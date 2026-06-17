@@ -973,6 +973,65 @@ a { color:#149DAA; text-decoration:none; } a:hover { color:#0F8190; }
 .tm-subtab .ct { font-size:11.5px; color:rgba(0,0,0,0.4); }
 .tm-subtab.active .ct { color:#149DAA; opacity:0.8; }
 
+/* ── 数据平台 · 工作台 · 标注 editor ── */
+.lab-meta { background:#1f2933; color:rgba(255,255,255,0.92); padding:11px 18px; border-radius:8px; display:flex; flex-wrap:wrap; gap:8px 22px; align-items:center; font-size:13px; margin-bottom:10px; }
+.lab-meta .lf { display:inline-flex; align-items:center; gap:6px; }
+.lab-meta .lf .lbl { color:rgba(255,255,255,0.55); font-size:12.5px; }
+.lab-meta .lf .val { color:#fff; font-weight:500; }
+.lab-meta .lf.mono .val { font-family:'SFMono-Regular',Consolas,'Liberation Mono',Menlo,monospace; }
+.lab-meta .grow { flex:1; }
+.lab-meta .ver { display:inline-flex; align-items:center; gap:6px; background:rgba(255,255,255,0.08); padding:4px 12px; border-radius:6px; cursor:pointer; font-size:12.5px; }
+.lab-meta .ver:hover { background:rgba(255,255,255,0.14); }
+.lab-meta .ver .caret { font-size:9px; opacity:0.55; }
+.lab-meta .status-pass { background:#3DC470; color:#fff; padding:3px 12px; border-radius:6px; font-size:12px; font-weight:500; letter-spacing:0.5px; }
+.lab-vid-grid { display:grid; grid-template-columns:1fr 1fr 1fr; gap:6px; background:#0d0d0d; padding:6px; border-radius:8px; margin-bottom:14px; position:relative; }
+.lab-vid { background:linear-gradient(135deg,#262b31,#1c2025); border-radius:6px; position:relative; min-height:300px; display:flex; align-items:center; justify-content:center; color:rgba(255,255,255,0.18); font-size:32px; overflow:hidden; }
+.lab-vid .vid-label { position:absolute; top:10px; left:14px; color:#fff; font-size:12.5px; z-index:2; padding:0; background:transparent; }
+.lab-vid .vid-expand { position:absolute; top:10px; right:14px; color:rgba(255,255,255,0.65); font-size:13px; cursor:pointer; z-index:2; }
+.lab-fab { position:absolute; right:14px; bottom:14px; width:38px; height:38px; border-radius:50%; background:#1F8AC9; color:#fff; display:flex; align-items:center; justify-content:center; box-shadow:0 4px 12px rgba(0,0,0,0.4); cursor:pointer; z-index:3; }
+.lab-fab:hover { background:#176aa0; }
+.lab-tools-card { background:#fff; border:1px solid #f0f0f0; border-radius:10px; padding:14px 18px 12px; margin-bottom:14px; }
+.lab-timeline { position:relative; padding:0; }
+.lab-tl-ticks { position:relative; height:16px; margin-bottom:6px; font-size:11px; color:rgba(0,0,0,0.45); font-family:'SFMono-Regular',Consolas,monospace; }
+.lab-tl-tick { position:absolute; transform:translateX(-50%); }
+.lab-tl-bar { position:relative; height:14px; margin-bottom:6px; background:#eef0f2; border-radius:7px; overflow:hidden; }
+.lab-tl-bar:last-child { margin-bottom:0; }
+.lab-tl-seg { position:absolute; top:0; bottom:0; }
+.lab-tl-seg.orange { background:#F5A623; }
+.lab-tl-seg.red { background:#E45A52; }
+.lab-tl-seg.purple { background:#8B47C7; }
+.lab-tl-pin { position:absolute; top:-3px; transform:translateX(-50%); color:#5D4A8C; font-size:16px; line-height:1; pointer-events:none; }
+.lab-tools { display:flex; align-items:center; justify-content:center; padding-top:10px; margin-top:8px; border-top:1px solid #f5f5f5; gap:14px; position:relative; }
+.lab-tools-left { display:flex; align-items:center; gap:4px; }
+.lab-tools .lab-tools-right { position:absolute; right:0; top:50%; transform:translateY(-50%); margin-top:5px; }
+.lab-tool { display:inline-flex; align-items:center; justify-content:center; width:30px; height:30px; border-radius:6px; cursor:pointer; color:rgba(0,0,0,0.65); transition:all 0.15s; font-size:13px; user-select:none; }
+.lab-tool:hover { background:#f5f7fa; color:#149DAA; }
+.lab-tool.danger:hover { color:#e25c5c; background:#fff0f0; }
+.lab-tool.play { background:#149DAA; color:#fff; width:32px; height:32px; border-radius:50%; margin:0 4px; }
+.lab-tool.play:hover { background:#0F8190; color:#fff; }
+.lab-speed { padding:0 8px; font-size:13px; color:rgba(0,0,0,0.55); user-select:none; }
+.lab-tools-right { display:inline-flex; align-items:center; gap:6px; color:#149DAA; font-size:13px; cursor:pointer; text-decoration:none; }
+.lab-tools-right:hover { color:#0F8190; }
+.lab-tbl { background:#fff; border:1px solid #f0f0f0; border-radius:10px; overflow:hidden; margin-bottom:14px; }
+.lab-tbl table { width:100%; border-collapse:separate; border-spacing:0; }
+.lab-tbl th { padding:12px 14px; font-size:12.5px; color:rgba(0,0,0,0.55); font-weight:500; text-align:left; background:#fafbfc; border-bottom:1px solid #f0f0f0; }
+.lab-tbl td { padding:14px 14px; font-size:13px; color:rgba(0,0,0,0.78); border-bottom:1px solid #f5f5f5; vertical-align:middle; }
+.lab-tbl tr:last-child td { border-bottom:none; }
+.lab-tbl .color-chip { width:20px; height:20px; border-radius:3px; display:inline-block; vertical-align:middle; }
+.lab-tbl select.mock, .lab-tbl input.mock { width:100%; height:32px; padding:0 28px 0 12px; font-size:13px; color:rgba(0,0,0,0.55); border:1px solid #e2e4e8; border-radius:6px; background:#fff; box-sizing:border-box; appearance:none; cursor:pointer; }
+.lab-tbl select.mock { background-image:linear-gradient(45deg, transparent 50%, rgba(0,0,0,0.4) 50%), linear-gradient(135deg, rgba(0,0,0,0.4) 50%, transparent 50%); background-position:calc(100% - 14px) 50%, calc(100% - 9px) 50%; background-size:5px 5px, 5px 5px; background-repeat:no-repeat; }
+.lab-tbl input.mock { padding:0 12px; color:rgba(0,0,0,0.78); cursor:text; }
+.lab-act-cell { display:flex; align-items:center; justify-content:center; gap:6px; }
+.lab-tbl .nowrap { white-space:nowrap; }
+.lab-act-btn { display:inline-flex; align-items:center; justify-content:center; width:30px; height:30px; border-radius:6px; color:#fff; cursor:pointer; border:none; font-size:14px; }
+.lab-act-btn.blue { background:#149DAA; } .lab-act-btn.blue:hover { background:#0F8190; }
+.lab-act-btn.orange { background:#F39C12; } .lab-act-btn.orange:hover { background:#D88A0B; }
+.lab-act-btn.red { background:#E25C5C; } .lab-act-btn.red:hover { background:#C44949; }
+.lab-foot { display:flex; justify-content:center; gap:14px; padding:6px 0 8px; }
+.lab-foot .btn { padding:8px 28px; font-size:14px; min-width:120px; justify-content:center; }
+.lab-foot .btn-primary { background:#149DAA; color:#fff; border-color:#149DAA; }
+.lab-foot .btn-primary:hover { background:#0F8190; border-color:#0F8190; }
+
 /* ── 设备预约: 占用看板 tab + Gantt ── */
 .bk-tabs { display:flex; border-bottom:1px solid #f0f0f0; margin:0 2px 18px; padding:0 4px; gap:4px; }
 .bk-tab { padding:11px 18px; font-size:14px; color:rgba(0,0,0,0.65); cursor:pointer; border:none; background:none; border-bottom:2px solid transparent; margin-bottom:-1px; user-select:none; }
@@ -2032,7 +2091,7 @@ def data_workbench():
                 <span class="pct">{pct}%</span>
               </div>
             </div>
-            <a class="btn btn-primary" href="#" onclick="toast('Demo: 进入 {t['type']} 工作台');return false;">进入工作台 &rsaquo;</a>
+            <a class="btn btn-primary" href="/data/workbench/edit">进入工作台 &rsaquo;</a>
           </div>
         </div>
         """
@@ -2042,6 +2101,134 @@ def data_workbench():
     """
     return render_page("工作台", content, active="/data/workbench", module="data",
                        breadcrumb='数据平台 / <b>工作台</b>', mvp_note="MVP 一期")
+
+
+# ── 工作台 · 标注 editor (单条任务进入后的标注界面) ──
+@app.route("/data/workbench/edit")
+def data_workbench_edit():
+    DUR_TOTAL = 42.80
+    rows = [
+        {"no": 1, "start": 0.00,  "end": 1.94,  "color": "#E45A52", "desc": "无法标注",       "el_placeholder": "选择动作元素"},
+        {"no": 2, "start": 1.94,  "end": 42.80, "color": "#8B47C7", "desc": "分捡药片放入盘中", "el_placeholder": "选择动作元素"},
+    ]
+    tick_secs = [0, 5, 10, 15, 20, 25, 30, 35, 40]
+    ticks_html = "".join(
+        f'<span class="lab-tl-tick" style="left:{t / DUR_TOTAL * 100:.2f}%;">{t:.2f}s</span>'
+        for t in tick_secs
+    )
+    # 顶部 orange 短带 (前 5s 当前播放窗口) + 主时间线 (按标注段铺色)
+    seg1_pct = 5.0 / DUR_TOTAL * 100
+    main_segs = ""
+    for r in rows:
+        left = r["start"] / DUR_TOTAL * 100
+        width = (r["end"] - r["start"]) / DUR_TOTAL * 100
+        cls = "red" if r["color"] == "#E45A52" else "purple"
+        main_segs += f'<div class="lab-tl-seg {cls}" style="left:{left:.2f}%;width:{width:.2f}%;"></div>'
+    # 两个 pin marker (示意书签 / 关键帧)
+    pin_pcts = [14.0 / DUR_TOTAL * 100, 17.0 / DUR_TOTAL * 100]
+    pins_html = "".join(f'<span class="lab-tl-pin" style="left:{p:.2f}%;">&#9873;</span>' for p in pin_pcts)
+
+    body_rows = ""
+    for r in rows:
+        dur = r["end"] - r["start"]
+        body_rows += f"""<tr>
+          <td>{r['no']}</td>
+          <td>{r['start']:.2f}s</td>
+          <td>{r['end']:.2f}s</td>
+          <td>{dur:.2f}s</td>
+          <td><span class="color-chip" style="background:{r['color']};"></span></td>
+          <td><select class="mock"><option>{r['el_placeholder']}</option><option>抓取</option><option>放置</option><option>移动</option></select></td>
+          <td><input class="mock" type="text" value="{r['desc']}"></td>
+          <td>—</td>
+          <td>
+            <div class="lab-act-cell">
+              <button class="lab-act-btn blue"   title="跳到此段">&#10162;</button>
+              <button class="lab-act-btn orange" title="编辑">&#9998;</button>
+              <button class="lab-act-btn red"    title="删除">&#128465;</button>
+            </div>
+          </td>
+        </tr>"""
+
+    content = f"""
+    <div class="lab-meta">
+      <div class="lf"><span class="lbl">任务ID:</span><span class="val">9805</span></div>
+      <div class="lf"><span class="lbl">任务名称:</span><span class="val">20260601_SortPills_V2_NarrowTable_FrontDeskDemo_Udas</span></div>
+      <div class="grow"></div>
+      <div class="lf mono"><span class="lbl">序列号:</span><span class="val">UDAS-00002-2983</span></div>
+      <div class="lf"><span class="lbl">采集员:</span><span class="val">柳少龙</span></div>
+      <div class="lf mono"><span class="lbl">数据ID:</span><span class="val">3298698</span></div>
+      <div class="ver" onclick="toast('Demo: 切换版本')">第1版<span class="caret">&#9662;</span></div>
+      <div class="lf"><span class="lbl">状态:</span><span class="status-pass">通过</span></div>
+    </div>
+
+    <div class="lab-vid-grid">
+      <div class="lab-vid">
+        <span class="vid-label">左臂视角</span>
+        <span class="vid-expand" onclick="toast('Demo: 放大')" title="放大">&#9974;</span>
+        &#9658;
+      </div>
+      <div class="lab-vid">
+        <span class="vid-label">头部视角</span>
+        <span class="vid-expand" onclick="toast('Demo: 放大')" title="放大">&#9974;</span>
+        &#9658;
+      </div>
+      <div class="lab-vid">
+        <span class="vid-label">右臂视角</span>
+        <span class="vid-expand" onclick="toast('Demo: 放大')" title="放大">&#9974;</span>
+        &#9658;
+      </div>
+      <div class="lab-fab" onclick="toast('Demo: 录屏')" title="录屏">&#9209;</div>
+    </div>
+
+    <div class="lab-tools-card">
+      <div class="lab-timeline">
+        <div class="lab-tl-ticks">{ticks_html}</div>
+        <div class="lab-tl-bar"><div class="lab-tl-seg orange" style="left:0;width:{seg1_pct:.2f}%;"></div></div>
+        <div class="lab-tl-bar">{main_segs}{pins_html}</div>
+      </div>
+      <div class="lab-tools">
+        <div class="lab-tools-left">
+          <span class="lab-tool" title="上一帧" onclick="toast('Demo: 上一帧')">&laquo;</span>
+          <span class="lab-speed">1x</span>
+          <span class="lab-tool" title="下一帧" onclick="toast('Demo: 下一帧')">&raquo;</span>
+          <span class="lab-tool play" title="播放" onclick="toast('Demo: 播放')">&#9654;</span>
+          <span class="lab-tool" title="截帧" onclick="toast('Demo: 截帧')">&#9783;</span>
+          <span class="lab-tool" title="在前插入" onclick="toast('Demo: 在前插入')">&#10133;</span>
+          <span class="lab-tool" title="在后插入" onclick="toast('Demo: 在后插入')">&#10133;</span>
+          <span class="lab-tool" title="跳到末尾" onclick="toast('Demo: 跳到末尾')">&#10142;</span>
+          <span class="lab-tool danger" title="删除选段" onclick="toast('Demo: 删除选段')">&#128465;</span>
+          <span class="lab-tool" title="区间编辑" onclick="toast('Demo: 区间编辑')">&#8596;</span>
+          <span class="lab-tool" title="切分" onclick="toast('Demo: 切分')">&#9986;</span>
+          <span class="lab-tool" title="书签" onclick="toast('Demo: 书签')">&#9873;</span>
+        </div>
+        <a class="lab-tools-right" href="#" onclick="toast('Demo: 任务描述');return false;">&#10140; 任务描述</a>
+      </div>
+    </div>
+
+    <div class="lab-tbl">
+      <table>
+        <thead><tr>
+          <th class="nowrap" style="width:72px;">序号</th>
+          <th class="nowrap" style="width:80px;">开始</th>
+          <th class="nowrap" style="width:80px;">结束</th>
+          <th class="nowrap" style="width:80px;">时长</th>
+          <th class="nowrap" style="width:60px;">颜色</th>
+          <th class="nowrap" style="width:200px;">动作元素</th>
+          <th class="nowrap">动作描述</th>
+          <th class="nowrap" style="width:80px;">缩略图</th>
+          <th class="nowrap" style="width:140px;text-align:center;">操作</th>
+        </tr></thead>
+        <tbody>{body_rows}</tbody>
+      </table>
+    </div>
+
+    <div class="lab-foot">
+      <a class="btn btn-primary" href="#" onclick="toast('Demo: 已提交');return false;">&#9729; 提交</a>
+      <a class="btn" href="#" onclick="toast('Demo: 下一条');return false;">下一条 &rsaquo;</a>
+    </div>
+    """
+    return render_page("工作台 · 标注", content, active="/data/workbench", module="data",
+                       breadcrumb='数据平台 / 工作台 / <b>标注 #9805</b>', mvp_note="MVP 一期")
 
 
 # ── 数据看板: 漏斗 + 各环节处理能力 ──
