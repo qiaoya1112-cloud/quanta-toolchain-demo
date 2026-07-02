@@ -355,6 +355,10 @@ body.sider-collapsed .sc-exp { display:inline; }
 .filter-bar { display:flex; gap:8px; margin-bottom:16px; flex-wrap:wrap; align-items:center; }
 .filter-bar input,.filter-bar select { padding:5px 12px; height:34px; border:1px solid #d9d9d9; border-radius:8px; font-size:14px; color:rgba(0,0,0,0.85); outline:none; background:#fff; }
 .filter-bar input:focus,.filter-bar select:focus { border-color:#1F80A0; box-shadow:0 0 0 2px rgba(31,128,160,0.12); }
+input::placeholder, textarea::placeholder { color:rgba(0,0,0,0.32); opacity:1; }
+select.select-empty { color:rgba(0,0,0,0.32) !important; }
+select option { color:rgba(0,0,0,0.85); }
+select option:disabled { color:rgba(0,0,0,0.32); }
 /* ---- 数据查询: 筛选区 ---- */
 .q-filters { position:relative; background:#fff; border:1px solid #f0f0f0; border-radius:10px; padding:18px 20px; margin-bottom:16px; }
 .q-mode-tabs { display:flex; gap:24px; border-bottom:1px solid #f0f0f0; margin:-4px 0 16px; }
@@ -467,6 +471,8 @@ body.sider-collapsed .sc-exp { display:inline; }
 .ai-send:hover { background:#176a88; }
 .btn { display:inline-flex; align-items:center; gap:6px; height:34px; padding:0 16px; border-radius:8px; font-size:14px; cursor:pointer; border:1px solid #d9d9d9; background:#fff; color:rgba(0,0,0,0.85); }
 .btn:hover { border-color:#1F80A0; color:#1F80A0; }
+.btn-secondary { background:#fff; border-color:#1F80A0; color:#1F80A0; }
+.btn-secondary:hover { background:#f3f9fb; border-color:#176a88; color:#176a88; }
 .btn-primary { background:#1F80A0; border-color:#1F80A0; color:#fff; }
 .btn-primary:hover { background:#176a88; border-color:#176a88; color:#fff; }
 .btn-secondary { background:#fff; border-color:#1F80A0; color:#1F80A0; }
@@ -1005,6 +1011,37 @@ BASE_TEMPLATE = """<!DOCTYPE html>
 <div class="q-toast" id="toast"></div>
 <script>
 function toast(msg){ var t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); setTimeout(function(){t.classList.remove('show');},2200); }
+function resetFilters(btn){
+  var root = btn.closest('.filter-bar,.q-filters');
+  if(!root){ toast('Demo: 已重置'); return; }
+  root.querySelectorAll('input, textarea').forEach(function(el){ el.value=''; });
+  root.querySelectorAll('select').forEach(function(el){ el.selectedIndex = 0; });
+  root.querySelectorAll('.ms-wrap input[type="checkbox"]').forEach(function(el){ el.checked = false; });
+  root.querySelectorAll('.ms-trigger').forEach(function(el){
+    var base = el.getAttribute('data-base') || '筛选';
+    el.classList.remove('has-value');
+    var label = el.querySelector('.ms-label');
+    if(label) label.textContent = base.replace(/\s*\(\d+\)$/, '');
+  });
+  refreshSelectPlaceholders(root);
+  toast('Demo: 已重置');
+}
+function queryFilters(btn){ toast('Demo: 已查询'); }
+function isPlaceholderSelectValue(sel){
+  if(!sel) return false;
+  var opt = sel.options[sel.selectedIndex];
+  if(!opt) return false;
+  var txt = (opt.textContent || '').trim();
+  return opt.disabled || opt.value === '' || /^请选择/.test(txt) || /^全部/.test(txt);
+}
+function refreshSelectPlaceholderState(sel){ sel.classList.toggle('select-empty', isPlaceholderSelectValue(sel)); }
+function refreshSelectPlaceholders(root){
+  (root || document).querySelectorAll('select').forEach(refreshSelectPlaceholderState);
+}
+document.addEventListener('DOMContentLoaded', function(){ refreshSelectPlaceholders(document); });
+document.addEventListener('change', function(e){
+  if(e.target && e.target.tagName === 'SELECT') refreshSelectPlaceholderState(e.target);
+}, true);
 function msUpdate(cb){
   var wrap=cb.closest('.ms-wrap'); var checked=wrap.querySelectorAll('input:checked'); var n=checked.length;
   var trig=wrap.querySelector('.ms-trigger'); var base=trig.getAttribute('data-base')||''; var lab=wrap.querySelector('.ms-label');
@@ -3008,20 +3045,6 @@ def dataset_detail_panel_v2(d, viewed_ver=""):
     if not down_rows:
         down_rows = '<tr><td colspan="3" class="muted">暂未被训练/评测任务引用</td></tr>'
 
-    lineage = f"""
-    <div class="tab-pane" id="pane-lineage">
-      <h4 class="va-h">↑ 上游来源 <span class="muted" style="font-weight:400;font-size:12px;">由以下采集/dagger 任务生成</span></h4>
-      <table class="ant-table">
-        <thead><tr><th>来源</th><th>类型</th><th>recording 数</th><th>引用 recording</th></tr></thead>
-        <tbody>{up_rows}</tbody>
-      </table>
-      <h4 class="va-h">↓ 下游引用 <span class="muted" style="font-weight:400;font-size:12px;">被以下训练/评测任务引用</span></h4>
-      <table class="ant-table">
-        <thead><tr><th>任务</th><th>类型</th><th>引用版本</th></tr></thead>
-        <tbody>{down_rows}</tbody>
-      </table>
-    </div>
-    """
     vrows = ""
     for v in ds_versions(d):
         if v["status"] == "待发布":
@@ -3046,7 +3069,7 @@ def dataset_detail_panel_v2(d, viewed_ver=""):
     </div>
     """
     publish_btn = ('<button class="btn-primary btn" onclick="toast(\'Demo: 已开始发布并上传 TOS...\')">发布 / 上传 TOS</button>'
-                   if d["status"] != "生效中" else '<button class="btn" onclick="toast(\'生效中, 可被训练任务引用\')">查看 TOS</button>')
+                   if d["status"] != "生效中" else "")
 
     # 处理数据抽屉: 选任务 + 参数(结构化/代码) → 执行生成新版本
     pl_opts = "".join(f'<option value="task|{p["name"]}">{p["name"]}</option>' for p in PIPELINES)
@@ -3143,16 +3166,15 @@ def dataset_detail_panel_v2(d, viewed_ver=""):
     <div class="detail-head">
       <div><div class="dh-title">{d['name']} {ver_select} {qa_html(d['quality'])}</div>
       <div class="dh-meta"><span>{d['episodes']} ep · {d['frames']:,} f</span><span>{d['status']}</span></div></div>
-      <div><button class="btn" onclick="document.getElementById('procDrawer').classList.add('active')">&#9881; 处理数据</button> {publish_btn}</div>
+      <div><button class="btn btn-secondary" onclick="document.getElementById('procDrawer').classList.add('active')">&#9881; 处理数据</button> {publish_btn}</div>
     </div>
     <div class="tabs">
       <div class="tab active" onclick="switchTab(this,'preview')">数据预览</div>
       <div class="tab" onclick="switchTab(this,'compose')">构成分析</div>
-      <div class="tab" onclick="switchTab(this,'lineage')">血缘</div>
       <div class="tab" onclick="switchTab(this,'version')">版本</div>
       <div class="tab" onclick="switchTab(this,'info')">基本信息</div>
     </div>
-    <div class="pane-wrap">{preview}{compose}{lineage}{version}{info}</div>
+    <div class="pane-wrap">{preview}{compose}{version}{info}</div>
     {drawer}
     """
     return head
@@ -3240,6 +3262,8 @@ def dataset_new_panel_v2():
           <select class="has-value"><option>task: 擦白板</option></select>
           <select class="has-value"><option>类型: 采集</option></select>
           <select class="has-value"><option>质检: PASS</option></select>
+          <button class="btn" onclick="resetFilters(this)">重置</button>
+          <button class="btn-primary btn" onclick="queryFilters(this)">查询</button>
           <span class="muted">动作量排行榜 / smoothness 诊断标签可在此 flag 异常</span>
         </div>
         <table class="ant-table"><thead><tr><th></th><th>ID</th><th>Task</th><th>类型</th><th>帧数</th><th>质检</th></tr></thead><tbody>{rec_rows}</tbody></table>
@@ -3253,6 +3277,8 @@ def dataset_new_panel_v2():
         <h4>③ 切分 — train / val / eval</h4>
         <div class="filter-bar"><select class="has-value"><option>类型: train</option></select>
         <input value="train_ratio = 0.95" style="width:160px;"><input value="seed = 42" style="width:120px;">
+        <button class="btn" onclick="resetFilters(this)">重置</button>
+        <button class="btn-primary btn" onclick="queryFilters(this)">查询</button>
         <span class="qa qa-warn">eval 泄漏检查: 通过, 未碰评测集 recording</span></div>
       </div>
       <div class="card" style="margin-bottom:16px;">
@@ -3294,6 +3320,8 @@ def operators():
         <div class="ms-trigger" onclick="this.closest('.ms-wrap').classList.toggle('open')"><span class="ms-label">创建人</span></div>
         <div class="ms-panel">{creator_checks}</div>
       </div>
+      <button class="btn" onclick="resetFilters(this)">重置</button>
+      <button class="btn-primary btn" onclick="queryFilters(this)">查询</button>
       <button class="btn-primary btn" onclick="openOpForm('')" style="margin-left:auto;">+ 新建算子</button>
     </div>
     <div class="muted" style="margin-bottom:12px;">每个算子 = 一个「原子处理能力」的封装, 可被编排到工作流。</div>
@@ -3416,6 +3444,8 @@ def pipelines():
         <div class="ms-trigger {op_hasval}" data-base="算子" onclick="this.closest('.ms-wrap').classList.toggle('open')"><span class="ms-label">{op_label}</span></div>
         <div class="ms-panel">{op_checks}</div>
       </div>
+      <button class="btn" onclick="resetFilters(this)">重置</button>
+      <button class="btn-primary btn" onclick="queryFilters(this)">查询</button>
       <a href="/pipelines/new" class="btn-primary btn" style="margin-left:auto;">+ 新建工作流</a>
     </div>
     <div class="muted" style="margin-bottom:12px;">把算子编排成可复用、可调度的工作流, 用于批量重复跑数据集。</div>
@@ -3842,6 +3872,8 @@ def runs():
       <select class="has-value"><option value="">全部状态</option><option>成功</option><option>运行中</option><option>失败</option></select>
       <select class="has-value"><option value="">全部触发方式</option><option>手动触发</option><option>定时触发</option></select>
       <input placeholder="搜索工作流 / 产出数据集...">
+      <button class="btn" onclick="resetFilters(this)">重置</button>
+      <button class="btn-primary btn" onclick="queryFilters(this)">查询</button>
     </div>
     <div class="muted" style="margin-bottom:12px;">共 {len(RUNS)} 次执行 · 运行中 {n_run} · 失败 {n_fail} · 每行 = 一次工作流执行实例</div>
     <table class="ant-table">

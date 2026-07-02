@@ -260,13 +260,16 @@ EVALS = [
 DEPLOYS = [
     {"id": "dp_801", "model": "spirit-v1.7-whiteboard-base", "version": "v1.7.0",
      "targets": ["moz1-002", "moz1-003", "moz1-005"],
-     "status": "deployed", "at": "2026-06-15 14:00", "operator": "joanna.qiao"},
+     "status": "deployed", "progress": {"success": 3, "failed": 0, "running": 0},
+     "trigger": "手动部署", "at": "2026-06-15 14:00", "operator": "joanna.qiao"},
     {"id": "dp_802", "model": "spirit-v1.6-whiteboard-baseline", "version": "v1.6.0",
      "targets": ["moz1-001"],
-     "status": "deployed", "at": "2026-06-13 10:00", "operator": "joanna.qiao"},
+     "status": "deployed", "progress": {"success": 1, "failed": 0, "running": 0},
+     "trigger": "test 任务", "at": "2026-06-13 10:00", "operator": "joanna.qiao"},
     {"id": "dp_803", "model": "spirit-v1.7-whiteboard-base", "version": "v1.7.1",
      "targets": ["moz1-003", "moz1-004", "moz1-005", "moz1-006", "moz1-007", "moz1-008"],
-     "status": "pending", "at": "—", "operator": "Lance Li"},
+     "status": "in_progress", "progress": {"success": 3, "failed": 1, "running": 2},
+     "trigger": "dagger 任务", "at": "—", "operator": "Lance Li"},
 ]
 
 MODELS = [
@@ -445,15 +448,14 @@ PLATFORMS = {
             ("数据", [
                 ("/model/data/query", "数据查询", "&#9906;", "优化"),
                 ("/model/data/datasets", "数据集", "&#9776;", "优化"),
+                ("/model/data/raw", "原始数据", "&#9783;", "新增"),
             ]),
             ("训练", [
                 ("/model/experiments", "训练任务", "&#9881;", "优化"),
-                ("/model/checkpoints", "Checkpoint", "&#9783;", "优化"),
             ]),
             ("部署", [
+                ("/model/checkpoints", "Checkpoint", "&#9783;", "优化"),
                 ("/model/deploy", "部署任务", "&#9654;", "新增"),
-                ("/model/convert", "模型转换", "&#9881;", "新增"),
-                ("/model/models", "模型仓库", "&#9776;", "新增"),
             ]),
             ("评测", [
                 ("/model/eval/tasks",        "评测任务", "&#9881;", "待定"),
@@ -520,6 +522,23 @@ PLATFORMS = {
 # 设备型号选择下拉 (仅在 module=="device" 时显示在 sider 平台切换器下方)
 DEVICE_MODELS = ["Moz 墨子", "Mobi 莫比", "uDAS 1.0", "uDAS 2.0"]
 
+# 租户管理: 独立 module, 不出现在平台切换下拉里 (顶导单独入口进入)
+PLATFORMS["tenant"] = {
+    "name": "租户管理",
+    "short": "管",
+    "color": "tenant",
+    "tagline": "租户 · 人员 · 权限 · 资源",
+    "home": "/tenant",
+    "nav": [
+        ("管理", [
+            ("/tenant/members",   "人员管理", "&#9786;"),
+            ("/tenant/roles",     "权限管理", "&#9919;"),
+            ("/tenant/resources", "资源管理", "&#9784;"),
+            ("/tenant/queues",    "队列管理", "&#9783;"),
+        ]),
+    ],
+}
+
 
 # ── 平台线形图标（统一用主色 stroke）──
 ICON_DATA = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5.5" rx="7" ry="2.5"/><path d="M5 5.5v6c0 1.4 3.1 2.5 7 2.5s7-1.1 7-2.5v-6"/><path d="M5 11.5v6c0 1.4 3.1 2.5 7 2.5s7-1.1 7-2.5v-6"/></svg>'
@@ -527,8 +546,9 @@ ICON_MODEL = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-
 ICON_DEVICE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="6" width="12" height="12" rx="1.5"/><rect x="9.5" y="9.5" width="5" height="5"/><path d="M10 6V3M14 6V3M10 21v-3M14 21v-3M21 10h-3M21 14h-3M6 10H3M6 14H3"/></svg>'
 ICON_ASSET = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="5" cy="6" r="2.2"/><circle cx="12" cy="12" r="2.2"/><circle cx="19" cy="18" r="2.2"/><path d="M6.5 7.5L10.5 10.5M13.5 13.5L17.5 16.5"/></svg>'
 ICON_APP = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="6" height="4" rx="1"/><rect x="3" y="16" width="6" height="4" rx="1"/><rect x="15" y="10" width="6" height="4" rx="1"/><path d="M9 6 H12 V12 H15"/><path d="M9 18 H12 V12 H15"/></svg>'
+ICON_TENANT = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3.2"/><path d="M19.4 15a1.6 1.6 0 0 0 .32 1.76l.06.06a1.94 1.94 0 1 1-2.74 2.74l-.06-.06a1.6 1.6 0 0 0-1.76-.32 1.6 1.6 0 0 0-.97 1.46V21a1.94 1.94 0 1 1-3.88 0v-.1a1.6 1.6 0 0 0-1.05-1.46 1.6 1.6 0 0 0-1.76.32l-.06.06a1.94 1.94 0 1 1-2.74-2.74l.06-.06a1.6 1.6 0 0 0 .32-1.76 1.6 1.6 0 0 0-1.46-.97H3a1.94 1.94 0 1 1 0-3.88h.1a1.6 1.6 0 0 0 1.46-1.05 1.6 1.6 0 0 0-.32-1.76l-.06-.06a1.94 1.94 0 1 1 2.74-2.74l.06.06a1.6 1.6 0 0 0 1.76.32H9a1.6 1.6 0 0 0 .97-1.46V3a1.94 1.94 0 1 1 3.88 0v.1a1.6 1.6 0 0 0 .97 1.46 1.6 1.6 0 0 0 1.76-.32l.06-.06a1.94 1.94 0 1 1 2.74 2.74l-.06.06a1.6 1.6 0 0 0-.32 1.76V9a1.6 1.6 0 0 0 1.46.97H21a1.94 1.94 0 1 1 0 3.88h-.1a1.6 1.6 0 0 0-1.46.97z"/></svg>'
 
-PLATFORM_ICONS = {"data": ICON_DATA, "model": ICON_MODEL, "app": ICON_APP, "device": ICON_DEVICE}
+PLATFORM_ICONS = {"data": ICON_DATA, "model": ICON_MODEL, "app": ICON_APP, "device": ICON_DEVICE, "tenant": ICON_TENANT}
 PLATFORM_ORDER = [("data", "数据平台"), ("model", "模型平台"), ("app", "应用编排平台"), ("device", "设备管理平台")]
 
 
@@ -558,6 +578,10 @@ a { color:#149DAA; text-decoration:none; } a:hover { color:#0F8190; }
 .tn-link { color:rgba(255,255,255,0.65); font-size:14px; cursor:pointer; }
 .tn-link:hover { color:#fff; }
 .tn-divider { width:1px; height:18px; background:rgba(255,255,255,0.14); margin:0 4px; flex:none; }
+.tn-tenant-admin { display:inline-flex; align-items:center; gap:6px; padding:5px 9px; border-radius:6px; }
+.tn-tenant-admin svg { color:rgba(255,255,255,0.65); }
+.tn-tenant-admin:hover { background:rgba(255,255,255,0.06); color:#fff; }
+.tn-tenant-admin:hover svg { color:#fff; }
 .tn-pill { font-size:11px; color:rgba(255,255,255,0.85); background:transparent; border:1px solid rgba(255,255,255,0.25); padding:2px 12px; border-radius:11px; letter-spacing:0.4px; }
 .brand-demo { font-size:10.5px; font-weight:500; color:rgba(255,255,255,0.85); background:rgba(20,157,170,0.30); border:1px solid rgba(93,229,236,0.50); padding:1px 7px; border-radius:8px; letter-spacing:0.6px; text-transform:uppercase; margin-left:4px; }
 .tn-tenant { display:flex; align-items:center; gap:8px; cursor:pointer; padding:4px 6px 4px 2px; border-radius:6px; user-select:none; position:relative; background:transparent; border:none; transition:background 0.15s; }
@@ -596,6 +620,8 @@ a { color:#149DAA; text-decoration:none; } a:hover { color:#0F8190; }
 .smh-name { font-size:14px; font-weight:500; color:rgba(255,255,255,0.92); flex:1; min-width:0; }
 .smh-caret { color:rgba(255,255,255,0.42); font-size:10px; transition:transform 0.2s; flex:none; }
 .smh.open .smh-caret { transform:rotate(180deg); color:#5DE5EC; }
+.smh-static { cursor:default; }
+.smh-static:hover { border-color:rgba(255,255,255,0.14); background:rgba(255,255,255,0.04); }
 .mod-switch { display:none; position:absolute; top:calc(100% - 4px); left:14px; right:14px; background:#fff; border:1px solid #E0E4E7; border-radius:8px; box-shadow:0 12px 32px rgba(0,0,0,0.45); padding:6px; z-index:300; }
 .mod-switch.open { display:block; }
 .ms-item { display:flex; align-items:center; gap:10px; padding:8px 10px; border-radius:6px; font-size:14px; color:rgba(0,0,0,0.78); cursor:pointer; text-decoration:none; margin:1px 0; }
@@ -724,10 +750,19 @@ a { color:#149DAA; text-decoration:none; } a:hover { color:#0F8190; }
 .filter-bar input:focus,.filter-bar select:focus { border-color:#149DAA; box-shadow:0 0 0 2px rgba(20,157,170,0.12); }
 .filter-bar .grow { flex:1; min-width:200px; }
 .filter-bar .right { margin-left:auto; display:flex; gap:8px; }
+.filter-actions { display:flex; gap:8px; align-items:center; }
+input::placeholder, textarea::placeholder { color:rgba(0,0,0,0.32); opacity:1; }
+select.select-empty { color:rgba(0,0,0,0.32) !important; }
+select option { color:rgba(0,0,0,0.85); }
+select option:disabled { color:rgba(0,0,0,0.32); }
 
 /* ── Buttons ── */
 .btn { display:inline-flex; align-items:center; gap:6px; height:34px; padding:0 16px; border-radius:8px; font-size:14px; cursor:pointer; border:1px solid #d9d9d9; background:#fff; color:rgba(0,0,0,0.85); text-decoration:none; box-sizing:border-box; }
 .btn:hover { border-color:#149DAA; color:#149DAA; }
+.btn-secondary { background:#fff; border-color:#149DAA; color:#149DAA; }
+.btn-secondary:hover { background:#EBF8FA; border-color:#0F8190; color:#0F8190; }
+.btn-tertiary { background:#fff; border-color:#d9d9d9; color:rgba(0,0,0,0.85); }
+.btn-tertiary:hover { border-color:#149DAA; color:#149DAA; background:#fff; }
 .btn-primary { background:#149DAA; border-color:#149DAA; color:#fff; }
 .btn-primary:hover { background:#0F8190; border-color:#0F8190; color:#fff; }
 .btn-sm { height:28px; padding:0 12px; font-size:13px; }
@@ -740,6 +775,10 @@ a { color:#149DAA; text-decoration:none; } a:hover { color:#0F8190; }
 .actions-cell { white-space:nowrap; }
 .mono { font-family:'SF Mono',Menlo,monospace; font-size:12.5px; color:rgba(0,0,0,0.55); }
 .table-wrap { background:#fff; border:1px solid #f0f0f0; border-radius:8px; overflow:hidden; }
+.table-wrap.deploy-table-wrap { overflow:visible; }
+.ckpt-table { table-layout:fixed; }
+.ckpt-name-cell { display:block; max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:#149DAA; text-decoration:none; }
+.ckpt-name-cell:hover { color:#0F8190; }
 
 /* ── Tags / status ── */
 .tag { display:inline-block; padding:1px 8px; border-radius:4px; font-size:12px; line-height:20px; border:1px solid transparent; }
@@ -787,6 +826,19 @@ a { color:#149DAA; text-decoration:none; } a:hover { color:#0F8190; }
 .dismiss { font-size:18px; color:rgba(0,0,0,0.45); cursor:pointer; line-height:1; }
 .dismiss:hover { color:rgba(0,0,0,0.85); }
 
+/* ── Modal ── */
+.modal-mask { position:fixed; inset:0; z-index:1700; display:none; align-items:center; justify-content:center; background:rgba(0,0,0,0.42); }
+.modal-mask.active { display:flex; }
+.modal { width:480px; max-width:calc(100vw - 40px); background:#fff; border-radius:10px; box-shadow:0 16px 48px rgba(0,0,0,0.18); overflow:hidden; }
+.modal-head { padding:18px 22px; border-bottom:1px solid #f0f0f0; display:flex; align-items:center; justify-content:space-between; }
+.modal-head h3 { margin:0; font-size:16px; font-weight:500; color:rgba(0,0,0,0.86); }
+.modal-body { padding:20px 22px; }
+.modal-foot { padding:13px 22px; border-top:1px solid #f0f0f0; display:flex; justify-content:flex-end; gap:8px; }
+.cache-state { display:flex; gap:12px; align-items:flex-start; }
+.cache-hourglass { width:32px; height:32px; border-radius:50%; background:#DEF6F9; color:#149DAA; display:inline-flex; align-items:center; justify-content:center; font-size:18px; line-height:1; flex:none; }
+.cache-state h4 { margin:1px 0 6px; font-size:15px; color:rgba(0,0,0,0.86); font-weight:500; }
+.cache-state p { margin:0; font-size:13px; color:rgba(0,0,0,0.55); line-height:1.7; }
+
 /* ── Lineage (asset page) ── */
 .lin-pick { display:flex; gap:10px; align-items:center; margin-bottom:18px; }
 .lin-pick select { padding:7px 14px; border:1px solid #d9d9d9; border-radius:8px; font-size:14px; outline:none; min-width:280px; }
@@ -799,7 +851,27 @@ a { color:#149DAA; text-decoration:none; } a:hover { color:#0F8190; }
 .lin-node.teal { background:#e1f5ee; border-color:#5dcaa5; }
 .lin-node.purple { background:#eeedfe; border-color:#7F77DD; }
 .lin-node.coral { background:#fef0eb; border-color:#f0997b; }
+.lin-node.blue { background:#eaf4ff; border-color:#69a7e8; }
+.lin-node.amber { background:#fff7e6; border-color:#ffc069; }
+.lin-node.green { background:#edf9f0; border-color:#7bcf8a; }
+.lin-node.anchor { box-shadow:0 0 0 3px rgba(20,157,170,0.14); border-color:#149DAA; }
 .lin-arr { display:flex; align-items:center; justify-content:center; color:rgba(0,0,0,0.4); font-size:22px; }
+.lin-flow.lin-flow-5 { grid-template-columns:1fr 24px 1fr 24px 1.1fr 24px 1fr 24px 1fr; }
+.lin-summary { display:grid; grid-template-columns:repeat(4, 1fr); gap:12px; margin-bottom:14px; }
+.lin-sum-card { background:#fff; border:1px solid #f0f0f0; border-radius:8px; padding:14px 16px; }
+.lin-sum-card .k { font-size:12px; color:rgba(0,0,0,0.45); }
+.lin-sum-card .v { margin-top:4px; font-size:20px; font-weight:600; color:rgba(0,0,0,0.85); font-family:'SFMono-Regular',Consolas,monospace; }
+.lin-actions { display:flex; justify-content:flex-end; gap:8px; margin-bottom:14px; }
+.lin-table { margin-top:16px; }
+.lin-filter { background:#fff; border:1px solid #f0f0f0; border-radius:8px; padding:14px 16px; margin-bottom:14px; display:flex; align-items:flex-end; gap:12px; flex-wrap:wrap; }
+.lin-filter .lf-field { display:flex; flex-direction:column; gap:6px; min-width:240px; flex:1; }
+.lin-filter label { font-size:12px; color:rgba(0,0,0,0.55); }
+.lin-filter input { height:34px; border:1px solid #d9d9d9; border-radius:6px; padding:0 11px; font-size:13px; outline:none; box-sizing:border-box; }
+.lin-filter input:focus { border-color:#149DAA; box-shadow:0 0 0 2px rgba(20,157,170,0.10); }
+.kv-grid { display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:12px; }
+.kv { background:#fafbfc; border:1px solid #f0f0f0; border-radius:8px; padding:12px 14px; min-width:0; }
+.kv span { display:block; font-size:12px; color:rgba(0,0,0,0.45); margin-bottom:5px; }
+.kv b { display:block; font-size:13.5px; color:rgba(0,0,0,0.82); font-weight:500; word-break:break-word; }
 
 /* ── Labeled filter bar (训练任务/Checkpoint 列表用) ── */
 .fb-labeled { background:#fff; padding:16px 18px; border:1px solid #f0f0f0; border-radius:8px; margin-bottom:14px; display:flex; gap:18px; align-items:flex-end; flex-wrap:wrap; }
@@ -808,8 +880,9 @@ a { color:#149DAA; text-decoration:none; } a:hover { color:#0F8190; }
 .fb-labeled .ff input, .fb-labeled .ff select { height:34px; min-width:240px; padding:5px 12px; border:1px solid #d9d9d9; border-radius:6px; font-size:14px; outline:none; background:#fff; box-sizing:border-box; }
 .fb-labeled .ff input::placeholder { color:rgba(0,0,0,0.32); }
 .fb-labeled .ff input:focus, .fb-labeled .ff select:focus { border-color:#149DAA; box-shadow:0 0 0 2px rgba(20,157,170,0.12); }
-.fb-labeled .ff-refresh { width:34px; height:34px; border:1px solid #d9d9d9; border-radius:6px; background:#fff; cursor:pointer; display:flex; align-items:center; justify-content:center; color:rgba(0,0,0,0.55); font-size:15px; }
-.fb-labeled .ff-refresh:hover { border-color:#149DAA; color:#149DAA; }
+.list-summarybar { display:flex; align-items:center; justify-content:space-between; gap:16px; margin:0 2px 14px; }
+.list-summarybar .txt { font-size:13.5px; color:rgba(0,0,0,0.62); }
+.list-summarybar .txt b { color:rgba(0,0,0,0.85); font-family:'SF Mono',Menlo,monospace; font-weight:600; }
 
 /* ── Page actions (top-right primary button) ── */
 .page-actions { display:flex; justify-content:flex-end; margin-bottom:14px; }
@@ -826,6 +899,12 @@ a { color:#149DAA; text-decoration:none; } a:hover { color:#0F8190; }
 .fg-row > .fg { flex:1; }
 .fg-hint { font-size:11px; color:rgba(0,0,0,0.4); margin-top:2px; }
 .fg-req::before { content:'*'; color:#cf1322; margin-right:4px; }
+.image-path-hint { margin-top:8px; padding:9px 11px; border:1px solid #f0f0f0; border-radius:6px; background:#fafbfc; color:rgba(0,0,0,0.45); font-size:12px; line-height:1.5; }
+.image-path-hint .path { display:block; color:rgba(0,0,0,0.62); font-family:'SF Mono',Menlo,monospace; word-break:break-all; }
+.image-mode-tabs { margin:0 0 12px; width:max-content; max-width:100%; }
+.image-mode-panel { display:none; }
+.image-mode-panel.active { display:block; }
+.image-mode-panel input:disabled { background:#f5f7fa; color:rgba(0,0,0,0.58); cursor:not-allowed; }
 
 /* ── Drawer: dataset row table ── */
 .ds-table { border:1px solid #f0f0f0; border-radius:8px; overflow:hidden; }
@@ -846,17 +925,47 @@ a { color:#149DAA; text-decoration:none; } a:hover { color:#0F8190; }
 .yaml-area { width:100%; min-height:300px; padding:12px 14px; font-family:'SF Mono',Menlo,Consolas,monospace; font-size:12.5px; line-height:1.65; background:#fafbfc; border:1px solid #e5e7eb; border-radius:8px; resize:vertical; outline:none; color:rgba(0,0,0,0.85); box-sizing:border-box; white-space:pre; overflow:auto; }
 .yaml-area:focus { border-color:#149DAA; box-shadow:0 0 0 2px rgba(20,157,170,0.12); }
 
-/* ── 部署任务: 设备数胶囊 + 点击弹出清单 ── */
+/* ── 部署任务: 设备数胶囊 + hover/click 弹出清单 ── */
 .devs-cell { position:relative; display:inline-block; }
 .devs-pill { display:inline-flex; align-items:center; gap:5px; padding:3px 12px; border-radius:11px; background:#DEF6F9; border:1px solid #7BD8DF; color:#149DAA; font-size:13px; cursor:pointer; user-select:none; font-family:'SF Mono',Menlo,monospace; }
 .devs-pill:hover { background:#cfeef2; }
 .devs-pill .ca { font-size:9px; opacity:0.7; transition:transform 0.15s; }
 .devs-pill.open .ca { transform:rotate(180deg); }
-.devs-pop { display:none; position:absolute; top:calc(100% + 6px); left:0; background:#fff; border:1px solid #e5e7eb; border-radius:8px; box-shadow:0 6px 22px rgba(0,0,0,0.12); padding:6px; z-index:50; min-width:180px; max-height:260px; overflow-y:auto; }
-.devs-pop.open { display:block; }
-.devs-pop a { display:flex; justify-content:space-between; align-items:center; padding:6px 10px; border-radius:4px; font-size:13px; color:#149DAA; font-family:'SF Mono',Menlo,monospace; text-decoration:none; }
+.devs-pop { display:none; position:absolute; top:calc(100% + 6px); left:0; background:#fff; border:1px solid #e5e7eb; border-radius:8px; box-shadow:0 6px 22px rgba(0,0,0,0.12); padding:6px; z-index:50; min-width:230px; max-height:260px; overflow-y:auto; }
+.devs-cell:hover .devs-pop, .devs-pop.open { display:block; }
+.devs-pop a { display:flex; justify-content:space-between; align-items:center; gap:14px; padding:6px 10px; border-radius:4px; font-size:13px; color:#149DAA; font-family:'SF Mono',Menlo,monospace; text-decoration:none; }
 .devs-pop a:hover { background:#EBF8FA; color:#0F8190; }
-.devs-pop a .arr { font-size:10px; color:rgba(0,0,0,0.3); }
+.devs-pop .dev-id { min-width:84px; }
+.devs-pop .dev-state { display:inline-flex; align-items:center; gap:5px; font-family:inherit; font-size:12px; color:rgba(0,0,0,0.65); white-space:nowrap; }
+.devs-pop .dev-state::before { content:''; width:7px; height:7px; border-radius:50%; display:inline-block; }
+.devs-pop .dev-state.success::before { background:#389e0d; }
+.devs-pop .dev-state.failed::before { background:#cf1322; }
+.devs-pop .dev-state.running::before { background:#d48806; }
+.deploy-progress { position:relative; display:inline-flex; align-items:center; font-family:'SF Mono',Menlo,monospace; font-size:12.5px; white-space:nowrap; }
+.deploy-progress .dp-success-num { color:#389e0d; font-weight:600; }
+.deploy-progress .dp-failed-num { color:#cf1322; font-weight:600; }
+.deploy-progress .dp-total-num { color:rgba(0,0,0,0.72); font-weight:600; }
+.deploy-progress .dp-sep { color:rgba(0,0,0,0.28); padding:0 2px; }
+.deploy-progress .dp-tip { display:none; position:absolute; left:0; top:calc(100% + 8px); z-index:80; min-width:190px; padding:8px 10px; border:1px solid #e5e7eb; border-radius:6px; background:#fff; box-shadow:0 6px 18px rgba(0,0,0,0.12); font-family:inherit; font-size:12px; line-height:1.8; color:rgba(0,0,0,0.72); pointer-events:none; }
+.deploy-progress:hover .dp-tip { display:block; }
+.deploy-progress .dp-tip span { display:flex; align-items:center; gap:6px; white-space:nowrap; }
+.deploy-progress .dp-dot { width:7px; height:7px; border-radius:50%; display:inline-block; flex:none; }
+.deploy-progress .dp-dot.success { background:#389e0d; }
+.deploy-progress .dp-dot.failed { background:#cf1322; }
+.deploy-progress .dp-dot.total { background:rgba(0,0,0,0.55); }
+.deploy-progress .dp-dot.running { background:#d48806; }
+.deploy-device-picker { border:1px solid #d9d9d9; border-radius:8px; background:#fff; overflow:hidden; }
+.deploy-device-picker:focus-within { border-color:#149DAA; box-shadow:0 0 0 2px rgba(20,157,170,0.12); }
+.ddp-input { min-height:38px; padding:6px 8px; display:flex; align-items:center; gap:6px; flex-wrap:wrap; border-bottom:1px solid #f0f0f0; }
+.ddp-input .picked { display:inline-flex; align-items:center; gap:6px; height:26px; padding:0 8px; border:1px solid #dfe3e8; border-radius:5px; background:#f7f8fa; color:rgba(0,0,0,0.70); font-size:12.5px; font-family:'SF Mono',Menlo,monospace; }
+.ddp-input .picked i { font-style:normal; color:rgba(0,0,0,0.35); cursor:pointer; }
+.ddp-input input { flex:1; min-width:150px; height:26px; border:0; outline:none; padding:0 4px; font-size:13px; font-family:inherit; }
+.ddp-list { max-height:178px; overflow-y:auto; padding:5px; }
+.ddp-item { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:8px 9px; border-radius:6px; cursor:pointer; color:rgba(0,0,0,0.72); }
+.ddp-item:hover { background:#EBF8FA; }
+.ddp-item.on { background:#DEF6F9; color:#149DAA; }
+.ddp-item .id { font-family:'SF Mono',Menlo,monospace; font-size:12.5px; color:inherit; }
+.ddp-item .loc { font-size:12px; color:rgba(0,0,0,0.45); }
 
 /* ── Mini pagination (visual only) ── */
 .mini-pager { display:flex; align-items:center; justify-content:flex-end; gap:8px; padding:12px 8px 0; font-size:13px; color:rgba(0,0,0,0.65); }
@@ -883,6 +992,7 @@ a { color:#149DAA; text-decoration:none; } a:hover { color:#0F8190; }
 .tdh .tdh-meta { display:flex; gap:40px; font-size:13px; flex-wrap:wrap; }
 .tdh .tdh-meta .lbl { color:rgba(0,0,0,0.5); margin-right:8px; }
 .tdh .tdh-meta .val { color:rgba(0,0,0,0.85); }
+.tdh-actions { position:absolute; top:34px; right:28px; display:flex; gap:8px; align-items:center; }
 .wandb-btn { position:absolute; top:18px; right:20px; padding:7px 18px; background:#149DAA; color:#fff; font-size:13px; border:none; border-radius:18px; cursor:pointer; font-weight:500; }
 .wandb-btn:hover { background:#0F8190; }
 .sec-title { font-size:16px; font-weight:600; color:rgba(0,0,0,0.85); margin:0 0 14px; }
@@ -968,10 +1078,164 @@ a { color:#149DAA; text-decoration:none; } a:hover { color:#0F8190; }
 .tm-bar > .btn { margin-bottom:8px; flex:none; }
 .tm-subtabs { display:inline-flex; gap:0; padding:3px; background:#f5f7fa; border-radius:8px; margin:0 2px 14px; }
 .tm-subtab { padding:6px 16px; font-size:13px; color:rgba(0,0,0,0.6); text-decoration:none; border-radius:6px; transition:all 0.15s; display:inline-flex; align-items:center; gap:6px; }
+button.tm-subtab { border:0; background:transparent; font-family:inherit; cursor:pointer; }
 .tm-subtab:hover { color:#149DAA; }
 .tm-subtab.active { background:#fff; color:#149DAA; font-weight:500; box-shadow:0 1px 3px rgba(0,0,0,0.06); }
 .tm-subtab .ct { font-size:11.5px; color:rgba(0,0,0,0.4); }
 .tm-subtab.active .ct { color:#149DAA; opacity:0.8; }
+.ckpt-listbar { display:flex; align-items:center; justify-content:space-between; gap:16px; margin:0 2px 14px; }
+.ckpt-listbar .tm-subtabs { margin:0; }
+.ckpt-listnote { font-size:13px; color:rgba(0,0,0,0.55); }
+.ckpt-actions { display:flex; align-items:center; gap:10px; margin-left:auto; }
+.ckpt-detail-title { font-size:18px; font-weight:600; color:rgba(0,0,0,0.86); margin:0 0 18px; word-break:break-all; }
+.ckpt-form { display:flex; flex-direction:column; gap:16px; }
+.ckpt-form-row { display:grid; grid-template-columns:92px minmax(0,1fr); gap:14px; align-items:flex-start; }
+.ckpt-form-row label { padding-top:2px; font-size:13px; color:rgba(0,0,0,0.56); text-align:left; }
+.ckpt-form-value { min-height:22px; display:block; box-sizing:border-box; padding:0; background:transparent; color:rgba(0,0,0,0.84); font-size:13.5px; line-height:1.65; word-break:break-word; }
+.ckpt-form-value.mono { font-size:13px; color:rgba(0,0,0,0.72); }
+
+/* ── 租户管理 · 权限管理 (角色 + 详情 + API 三栏) ── */
+.tn-mgmt-tt { font-size:20px; font-weight:600; color:rgba(0,0,0,0.85); margin:0 0 14px; }
+.role-mgmt { display:grid; grid-template-columns:300px 1fr 1fr; gap:14px; align-items:flex-start; }
+.rm-list, .rm-detail, .rm-api { background:#fff; border:1px solid #f0f0f0; border-radius:10px; padding:18px; }
+.rm-list-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; }
+.rm-list-head h3 { margin:0; font-size:15px; font-weight:600; color:rgba(0,0,0,0.85); }
+.rm-roles { display:flex; flex-direction:column; gap:10px; max-height:720px; overflow-y:auto; }
+.rm-role { border:1px solid #e8eaed; border-radius:8px; padding:14px 14px 12px; cursor:pointer; position:relative; background:#fff; transition:all 0.15s; }
+.rm-role:hover { border-color:#149DAA; }
+.rm-role.active { border-color:#149DAA; background:linear-gradient(180deg, #f0fbfc, #fff); box-shadow:0 0 0 3px rgba(20,157,170,0.10); }
+.rm-rc-nm { font-size:14px; font-weight:500; color:rgba(0,0,0,0.85); padding-right:28px; }
+.rm-rc-bot { display:flex; align-items:center; justify-content:space-between; gap:10px; margin-top:8px; }
+.rm-rc-tm { font-size:12px; color:rgba(0,0,0,0.45); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; flex:1; min-width:0; }
+.rm-rc-del { position:absolute; top:14px; right:14px; color:#e25c5c; font-size:14px; cursor:pointer; display:none; padding:2px; line-height:1; }
+.rm-role.active .rm-rc-del { display:inline-flex; }
+.rm-d-row { display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:18px; }
+.rm-d-fg label { display:block; font-size:13px; color:rgba(0,0,0,0.78); margin-bottom:6px; }
+.rm-d-fg label .req { color:#e25c5c; margin-right:3px; }
+.rm-d-fg input { width:100%; height:34px; padding:0 12px; border:1px solid #e2e4e8; border-radius:6px; font-size:13px; box-sizing:border-box; }
+.rm-d-fg input:focus { border-color:#149DAA; outline:none; }
+.rm-d-perm-head { display:flex; align-items:center; gap:12px; margin-bottom:12px; }
+.rm-d-perm-head h4 { margin:0; font-size:14px; font-weight:600; color:rgba(0,0,0,0.85); }
+.rm-d-perm-head .grow { flex:1; }
+.rm-d-perm-head .btn { padding:5px 12px; font-size:12.5px; }
+.rm-perm-tree { font-size:13.5px; }
+.rm-pt-group { margin-bottom:6px; }
+.rm-pt-grp-head { display:flex; align-items:center; gap:8px; padding:8px 4px; cursor:pointer; user-select:none; }
+.rm-pt-grp-head .caret { color:rgba(0,0,0,0.40); font-size:10px; transition:transform 0.15s; }
+.rm-pt-group.collapsed .rm-pt-grp-head .caret { transform:rotate(-90deg); }
+.rm-pt-group.collapsed .rm-pt-children { display:none; }
+.rm-pt-grp-head input[type=checkbox] { accent-color:#149DAA; }
+.rm-pt-children { padding-left:30px; display:flex; flex-direction:column; gap:2px; }
+.rm-pt-leaf { display:flex; align-items:center; gap:8px; padding:7px 10px; border-radius:6px; cursor:pointer; color:rgba(0,0,0,0.72); }
+.rm-pt-leaf:hover { background:#f7fafa; }
+.rm-pt-leaf.active { background:#EAF7F8; color:#0B6B78; font-weight:500; }
+.rm-pt-leaf input[type=checkbox] { accent-color:#149DAA; }
+.rm-api h4 { margin:0 0 12px; font-size:15px; font-weight:600; color:rgba(0,0,0,0.85); }
+.rm-api .sub-ttl { font-size:12.5px; color:rgba(0,0,0,0.50); margin-bottom:10px; }
+.rm-api-tabs { display:flex; gap:0; border-bottom:1px solid #f0f0f0; margin-bottom:12px; padding-bottom:0; }
+.rm-api-tab { padding:8px 18px 12px; font-size:13.5px; color:rgba(0,0,0,0.55); cursor:pointer; border-bottom:2px solid transparent; margin-bottom:-1px; user-select:none; letter-spacing:0.4px; }
+.rm-api-tab:hover { color:#149DAA; }
+.rm-api-tab.active { color:#149DAA; border-bottom-color:#149DAA; font-weight:600; }
+.rm-api .empty { padding:48px 12px; text-align:center; color:rgba(0,0,0,0.35); font-size:13px; }
+.rm-foot { display:flex; justify-content:flex-end; margin-top:18px; }
+.rm-foot .btn-primary { padding:7px 28px; }
+
+/* ── 通用 toggle switch ── */
+.toggle-sw { position:relative; display:inline-block; width:34px; height:18px; flex:none; }
+.toggle-sw input { opacity:0; width:0; height:0; }
+.toggle-sw .slider { position:absolute; cursor:pointer; inset:0; background:#cfd6db; border-radius:34px; transition:0.2s; }
+.toggle-sw .slider::before { position:absolute; content:''; height:14px; width:14px; left:2px; top:2px; background:#fff; border-radius:50%; transition:0.2s; box-shadow:0 1px 3px rgba(0,0,0,0.20); }
+.toggle-sw input:checked + .slider { background:#149DAA; }
+.toggle-sw input:checked + .slider::before { transform:translateX(16px); }
+
+/* ── 资源管理 ── */
+.res-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+.res-card { background:#fff; border:1px solid #f0f0f0; border-radius:10px; padding:20px; }
+.res-card h3 { margin:0 0 4px; font-size:16px; font-weight:600; color:rgba(0,0,0,0.85); }
+.res-card .sub { font-size:12.5px; color:rgba(0,0,0,0.50); margin-bottom:18px; }
+.res-topbar { display:flex; align-items:center; justify-content:space-between; gap:16px; margin-bottom:14px; }
+.res-card-grid { display:grid; grid-template-columns:repeat(5, minmax(0, 1fr)); gap:14px; margin-bottom:18px; }
+.res-over-card { background:#fff; border:1px solid #f0f0f0; border-radius:10px; padding:16px 18px; min-width:0; }
+.res-over-card .k { font-size:12.5px; color:rgba(0,0,0,0.50); margin-bottom:8px; }
+.res-over-card .v { font-size:25px; line-height:1.1; font-weight:600; color:rgba(0,0,0,0.86); font-family:'SF Mono',Menlo,monospace; white-space:nowrap; }
+.res-over-card .s { margin-top:8px; font-size:12px; color:rgba(0,0,0,0.42); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.res-group-head { display:flex; align-items:center; justify-content:space-between; gap:14px; margin:20px 0 12px; }
+.res-group-head h3 { margin:0; font-size:16px; color:rgba(0,0,0,0.85); font-weight:600; }
+.res-quota { display:flex; flex-direction:column; gap:6px; min-width:170px; }
+.res-quota-line { display:grid; grid-template-columns:54px 1fr 58px; gap:8px; align-items:center; font-size:12px; color:rgba(0,0,0,0.54); }
+.res-quota-line .track { height:6px; background:#eef0f2; border-radius:3px; overflow:hidden; }
+.res-quota-line .fill { display:block; height:100%; border-radius:3px; background:#149DAA; }
+.res-quota-line .fill.warn { background:#E29845; }
+.res-stat-row { display:grid; grid-template-columns:repeat(3, 1fr); gap:14px; margin-bottom:18px; }
+.res-stat { padding:14px; background:#fafbfc; border-radius:8px; }
+.res-stat .l { font-size:12px; color:rgba(0,0,0,0.50); }
+.res-stat .v { font-size:22px; font-weight:600; color:rgba(0,0,0,0.85); margin-top:4px; font-family:'SFMono-Regular',Consolas,monospace; }
+.res-stat .v.warn { color:#E29845; }
+.res-stat .v.ok { color:#3DC470; }
+.res-bd-row { display:flex; align-items:center; gap:14px; margin-bottom:12px; }
+.res-bd-row:last-child { margin-bottom:0; }
+.res-bd-nm { width:120px; flex:none; font-size:13px; color:rgba(0,0,0,0.78); }
+.res-bd-bar { flex:1; height:8px; background:#eef0f2; border-radius:4px; overflow:hidden; }
+.res-bd-bar > div { height:100%; background:#149DAA; border-radius:4px; }
+.res-bd-bar > div.warn { background:#E29845; }
+.res-bd-meta { width:140px; flex:none; font-size:12.5px; color:rgba(0,0,0,0.55); font-family:'SFMono-Regular',Consolas,monospace; text-align:right; }
+
+/* ── 租户管理 · 队列管理 ── */
+.queue-layout { display:grid; grid-template-columns:minmax(0, 1fr) 340px; gap:18px; align-items:start; }
+.queue-layout.queue-layout-single { grid-template-columns:minmax(0, 1fr); }
+.drawer.drawer-queue { width:1080px; max-width:88vw; }
+.drawer.drawer-queue .drawer-body { background:#f5f7fa; }
+.queue-main, .queue-summary { background:#fff; border:1px solid #f0f0f0; border-radius:10px; padding:22px 24px; }
+.queue-section { margin-bottom:28px; }
+.queue-section:last-child { margin-bottom:0; }
+.queue-sec-title { display:flex; align-items:center; gap:8px; font-size:16px; font-weight:600; color:rgba(0,0,0,0.86); margin:0 0 18px; }
+.queue-sec-title::before { content:''; width:3px; height:18px; border-radius:2px; background:#149DAA; display:inline-block; }
+.queue-form-row { display:grid; grid-template-columns:120px minmax(0, 1fr); gap:16px; align-items:flex-start; margin-bottom:16px; }
+.queue-form-row label { font-size:13.5px; color:rgba(0,0,0,0.72); padding-top:8px; }
+.queue-form-row label.req::after { content:'*'; color:#cf1322; margin-left:4px; }
+.queue-input, .queue-select, .queue-textarea { width:100%; box-sizing:border-box; border:1px solid #dfe3e8; border-radius:6px; background:#fff; color:rgba(0,0,0,0.82); font-size:14px; outline:none; }
+.queue-input, .queue-select { height:38px; padding:0 12px; }
+.queue-select[multiple] { height:auto; min-height:88px; padding:8px 12px; }
+.queue-textarea { min-height:64px; padding:10px 12px; resize:vertical; font-family:inherit; }
+.queue-input:focus, .queue-select:focus, .queue-textarea:focus { border-color:#149DAA; box-shadow:0 0 0 2px rgba(20,157,170,0.10); }
+.remote-picker { border:1px solid #dfe3e8; border-radius:6px; background:#fff; min-height:38px; padding:5px 8px; display:flex; align-items:center; gap:6px; flex-wrap:wrap; box-sizing:border-box; }
+.remote-picker:focus-within { border-color:#149DAA; box-shadow:0 0 0 2px rgba(20,157,170,0.10); }
+.remote-picker .picked { display:inline-flex; align-items:center; gap:6px; height:26px; padding:0 8px; border:1px solid #dfe3e8; border-radius:5px; background:#f7f8fa; color:rgba(0,0,0,0.70); font-size:12.5px; }
+.remote-picker .picked i { font-style:normal; color:rgba(0,0,0,0.35); cursor:pointer; }
+.remote-picker input { flex:1; min-width:150px; height:26px; border:0; outline:none; padding:0 4px; font-size:13px; font-family:inherit; }
+.queue-chip { display:inline-flex; align-items:center; gap:6px; height:28px; padding:0 9px; border:1px solid #e5e7eb; border-radius:6px; background:#f7f8fa; color:rgba(0,0,0,0.68); font-size:13px; }
+.queue-table { border:1px solid #f0f0f0; border-radius:8px; overflow:hidden; }
+.queue-table table { width:100%; border-collapse:collapse; font-size:13.5px; }
+.queue-table th { background:#f7f8fa; color:rgba(0,0,0,0.72); text-align:left; font-weight:600; padding:12px 14px; border-bottom:1px solid #f0f0f0; white-space:nowrap; }
+.queue-table td { padding:12px 14px; border-bottom:1px solid #f5f5f5; color:rgba(0,0,0,0.68); }
+.queue-table tr:last-child td { border-bottom:none; }
+.queue-num { width:92px; height:30px; border:1px solid #dfe3e8; border-radius:6px; padding:0 8px; font-size:13px; box-sizing:border-box; }
+.queue-help { margin:10px 0 0 120px; font-size:12px; color:rgba(0,0,0,0.42); }
+.queue-summary-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:18px; }
+.queue-summary-head h3 { margin:0; font-size:16px; font-weight:600; color:rgba(0,0,0,0.86); display:flex; align-items:center; gap:8px; }
+.queue-summary-head h3::before { content:''; width:3px; height:18px; border-radius:2px; background:#149DAA; display:inline-block; }
+.queue-clear { font-size:12.5px; color:rgba(0,0,0,0.45); cursor:pointer; }
+.queue-sum-list { display:flex; flex-direction:column; gap:10px; }
+.queue-sum-item { display:flex; justify-content:space-between; align-items:center; padding:11px 12px; background:#fafbfc; border:1px solid #f0f0f0; border-radius:8px; }
+.queue-sum-item span { font-size:12.5px; color:rgba(0,0,0,0.5); }
+.queue-sum-item b { font-size:13.5px; color:rgba(0,0,0,0.82); font-family:'SF Mono',Menlo,monospace; }
+.queue-foot { position:sticky; bottom:0; display:flex; justify-content:flex-end; gap:10px; margin-top:18px; padding:14px 0 0; background:#f5f7fa; }
+.queue-status { display:inline-flex; align-items:center; gap:5px; font-size:13px; }
+.queue-status::before { content:''; width:7px; height:7px; border-radius:50%; display:inline-block; }
+.queue-status.active { color:#389e0d; }
+.queue-status.active::before { background:#52c41a; }
+.queue-status.paused { color:#8c8c8c; }
+.queue-status.paused::before { background:#bfbfbf; }
+.queue-name-link { color:#149DAA; font-weight:600; text-decoration:none; }
+.queue-name-link:hover { color:#0F8190; }
+.queue-detail { display:flex; flex-direction:column; gap:18px; }
+.queue-detail-section { background:#fff; border:1px solid #f0f0f0; border-radius:10px; padding:18px 20px; }
+.queue-detail-section h3 { margin:0 0 14px; font-size:16px; font-weight:600; color:rgba(0,0,0,0.86); display:flex; align-items:center; gap:8px; }
+.queue-detail-section h3::before { content:''; width:3px; height:16px; border-radius:2px; background:#149DAA; display:inline-block; }
+.queue-info-grid { display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:14px 24px; }
+.queue-info-item span { display:block; font-size:12.5px; color:rgba(0,0,0,0.46); margin-bottom:5px; }
+.queue-info-item b { display:block; font-size:13.5px; color:rgba(0,0,0,0.84); font-weight:500; word-break:break-word; }
+.queue-member-add { display:grid; grid-template-columns:1fr 140px 96px; gap:10px; align-items:center; margin-bottom:14px; }
 
 /* ── 数据平台 · 工作台 · 标注 editor ── */
 .lab-meta { background:#1f2933; color:rgba(255,255,255,0.92); padding:11px 18px; border-radius:8px; display:flex; flex-wrap:wrap; gap:8px 22px; align-items:center; font-size:13px; margin-bottom:10px; }
@@ -1216,6 +1480,10 @@ BASE_TEMPLATE = """<!DOCTYPE html>
     <a class="tn-link" href="#" onclick="toast('Demo: 工单');return false;">工单</a>
     <a class="tn-link" href="#" onclick="toast('Demo: 客服');return false;">客服</a>
     <div class="tn-divider"></div>
+    <a class="tn-link tn-tenant-admin" href="/tenant" title="租户管理">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><circle cx="12" cy="12" r="2.4"/><path d="M19 12c0-.5-.05-.95-.13-1.4l2-1.55-2-3.45-2.36.95c-.7-.6-1.5-1.05-2.4-1.32L13.7 2.6h-3.4l-.4 2.63c-.9.27-1.7.72-2.4 1.32L5.13 5.6l-2 3.45 2 1.55c-.08.45-.13.9-.13 1.4s.05.95.13 1.4l-2 1.55 2 3.45 2.36-.95c.7.6 1.5 1.05 2.4 1.32l.4 2.63h3.4l.4-2.63c.9-.27 1.7-.72 2.4-1.32l2.36.95 2-3.45-2-1.55c.08-.45.13-.9.13-1.4z"/></svg>
+      <span>租户管理</span>
+    </a>
     <div class="tn-tenant" onclick="toggleTenantPop(event)">
       <span class="tt-av" id="ttAv">宁</span>
       <span class="tt-name" id="ttName">宁德时代</span>
@@ -1228,12 +1496,6 @@ BASE_TEMPLATE = """<!DOCTYPE html>
         <a class="tp-tenant" data-tenant="千寻智能" data-av="千" onclick="selectTenant(this);return false;">
           <span class="tp-av">千</span>千寻智能<span class="tp-check">&#10003;</span>
         </a>
-        <div class="tp-divider"></div>
-        <a class="tp-item" href="#" onclick="toast('Demo: 账号管理');return false;">账号管理</a>
-        <a class="tp-item" href="#" onclick="toast('Demo: 权限管理');return false;">权限管理</a>
-        <a class="tp-item" href="#" onclick="toast('Demo: 资源管理');return false;">
-          资源管理<span class="tp-sub">存储 · 算力资源</span>
-        </a>
       </div>
     </div>
     <div class="tn-user">J</div>
@@ -1243,6 +1505,7 @@ BASE_TEMPLATE = """<!DOCTYPE html>
 <div class="q-layout {% if portal %}portal-mode{% endif %}">
   {% if not portal %}
   <aside class="q-sider">
+    {% if module != "tenant" %}
     <div class="smh-wrap">
       <div class="smh" onclick="toggleModSwitch()">
         <div class="smh-icon">{{ module_icon|safe }}</div>
@@ -1251,6 +1514,7 @@ BASE_TEMPLATE = """<!DOCTYPE html>
       </div>
       <div class="mod-switch" id="modSwitch">{{ mod_switch_html|safe }}</div>
     </div>
+    {% endif %}
     {% if device_models %}
     <div class="dev-wrap">
       <div class="dev-label">选择设备</div>
@@ -1283,10 +1547,79 @@ BASE_TEMPLATE = """<!DOCTYPE html>
 </div>
 <div class="q-toast" id="toast"></div>
 <div class="drawer-mask" id="drawerMask" onclick="closeDrawer()"></div>
+<div class="modal-mask" id="taskCapabilityModalMask" onclick="closeTaskCapabilityModal()">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-head">
+      <h3>能力复用说明</h3>
+      <span class="dismiss" onclick="closeTaskCapabilityModal()">&times;</span>
+    </div>
+    <div class="modal-body">
+      <ol style="margin:0;padding-left:20px;color:rgba(0,0,0,0.72);font-size:14px;line-height:1.9;">
+        <li>复用当前 test、dagger 能力</li>
+        <li>增加 ckpt 对应的训练镜像，端侧选择任务，会自动带出模型和镜像</li>
+        <li>test、dagger 支持选择机器（可选），如果选了，会异步发起该机器的 ckpt 部署任务，不选择现场拉</li>
+      </ol>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-primary" onclick="closeTaskCapabilityModal()">知道了</button>
+    </div>
+  </div>
+</div>
 <script>
 function toast(msg){ var t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); setTimeout(function(){t.classList.remove('show');},1500); }
+function resetFilters(btn){
+  var root = btn.closest('.filter-bar,.fb-labeled,.lin-filter,.q-filters');
+  if(!root){ toast('Demo: 已重置'); return; }
+  root.querySelectorAll('input, textarea').forEach(function(el){ el.value=''; });
+  root.querySelectorAll('select').forEach(function(el){ el.selectedIndex = 0; });
+  refreshSelectPlaceholders(root);
+  toast('Demo: 已重置');
+}
+function queryFilters(btn){ toast('Demo: 已查询'); }
+function openTaskCapabilityModal(){
+  var m=document.getElementById('taskCapabilityModalMask');
+  if(m) m.classList.add('active');
+}
+function closeTaskCapabilityModal(){
+  var m=document.getElementById('taskCapabilityModalMask');
+  if(m) m.classList.remove('active');
+}
+function isPlaceholderSelectValue(sel){
+  if(!sel) return false;
+  var opt = sel.options[sel.selectedIndex];
+  if(!opt) return false;
+  var txt = (opt.textContent || '').trim();
+  return opt.disabled || opt.value === '' || /^请选择/.test(txt) || /^全部/.test(txt) || txt === '镜像名称' || txt === '镜像版本';
+}
+function refreshSelectPlaceholderState(sel){ sel.classList.toggle('select-empty', isPlaceholderSelectValue(sel)); }
+function refreshSelectPlaceholders(root){
+  (root || document).querySelectorAll('select').forEach(refreshSelectPlaceholderState);
+}
+document.addEventListener('DOMContentLoaded', function(){ refreshSelectPlaceholders(document); });
+document.addEventListener('change', function(e){
+  if(e.target && e.target.tagName === 'SELECT') refreshSelectPlaceholderState(e.target);
+}, true);
 function openDrawer(id){ document.getElementById('drawerMask').classList.add('active'); var d=document.getElementById(id); if(d) d.classList.add('active'); }
 function closeDrawer(){ document.getElementById('drawerMask').classList.remove('active'); document.querySelectorAll('.drawer.active').forEach(function(d){d.classList.remove('active');}); }
+function openCacheModal(step, location){
+  var m=document.getElementById('cacheModalMask'); if(!m) return;
+  var head=document.getElementById('cacheModalHead'); if(head) head.style.display='flex';
+  var stepEl=document.getElementById('cacheStepText'); if(stepEl) stepEl.textContent=step;
+  var locEl=document.getElementById('cacheLocText'); if(locEl) locEl.textContent=location || '-';
+  var desc=document.getElementById('cacheDesc'); if(desc) desc.value='';
+  var form=document.getElementById('cacheModalForm'); if(form) form.style.display='block';
+  var doing=document.getElementById('cacheModalDoing'); if(doing) doing.style.display='none';
+  var footForm=document.getElementById('cacheModalFootForm'); if(footForm) footForm.style.display='flex';
+  var footDoing=document.getElementById('cacheModalFootDoing'); if(footDoing) footDoing.style.display='none';
+  m.classList.add('active');
+}
+function confirmCacheModal(){
+  var form=document.getElementById('cacheModalForm'); if(form) form.style.display='none';
+  var doing=document.getElementById('cacheModalDoing'); if(doing) doing.style.display='block';
+  var footForm=document.getElementById('cacheModalFootForm'); if(footForm) footForm.style.display='none';
+  var footDoing=document.getElementById('cacheModalFootDoing'); if(footDoing) footDoing.style.display='flex';
+}
+function closeCacheModal(){ var m=document.getElementById('cacheModalMask'); if(m) m.classList.remove('active'); }
 function toggleModSwitch(){ var p=document.getElementById('modSwitch'); var smh=document.querySelector('.smh-wrap .smh'); if(p&&smh){ var open=p.classList.toggle('open'); smh.classList.toggle('open', open); } }
 function toggleTenantPop(ev){ if (ev) ev.stopPropagation(); var p=document.getElementById('tenantPop'); var t=document.querySelector('.tn-tenant'); if(p&&t){ var open=p.classList.toggle('open'); t.classList.toggle('open', open); } }
 function selectTenant(el){
@@ -1358,6 +1691,7 @@ document.addEventListener('click', function(e){
 /* 新增训练任务: 抽屉打开时 lazy-init CodeMirror YAML 编辑器 + 字符计数 */
 function openTrainDrawer(){
   openDrawer('drawerNewTrain');
+  updateTrainImagePath();
   setTimeout(function(){
     var ta = document.getElementById('yamlEditor');
     if (ta && !ta._cmInited && window.CodeMirror){
@@ -1372,6 +1706,53 @@ function openTrainDrawer(){
 function updateNameCount(input){
   var c = document.getElementById('nameCount');
   if (c) c.textContent = (input.value.length) + ' / 50';
+}
+var TRAIN_IMAGE_MODE = 'default';
+var DEFAULT_TRAIN_IMAGE = {
+  name: 'mozbrain',
+  version: 'thor-v1.0.0',
+  path: 'spirit-ai-cn-beijing.cr.volces.com/spirit-ai/mozbrain:thor-v1.0.0'
+};
+var TRAIN_IMAGE_VERSIONS = {
+  'mozbrain_release': ['thor-v1.0.0', 'thor-v0.9.8', 'latest'],
+  'mozbrain': ['thor-v1.0.0', 'thor-v0.9.8', 'latest'],
+  'mozbrain_base': ['thor-v1.0.0', 'thor-v0.9.8', 'latest']
+};
+function switchTrainImageMode(el, mode){
+  TRAIN_IMAGE_MODE = mode;
+  el.parentNode.querySelectorAll('.tm-subtab').forEach(function(t){ t.classList.remove('active'); });
+  el.classList.add('active');
+  var def = document.getElementById('trainImageDefault');
+  var custom = document.getElementById('trainImageCustom');
+  if (def) def.classList.toggle('active', mode === 'default');
+  if (custom) custom.classList.toggle('active', mode === 'custom');
+  updateTrainImagePath();
+}
+function updateTrainImageVersions(){
+  var nameSel = document.getElementById('trainImageName');
+  var versionSel = document.getElementById('trainImageVersion');
+  if (!nameSel || !versionSel) return;
+  var versions = TRAIN_IMAGE_VERSIONS[nameSel.value] || [];
+  versionSel.innerHTML = '<option value="" selected disabled>镜像版本</option>' + versions.map(function(v){ return '<option value="' + v + '">' + v + '</option>'; }).join('');
+  refreshSelectPlaceholderState(nameSel);
+  refreshSelectPlaceholderState(versionSel);
+  updateTrainImagePath();
+}
+function updateTrainImagePath(){
+  var nameSel = document.getElementById('trainImageName');
+  var versionSel = document.getElementById('trainImageVersion');
+  var pathEl = document.getElementById('trainImagePath');
+  if (!pathEl) return;
+  if (TRAIN_IMAGE_MODE === 'default'){
+    pathEl.textContent = DEFAULT_TRAIN_IMAGE.path;
+    return;
+  }
+  if (!nameSel || !versionSel) return;
+  if (!nameSel.value || !versionSel.value){
+    pathEl.textContent = '请选择镜像名称和版本';
+    return;
+  }
+  pathEl.textContent = 'spirit-ai-cn-beijing.cr.volces.com/spirit-ai/' + nameSel.value + ':' + versionSel.value;
 }
 function switchAdvTab(el){
   var tabs = el.parentNode.querySelectorAll('.at');
@@ -1391,6 +1772,56 @@ function switchLogSubtab(el){
   el.classList.add('active');
 }
 function toggleLogToggle(el){ el.classList.toggle('on'); }
+function toggleDeployDevice(el){
+  el.classList.toggle('on');
+  var picker = el.closest('.deploy-device-picker');
+  if(!picker) return;
+  var id = el.dataset.id;
+  var chips = picker.querySelector('.ddp-chips');
+  var exists = chips.querySelector('[data-id="' + id + '"]');
+  if(el.classList.contains('on') && !exists){
+    var chip = document.createElement('span');
+    chip.className = 'picked';
+    chip.dataset.id = id;
+    chip.innerHTML = id + ' <i onclick="removeDeployDevice(this,event)">&times;</i>';
+    chips.insertBefore(chip, picker.querySelector('.ddp-search'));
+  } else if(!el.classList.contains('on') && exists) {
+    exists.remove();
+  }
+}
+function removeDeployDevice(x, ev){
+  if(ev) ev.stopPropagation();
+  var chip = x.closest('.picked');
+  var picker = x.closest('.deploy-device-picker');
+  var id = chip.dataset.id;
+  chip.remove();
+  var item = picker.querySelector('.ddp-item[data-id="' + id + '"]');
+  if(item) item.classList.remove('on');
+}
+function filterDeployDevices(input){
+  var q = (input.value || '').trim().toLowerCase();
+  input.closest('.deploy-device-picker').querySelectorAll('.ddp-item').forEach(function(item){
+    item.style.display = item.textContent.toLowerCase().indexOf(q) >= 0 ? '' : 'none';
+  });
+}
+function switchDeviceDeployTab(el, boxId, tab){
+  el.parentNode.querySelectorAll('.ep-tab').forEach(function(t){ t.classList.remove('active'); });
+  el.classList.add('active');
+  var box = document.getElementById(boxId);
+  if(!box) return;
+  box.querySelectorAll('.dev-deploy-pane').forEach(function(p){ p.style.display='none'; });
+  var pane = box.querySelector('[data-pane="' + tab + '"]');
+  if(pane) pane.style.display='';
+}
+function switchDeviceModelRecordTab(el, boxId, tab){
+  el.parentNode.querySelectorAll('.tm-subtab').forEach(function(t){ t.classList.remove('active'); });
+  el.classList.add('active');
+  var box = document.getElementById(boxId);
+  if(!box) return;
+  box.querySelectorAll('.dev-model-record-pane').forEach(function(p){ p.style.display='none'; });
+  var pane = box.querySelector('[data-record-pane="' + tab + '"]');
+  if(pane) pane.style.display='';
+}
 /* 部署任务: 设备数胶囊点击展开 */
 function toggleDevsPop(el, ev){
   if (ev) ev.stopPropagation();
@@ -1787,7 +2218,10 @@ def collect():
       <div class="ff"><label>标签</label>
         <select><option>请选择标签</option></select>
       </div>
-      <button class="ff-refresh" onclick="toast('Demo: 已刷新')" title="刷新">&#8635;</button>
+      <div class="filter-actions">
+        <button class="btn btn-tertiary" onclick="resetFilters(this)">重置</button>
+        <button class="btn btn-primary" onclick="queryFilters(this)">查询</button>
+      </div>
     </div>
 
     <div class="table-wrap">
@@ -1932,7 +2366,10 @@ def data_recordings():
       <div class="ff"><label>ID 搜索</label><input placeholder="请输入ID"></div>
       <div class="ff"><label>序列号</label><select><option>请选择设备序列号</option><option>UDAS-007</option></select></div>
       <div class="ff"><label>操作人</label><select><option>请选择操作类型/操作人</option></select></div>
-      <button class="ff-refresh" onclick="toast('Demo: 已刷新')" title="刷新">&#8635;</button>
+      <div class="filter-actions">
+        <button class="btn btn-tertiary" onclick="resetFilters(this)">重置</button>
+        <button class="btn btn-primary" onclick="queryFilters(this)">查询</button>
+      </div>
     </div>
     {summary}
     <div class="table-wrap">
@@ -1991,7 +2428,10 @@ def data_recordings():
       <div class="ff"><label>License</label>
         <select><option>全部 License</option><option>CC-BY-4.0</option><option>Apache-2.0</option><option>商业授权</option></select>
       </div>
-      <button class="ff-refresh" onclick="toast('Demo: 已刷新')" title="刷新">&#8635;</button>
+      <div class="filter-actions">
+        <button class="btn btn-tertiary" onclick="resetFilters(this)">重置</button>
+        <button class="btn btn-primary" onclick="queryFilters(this)">查询</button>
+      </div>
     </div>
     <div style="margin:0 0 14px;color:rgba(0,0,0,0.7);font-size:13px;">
       共 <b>{len(THIRD_PARTY_DATASETS)}</b> 个数据集 · <b>{total_eps:,}</b> episode · 总大小 <b>{total_size:.1f}</b> GB
@@ -2517,6 +2957,10 @@ def process():
     <div class="filter-bar">
       <input class="grow" placeholder="搜索来源采集任务 / 执行 ID...">
       <select><option>全部状态</option><option>成功</option><option>运行中</option><option>失败</option></select>
+      <div class="filter-actions">
+        <button class="btn btn-tertiary" onclick="resetFilters(this)">重置</button>
+        <button class="btn btn-primary" onclick="queryFilters(this)">查询</button>
+      </div>
       <div class="right">
         <a href="#" class="btn" onclick="toast('Demo: 触发批量重跑');return false;">批量重跑</a>
       </div>
@@ -2575,6 +3019,10 @@ def qc():
     <div class="filter-bar">
       <input class="grow" placeholder="搜索来源任务...">
       <select><option>全部状态</option><option>复核中</option><option>已完成</option><option>待启动</option></select>
+      <div class="filter-actions">
+        <button class="btn btn-tertiary" onclick="resetFilters(this)">重置</button>
+        <button class="btn btn-primary" onclick="queryFilters(this)">查询</button>
+      </div>
     </div>
     <div class="table-wrap">
       <table class="ant-table">
@@ -2621,6 +3069,10 @@ def label():
     <div class="filter-bar">
       <input class="grow" placeholder="搜索标注任务...">
       <select><option>全部状态</option><option>进行中</option><option>已完成</option><option>待启动</option></select>
+      <div class="filter-actions">
+        <button class="btn btn-tertiary" onclick="resetFilters(this)">重置</button>
+        <button class="btn btn-primary" onclick="queryFilters(this)">查询</button>
+      </div>
       <div class="right">
         <a href="#" class="btn" onclick="toast('Demo: 新建标注任务');return false;">+ 新建</a>
       </div>
@@ -2675,6 +3127,10 @@ def datasets():
       <input class="grow" placeholder="搜索数据集...">
       <select><option>全部类型</option><option>训练</option><option>评测</option></select>
       <select><option>全部状态</option><option>已生效</option><option>待启动</option></select>
+      <div class="filter-actions">
+        <button class="btn btn-tertiary" onclick="resetFilters(this)">重置</button>
+        <button class="btn btn-primary" onclick="queryFilters(this)">查询</button>
+      </div>
       <div class="right">
         <a href="#" class="btn" onclick="toast('Demo: 进入数据集构建向导');return false;">+ 新建数据集</a>
       </div>
@@ -2764,6 +3220,15 @@ def _dp_render(handler_func, active, prefix="/model/data", module="model"):
     _dp_capture.clear()
     handler_func()
     content = _rewrite_dp_links(_dp_capture.get("content", ""), prefix=prefix)
+    if active == "/model/data/raw":
+        content = (
+            content
+            .replace('<div class="ep-tabs raw-tabs">', '<div class="tm-subtabs raw-tabs">', 1)
+            .replace('<button class="ep-tab active" onclick="rawTab(this,\'self\')">自采数据</button>',
+                     '<button class="ep-tab tm-subtab active" onclick="rawTab(this,\'self\')">自采数据</button>', 1)
+            .replace('<button class="ep-tab" onclick="rawTab(this,\'third\')">三方数据</button>',
+                     '<button class="ep-tab tm-subtab" onclick="rawTab(this,\'third\')">三方数据</button>', 1)
+        )
     extra = _dp_capture.get("extra_script")
     return render_page(_dp_capture.get("title", ""), content,
                        active=active, module=module, extra_script=extra)
@@ -2778,38 +3243,85 @@ def model_data_root():
 def model_data_query():
     if not DP_AVAILABLE:
         return _dp_render(dp.query, "/model/data/query")
-    _dp_capture.clear()
-    dp.query()
-    inner = _rewrite_dp_links(_dp_capture.get("content", "") or "")
-    extra = _dp_capture.get("extra_script")
-    # 把「查看数据源」二级按钮塞进 .q-mode-tabs flex 行的尾部, 用 margin-left:auto 推到右侧
-    # flex 默认 align-items:center, 自动与 Pretty/SQL 切换 tab 垂直居中
-    btn_html = (
-        '<a class="btn" href="/model/data/raw" '
-        'style="margin-left:auto;align-self:center;padding:4px 12px;'
-        'font-size:13px;line-height:1.6;">查看数据源 &rsaquo;</a>'
-    )
-    inner = re.sub(
-        r'(<div class="q-mode-tabs">)(.*?)(</div>)',
-        lambda m: m.group(1) + m.group(2) + btn_html + m.group(3),
-        inner, count=1, flags=re.S,
-    )
-    return render_page(
-        _dp_capture.get("title", "数据查询"),
-        inner,
-        active="/model/data/query", module="model", extra_script=extra,
-    )
+    return _dp_render(dp.query, "/model/data/query")
 
 
 @app.route("/model/data/datasets")
 def model_data_datasets():
-    return _dp_render(dp.datasets, "/model/data/datasets")
+    if not DP_AVAILABLE:
+        return _dp_render(dp.datasets, "/model/data/datasets")
+    _dp_capture.clear()
+    dp.datasets()
+    inner = _rewrite_dp_links(_dp_capture.get("content", "") or "")
+    extra = _dp_capture.get("extra_script")
+    sel = request.args.get("sel") or "ds1"
+    lineage_btn = f'<a class="btn btn-secondary" href="/model/lineage/dataset/{sel}">查看血缘</a> '
+    raw_action = (
+        '<div><button class="btn btn-secondary" onclick="document.getElementById('
+        "'procDrawer').classList.add('active')\">"
+    )
+    inner = inner.replace(
+        raw_action,
+        raw_action.replace("<div>", f"<div>{lineage_btn}"),
+        1,
+    )
+    return render_page(_dp_capture.get("title", "数据集"), inner,
+                       active="/model/data/datasets", module="model", extra_script=extra)
+
+
+@app.route("/model/data/datasets/<ds_id>")
+def model_data_dataset_detail(ds_id):
+    ds = _dataset_by_id_or_name(ds_id) or DATASETS[0]
+    src_html = " · ".join(f'<span class="tag tag-teal">{s}</span>' for s in ds["source_tasks"])
+    split = f'{int(ds["train_ratio"]*100)} / {int(ds["val_ratio"]*100)} / {int(ds["test_ratio"]*100)}'
+    related_exps = [e for e in EXPERIMENTS if e["dataset"] == ds["name"]]
+    if not related_exps:
+        related_exps = [e for e in EXPERIMENTS if any(m["from_exp"] == e["id"] and m["from_dataset"] == ds["name"] for m in MODELS)]
+    exp_rows = "".join(
+        f'<tr><td><a href="/model/experiments/{e["id"]}">{e["name"]}</a></td><td>{e["status"]}</td><td>{e["owner"]}</td><td class="mono muted">{e["started"]}</td></tr>'
+        for e in related_exps
+    ) or '<tr><td colspan="4" class="muted" style="text-align:center;padding:24px;">暂无关联训练任务</td></tr>'
+    content = page_header(
+        ds["name"],
+        f'{ds["version"]} · {ds["type"]} · {ds["episodes"]} episodes',
+        "数据集详情 · 版本 · 来源采集任务 · 下游训练",
+    ) + f"""
+    <div class="lin-actions">
+      <a class="btn" href="/model/data/datasets">返回数据集</a>
+      <a class="btn btn-secondary" href="/model/lineage/dataset/{ds['id']}">查看血缘</a>
+    </div>
+    {stat_grid([
+        ("Episode", str(ds["episodes"]), ""),
+        ("Frames", f'{ds["frames"]:,}', ""),
+        ("划分", split, "train / val / test"),
+        ("负责人", ds["owner"], status_tag(ds["status"])),
+    ])}
+    <div class="card">
+      <h3 style="margin-top:0;">基本信息</h3>
+      <div class="kv-grid">
+        <div class="kv"><span>数据集 ID</span><b class="mono">{ds["id"]}</b></div>
+        <div class="kv"><span>数据集版本</span><b class="mono">{ds["version"]}</b></div>
+        <div class="kv"><span>创建时间</span><b class="mono">{ds["created"]}</b></div>
+        <div class="kv"><span>来源采集任务</span><b>{src_html}</b></div>
+      </div>
+    </div>
+    <div class="card" style="margin-top:14px;">
+      <h3 style="margin-top:0;">下游训练任务</h3>
+      <div class="table-wrap">
+        <table class="ant-table">
+          <thead><tr><th>训练任务</th><th>状态</th><th>负责人</th><th>开始时间</th></tr></thead>
+          <tbody>{exp_rows}</tbody>
+        </table>
+      </div>
+    </div>
+    """
+    return render_page(ds["name"], content, active="/model/data/datasets", module="model",
+                       breadcrumb=f'模型平台 / 数据集 / <b>{ds["name"]}</b>', mvp_note="MVP 一期")
 
 
 @app.route("/model/data/raw")
 def model_data_raw():
-    # 数据资产是「数据查询」的二级页, 侧栏保持 数据查询 选中态
-    return _dp_render(dp.raw_data, "/model/data/query")
+    return _dp_render(dp.raw_data, "/model/data/raw")
 
 
 @app.route("/model/data/lake")
@@ -3087,52 +3599,62 @@ def _eval_task_detail_with_tabs(tid):
 @app.route("/model/experiments")
 def experiments():
     rows = ""
-    for e in EXPERIMENTS:
+    owner_fallbacks = ["tao.wang", "hannah.wang", "joanna.qiao", "Maple Liu", "Min Chen"]
+    priority_fallbacks = ["高", "中", "低"]
+    for idx, e in enumerate(EXPERIMENTS):
         # 训练任务名称作为可点击链接 (跳到任务详情 → checkpoint 列表)
         status_html = {
             "running": '<span class="tag tag-orange">运行中</span>',
             "done":    '<span class="tag tag-green">成功</span>',
             "failed":  '<span class="tag tag-red">失败</span>',
         }.get(e["status"], f'<span class="tag tag-gray">{e["status"]}</span>')
-        dataset_html = '—' if e["dataset"] == "—" else f'<a href="/model/data/datasets" class="mono">{e["dataset"]}</a>'
-        tag_html = '—' if e["tag"] == "—" else f'<span class="tag tag-gray">{e["tag"]}</span>'
+        owner = e["owner"] if e["owner"] != "—" else owner_fallbacks[idx % len(owner_fallbacks)]
+        priority = e.get("priority", priority_fallbacks[idx % len(priority_fallbacks)])
+        priority_html = {
+            "高": '<span class="tag tag-red">高</span>',
+            "中": '<span class="tag tag-orange">中</span>',
+            "低": '<span class="tag tag-gray">低</span>',
+        }.get(priority, f'<span class="tag tag-gray">{priority}</span>')
         rows += f"""<tr>
           <td><a href="/model/experiments/{e['id']}" style="color:#149DAA">{e['name']}</a></td>
-          <td>{dataset_html}</td>
           <td>{status_html}</td>
-          <td>{tag_html}</td>
-          <td>{e['owner']}</td>
+          <td>{priority_html}</td>
+          <td>{owner}</td>
           <td class="muted mono">{e['started']}</td>
           <td class="muted">{e['dur']}</td>
           <td class="actions-cell">
             <a class="tbtn" href="#" onclick="toast('Demo: 已复制配置');return false;">&#10697; 复制</a>
-            <a class="tbtn" href="#" onclick="toast('Demo: 查看更多操作');return false;">⋯ 更多</a>
           </td>
         </tr>"""
 
+    running_count = sum(1 for e in EXPERIMENTS if e["status"] == "running")
+    total_count = len(EXPERIMENTS)
     content = page_header(
         "训练任务",
         "数据集挂载 · 实验管理 · 超参 · Checkpoint",
         "分布式训练 · 训练监控 (loss 曲线)",
     ) + f"""
-    <div class="page-actions">
-      <a class="btn btn-primary" onclick="openTrainDrawer();return false;">+ 新增训练任务</a>
-    </div>
-
     <div class="fb-labeled">
       <div class="ff"><label>训练任务名称</label><input placeholder="请输入训练任务名称"></div>
       <div class="ff"><label>标签</label><select><option>请选择标签</option><option>robotwin</option><option>HouseHold</option><option>pi05</option></select></div>
       <div class="ff"><label>数据集</label><select><option>请选择数据集</option><option>clean_whiteboard_v4</option><option>tidy_desk_v2</option></select></div>
-      <button class="ff-refresh" onclick="toast('Demo: 已刷新')" title="刷新">&#8635;</button>
+      <div class="filter-actions">
+        <button class="btn btn-tertiary" onclick="resetFilters(this)">重置</button>
+        <button class="btn btn-primary" onclick="queryFilters(this)">查询</button>
+      </div>
+    </div>
+
+    <div class="list-summarybar">
+      <div class="txt">运行中任务 <b>{running_count}</b> 条，全部任务 <b>{total_count}</b> 条</div>
+      <a class="btn btn-primary" onclick="openTrainDrawer();return false;">+ 新增训练任务</a>
     </div>
 
     <div class="table-wrap">
       <table class="ant-table">
         <thead><tr>
           <th>名称</th>
-          <th>关联数据集</th>
           <th>状态 &#9662;</th>
-          <th>标签</th>
+          <th>优先级</th>
           <th>创建人</th>
           <th>创建时间 &#x21F5;</th>
           <th>运行时长</th>
@@ -3167,7 +3689,44 @@ def experiments():
 
         <div class="fg">
           <label class="fg-req">镜像</label>
-          <select><option>请选择镜像</option><option>spirit-train:v1.7-cuda12</option><option>spirit-train:v1.6-cuda11</option></select>
+          <div class="tm-subtabs image-mode-tabs">
+            <button type="button" class="tm-subtab active" onclick="switchTrainImageMode(this,'default')">默认镜像</button>
+            <button type="button" class="tm-subtab" onclick="switchTrainImageMode(this,'custom')">自定义镜像</button>
+          </div>
+          <div id="trainImageDefault" class="image-mode-panel active">
+            <div class="fg-row">
+              <div class="fg" style="margin-bottom:0;">
+                <label>名称</label>
+                <input value="mozbrain" disabled>
+              </div>
+              <div class="fg" style="margin-bottom:0;">
+                <label>版本</label>
+                <input value="thor-v1.0.0" disabled>
+              </div>
+            </div>
+          </div>
+          <div id="trainImageCustom" class="image-mode-panel">
+            <div class="fg-row">
+              <div class="fg" style="margin-bottom:0;">
+                <label>名称</label>
+                <select id="trainImageName" onchange="updateTrainImageVersions()">
+                  <option value="" selected disabled>镜像名称</option>
+                  <option value="mozbrain_release">mozbrain_release</option>
+                  <option value="mozbrain">mozbrain</option>
+                  <option value="mozbrain_base">mozbrain_base</option>
+                </select>
+              </div>
+              <div class="fg" style="margin-bottom:0;">
+                <label>版本</label>
+                <select id="trainImageVersion" onchange="updateTrainImagePath()">
+                  <option value="" selected disabled>镜像版本</option>
+                </select>
+              </div>
+            </div>
+          </div>
+          <div class="image-path-hint">
+            <span class="path" id="trainImagePath">spirit-ai-cn-beijing.cr.volces.com/spirit-ai/mozbrain:thor-v1.0.0</span>
+          </div>
         </div>
 
         <div class="fg-row">
@@ -3406,7 +3965,7 @@ def experiment_detail(exp_id):
           <td class="mono">{c['validation_loss']}</td>
           <td><span class="tag tag-gray">未缓存</span></td>
           <td><a class="ckpt-loc" href="#" onclick="toast('Demo: 已复制 TOS 路径');return false;"><span class="ll-ic">&#10697;</span>{c['location']}</a></td>
-          <td class="actions-cell"><a href="#" style="color:#149DAA" onclick="toast('Demo: 已发起缓存');return false;">缓存</a></td>
+          <td class="actions-cell"><a href="#" style="color:#149DAA" onclick="openCacheModal('{c['step']}', '{c['location']}');return false;">缓存</a></td>
         </tr>"""
     tab_ckpt = f"""
     <h3 class="sec-title">Check point 列表</h3>
@@ -3583,27 +4142,13 @@ dataset:
     </div>
     """
 
-    # ── 血缘 tab: 从这个训练任务产出的模型出发, 反向追溯链路 ──
-    _model_from_exp = next((m for m in MODELS if m["from_exp"] == e["id"]), None)
-    if _model_from_exp:
-        tab_lineage = f"""
-        <div class="muted" style="font-size:12.5px;margin-bottom:14px;">
-          以本任务产出模型 <b>{_model_from_exp['name']} {_model_from_exp['version']}</b> 为锚点的端到端血缘链路
-        </div>
-        {_lineage_flow_html(_model_from_exp)}
-        """
-    else:
-        tab_lineage = """
-        <div class="card" style="text-align:center;padding:50px 30px;">
-          <div style="font-size:42px;color:rgba(0,0,0,0.15);margin-bottom:10px;">&#9783;</div>
-          <p class="muted" style="margin:0;">本任务尚未产出已注册的模型版本, 暂无可追溯的血缘链路</p>
-        </div>
-        """
-
-    # 顶层结构: 头卡片 + 4 顶 tab + 4 pane
+    # 顶层结构: 头卡片 + 3 顶 tab + 3 pane
     content = f"""
     <div class="tdh">
       <div class="tdh-name">{e['name']}</div>
+      <div class="tdh-actions">
+        <a class="btn" href="/model/lineage/train/{e['id']}">查看血缘</a>
+      </div>
       <div class="tdh-meta">
         <div><span class="lbl">创建人:</span><span class="val">{owner}</span></div>
         <div><span class="lbl">创建时间:</span><span class="val">{e['started']}</span></div>
@@ -3613,14 +4158,46 @@ dataset:
     <div class="det-tabs">
       <span class="det-tab active" onclick="switchDetTab(this,'trials')">运行记录</span>
       <span class="det-tab" onclick="switchDetTab(this,'data')">实验看板</span>
-      <span class="det-tab" onclick="switchDetTab(this,'lineage')">血缘</span>
       <span class="det-tab" onclick="switchDetTab(this,'basic')">基础信息</span>
     </div>
 
     <div id="det-pane-trials"  class="det-pane active">{pane_trials}</div>
     <div id="det-pane-data"    class="det-pane">{tab_data}</div>
-    <div id="det-pane-lineage" class="det-pane">{tab_lineage}</div>
     <div id="det-pane-basic"   class="det-pane">{tab_basic}</div>
+
+    <div class="modal-mask" id="cacheModalMask" onclick="closeCacheModal()">
+      <div class="modal" id="cacheModalBox" onclick="event.stopPropagation()">
+        <div class="modal-head" id="cacheModalHead">
+          <h3>缓存 Checkpoint</h3>
+          <span class="dismiss" onclick="closeCacheModal()">&times;</span>
+        </div>
+        <div class="modal-body">
+          <div id="cacheModalForm">
+            <div class="fg">
+              <label class="fg-req">描述</label>
+              <textarea id="cacheDesc" rows="4" placeholder="请输入本次缓存说明，例如候选版本用途、关联评测或保留原因"></textarea>
+            </div>
+          </div>
+          <div id="cacheModalDoing" style="display:none;">
+            <div class="cache-state">
+              <span class="cache-hourglass">&#8987;</span>
+              <div>
+                <h4>缓存中</h4>
+                <p>可在「缓存进度列表」查看</p>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-foot" id="cacheModalFootForm">
+          <button class="btn btn-tertiary" onclick="closeCacheModal()">取消</button>
+          <button class="btn btn-primary" onclick="confirmCacheModal()">确认</button>
+        </div>
+        <div class="modal-foot" id="cacheModalFootDoing" style="display:none;">
+          <button class="btn btn-secondary" onclick="closeCacheModal()">关闭</button>
+          <a class="btn btn-primary" href="/model/checkpoints/cache-records">查看进度</a>
+        </div>
+      </div>
+    </div>
     """
     return render_page(e["name"], content, active="/model/experiments", module="model",
                        breadcrumb=f'模型平台 / 训练任务 / <b>{e["name"]}</b>', mvp_note="MVP 一期")
@@ -3628,12 +4205,43 @@ dataset:
 
 @app.route("/model/deploy")
 def deploy():
+    def deploy_progress_html(d):
+        total = max(len(d["targets"]), 1)
+        progress = d.get("progress") or {}
+        success = min(progress.get("success", total if d["status"] == "deployed" else 0), total)
+        failed = min(progress.get("failed", 0), total - success)
+        running = min(progress.get("running", max(total - success - failed, 0)), total - success - failed)
+        running_tip = f'<span><i class="dp-dot running"></i>部署中: {running}</span>' if running else ""
+        return (
+            f'<span class="deploy-progress">'
+            f'<span class="dp-success-num">{success}</span><span class="dp-sep">/</span>'
+            f'<span class="dp-failed-num">{failed}</span><span class="dp-sep">/</span>'
+            f'<span class="dp-total-num">{total}</span>'
+            f'<span class="dp-tip">'
+            f'<span><i class="dp-dot success"></i>部署成功: {success}</span>'
+            f'<span><i class="dp-dot failed"></i>部署失败: {failed}</span>'
+            f'<span><i class="dp-dot total"></i>全部: {total}</span>'
+            f'{running_tip}'
+            f'</span>'
+            f'</span>'
+        )
+
     rows = ""
     for d in DEPLOYS:
         n = len(d["targets"])
+        ckpt_name = f"{d['model']}_{d['version']}"
+        created_at = d.get("created") or ("2026-07-02 10:24" if d["status"] == "in_progress" else d["at"])
+        progress = d.get("progress") or {}
+        dev_states = (
+            ["success"] * progress.get("success", 0)
+            + ["failed"] * progress.get("failed", 0)
+            + ["running"] * progress.get("running", 0)
+        )
+        state_labels = {"success": "成功", "failed": "失败", "running": "部署中"}
         devs_links = "".join(
-            f'<a href="/device/devices">{tgt}<span class="arr">&rsaquo;</span></a>'
-            for tgt in d["targets"]
+            f'<a href="/device/devices"><span class="dev-id">{tgt}</span>'
+            f'<span class="dev-state {state}">{state_labels[state]}</span></a>'
+            for tgt, state in zip(d["targets"], dev_states + ["running"] * max(0, n - len(dev_states)))
         )
         targets_cell = (
             f'<div class="devs-cell">'
@@ -3643,45 +4251,68 @@ def deploy():
         )
         rows += f"""<tr>
           <td class="mono">{d['id']}</td>
-          <td><b>{d['model']}</b></td>
-          <td class="mono">{d['version']}</td>
+          <td><b>{ckpt_name}</b></td>
+          <td><span class="tag tag-gray">{d.get('trigger', '手动部署')}</span></td>
           <td>{targets_cell}</td>
-          <td>{status_tag(d['status'])}</td>
+          <td>{deploy_progress_html(d)}</td>
           <td>{d['operator']}</td>
+          <td class="muted mono">{created_at}</td>
           <td class="muted mono">{d['at']}</td>
-          <td class="actions-cell"><a href="#" onclick="toast('Demo: 查看部署日志');return false;">日志</a></td>
+          <td class="actions-cell"><a class="tbtn" href="#" onclick="toast('Demo: 查看部署详情');return false;">查看</a></td>
         </tr>"""
+    running_count = sum(1 for d in DEPLOYS if d["status"] == "in_progress")
+    ckpt_options = '<option value="" selected disabled>请选择 ckpt</option>' + "".join(
+        f'<option>{m["name"]}_{m["version"]}</option>' for m in MODELS
+    )
+    device_items = "".join(
+        f'<div class="ddp-item" data-id="{d["id"]}" onclick="toggleDeployDevice(this)">'
+        f'<span class="id">{d["id"]}</span><span class="loc">{d["location"]}</span></div>'
+        for d in DEVICES if d["status"] != "offline"
+    )
     content = page_header(
         "部署任务",
-        "模型下发到指定设备 · 状态 + 操作历史",
+        "Checkpoint 下发到指定设备 · 状态 + 操作历史",
         "灰度发布 · 回滚 · OTA 兼容性矩阵",
     ) + f"""
     <div class="filter-bar">
-      <input class="grow" placeholder="搜索模型 / 设备...">
-      <select><option>全部状态</option><option>已部署</option><option>待启动</option></select>
-      <div class="right">
-        <a href="#" class="btn" onclick="openDrawer('drawerDeploy');return false;">+ 新部署</a>
+      <input class="grow" placeholder="ckpt">
+      <input placeholder="操作人">
+      <div class="filter-actions">
+        <button class="btn btn-tertiary" onclick="resetFilters(this)">重置</button>
+        <button class="btn btn-primary" onclick="queryFilters(this)">查询</button>
       </div>
     </div>
-    <div class="table-wrap">
+    <div class="list-summarybar">
+      <div class="txt">进行中任务 <b>{running_count}</b> 条</div>
+      <a href="#" class="btn btn-primary" onclick="openDrawer('drawerDeploy');return false;">新建部署任务</a>
+    </div>
+    <div class="table-wrap deploy-table-wrap">
       <table class="ant-table">
-        <thead><tr><th>ID</th><th>模型</th><th>版本</th><th>目标设备</th><th>状态</th><th>操作人</th><th>完成时间</th><th>操作</th></tr></thead>
+        <thead><tr><th>ID</th><th>ckpt</th><th>触发方式</th><th>目标设备</th><th>部署进度</th><th>操作人</th><th>创建时间</th><th>完成时间</th><th>操作</th></tr></thead>
         <tbody>{rows}</tbody>
       </table>
     </div>
     <div class="drawer" id="drawerDeploy">
       <div class="drawer-head"><h3>新建部署</h3><span class="dismiss" onclick="closeDrawer()">&times;</span></div>
       <div class="drawer-body">
-        <div class="fg"><label>模型</label><select>{''.join(f'<option>{m["name"]}</option>' for m in MODELS)}</select></div>
-        <div class="fg"><label>版本</label><select><option>v1.7.1</option><option>v1.7.0</option><option>v1.6.0</option></select></div>
+        <div class="fg"><label>ckpt</label><select>{ckpt_options}</select></div>
+        <div class="fg"><label>触发方式</label>
+          <select>
+            <option value="" selected disabled>请选择触发方式</option>
+            <option>手动部署</option>
+            <option>test 任务</option>
+            <option>dagger 任务</option>
+          </select>
+        </div>
         <div class="fg">
           <label>目标设备（可多选）</label>
-          <div style="border:1px solid #d9d9d9;border-radius:8px;padding:8px 12px;max-height:200px;overflow-y:auto;">
-            {''.join(f'<label style="display:flex;align-items:center;gap:8px;padding:5px 0;font-size:13px;cursor:pointer;"><input type="checkbox" value="{d["id"]}" style="accent-color:#149DAA;"><span class="mono">{d["id"]}</span><span class="muted" style="font-size:12px;">{d["location"]}</span></label>' for d in DEVICES if d["status"] != "offline")}
+          <div class="deploy-device-picker">
+            <div class="ddp-input ddp-chips">
+              <input class="ddp-search" placeholder="搜索设备序列号 / 位置" oninput="filterDeployDevices(this)">
+            </div>
+            <div class="ddp-list">{device_items}</div>
           </div>
         </div>
-        <div class="fg"><label>转换格式</label><select><option>onnx</option><option>tensorrt</option><option>原生</option></select></div>
-        <div class="fg"><label>量化</label><select><option>fp16</option><option>int8</option><option>无</option></select></div>
         <div class="muted" style="font-size:12px;margin-top:6px;">一期: 直接下发到指定设备 (不含灰度 / 回滚)</div>
       </div>
       <div class="drawer-foot">
@@ -3719,6 +4350,10 @@ def models():
     <div class="filter-bar">
       <input class="grow" placeholder="搜索模型名...">
       <select><option>全部基础模型</option><option>Spirit v1.7</option><option>Spirit v1.6</option></select>
+      <div class="filter-actions">
+        <button class="btn btn-tertiary" onclick="resetFilters(this)">重置</button>
+        <button class="btn btn-primary" onclick="queryFilters(this)">查询</button>
+      </div>
     </div>
     <div class="table-wrap">
       <table class="ant-table">
@@ -3734,60 +4369,123 @@ def models():
 # ── 训练 · Checkpoint ──
 CKPT_STATUS_LABEL = {
     "cached":       '<span class="tag tag-green">已缓存</span>',
+    "caching":      '<span class="tag tag-blue">缓存中</span>',
     "not_cached":   '<span class="tag tag-gray">未缓存</span>',
     "merge_failed": '<span class="tag tag-red">合并失败</span>',
 }
 
+CKPT_DESC_FALLBACKS = [
+    "HouseHold stop 32 任务 40k step 稳定版本",
+    "opd taskA SFT 50k step 候选版本",
+    "HouseHold stop 32 任务 50k step 对照版本",
+    "taskAB 单模型无 BC loss 版本",
+    "HouseHold stop 32 任务 40k step 合并失败待处理",
+]
 
-@app.route("/model/checkpoints")
-def checkpoints():
-    # 模拟: 部分 ckpt 已被注册到模型仓库 (mock 数据: 前 2 个已注册)
-    _registered_ids = {"7916", "7560"}
+
+def _ckpt_desc(ckpt):
+    if ckpt.get("description"):
+        return ckpt["description"]
+    idx = next((i for i, item in enumerate(CHECKPOINTS) if item["id"] == ckpt["id"]), 0)
+    return CKPT_DESC_FALLBACKS[idx % len(CKPT_DESC_FALLBACKS)]
+
+
+def _ckpt_train_step(ckpt):
+    m = re.search(r"_(\d{4,7})$", ckpt["name"])
+    return m.group(1) if m else "—"
+
+
+def _ckpt_detail_drawers(items):
+    drawers = ""
+    for c in items:
+        exp = _ckpt_exp(c)
+        train_name = exp["name"] if exp else "—"
+        base_model = exp["model_type"] if exp else "—"
+        desc = _ckpt_desc(c)
+        step = _ckpt_train_step(c)
+        drawers += f"""
+        <div class="drawer" id="drawerCkpt{c['id']}">
+          <div class="drawer-head"><h3>Checkpoint 详情</h3><span class="dismiss" onclick="closeDrawer()">&times;</span></div>
+          <div class="drawer-body">
+            <h2 class="ckpt-detail-title">{c['name']}</h2>
+            <div class="ckpt-form">
+              <div class="ckpt-form-row"><label>ckpt 名称</label><div class="ckpt-form-value">{c['name']}</div></div>
+              <div class="ckpt-form-row"><label>描述</label><div class="ckpt-form-value">{desc}</div></div>
+              <div class="ckpt-form-row"><label>训练任务</label><div class="ckpt-form-value">{train_name}</div></div>
+              <div class="ckpt-form-row"><label>基础模型</label><div class="ckpt-form-value">{base_model}</div></div>
+              <div class="ckpt-form-row"><label>训练步数</label><div class="ckpt-form-value mono">{step}</div></div>
+              <div class="ckpt-form-row"><label>创建人</label><div class="ckpt-form-value">{c['owner']}</div></div>
+              <div class="ckpt-form-row"><label>创建时间</label><div class="ckpt-form-value mono">{c['created']}</div></div>
+            </div>
+          </div>
+          <div class="drawer-foot">
+            <a class="btn btn-secondary" href="/model/lineage/checkpoint/{c['id']}">查看血缘</a>
+            <button class="btn" onclick="closeDrawer()">关闭</button>
+          </div>
+        </div>
+        """
+    return drawers
+
+
+def _ckpt_rows_html(items, show_actions=True, show_status=True):
     rows = ""
-    for c in CHECKPOINTS:
-        reg_btn = (
-            '<span class="tbtn" style="background:#f5f5f5;color:rgba(0,0,0,0.45);border-color:#e8e8e8;cursor:default;">已注册</span>'
-            if c["id"] in _registered_ids
-            else f'<a class="tbtn" href="#" onclick="openRegisterCkpt(\'{c["id"]}\', \'{c["name"]}\', \'{c["owner"]}\');return false;">注册到仓库</a>'
-        )
+    for idx, c in enumerate(items):
+        desc = _ckpt_desc(c)
+        status_cell = f"<td>{CKPT_STATUS_LABEL.get(c['status'], c['status'])}</td>" if show_status else ""
+        actions_cell = ""
+        if show_actions:
+            actions_cell = """<td class="actions-cell">
+            <a class="tbtn" href="#" onclick="openTaskCapabilityModal();return false;">TEST</a>
+            <a class="tbtn" href="#" onclick="openTaskCapabilityModal();return false;">DAGGER</a>
+            <a class="tbtn" href="#" onclick="toast('Demo: Checkpoint 已发起部署');return false;">部署</a>
+          </td>"""
         rows += f"""<tr>
           <td class="mono">{c['id']}</td>
-          <td><a href="#" style="color:#149DAA" onclick="toast('Demo: 查看 ckpt 详情');return false;">{c['name']}</a></td>
-          <td>{CKPT_STATUS_LABEL.get(c['status'], c['status'])}</td>
+          <td><a class="ckpt-name-cell" href="#" onclick="openDrawer('drawerCkpt{c['id']}');return false;" title="{c['name']}">{c['name']}</a></td>
+          <td class="muted">{desc}</td>
+          {status_cell}
           <td>{c['owner']}</td>
           <td class="muted mono">{c['created']}</td>
-          <td class="actions-cell">
-            <a class="tbtn" href="#" onclick="toast('Demo: 发起 TEST');return false;">TEST</a>
-            <a class="tbtn" href="#" onclick="toast('Demo: 发起 DAGGER');return false;">DAGGER</a>
-            {reg_btn}
-          </td>
+          {actions_cell}
         </tr>"""
+    return rows
 
-    content = page_header(
-        "Checkpoint",
-        "跨任务 checkpoint 浏览 · 状态 / 缓存 / 续训",
-        "自动保留策略 · 远程同步 · 自动分支评测",
-    ) + f"""
-    <div class="fb-labeled">
-      <div class="ff"><label>名称</label><input placeholder="请输入名称"></div>
-      <div class="ff"><label>ID</label><input placeholder="请输入ID"></div>
-      <button class="ff-refresh" onclick="toast('Demo: 已刷新')" title="刷新">&#8635;</button>
-    </div>
 
+def _ckpt_table_html(items, show_actions=True, show_status=True):
+    status_col = '<col style="width:110px;">' if show_status else ""
+    status_head = "<th>状态 &#9662;</th>" if show_status else ""
+    actions_col = '<col style="width:230px;">' if show_actions else ""
+    actions_head = "<th>操作</th>" if show_actions else ""
+    return f"""
     <div class="table-wrap">
-      <table class="ant-table">
+      <table class="ant-table ckpt-table">
+        <colgroup>
+          <col style="width:82px;">
+          <col style="width:260px;">
+          <col>
+          {status_col}
+          <col style="width:120px;">
+          <col style="width:180px;">
+          {actions_col}
+        </colgroup>
         <thead><tr>
           <th>ID</th>
           <th>名称</th>
-          <th>状态 &#9662;</th>
+          <th>描述</th>
+          {status_head}
           <th>创建人</th>
           <th>创建时间 &#x21F5;</th>
-          <th>操作</th>
+          {actions_head}
         </tr></thead>
-        <tbody>{rows}</tbody>
+        <tbody>{_ckpt_rows_html(items, show_actions, show_status)}</tbody>
       </table>
     </div>
+    {_ckpt_detail_drawers(items)}
+    """
 
+
+def _ckpt_pager_html():
+    return """
     <div class="mini-pager">
       <select><option>10条/页</option><option>20条/页</option><option>50条/页</option></select>
       <span class="pg-btn">&lsaquo;</span>
@@ -3800,53 +4498,178 @@ def checkpoints():
       <span class="pg-btn">&rsaquo;</span>
       <input class="pg-goto" placeholder=""><span class="pg-go">go</span>
     </div>
+    """
 
-    <div class="drawer" id="drawerRegister">
-      <div class="drawer-head"><h3>注册到模型仓库</h3><span class="dismiss" onclick="closeDrawer()">&times;</span></div>
+
+def _new_checkpoint_drawer_html():
+    return """
+    <div class="drawer drawer-wide" id="drawerNewCheckpoint">
+      <div class="drawer-head"><h3>新建 Checkpoint</h3><span class="dismiss" onclick="closeDrawer()">&times;</span></div>
       <div class="drawer-body">
-        <div class="fg">
-          <label>来源 Checkpoint</label>
-          <div style="background:#fafbfc;border:1px solid #f0f0f0;border-radius:6px;padding:10px 12px;font-family:'SF Mono',Menlo,monospace;font-size:12.5px;">
-            <div style="color:rgba(0,0,0,0.85);"><b id="regCkptName">—</b></div>
-            <div style="margin-top:4px;color:rgba(0,0,0,0.45);font-size:11.5px;">ID: <span id="regCkptId">—</span> · 训练人: <span id="regCkptOwner">—</span></div>
-          </div>
-        </div>
-        <div class="fg"><label class="fg-req">模型名称</label><input id="regModelName" placeholder="如: spirit-v1.7-whiteboard-base"></div>
         <div class="fg-row">
-          <div class="fg"><label class="fg-req">版本号</label><input value="v1.0.0" placeholder="语义化版本"></div>
-          <div class="fg"><label>基础模型</label>
+          <div class="fg"><label class="fg-req">Checkpoint 名称</label><input value="manual_ckpt_20260702_40000" placeholder="如 robotwin_stack_blocks_40000"></div>
+          <div class="fg"><label>Checkpoint ID</label><input placeholder="自动生成"></div>
+        </div>
+        <div class="fg"><label class="fg-req">描述</label><textarea rows="3" placeholder="说明训练阶段、适用场景、效果备注...">手动登记的稳定候选版本, 用于部署前评测和缓存追踪。</textarea></div>
+        <div class="fg-row">
+          <div class="fg"><label class="fg-req">来源训练任务</label>
             <select>
-              <option>Spirit v1.7</option>
-              <option>Spirit v1.7-SFT</option>
-              <option>Spirit v1.6</option>
+              <option>robotwin_pi05_datamil_stack_blocks_two_top10pct_cotrain</option>
+              <option>20260615_HouseHold_newper_stop_32</option>
+              <option>20260602_ManualDagger2_NarrowTable_Moz1WB</option>
+            </select>
+          </div>
+          <div class="fg"><label class="fg-req">训练 Step</label><input value="40000" placeholder="如 40000"></div>
+        </div>
+        <div class="fg"><label class="fg-req">Artifact URI</label><input value="tos://quanta-model/checkpoints/manual_ckpt_20260702_40000.pt" placeholder="tos://bucket/path/to/ckpt.pt"></div>
+        <div class="fg-row">
+          <div class="fg"><label>状态</label>
+            <select>
+              <option>已缓存</option>
+              <option>未缓存</option>
+              <option>合并失败</option>
+            </select>
+          </div>
+          <div class="fg"><label>缓存策略</label>
+            <select>
+              <option>长期保留</option>
+              <option>30 天保留</option>
+              <option>仅登记不缓存</option>
             </select>
           </div>
         </div>
-        <div class="fg"><label>标签</label><input placeholder="逗号分隔: production, baseline"></div>
-        <div class="fg"><label>发布描述</label><textarea rows="3" placeholder="该版本相比上版的改进 / 注意事项..."></textarea></div>
-        <div class="muted" style="font-size:12px;margin-top:6px;">注册后会自动写入血缘 (数据集 → 训练任务 → ckpt → 模型版本)</div>
+        <div class="fg-row">
+          <div class="fg"><label>创建人</label><input value="tao.wang" placeholder="请输入创建人"></div>
+          <div class="fg"><label>标签</label><input value="candidate, deploy-ready" placeholder="逗号分隔"></div>
+        </div>
+        <div class="muted" style="font-size:12px;margin-top:6px;">提交后会登记 Checkpoint 资产, 并记录来源训练任务与 artifact 路径的血缘。</div>
       </div>
       <div class="drawer-foot">
         <button class="btn" onclick="closeDrawer()">取消</button>
-        <button class="btn btn-primary" onclick="toast('Demo: 已注册到模型仓库');closeDrawer()">注册</button>
+        <button class="btn btn-primary" onclick="toast('Demo: Checkpoint 已创建');closeDrawer()">创建</button>
       </div>
     </div>
     """
-    extra_script = """<script>
-    function openRegisterCkpt(id, name, owner){
-      document.getElementById('regCkptId').textContent = id;
-      document.getElementById('regCkptName').textContent = name;
-      document.getElementById('regCkptOwner').textContent = owner;
-      // 默认拿 ckpt 名第一段做模型名预填
-      var seg = (name || '').split('_')[0] || '';
-      var nameInput = document.getElementById('regModelName');
-      if (nameInput && !nameInput.value) nameInput.value = seg.toLowerCase();
-      openDrawer('drawerRegister');
-    }
-    </script>"""
+
+
+@app.route("/model/checkpoints")
+def checkpoints():
+    visible_checkpoints = [c for c in CHECKPOINTS if c["status"] == "cached"]
+    cached_count = sum(1 for c in CHECKPOINTS if c["status"] == "cached")
+    all_count = len(CHECKPOINTS)
+
+    content = page_header(
+        "Checkpoint",
+        "仅展示已缓存 checkpoint · 续训 / 评测 / 部署",
+        "自动保留策略 · 远程同步 · 自动分支评测",
+    ) + f"""
+    <div class="fb-labeled">
+      <div class="ff"><label>名称</label><input placeholder="请输入名称"></div>
+      <div class="ff"><label>ID</label><input placeholder="请输入ID"></div>
+      <div class="filter-actions">
+        <button class="btn btn-tertiary" onclick="resetFilters(this)">重置</button>
+        <button class="btn btn-primary" onclick="queryFilters(this)">查询</button>
+      </div>
+    </div>
+
+    <div class="ckpt-listbar">
+      <div class="ckpt-listnote">已缓存 {cached_count} 个，缓存记录共 {all_count} 条</div>
+      <div class="ckpt-actions">
+        <a href="/model/checkpoints/cache-records" class="btn btn-secondary">查看缓存记录</a>
+      </div>
+    </div>
+
+    {_ckpt_table_html(visible_checkpoints, show_status=False)}
+
+    {_ckpt_pager_html()}
+
+    """
     return render_page("Checkpoint", content, active="/model/checkpoints", module="model",
-                       breadcrumb='模型平台 / <b>Checkpoint</b>', mvp_note="MVP 一期",
-                       extra_script=extra_script)
+                       breadcrumb='模型平台 / 部署 / <b>Checkpoint</b>', mvp_note="MVP 一期")
+
+
+@app.route("/model/checkpoints/cache-records")
+def checkpoint_cache_records():
+    cache_items = [
+        {"id": "7916-50000", "name": "robotwin_pi05_datamil_stack_blocks_two_top10pct_cotrain_50000",
+         "description": "训练任务详情手动发起缓存, 用于后续评测与部署前确认。",
+         "status": "caching", "owner": "tao.wang", "created": "2026-07-02 14:20:00"},
+    ] + CHECKPOINTS
+    caching_count = sum(1 for c in cache_items if c["status"] == "caching")
+    cached_count = sum(1 for c in cache_items if c["status"] == "cached")
+    failed_count = sum(1 for c in cache_items if c["status"] == "merge_failed")
+    pending_count = sum(1 for c in cache_items if c["status"] == "not_cached")
+    content = page_header(
+        "缓存记录",
+        "展示全部状态的 checkpoint 缓存记录",
+        "缓存中 / 已缓存 / 未缓存 / 合并失败",
+    ) + f"""
+    <div class="page-actions" style="margin:-8px 0 14px;">
+      <a class="btn" href="/model/checkpoints">返回 Checkpoint</a>
+    </div>
+
+    <div class="fb-labeled">
+      <div class="ff"><label>名称</label><input placeholder="请输入名称"></div>
+      <div class="ff"><label>ID</label><input placeholder="请输入ID"></div>
+      <div class="ff"><label>状态</label>
+        <select><option>全部状态</option><option>缓存中</option><option>已缓存</option><option>未缓存</option><option>合并失败</option></select>
+      </div>
+      <div class="filter-actions">
+        <button class="btn btn-tertiary" onclick="resetFilters(this)">重置</button>
+        <button class="btn btn-primary" onclick="queryFilters(this)">查询</button>
+      </div>
+    </div>
+
+    <div class="ckpt-listbar">
+      <div class="ckpt-listnote">全部 {len(cache_items)} 条 · 缓存中 {caching_count} · 已缓存 {cached_count} · 未缓存 {pending_count} · 合并失败 {failed_count}</div>
+    </div>
+
+    {_ckpt_table_html(cache_items, show_actions=False)}
+    {_ckpt_pager_html()}
+    """
+    return render_page("缓存记录", content, active="/model/checkpoints", module="model",
+                       breadcrumb='模型平台 / 部署 / Checkpoint / <b>缓存记录</b>', mvp_note="MVP 一期")
+
+
+@app.route("/model/checkpoints/<ckpt_id>")
+def checkpoint_detail(ckpt_id):
+    ckpt = _ckpt_by_id(ckpt_id)
+    if ckpt is None:
+        return redirect("/model/checkpoints")
+    exp = _ckpt_exp(ckpt)
+    ds = _exp_dataset(exp)
+    status_html = CKPT_STATUS_LABEL.get(ckpt["status"], ckpt["status"])
+    content = page_header(
+        ckpt["name"],
+        f'Checkpoint #{ckpt["id"]} · {ckpt["created"]}',
+        "训练产物 · 缓存状态 · 注册模型仓库 · 血缘",
+    ) + f"""
+    <div class="lin-actions">
+      <a class="btn" href="/model/checkpoints">返回 Checkpoint</a>
+      <a class="btn" href="/model/lineage/checkpoint/{ckpt['id']}">查看血缘</a>
+    </div>
+    {stat_grid([
+        ("状态", status_html, ""),
+        ("创建人", ckpt["owner"], ""),
+        ("来源训练任务", exp["id"] if exp else "—", exp["name"][:38] if exp else ""),
+        ("来源数据集", ds["name"], ds["version"]),
+    ])}
+    <div class="card">
+      <h3 style="margin-top:0;">基础信息</h3>
+      <div class="kv-grid">
+        <div class="kv"><span>Checkpoint ID</span><b class="mono">{ckpt["id"]}</b></div>
+        <div class="kv"><span>名称</span><b>{ckpt["name"]}</b></div>
+        <div class="kv"><span>训练任务</span><b><a href="/model/experiments/{exp['id'] if exp else ''}">{exp['name'] if exp else '—'}</a></b></div>
+        <div class="kv"><span>数据集</span><b><a href="/model/data/datasets/{ds['id']}">{ds['name']} · {ds['version']}</a></b></div>
+      </div>
+    </div>
+    <div class="det-tabs" style="margin-top:14px;">
+      <a class="det-tab active" href="/model/checkpoints/{ckpt['id']}" style="text-decoration:none;">详情</a>
+      <a class="det-tab" href="/model/lineage/checkpoint/{ckpt['id']}" style="text-decoration:none;">血缘</a>
+    </div>
+    """
+    return render_page(ckpt["name"], content, active="/model/checkpoints", module="model",
+                       breadcrumb=f'模型平台 / Checkpoint / <b>{ckpt["id"]}</b>', mvp_note="MVP 一期")
 
 
 # ── 部署 · 模型转换 ──
@@ -3874,6 +4697,10 @@ def convert():
       <input class="grow" placeholder="搜索模型 / ID...">
       <select><option>全部格式</option><option>tensorrt</option><option>onnx</option></select>
       <select><option>全部状态</option><option>已完成</option><option>运行中</option></select>
+      <div class="filter-actions">
+        <button class="btn btn-tertiary" onclick="resetFilters(this)">重置</button>
+        <button class="btn btn-primary" onclick="queryFilters(this)">查询</button>
+      </div>
       <div class="right">
         <a href="#" class="btn" onclick="openDrawer('drawerConvert');return false;">+ 新建转换</a>
       </div>
@@ -3942,6 +4769,10 @@ def inference():
     <div class="filter-bar">
       <input class="grow" placeholder="搜索设备 / 模型...">
       <select><option>全部状态</option><option>在线</option><option>离线</option></select>
+      <div class="filter-actions">
+        <button class="btn btn-tertiary" onclick="resetFilters(this)">重置</button>
+        <button class="btn btn-primary" onclick="queryFilters(this)">查询</button>
+      </div>
     </div>
     <div class="table-wrap">
       <table class="ant-table">
@@ -4015,6 +4846,645 @@ def app_assets_knowledge():
 
 
 # ════════════════════════════════════════════════════════════════
+# Section 7.6: 租户管理 (/tenant/*)  — 顶导入口
+# ════════════════════════════════════════════════════════════════
+
+TENANT_LIST = [
+    {"name": "宁德时代", "av": "宁", "status": "active",  "created": "2025-12-08 10:21:33",
+     "users": 38, "storage": "12.4 TB / 50 TB", "gpu": "16 / 32 卡"},
+    {"name": "千寻智能", "av": "千", "status": "active",  "created": "2026-03-15 14:08:12",
+     "users": 21, "storage": "5.8 TB / 30 TB",  "gpu": "8 / 16 卡"},
+]
+
+TENANT_MEMBERS = [
+    {"name": "joanna.qiao",  "email": "qiaoya1112@gmail.com",  "role": "管理员",     "joined": "2025-12-08", "status": "active"},
+    {"name": "Lance Li",     "email": "lance.li@catl.com",     "role": "算法工程师",  "joined": "2026-01-12", "status": "active"},
+    {"name": "Min Chen",     "email": "min.chen@catl.com",     "role": "数据工程师",  "joined": "2026-02-04", "status": "active"},
+    {"name": "Wei Zhang",    "email": "wei.zhang@catl.com",    "role": "标注员",     "joined": "2026-03-20", "status": "active"},
+    {"name": "柳少龙",        "email": "shaolong.liu@catl.com", "role": "采集员",     "joined": "2026-04-02", "status": "active"},
+    {"name": "Evelyn Zhang", "email": "evelyn@catl.com",       "role": "质检员",     "joined": "2026-05-11", "status": "active"},
+    {"name": "Drake Cao",    "email": "drake@catl.com",        "role": "外部员工",    "joined": "2026-06-01", "status": "paused"},
+]
+
+TENANT_ROLES = [
+    {"key": "cdn_user",   "name": "CDN访问用户",     "created": "2026-06-16 17:17:31", "enabled": True},
+    {"key": "tos_user",   "name": "TOS加速访问用户",  "created": "2026-06-16 17:17:31", "enabled": True},
+    {"key": "qc_inner",   "name": "内部质检员",      "created": "2026-06-16 17:17:31", "enabled": True},
+    {"key": "tool_admin", "name": "采集道具管理员",   "created": "2026-06-04 16:31:42", "enabled": True},
+    {"key": "admin",      "name": "管理员",         "created": "2026-06-04 16:30:22", "enabled": True},
+    {"key": "ext_emp",    "name": "外部员工",        "created": "2026-06-01 20:19:19", "enabled": True},
+    {"key": "out_emp",    "name": "外包员工",        "created": "2026-06-01 20:19:19", "enabled": True},
+    {"key": "qa_label",   "name": "标注抽验员",      "created": "2026-06-01 20:19:19", "enabled": True},
+]
+
+TENANT_PERM_TREE = [
+    ("系统设置", "open", [
+        ("权限点列表",  False, "leaf"),
+        ("角色列表",    False, "leaf"),
+        ("组织列表",    False, "leaf"),
+        ("组织权限管理", False, "leaf"),
+        ("页面API列表", False, "active"),
+    ]),
+    ("用户管理", "open", [
+        ("用户列表",      False, "leaf"),
+        ("供应商用户列表", False, "leaf"),
+    ]),
+    ("采集任务", "open", [
+        ("采集任务列表",   False, "leaf"),
+        ("测试任务列表",   False, "leaf"),
+        ("全部批次列表",   False, "leaf"),
+        ("任务数据-采集任务", False, "leaf"),
+        ("任务信息-采集任务", False, "leaf"),
+    ]),
+]
+
+
+@app.route("/tenant")
+def tenant_home():
+    return redirect("/tenant/members")
+
+
+@app.route("/tenant/tenants")
+def tenant_tenants():
+    rows = ""
+    for t in TENANT_LIST:
+        status_pill = '<span class="qa qa-pass">已启用</span>' if t["status"] == "active" else '<span class="qa qa-pend">已禁用</span>'
+        rows += f"""<tr>
+          <td><div style="display:flex;align-items:center;gap:10px;">
+            <span style="width:28px;height:28px;border-radius:50%;background:#149DAA;color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;flex:none;">{t['av']}</span>
+            <b>{t['name']}</b>
+          </div></td>
+          <td>{status_pill}</td>
+          <td class="muted mono">{t['created']}</td>
+          <td class="mono">{t['users']}</td>
+          <td class="mono">{t['storage']}</td>
+          <td class="mono">{t['gpu']}</td>
+          <td class="actions-cell">
+            <a href="#" onclick="toast('Demo: 配置');return false;">配置</a>
+            <a href="#" onclick="toast('Demo: 切换');return false;" style="margin-left:8px;">切换</a>
+          </td>
+        </tr>"""
+    content = f"""
+    <h2 class="tn-mgmt-tt">租户管理</h2>
+    <div class="filter-bar">
+      <input class="grow" placeholder="搜索租户名称...">
+      <select><option>全部状态</option><option>已启用</option><option>已禁用</option></select>
+      <div class="filter-actions">
+        <button class="btn btn-tertiary" onclick="resetFilters(this)">重置</button>
+        <button class="btn btn-primary" onclick="queryFilters(this)">查询</button>
+      </div>
+      <div class="right">
+        <a href="#" class="btn btn-primary" onclick="toast('Demo: 新增租户');return false;">+ 新增租户</a>
+      </div>
+    </div>
+    <div class="table-wrap">
+      <table class="ant-table">
+        <thead><tr><th>租户</th><th>状态</th><th>创建时间</th><th>成员数</th><th>存储用量</th><th>GPU 配额</th><th>操作</th></tr></thead>
+        <tbody>{rows}</tbody>
+      </table>
+    </div>
+    """
+    return render_page("租户管理", content, active="/tenant/tenants", module="tenant",
+                       breadcrumb='<b>租户管理</b> / 租户管理', mvp_note="规划中")
+
+
+@app.route("/tenant/members")
+def tenant_members():
+    rows = ""
+    for m in TENANT_MEMBERS:
+        status_pill = '<span class="qa qa-pass">在职</span>' if m["status"] == "active" else '<span class="qa qa-pend">已停用</span>'
+        av = m["name"][0]
+        rows += f"""<tr>
+          <td><div style="display:flex;align-items:center;gap:10px;">
+            <span style="width:30px;height:30px;border-radius:50%;background:#5DA9D9;color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;flex:none;">{av}</span>
+            <b>{m['name']}</b>
+          </div></td>
+          <td class="mono muted">{m['email']}</td>
+          <td><span class="tag tag-teal">{m['role']}</span></td>
+          <td class="muted mono">{m['joined']}</td>
+          <td>{status_pill}</td>
+          <td class="actions-cell">
+            <a href="#" onclick="toast('Demo: 编辑角色');return false;">编辑角色</a>
+            <a href="#" onclick="toast('Demo: 移除');return false;" style="margin-left:8px;color:#e25c5c;">移除</a>
+          </td>
+        </tr>"""
+    n_active = sum(1 for m in TENANT_MEMBERS if m["status"] == "active")
+    role_counts = {}
+    for m in TENANT_MEMBERS:
+        role_counts[m["role"]] = role_counts.get(m["role"], 0) + 1
+    content = f"""
+    <h2 class="tn-mgmt-tt">人员管理</h2>
+    """ + stat_grid([
+        ("成员总数", str(len(TENANT_MEMBERS)), ""),
+        ("在职",     str(n_active), ""),
+        ("已停用",   str(len(TENANT_MEMBERS) - n_active), ""),
+        ("覆盖角色", str(len(role_counts)), " · ".join(f"{k} {v}" for k, v in list(role_counts.items())[:3])),
+    ]) + f"""
+    <div class="filter-bar">
+      <input class="grow" placeholder="搜索姓名 / 邮箱...">
+      <select><option>全部角色</option>{''.join(f'<option>{r}</option>' for r in role_counts)}</select>
+      <select><option>全部状态</option><option>在职</option><option>已停用</option></select>
+      <div class="filter-actions">
+        <button class="btn btn-tertiary" onclick="resetFilters(this)">重置</button>
+        <button class="btn btn-primary" onclick="queryFilters(this)">查询</button>
+      </div>
+      <div class="right">
+        <a href="#" class="btn btn-primary" onclick="toast('Demo: 邀请成员');return false;">+ 邀请成员</a>
+      </div>
+    </div>
+    <div class="table-wrap">
+      <table class="ant-table">
+        <thead><tr><th>姓名</th><th>邮箱</th><th>角色</th><th>加入时间</th><th>状态</th><th>操作</th></tr></thead>
+        <tbody>{rows}</tbody>
+      </table>
+    </div>
+    """
+    return render_page("人员管理", content, active="/tenant/members", module="tenant",
+                       breadcrumb='<b>租户管理</b> / 人员管理', mvp_note="规划中")
+
+
+@app.route("/tenant/roles")
+def tenant_roles():
+    # 角色列表 (默认第一条选中)
+    roles_html = ""
+    for i, r in enumerate(TENANT_ROLES):
+        cls = "rm-role active" if i == 0 else "rm-role"
+        roles_html += f"""<div class="{cls}" onclick="rmSelectRole(this)">
+          <div class="rm-rc-nm">{r['name']}</div>
+          <div class="rm-rc-bot">
+            <span class="rm-rc-tm">创建时间: <span class="mono">{r['created']}</span></span>
+            <label class="toggle-sw" onclick="event.stopPropagation()"><input type="checkbox" {"checked" if r['enabled'] else ""}><span class="slider"></span></label>
+          </div>
+          <span class="rm-rc-del" title="删除">&#128465;</span>
+        </div>"""
+
+    # 权限树
+    tree_html = ""
+    for grp_name, state, leaves in TENANT_PERM_TREE:
+        leaves_html = ""
+        for leaf_name, checked, leaf_state in leaves:
+            leaf_cls = "rm-pt-leaf active" if leaf_state == "active" else "rm-pt-leaf"
+            ck = "checked" if checked or leaf_state == "active" else ""
+            leaves_html += f'<label class="{leaf_cls}"><input type="checkbox" {ck}>{leaf_name}</label>'
+        tree_html += f"""<div class="rm-pt-group {state}">
+          <div class="rm-pt-grp-head" onclick="this.parentNode.classList.toggle('collapsed')">
+            <span class="caret">&#9662;</span>
+            <input type="checkbox" onclick="event.stopPropagation()">
+            <span>{grp_name}</span>
+          </div>
+          <div class="rm-pt-children">{leaves_html}</div>
+        </div>"""
+
+    content = f"""
+    <h2 class="tn-mgmt-tt">权限管理</h2>
+    <div class="role-mgmt">
+
+      <div class="rm-list">
+        <div class="rm-list-head">
+          <h3>角色列表</h3>
+          <a class="btn btn-primary" href="#" onclick="toast('Demo: 新增角色');return false;">新增角色</a>
+        </div>
+        <div class="rm-roles">{roles_html}</div>
+      </div>
+
+      <div class="rm-detail">
+        <div class="rm-list-head">
+          <h3>角色详情</h3>
+        </div>
+        <div class="rm-d-row">
+          <div class="rm-d-fg"><label><span class="req">*</span>角色名称</label><input value="CDN访问用户"></div>
+          <div class="rm-d-fg"><label><span class="req">*</span>角色描述</label><input value="CDN访问用户"></div>
+        </div>
+        <div class="rm-d-perm-head">
+          <h4>权限配置</h4>
+          <div class="grow"></div>
+          <a class="btn" href="#" onclick="toast('Demo: 全选');return false;">&#10003; 全选</a>
+          <a class="btn" href="#" onclick="toast('Demo: 收起所有');return false;">&#8678; 收起所有</a>
+        </div>
+        <div class="rm-perm-tree">{tree_html}</div>
+        <div class="rm-foot">
+          <a class="btn btn-primary" href="#" onclick="toast('Demo: 已保存');return false;">确定</a>
+        </div>
+      </div>
+
+      <div class="rm-api">
+        <h4>页面API列表</h4>
+        <div class="sub-ttl">权限点类型</div>
+        <div class="rm-api-tabs">
+          <span class="rm-api-tab active" onclick="rmApiTab(this)">BUTTON</span>
+          <span class="rm-api-tab" onclick="rmApiTab(this)">筛选</span>
+          <span class="rm-api-tab" onclick="rmApiTab(this)">列表字段</span>
+          <span class="rm-api-tab" onclick="rmApiTab(this)">表单字段</span>
+        </div>
+        <div class="table-wrap">
+          <table class="ant-table">
+            <thead><tr><th>按钮名称</th><th>字段名称</th><th>路径</th><th>显示/隐藏</th></tr></thead>
+            <tbody><tr><td colspan="4" class="empty">暂无数据</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+    <script>
+    function rmSelectRole(el){{
+      el.parentNode.querySelectorAll('.rm-role').forEach(function(r){{ r.classList.remove('active'); }});
+      el.classList.add('active');
+      var nm = el.querySelector('.rm-rc-nm').textContent;
+      toast('已选中角色: ' + nm);
+    }}
+    function rmApiTab(el){{
+      el.parentNode.querySelectorAll('.rm-api-tab').forEach(function(t){{ t.classList.remove('active'); }});
+      el.classList.add('active');
+    }}
+    </script>
+    """
+    return render_page("权限管理", content, active="/tenant/roles", module="tenant",
+                       breadcrumb='<b>租户管理</b> / 权限管理', mvp_note="规划中")
+
+
+@app.route("/tenant/resources")
+def tenant_resources():
+    resource_cards = [
+        ("GPU 总配额", "32 卡", "已使用 16 卡 · 空闲 16 卡"),
+        ("vCPU 总配额", "384 核", "已使用 156 核"),
+        ("内存总配额", "2.8 TB", "已使用 1.1 TB"),
+        ("存储总配额", "50 TB", "已使用 12.4 TB"),
+        ("资源组", "3 个", "2 个启用中 · 1 个已停用"),
+    ]
+    card_html = "".join(
+        f"""<div class="res-over-card">
+          <div class="k">{k}</div>
+          <div class="v">{v}</div>
+          <div class="s">{s}</div>
+        </div>"""
+        for k, v, s in resource_cards
+    )
+
+    groups = [
+        ("账号全部资源", "默认资源组", "joanna.qiao", 16, 32, 12.4, 50, 4, "active", "2026-06-14 10:12"),
+        ("宁德时代资源组", "训练专用", "tao.wang", 8, 12, 6.8, 20, 2, "active", "2026-06-28 16:05"),
+        ("eval_shared_group", "评测共享", "Lance Li", 3, 8, 2.2, 10, 1, "paused", "2026-06-21 09:12"),
+    ]
+
+    def _quota_lines(gpu_used, gpu_total, storage_used, storage_total):
+        gpu_pct = min(round(gpu_used / gpu_total * 100), 100) if gpu_total else 0
+        storage_pct = min(round(storage_used / storage_total * 100), 100) if storage_total else 0
+        storage_used_s = f"{storage_used:g}"
+        storage_total_s = f"{storage_total:g}"
+        return f"""
+        <div class="res-quota">
+          <div class="res-quota-line">
+            <span>GPU</span><span class="track"><i class="fill" style="width:{gpu_pct}%"></i></span><span>{gpu_used}/{gpu_total}</span>
+          </div>
+          <div class="res-quota-line">
+            <span>存储</span><span class="track"><i class="fill warn" style="width:{storage_pct}%"></i></span><span>{storage_used_s}/{storage_total_s}TB</span>
+          </div>
+        </div>
+        """
+
+    rows = ""
+    for name, kind, admin, gpu_used, gpu_total, storage_used, storage_total, queues, status, created in groups:
+        status_html = (
+            '<span class="queue-status active">启用中</span>'
+            if status == "active" else '<span class="queue-status paused">已停用</span>'
+        )
+        rows += f"""<tr>
+          <td><b>{name}</b><div class="muted" style="font-size:12px;margin-top:3px;">{kind}</div></td>
+          <td>{admin}</td>
+          <td>{_quota_lines(gpu_used, gpu_total, storage_used, storage_total)}</td>
+          <td class="mono">{queues}</td>
+          <td>{status_html}</td>
+          <td class="muted mono">{created}</td>
+          <td class="actions-cell">
+            <a href="#" onclick="openDrawer('drawerResourceGroup');return false;">编辑</a>
+          </td>
+        </tr>"""
+
+    compute_rows = [
+        ("A100-2x-80G", "24", "192 GB", "2 x A100", "6 / 12", "1"),
+        ("A100-4x-80G", "48", "384 GB", "4 x A100", "2 / 4", "0"),
+        ("H100-8x-80G", "96", "768 GB", "8 x H100", "1 / 2", "0"),
+    ]
+    disk_rows = [
+        ("高性能云盘", "50000", "350 MB/s", "12 / 40", "200 GiB"),
+        ("SSD 云盘", "30000", "250 MB/s", "20 / 80", "100 GiB"),
+    ]
+    compute_html = "".join(
+        f"""<tr>
+          <td>{name}</td><td class="mono">{vcpu}</td><td>{mem}</td><td>{gpu}</td>
+          <td class="mono">{quota}</td><td><input class="queue-num" value="{count}"></td>
+        </tr>"""
+        for name, vcpu, mem, gpu, quota, count in compute_rows
+    )
+    disk_html = "".join(
+        f"""<tr>
+          <td>{kind}</td><td class="mono">{iops}</td><td>{throughput}</td>
+          <td class="mono">{quota}</td><td><input class="queue-num" value="{cap}"></td>
+        </tr>"""
+        for kind, iops, throughput, quota, cap in disk_rows
+    )
+
+    content = f"""
+    <div class="page-actions">
+      <a href="#" class="btn btn-primary" onclick="openDrawer('drawerResourceGroup');return false;">+ 新增资源组</a>
+    </div>
+
+    <div class="res-card-grid">{card_html}</div>
+
+    <div class="res-group-head">
+      <h3>资源组列表</h3>
+    </div>
+    <div class="filter-bar">
+      <input placeholder="资源组">
+      <input placeholder="管理员">
+      <input placeholder="状态">
+      <div class="filter-actions">
+        <button class="btn btn-tertiary" onclick="resetFilters(this)">重置</button>
+        <button class="btn btn-primary" onclick="queryFilters(this)">查询</button>
+      </div>
+    </div>
+    <div class="table-wrap">
+      <table class="ant-table">
+        <thead><tr><th>资源组</th><th>管理员</th><th>资源使用</th><th>队列数</th><th>状态</th><th>创建时间</th><th>操作</th></tr></thead>
+        <tbody>{rows}</tbody>
+      </table>
+    </div>
+
+    <div class="drawer drawer-queue" id="drawerResourceGroup">
+      <div class="drawer-head"><h3>新增资源组</h3><span class="dismiss" onclick="closeDrawer()">&times;</span></div>
+      <div class="drawer-body">
+        <div class="queue-layout queue-layout-single">
+          <div class="queue-main">
+            <div class="queue-section">
+              <h3 class="queue-sec-title">基本信息</h3>
+              <div class="queue-form-row">
+                <label class="req">名称</label>
+                <input class="queue-input" value="pi05_train_resource_group" placeholder="请输入资源组名称">
+              </div>
+              <div class="queue-form-row">
+                <label>描述</label>
+                <textarea class="queue-textarea" placeholder="说明资源组用途">PI05 训练任务专用资源组，用于训练、评测和缓存任务的资源隔离。</textarea>
+              </div>
+              <div class="queue-form-row">
+                <label>管理员</label>
+                <div>
+                  <div class="remote-picker">
+                    <span class="picked">joanna.qiao <i>&times;</i></span>
+                    <input placeholder="请搜索用户名">
+                  </div>
+                </div>
+              </div>
+              <div class="queue-form-row">
+                <label>状态</label>
+                <select class="queue-select"><option>启用中</option><option>已停用</option></select>
+              </div>
+            </div>
+            <div class="queue-section">
+              <h3 class="queue-sec-title">资源配置</h3>
+              <div class="queue-form-row">
+                <label>计算规格</label>
+                <div class="queue-table">
+                  <table>
+                    <thead><tr><th>实例规格</th><th>vCPU</th><th>内存</th><th>GPU卡</th><th>可分配量/总量</th><th>实例数量</th></tr></thead>
+                    <tbody>{compute_html}</tbody>
+                  </table>
+                </div>
+              </div>
+              <div class="queue-help">云盘用于持久化运行环境及存放训练过程中的临时数据。</div>
+              <div class="queue-form-row" style="margin-top:16px;">
+                <label>云盘</label>
+                <div class="queue-table">
+                  <table>
+                    <thead><tr><th>云盘种类</th><th>单盘最大 IOPS</th><th>单盘最大吞吐量</th><th>可分配量/总量</th><th>云盘容量</th></tr></thead>
+                    <tbody>{disk_html}</tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="drawer-foot">
+        <button class="btn btn-tertiary" onclick="closeDrawer()">取消</button>
+        <button class="btn btn-primary" onclick="toast('Demo: 资源组已创建');closeDrawer()">确认创建</button>
+      </div>
+    </div>
+    """
+    return render_page("资源管理", content, active="/tenant/resources", module="tenant",
+                       breadcrumb='<b>租户管理</b> / 资源管理', mvp_note="规划中")
+
+
+@app.route("/tenant/queues")
+def tenant_queues():
+    queue_rows = [
+        ("pi05_train_a100_queue", "账号全部资源", "joanna.qiao", "2 x A100", "1", "200 GiB", "active", "2026-07-01 10:24"),
+        ("dagger_h100_priority", "宁德时代资源组", "tao.wang", "8 x H100", "0", "500 GiB", "active", "2026-06-28 16:05"),
+        ("eval_l40s_shared", "账号全部资源", "Lance Li", "4 x L40S", "3", "100 GiB", "paused", "2026-06-21 09:12"),
+    ]
+    rows = ""
+    detail_drawers = ""
+    for idx, (name, group, admin, gpu, instances, disk, status, created) in enumerate(queue_rows):
+        status_html = (
+            '<span class="queue-status active">启用中</span>'
+            if status == "active" else '<span class="queue-status paused">已停用</span>'
+        )
+        detail_id = f"drawerQueueDetail{idx}"
+        desc = "PI05 训练任务专用队列，承载 SFT、DAGGER 和部署前回归训练。" if idx == 0 else "面向训练 / 评测任务的共享资源队列。"
+        member_rows = "".join(
+            f"""<tr>
+              <td>{member}</td>
+              <td>{role}</td>
+              <td><span class="queue-status active">启用中</span></td>
+              <td class="actions-cell">
+                <a href="#" onclick="toast('Demo: 删除成员');return false;" style="color:#d4504e;">删除</a>
+              </td>
+            </tr>"""
+            for member, role in [
+                (admin, "管理员"),
+                ("tao.wang", "成员"),
+                ("hannah.wang", "成员"),
+            ]
+        )
+        detail_drawers += f"""
+        <div class="drawer drawer-queue" id="{detail_id}">
+          <div class="drawer-head"><h3>队列详情</h3><span class="dismiss" onclick="closeDrawer()">&times;</span></div>
+          <div class="drawer-body">
+            <div class="queue-detail">
+              <div class="queue-detail-section">
+                <h3>基本信息</h3>
+                <div class="queue-info-grid">
+                  <div class="queue-info-item"><span>名称</span><b>{name}</b></div>
+                  <div class="queue-info-item"><span>资源组</span><b>{group}</b></div>
+                  <div class="queue-info-item"><span>描述</span><b>{desc}</b></div>
+                  <div class="queue-info-item"><span>管理员</span><b>{admin}</b></div>
+                  <div class="queue-info-item"><span>状态</span><b>{status_html}</b></div>
+                  <div class="queue-info-item"><span>创建时间</span><b class="mono">{created}</b></div>
+                </div>
+              </div>
+
+              <div class="queue-detail-section">
+                <h3>资源</h3>
+                <div class="queue-info-grid">
+                  <div class="queue-info-item"><span>GPU</span><b class="mono">{gpu}</b></div>
+                  <div class="queue-info-item"><span>实例数</span><b class="mono">{instances}</b></div>
+                  <div class="queue-info-item"><span>云盘容量</span><b class="mono">{disk}</b></div>
+                  <div class="queue-info-item"><span>调度策略</span><b>按优先级排队，空闲资源自动回收</b></div>
+                </div>
+              </div>
+
+              <div class="queue-detail-section">
+                <h3>成员</h3>
+                <div class="queue-member-add">
+                  <div class="remote-picker">
+                    <input placeholder="请搜索用户名">
+                  </div>
+                  <select class="queue-select"><option>成员</option><option>管理员</option></select>
+                  <button class="btn btn-secondary" onclick="toast('Demo: 成员已添加')">添加</button>
+                </div>
+                <div class="queue-table">
+                  <table>
+                    <thead><tr><th>账号</th><th>角色</th><th>状态</th><th>操作</th></tr></thead>
+                    <tbody>{member_rows}</tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="drawer-foot">
+            <button class="btn btn-tertiary" onclick="closeDrawer()">关闭</button>
+            <button class="btn btn-primary" onclick="toast('Demo: 队列详情已保存');closeDrawer()">保存</button>
+          </div>
+        </div>
+        """
+        rows += f"""<tr>
+          <td><a href="#" class="queue-name-link" onclick="openDrawer('{detail_id}');return false;">{name}</a></td>
+          <td>{group}</td>
+          <td>{admin}</td>
+          <td class="mono">{gpu}</td>
+          <td class="mono">{instances}</td>
+          <td class="mono">{disk}</td>
+          <td>{status_html}</td>
+          <td class="muted mono">{created}</td>
+          <td class="actions-cell">
+            <a href="#" onclick="openDrawer('drawerQueueCreate');return false;">编辑</a>
+          </td>
+        </tr>"""
+
+    compute_rows = [
+        ("A100-2x-80G", "24", "192 GB", "2 x A100", "6 / 12", "1"),
+        ("A100-4x-80G", "48", "384 GB", "4 x A100", "2 / 4", "0"),
+        ("H100-8x-80G", "96", "768 GB", "8 x H100", "1 / 2", "0"),
+    ]
+    disk_rows = [
+        ("高性能云盘", "50000", "350 MB/s", "12 / 40", "200 GiB"),
+        ("SSD 云盘", "30000", "250 MB/s", "20 / 80", "100 GiB"),
+    ]
+    compute_html = "".join(
+        f"""<tr>
+          <td>{name}</td><td class="mono">{vcpu}</td><td>{mem}</td><td>{gpu}</td>
+          <td class="mono">{quota}</td><td><input class="queue-num" value="{count}"></td>
+        </tr>"""
+        for name, vcpu, mem, gpu, quota, count in compute_rows
+    )
+    disk_html = "".join(
+        f"""<tr>
+          <td>{kind}</td><td class="mono">{iops}</td><td>{throughput}</td>
+          <td class="mono">{quota}</td><td><input class="queue-num" value="{cap}"></td>
+        </tr>"""
+        for kind, iops, throughput, quota, cap in disk_rows
+    )
+    queue_form = f"""
+    <div class="queue-layout queue-layout-single">
+      <div class="queue-main">
+        <div class="queue-section">
+          <h3 class="queue-sec-title">基本信息</h3>
+          <div class="queue-form-row">
+            <label class="req">名称</label>
+            <input class="queue-input" value="pi05_train_a100_queue" placeholder="支持1~200位可见字符，且只包含大小写字母、中文、数字、中划线、下划线">
+          </div>
+          <div class="queue-form-row">
+            <label>描述</label>
+            <textarea class="queue-textarea" placeholder="支持1~500位字符">PI05 训练任务专用队列，优先承载 SFT、DAGGER 和部署前回归训练。</textarea>
+          </div>
+          <div class="queue-form-row">
+            <label>管理员</label>
+            <div>
+              <div class="remote-picker">
+                <span class="picked">joanna.qiao <i>&times;</i></span>
+                <input placeholder="请搜索用户名">
+              </div>
+            </div>
+          </div>
+          <div class="queue-form-row">
+            <label class="req">资源组</label>
+            <select class="queue-select"><option>账号全部资源</option><option>宁德时代资源组</option><option>eval_shared_group</option></select>
+          </div>
+        </div>
+
+        <div class="queue-section">
+          <h3 class="queue-sec-title">资源配置</h3>
+          <div class="queue-form-row">
+            <label>计算规格</label>
+            <div class="queue-table">
+              <table>
+                <thead><tr><th>实例规格</th><th>vCPU</th><th>内存</th><th>GPU卡</th><th>可分配量/总量</th><th>实例数量</th></tr></thead>
+                <tbody>{compute_html}</tbody>
+              </table>
+            </div>
+          </div>
+          <div class="queue-help">云盘用于持久化开发机运行环境及存放训练过程中的临时数据，建议单队列最小容量为 20GiB。</div>
+          <div class="queue-form-row" style="margin-top:16px;">
+            <label>云盘</label>
+            <div class="queue-table">
+              <table>
+                <thead><tr><th>云盘种类</th><th>单盘最大 IOPS</th><th>单盘最大吞吐量</th><th>可分配量/总量</th><th>云盘容量</th></tr></thead>
+                <tbody>{disk_html}</tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+    """
+
+    content = f"""
+    <h2 class="tn-mgmt-tt">队列管理</h2>
+    <div class="filter-bar">
+      <input placeholder="名称">
+      <input placeholder="管理员">
+      <input placeholder="资源组">
+      <input placeholder="状态">
+      <div class="filter-actions">
+        <button class="btn btn-tertiary" onclick="resetFilters(this)">重置</button>
+        <button class="btn btn-primary" onclick="queryFilters(this)">查询</button>
+      </div>
+    </div>
+    <div class="list-summarybar">
+      <div class="txt">全部队列 <b>{len(queue_rows)}</b> 条</div>
+      <a href="#" class="btn btn-primary" onclick="openDrawer('drawerQueueCreate');return false;">+ 新建队列</a>
+    </div>
+    <div class="table-wrap">
+      <table class="ant-table">
+        <thead><tr><th>队列名称</th><th>资源组</th><th>管理员</th><th>GPU</th><th>实例数</th><th>云盘容量</th><th>状态</th><th>创建时间</th><th>操作</th></tr></thead>
+        <tbody>{rows}</tbody>
+      </table>
+    </div>
+    <div class="drawer drawer-queue" id="drawerQueueCreate">
+      <div class="drawer-head"><h3>新建队列</h3><span class="dismiss" onclick="closeDrawer()">&times;</span></div>
+      <div class="drawer-body">{queue_form}</div>
+      <div class="drawer-foot">
+        <button class="btn" onclick="closeDrawer()">取消</button>
+        <button class="btn btn-primary" onclick="toast('Demo: 队列已创建');closeDrawer()">确认创建</button>
+      </div>
+    </div>
+    {detail_drawers}
+    """
+    return render_page("队列管理", content, active="/tenant/queues", module="tenant",
+                       breadcrumb='<b>租户管理</b> / 队列管理', mvp_note="规划中")
+
+
+# ════════════════════════════════════════════════════════════════
 # Section 8: 设备平台 (/device/*)
 # ════════════════════════════════════════════════════════════════
 
@@ -4027,18 +5497,125 @@ def device_home():
 @app.route("/device/devices")
 def devices_list():
     rows = ""
-    for d in DEVICES:
-        # 「占用中」枚举合并为「在线」, 只渲染 online / offline
-        eff_status = "online" if d["status"] in ("online", "in_use") else d["status"]
+    detail_drawers = ""
+
+    def device_meta(d):
+        purpose_map = {"moz1-001": "真机评测", "moz1-002": "部署验证", "moz1-003": "训练回归", "moz2-001": "采集", "moz2-002": "备用"}
+        admin_map = {"moz1-001": "Lance Li", "moz1-002": "joanna.qiao", "moz1-003": "tao.wang", "moz2-001": "Min Chen", "moz2-002": "joanna.qiao"}
+        image_map = {
+            "moz1-001": "spirit-ai-cn-beijing.cr.volces.com/spirit-ai/mozbrain:thor-v0.9.8",
+            "moz1-002": "spirit-ai-cn-beijing.cr.volces.com/spirit-ai/mozbrain:thor-v1.0.0",
+            "moz1-003": "spirit-ai-cn-beijing.cr.volces.com/spirit-ai/mozbrain_base:thor-v1.0.0",
+            "moz2-001": "spirit-ai-cn-beijing.cr.volces.com/spirit-ai/mozbrain_release:latest",
+            "moz2-002": "—",
+        }
+        deploy = next((dp for dp in DEPLOYS if d["id"] in dp["targets"]), None)
+        model = f"{deploy['model']}_{deploy['version']}" if deploy else d["model"]
+        return purpose_map.get(d["id"], "训练回归"), admin_map.get(d["id"], d["current_user"]), model, image_map.get(d["id"], "—")
+
+    for idx, d in enumerate(DEVICES):
+        purpose, admin, deployed_model, deployed_image = device_meta(d)
+        detail_id = f"drawerDeviceDetail{idx}"
+        related_deploys = [dp for dp in DEPLOYS if d["id"] in dp["targets"]]
+        deployed_deploys = [dp for dp in related_deploys if dp["status"] == "deployed"]
+
+        def _model_record_rows(items, empty_text):
+            body = "".join(
+                f"""<tr>
+                  <td class="mono">{dp['id']}</td>
+                  <td>{dp['model']}_{dp['version']}</td>
+                  <td>{status_tag(dp['status'])}</td>
+                  <td>{dp['operator']}</td>
+                  <td class="muted mono">{dp['at']}</td>
+                </tr>"""
+                for dp in items
+            )
+            return body or f'<tr><td colspan="5" class="empty">{empty_text}</td></tr>'
+
+        model_records_deployed = _model_record_rows(deployed_deploys, "暂无已部署模型记录")
+        model_records_all = _model_record_rows(related_deploys, "暂无模型部署记录")
+        image_records = (
+            f"""<tr>
+              <td class="mono">img_{idx + 1:03d}</td>
+              <td>{deployed_image}</td>
+              <td>{'已部署' if deployed_image != '—' else '未部署'}</td>
+              <td>{admin}</td>
+              <td class="muted mono">{'2026-07-02 10:30' if deployed_image != '—' else '—'}</td>
+            </tr>"""
+        )
+        detail_drawers += f"""
+        <div class="drawer drawer-queue" id="{detail_id}">
+          <div class="drawer-head"><h3>设备详情</h3><span class="dismiss" onclick="closeDrawer()">&times;</span></div>
+          <div class="drawer-body">
+            <div class="queue-detail">
+              <div class="queue-detail-section">
+                <h3>基础信息</h3>
+                <div class="queue-info-grid">
+                  <div class="queue-info-item"><span>序列号</span><b class="mono">{d['id']}</b></div>
+                  <div class="queue-info-item"><span>设备名称</span><b>{d['name']}</b></div>
+                  <div class="queue-info-item"><span>用途</span><b>{purpose}</b></div>
+                  <div class="queue-info-item"><span>管理员</span><b>{admin}</b></div>
+                </div>
+              </div>
+              <div class="queue-detail-section">
+                <h3>部署信息</h3>
+                <div class="queue-info-grid" style="margin-bottom:16px;">
+                  <div class="queue-info-item"><span>当前模型</span><b>{deployed_model}</b></div>
+                  <div class="queue-info-item"><span>当前镜像</span><b class="mono">{deployed_image}</b></div>
+                </div>
+                <div id="devDeployTabs{idx}">
+                  <div class="ep-tabs">
+                    <button class="ep-tab active" onclick="switchDeviceDeployTab(this,'devDeployTabs{idx}','model')">模型部署记录</button>
+                    <button class="ep-tab" onclick="switchDeviceDeployTab(this,'devDeployTabs{idx}','image')">镜像部署记录</button>
+                  </div>
+                  <div class="dev-deploy-pane" data-pane="model">
+                    <div id="devModelRecordTabs{idx}">
+                      <div class="tm-subtabs" style="margin:0 0 12px;">
+                        <button class="tm-subtab active" onclick="switchDeviceModelRecordTab(this,'devModelRecordTabs{idx}','deployed')">已部署</button>
+                        <button class="tm-subtab" onclick="switchDeviceModelRecordTab(this,'devModelRecordTabs{idx}','all')">全部</button>
+                      </div>
+                      <div class="dev-model-record-pane" data-record-pane="deployed">
+                        <div class="table-wrap">
+                          <table class="ant-table">
+                            <thead><tr><th>部署任务</th><th>模型</th><th>状态</th><th>操作人</th><th>时间</th></tr></thead>
+                            <tbody>{model_records_deployed}</tbody>
+                          </table>
+                        </div>
+                      </div>
+                      <div class="dev-model-record-pane" data-record-pane="all" style="display:none;">
+                        <div class="table-wrap">
+                          <table class="ant-table">
+                            <thead><tr><th>部署任务</th><th>模型</th><th>状态</th><th>操作人</th><th>时间</th></tr></thead>
+                            <tbody>{model_records_all}</tbody>
+                          </table>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="dev-deploy-pane" data-pane="image" style="display:none;">
+                    <div class="table-wrap">
+                      <table class="ant-table">
+                        <thead><tr><th>记录 ID</th><th>镜像</th><th>状态</th><th>操作人</th><th>时间</th></tr></thead>
+                        <tbody>{image_records}</tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="drawer-foot">
+            <button class="btn btn-tertiary" onclick="closeDrawer()">关闭</button>
+          </div>
+        </div>
+        """
         rows += f"""<tr>
-          <td class="mono">{d['id']}</td>
-          <td>{status_tag(eff_status)}</td>
-          <td>{d['location']}</td>
-          <td class="mono" style="font-size:12.5px;line-height:1.5;">{d['sw_dep']}</td>
-          <td class="mono" style="font-size:12.5px;line-height:1.5;">{d['hw_dep']}</td>
-          <td class="mono">{d['model']}</td>
-          <td class="muted mono">{d['last_seen']}</td>
-          <td class="actions-cell"><a href="/device/booking?device={d['id']}">预约</a></td>
+          <td><a href="#" class="queue-name-link mono" onclick="openDrawer('{detail_id}');return false;">{d['id']}</a></td>
+          <td>{d['name']}</td>
+          <td>{purpose}</td>
+          <td>{admin}</td>
+          <td>{deployed_model}</td>
+          <td class="mono" title="{deployed_image}" style="max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{deployed_image}</td>
         </tr>"""
     n_online = sum(1 for d in DEVICES if d["status"] in ("online", "in_use"))
     n_offline = sum(1 for d in DEVICES if d["status"] == "offline")
@@ -4056,13 +5633,18 @@ def devices_list():
     <div class="filter-bar">
       <input class="grow" placeholder="搜索设备 ID / 位置...">
       <select><option>全部状态</option><option>在线</option><option>离线</option></select>
+      <div class="filter-actions">
+        <button class="btn btn-tertiary" onclick="resetFilters(this)">重置</button>
+        <button class="btn btn-primary" onclick="queryFilters(this)">查询</button>
+      </div>
     </div>
     <div class="table-wrap">
       <table class="ant-table">
-        <thead><tr><th>ID</th><th>状态</th><th>位置</th><th>软件依赖</th><th>硬件依赖</th><th>当前模型</th><th>最后心跳</th><th>操作</th></tr></thead>
+        <thead><tr><th>序列号</th><th>设备名称</th><th>用途</th><th>管理员</th><th>部署模型</th><th>部署镜像</th></tr></thead>
         <tbody>{rows}</tbody>
       </table>
     </div>
+    {detail_drawers}
     """
     return render_page("设备管理", content, active="/device/devices", module="device",
                        breadcrumb='设备管理平台 / <b>设备管理</b>', mvp_note="MVP 一期")
@@ -4112,6 +5694,10 @@ def booking():
       <a href="#" class="btn" onclick="toast('Demo: 下一天');return false;">&rsaquo;</a>
       <span class="mono" style="font-weight:500;padding:0 8px;color:rgba(0,0,0,0.85);">{board_date} (周四)</span>
       <select><option>全部设备型号</option>{dev_select_opts}</select>
+      <div class="filter-actions">
+        <button class="btn btn-tertiary" onclick="resetFilters(this)">重置</button>
+        <button class="btn btn-primary" onclick="queryFilters(this)">查询</button>
+      </div>
       <div class="right">
         <a href="#" class="btn btn-primary" onclick="openDrawer('drawerBooking');return false;">+ 新预约</a>
       </div>
@@ -4145,6 +5731,10 @@ def booking():
       <select><option>全部设备</option>{''.join(f'<option {"selected" if d["id"]==pre_device else ""}>' + d["id"] + '</option>' for d in DEVICES)}</select>
       <select><option>全部用途</option><option>真机评测</option><option>采集</option></select>
       <select><option>全部状态</option><option>已批准</option><option>待审批</option></select>
+      <div class="filter-actions">
+        <button class="btn btn-tertiary" onclick="resetFilters(this)">重置</button>
+        <button class="btn btn-primary" onclick="queryFilters(this)">查询</button>
+      </div>
       <div class="right">
         <a href="#" class="btn" onclick="openDrawer('drawerBooking');return false;">+ 新预约</a>
       </div>
@@ -4237,6 +5827,169 @@ def _asset_lineage_legacy_redirect():
     return redirect(f"/model/lineage{('?' + qs) if qs else ''}")
 
 
+def _dataset_by_id_or_name(value):
+    return next((d for d in DATASETS if d["id"] == value or d["name"] == value), None)
+
+
+def _exp_by_id(value):
+    return next((e for e in EXPERIMENTS if e["id"] == value), None)
+
+
+def _ckpt_by_id(value):
+    return next((c for c in CHECKPOINTS if c["id"] == value), None)
+
+
+def _ckpt_exp(ckpt):
+    if not ckpt:
+        return None
+    return _exp_by_id(f"exp_{ckpt['id']}") or EXPERIMENTS[0]
+
+
+def _exp_dataset(exp):
+    if not exp:
+        return DATASETS[0]
+    if exp["dataset"] != "—":
+        return _dataset_by_id_or_name(exp["dataset"]) or DATASETS[0]
+    model = next((m for m in MODELS if m["from_exp"] == exp["id"]), None)
+    if model:
+        return _dataset_by_id_or_name(model["from_dataset"]) or DATASETS[0]
+    return DATASETS[0]
+
+
+def _lineage_records_for_dataset(ds):
+    task_names = set(ds.get("source_tasks", [])) if ds else set()
+    task_ids = [t["id"] for t in COLLECT_TASKS if t.get("name") in task_names]
+    if not task_ids:
+        task_ids = [COLLECT_TASKS[0]["id"], COLLECT_TASKS[-1]["id"]]
+    recs = [r for r in RECORDINGS if r["task_id"] in task_ids]
+    return task_ids, recs[:8]
+
+
+def _lineage_context(anchor_type, anchor_id):
+    exp = None
+    ckpt = None
+    ds = None
+
+    if anchor_type == "train":
+        exp = _exp_by_id(anchor_id) or EXPERIMENTS[0]
+        ds = _exp_dataset(exp)
+        ckpt = next((c for c in CHECKPOINTS if f"exp_{c['id']}" == exp["id"]), None)
+    elif anchor_type == "checkpoint":
+        ckpt = _ckpt_by_id(anchor_id) or CHECKPOINTS[0]
+        exp = _ckpt_exp(ckpt)
+        ds = _exp_dataset(exp)
+    elif anchor_type == "dataset":
+        ds = _dataset_by_id_or_name(anchor_id) or DATASETS[0]
+        exp = next((e for e in EXPERIMENTS if e["dataset"] == ds["name"]), None)
+        model = next((m for m in MODELS if m["from_dataset"] == ds["name"]), None)
+        if not exp and model:
+            exp = _exp_by_id(model["from_exp"])
+        exp = exp or EXPERIMENTS[0]
+        ckpt = next((c for c in CHECKPOINTS if f"exp_{c['id']}" == exp["id"]), None) or CHECKPOINTS[0]
+    else:
+        ds = DATASETS[0]
+        exp = EXPERIMENTS[0]
+        ckpt = CHECKPOINTS[0]
+
+    task_ids, recs = _lineage_records_for_dataset(ds)
+    tasks = [t for t in COLLECT_TASKS if t["id"] in task_ids]
+    if not tasks:
+        tasks = COLLECT_TASKS[:2]
+    ckpts = _task_ckpts(exp)[:4] if exp else []
+    return {"anchor_type": anchor_type, "anchor_id": anchor_id, "dataset": ds, "experiment": exp,
+            "checkpoint": ckpt, "tasks": tasks, "records": recs, "steps": ckpts}
+
+
+def _lineage_detail_html(anchor_type, anchor_id):
+    ctx = _lineage_context(anchor_type, anchor_id)
+    ds, exp, ckpt = ctx["dataset"], ctx["experiment"], ctx["checkpoint"]
+    tasks, steps = ctx["tasks"], ctx["steps"]
+
+    def cls(kind, base):
+        return base + (" anchor" if anchor_type == kind else "")
+
+    task_html = "".join(
+        f'<div class="{cls("task", "lin-node teal")}"><div class="ln-ttl">Task ID: {t["id"]}</div>'
+        f'<div class="ln-meta">{t["name"][:38]}{"..." if len(t["name"]) > 38 else ""}</div>'
+        f'<div class="ln-meta">{t["project"]} · {t["stage"]} · 已采集 {t["collected"]}</div>'
+        f'<div class="ln-meta">创建人: {t.get("owner", "joanna.qiao")} · 创建时间: {t["created"]}</div></div>'
+        for t in tasks
+    )
+    segment_count = max(1, round(ds["frames"] / 1200))
+    ds_html = (
+        f'<div class="{cls("dataset", "lin-node teal")}"><div class="ln-ttl">{ds["name"]}</div>'
+        f'<div class="ln-meta">版本号: {ds["version"]} · EP: {ds["episodes"]} · Segment: {segment_count}</div>'
+        f'<div class="ln-meta">创建人: {ds["owner"]}</div></div>'
+    )
+    exp_html = (
+        f'<div class="{cls("train", "lin-node purple")}"><div class="ln-ttl">{exp["id"]}</div>'
+        f'<div class="ln-meta">{exp["name"][:44]}{"..." if len(exp["name"]) > 44 else ""}</div>'
+        f'<div class="ln-meta">{exp["model_type"]} · {exp["status"]} · {exp["started"]}</div></div>'
+    )
+    test_items = [ev for ev in EVALS if ds["name"] in ev["benchmark"] or (ckpt and ckpt["id"] in ev["exp"])]
+    if not test_items:
+        test_items = [EVALS[0]]
+    test_html = "".join(
+        f'<div class="lin-node green"><div class="ln-ttl">{ev["id"]}</div>'
+        f'<div class="ln-meta">{ev["benchmark"]}</div>'
+        f'<div class="ln-meta">{ev["status"]} · 成功率 {ev["success_rate"] if ev["success_rate"] is not None else "—"} · {ev["at"]}</div></div>'
+        for ev in test_items[:3]
+    )
+    step_html = "".join(
+        f'<div class="lin-node amber"><div class="ln-ttl">step {s["step"]}</div>'
+        f'<div class="ln-meta">{s["storage"]} · {s["state"]} · {s["location"]}</div></div>'
+        for s in steps
+    )
+    if ckpt:
+        step_html = (
+            f'<div class="{cls("checkpoint", "lin-node amber")}"><div class="ln-ttl">Checkpoint #{ckpt["id"]}</div>'
+            f'<div class="ln-meta">{ckpt["name"]} · {ckpt["status"]} · {ckpt["created"]}</div></div>'
+            + step_html
+        )
+
+    return f"""
+    <div class="lin-filter">
+      <div class="lf-field">
+        <label>数据集</label>
+        <input id="linDatasetInput" value="{ds['name']}" placeholder="输入数据集 ID / 名称">
+      </div>
+      <div class="lf-field">
+        <label>Checkpoint</label>
+        <input id="linCkptInput" value="{ckpt['id'] if ckpt else ''}" placeholder="输入 ckpt ID">
+      </div>
+      <div class="filter-actions">
+        <button class="btn btn-tertiary" onclick="linClearFilter()">重置</button>
+        <button class="btn btn-primary" onclick="linApplyFilter()">查询</button>
+      </div>
+    </div>
+    <div class="lin-flow lin-flow-5">
+      <div class="lin-col"><h4>采集任务</h4>{task_html}</div>
+      <div class="lin-arr">→</div>
+      <div class="lin-col"><h4>训练数据集</h4>{ds_html}</div>
+      <div class="lin-arr">→</div>
+      <div class="lin-col"><h4>训练任务</h4>{exp_html}</div>
+      <div class="lin-arr">→</div>
+      <div class="lin-col"><h4>Checkpoint</h4>{step_html}</div>
+      <div class="lin-arr">→</div>
+      <div class="lin-col"><h4>评测任务</h4>{test_html}</div>
+    </div>
+    <script>
+    function linApplyFilter(){{
+      var ds=(document.getElementById('linDatasetInput').value||'').trim();
+      var ck=(document.getElementById('linCkptInput').value||'').trim();
+      if(ds){{ location.href='/model/lineage/dataset/'+encodeURIComponent(ds); return; }}
+      if(ck){{ location.href='/model/lineage/checkpoint/'+encodeURIComponent(ck); return; }}
+      toast('请输入数据集或 ckpt');
+    }}
+    function linClearFilter(){{
+      var ds=document.getElementById('linDatasetInput'), ck=document.getElementById('linCkptInput');
+      if(ds) ds.value='';
+      if(ck) ck.value='';
+    }}
+    </script>
+    """
+
+
 def _lineage_flow_html(selected):
     """给定模型 dict, 生成 4 列血缘流图 HTML (采集任务 → 数据集 → 实验/模型 → 部署设备)."""
     ds = next((d for d in DATASETS if d["name"] == selected["from_dataset"]), None)
@@ -4294,6 +6047,10 @@ def _lineage_flow_html(selected):
 
 @app.route("/model/lineage")
 def lineage():
+    ds_id = request.args.get("ds", "")
+    if ds_id:
+        return redirect(f"/model/lineage/dataset/{ds_id}")
+
     selected_id = request.args.get("model", "md_901")
     selected = next((m for m in MODELS if m["id"] == selected_id), MODELS[0])
 
@@ -4319,6 +6076,57 @@ def lineage():
     """
     return render_page("端到端血缘", content, active="/model/models", module="model",
                        breadcrumb='模型平台 / 模型仓库 / <b>端到端血缘</b>', mvp_note="MVP 一期")
+
+
+@app.route("/model/lineage/train/<exp_id>")
+def lineage_train(exp_id):
+    exp = _exp_by_id(exp_id) or EXPERIMENTS[0]
+    content = page_header(
+        "血缘",
+        "训练任务 → Checkpoint 的输入输出链路",
+        "采集任务 · 训练数据集 · 训练任务 · checkpoint · 评测任务",
+    ) + f"""
+    <div class="lin-actions">
+      <a class="btn" href="/model/experiments/{exp['id']}">返回训练任务详情</a>
+    </div>
+    {_lineage_detail_html("train", exp["id"])}
+    """
+    return render_page("血缘", content, active="/model/experiments", module="model",
+                       breadcrumb=f'模型平台 / 训练任务 / {exp["name"]} / <b>血缘</b>', mvp_note="MVP 一期")
+
+
+@app.route("/model/lineage/checkpoint/<ckpt_id>")
+def lineage_checkpoint(ckpt_id):
+    ckpt = _ckpt_by_id(ckpt_id) or CHECKPOINTS[0]
+    content = page_header(
+        "血缘",
+        "Checkpoint 的训练来源与数据来源",
+        "采集任务 · 训练数据集 · 训练任务 · checkpoint · 评测任务",
+    ) + f"""
+    <div class="lin-actions">
+      <a class="btn" href="/model/checkpoints/{ckpt['id']}">返回 Checkpoint 详情</a>
+    </div>
+    {_lineage_detail_html("checkpoint", ckpt["id"])}
+    """
+    return render_page("血缘", content, active="/model/checkpoints", module="model",
+                       breadcrumb=f'模型平台 / Checkpoint / {ckpt["id"]} / <b>血缘</b>', mvp_note="MVP 一期")
+
+
+@app.route("/model/lineage/dataset/<ds_id>")
+def lineage_dataset(ds_id):
+    ds = _dataset_by_id_or_name(ds_id) or DATASETS[0]
+    content = page_header(
+        "血缘",
+        "数据集的上游采集与下游训练链路",
+        "采集任务 · 训练数据集 · 训练任务 · checkpoint · 评测任务",
+    ) + f"""
+    <div class="lin-actions">
+      <a class="btn" href="/model/data/datasets/{ds['id']}">返回数据集详情</a>
+    </div>
+    {_lineage_detail_html("dataset", ds["id"])}
+    """
+    return render_page("血缘", content, active="/model/data/datasets", module="model",
+                       breadcrumb=f'模型平台 / 数据集 / {ds["name"]} / <b>血缘</b>', mvp_note="MVP 一期")
 
 
 # ════════════════════════════════════════════════════════════════
