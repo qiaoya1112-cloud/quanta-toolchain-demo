@@ -20,6 +20,7 @@ import os
 import json
 import datetime
 import re
+import html
 from flask import Flask, render_template_string, request, redirect
 
 app = Flask(__name__)
@@ -483,7 +484,22 @@ select option:disabled { color:rgba(0,0,0,0.32); }
 .ms-trigger:hover { border-color:#1F80A0; }
 .ms-trigger::after { content:''; position:absolute; right:11px; top:50%; border:5px solid transparent; border-top-color:#bfbfbf; transform:translateY(-2px); }
 .ms-label { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-.ms-panel { display:none; position:absolute; top:calc(100% + 4px); left:0; min-width:160px; background:#fff; border:1px solid #f0f0f0; border-radius:8px; box-shadow:0 6px 16px rgba(0,0,0,0.08); z-index:100; padding:4px 0; }
+.ms-panel { display:none; position:absolute; top:calc(100% + 4px); left:0; min-width:160px; max-height:300px; overflow-y:auto; background:#fff; border:1px solid #f0f0f0; border-radius:8px; box-shadow:0 6px 16px rgba(0,0,0,0.08); z-index:100; padding:4px 0; }
+.ms-uid { color:rgba(0,0,0,0.35); font-size:11px; }
+.ps-wrap { position:relative; }
+.ps-control { display:flex; flex-wrap:wrap; align-items:center; gap:5px; min-height:36px; border:1px solid #e2e4e8; border-radius:8px; padding:3px 8px; background:#fff; cursor:text; box-sizing:border-box; }
+.ps-control:focus-within { border-color:#1F80A0; box-shadow:0 0 0 2px rgba(31,128,160,0.12); }
+.ps-chip { display:inline-flex; align-items:center; gap:4px; background:#eef3f8; color:#1F80A0; border-radius:4px; padding:1px 4px 1px 8px; font-size:12px; line-height:20px; }
+.ps-chip .ps-x { cursor:pointer; color:rgba(31,128,160,0.55); font-style:normal; font-size:14px; padding:0 2px; }
+.ps-chip .ps-x:hover { color:#d4504e; }
+.ps-input { flex:1; min-width:90px; border:none; outline:none; height:28px; font-size:13px; background:transparent; color:rgba(0,0,0,0.85); }
+.q-field .ps-control .ps-input, .q-field .ps-control .ps-input:hover, .q-field .ps-control .ps-input:focus { border:none; background:transparent; height:28px; min-width:90px; padding:0; box-shadow:none; }
+.ps-panel { display:none; position:absolute; top:calc(100% + 4px); left:0; right:0; min-width:230px; max-height:260px; overflow-y:auto; background:#fff; border:1px solid #f0f0f0; border-radius:8px; box-shadow:0 6px 16px rgba(0,0,0,0.08); z-index:100; padding:4px; }
+.ps-wrap.open .ps-panel { display:block; }
+.ps-opt { padding:8px 10px; border-radius:6px; cursor:pointer; font-size:13px; color:rgba(0,0,0,0.8); }
+.ps-opt:hover { background:#f3f9fb; color:#1F80A0; }
+.ps-empty { display:none; padding:14px; text-align:center; font-size:12px; color:rgba(0,0,0,0.35); }
+.q-adv-row .q-field .ps-wrap { width:100%; }
 .ms-wrap.open .ms-panel { display:block; }
 .ms-panel label { display:flex; align-items:center; gap:8px; padding:6px 14px; font-size:13px; cursor:pointer; color:rgba(0,0,0,0.8); }
 .ms-panel label:hover { background:#fafafa; }
@@ -498,6 +514,18 @@ select option:disabled { color:rgba(0,0,0,0.32); }
 /* 统一行高 = 两行 */
 .row2 tbody td { vertical-align:middle; }
 .row2 .desc-clamp { display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; line-height:1.5; min-height:42px; }
+.status-head-filter { position:relative; display:inline-flex; align-items:center; height:26px; }
+.status-head-trigger { display:inline-flex; align-items:center; gap:6px; border:0; background:transparent; padding:0; color:rgba(0,0,0,0.85); font:inherit; font-weight:600; cursor:pointer; }
+.status-head-trigger .caret { font-size:15px; line-height:1; transform:translateY(-1px); color:rgba(0,0,0,0.78); }
+.status-head-menu { display:none; position:absolute; top:calc(100% + 9px); left:42px; z-index:180; min-width:118px; padding:6px 0; border:1px solid #e5e7eb; border-radius:6px; background:#fff; box-shadow:0 12px 28px rgba(0,0,0,0.14); overflow:hidden; }
+.status-head-filter.open .status-head-menu { display:block; }
+.status-head-option { display:block; width:100%; height:34px; padding:0 14px; border:0; background:#fff; color:rgba(0,0,0,0.88); text-align:left; font-size:14px; line-height:34px; cursor:pointer; white-space:nowrap; }
+.status-head-option:hover { background:#f5f7fa; }
+.status-head-option.active { background:#238da3; color:#fff; }
+.status-with-log { display:inline-flex; align-items:center; gap:6px; white-space:nowrap; }
+.status-log-icon { width:18px; height:18px; padding:0; border:1px solid #f3d6d5; border-radius:50%; background:#fff; color:#d4504e; font-size:12px; line-height:16px; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; }
+.status-log-icon:hover { border-color:#d4504e; background:#fdf3f3; }
+.dp-log-pre { height:260px; margin:0; padding:12px 14px; border:1px solid #e5e7eb; border-radius:6px; background:#fafbfc; color:rgba(0,0,0,0.78); font-family:'SFMono-Regular',Consolas,Menlo,monospace; font-size:12.5px; line-height:1.65; white-space:pre-wrap; overflow:auto; box-sizing:border-box; }
 
 /* ── Tags / status ── */
 .tag { display:inline-block; padding:1px 8px; border-radius:4px; font-size:12px; line-height:20px; border:1px solid transparent; }
@@ -1051,13 +1079,49 @@ function msUpdate(cb){
   lab.textContent=names.join(', ');
   if(lab.scrollWidth > lab.clientWidth + 1){ lab.textContent=base+' ('+n+')'; }
 }
+function psEsc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function psOpen(ctrl){ var i=ctrl.closest('.ps-wrap').querySelector('.ps-input'); if(i) i.focus(); }
+function psSelectedNames(w){ return Array.prototype.map.call(w.querySelectorAll('.ps-chip'), function(c){ return c.getAttribute('data-v'); }); }
+function psSearch(inp){
+  var w=inp.closest('.ps-wrap');
+  var pool=JSON.parse(w.getAttribute('data-pool'));
+  var q=inp.value.trim().toLowerCase();
+  var res=w.querySelector('.ps-results'), empty=w.querySelector('.ps-empty');
+  if(!q){ w.classList.remove('open'); res.innerHTML=''; empty.style.display='none'; return; }
+  w.classList.add('open');
+  var sel=psSelectedNames(w);
+  var hits=pool.filter(function(p){ return sel.indexOf(p.nm)<0 && ((p.nm.toLowerCase().indexOf(q)>=0)||(p.id.toLowerCase().indexOf(q)>=0)); });
+  if(!hits.length){ res.innerHTML=''; empty.style.display='block'; empty.textContent='无匹配人员'; return; }
+  empty.style.display='none';
+  res.innerHTML=hits.map(function(p){ return '<div class="ps-opt" data-nm="'+psEsc(p.nm)+'" onclick="psSelect(this)">'+psEsc(p.nm)+' <span class="ms-uid">#'+p.id+'</span></div>'; }).join('');
+}
+function psSelect(opt){
+  var w=opt.closest('.ps-wrap'); var nm=opt.getAttribute('data-nm'); var name=w.getAttribute('data-name');
+  var chip=document.createElement('span'); chip.className='ps-chip'; chip.setAttribute('data-v',nm);
+  chip.innerHTML='<span>'+psEsc(nm)+'</span><input type="hidden" name="'+name+'" value="'+psEsc(nm)+'"><i class="ps-x" onclick="psRemove(event,this)">&times;</i>';
+  w.querySelector('.ps-chips').appendChild(chip);
+  var inp=w.querySelector('.ps-input'); inp.value=''; psSearch(inp); inp.focus();
+}
+function psRemove(e, x){ e.stopPropagation(); x.closest('.ps-chip').remove(); }
 document.addEventListener('click', function(e){
+  document.querySelectorAll('.ps-wrap.open').forEach(function(w){ if(!w.contains(e.target)) w.classList.remove('open'); });
   document.querySelectorAll('.ms-wrap.open').forEach(function(w){ if(!w.contains(e.target)) w.classList.remove('open'); });
   document.querySelectorAll('.row-act-wrap.open').forEach(function(w){ if(!w.contains(e.target)) w.classList.remove('open'); });
 });
 function openDrawerById(id){ document.getElementById(id).classList.add('active'); }
 function closeDrawerById(id){ document.getElementById(id).classList.remove('active'); }
 function qfDep(id, val){ var el=document.getElementById(id); if(el) el.classList.toggle('qf-off', val!=='yes'); }
+function dsCreating(modalId){
+  var box=document.querySelector('#'+modalId+' .modal-box'); if(!box) return;
+  box.innerHTML='<div style="padding:46px 28px;text-align:center;">'
+    +'<div style="font-size:42px;line-height:1;margin-bottom:14px;">&#9203;</div>'
+    +'<h3 style="margin:0 0 8px;">数据集创建中</h3>'
+    +'<div class="muted" style="font-size:13px;max-width:380px;margin:0 auto;">已提交创建任务，正在后台异步处理，可在「数据集创建进度」查看状态。</div>'
+    +'<div style="margin-top:22px;display:flex;gap:10px;justify-content:center;">'
+    +'<button class="btn btn-secondary" onclick="location.reload()">关闭</button>'
+    +'<a href="/ds_progress" class="btn-primary btn">查看进度</a>'
+    +'</div></div>';
+}
 function qfToggleGroup(t){ t.closest('.qf-group').classList.toggle('collapsed'); }
 /* episode 预览三 tab: 轨迹信息 / 标注信息 / 可视化分析 */
 function epTab(btn, prefix, which){
@@ -1803,6 +1867,35 @@ def lake():
 
 DEVICES = ["Moz", "uDAS"]
 OPERATORS_LIST = ["Lance Li", "Wei Zhang", "Min Chen"]
+OP_POOL = [
+    ("E1042", "Lance Li"), ("E1077", "Wei Zhang"), ("E1093", "Min Chen"),
+    ("E1105", "Yang Liu"), ("E1118", "Hao Wang"), ("E1126", "Jing Zhao"),
+    ("E1134", "Fang Sun"), ("E1149", "Lei Chen"), ("E1153", "Xin Guo"),
+    ("E1162", "Tao Huang"), ("E1170", "Bo Zhou"), ("E1188", "Qian Wu"),
+]
+CREATOR_POOL = [
+    ("U2001", "Will Xiao"), ("U2002", "Vivian Luo"), ("U2003", "Lance Li"),
+    ("U2004", "Wei Zhang"), ("U2005", "Min Chen"), ("U2006", "Yang Liu"),
+    ("U2007", "Hao Wang"), ("U2008", "Jing Zhao"),
+]
+
+
+def ms_search_html(name, base, pool, selected=None):
+    """远程搜索式多选: 输入姓名/ID 后选择成 chip。"""
+    selected = selected or []
+    pool_json = json.dumps([{"id": uid, "nm": nm} for uid, nm in pool], ensure_ascii=False).replace('"', "&quot;")
+    chips = "".join(
+        f'<span class="ps-chip" data-v="{nm}"><span>{nm}</span>'
+        f'<input type="hidden" name="{name}" value="{nm}"><i class="ps-x" onclick="psRemove(event,this)">&times;</i></span>'
+        for nm in selected)
+    return (f'<div class="ps-wrap" data-name="{name}" data-pool="{pool_json}">'
+            f'<div class="ps-control" onclick="psOpen(this)">'
+            f'<span class="ps-chips">{chips}</span>'
+            f'<input class="ps-input" placeholder="搜索姓名 / ID" oninput="psSearch(this)">'
+            f'</div>'
+            f'<div class="ps-panel"><div class="ps-results"></div>'
+            f'<div class="ps-empty">输入姓名 / ID 搜索</div></div>'
+            f'</div>')
 
 def rec_device(r):
     return "Moz" if r["id"] % 2 == 0 else "uDAS"
@@ -1842,7 +1935,7 @@ def build_query_filters():
     tag_ms = ('<div class="ms-wrap"><div class="ms-trigger" data-base="不限" onclick="this.closest(\'.ms-wrap\').classList.toggle(\'open\')">'
               '<span class="ms-label">不限</span></div><div class="ms-panel">' + tag_checks + '</div></div>')
 
-    op = _ms("不限", [(o, o) for o in OPERATORS_LIST])
+    op = ms_search_html("operator", "不限", OP_POOL, [])
     typ = _ms("不限", [(t, t) for t in ["normal", "dagger", "test", "eval"]])
     dagger_typ = _ms("不限", [("policy", "policy"), ("teleop", "teleop")])
     qa_ms = _ms("不限", [("pass", "合格"), ("fail", "不合格"), ("warn", "操作失误")])
@@ -1854,7 +1947,7 @@ def build_query_filters():
     def tri(dep):  # 三态: 不限 / 是 / 否; dep=依赖字段id, 选「是」才启用
         return (f'<select onchange="qfDep(\'{dep}\',this.value)">'
                 '<option value="">不限</option><option value="yes">是</option><option value="no">否</option></select>')
-    anno_ver = '<select><option value="">不限</option><option>v1</option><option>v2</option><option>v3</option></select>'
+    anno_ver = '<input type="number" min="1" name="annover" placeholder="留空默认最新版本">'
 
     return (
         # —— 采集 ——
@@ -1917,18 +2010,18 @@ def raw_data():
         return f'<span class="tag {cls}">{txt}</span>'
     third_rows = ""
     _third = [
-        ("x1", "Open Pick-Place (RT-1)", "rt1_pickplace.tar.gz", 3200, "done", "Min Chen", "2026-05-18 09:20"),
-        ("x2", "Bridge Kitchen v2", "bridge_v2.parquet", 1850, "done", "Lance Li", "2026-05-22 13:05"),
-        ("x3", "DROID subset", "droid_subset.zip", 2740, "doing", "Wei Zhang", "2026-06-10 11:41"),
-        ("x4", "Ego4D hands clips", "ego4d_hands.tar", 0, "fail", "Min Chen", "2026-06-12 15:58"),
+        ("x1", "Open Pick-Place (RT-1)", "rt1_pickplace_v1", "tos://3rd/rt1_pickplace.tar.gz", "done", "Min Chen", "2026-05-18 09:20"),
+        ("x2", "Bridge Kitchen v2", "bridge_kitchen_v2", "tos://3rd/bridge_v2.parquet", "done", "Lance Li", "2026-05-22 13:05"),
+        ("x3", "DROID subset", "droid_subset_0610", "tos://3rd/droid_subset.zip", "doing", "Wei Zhang", "2026-06-10 11:41"),
+        ("x4", "Ego4D hands clips", "--", "tos://3rd/ego4d_hands.tar", "fail", "Min Chen", "2026-06-12 15:58"),
     ]
-    for tid, name, fname, n, st, by, at in _third:
-        third_rows += (f'<tr><td>{tid}</td><td>{name}</td>'
-                       f'<td><a href="#" onclick="rawDownload(\'{fname}\');return false;" style="font-family:monospace;font-size:12px;color:#1F80A0;">{fname}</a></td>'
-                       f'<td>{n:,}</td><td>{imp_badge(st)}</td>'
+    for tid, name, dsname, faddr, st, by, at in _third:
+        third_rows += (f'<tr><td>{tid}</td><td>{name}</td><td>{dsname}</td>'
+                       f'<td><a href="#" onclick="rawDownload(\'{faddr}\');return false;" style="font-family:monospace;font-size:12px;color:#1F80A0;">{faddr}</a></td>'
+                       f'<td>{imp_badge(st)}</td>'
                        f'<td>{by}</td><td>{at}</td></tr>')
 
-    op_opts = "".join(f"<option>{o}</option>" for o in OPERATORS_LIST)
+    creator_ms = ms_search_html("creator", "全部", CREATOR_POOL, [])
     date_range = '<div class="q-range"><input type="date"><span class="q-range-sep">~</span><input type="date"></div>'
     content = f"""
     <div class="raw-head">
@@ -1945,7 +2038,7 @@ def raw_data():
           <div class="q-filter-row q-adv-row">
             <div class="q-field"><label>任务 ID</label><input placeholder="如 t1"></div>
             <div class="q-field"><label>任务名称</label><input placeholder="任务名称关键词"></div>
-            <div class="q-field"><label>创建人</label><select><option value="">全部</option>{op_opts}</select></div>
+            <div class="q-field"><label>创建人</label>{creator_ms}</div>
             <div class="q-field"><label>创建时间</label>{date_range}</div>
           </div>
           <div class="q-filter-tools">
@@ -1963,9 +2056,9 @@ def raw_data():
       <div id="pane-third" style="display:none;">
         <div class="q-filters" style="margin-bottom:16px;">
           <div class="q-filter-row q-adv-row">
-            <div class="q-field"><label>原始文件</label><input placeholder="文件名关键词"></div>
+            <div class="q-field"><label>数据集名称</label><input placeholder="数据集名称关键词"></div>
             <div class="q-field"><label>导入状态</label><select><option value="">全部</option><option>导入中</option><option>导入完成</option><option>导入失败</option></select></div>
-            <div class="q-field"><label>创建人</label><select><option value="">全部</option>{op_opts}</select></div>
+            <div class="q-field"><label>创建人</label>{creator_ms}</div>
             <div class="q-field"><label>创建时间</label>{date_range}</div>
           </div>
           <div class="q-filter-tools">
@@ -1975,7 +2068,7 @@ def raw_data():
         </div>
         <div class="card">
           <table class="ant-table">
-            <thead><tr><th>任务 ID</th><th>任务名称</th><th>原始文件</th><th>记录数量</th><th>导入状态</th><th>创建人</th><th>创建时间</th></tr></thead>
+            <thead><tr><th>任务 ID</th><th>任务名称</th><th>数据集名称</th><th>文件地址</th><th>导入状态</th><th>创建人</th><th>创建时间</th></tr></thead>
             <tbody>{third_rows}</tbody>
           </table>
         </div>
@@ -2029,6 +2122,155 @@ def raw_data():
     </script>
     """
     return render_page("原始数据", content, active="raw", breadcrumb="数据湖 / <b>原始数据</b>")
+
+
+@app.route("/ds_progress")
+def ds_progress():
+    rows_data = [
+        (81, "20260420_CarryBox_PutDown_ExhibitionDemo_Moz1Y1", "done", "2026-06-25 16:50:25", "Will Xiao"),
+        (80, "20260420_CarryBox_PutDown_ExhibitionDemo_Moz1Ytest", "fail", "2026-06-25 16:46:45", "Will Xiao"),
+        (79, "20260521_Unlock_V1_Demo_Moz1WB6", "fail", "2026-06-25 16:38:18", "Will Xiao"),
+        (78, "20260521_Unlock_V1_Demo_Moz1WB5", "fail", "2026-06-25 16:24:07", "Will Xiao"),
+        (77, "20260521_Unlock_V1_Demo_Moz1WB4", "todo", "2026-06-26 20:00:00", "Will Xiao"),
+        (76, "20260521_Unlock_V1_Demo_Moz1WB3", "fail", "2026-06-25 16:18:07", "Will Xiao"),
+        (75, "20260521_Unlock_V1_Demo_Moz1WB2", "done", "2026-06-25 16:11:38", "Will Xiao"),
+        (74, "20260521_Unlock_V1_Demo_Moz1WB1", "fail", "2026-06-25 15:59:25", "Will Xiao"),
+        (73, "20260521_Unlock_V1_Demo_Moz1WB", "fail", "2026-06-25 15:43:38", "Will Xiao"),
+        (72, "20260616_test", "fail", "2026-06-16 16:47:47", "Vivian Luo"),
+    ]
+    st_map = {"done": ("tag-green", "成功"), "fail": ("imp-fail", "失败"), "todo": ("tag-gray", "未开始")}
+
+    def fail_log(did, name, at):
+        return "\n".join([
+            f"[{at}] dataset_builder: start create dataset {name}",
+            f"[{at}] dataset_builder: task_id={did}, status=failed",
+            "export_dataset: source recording manifest validation failed",
+            "doctor_check: missing parquet segments in 3 episodes",
+            "suggestion: 检查源 recording 完整性后重新提交数据集创建任务",
+        ])
+
+    def status_cell(did, name, st, at):
+        cls, txt = st_map[st]
+        tag = f'<span class="tag {cls}">{txt}</span>'
+        if st != "fail":
+            return tag
+        log_attr = html.escape(fail_log(did, name, at), quote=True)
+        return (
+            f'<span class="status-with-log">{tag}'
+            f'<button type="button" class="status-log-icon" title="查看失败日志" '
+            f'data-log="{log_attr}" onclick="openDsProgressLog(this)">i</button>'
+            f'</span>'
+        )
+
+    rows = ""
+    for did, name, st, at, by in rows_data:
+        if st == "done":
+            view_btn = f'<button class="btn" onclick="location.href=\'/datasets\'">查看数据集</button>'
+        else:
+            view_btn = '<button class="btn" disabled style="opacity:.4;cursor:not-allowed;">查看数据集</button>'
+        rows += (f'<tr data-status="{st}"><td>{did}</td>'
+                 f'<td>{name}</td>'
+                 f'<td>{status_cell(did, name, st, at)}</td>'
+                 f'<td>--</td><td>{at}</td><td>{by}</td>'
+                 f'<td><div style="display:flex;gap:6px;">'
+                 f'<button class="btn" onclick="dpDetail(\'{name}\')">任务详情</button>'
+                 f'{view_btn}'
+                 f'</div></td></tr>')
+    creator_ms = ms_search_html("creator", "请选择创建人", CREATOR_POOL, [])
+    content = f"""
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:18px;">
+      <a href="/query" class="btn">&#8249; 返回</a>
+      <div style="font-size:16px;font-weight:600;">数据集创建进度</div>
+    </div>
+    <div class="q-filters" style="margin-bottom:16px;">
+      <div class="q-filter-row q-adv-row">
+        <div class="q-field"><label>数据集名称</label><input placeholder="请输入数据集名称"></div>
+        <div class="q-field"><label>创建人</label>{creator_ms}</div>
+      </div>
+      <div class="q-filter-tools">
+        <button type="button" class="btn" onclick="toast('Demo: 已重置')">重置</button>
+        <button type="button" class="btn-primary btn" onclick="toast('Demo: 已查询')">查询</button>
+      </div>
+    </div>
+    <div class="card">
+      <table class="ant-table">
+        <thead><tr><th>ID</th><th>数据集名称</th><th>
+          <div class="status-head-filter">
+            <button type="button" class="status-head-trigger" onclick="toggleDsProgressStatusFilter(this)">状态 <span class="caret">&#8963;</span></button>
+            <div class="status-head-menu">
+              <button type="button" class="status-head-option active" data-value="" onclick="selectDsProgressStatus(this)">全部</button>
+              <button type="button" class="status-head-option" data-value="todo" onclick="selectDsProgressStatus(this)">未开始</button>
+              <button type="button" class="status-head-option" data-value="done" onclick="selectDsProgressStatus(this)">成功</button>
+              <button type="button" class="status-head-option" data-value="fail" onclick="selectDsProgressStatus(this)">失败</button>
+            </div>
+          </div>
+        </th><th>标签</th><th>创建时间</th><th>创建人</th><th>操作</th></tr></thead>
+        <tbody>{rows}</tbody>
+      </table>
+    </div>
+
+    <div class="drawer-mask" id="dpDetailModal" onclick="if(event.target===this)this.classList.remove('active')">
+      <div class="drawer">
+        <div class="drawer-head"><h3>任务详情 · 创建筛选条件</h3><button class="drawer-close" onclick="closeDrawerById('dpDetailModal')">&times;</button></div>
+        <div class="drawer-body">
+          <div class="muted" style="font-size:12px;margin-bottom:12px;">数据集 <b id="dpDsName"></b> 创建时使用的筛选条件:</div>
+          <div class="desc-grid">
+            <div class="dk">采集任务</div><div class="dv">t1, t2</div>
+            <div class="dk">任务标签</div><div class="dv">擦拭 · 高质量</div>
+            <div class="dk">采集类型</div><div class="dv">normal · dagger</div>
+            <div class="dk">质检结论</div><div class="dv">合格</div>
+            <div class="dk">是否标注</div><div class="dv">是 · 标注版本 v2</div>
+            <div class="dk">采集时间</div><div class="dv">2026-05-01 ~ 2026-05-31</div>
+            <div class="dk">Prompt 语言</div><div class="dv">中文</div>
+            <div class="dk">Episode 上限</div><div class="dv">500</div>
+          </div>
+        </div>
+        <div class="drawer-foot">
+          <button class="btn btn-secondary" onclick="closeDrawerById('dpDetailModal')">关闭</button>
+        </div>
+      </div>
+    </div>
+    <div class="modal-mask" id="dpLogModal" onclick="if(event.target===this)this.classList.remove('active')">
+      <div class="modal-box" style="width:620px;max-width:92vw;">
+        <div class="drawer-head"><h3>日志</h3><button class="drawer-close" onclick="closeDrawerById('dpLogModal')">&times;</button></div>
+        <div class="drawer-body">
+          <pre class="dp-log-pre" id="dpLogBody"></pre>
+        </div>
+      </div>
+    </div>
+    <script>
+      function dpDetail(name){{ var el=document.getElementById('dpDsName'); if(el) el.textContent=name; openDrawerById('dpDetailModal'); }}
+      function toggleDsProgressStatusFilter(btn){{
+        var wrap=btn.closest('.status-head-filter');
+        if(!wrap) return;
+        document.querySelectorAll('.status-head-filter.open').forEach(function(item){{ if(item!==wrap) item.classList.remove('open'); }});
+        wrap.classList.toggle('open');
+      }}
+      function selectDsProgressStatus(btn){{
+        var filter=btn.closest('.status-head-filter');
+        if(!filter) return;
+        filter.querySelectorAll('.status-head-option').forEach(function(item){{ item.classList.remove('active'); }});
+        btn.classList.add('active');
+        var value=btn.getAttribute('data-value') || '';
+        document.querySelectorAll('.ant-table tbody tr[data-status]').forEach(function(row){{
+          row.style.display = (!value || row.dataset.status === value) ? '' : 'none';
+        }});
+        filter.classList.remove('open');
+      }}
+      function openDsProgressLog(btn){{
+        var body=document.getElementById('dpLogBody');
+        if(body) body.textContent=btn.getAttribute('data-log') || '';
+        openDrawerById('dpLogModal');
+      }}
+      document.addEventListener('click', function(e){{
+        document.querySelectorAll('.status-head-filter.open').forEach(function(wrap){{
+          if(!wrap.contains(e.target)) wrap.classList.remove('open');
+        }});
+      }});
+    </script>
+    """
+    return render_page("数据集创建进度", content, active="query",
+                       breadcrumb='数据湖 / 数据查询 / <b>数据集创建进度</b>')
 
 
 @app.route("/query")
@@ -2158,7 +2400,7 @@ def query():
 
     qa_ms = ms("qa", "全部", [("pass", "合格"), ("fail", "不合格"), ("warn", "操作失误")], f_qas)
     dev_sel = sel("device", f_device, [(d, d) for d in DEVICES], "全部")
-    op_sel = ms("operator", "全部", [(o, o) for o in OPERATORS_LIST], f_operators)
+    op_sel = ms_search_html("operator", "全部", OP_POOL, f_operators)
     type_sel = ms("type", "全部", [("normal", "normal"), ("dagger", "dagger"), ("test", "test"), ("eval", "eval")], f_types)
 
     # —— 新增分组字段 (与「新建数据集」弹窗一致; 部分为 demo 展示, 暂不参与后端过滤) ——
@@ -2172,7 +2414,7 @@ def query():
     def tri_q(dep):  # 三态: 不限 / 是 / 否; 选「是」才启用依赖字段 dep
         return (f'<select onchange="qfDep(\'{dep}\',this.value)">'
                 '<option value="">不限</option><option value="yes">是</option><option value="no">否</option></select>')
-    annover_sel = '<select><option value="">不限</option><option>v1</option><option>v2</option><option>v3</option></select>'
+    annover_sel = '<input type="number" min="1" name="annover" placeholder="留空默认最新版本">'
     lang_ms = ms("lang", "全部", [("zh", "中文"), ("en", "英文")], [])
 
     # 所有筛选条件默认全部展开 (不再折叠)
@@ -2338,7 +2580,10 @@ def query():
     <div class="card">
       <h3>查询结果
         <span class="muted" id="qResMeta" style="font-size:13px;font-weight:400;">默认展示 20 条, 更多请输入筛选条件查询</span>
-        <button class="btn btn-secondary" style="float:right;" onclick="document.getElementById('buildDsDrawer').classList.add('active')">用结果建数据集</button>
+        <span style="float:right;display:inline-flex;gap:8px;">
+          <a href="/ds_progress" class="btn">查看数据集创建进度</a>
+          <button class="btn btn-secondary" onclick="document.getElementById('buildDsDrawer').classList.add('active')">用结果建数据集</button>
+        </span>
       </h3>
       <div class="q-table-scroll">
         <table class="ant-table">
@@ -2367,11 +2612,12 @@ def query():
           <div class="muted" style="font-size:12px;margin-bottom:14px;">将当前查询结果（{n_disp} 个 episode）打包为一个新数据集。</div>
           <div class="fg"><label><span class="req">*</span>标识</label><input id="buildDsIdent" placeholder="英文唯一标识" oninput="var n=document.getElementById('buildDsName'); if(n) n.value=this.value;"><div class="hint">全局唯一</div></div>
           <div class="fg"><label><span class="req">*</span>数据集名称</label><input id="buildDsName" placeholder="填写标识后自动带入, 可修改"></div>
+          <div class="fg"><label>生成格式</label><select><option>LeRobot</option><option>Mozdataset</option></select></div>
           <div class="fg"><label>选择目录</label><select>{build_folder_opts}</select></div>
         </div>
         <div class="drawer-foot">
           <button class="btn" onclick="document.getElementById('buildDsDrawer').classList.remove('active')">取消</button>
-          <button class="btn-primary btn" onclick="document.getElementById('buildDsDrawer').classList.remove('active');toast('Demo: 数据集创建成功')">确认创建</button>
+          <button class="btn-primary btn" onclick="dsCreating('buildDsDrawer')">确认创建</button>
         </div>
       </div>
     </div>
@@ -2728,7 +2974,7 @@ def datasets():
         </div>
         <div class="drawer-foot">
           <button class="btn" onclick="closeDrawerById('newDsDrawer')">取消</button>
-          <button class="btn-primary btn" onclick="closeDrawerById('newDsDrawer');toast('Demo: 已按筛选条件生成数据集')">确认创建</button>
+          <button class="btn-primary btn" onclick="dsCreating('newDsDrawer')">确认创建</button>
         </div>
       </div>
     </div>
@@ -2817,6 +3063,7 @@ def datasets():
 
 
 def dataset_detail_panel_v2(d, viewed_ver=""):
+    ds_format = "Mozdataset" if d.get("type") in ("eval-benchmark", "custom") or "eval" in d["name"].lower() or "smoke" in d["name"].lower() else "LeRobot"
     eps = dataset_episodes(d)
     _hl_items = dataset_prompt_composition(d)   # highlevel prompt 构成 (info / compose 共用)
     preview = (f'<div class="tab-pane active" id="pane-preview">'
@@ -2902,6 +3149,7 @@ def dataset_detail_panel_v2(d, viewed_ver=""):
         <div class="desc-grid">
           <div class="dk">名称</div><div class="dv">{d['name']}</div>
           <div class="dk">标识</div><div class="dv" style="font-family:monospace;">{d['id']}</div>
+          <div class="dk">数据格式</div><div class="dv">{ds_format}</div>
           <div class="dk">本体</div><div class="dv">{d['robot']}</div>
           <div class="dk">规模</div><div class="dv">{d['episodes']} episodes · {d['frames']:,} frames · {round(d['frames']/30/60,1)} min</div>
           <div class="dk">创建人</div><div class="dv">{d['owner']}</div>
@@ -3150,22 +3398,15 @@ def dataset_detail_panel_v2(d, viewed_ver=""):
     viewed = viewed_ver if any(v["version"] == viewed_ver for v in _vlist) else d["version"]
     _vopts = ""
     for v in _vlist:
-        if v["version"] == d["version"] and v["status"] == "生效中":
-            lab = f'{v["version"]} · 生效中'
-        elif v["status"] == "待发布":
-            lab = f'{v["version"]} · 待发布'
-        elif v["status"] == "已归档":
-            lab = f'{v["version"]} · 已归档'
-        else:
-            lab = v["version"]
+        lab = v["version"]
         s = " selected" if v["version"] == viewed else ""
         _vopts += f'<option value="{v["version"]}"{s}>{lab}</option>'
     ver_select = (f'<select class="ver-select" onchange="if(this.value)location.href=\'/datasets?sel={d["id"]}&ver=\'+this.value">'
                   f'{_vopts}</select>')
     head = f"""
     <div class="detail-head">
-      <div><div class="dh-title">{d['name']} {ver_select} {qa_html(d['quality'])}</div>
-      <div class="dh-meta"><span>{d['episodes']} ep · {d['frames']:,} f</span><span>{d['status']}</span></div></div>
+      <div><div class="dh-title">{d['name']} <span class="tag tag-blue">{ds_format}</span> {ver_select}</div>
+      <div class="dh-meta"><span>{d['episodes']} ep · {d['frames']:,} f</span></div></div>
       <div><button class="btn btn-secondary" onclick="document.getElementById('procDrawer').classList.add('active')">&#9881; 处理数据</button> {publish_btn}</div>
     </div>
     <div class="tabs">

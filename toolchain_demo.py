@@ -22,9 +22,11 @@ Usage:
 """
 
 import math
+import html
 import os
 import re
 import sys
+from urllib.parse import quote
 from flask import Flask, render_template_string, request, redirect
 
 app = Flask(__name__)
@@ -265,11 +267,11 @@ DEPLOYS = [
     {"id": "dp_802", "model": "spirit-v1.6-whiteboard-baseline", "version": "v1.6.0",
      "targets": ["moz1-001"],
      "status": "deployed", "progress": {"success": 1, "failed": 0, "running": 0},
-     "trigger": "test 任务", "at": "2026-06-13 10:00", "operator": "joanna.qiao"},
+     "trigger": "TEST 任务", "at": "2026-06-13 10:00", "operator": "joanna.qiao"},
     {"id": "dp_803", "model": "spirit-v1.7-whiteboard-base", "version": "v1.7.1",
      "targets": ["moz1-003", "moz1-004", "moz1-005", "moz1-006", "moz1-007", "moz1-008"],
      "status": "in_progress", "progress": {"success": 3, "failed": 1, "running": 2},
-     "trigger": "dagger 任务", "at": "—", "operator": "Lance Li"},
+     "trigger": "DAgger 任务", "at": "—", "operator": "Lance Li"},
 ]
 
 MODELS = [
@@ -355,27 +357,27 @@ BENCHMARKS = [
 # ── 设备 ──
 
 DEVICES = [
-    {"id": "moz1-001", "name": "moz1-001 · 实验室东", "type": "moz1", "status": "in_use",
+    {"id": "moz1-001", "name": "新感知 Y18", "type": "moz1", "status": "in_use",
      "location": "实验室 东区", "current_user": "Lance Li", "model": "spirit-v1.6 / v1.6.0",
      "last_seen": "now",
      "sw_dep": "Ubuntu 22.04 · ROS2 Humble · spirit-runtime ≥1.5",
      "hw_dep": "6-DOF 机械臂 · RealSense D455 · Jetson Orin"},
-    {"id": "moz1-002", "name": "moz1-002 · 实验室西", "type": "moz1", "status": "in_use",
+    {"id": "moz1-002", "name": "旧感知 Y36", "type": "moz1", "status": "in_use",
      "location": "实验室 西区", "current_user": "joanna.qiao", "model": "spirit-v1.7 / v1.7.0",
      "last_seen": "now",
      "sw_dep": "Ubuntu 22.04 · ROS2 Humble · spirit-runtime ≥1.7",
      "hw_dep": "6-DOF 机械臂 · RealSense D455 · Jetson Orin"},
-    {"id": "moz1-003", "name": "moz1-003 · 二楼", "type": "moz1", "status": "online",
+    {"id": "moz1-003", "name": "新感知 Y22", "type": "moz1", "status": "online",
      "location": "二楼 工位 A", "current_user": "—", "model": "spirit-v1.6 / v1.5.2",
      "last_seen": "now",
      "sw_dep": "Ubuntu 22.04 · ROS2 Humble · spirit-runtime 1.5",
      "hw_dep": "6-DOF 机械臂 · RealSense D455 · Jetson Orin"},
-    {"id": "moz2-001", "name": "moz2-001 · 一楼", "type": "moz2", "status": "in_use",
+    {"id": "moz2-001", "name": "双臂 M12", "type": "moz2", "status": "in_use",
      "location": "一楼 测试区", "current_user": "Min Chen", "model": "—",
      "last_seen": "now",
      "sw_dep": "Ubuntu 22.04 · ROS2 Humble · mobi-runtime ≥2.0",
      "hw_dep": "双臂 7-DOF · 双目 D455 · Jetson Orin NX"},
-    {"id": "moz2-002", "name": "moz2-002 · 一楼", "type": "moz2", "status": "offline",
+    {"id": "moz2-002", "name": "备用本体 R08", "type": "moz2", "status": "offline",
      "location": "一楼 备用", "current_user": "—", "model": "—",
      "last_seen": "2026-06-15 18:32",
      "sw_dep": "Ubuntu 22.04 · ROS2 Humble · mobi-runtime 2.0",
@@ -751,6 +753,24 @@ a { color:#149DAA; text-decoration:none; } a:hover { color:#0F8190; }
 .filter-bar .grow { flex:1; min-width:200px; }
 .filter-bar .right { margin-left:auto; display:flex; gap:8px; }
 .filter-actions { display:flex; gap:8px; align-items:center; }
+.filter-bar.deploy-filters { display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)) auto; gap:12px; align-items:start; overflow:visible; }
+.remote-filter { position:relative; min-width:0; }
+.remote-filter .rf-hidden { display:none; }
+.rf-control { min-height:34px; box-sizing:border-box; border:1px solid #d9d9d9; border-radius:8px; background:#fff; padding:3px 8px; display:flex; align-items:center; gap:6px; flex-wrap:wrap; cursor:text; }
+.rf-control:focus-within, .remote-filter.open .rf-control { border-color:#149DAA; box-shadow:0 0 0 2px rgba(20,157,170,0.12); }
+.rf-control input { flex:1; min-width:82px; height:26px; padding:0 2px; border:0; box-shadow:none !important; outline:none; font-size:13.5px; }
+.rf-chip { display:inline-flex; align-items:center; gap:5px; max-width:100%; height:24px; padding:0 8px; border:1px solid #dfe3e8; border-radius:5px; background:#f7f8fa; color:rgba(0,0,0,0.72); font-size:12.5px; }
+.rf-chip span { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:180px; }
+.rf-chip i { font-style:normal; color:rgba(0,0,0,0.35); cursor:pointer; line-height:1; }
+.rf-menu { display:none; position:absolute; z-index:120; left:0; right:0; top:calc(100% + 6px); max-height:220px; overflow-y:auto; padding:5px; border:1px solid #e5e7eb; border-radius:8px; background:#fff; box-shadow:0 8px 24px rgba(0,0,0,0.12); }
+.remote-filter.open .rf-menu { display:block; }
+.rf-option { display:flex; align-items:center; justify-content:space-between; gap:10px; padding:8px 9px; border-radius:6px; color:rgba(0,0,0,0.72); font-size:13px; cursor:pointer; }
+.rf-option:hover { background:#EBF8FA; }
+.rf-option.on { background:#DEF6F9; color:#149DAA; }
+.rf-option .rf-value { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.rf-option .rf-check { display:none; font-size:12px; color:#149DAA; }
+.rf-option.on .rf-check { display:inline; }
+@media (max-width: 1180px) { .filter-bar.deploy-filters { grid-template-columns:1fr; } .filter-bar.deploy-filters .filter-actions { justify-content:flex-end; } }
 input::placeholder, textarea::placeholder { color:rgba(0,0,0,0.32); opacity:1; }
 select.select-empty { color:rgba(0,0,0,0.32) !important; }
 select option { color:rgba(0,0,0,0.85); }
@@ -772,13 +792,37 @@ select option:disabled { color:rgba(0,0,0,0.32); }
 .ant-table thead th { background:#fafafa; padding:11px 16px; font-weight:500; color:rgba(0,0,0,0.85); text-align:left; border-bottom:1px solid #f0f0f0; white-space:nowrap; }
 .ant-table tbody td { padding:11px 16px; border-bottom:1px solid #f0f0f0; color:rgba(0,0,0,0.65); vertical-align:middle; }
 .ant-table tbody tr:hover td { background:#fafafa; }
-.actions-cell { white-space:nowrap; }
+.actions-cell { white-space:nowrap; position:relative; overflow:visible; }
+.actions-cell a, .actions-cell .tbtn, .action-link { display:inline-flex; align-items:center; height:24px; padding:0; border:0; background:transparent; color:#149DAA; font-size:13px; line-height:24px; text-decoration:none; cursor:pointer; margin-right:14px; border-radius:0; }
+.actions-cell a:hover, .actions-cell .tbtn:hover, .action-link:hover { color:#0F8190; background:transparent; border:0; }
+.actions-cell a:last-child, .actions-cell .tbtn:last-child, .action-link:last-child { margin-right:0; }
+.actions-cell .action-disabled { color:rgba(0,0,0,0.28); cursor:not-allowed; pointer-events:none; }
+.action-more { position:relative; display:inline-flex; align-items:center; height:24px; vertical-align:middle; }
+.action-more-trigger { display:inline-flex; align-items:center; justify-content:center; min-width:24px; height:24px; color:#149DAA; font-size:16px; line-height:1; cursor:pointer; user-select:none; }
+.action-more-trigger:hover { color:#0F8190; }
+.action-menu { display:none; position:absolute; right:0; top:calc(100% + 8px); z-index:160; min-width:136px; padding:6px 0; background:#fff; border:1px solid #e5e7eb; border-radius:6px; box-shadow:0 8px 24px rgba(0,0,0,0.12); }
+.action-more:hover .action-menu { display:block; }
+.action-menu a, .action-menu span { display:block; height:auto; padding:8px 18px; margin:0; color:rgba(0,0,0,0.72); font-size:13px; line-height:1.4; white-space:nowrap; text-decoration:none; }
+.action-menu a:hover { background:#f5f7fa; color:#149DAA; }
+.action-menu .disabled { color:rgba(0,0,0,0.28); cursor:not-allowed; }
 .mono { font-family:'SF Mono',Menlo,monospace; font-size:12.5px; color:rgba(0,0,0,0.55); }
-.table-wrap { background:#fff; border:1px solid #f0f0f0; border-radius:8px; overflow:hidden; }
+.table-wrap { background:#fff; border:1px solid #f0f0f0; border-radius:8px; overflow:visible; }
 .table-wrap.deploy-table-wrap { overflow:visible; }
 .ckpt-table { table-layout:fixed; }
 .ckpt-name-cell { display:block; max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:#149DAA; text-decoration:none; }
 .ckpt-name-cell:hover { color:#0F8190; }
+.ckpt-status-filter { position:relative; display:inline-flex; align-items:center; height:26px; }
+.ckpt-status-trigger { display:inline-flex; align-items:center; gap:6px; border:0; background:transparent; padding:0; color:rgba(0,0,0,0.85); font:inherit; font-weight:600; cursor:pointer; }
+.ckpt-status-trigger .caret { font-size:15px; line-height:1; transform:translateY(-1px); color:rgba(0,0,0,0.78); }
+.ckpt-status-menu { display:none; position:absolute; top:calc(100% + 9px); left:50px; z-index:180; min-width:128px; padding:6px 0; border:1px solid #e5e7eb; border-radius:6px; background:#fff; box-shadow:0 12px 28px rgba(0,0,0,0.14); overflow:hidden; }
+.ckpt-status-filter.open .ckpt-status-menu { display:block; }
+.ckpt-status-option { display:block; width:100%; height:34px; padding:0 14px; border:0; background:#fff; color:rgba(0,0,0,0.88); text-align:left; font-size:14px; line-height:34px; cursor:pointer; white-space:nowrap; }
+.ckpt-status-option:hover { background:#f5f7fa; }
+.ckpt-status-option.active { background:#238da3; color:#fff; }
+.status-with-log { display:inline-flex; align-items:center; gap:6px; white-space:nowrap; }
+.status-log-icon { width:18px; height:18px; padding:0; border:1px solid #f3d6d5; border-radius:50%; background:#fff; color:#d4504e; font-size:12px; line-height:16px; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; }
+.status-log-icon:hover { border-color:#d4504e; background:#fdf3f3; }
+.ckpt-log-pre { margin:0; padding:12px 14px; border:1px solid #e5e7eb; border-radius:6px; background:#fafbfc; color:rgba(0,0,0,0.78); font-family:'SF Mono',Menlo,Consolas,monospace; font-size:12.5px; line-height:1.65; white-space:pre-wrap; max-height:260px; overflow:auto; }
 
 /* ── Tags / status ── */
 .tag { display:inline-block; padding:1px 8px; border-radius:4px; font-size:12px; line-height:20px; border:1px solid transparent; }
@@ -878,6 +922,8 @@ select option:disabled { color:rgba(0,0,0,0.32); }
 .fb-labeled .ff { display:flex; flex-direction:column; gap:6px; }
 .fb-labeled .ff > label { font-size:13px; color:rgba(0,0,0,0.72); }
 .fb-labeled .ff input, .fb-labeled .ff select { height:34px; min-width:240px; padding:5px 12px; border:1px solid #d9d9d9; border-radius:6px; font-size:14px; outline:none; background:#fff; box-sizing:border-box; }
+.fb-labeled .ff .remote-filter { min-width:240px; }
+.fb-labeled .ff .rf-control input { height:26px; min-width:82px; padding:0 2px; border:0; border-radius:0; box-shadow:none !important; background:transparent; }
 .fb-labeled .ff input::placeholder { color:rgba(0,0,0,0.32); }
 .fb-labeled .ff input:focus, .fb-labeled .ff select:focus { border-color:#149DAA; box-shadow:0 0 0 2px rgba(20,157,170,0.12); }
 .list-summarybar { display:flex; align-items:center; justify-content:space-between; gap:16px; margin:0 2px 14px; }
@@ -886,8 +932,10 @@ select option:disabled { color:rgba(0,0,0,0.32); }
 
 /* ── Page actions (top-right primary button) ── */
 .page-actions { display:flex; justify-content:flex-end; margin-bottom:14px; }
+.cache-page-head { display:flex; align-items:center; gap:12px; margin-bottom:18px; }
+.cache-page-title { font-size:16px; font-weight:600; color:rgba(0,0,0,0.85); }
 
-/* ── Pill-style action buttons in tables (TEST / DAGGER / 复制) ── */
+/* ── Pill-style action buttons in tables (TEST / DAgger / 复制) ── */
 .tbtn { display:inline-flex; align-items:center; gap:5px; height:28px; padding:0 13px; border-radius:6px; font-size:12.5px; cursor:pointer; border:1px solid #d9d9d9; background:#fff; color:rgba(0,0,0,0.75); text-decoration:none; margin-right:4px; box-sizing:border-box; }
 .tbtn:hover { border-color:#149DAA; color:#149DAA; }
 
@@ -924,6 +972,8 @@ select option:disabled { color:rgba(0,0,0,0.32); }
 .adv-tabs .at-reset:hover { border-color:#149DAA; color:#149DAA; }
 .yaml-area { width:100%; min-height:300px; padding:12px 14px; font-family:'SF Mono',Menlo,Consolas,monospace; font-size:12.5px; line-height:1.65; background:#fafbfc; border:1px solid #e5e7eb; border-radius:8px; resize:vertical; outline:none; color:rgba(0,0,0,0.85); box-sizing:border-box; white-space:pre; overflow:auto; }
 .yaml-area:focus { border-color:#149DAA; box-shadow:0 0 0 2px rgba(20,157,170,0.12); }
+.entry-command-area { width:100%; min-height:220px; padding:12px 14px; font-family:'SF Mono',Menlo,Consolas,monospace; font-size:12.5px; line-height:1.65; background:#fafbfc; border:1px solid #e5e7eb; border-radius:8px; resize:vertical; outline:none; color:rgba(0,0,0,0.85); box-sizing:border-box; white-space:pre; overflow:auto; }
+.entry-command-area:focus { border-color:#149DAA; box-shadow:0 0 0 2px rgba(20,157,170,0.12); }
 
 /* ── 部署任务: 设备数胶囊 + hover/click 弹出清单 ── */
 .devs-cell { position:relative; display:inline-block; }
@@ -954,18 +1004,27 @@ select option:disabled { color:rgba(0,0,0,0.32); }
 .deploy-progress .dp-dot.failed { background:#cf1322; }
 .deploy-progress .dp-dot.total { background:rgba(0,0,0,0.55); }
 .deploy-progress .dp-dot.running { background:#d48806; }
-.deploy-device-picker { border:1px solid #d9d9d9; border-radius:8px; background:#fff; overflow:hidden; }
-.deploy-device-picker:focus-within { border-color:#149DAA; box-shadow:0 0 0 2px rgba(20,157,170,0.12); }
-.ddp-input { min-height:38px; padding:6px 8px; display:flex; align-items:center; gap:6px; flex-wrap:wrap; border-bottom:1px solid #f0f0f0; }
-.ddp-input .picked { display:inline-flex; align-items:center; gap:6px; height:26px; padding:0 8px; border:1px solid #dfe3e8; border-radius:5px; background:#f7f8fa; color:rgba(0,0,0,0.70); font-size:12.5px; font-family:'SF Mono',Menlo,monospace; }
-.ddp-input .picked i { font-style:normal; color:rgba(0,0,0,0.35); cursor:pointer; }
-.ddp-input input { flex:1; min-width:150px; height:26px; border:0; outline:none; padding:0 4px; font-size:13px; font-family:inherit; }
-.ddp-list { max-height:178px; overflow-y:auto; padding:5px; }
-.ddp-item { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:8px 9px; border-radius:6px; cursor:pointer; color:rgba(0,0,0,0.72); }
+.deploy-device-picker, .deploy-checkpoint-picker { position:relative; background:transparent; overflow:visible; }
+.ddp-control { min-height:38px; padding:5px 34px 5px 8px; display:flex; align-items:center; gap:6px; flex-wrap:wrap; border:1px solid #d9d9d9; border-radius:8px; background:#fff; box-sizing:border-box; cursor:text; position:relative; }
+.ddp-control::after { content:'⌄'; position:absolute; right:12px; top:50%; transform:translateY(-56%); color:rgba(0,0,0,0.45); font-size:15px; pointer-events:none; }
+.deploy-device-picker.open .ddp-control, .deploy-checkpoint-picker.open .ddp-control, .ddp-control:focus-within { border-color:#149DAA; box-shadow:0 0 0 2px rgba(20,157,170,0.12); }
+.ddp-control .picked { display:inline-flex; align-items:center; gap:6px; max-width:100%; height:26px; padding:0 8px; border:1px solid #dfe3e8; border-radius:5px; background:#f7f8fa; color:rgba(0,0,0,0.70); font-size:12.5px; }
+.ddp-control .picked .picked-text { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:230px; }
+.ddp-control .picked i { font-style:normal; color:rgba(0,0,0,0.35); cursor:pointer; }
+.ddp-control input { flex:1; min-width:130px; height:26px; border:0; outline:none; padding:0 4px; font-size:13px; font-family:inherit; background:transparent; }
+.fg .ddp-control input, .fg .ddp-control input:focus { border:0; border-radius:0; box-shadow:none !important; padding:0 4px; background:transparent; }
+.ddp-menu { display:none; position:absolute; left:0; right:0; top:calc(100% + 6px); z-index:180; max-height:260px; overflow-y:auto; padding:6px; border:1px solid #e5e7eb; border-radius:8px; background:#fff; box-shadow:0 8px 24px rgba(0,0,0,0.12); }
+.deploy-device-picker.open .ddp-menu, .deploy-checkpoint-picker.open .ddp-menu { display:block; }
+.ddp-item { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; padding:9px 10px; border-radius:6px; cursor:pointer; color:rgba(0,0,0,0.72); }
 .ddp-item:hover { background:#EBF8FA; }
 .ddp-item.on { background:#DEF6F9; color:#149DAA; }
-.ddp-item .id { font-family:'SF Mono',Menlo,monospace; font-size:12.5px; color:inherit; }
-.ddp-item .loc { font-size:12px; color:rgba(0,0,0,0.45); }
+.ddp-copy { min-width:0; display:flex; flex-direction:column; gap:3px; }
+.ddp-main { font-size:13.5px; color:rgba(0,0,0,0.84); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.ddp-item.on .ddp-main { color:#149DAA; }
+.ddp-main .serial { font-family:'SF Mono',Menlo,monospace; color:rgba(0,0,0,0.58); }
+.ddp-sub { font-size:12px; color:rgba(0,0,0,0.45); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.ddp-check { display:none; flex:none; padding-top:2px; color:#149DAA; font-size:12px; }
+.ddp-item.on .ddp-check { display:inline; }
 
 /* ── Mini pagination (visual only) ── */
 .mini-pager { display:flex; align-items:center; justify-content:flex-end; gap:8px; padding:12px 8px 0; font-size:13px; color:rgba(0,0,0,0.65); }
@@ -1236,6 +1295,11 @@ button.tm-subtab { border:0; background:transparent; font-family:inherit; cursor
 .queue-info-item span { display:block; font-size:12.5px; color:rgba(0,0,0,0.46); margin-bottom:5px; }
 .queue-info-item b { display:block; font-size:13.5px; color:rgba(0,0,0,0.84); font-weight:500; word-break:break-word; }
 .queue-member-add { display:grid; grid-template-columns:1fr 140px 96px; gap:10px; align-items:center; margin-bottom:14px; }
+.device-detail-pane, .dev-record-pane { display:none; }
+.device-detail-pane.active, .dev-record-pane.active { display:block; }
+.device-detail-pane .queue-detail-section + .queue-detail-section { margin-top:16px; }
+.device-version-list { display:flex; flex-direction:column; gap:8px; }
+.device-version-list b { display:block; font-size:13.5px; color:rgba(0,0,0,0.84); font-weight:500; word-break:break-word; }
 
 /* ── 数据平台 · 工作台 · 标注 editor ── */
 .lab-meta { background:#1f2933; color:rgba(255,255,255,0.92); padding:11px 18px; border-radius:8px; display:flex; flex-wrap:wrap; gap:8px 22px; align-items:center; font-size:13px; margin-bottom:10px; }
@@ -1380,23 +1444,36 @@ button.tm-subtab { border:0; background:transparent; font-family:inherit; cursor
 
 /* ── 日志 ── */
 .logs-pane { background:#fff; border:1px solid #f0f0f0; border-radius:8px; padding:14px 18px 18px; }
-.logs-subtabs { display:flex; gap:24px; padding-bottom:10px; border-bottom:1px solid #f0f0f0; margin-bottom:14px; }
-.ls-tab { font-size:14px; color:rgba(0,0,0,0.55); cursor:pointer; padding-bottom:8px; border-bottom:2px solid transparent; margin-bottom:-11px; user-select:none; }
-.ls-tab:hover { color:#149DAA; }
-.ls-tab.active { color:#149DAA; font-weight:500; border-bottom-color:#149DAA; }
-.logs-controls { display:flex; align-items:center; gap:14px; margin-bottom:10px; flex-wrap:wrap; }
-.lc-pill { font-size:12px; padding:4px 12px; border-radius:11px; background:#DEF6F9; color:#149DAA; border:1px solid #7BD8DF; }
+.logs-subtabs { display:flex; gap:6px; margin-bottom:18px; }
+.ls-tab { height:30px; display:inline-flex; align-items:center; padding:0 13px; border:1px solid #d9d9d9; border-radius:6px; background:#fff; font-size:13px; color:rgba(0,0,0,0.58); cursor:pointer; user-select:none; }
+.ls-tab:hover { color:#149DAA; border-color:#149DAA; }
+.ls-tab.active { color:#149DAA; font-weight:500; background:#EBF8FA; border-color:#B5E5EA; }
+.log-subpane { display:none; }
+.log-subpane.active { display:block; }
+.logs-controls { display:flex; align-items:center; gap:10px; padding:10px 16px; border-bottom:1px solid #f0f0f0; margin-bottom:0; flex-wrap:wrap; }
+.lc-pill { font-size:12px; height:26px; display:inline-flex; align-items:center; padding:0 12px; border-radius:5px; background:#EBF8FA; color:#149DAA; border:1px solid #B5E5EA; font-weight:500; }
 .lc-grp { display:flex; align-items:center; gap:8px; font-size:13px; color:rgba(0,0,0,0.65); }
-.lc-grp select { height:30px; padding:0 10px; border:1px solid #d9d9d9; border-radius:5px; font-size:13px; background:#fff; min-width:140px; outline:none; }
-.lc-right { margin-left:auto; display:flex; align-items:center; gap:14px; font-size:13px; color:rgba(0,0,0,0.65); }
-.lc-right input.lc-num { width:50px; height:28px; padding:0 8px; border:1px solid #d9d9d9; border-radius:5px; font-size:13px; text-align:center; outline:none; }
+.lc-grp select { height:30px; padding:0 28px 0 10px; border:1px solid #d9d9d9; border-radius:6px; font-size:13px; background:#fff; min-width:140px; outline:none; }
+.lc-grp select:focus { border-color:#149DAA; box-shadow:0 0 0 2px rgba(20,157,170,0.12); }
+.lc-btn { height:30px; display:inline-flex; align-items:center; gap:5px; padding:0 12px; border:1px solid #d9d9d9; border-radius:6px; background:#fff; color:rgba(0,0,0,0.66); font-size:13px; text-decoration:none; cursor:pointer; }
+.lc-btn:hover { border-color:#149DAA; color:#149DAA; }
+.lc-link { height:30px; display:inline-flex; align-items:center; color:#149DAA; font-size:13px; text-decoration:none; }
+.lc-right { margin-left:auto; display:flex; align-items:center; gap:10px; font-size:13px; color:rgba(0,0,0,0.65); flex-wrap:wrap; }
+.lc-right input.lc-num { width:64px; height:30px; padding:0 8px; border:1px solid #d9d9d9; border-radius:5px; font-size:13px; text-align:center; outline:none; }
 .lc-toggle { display:inline-block; width:30px; height:16px; border-radius:8px; background:#d9d9d9; position:relative; cursor:pointer; vertical-align:middle; }
 .lc-toggle.on { background:#149DAA; }
 .lc-toggle::after { content:''; position:absolute; top:2px; left:2px; width:12px; height:12px; border-radius:50%; background:#fff; transition:transform 0.15s; }
 .lc-toggle.on::after { transform:translateX(14px); }
-.lc-icon { width:26px; height:26px; display:inline-flex; align-items:center; justify-content:center; color:rgba(0,0,0,0.55); border-radius:4px; cursor:pointer; }
-.lc-icon:hover { color:#149DAA; background:#f5f7fa; }
-.logs-body { background:#fafbfc; border:1px solid #e5e7eb; border-radius:6px; padding:14px 16px; font-family:'SF Mono',Menlo,monospace; font-size:12px; line-height:1.7; color:rgba(0,0,0,0.85); max-height:620px; overflow:auto; white-space:pre; margin:0; }
+.lc-icon { width:28px; height:28px; display:inline-flex; align-items:center; justify-content:center; color:rgba(0,0,0,0.55); border:1px solid #e5e7eb; border-radius:4px; cursor:pointer; background:#fff; }
+.lc-icon:hover { color:#149DAA; border-color:#149DAA; background:#f5f7fa; }
+.logs-body { background:#fafbfc; border:0; border-radius:0; padding:14px 16px; font-family:'SF Mono',Menlo,monospace; font-size:12px; line-height:1.7; color:rgba(0,0,0,0.85); max-height:620px; overflow:auto; white-space:pre; margin:0; }
+.logs-box { border:1px solid #e5e7eb; border-radius:6px; overflow:hidden; background:#fafbfc; }
+.logs-empty { min-height:260px; display:flex; flex-direction:column; align-items:center; justify-content:center; color:rgba(0,0,0,0.45); font-size:13px; border:1px solid #e5e7eb; border-top:0; border-radius:0 0 6px 6px; background:#fff; padding:0 16px; box-sizing:border-box; }
+.logs-empty .emp-icon { width:54px; height:68px; border:1px solid #e5e7eb; border-radius:6px; background:#fafbfc; color:#9aa5b1; display:flex; align-items:center; justify-content:center; font-size:12px; margin-bottom:10px; }
+.logs-pager { display:flex; justify-content:flex-end; gap:8px; padding:10px 0 0; align-items:center; color:rgba(0,0,0,0.55); font-size:12px; }
+.logs-pager .pg-btn { width:28px; height:28px; border:1px solid #d9d9d9; border-radius:5px; background:#fff; display:inline-flex; align-items:center; justify-content:center; cursor:pointer; color:rgba(0,0,0,0.55); }
+.logs-pager .pg-btn.active { border-color:#149DAA; color:#149DAA; }
+.logs-pager select { height:28px; padding:0 10px; border:1px solid #d9d9d9; border-radius:5px; background:#fff; font-size:12px; outline:none; }
 
 /* ── 时间线 ── */
 .timeline-pane { background:#fff; border:1px solid #f0f0f0; border-radius:8px; padding:20px 28px 28px; }
@@ -1464,6 +1541,7 @@ BASE_TEMPLATE = """<!DOCTYPE html>
 <script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/mode/sql/sql.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/mode/javascript/javascript.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/mode/yaml/yaml.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/mode/shell/shell.min.js"></script>
 <style>""" + BASE_CSS + """</style>
 </head>
 <body>
@@ -1555,13 +1633,31 @@ BASE_TEMPLATE = """<!DOCTYPE html>
     </div>
     <div class="modal-body">
       <ol style="margin:0;padding-left:20px;color:rgba(0,0,0,0.72);font-size:14px;line-height:1.9;">
-        <li>复用当前 test、dagger 能力</li>
+        <li>复用当前 TEST、DAgger 能力</li>
         <li>增加 ckpt 对应的训练镜像，端侧选择任务，会自动带出模型和镜像</li>
-        <li>test、dagger 支持选择机器（可选），如果选了，会异步发起该机器的 ckpt 部署任务，不选择现场拉</li>
+        <li>TEST、DAgger 支持选择机器（可选），如果选了，会异步发起该机器的 ckpt 部署任务，不选择现场拉</li>
       </ol>
     </div>
     <div class="modal-foot">
       <button class="btn btn-primary" onclick="closeTaskCapabilityModal()">知道了</button>
+    </div>
+  </div>
+</div>
+<div class="modal-mask" id="stopExperimentModalMask" onclick="closeStopExperimentModal()">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-head">
+      <h3>停止训练任务</h3>
+      <span class="dismiss" onclick="closeStopExperimentModal()">&times;</span>
+    </div>
+    <div class="modal-body">
+      <p style="margin:0;color:rgba(0,0,0,0.72);font-size:14px;line-height:1.8;">
+        确认停止训练任务「<span id="stopExperimentName" style="font-weight:600;color:rgba(0,0,0,0.86);"></span>」？
+      </p>
+      <p style="margin:8px 0 0;color:rgba(0,0,0,0.45);font-size:13px;line-height:1.6;">停止后任务将不再继续运行，已产生的日志和 checkpoint 仍可查看。</p>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-tertiary" onclick="closeStopExperimentModal()">取消</button>
+      <button class="btn btn-primary" onclick="submitStopExperiment()">确认停止</button>
     </div>
   </div>
 </div>
@@ -1576,6 +1672,106 @@ function resetFilters(btn){
   toast('Demo: 已重置');
 }
 function queryFilters(btn){ toast('Demo: 已查询'); }
+function queryDeployFilters(btn){
+  var root = btn.closest('.filter-bar,.fb-labeled');
+  if(!root){ toast('Demo: 已查询'); return; }
+  var params = new URLSearchParams();
+  root.querySelectorAll('[name]').forEach(function(el){
+    var v = (el.value || '').trim();
+    if(v) params.set(el.name, v);
+  });
+  var url = window.location.pathname + (params.toString() ? '?' + params.toString() : '');
+  window.location.href = url;
+}
+function resetDeployFilters(){
+  window.location.href = '/model/deploy';
+}
+function openRemoteFilter(input){
+  document.querySelectorAll('.remote-filter.open').forEach(function(w){
+    if(!w.contains(input)) w.classList.remove('open');
+  });
+  var wrap = input.closest('.remote-filter');
+  if(wrap) wrap.classList.add('open');
+}
+function focusRemoteFilter(control){
+  var input = control.querySelector('input[type="text"]');
+  if(input) input.focus();
+}
+function syncRemoteFilterHidden(wrap){
+  var hidden = wrap.querySelector('.rf-hidden');
+  if(!hidden) return;
+  var values = Array.prototype.map.call(wrap.querySelectorAll('.rf-chip'), function(chip){
+    return chip.dataset.value || '';
+  }).filter(Boolean);
+  hidden.value = values.join(',');
+}
+function addRemoteFilterChip(wrap, value){
+  if(wrap.querySelector('.rf-chip[data-value="' + CSS.escape(value) + '"]')) return;
+  var chip = document.createElement('span');
+  chip.className = 'rf-chip';
+  chip.dataset.value = value;
+  var text = document.createElement('span');
+  text.textContent = value;
+  var close = document.createElement('i');
+  close.textContent = '×';
+  close.onclick = function(ev){ removeRemoteFilterChip(close, ev); };
+  chip.appendChild(text);
+  chip.appendChild(close);
+  var input = wrap.querySelector('.rf-control input[type="text"]');
+  input.parentNode.insertBefore(chip, input);
+}
+function toggleRemoteFilterOption(item){
+  var wrap = item.closest('.remote-filter');
+  var value = item.dataset.value || '';
+  if(!wrap || !value) return;
+  var existing = wrap.querySelector('.rf-chip[data-value="' + CSS.escape(value) + '"]');
+  if(existing){
+    existing.remove();
+    item.classList.remove('on');
+  } else {
+    addRemoteFilterChip(wrap, value);
+    item.classList.add('on');
+  }
+  var input = wrap.querySelector('.rf-control input[type="text"]');
+  if(input) input.value = '';
+  wrap.querySelectorAll('.rf-option').forEach(function(opt){ opt.style.display=''; });
+  syncRemoteFilterHidden(wrap);
+}
+function removeRemoteFilterChip(close, ev){
+  if(ev) ev.stopPropagation();
+  var chip = close.closest('.rf-chip');
+  var wrap = close.closest('.remote-filter');
+  var value = chip ? chip.dataset.value : '';
+  if(chip) chip.remove();
+  if(wrap && value){
+    var item = wrap.querySelector('.rf-option[data-value="' + CSS.escape(value) + '"]');
+    if(item) item.classList.remove('on');
+    syncRemoteFilterHidden(wrap);
+  }
+}
+function filterRemoteFilterOptions(input){
+  var q = (input.value || '').trim().toLowerCase();
+  var wrap = input.closest('.remote-filter');
+  if(!wrap) return;
+  wrap.classList.add('open');
+  wrap.querySelectorAll('.rf-option').forEach(function(item){
+    item.style.display = item.textContent.toLowerCase().indexOf(q) >= 0 ? '' : 'none';
+  });
+}
+document.addEventListener('click', function(e){
+  document.querySelectorAll('.remote-filter.open').forEach(function(wrap){
+    if(!wrap.contains(e.target)) wrap.classList.remove('open');
+  });
+  document.querySelectorAll('.ckpt-status-filter.open').forEach(function(wrap){
+    if(!wrap.contains(e.target)) wrap.classList.remove('open');
+  });
+  document.querySelectorAll('.deploy-device-picker.open').forEach(function(wrap){
+    if(!wrap.contains(e.target)) wrap.classList.remove('open');
+  });
+  document.querySelectorAll('.deploy-checkpoint-picker.open').forEach(function(wrap){
+    if(!wrap.contains(e.target)) wrap.classList.remove('open');
+  });
+});
 function openTaskCapabilityModal(){
   var m=document.getElementById('taskCapabilityModalMask');
   if(m) m.classList.add('active');
@@ -1583,6 +1779,58 @@ function openTaskCapabilityModal(){
 function closeTaskCapabilityModal(){
   var m=document.getElementById('taskCapabilityModalMask');
   if(m) m.classList.remove('active');
+}
+function filterCkptStatus(source, status){
+  var wrap = source.closest('.table-wrap');
+  if(!wrap) return;
+  status = status || '';
+  wrap.querySelectorAll('tbody tr[data-status]').forEach(function(row){
+    row.style.display = (!status || row.dataset.status === status) ? '' : 'none';
+  });
+}
+function toggleCkptStatusFilter(btn){
+  var wrap = btn.closest('.ckpt-status-filter');
+  if(!wrap) return;
+  document.querySelectorAll('.ckpt-status-filter.open').forEach(function(item){
+    if(item !== wrap) item.classList.remove('open');
+  });
+  wrap.classList.toggle('open');
+}
+function selectCkptStatusFilter(btn){
+  var filter = btn.closest('.ckpt-status-filter');
+  if(!filter) return;
+  filter.querySelectorAll('.ckpt-status-option').forEach(function(item){ item.classList.remove('active'); });
+  btn.classList.add('active');
+  filterCkptStatus(filter, btn.getAttribute('data-value') || '');
+  filter.classList.remove('open');
+}
+function openCkptStatusLog(btn){
+  var title = btn.getAttribute('data-title') || '日志';
+  var log = btn.getAttribute('data-log') || '';
+  var titleEl = document.getElementById('ckptStatusLogTitle');
+  var bodyEl = document.getElementById('ckptStatusLogBody');
+  if(titleEl) titleEl.textContent = title;
+  if(bodyEl) bodyEl.textContent = log;
+  var m = document.getElementById('ckptStatusLogModalMask');
+  if(m) m.classList.add('active');
+}
+function closeCkptStatusLog(){
+  var m = document.getElementById('ckptStatusLogModalMask');
+  if(m) m.classList.remove('active');
+}
+function confirmStopExperiment(name){
+  var nameEl=document.getElementById('stopExperimentName');
+  if(nameEl) nameEl.textContent=name;
+  var m=document.getElementById('stopExperimentModalMask');
+  if(m) m.classList.add('active');
+}
+function closeStopExperimentModal(){
+  var m=document.getElementById('stopExperimentModalMask');
+  if(m) m.classList.remove('active');
+}
+function submitStopExperiment(){
+  closeStopExperimentModal();
+  toast('Demo: 已提交停止任务');
 }
 function isPlaceholderSelectValue(sel){
   if(!sel) return false;
@@ -1688,19 +1936,23 @@ document.addEventListener('click', function(e){
     }
   });
 });
-/* 新增训练任务: 抽屉打开时 lazy-init CodeMirror YAML 编辑器 + 字符计数 */
+/* 新增训练任务: 抽屉打开时 lazy-init CodeMirror 代码编辑器 + 字符计数 */
+function initTrainCodeEditor(id, mode){
+  var ta = document.getElementById(id);
+  if (ta && !ta._cmInited && window.CodeMirror){
+    ta._cmInited = true;
+    var cm = CodeMirror.fromTextArea(ta, { mode:mode, lineNumbers:false, lineWrapping:false, viewportMargin:Infinity });
+    ta._cm = cm;
+  } else if (ta && ta._cm){
+    ta._cm.refresh();
+  }
+}
 function openTrainDrawer(){
   openDrawer('drawerNewTrain');
   updateTrainImagePath();
   setTimeout(function(){
-    var ta = document.getElementById('yamlEditor');
-    if (ta && !ta._cmInited && window.CodeMirror){
-      ta._cmInited = true;
-      var cm = CodeMirror.fromTextArea(ta, { mode:'yaml', lineNumbers:false, lineWrapping:false, viewportMargin:Infinity });
-      ta._cm = cm;
-    } else if (ta && ta._cm){
-      ta._cm.refresh();
-    }
+    initTrainCodeEditor('yamlEditor', 'yaml');
+    initTrainCodeEditor('entryCommandEditor', 'shell');
   }, 50);
 }
 function updateNameCount(input){
@@ -1770,24 +2022,82 @@ function switchDetTab(el, tabId){
 function switchLogSubtab(el){
   el.parentNode.querySelectorAll('.ls-tab').forEach(function(t){ t.classList.remove('active'); });
   el.classList.add('active');
+  var pane = el.closest('.logs-pane');
+  if(!pane) return;
+  pane.querySelectorAll('.log-subpane').forEach(function(p){ p.classList.remove('active'); });
+  var target = pane.querySelector('[data-log-pane="' + el.dataset.logTab + '"]');
+  if(target) target.classList.add('active');
 }
 function toggleLogToggle(el){ el.classList.toggle('on'); }
+function openDeployCheckpointPicker(el){
+  var picker = el.closest('.deploy-checkpoint-picker');
+  if(!picker) return;
+  document.querySelectorAll('.deploy-checkpoint-picker.open').forEach(function(wrap){
+    if(wrap !== picker) wrap.classList.remove('open');
+  });
+  picker.classList.add('open');
+  var input = picker.querySelector('.dcp-search');
+  if(input && el !== input) input.focus();
+}
+function selectDeployCheckpoint(el){
+  var picker = el.closest('.deploy-checkpoint-picker');
+  if(!picker) return;
+  var value = el.dataset.value || '';
+  picker.querySelectorAll('.ddp-item').forEach(function(item){ item.classList.remove('on'); item.style.display = ''; });
+  el.classList.add('on');
+  var input = picker.querySelector('.dcp-search');
+  var hidden = picker.querySelector('.dcp-hidden');
+  if(input) input.value = value;
+  if(hidden) hidden.value = value;
+  picker.classList.remove('open');
+}
+function filterDeployCheckpoints(input){
+  var q = (input.value || '').trim().toLowerCase();
+  var picker = input.closest('.deploy-checkpoint-picker');
+  if(!picker) return;
+  picker.classList.add('open');
+  picker.querySelectorAll('.ddp-item').forEach(function(item){
+    var hay = ((item.dataset.value || '') + ' ' + (item.dataset.desc || '')).toLowerCase();
+    item.style.display = hay.indexOf(q) >= 0 ? '' : 'none';
+  });
+}
+function openDeployDevicePicker(el){
+  var picker = el.closest('.deploy-device-picker');
+  if(!picker) return;
+  document.querySelectorAll('.deploy-device-picker.open').forEach(function(wrap){
+    if(wrap !== picker) wrap.classList.remove('open');
+  });
+  picker.classList.add('open');
+  var input = picker.querySelector('.ddp-search');
+  if(input && el !== input) input.focus();
+}
 function toggleDeployDevice(el){
   el.classList.toggle('on');
   var picker = el.closest('.deploy-device-picker');
   if(!picker) return;
   var id = el.dataset.id;
+  var label = el.dataset.label || id;
   var chips = picker.querySelector('.ddp-chips');
   var exists = chips.querySelector('[data-id="' + id + '"]');
   if(el.classList.contains('on') && !exists){
     var chip = document.createElement('span');
     chip.className = 'picked';
     chip.dataset.id = id;
-    chip.innerHTML = id + ' <i onclick="removeDeployDevice(this,event)">&times;</i>';
+    var text = document.createElement('span');
+    text.className = 'picked-text';
+    text.textContent = label;
+    var close = document.createElement('i');
+    close.textContent = '×';
+    close.onclick = function(ev){ removeDeployDevice(close, ev); };
+    chip.appendChild(text);
+    chip.appendChild(close);
     chips.insertBefore(chip, picker.querySelector('.ddp-search'));
   } else if(!el.classList.contains('on') && exists) {
     exists.remove();
   }
+  var input = picker.querySelector('.ddp-search');
+  if(input) input.value = '';
+  picker.querySelectorAll('.ddp-item').forEach(function(item){ item.style.display = ''; });
 }
 function removeDeployDevice(x, ev){
   if(ev) ev.stopPropagation();
@@ -1800,8 +2110,11 @@ function removeDeployDevice(x, ev){
 }
 function filterDeployDevices(input){
   var q = (input.value || '').trim().toLowerCase();
-  input.closest('.deploy-device-picker').querySelectorAll('.ddp-item').forEach(function(item){
-    item.style.display = item.textContent.toLowerCase().indexOf(q) >= 0 ? '' : 'none';
+  var picker = input.closest('.deploy-device-picker');
+  if(!picker) return;
+  picker.classList.add('open');
+  picker.querySelectorAll('.ddp-item').forEach(function(item){
+    item.style.display = (item.dataset.id || '').toLowerCase().indexOf(q) >= 0 ? '' : 'none';
   });
 }
 function switchDeviceDeployTab(el, boxId, tab){
@@ -1812,6 +2125,24 @@ function switchDeviceDeployTab(el, boxId, tab){
   box.querySelectorAll('.dev-deploy-pane').forEach(function(p){ p.style.display='none'; });
   var pane = box.querySelector('[data-pane="' + tab + '"]');
   if(pane) pane.style.display='';
+}
+function switchDeviceDetailTab(el, boxId, tab){
+  el.parentNode.querySelectorAll('.tm-subtab').forEach(function(t){ t.classList.remove('active'); });
+  el.classList.add('active');
+  var box = document.getElementById(boxId);
+  if(!box) return;
+  box.querySelectorAll('.device-detail-pane').forEach(function(p){ p.classList.remove('active'); });
+  var pane = box.querySelector('[data-detail-pane="' + tab + '"]');
+  if(pane) pane.classList.add('active');
+}
+function switchDeviceRecordTab(el, boxId, tab){
+  el.parentNode.querySelectorAll('.tm-subtab').forEach(function(t){ t.classList.remove('active'); });
+  el.classList.add('active');
+  var box = document.getElementById(boxId);
+  if(!box) return;
+  box.querySelectorAll('.dev-record-pane').forEach(function(p){ p.classList.remove('active'); });
+  var pane = box.querySelector('[data-record-type="' + tab + '"]');
+  if(pane) pane.classList.add('active');
 }
 function switchDeviceModelRecordTab(el, boxId, tab){
   el.parentNode.querySelectorAll('.tm-subtab').forEach(function(t){ t.classList.remove('active'); });
@@ -3205,7 +3536,7 @@ if DP_AVAILABLE:
 
 
 # 把 data_platform 内部 href 重写到 /model/data/<...> 前缀
-_DP_PATHS = ("lake", "raw", "query", "datasets", "operators", "pipelines", "runs", "tags")
+_DP_PATHS = ("lake", "raw", "query", "datasets", "ds_progress", "operators", "pipelines", "runs", "tags")
 _DP_LINK_RE = re.compile(r'''(["'])/(''' + "|".join(_DP_PATHS) + r''')([/?"'])''')
 
 
@@ -3317,6 +3648,11 @@ def model_data_dataset_detail(ds_id):
     """
     return render_page(ds["name"], content, active="/model/data/datasets", module="model",
                        breadcrumb=f'模型平台 / 数据集 / <b>{ds["name"]}</b>', mvp_note="MVP 一期")
+
+
+@app.route("/model/data/ds_progress")
+def model_data_ds_progress():
+    return _dp_render(dp.ds_progress, "/model/data/query")
 
 
 @app.route("/model/data/raw")
@@ -3615,6 +3951,11 @@ def experiments():
             "中": '<span class="tag tag-orange">中</span>',
             "低": '<span class="tag tag-gray">低</span>',
         }.get(priority, f'<span class="tag tag-gray">{priority}</span>')
+        stop_action = (
+            f'<a href="#" onclick="confirmStopExperiment({html.escape(e["name"]).__repr__()});return false;">停止</a>'
+            if e["status"] == "running"
+            else '<span class="action-link action-disabled">停止</span>'
+        )
         rows += f"""<tr>
           <td><a href="/model/experiments/{e['id']}" style="color:#149DAA">{e['name']}</a></td>
           <td>{status_html}</td>
@@ -3623,7 +3964,8 @@ def experiments():
           <td class="muted mono">{e['started']}</td>
           <td class="muted">{e['dur']}</td>
           <td class="actions-cell">
-            <a class="tbtn" href="#" onclick="toast('Demo: 已复制配置');return false;">&#10697; 复制</a>
+            <a href="#" onclick="toast('Demo: 已复制配置');return false;">复制</a>
+            {stop_action}
           </td>
         </tr>"""
 
@@ -3635,7 +3977,8 @@ def experiments():
         "分布式训练 · 训练监控 (loss 曲线)",
     ) + f"""
     <div class="fb-labeled">
-      <div class="ff"><label>训练任务名称</label><input placeholder="请输入训练任务名称"></div>
+      <div class="ff"><label>名称</label><input placeholder="请输入名称"></div>
+      <div class="ff"><label>描述</label><input placeholder="请输入描述"></div>
       <div class="ff"><label>标签</label><select><option>请选择标签</option><option>robotwin</option><option>HouseHold</option><option>pi05</option></select></div>
       <div class="ff"><label>数据集</label><select><option>请选择数据集</option><option>clean_whiteboard_v4</option><option>tidy_desk_v2</option></select></div>
       <div class="filter-actions">
@@ -3682,9 +4025,14 @@ def experiments():
       <div class="drawer-body">
 
         <div class="fg">
-          <label class="fg-req">训练任务名称</label>
-          <input placeholder="请输入训练任务名称（A-z,0-9,_）" maxlength="50" oninput="updateNameCount(this)">
+          <label class="fg-req">名称</label>
+          <input placeholder="请输入名称（A-z,0-9,_）" maxlength="50" oninput="updateNameCount(this)">
           <div class="fg-hint" style="text-align:right" id="nameCount">0 / 50</div>
+        </div>
+
+        <div class="fg">
+          <label>描述</label>
+          <textarea rows="3" placeholder="请输入训练任务描述，例如任务目标、数据范围或备注说明"></textarea>
         </div>
 
         <div class="fg">
@@ -3773,6 +4121,24 @@ dataset:
 
 # === Basic configuration ===
 </textarea>
+        </div>
+
+        <div class="fg">
+          <label class="fg-req">入口命令</label>
+          <textarea id="entryCommandEditor" class="entry-command-area" spellcheck="false"># 需要填写个人的 WANDB_API_KEY，如 export WANDB_API_KEY=aaffxxxx
+export WANDB_API_KEY=put_your_wandb_api_key_here
+export WANDB_BASE_URL=https://api.bandw.top
+
+export XDG_CACHE_HOME=${{XDG_CACHE_HOME:-/mnt/vepfs01/output/qhj/cache/}}
+export HF_HOME=${{HF_HOME:-/mnt/vepfs01/output/lmz/cache}}
+export HF_ENDPOINT=https://hf-mirror.com
+export HF_HUB_OFFLINE=1
+
+export ENABLE_REPORT_QUANTA=True
+export QUANTA_SERVICE_URL="https://quanta.i.spirit-ai.com"
+
+# Quanta 会自动填充 experiment_id 为实际的 experiment_id，请不要修改 yaml 文件路径
+bash lerobot/scripts/train_unified.sh --gpus 8 --cuda-devices "0,1,2,3,4,5,6,7" /mnt/vepfs01/output/configs/train.yaml</textarea>
         </div>
 
       </div>
@@ -4017,23 +4383,47 @@ def experiment_detail(exp_id):
     tab_logs = f"""
     <div class="logs-pane">
       <div class="logs-subtabs">
-        <span class="ls-tab" onclick="switchLogSubtab(this)">历史日志</span>
-        <span class="ls-tab active" onclick="switchLogSubtab(this)">实时日志</span>
+        <span class="ls-tab active" data-log-tab="history" onclick="switchLogSubtab(this)">历史日志</span>
+        <span class="ls-tab" data-log-tab="realtime" onclick="switchLogSubtab(this)">实时日志</span>
       </div>
-      <div class="logs-controls">
-        <span class="lc-pill">实时加载中</span>
-        <div class="lc-grp"><label>实例</label><select><option>worker_0</option><option>worker_1</option><option>worker_2</option></select> <span style="color:rgba(0,0,0,0.3);font-size:12px;">&#9432;</span></div>
-        <div class="lc-right">
-          <span>查看最新 &#9432;</span>
-          <input class="lc-num" value="100"> 行
-          <span>时间戳</span><span class="lc-toggle on" onclick="toggleLogToggle(this)"></span>
-          <span>自动更新</span><span class="lc-toggle on" onclick="toggleLogToggle(this)"></span>
-          <span class="lc-icon">&#128269;</span>
-          <span class="lc-icon">&#9728;</span>
-          <span class="lc-icon">&#9974;</span>
+
+      <div class="log-subpane active" data-log-pane="history">
+        <div class="logs-box">
+          <div class="logs-controls">
+            <div class="lc-grp"><select><option>全部实例</option><option>worker-0</option><option>worker-1</option><option>worker-2</option></select></div>
+            <div class="lc-grp"><select><option>all</option><option>stdout</option><option>stderr</option></select></div>
+            <button class="lc-btn" onclick="toast('Demo: 选择时间范围')">&#9719; 近24小时</button>
+            <div class="lc-right">
+              <span>时间戳</span><span class="lc-toggle on" onclick="toggleLogToggle(this)"></span>
+            </div>
+          </div>
+          <pre class="logs-body">{log_text}</pre>
+        </div>
+        <div class="logs-pager">
+          <span class="pg-btn active">1</span><span class="pg-btn">2</span><span class="muted">...</span><span class="pg-btn">&rsaquo;</span>
+          <select><option>500 条/页</option><option>100 条/页</option></select>
         </div>
       </div>
-      <pre class="logs-body">{log_text}</pre>
+
+      <div class="log-subpane" data-log-pane="realtime">
+        <div class="logs-box">
+          <div class="logs-controls">
+            <span class="lc-pill">实时加载中</span>
+            <div class="lc-grp"><select><option>请选择实例</option><option>worker-0</option><option>worker-1</option><option>worker-2</option></select></div>
+            <span style="color:rgba(0,0,0,0.35);font-size:13px;">&#9432;</span>
+            <div class="lc-right">
+              <span>查看最新 &#9432;</span>
+              <input class="lc-num" value="100"> <span>行</span>
+              <span>时间戳</span><span class="lc-toggle on" onclick="toggleLogToggle(this)"></span>
+              <span>自动更新</span><span class="lc-toggle on" onclick="toggleLogToggle(this)"></span>
+            </div>
+          </div>
+          <div class="logs-empty">
+            <div class="emp-icon">EMP</div>
+            <div>暂无实时日志，详情请查看历史日志</div>
+          </div>
+        </div>
+      </div>
     </div>
     """
 
@@ -4205,6 +4595,47 @@ dataset:
 
 @app.route("/model/deploy")
 def deploy():
+    def _multi_query(name, alias=None):
+        values = []
+        raw_values = request.args.getlist(name)
+        if alias:
+            raw_values += request.args.getlist(alias)
+        for raw in raw_values:
+            for item in raw.split(","):
+                item = item.strip()
+                if item:
+                    values.append(item)
+        return list(dict.fromkeys(values))
+
+    checkpoint_filters = _multi_query("checkpoint", "ckpt")
+    people_filters = _multi_query("people", "operator")
+    device_filters = _multi_query("device")
+    deploy_checkpoint = request.args.get("deploy_checkpoint", "").strip()
+    open_deploy_drawer = request.args.get("open") == "deploy" or bool(deploy_checkpoint)
+
+    def _remote_filter_html(name, placeholder, options, selected):
+        selected_set = set(selected)
+        value_attr = html.escape(",".join(selected), quote=True)
+        chips = "".join(
+            f'<span class="rf-chip" data-value="{html.escape(item, quote=True)}"><span>{html.escape(item)}</span><i onclick="removeRemoteFilterChip(this,event)">×</i></span>'
+            for item in selected
+        )
+        option_html = "".join(
+            f'<div class="rf-option {"on" if opt in selected_set else ""}" data-value="{html.escape(opt, quote=True)}" onclick="toggleRemoteFilterOption(this)">'
+            f'<span class="rf-value">{html.escape(opt)}</span><span class="rf-check">✓</span></div>'
+            for opt in options
+        )
+        return f"""
+        <div class="remote-filter" data-name="{name}">
+          <input class="rf-hidden" type="hidden" name="{name}" value="{value_attr}">
+          <div class="rf-control" onclick="focusRemoteFilter(this)">
+            {chips}
+            <input type="text" placeholder="{html.escape(placeholder, quote=True)}" onfocus="openRemoteFilter(this)" oninput="filterRemoteFilterOptions(this)">
+          </div>
+          <div class="rf-menu">{option_html}</div>
+        </div>
+        """
+
     def deploy_progress_html(d):
         total = max(len(d["targets"]), 1)
         progress = d.get("progress") or {}
@@ -4226,11 +4657,23 @@ def deploy():
             f'</span>'
         )
 
+    def fmt_dt_seconds(value):
+        if not value or value == "—":
+            return "—"
+        return value if re.search(r"\d{2}:\d{2}:\d{2}$", value) else f"{value}:00"
+
     rows = ""
     for d in DEPLOYS:
         n = len(d["targets"])
         ckpt_name = f"{d['model']}_{d['version']}"
-        created_at = d.get("created") or ("2026-07-02 10:24" if d["status"] == "in_progress" else d["at"])
+        if checkpoint_filters and not any(item.lower() in ckpt_name.lower() for item in checkpoint_filters):
+            continue
+        if people_filters and not any(item.lower() in d["operator"].lower() for item in people_filters):
+            continue
+        if device_filters and not any(item.lower() in tgt.lower() for item in device_filters for tgt in d["targets"]):
+            continue
+        created_at = fmt_dt_seconds(d.get("created") or ("2026-07-02 10:24" if d["status"] == "in_progress" else d["at"]))
+        finished_at = fmt_dt_seconds(d["at"])
         progress = d.get("progress") or {}
         dev_states = (
             ["success"] * progress.get("success", 0)
@@ -4245,7 +4688,7 @@ def deploy():
         )
         targets_cell = (
             f'<div class="devs-cell">'
-            f'<span class="devs-pill" onclick="toggleDevsPop(this, event)">{n} 台设备 <span class="ca">&#9662;</span></span>'
+            f'<span class="devs-pill" onclick="toggleDevsPop(this, event)">{n}台 <span class="ca">&#9662;</span></span>'
             f'<div class="devs-pop">{devs_links}</div>'
             f'</div>'
         )
@@ -4257,29 +4700,55 @@ def deploy():
           <td>{deploy_progress_html(d)}</td>
           <td>{d['operator']}</td>
           <td class="muted mono">{created_at}</td>
-          <td class="muted mono">{d['at']}</td>
-          <td class="actions-cell"><a class="tbtn" href="#" onclick="toast('Demo: 查看部署详情');return false;">查看</a></td>
+          <td class="muted mono">{finished_at}</td>
         </tr>"""
     running_count = sum(1 for d in DEPLOYS if d["status"] == "in_progress")
-    ckpt_options = '<option value="" selected disabled>请选择 ckpt</option>' + "".join(
-        f'<option>{m["name"]}_{m["version"]}</option>' for m in MODELS
-    )
-    device_items = "".join(
-        f'<div class="ddp-item" data-id="{d["id"]}" onclick="toggleDeployDevice(this)">'
-        f'<span class="id">{d["id"]}</span><span class="loc">{d["location"]}</span></div>'
-        for d in DEVICES if d["status"] != "offline"
-    )
+    deploy_ckpt_names = [c["name"] for c in CHECKPOINTS]
+    selected_deploy_ckpt = deploy_checkpoint if deploy_checkpoint in deploy_ckpt_names else ""
+    ckpt_items = ""
+    for c in CHECKPOINTS:
+        value = c["name"]
+        desc = _ckpt_desc(c)
+        active = " on" if value == selected_deploy_ckpt else ""
+        ckpt_items += (
+            f'<div class="ddp-item{active}" data-value="{html.escape(value, quote=True)}" '
+            f'data-desc="{html.escape(desc, quote=True)}" onclick="selectDeployCheckpoint(this)">'
+            f'<span class="ddp-copy"><span class="ddp-main">{html.escape(value)}</span>'
+            f'<span class="ddp-sub">{html.escape(desc)}</span></span>'
+            f'<span class="ddp-check">已选</span></div>'
+        )
+    checkpoint_filter_options = sorted({f"{d['model']}_{d['version']}" for d in DEPLOYS})
+    people_filter_options = sorted({d["operator"] for d in DEPLOYS})
+    device_filter_options = sorted({target for d in DEPLOYS for target in d["targets"]})
+    purpose_map = {"moz1-001": "真机评测", "moz1-002": "部署验证", "moz1-003": "训练回归", "moz2-001": "采集", "moz2-002": "备用"}
+    device_items = ""
+    for d in DEVICES:
+        if d["status"] == "offline":
+            continue
+        serial = d["id"]
+        device_name = d["name"].replace(serial, "", 1).strip(" ·") or d["name"]
+        option_label = f"{device_name} · {serial}"
+        purpose = purpose_map.get(serial, "训练回归")
+        device_items += (
+            f'<div class="ddp-item" data-id="{html.escape(serial, quote=True)}" '
+            f'data-label="{html.escape(option_label, quote=True)}" onclick="toggleDeployDevice(this)">'
+            f'<span class="ddp-copy"><span class="ddp-main">{html.escape(device_name)} · '
+            f'<span class="serial">{html.escape(serial)}</span></span>'
+            f'<span class="ddp-sub">{html.escape(purpose)}</span></span>'
+            f'<span class="ddp-check">已选</span></div>'
+        )
     content = page_header(
         "部署任务",
         "Checkpoint 下发到指定设备 · 状态 + 操作历史",
         "灰度发布 · 回滚 · OTA 兼容性矩阵",
     ) + f"""
-    <div class="filter-bar">
-      <input class="grow" placeholder="ckpt">
-      <input placeholder="操作人">
+    <div class="fb-labeled">
+      <div class="ff"><label>checkpoint</label>{_remote_filter_html("checkpoint", "请输入 checkpoint", checkpoint_filter_options, checkpoint_filters)}</div>
+      <div class="ff"><label>操作人</label>{_remote_filter_html("people", "请输入操作人", people_filter_options, people_filters)}</div>
+      <div class="ff"><label>设备序列号</label>{_remote_filter_html("device", "请输入设备序列号", device_filter_options, device_filters)}</div>
       <div class="filter-actions">
-        <button class="btn btn-tertiary" onclick="resetFilters(this)">重置</button>
-        <button class="btn btn-primary" onclick="queryFilters(this)">查询</button>
+        <button class="btn btn-tertiary" onclick="resetDeployFilters()">重置</button>
+        <button class="btn btn-primary" onclick="queryDeployFilters(this)">查询</button>
       </div>
     </div>
     <div class="list-summarybar">
@@ -4288,41 +4757,50 @@ def deploy():
     </div>
     <div class="table-wrap deploy-table-wrap">
       <table class="ant-table">
-        <thead><tr><th>ID</th><th>ckpt</th><th>触发方式</th><th>目标设备</th><th>部署进度</th><th>操作人</th><th>创建时间</th><th>完成时间</th><th>操作</th></tr></thead>
-        <tbody>{rows}</tbody>
+        <thead><tr><th>ID</th><th>checkpoint</th><th>触发方式</th><th>目标设备</th><th>部署进度</th><th>操作人</th><th>创建时间</th><th>完成时间</th></tr></thead>
+        <tbody>{rows or '<tr><td colspan="8" style="text-align:center;padding:40px;color:rgba(0,0,0,0.25);">暂无匹配部署任务</td></tr>'}</tbody>
       </table>
     </div>
     <div class="drawer" id="drawerDeploy">
       <div class="drawer-head"><h3>新建部署</h3><span class="dismiss" onclick="closeDrawer()">&times;</span></div>
       <div class="drawer-body">
-        <div class="fg"><label>ckpt</label><select>{ckpt_options}</select></div>
-        <div class="fg"><label>触发方式</label>
-          <select>
-            <option value="" selected disabled>请选择触发方式</option>
-            <option>手动部署</option>
-            <option>test 任务</option>
-            <option>dagger 任务</option>
-          </select>
-        </div>
-        <div class="fg">
-          <label>目标设备（可多选）</label>
-          <div class="deploy-device-picker">
-            <div class="ddp-input ddp-chips">
-              <input class="ddp-search" placeholder="搜索设备序列号 / 位置" oninput="filterDeployDevices(this)">
+        <div class="fg"><label>checkpoint</label>
+          <div class="deploy-checkpoint-picker">
+            <input type="hidden" class="dcp-hidden" value="{html.escape(selected_deploy_ckpt, quote=True)}">
+            <div class="ddp-control" onclick="openDeployCheckpointPicker(this)">
+              <input class="dcp-search" placeholder="请选择 checkpoint" value="{html.escape(selected_deploy_ckpt, quote=True)}" onfocus="openDeployCheckpointPicker(this)" oninput="filterDeployCheckpoints(this)">
             </div>
-            <div class="ddp-list">{device_items}</div>
+            <div class="ddp-menu">{ckpt_items}</div>
           </div>
         </div>
-        <div class="muted" style="font-size:12px;margin-top:6px;">一期: 直接下发到指定设备 (不含灰度 / 回滚)</div>
+        <div class="fg">
+          <label>部署设备</label>
+          <div class="deploy-device-picker">
+            <div class="ddp-control ddp-chips" onclick="openDeployDevicePicker(this)">
+              <input class="ddp-search" placeholder="搜索设备序列号" onfocus="openDeployDevicePicker(this)" oninput="filterDeployDevices(this)">
+            </div>
+            <div class="ddp-menu">{device_items}</div>
+          </div>
+        </div>
       </div>
       <div class="drawer-foot">
         <button class="btn" onclick="closeDrawer()">取消</button>
-        <button class="btn btn-primary" onclick="toast('Demo: 部署已下发 → 设备平台 OTA 执行');closeDrawer()">下发</button>
+        <button class="btn btn-primary" onclick="toast('Demo: 部署已下发 → 设备平台 OTA 执行');closeDrawer()">部署</button>
       </div>
     </div>
     """
+    extra_script = ""
+    if open_deploy_drawer:
+        extra_script = """
+        <script>
+        document.addEventListener('DOMContentLoaded', function(){
+          openDrawer('drawerDeploy');
+        });
+        </script>
+        """
     return render_page("部署", content, active="/model/deploy", module="model",
-                       breadcrumb='模型平台 / <b>部署</b>', mvp_note="MVP 一期")
+                       breadcrumb='模型平台 / <b>部署</b>', mvp_note="MVP 一期",
+                       extra_script=extra_script)
 
 
 @app.route("/model/models")
@@ -4368,10 +4846,13 @@ def models():
 
 # ── 训练 · Checkpoint ──
 CKPT_STATUS_LABEL = {
-    "cached":       '<span class="tag tag-green">已缓存</span>',
-    "caching":      '<span class="tag tag-blue">缓存中</span>',
-    "not_cached":   '<span class="tag tag-gray">未缓存</span>',
+    "unmerged":     '<span class="tag tag-gray">未合并</span>',
+    "merging":      '<span class="tag tag-blue">合并中</span>',
     "merge_failed": '<span class="tag tag-red">合并失败</span>',
+    "not_cached":   '<span class="tag tag-gray">未缓存</span>',
+    "caching":      '<span class="tag tag-blue">缓存中</span>',
+    "cached":       '<span class="tag tag-green">已缓存</span>',
+    "cache_failed": '<span class="tag tag-red">缓存失败</span>',
 }
 
 CKPT_DESC_FALLBACKS = [
@@ -4395,6 +4876,39 @@ def _ckpt_train_step(ckpt):
     return m.group(1) if m else "—"
 
 
+def _ckpt_status_log(ckpt):
+    if ckpt["status"] == "merge_failed":
+        return "\n".join([
+            f"[{ckpt['created']}] merge_worker: start merge checkpoint {ckpt['id']}",
+            "merge_worker: safetensors index mismatch, missing shard model-00007-of-00008",
+            "merge_worker: checksum validation failed, output checkpoint has been discarded",
+            "suggestion: 重新拉取源 checkpoint 后重试合并任务",
+        ])
+    if ckpt["status"] == "cache_failed":
+        return "\n".join([
+            f"[{ckpt['created']}] cache_worker: start cache checkpoint {ckpt['id']}",
+            "cache_worker: TOS object fetch timeout after 3 retries",
+            "cache_worker: failed to materialize checkpoint files to cache volume",
+            "suggestion: 检查源路径权限和对象完整性后重新发起缓存",
+        ])
+    return ""
+
+
+def _ckpt_status_cell_html(ckpt, with_log=False):
+    tag = CKPT_STATUS_LABEL.get(ckpt["status"], ckpt["status"])
+    if not with_log or ckpt["status"] not in {"merge_failed", "cache_failed"}:
+        return tag
+    title = "日志"
+    log = html.escape(_ckpt_status_log(ckpt), quote=True)
+    title_attr = html.escape(title, quote=True)
+    return (
+        f'<span class="status-with-log">{tag}'
+        f'<button type="button" class="status-log-icon" title="查看日志" '
+        f'data-title="{title_attr}" data-log="{log}" onclick="openCkptStatusLog(this)">i</button>'
+        f'</span>'
+    )
+
+
 def _ckpt_detail_drawers(items):
     drawers = ""
     for c in items:
@@ -4409,7 +4923,7 @@ def _ckpt_detail_drawers(items):
           <div class="drawer-body">
             <h2 class="ckpt-detail-title">{c['name']}</h2>
             <div class="ckpt-form">
-              <div class="ckpt-form-row"><label>ckpt 名称</label><div class="ckpt-form-value">{c['name']}</div></div>
+              <div class="ckpt-form-row"><label>checkpoint</label><div class="ckpt-form-value">{c['name']}</div></div>
               <div class="ckpt-form-row"><label>描述</label><div class="ckpt-form-value">{desc}</div></div>
               <div class="ckpt-form-row"><label>训练任务</label><div class="ckpt-form-value">{train_name}</div></div>
               <div class="ckpt-form-row"><label>基础模型</label><div class="ckpt-form-value">{base_model}</div></div>
@@ -4427,19 +4941,20 @@ def _ckpt_detail_drawers(items):
     return drawers
 
 
-def _ckpt_rows_html(items, show_actions=True, show_status=True):
+def _ckpt_rows_html(items, show_actions=True, show_status=True, status_logs=False):
     rows = ""
     for idx, c in enumerate(items):
         desc = _ckpt_desc(c)
-        status_cell = f"<td>{CKPT_STATUS_LABEL.get(c['status'], c['status'])}</td>" if show_status else ""
+        status_cell = f"<td>{_ckpt_status_cell_html(c, status_logs)}</td>" if show_status else ""
         actions_cell = ""
         if show_actions:
-            actions_cell = """<td class="actions-cell">
-            <a class="tbtn" href="#" onclick="openTaskCapabilityModal();return false;">TEST</a>
-            <a class="tbtn" href="#" onclick="openTaskCapabilityModal();return false;">DAGGER</a>
-            <a class="tbtn" href="#" onclick="toast('Demo: Checkpoint 已发起部署');return false;">部署</a>
+            deploy_href = f"/model/deploy?open=deploy&deploy_checkpoint={quote(c['name'], safe='')}"
+            actions_cell = f"""<td class="actions-cell">
+            <a href="#" onclick="openTaskCapabilityModal();return false;">TEST</a>
+            <a href="#" onclick="openTaskCapabilityModal();return false;">DAgger</a>
+            <a href="{deploy_href}">部署</a>
           </td>"""
-        rows += f"""<tr>
+        rows += f"""<tr data-status="{c['status']}">
           <td class="mono">{c['id']}</td>
           <td><a class="ckpt-name-cell" href="#" onclick="openDrawer('drawerCkpt{c['id']}');return false;" title="{c['name']}">{c['name']}</a></td>
           <td class="muted">{desc}</td>
@@ -4451,9 +4966,26 @@ def _ckpt_rows_html(items, show_actions=True, show_status=True):
     return rows
 
 
-def _ckpt_table_html(items, show_actions=True, show_status=True):
-    status_col = '<col style="width:110px;">' if show_status else ""
-    status_head = "<th>状态 &#9662;</th>" if show_status else ""
+def _ckpt_table_html(items, show_actions=True, show_status=True, status_filter=False, status_logs=False):
+    status_col = '<col style="width:150px;">' if show_status and status_filter else ('<col style="width:110px;">' if show_status else "")
+    if show_status and status_filter:
+        status_head = """<th>
+            <div class="ckpt-status-filter">
+              <button type="button" class="ckpt-status-trigger" onclick="toggleCkptStatusFilter(this)">状态 <span class="caret">&#8963;</span></button>
+              <div class="ckpt-status-menu">
+                <button type="button" class="ckpt-status-option active" data-value="" onclick="selectCkptStatusFilter(this)">全部</button>
+                <button type="button" class="ckpt-status-option" data-value="unmerged" onclick="selectCkptStatusFilter(this)">未合并</button>
+                <button type="button" class="ckpt-status-option" data-value="merging" onclick="selectCkptStatusFilter(this)">合并中</button>
+                <button type="button" class="ckpt-status-option" data-value="merge_failed" onclick="selectCkptStatusFilter(this)">合并失败</button>
+                <button type="button" class="ckpt-status-option" data-value="not_cached" onclick="selectCkptStatusFilter(this)">未缓存</button>
+                <button type="button" class="ckpt-status-option" data-value="caching" onclick="selectCkptStatusFilter(this)">缓存中</button>
+                <button type="button" class="ckpt-status-option" data-value="cached" onclick="selectCkptStatusFilter(this)">已缓存</button>
+                <button type="button" class="ckpt-status-option" data-value="cache_failed" onclick="selectCkptStatusFilter(this)">缓存失败</button>
+              </div>
+            </div>
+          </th>"""
+    else:
+        status_head = "<th>状态 &#9662;</th>" if show_status else ""
     actions_col = '<col style="width:230px;">' if show_actions else ""
     actions_head = "<th>操作</th>" if show_actions else ""
     return f"""
@@ -4470,14 +5002,14 @@ def _ckpt_table_html(items, show_actions=True, show_status=True):
         </colgroup>
         <thead><tr>
           <th>ID</th>
-          <th>名称</th>
+          <th>checkpoint</th>
           <th>描述</th>
           {status_head}
           <th>创建人</th>
           <th>创建时间 &#x21F5;</th>
           {actions_head}
         </tr></thead>
-        <tbody>{_ckpt_rows_html(items, show_actions, show_status)}</tbody>
+        <tbody>{_ckpt_rows_html(items, show_actions, show_status, status_logs)}</tbody>
       </table>
     </div>
     {_ckpt_detail_drawers(items)}
@@ -4525,9 +5057,13 @@ def _new_checkpoint_drawer_html():
         <div class="fg-row">
           <div class="fg"><label>状态</label>
             <select>
-              <option>已缓存</option>
-              <option>未缓存</option>
+              <option>未合并</option>
+              <option>合并中</option>
               <option>合并失败</option>
+              <option>未缓存</option>
+              <option>缓存中</option>
+              <option>已缓存</option>
+              <option>缓存失败</option>
             </select>
           </div>
           <div class="fg"><label>缓存策略</label>
@@ -4564,8 +5100,8 @@ def checkpoints():
         "自动保留策略 · 远程同步 · 自动分支评测",
     ) + f"""
     <div class="fb-labeled">
-      <div class="ff"><label>名称</label><input placeholder="请输入名称"></div>
-      <div class="ff"><label>ID</label><input placeholder="请输入ID"></div>
+      <div class="ff"><label>checkpoint</label><input placeholder="请输入 checkpoint"></div>
+      <div class="ff"><label>创建人</label><input placeholder="请输入创建人"></div>
       <div class="filter-actions">
         <button class="btn btn-tertiary" onclick="resetFilters(this)">重置</button>
         <button class="btn btn-primary" onclick="queryFilters(this)">查询</button>
@@ -4591,44 +5127,50 @@ def checkpoints():
 @app.route("/model/checkpoints/cache-records")
 def checkpoint_cache_records():
     cache_items = [
-        {"id": "7916-50000", "name": "robotwin_pi05_datamil_stack_blocks_two_top10pct_cotrain_50000",
+        {"id": "8032", "name": "20260701_opd_taskC_raw_shards",
+         "description": "训练产物已登记, 尚未触发 checkpoint 合并。",
+         "status": "unmerged", "owner": "joanna.qiao", "created": "2026-07-01 10:30:00"},
+        {"id": "8028", "name": "20260630_HouseHold_stop_48_merging",
+         "description": "checkpoint 分片合并中, 完成后进入缓存流程。",
+         "status": "merging", "owner": "Min Chen", "created": "2026-06-30 22:18:44"},
+        {"id": "7916", "name": "robotwin_pi05_datamil_stack_blocks_two_top10pct_cotrain_50000",
          "description": "训练任务详情手动发起缓存, 用于后续评测与部署前确认。",
          "status": "caching", "owner": "tao.wang", "created": "2026-07-02 14:20:00"},
+        {"id": "7757", "name": "20260604_opd_exp1_sft_taskA_gpu8_50000_cache",
+         "description": "缓存任务拉取源文件失败, 待确认 TOS 路径与权限后重试。",
+         "status": "cache_failed", "owner": "Hannah Wang", "created": "2026-06-15 16:12:09"},
     ] + CHECKPOINTS
-    caching_count = sum(1 for c in cache_items if c["status"] == "caching")
-    cached_count = sum(1 for c in cache_items if c["status"] == "cached")
-    failed_count = sum(1 for c in cache_items if c["status"] == "merge_failed")
-    pending_count = sum(1 for c in cache_items if c["status"] == "not_cached")
-    content = page_header(
-        "缓存记录",
-        "展示全部状态的 checkpoint 缓存记录",
-        "缓存中 / 已缓存 / 未缓存 / 合并失败",
-    ) + f"""
-    <div class="page-actions" style="margin:-8px 0 14px;">
-      <a class="btn" href="/model/checkpoints">返回 Checkpoint</a>
+    content = f"""
+    <div class="cache-page-head">
+      <a class="btn" href="/model/checkpoints">&#8249; 返回</a>
+      <div class="cache-page-title">checkpoint 缓存记录</div>
     </div>
 
     <div class="fb-labeled">
-      <div class="ff"><label>名称</label><input placeholder="请输入名称"></div>
-      <div class="ff"><label>ID</label><input placeholder="请输入ID"></div>
-      <div class="ff"><label>状态</label>
-        <select><option>全部状态</option><option>缓存中</option><option>已缓存</option><option>未缓存</option><option>合并失败</option></select>
-      </div>
+      <div class="ff"><label>checkpoint</label><input placeholder="请输入 checkpoint"></div>
+      <div class="ff"><label>创建人</label><input placeholder="请输入创建人"></div>
       <div class="filter-actions">
         <button class="btn btn-tertiary" onclick="resetFilters(this)">重置</button>
         <button class="btn btn-primary" onclick="queryFilters(this)">查询</button>
       </div>
     </div>
 
-    <div class="ckpt-listbar">
-      <div class="ckpt-listnote">全部 {len(cache_items)} 条 · 缓存中 {caching_count} · 已缓存 {cached_count} · 未缓存 {pending_count} · 合并失败 {failed_count}</div>
-    </div>
-
-    {_ckpt_table_html(cache_items, show_actions=False)}
+    {_ckpt_table_html(cache_items, show_actions=False, status_filter=True, status_logs=True)}
     {_ckpt_pager_html()}
+    <div class="modal-mask" id="ckptStatusLogModalMask" onclick="closeCkptStatusLog()">
+      <div class="modal" onclick="event.stopPropagation()">
+        <div class="modal-head">
+          <h3 id="ckptStatusLogTitle">日志</h3>
+          <span class="dismiss" onclick="closeCkptStatusLog()">&times;</span>
+        </div>
+        <div class="modal-body">
+          <pre class="ckpt-log-pre" id="ckptStatusLogBody"></pre>
+        </div>
+      </div>
+    </div>
     """
-    return render_page("缓存记录", content, active="/model/checkpoints", module="model",
-                       breadcrumb='模型平台 / 部署 / Checkpoint / <b>缓存记录</b>', mvp_note="MVP 一期")
+    return render_page("checkpoint 缓存记录", content, active="/model/checkpoints", module="model",
+                       breadcrumb='模型平台 / 部署 / Checkpoint / <b>checkpoint 缓存记录</b>', mvp_note="MVP 一期")
 
 
 @app.route("/model/checkpoints/<ckpt_id>")
@@ -5513,18 +6055,69 @@ def devices_list():
         model = f"{deploy['model']}_{deploy['version']}" if deploy else d["model"]
         return purpose_map.get(d["id"], "训练回归"), admin_map.get(d["id"], d["current_user"]), model, image_map.get(d["id"], "—")
 
+    def deploy_record_status_tag(status):
+        return {
+            "deployed": '<span class="tag tag-green">成功</span>',
+            "in_progress": '<span class="tag tag-blue">部署中</span>',
+            "failed": '<span class="tag tag-red">失败</span>',
+            "pending": '<span class="tag tag-gray">未开始</span>',
+            "not_deployed": '<span class="tag tag-gray">未开始</span>',
+        }.get(status, f'<span class="tag tag-gray">{status}</span>')
+
     for idx, d in enumerate(DEVICES):
         purpose, admin, deployed_model, deployed_image = device_meta(d)
+        software_version = deployed_image.rsplit(":", 1)[-1] if deployed_image != "—" else "—"
         detail_id = f"drawerDeviceDetail{idx}"
         related_deploys = [dp for dp in DEPLOYS if d["id"] in dp["targets"]]
-        deployed_deploys = [dp for dp in related_deploys if dp["status"] == "deployed"]
+        model_version_map = {
+            "moz1-001": ["spirit-v1.6-whiteboard-baseline_v1.6.0", "spirit-grasp-policy_v0.9.8"],
+            "moz1-002": ["spirit-v1.7-whiteboard-base_v1.7.0", "spirit-desk-policy_v1.2.1"],
+            "moz1-003": ["spirit-v1.7-whiteboard-base_v1.7.1", "spirit-v1.6-whiteboard-baseline_v1.6.0"],
+            "moz2-001": ["spirit-dualarm-base_v2.0.0", "spirit-mobile-nav_v1.4.2"],
+            "moz2-002": ["—"],
+        }
+        current_model_versions = model_version_map.get(d["id"]) or list(dict.fromkeys(
+            f"{dp['model']}_{dp['version']}" for dp in related_deploys if dp["status"] in ("deployed", "in_progress")
+        )) or [deployed_model]
+        software_version_map = {
+            "moz1-001": [("thor-v0.9.8", "deployed"), ("runtime-v1.5.4", "deployed")],
+            "moz1-002": [("thor-v1.0.0", "deployed"), ("runtime-v1.7.2", "deployed")],
+            "moz1-003": [("thor-v1.0.0", "in_progress"), ("runtime-v1.5.8", "deployed")],
+            "moz2-001": [("latest", "deployed"), ("mobi-runtime-v2.0.3", "deployed")],
+            "moz2-002": [("—", "not_deployed")],
+        }
+        software_versions = software_version_map.get(d["id"], [(software_version, "deployed" if software_version != "—" else "not_deployed")])
+        current_model_html = "".join(f"<b>{html.escape(value)}</b>" for value in current_model_versions)
+        current_software_html = "".join(f"<b class=\"mono\">{html.escape(value)}</b>" for value, state in software_versions if state != "not_deployed") or '<b class="mono">—</b>'
+        model_pop_items = "".join(
+            f'<a href="#" onclick="return false;"><span class="dev-id">{html.escape(value)}</span></a>'
+            for value in current_model_versions if value != "—"
+        ) or '<a href="#" onclick="return false;"><span class="dev-id">暂无</span></a>'
+        software_pop_items = "".join(
+            f'<a href="#" onclick="return false;"><span class="dev-id">{html.escape(value)}</span></a>'
+            for value, state in software_versions if state != "not_deployed"
+        ) or '<a href="#" onclick="return false;"><span class="dev-id">暂无</span></a>'
+        model_count = sum(1 for value in current_model_versions if value != "—")
+        software_count = sum(1 for value, state in software_versions if state != "not_deployed")
+        model_count_cell = (
+            f'<div class="devs-cell">'
+            f'<span class="devs-pill" onclick="toggleDevsPop(this, event)">{model_count}<span class="ca">&#9662;</span></span>'
+            f'<div class="devs-pop">{model_pop_items}</div>'
+            f'</div>'
+        )
+        software_count_cell = (
+            f'<div class="devs-cell">'
+            f'<span class="devs-pill" onclick="toggleDevsPop(this, event)">{software_count}<span class="ca">&#9662;</span></span>'
+            f'<div class="devs-pop">{software_pop_items}</div>'
+            f'</div>'
+        )
 
         def _model_record_rows(items, empty_text):
             body = "".join(
                 f"""<tr>
                   <td class="mono">{dp['id']}</td>
                   <td>{dp['model']}_{dp['version']}</td>
-                  <td>{status_tag(dp['status'])}</td>
+                  <td>{deploy_record_status_tag(dp['status'])}</td>
                   <td>{dp['operator']}</td>
                   <td class="muted mono">{dp['at']}</td>
                 </tr>"""
@@ -5532,72 +6125,66 @@ def devices_list():
             )
             return body or f'<tr><td colspan="5" class="empty">{empty_text}</td></tr>'
 
-        model_records_deployed = _model_record_rows(deployed_deploys, "暂无已部署模型记录")
         model_records_all = _model_record_rows(related_deploys, "暂无模型部署记录")
-        image_records = (
+        software_records = "".join(
             f"""<tr>
-              <td class="mono">img_{idx + 1:03d}</td>
-              <td>{deployed_image}</td>
-              <td>{'已部署' if deployed_image != '—' else '未部署'}</td>
+              <td class="mono">soft_{idx + 1:03d}-{soft_idx}</td>
+              <td>{html.escape(version)}</td>
+              <td>{deploy_record_status_tag(state)}</td>
               <td>{admin}</td>
-              <td class="muted mono">{'2026-07-02 10:30' if deployed_image != '—' else '—'}</td>
+              <td class="muted mono">{'2026-07-02 10:30' if state != 'not_deployed' else '—'}</td>
             </tr>"""
+            for soft_idx, (version, state) in enumerate(software_versions, 1)
         )
         detail_drawers += f"""
         <div class="drawer drawer-queue" id="{detail_id}">
           <div class="drawer-head"><h3>设备详情</h3><span class="dismiss" onclick="closeDrawer()">&times;</span></div>
           <div class="drawer-body">
-            <div class="queue-detail">
-              <div class="queue-detail-section">
-                <h3>基础信息</h3>
-                <div class="queue-info-grid">
-                  <div class="queue-info-item"><span>序列号</span><b class="mono">{d['id']}</b></div>
-                  <div class="queue-info-item"><span>设备名称</span><b>{d['name']}</b></div>
-                  <div class="queue-info-item"><span>用途</span><b>{purpose}</b></div>
-                  <div class="queue-info-item"><span>管理员</span><b>{admin}</b></div>
+            <div id="deviceDetailTabs{idx}">
+              <div class="tm-subtabs" style="margin:0 0 16px;">
+                <button class="tm-subtab active" onclick="switchDeviceDetailTab(this,'deviceDetailTabs{idx}','basic')">基本信息</button>
+                <button class="tm-subtab" onclick="switchDeviceDetailTab(this,'deviceDetailTabs{idx}','records')">部署记录</button>
+              </div>
+              <div class="device-detail-pane active" data-detail-pane="basic">
+                <div class="queue-detail-section">
+                  <h3>设备信息</h3>
+                  <div class="queue-info-grid">
+                    <div class="queue-info-item"><span>序列号</span><b class="mono">{d['id']}</b></div>
+                    <div class="queue-info-item"><span>设备名称</span><b>{d['name']}</b></div>
+                    <div class="queue-info-item"><span>用途</span><b>{purpose}</b></div>
+                    <div class="queue-info-item"><span>管理员</span><b>{admin}</b></div>
+                  </div>
+                </div>
+                <div class="queue-detail-section">
+                  <h3>部署信息</h3>
+                  <div class="queue-info-grid">
+                    <div class="queue-info-item"><span>模型版本</span><div class="device-version-list">{current_model_html}</div></div>
+                    <div class="queue-info-item"><span>软件版本</span><div class="device-version-list">{current_software_html}</div></div>
+                  </div>
                 </div>
               </div>
-              <div class="queue-detail-section">
-                <h3>部署信息</h3>
-                <div class="queue-info-grid" style="margin-bottom:16px;">
-                  <div class="queue-info-item"><span>当前模型</span><b>{deployed_model}</b></div>
-                  <div class="queue-info-item"><span>当前镜像</span><b class="mono">{deployed_image}</b></div>
-                </div>
-                <div id="devDeployTabs{idx}">
-                  <div class="ep-tabs">
-                    <button class="ep-tab active" onclick="switchDeviceDeployTab(this,'devDeployTabs{idx}','model')">模型部署记录</button>
-                    <button class="ep-tab" onclick="switchDeviceDeployTab(this,'devDeployTabs{idx}','image')">镜像部署记录</button>
-                  </div>
-                  <div class="dev-deploy-pane" data-pane="model">
-                    <div id="devModelRecordTabs{idx}">
-                      <div class="tm-subtabs" style="margin:0 0 12px;">
-                        <button class="tm-subtab active" onclick="switchDeviceModelRecordTab(this,'devModelRecordTabs{idx}','deployed')">已部署</button>
-                        <button class="tm-subtab" onclick="switchDeviceModelRecordTab(this,'devModelRecordTabs{idx}','all')">全部</button>
-                      </div>
-                      <div class="dev-model-record-pane" data-record-pane="deployed">
-                        <div class="table-wrap">
-                          <table class="ant-table">
-                            <thead><tr><th>部署任务</th><th>模型</th><th>状态</th><th>操作人</th><th>时间</th></tr></thead>
-                            <tbody>{model_records_deployed}</tbody>
-                          </table>
-                        </div>
-                      </div>
-                      <div class="dev-model-record-pane" data-record-pane="all" style="display:none;">
-                        <div class="table-wrap">
-                          <table class="ant-table">
-                            <thead><tr><th>部署任务</th><th>模型</th><th>状态</th><th>操作人</th><th>时间</th></tr></thead>
-                            <tbody>{model_records_all}</tbody>
-                          </table>
-                        </div>
+              <div class="device-detail-pane" data-detail-pane="records">
+                <div class="queue-detail-section">
+                  <div id="deviceRecordTabs{idx}">
+                    <div class="tm-subtabs" style="margin:0 0 12px;">
+                      <button class="tm-subtab active" onclick="switchDeviceRecordTab(this,'deviceRecordTabs{idx}','model')">模型部署记录</button>
+                      <button class="tm-subtab" onclick="switchDeviceRecordTab(this,'deviceRecordTabs{idx}','software')">软件部署记录</button>
+                    </div>
+                    <div class="dev-record-pane active" data-record-type="model">
+                      <div class="table-wrap">
+                        <table class="ant-table">
+                          <thead><tr><th>部署任务</th><th>模型版本</th><th>状态</th><th>操作人</th><th>时间</th></tr></thead>
+                          <tbody>{model_records_all}</tbody>
+                        </table>
                       </div>
                     </div>
-                  </div>
-                  <div class="dev-deploy-pane" data-pane="image" style="display:none;">
-                    <div class="table-wrap">
-                      <table class="ant-table">
-                        <thead><tr><th>记录 ID</th><th>镜像</th><th>状态</th><th>操作人</th><th>时间</th></tr></thead>
-                        <tbody>{image_records}</tbody>
-                      </table>
+                    <div class="dev-record-pane" data-record-type="software">
+                      <div class="table-wrap">
+                        <table class="ant-table">
+                          <thead><tr><th>记录 ID</th><th>软件版本</th><th>状态</th><th>操作人</th><th>时间</th></tr></thead>
+                          <tbody>{software_records}</tbody>
+                        </table>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -5614,8 +6201,8 @@ def devices_list():
           <td>{d['name']}</td>
           <td>{purpose}</td>
           <td>{admin}</td>
-          <td>{deployed_model}</td>
-          <td class="mono" title="{deployed_image}" style="max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{deployed_image}</td>
+          <td>{model_count_cell}</td>
+          <td>{software_count_cell}</td>
         </tr>"""
     n_online = sum(1 for d in DEVICES if d["status"] in ("online", "in_use"))
     n_offline = sum(1 for d in DEVICES if d["status"] == "offline")
@@ -5631,7 +6218,7 @@ def devices_list():
         ("设备类型", "2 种", "moz1 · moz2"),
     ]) + f"""
     <div class="filter-bar">
-      <input class="grow" placeholder="搜索设备 ID / 位置...">
+      <input class="grow" placeholder="搜索设备 ID / 名称...">
       <select><option>全部状态</option><option>在线</option><option>离线</option></select>
       <div class="filter-actions">
         <button class="btn btn-tertiary" onclick="resetFilters(this)">重置</button>
