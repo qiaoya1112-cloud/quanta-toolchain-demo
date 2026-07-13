@@ -545,6 +545,7 @@ EVAL_TASKS = [
         "status": "\u8bc4\u6d4b\u5b8c\u6210", "priority": "\u9ad8",
         "total_sessions": 30, "collect_done": 30, "eval_done": 30,
         "created_by": "Lance Li", "created_at": "2026-04-05",
+        "ckpt_id": "7916",  # \u7528\u4e8e\u8840\u7f18\u5173\u8054
     },
     {
         "id": "t2", "task_no": 1002, "name": "Spirit v1.6 \u5168\u7248\u672c\u7efc\u5408\u8bc4\u6d4b",
@@ -553,6 +554,7 @@ EVAL_TASKS = [
         "status": "\u8bc4\u6d4b\u4e2d", "priority": "\u9ad8",
         "total_sessions": 60, "collect_done": 60, "eval_done": 42,
         "created_by": "Lance Li", "created_at": "2026-04-08",
+        "ckpt_id": "7757",  # \u7528\u4e8e\u8840\u7f18\u5173\u8054
     },
     {
         "id": "t3", "task_no": 1003, "name": "Spirit v1.6-rc1 vs \u5916\u90e8\u57fa\u7ebf\u5bf9\u6807",
@@ -561,6 +563,7 @@ EVAL_TASKS = [
         "status": "\u91c7\u96c6\u4e2d", "priority": "\u9ad8",
         "total_sessions": 80, "collect_done": 55, "eval_done": 0,
         "created_by": "Rick Guo", "created_at": "2026-04-10",
+        "ckpt_id": "7560",  # \u7528\u4e8e\u8840\u7f18\u5173\u8054
     },
     {
         "id": "t4", "task_no": 1004, "name": "\u5de5\u5177\u4f7f\u7528\u573a\u666f\u4e13\u9879\u6d4b\u8bd5",
@@ -569,6 +572,7 @@ EVAL_TASKS = [
         "status": "\u672a\u5f00\u59cb", "priority": "\u4e2d",
         "total_sessions": 30, "collect_done": 0, "eval_done": 0,
         "created_by": "Lance Li", "created_at": "2026-04-12",
+        "ckpt_id": "7539",  # \u7528\u4e8e\u8840\u7f18\u5173\u8054
     },
     {
         "id": "t5", "task_no": 1005, "name": "Spirit v1.6-rc1 \u591a\u7ef4\u80fd\u529b\u91cf\u8868\u8bc4\u4f30",
@@ -577,6 +581,62 @@ EVAL_TASKS = [
         "status": "\u8bc4\u6d4b\u4e2d", "priority": "\u4f4e",
         "total_sessions": 40, "collect_done": 40, "eval_done": 18,
         "created_by": "Rick Guo", "created_at": "2026-04-14",
+        "ckpt_id": "9001",  # \u7528\u4e8e\u8840\u7f18\u5173\u8054 (DEMO checkpoint)
+    },
+    # \u2500\u2500 DEMO \u6f14\u793a\u94fe\u8def\u8bc4\u6d4b\u4efb\u52a1 \u2500\u2500
+    {
+        "id": "t6", "task_no": 1006, "name": "\u767d\u677f\u6e05\u6d01\u57fa\u7840\u80fd\u529b\u8bc4\u6d4b_v5_ckpt40k",
+        "benchmark_id": "b1", "eval_type": "baseline",
+        "model_ids": ["m3"],
+        "status": "\u8bc4\u6d4b\u5b8c\u6210", "priority": "\u9ad8",
+        "total_sessions": 20, "collect_done": 20, "eval_done": 20,
+        "created_by": "joanna.qiao", "created_at": "2026-06-17",
+        "ckpt_id": "9001",
+    },
+    {
+        "id": "t7", "task_no": 1007, "name": "\u767d\u677f\u6e05\u6d01\u8fdb\u9636\u573a\u666f\u8bc4\u6d4b_v5_ckpt40k",
+        "benchmark_id": "b1", "eval_type": "baseline",
+        "model_ids": ["m3"],
+        "status": "\u8bc4\u6d4b\u5b8c\u6210", "priority": "\u9ad8",
+        "total_sessions": 20, "collect_done": 20, "eval_done": 20,
+        "created_by": "joanna.qiao", "created_at": "2026-06-17",
+        "ckpt_id": "9001",
+    },
+    {
+        "id": "t8", "task_no": 1008, "name": "\u767d\u677f\u6e05\u6d01\u57fa\u7840\u80fd\u529b\u8bc4\u6d4b_v5_ckpt50k",
+        "benchmark_id": "b1", "eval_type": "baseline",
+        "model_ids": ["m3"],
+        "status": "\u8bc4\u6d4b\u5b8c\u6210", "priority": "\u9ad8",
+        "total_sessions": 20, "collect_done": 20, "eval_done": 20,
+        "created_by": "joanna.qiao", "created_at": "2026-06-17",
+        "ckpt_id": "9002",
+    },
+    {
+        "id": "t9", "task_no": 1009, "name": "\u767d\u677f\u6e05\u6d01\u57fa\u7840\u80fd\u529b\u8bc4\u6d4b_v5ctrl_ckpt45k",
+        "benchmark_id": "b1", "eval_type": "baseline",
+        "model_ids": ["m4"],
+        "status": "\u8bc4\u6d4b\u5b8c\u6210", "priority": "\u9ad8",
+        "total_sessions": 20, "collect_done": 20, "eval_done": 20,
+        "created_by": "Lance Li", "created_at": "2026-06-18",
+        "ckpt_id": "9003",
+    },
+    {
+        "id": "t10", "task_no": 1010, "name": "\u684c\u9762\u6574\u7406\u7efc\u5408\u8bc4\u6d4b_joint_ckpt35k",
+        "benchmark_id": "b2", "eval_type": "baseline",
+        "model_ids": ["m4"],
+        "status": "\u8bc4\u6d4b\u5b8c\u6210", "priority": "\u4e2d",
+        "total_sessions": 15, "collect_done": 15, "eval_done": 15,
+        "created_by": "Lance Li", "created_at": "2026-06-19",
+        "ckpt_id": "9004",
+    },
+    {
+        "id": "t11", "task_no": 1011, "name": "\u684c\u9762\u6e05\u6d01\u57fa\u51c6\u8bc4\u6d4b_baseline_ckpt30k",
+        "benchmark_id": "b2", "eval_type": "baseline",
+        "model_ids": ["m5"],
+        "status": "\u8bc4\u6d4b\u5b8c\u6210", "priority": "\u4f4e",
+        "total_sessions": 10, "collect_done": 10, "eval_done": 10,
+        "created_by": "Min Chen", "created_at": "2026-06-20",
+        "ckpt_id": "9005",
     },
 ]
 # Backward compat: add completed_sessions alias

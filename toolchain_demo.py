@@ -26,8 +26,9 @@ import html
 import os
 import re
 import sys
+import json
 from urllib.parse import quote
-from flask import Flask, render_template_string, request, redirect
+from flask import Flask, render_template_string, request, redirect, jsonify
 
 app = Flask(__name__)
 app.secret_key = "embodied-toolchain-mvp-demo"
@@ -64,36 +65,111 @@ except Exception as e:
 # ── 数据平台 ──
 
 COLLECT_TASKS = [
+    # ── DEMO 演示链路采集任务（勿删，用于血缘全功能覆盖）──
+    {"id": "19001", "name": "20260610_CleanWhiteboard_Moz1WB_original",
+     "project": "DEMO预训练采集", "status": "completed", "priority": "中", "stage": "标注",
+     "source_type": "original",
+     "collected": 120, "qc_pass": 115, "qc_warn": 3, "qc_fail": 2,
+     "label_done": 115, "label_total": 120, "sample_done": 0, "sample_total": 0,
+     "created": "2026-06-10", "due": "2026-06-12"},
+    {"id": "19002", "name": "20260614_CleanWhiteboard_Moz1WB_dagger",
+     "project": "DEMO Dagger 数据聚合", "status": "completed", "priority": "高", "stage": "标注",
+     "source_type": "dagger", "src_checkpoint_id": "9001", "src_experiment_id": "—",
+     "src_dagger_at": "2026-06-14 09:00", "src_failure_type": "抓取失败", "src_trigger_device": "moz1-003",
+     "collected": 45, "qc_pass": 42, "qc_warn": 2, "qc_fail": 1,
+     "label_done": 42, "label_total": 45, "sample_done": 0, "sample_total": 0,
+     "created": "2026-06-18", "due": "2026-06-20"},
+    {"id": "19003", "name": "20260611_CleanWhiteboard_Moz1WB_originalB",
+     "project": "DEMO预训练采集", "status": "completed", "priority": "中", "stage": "标注",
+     "source_type": "original",
+     "collected": 60, "qc_pass": 58, "qc_warn": 1, "qc_fail": 1,
+     "label_done": 58, "label_total": 60, "sample_done": 0, "sample_total": 0,
+     "created": "2026-06-11", "due": "2026-06-13"},
+    {"id": "19004", "name": "20260608_DeskOrganize_Moz1Desk_original",
+     "project": "DEMO预训练采集", "status": "completed", "priority": "中", "stage": "标注",
+     "source_type": "original",
+     "collected": 90, "qc_pass": 85, "qc_warn": 3, "qc_fail": 2,
+     "label_done": 85, "label_total": 90, "sample_done": 0, "sample_total": 0,
+     "created": "2026-06-08", "due": "2026-06-10"},
+    {"id": "19005", "name": "20260615_DeskOrganize_Moz1Desk_dagger",
+     "project": "DEMO Dagger 数据聚合", "status": "completed", "priority": "高", "stage": "质检",
+     "source_type": "dagger", "src_checkpoint_id": "9001", "src_experiment_id": "—",
+     "src_dagger_at": "2026-06-15 11:00", "src_failure_type": "物体遮挡", "src_trigger_device": "moz1-005",
+     "collected": 30, "qc_pass": 28, "qc_warn": 1, "qc_fail": 1,
+     "label_done": 28, "label_total": 30, "sample_done": 0, "sample_total": 0,
+     "created": "2026-06-15", "due": "2026-06-17"},
+    {"id": "19006", "name": "20260609_DeskOrganize_Moz1Desk_originalB",
+     "project": "DEMO预训练采集", "status": "completed", "priority": "中", "stage": "标注",
+     "source_type": "original",
+     "collected": 55, "qc_pass": 52, "qc_warn": 2, "qc_fail": 1,
+     "label_done": 52, "label_total": 55, "sample_done": 0, "sample_total": 0,
+     "created": "2026-06-09", "due": "2026-06-11"},
+    {"id": "19007", "name": "20260605_DeskClean_Moz1Desk_baseline",
+     "project": "DEMO预训练采集", "status": "completed", "priority": "低", "stage": "标注",
+     "source_type": "original",
+     "collected": 50, "qc_pass": 48, "qc_warn": 1, "qc_fail": 1,
+     "label_done": 48, "label_total": 50, "sample_done": 0, "sample_total": 0,
+     "created": "2026-06-05", "due": "2026-06-07"},
     {"id": "11092", "name": "20260529_河北省石家庄元氏县马村乡使庄村富强东路19号_光轮智能_UDASv2",
      "project": "预训练采集", "status": "running", "priority": "中", "stage": "标注",
+     "source_type": "original",
      "collected": 180, "qc_pass": 171, "qc_warn": 4, "qc_fail": 5,
      "label_done": 0, "label_total": 176, "sample_done": 0, "sample_total": 0,
      "created": "2026-06-07", "due": "2026-06-08"},
     {"id": "11091", "name": "20260607_山东省德州市陵城区安德街道马颊河路德州科技职业学院B10宿舍楼",
      "project": "预训练采集", "status": "running", "priority": "中", "stage": "采集",
+     "source_type": "original",
      "collected": 18, "qc_pass": 0, "qc_warn": 0, "qc_fail": 18,
      "label_done": 0, "label_total": 18, "sample_done": 0, "sample_total": 0,
      "created": "2026-06-07", "due": "2026-06-08"},
     {"id": "11090", "name": "20260607_山东省德州市陵城区安德街道马颊河路德州科技职业学院B10宿舍楼",
      "project": "预训练采集", "status": "running", "priority": "中", "stage": "采集",
+     "source_type": "original",
      "collected": 42, "qc_pass": 0, "qc_warn": 0, "qc_fail": 42,
      "label_done": 0, "label_total": 42, "sample_done": 0, "sample_total": 0,
      "created": "2026-06-07", "due": "2026-06-08"},
     {"id": "11089", "name": "20260607_山东省德州市陵城区安德街道马颊河路德州科技职业学院B10宿舍楼",
      "project": "预训练采集", "status": "running", "priority": "中", "stage": "质检",
+     "source_type": "original",
      "collected": 56, "qc_pass": 0, "qc_warn": 0, "qc_fail": 56,
      "label_done": 0, "label_total": 56, "sample_done": 0, "sample_total": 0,
      "created": "2026-06-07", "due": "2026-06-08"},
     {"id": "11088", "name": "20260607_山东省德州市陵城区安德街道马颊河路德州科技职业学院B10宿舍楼",
      "project": "预训练采集", "status": "running", "priority": "中", "stage": "质检",
+     "source_type": "original",
      "collected": 28, "qc_pass": 0, "qc_warn": 0, "qc_fail": 28,
      "label_done": 0, "label_total": 28, "sample_done": 0, "sample_total": 0,
      "created": "2026-06-07", "due": "2026-06-08"},
     {"id": "11087", "name": "20260607_山东省德州市陵城区安德街道马颊河路德州科技职业学院B10宿舍楼",
      "project": "预训练采集", "status": "running", "priority": "中", "stage": "标注",
+     "source_type": "original",
      "collected": 31, "qc_pass": 1, "qc_warn": 0, "qc_fail": 30,
      "label_done": 0, "label_total": 31, "sample_done": 0, "sample_total": 0,
      "created": "2026-06-07", "due": "2026-06-08"},
+    {"id": "12088", "name": "20260618_Dagger回流_擦白板抓取失败案例",
+     "project": "Dagger 数据聚合", "status": "running", "priority": "高", "stage": "标注",
+     "source_type": "dagger",
+     "src_checkpoint_id": "7500",
+     "src_experiment_id": "exp_7560",
+     "src_dagger_at": "2026-06-18 14:30",
+     "src_failure_type": "抓取失败",
+     "src_trigger_device": "moz1-003",
+     "collected": 45, "qc_pass": 40, "qc_warn": 3, "qc_fail": 2,
+     "label_done": 12, "label_total": 43,
+     "created": "2026-06-18", "due": "2026-06-20", "owner": "system_dagger",
+     "robot": "moz1-003", "scene": "办公室", "current": 45, "target": 50},
+    {"id": "12089", "name": "20260619_Dagger回流_整理桌面物体遮挡",
+     "project": "Dagger 数据聚合", "status": "completed", "priority": "中", "stage": "质检",
+     "source_type": "dagger",
+     "src_checkpoint_id": "7757",
+     "src_experiment_id": "exp_7757",
+     "src_dagger_at": "2026-06-19 09:15",
+     "src_failure_type": "物体遮挡",
+     "src_trigger_device": "moz1-005",
+     "collected": 28, "qc_pass": 25, "qc_warn": 2, "qc_fail": 1,
+     "label_done": 25, "label_total": 27,
+     "created": "2026-06-19", "due": "2026-06-21", "owner": "system_dagger",
+     "robot": "moz1-005", "scene": "办公室", "current": 28, "target": 30},
 ]
 
 
@@ -175,44 +251,94 @@ LABEL_TASKS = [
 ]
 
 DATASETS = [
+    # ── DEMO 演示链路数据集（勿删）──
+    {"id": "DEMO_DS_9001", "name": "clean_whiteboard", "version": "v5", "type": "train",
+     "episodes": 225, "frames": 81000, "train_ratio": 0.8, "val_ratio": 0.1, "test_ratio": 0.1,
+     "owner": "joanna.qiao", "status": "active", "created": "2026-06-16 10:00",
+     "source_tasks": ["19001", "19002", "19003"]},
+    {"id": "DEMO_DS_9002", "name": "tidy_desk_A", "version": "v2", "type": "train",
+     "episodes": 120, "frames": 43200, "train_ratio": 0.8, "val_ratio": 0.1, "test_ratio": 0.1,
+     "owner": "Lance Li", "status": "active", "created": "2026-06-16 11:00",
+     "source_tasks": ["19004", "19005"]},
+    {"id": "DEMO_DS_9003", "name": "tidy_desk_B", "version": "v1", "type": "train",
+     "episodes": 55, "frames": 19800, "train_ratio": 0.8, "val_ratio": 0.1, "test_ratio": 0.1,
+     "owner": "Lance Li", "status": "active", "created": "2026-06-16 12:00",
+     "source_tasks": ["19006"]},
+    {"id": "DEMO_DS_9004", "name": "clean_table_baseline", "version": "v1", "type": "train",
+     "episodes": 50, "frames": 18000, "train_ratio": 0.8, "val_ratio": 0.1, "test_ratio": 0.1,
+     "owner": "Min Chen", "status": "active", "created": "2026-06-16 13:00",
+     "source_tasks": ["19007"]},
+    {"id": "ds_500", "name": "clean_whiteboard_v3", "version": "v3", "type": "train",
+     "episodes": 95, "frames": 34200, "train_ratio": 0.8, "val_ratio": 0.1, "test_ratio": 0.1,
+     "owner": "joanna.qiao", "status": "active", "created": "2026-06-10 10:00",
+     "source_tasks": ["11092"]},
     {"id": "ds_501", "name": "clean_whiteboard_v4", "version": "v4", "type": "train",
      "episodes": 137, "frames": 51200, "train_ratio": 0.8, "val_ratio": 0.1, "test_ratio": 0.1,
      "owner": "joanna.qiao", "status": "active", "created": "2026-06-14 10:00",
-     "source_tasks": ["擦白板 · 第 3 批", "擦白板 · 补采"]},
+     "source_tasks": ["11092", "11091"]},
     {"id": "ds_502", "name": "tidy_desk_v2", "version": "v2", "type": "train",
      "episodes": 118, "frames": 44600, "train_ratio": 0.8, "val_ratio": 0.1, "test_ratio": 0.1,
      "owner": "Lance Li", "status": "active", "created": "2026-06-09 17:00",
-     "source_tasks": ["整理桌面 · 导师演示"]},
+     "source_tasks": ["11089", "12089"]},
     {"id": "ds_503", "name": "plant_pour_pilot", "version": "v1", "type": "train",
      "episodes": 0, "frames": 0, "train_ratio": 0.8, "val_ratio": 0.1, "test_ratio": 0.1,
      "owner": "Min Chen", "status": "pending", "created": "2026-06-16 14:30",
-     "source_tasks": ["浇花 · 试点"]},
+     "source_tasks": ["11090"]},
     {"id": "ds_504", "name": "clean_whiteboard_eval_v1", "version": "v1", "type": "eval",
      "episodes": 12, "frames": 4400, "train_ratio": 0.0, "val_ratio": 0.0, "test_ratio": 1.0,
      "owner": "joanna.qiao", "status": "active", "created": "2026-06-14 11:00",
-     "source_tasks": ["擦白板 · 评测留出"]},
+     "source_tasks": ["11087"]},
+    {"id": "ds_505", "name": "clean_whiteboard_v5", "version": "v5", "type": "train",
+     "episodes": 182, "frames": 65400, "train_ratio": 0.8, "val_ratio": 0.1, "test_ratio": 0.1,
+     "owner": "joanna.qiao", "status": "active", "created": "2026-06-19 10:00",
+     "source_tasks": ["11092", "11091", "12088"]},
 ]
 
 # ── 模型平台 ──
 
 EXPERIMENTS = [
+    # ── DEMO 演示链路训练任务（勿删）──
+    {"id": "DEMO_EXP_9001", "name": "20260617_pi05_cleanwhiteboard_v5_main",
+     "model_type": "Spirit v1.7", "dataset": "clean_whiteboard", "dataset_id": "DEMO_DS_9001",
+     "dataset_ids": ["DEMO_DS_9001"], "tag": "—",
+     "epochs": 50, "current_epoch": 50,
+     "best_metric": 0.873, "metric_name": "成功率", "status": "done",
+     "started": "2026-06-17 03:00:00", "dur": "8h 30m", "owner": "joanna.qiao"},
+    {"id": "DEMO_EXP_9002", "name": "20260618_pi05_cleanwhiteboard_v5_ctrl",
+     "model_type": "Spirit v1.7", "dataset": "clean_whiteboard", "dataset_id": "DEMO_DS_9001",
+     "dataset_ids": ["DEMO_DS_9001"], "tag": "—",
+     "epochs": 50, "current_epoch": 45,
+     "best_metric": 0.851, "metric_name": "成功率", "status": "running",
+     "started": "2026-06-18 09:00:00", "dur": "—", "owner": "Lance Li"},
+    {"id": "DEMO_EXP_9003", "name": "20260618_pi05_tidydesk_joint_train",
+     "model_type": "Spirit v1.7", "dataset": "tidy_desk_A + tidy_desk_B", "dataset_id": "DEMO_DS_9002",
+     "dataset_ids": ["DEMO_DS_9002", "DEMO_DS_9003"], "tag": "—",
+     "epochs": 50, "current_epoch": 50,
+     "best_metric": 0.828, "metric_name": "成功率", "status": "done",
+     "started": "2026-06-18 14:00:00", "dur": "9h 10m", "owner": "Lance Li"},
+    {"id": "DEMO_EXP_9004", "name": "20260620_pi05_cleantable_baseline",
+     "model_type": "Spirit v1.7", "dataset": "clean_table_baseline", "dataset_id": "DEMO_DS_9004",
+     "dataset_ids": ["DEMO_DS_9004"], "tag": "—",
+     "epochs": 50, "current_epoch": 50,
+     "best_metric": 0.781, "metric_name": "成功率", "status": "done",
+     "started": "2026-06-20 08:00:00", "dur": "7h 40m", "owner": "Min Chen"},
     {"id": "exp_7916", "name": "robotwin_pi05_datamil_stack_blocks_two_top10pct_cotrain",
-     "model_type": "Spirit v1.7", "dataset": "—", "tag": "—",
+     "model_type": "Spirit v1.7", "dataset": "—", "dataset_id": "ds_505", "dataset_ids": ["ds_505", "ds_502"], "tag": "—",
      "epochs": 50, "current_epoch": 35,
      "best_metric": 0.852, "metric_name": "成功率", "status": "running",
      "started": "2026-06-17 03:23:39", "dur": "—", "owner": "—"},
     {"id": "exp_7757", "name": "20260615_pi05_oldft_sortpill_newobs_centercrop_manip2",
-     "model_type": "Spirit v1.7", "dataset": "—", "tag": "—",
+     "model_type": "Spirit v1.7", "dataset": "—", "dataset_id": "ds_505", "tag": "—",
      "epochs": 50, "current_epoch": 28,
      "best_metric": 0.821, "metric_name": "成功率", "status": "running",
      "started": "2026-06-16 11:57:35", "dur": "—", "owner": "—"},
     {"id": "exp_7560", "name": "20260615_HouseHold_newper_stop_32",
-     "model_type": "Spirit v1.7", "dataset": "—", "tag": "—",
+     "model_type": "Spirit v1.7", "dataset": "—", "dataset_id": "ds_501", "tag": "—",
      "epochs": 50, "current_epoch": 33,
      "best_metric": 0.812, "metric_name": "成功率", "status": "running",
      "started": "2026-06-16 11:18:17", "dur": "—", "owner": "—"},
     {"id": "exp_7539", "name": "20260602_ManualDagger2_NarrowTable_Moz1WB",
-     "model_type": "Spirit v1.6", "dataset": "tidy_desk_v2", "tag": "—",
+     "model_type": "Spirit v1.6", "dataset": "tidy_desk_v2", "dataset_id": "ds_502", "tag": "—",
      "epochs": 50, "current_epoch": 50,
      "best_metric": 0.873, "metric_name": "成功率", "status": "done",
      "started": "2026-06-16 01:52:20", "dur": "9h 12m", "owner": "—"},
@@ -249,14 +375,31 @@ EXPERIMENTS = [
 ]
 
 EVALS = [
-    {"id": "ev_701", "exp": "spirit-v1.7-whiteboard-base", "benchmark": "clean_whiteboard_eval_v1",
-     "success_rate": 0.873, "mse": 0.0142, "status": "passed", "at": "2026-06-15 10:30"},
-    {"id": "ev_702", "exp": "spirit-v1.7-desk-sft", "benchmark": "tidy_desk_v2 (val split)",
-     "success_rate": None, "mse": None, "status": "pending", "at": "—"},
-    {"id": "ev_703", "exp": "spirit-v1.6-whiteboard-baseline", "benchmark": "clean_whiteboard_eval_v1",
-     "success_rate": 0.792, "mse": 0.0187, "status": "passed", "at": "2026-06-14 08:30"},
-    {"id": "ev_704", "exp": "spirit-v1.7-whiteboard-large-bs", "benchmark": "clean_whiteboard_eval_v1",
-     "success_rate": 0.848, "mse": 0.0156, "status": "passed", "at": "2026-06-16 22:30"},
+    # ── 评测任务数据来自 quanta_eval_platform.EVAL_TASKS ──
+    # 这里作为血缘系统的数据源，保持与评测平台同步
+    {"id": "t1", "task_no": 1001, "name": "Spirit v1.5 vs v1.6-alpha 基础能力横测",
+     "benchmark": "基础能力横测", "status": "评测完成", "at": "2026-04-05", "ckpt_id": "7916", "success_rate": 0.873},
+    {"id": "t2", "task_no": 1002, "name": "Spirit v1.6 全版本综合评测",
+     "benchmark": "综合评测", "status": "评测中", "at": "2026-04-08", "ckpt_id": "7757", "success_rate": 0.792},
+    {"id": "t3", "task_no": 1003, "name": "Spirit v1.6-rc1 vs 外部基线对标",
+     "benchmark": "外部基线对标", "status": "采集中", "at": "2026-04-10", "ckpt_id": "7560", "success_rate": 0.848},
+    {"id": "t4", "task_no": 1004, "name": "工具使用场景专项测试",
+     "benchmark": "工具使用测试", "status": "未开始", "at": "2026-04-12", "ckpt_id": "7466", "success_rate": None},
+    {"id": "t5", "task_no": 1005, "name": "Spirit v1.6-rc1 多维能力量表评估",
+     "benchmark": "多维能力评估", "status": "评测中", "at": "2026-04-14", "ckpt_id": "9001", "success_rate": 0.889},
+    # ── DEMO 演示链路评测（用于完整血缘展示）──
+    {"id": "t6", "task_no": 1006, "name": "白板清洁基础能力评测_v5_ckpt40k",
+     "benchmark": "白板清洁基础", "status": "评测完成", "at": "2026-06-17", "ckpt_id": "9001", "success_rate": 0.873},
+    {"id": "t7", "task_no": 1007, "name": "白板清洁进阶场景评测_v5_ckpt40k",
+     "benchmark": "白板清洁进阶", "status": "评测完成", "at": "2026-06-17", "ckpt_id": "9001", "success_rate": 0.865},
+    {"id": "t8", "task_no": 1008, "name": "白板清洁基础能力评测_v5_ckpt50k",
+     "benchmark": "白板清洁基础", "status": "评测完成", "at": "2026-06-17", "ckpt_id": "9002", "success_rate": 0.889},
+    {"id": "t9", "task_no": 1009, "name": "白板清洁基础能力评测_v5ctrl_ckpt45k",
+     "benchmark": "白板清洁基础", "status": "评测完成", "at": "2026-06-18", "ckpt_id": "9003", "success_rate": 0.842},
+    {"id": "t10", "task_no": 1010, "name": "桌面整理综合评测_joint_ckpt35k",
+     "benchmark": "桌面整理综合", "status": "评测完成", "at": "2026-06-19", "ckpt_id": "9004", "success_rate": 0.828},
+    {"id": "t11", "task_no": 1011, "name": "桌面清洁基准评测_baseline_ckpt30k",
+     "benchmark": "桌面清洁基准", "status": "评测完成", "at": "2026-06-20", "ckpt_id": "9005", "success_rate": 0.781},
 ]
 
 DEPLOYS = [
@@ -292,26 +435,55 @@ MODELS = [
 # ── 训练 · Checkpoint ──
 
 CHECKPOINTS = [
+    # ── DEMO 演示链路 Checkpoint（勿删；名称末尾数字为 step）──
+    {"id": "9001", "name": "20260617_clean_whiteboard_v5_main_40000",
+     "status": "cached", "owner": "joanna.qiao", "created": "2026-06-17 12:00:00", "exp_id": "DEMO_EXP_9001",
+     "parent_checkpoint_id": "7916", "parent_type": "finetune"},
+    {"id": "9002", "name": "20260617_clean_whiteboard_v5_main_50000",
+     "status": "cached", "owner": "joanna.qiao", "created": "2026-06-17 18:00:00", "exp_id": "DEMO_EXP_9001",
+     "parent_checkpoint_id": "9001", "parent_type": "finetune"},
+    {"id": "9003", "name": "20260618_clean_whiteboard_v5_ctrl_45000",
+     "status": "cached", "owner": "Lance Li", "created": "2026-06-18 20:00:00", "exp_id": "DEMO_EXP_9002",
+     "parent_checkpoint_id": None, "parent_type": None},
+    {"id": "9004", "name": "20260618_tidy_desk_joint_train_35000",
+     "status": "cached", "owner": "Lance Li", "created": "2026-06-18 23:00:00", "exp_id": "DEMO_EXP_9003",
+     "parent_checkpoint_id": None, "parent_type": None},
+    {"id": "9005", "name": "20260620_clean_table_baseline_30000",
+     "status": "cached", "owner": "Min Chen", "created": "2026-06-20 16:00:00", "exp_id": "DEMO_EXP_9004",
+     "parent_checkpoint_id": None, "parent_type": None},
     {"id": "7916", "name": "20260613_HouseHold_stop_32_40000",
-     "status": "cached", "owner": "Lance Li", "created": "2026-06-16 18:39:01"},
+     "status": "cached", "owner": "—", "created": "2026-06-13 00:00:02", "exp_id": "exp_7916",
+     "parent_checkpoint_id": "7500", "parent_type": "dagger"},
     {"id": "7757", "name": "20260604_opd_exp1_sft_taskA_gpu8_50000",
-     "status": "not_cached", "owner": "Hannah Wang", "created": "2026-06-15 16:08:33"},
-    {"id": "7560", "name": "20260610_HouseHold_stop_32_50000",
-     "status": "cached", "owner": "—", "created": "2026-06-13 09:42:33"},
-    {"id": "7539", "name": "20260609_opd_exp5a_single_wobcloss_taskAB_gpu8_50000",
-     "status": "cached", "owner": "—", "created": "2026-06-13 05:05:41"},
+     "status": "not_cached", "owner": "—", "created": "2026-06-12 19:26:39", "exp_id": "exp_7757",
+     "parent_checkpoint_id": None, "parent_type": None},
+    {"id": "7560", "name": "20260609_opd_exp5a_single_wobcloss_taskAB_gpu8_50000",
+     "status": "cached", "owner": "—", "created": "2026-06-13 05:05:41", "exp_id": "exp_7560",
+     "parent_checkpoint_id": None, "parent_type": None},
+    {"id": "7500", "name": "20260610_clean_whiteboard_v4_baseline",
+     "status": "cached", "owner": "joanna.qiao", "created": "2026-06-11 10:00:00", "exp_id": "exp_7560",
+     "parent_checkpoint_id": "7285", "parent_type": "finetune"},
     {"id": "7466", "name": "20260610_HouseHold_stop_32_40000",
-     "status": "merge_failed", "owner": "—", "created": "2026-06-12 17:18:42"},
+     "status": "merge_failed", "owner": "—", "created": "2026-06-12 17:18:42", "exp_id": "exp_7539",
+     "parent_checkpoint_id": None, "parent_type": None},
     {"id": "7374", "name": "20260518_HouseHold_stop_24_50000",
-     "status": "cached", "owner": "Lance Li", "created": "2026-06-11 19:30:46"},
+     "status": "cached", "owner": "Lance Li", "created": "2026-06-11 19:30:46", "exp_id": "exp_7374",
+     "parent_checkpoint_id": None, "parent_type": None},
     {"id": "7325", "name": "20260518_HouseHold_stop_24_40000",
-     "status": "cached", "owner": "Lance Li", "created": "2026-06-11 03:42:38"},
+     "status": "cached", "owner": "Lance Li", "created": "2026-06-11 03:42:38", "exp_id": "exp_7325",
+     "parent_checkpoint_id": None, "parent_type": None},
     {"id": "7285", "name": "20260608_opd_exp4_cascade_taskAB_gpu8_50000",
-     "status": "cached", "owner": "—", "created": "2026-06-10 15:08:00"},
+     "status": "cached", "owner": "—", "created": "2026-06-10 15:08:00", "exp_id": "exp_7285",
+     "parent_checkpoint_id": None, "parent_type": None},
     {"id": "6873", "name": "catl-ckpt-0608",
-     "status": "cached", "owner": "Liquan Zheng", "created": "2026-06-08 18:12:22"},
+     "status": "cached", "owner": "Liquan Zheng", "created": "2026-06-08 18:12:22", "exp_id": "exp_6873",
+     "parent_checkpoint_id": None, "parent_type": None},
     {"id": "6869", "name": "catl-liquanzheng-upload",
-     "status": "not_cached", "owner": "Liquan Zheng", "created": "2026-06-08 17:26:35"},
+     "status": "not_cached", "owner": "Liquan Zheng", "created": "2026-06-08 17:26:35", "exp_id": "exp_6869",
+     "parent_checkpoint_id": None, "parent_type": None},
+    {"id": "7467", "name": "20260615_pi05_oldft_sortpill_newobs_centercrop_30000",
+     "status": "cached", "owner": "—", "created": "2026-06-15 22:10:00", "exp_id": "exp_7466",
+     "parent_checkpoint_id": None, "parent_type": None},
 ]
 
 # ── 部署 · 模型转换 / 推理服务 ──
@@ -886,32 +1058,90 @@ select option:disabled { color:rgba(0,0,0,0.32); }
 /* ── Lineage (asset page) ── */
 .lin-pick { display:flex; gap:10px; align-items:center; margin-bottom:18px; }
 .lin-pick select { padding:7px 14px; border:1px solid #d9d9d9; border-radius:8px; font-size:14px; outline:none; min-width:280px; }
-.lin-flow { display:grid; grid-template-columns:1fr 30px 1fr 30px 1fr 30px 1fr; gap:0; align-items:stretch; background:#fff; padding:24px 18px; border:1px solid #f0f0f0; border-radius:8px; }
-.lin-col { display:flex; flex-direction:column; gap:8px; }
+.lin-flow { display:grid; grid-template-columns:1fr 1fr 1fr; gap:24px; align-items:center; background:#fff; padding:24px 18px; border:1px solid #f0f0f0; border-radius:8px; }
+.lin-col { display:flex; flex-direction:column; gap:8px; position:relative; }
 .lin-col h4 { font-size:12px; color:rgba(0,0,0,0.55); margin:0 0 8px; font-weight:500; text-transform:uppercase; letter-spacing:0.6px; }
-.lin-node { padding:10px 14px; border-radius:8px; border:1px solid #d9d9d9; background:#fafafa; font-size:13px; line-height:1.55; }
-.lin-node .ln-ttl { font-weight:500; color:rgba(0,0,0,0.85); }
-.lin-node .ln-meta { color:rgba(0,0,0,0.45); font-size:12px; margin-top:3px; }
+.lin-col-title { font-size:14px; color:rgba(0,0,0,0.85); margin:0 0 12px; font-weight:600; text-align:center; }
+.lin-node { padding:10px 10px 8px 10px; border-radius:8px; border:1px solid #d9d9d9; background:#fafafa; font-size:13px; line-height:1.55; position:relative; z-index:2; display:flex; flex-direction:column; gap:2px; }
+.lin-node .ln-body { flex:1; }
+.lin-node .ln-ttl { font-weight:500; color:rgba(0,0,0,0.85); font-size:13px; line-height:1.4; word-break:break-all; }
+.lin-node .ln-meta { color:rgba(0,0,0,0.45); font-size:11px; margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.lin-node .ln-icon-actions { display:flex; gap:4px; flex-wrap:wrap; margin-top:6px; padding-top:6px; border-top:1px solid rgba(0,0,0,0.06); }
+.ln-icon-btn { height:22px; padding:0 7px; display:flex; align-items:center; justify-content:center; background:rgba(47,84,235,0.07); border:1px solid rgba(47,84,235,0.18); border-radius:4px; cursor:pointer; transition:all 0.15s; text-decoration:none; color:#2f54eb; font-size:11px; font-weight:500; white-space:nowrap; }
+.ln-icon-btn:hover { background:#2f54eb; border-color:#2f54eb; color:#fff; }
 .lin-node.teal { background:#e1f5ee; border-color:#5dcaa5; }
 .lin-node.purple { background:#eeedfe; border-color:#7F77DD; }
 .lin-node.coral { background:#fef0eb; border-color:#f0997b; }
-.lin-node.blue { background:#eaf4ff; border-color:#69a7e8; }
+.lin-node.blue { background:#e6f7ff; border-color:#1890ff; }
 .lin-node.amber { background:#fff7e6; border-color:#ffc069; }
 .lin-node.green { background:#edf9f0; border-color:#7bcf8a; }
+.lin-node.dagger { background:#fef0eb; border-color:#ff9500; }
 .lin-node.anchor { box-shadow:0 0 0 3px rgba(20,157,170,0.14); border-color:#149DAA; }
-.lin-arr { display:flex; align-items:center; justify-content:center; color:rgba(0,0,0,0.4); font-size:22px; }
-.lin-flow.lin-flow-5 { grid-template-columns:1fr 24px 1fr 24px 1.1fr 24px 1fr 24px 1fr; }
+
+/* 卡片固定高度 + 相对定位（供浮层锚定）*/
+.lin-node { position:relative; }
+
+/* 卡片操作按钮区（常驻）*/
+.ln-actions { display:flex; flex-wrap:wrap; gap:10px; margin-top:8px; padding-top:6px; border-top:1px solid rgba(0,0,0,0.06); }
+.ln-actions a.btn-link { font-size:12px; color:#149DAA; text-decoration:none; white-space:nowrap; cursor:pointer; }
+.ln-actions a.btn-link:hover { text-decoration:underline; }
+
+/* 悬停浮层（只读详情）*/
+.lin-node[data-lineage-tip] { cursor:default; }
+.lin-node.muted { background:#fafafa; border-style:dashed; }
+/* 图例 */
+.lin-legend { display:flex; flex-wrap:wrap; gap:16px; margin-bottom:14px; padding:12px 16px; background:#fafbfc; border:1px solid #f0f0f0; border-radius:8px; font-size:12px; color:rgba(0,0,0,0.6); }
+.lin-legend .lg-item { display:flex; align-items:center; gap:6px; }
+.lin-legend .lg-dot { width:14px; height:14px; border-radius:4px; border:1.5px solid; display:inline-block; }
+.lin-legend .lg-line { width:18px; height:0; border-top:3px solid #149DAA; display:inline-block; }
+/* 锚点"当前"角标 */
+.lin-node.anchor { position:relative; }
+.lin-node.anchor::before { content:"当前"; position:absolute; top:-8px; left:10px; background:#149DAA; color:#fff; font-size:10px; padding:1px 6px; border-radius:3px; z-index:3; }
+
+/* 链路高亮系统 */
+.lin-node { transition:opacity 0.3s ease, box-shadow 0.3s ease; }
+.lin-node.highlight { opacity:1; box-shadow:0 0 0 3px rgba(20,157,170,0.3); position:relative; z-index:10; }
+.lin-node.dimmed { opacity:0.4; filter:grayscale(60%); }
+.lin-node.locked { box-shadow:0 0 0 3px rgba(20,157,170,0.5); }
+.lin-flow.lin-flow-5 { grid-template-columns:1fr 1fr 1.1fr 1fr 1fr; }
 .lin-summary { display:grid; grid-template-columns:repeat(4, 1fr); gap:12px; margin-bottom:14px; }
 .lin-sum-card { background:#fff; border:1px solid #f0f0f0; border-radius:8px; padding:14px 16px; }
 .lin-sum-card .k { font-size:12px; color:rgba(0,0,0,0.45); }
 .lin-sum-card .v { margin-top:4px; font-size:20px; font-weight:600; color:rgba(0,0,0,0.85); font-family:'SFMono-Regular',Consolas,monospace; }
 .lin-actions { display:flex; justify-content:flex-end; gap:8px; margin-bottom:14px; }
 .lin-table { margin-top:16px; }
-.lin-filter { background:#fff; border:1px solid #f0f0f0; border-radius:8px; padding:14px 16px; margin-bottom:14px; display:flex; align-items:flex-end; gap:12px; flex-wrap:wrap; }
-.lin-filter .lf-field { display:flex; flex-direction:column; gap:6px; min-width:240px; flex:1; }
-.lin-filter label { font-size:12px; color:rgba(0,0,0,0.55); }
-.lin-filter input { height:34px; border:1px solid #d9d9d9; border-radius:6px; padding:0 11px; font-size:13px; outline:none; box-sizing:border-box; }
+.lin-filter { background:#fff; border:1px solid #f0f0f0; border-radius:8px; padding:14px 16px; margin-bottom:14px; }
+.lin-filter .lf-input-group { display:flex; gap:8px; align-items:center; max-width:600px; }
+.lin-filter .lf-dimension-select { height:34px; border:1px solid #d9d9d9; border-radius:6px; padding:0 11px; font-size:13px; outline:none; background:#fff; min-width:120px; }
+.lin-filter .lf-dimension-select:focus { border-color:#149DAA; box-shadow:0 0 0 2px rgba(20,157,170,0.10); }
+.lin-filter input { flex:1; height:34px; border:1px solid #d9d9d9; border-radius:6px; padding:0 11px; font-size:13px; outline:none; box-sizing:border-box; min-width:200px; }
 .lin-filter input:focus { border-color:#149DAA; box-shadow:0 0 0 2px rgba(20,157,170,0.10); }
+
+/* Checkpoint History Modal */
+.ckpt-history-modal { position:fixed; top:0; left:0; width:100%; height:100%; z-index:9999; display:flex; align-items:center; justify-content:center; }
+.ckpt-history-overlay { position:absolute; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); }
+.ckpt-history-content { position:relative; width:90%; max-width:600px; max-height:80vh; background:#fff; border-radius:8px; box-shadow:0 4px 20px rgba(0,0,0,0.3); display:flex; flex-direction:column; z-index:10000; }
+.ckpt-history-header { display:flex; justify-content:space-between; align-items:center; padding:20px 24px; border-bottom:1px solid #f0f0f0; }
+.ckpt-history-header h3 { margin:0; font-size:18px; font-weight:600; color:#1a1a1a; }
+.ckpt-history-close { background:none; border:none; font-size:24px; color:#999; cursor:pointer; padding:0; width:32px; height:32px; display:flex; align-items:center; justify-content:center; border-radius:4px; }
+.ckpt-history-close:hover { background:#f5f5f5; color:#333; }
+.ckpt-history-body { padding:24px; overflow-y:auto; flex:1; }
+.ckpt-timeline { position:relative; }
+.ckpt-timeline-item { position:relative; padding-left:40px; margin-bottom:24px; }
+.ckpt-timeline-item:last-child { margin-bottom:0; }
+.ckpt-timeline-item::before { content:''; position:absolute; left:11px; top:32px; bottom:0; width:2px; background:#e5e7eb; }
+.ckpt-timeline-item:last-child::before { display:none; }
+.ckpt-timeline-dot { position:absolute; left:0; top:8px; width:24px; height:24px; border-radius:50%; background:#fff; border:3px solid #d1d5db; z-index:1; }
+.ckpt-timeline-item.current .ckpt-timeline-dot { background:#f59e0b; border-color:#f59e0b; box-shadow:0 0 0 4px rgba(245,158,11,0.1); }
+.ckpt-timeline-node { background:#fff; border:1px solid #e5e7eb; border-radius:6px; padding:12px 16px; cursor:pointer; transition:all 0.2s; }
+.ckpt-timeline-node:hover { border-color:#f59e0b; box-shadow:0 2px 8px rgba(0,0,0,0.08); }
+.ckpt-timeline-node-id { font-size:11px; color:#6b7280; margin-bottom:4px; }
+.ckpt-timeline-node-name { font-size:14px; font-weight:500; color:#1a1a1a; margin-bottom:4px; word-break:break-word; overflow-wrap:break-word; }
+.ckpt-timeline-node-meta { font-size:12px; color:#6b7280; }
+.ckpt-timeline-connector { padding-left:40px; margin:12px 0; font-size:13px; color:#6b7280; display:flex; align-items:center; gap:8px; }
+.ckpt-timeline-connector.dagger { color:#f59e0b; }
+.ckpt-timeline-connector::before { content:'▼'; font-size:10px; }
+.ckpt-timeline-connector.dagger::before { content:'⚡'; }
 .kv-grid { display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:12px; }
 .kv { background:#fafbfc; border:1px solid #f0f0f0; border-radius:8px; padding:12px 14px; min-width:0; }
 .kv span { display:block; font-size:12px; color:rgba(0,0,0,0.45); margin-bottom:5px; }
@@ -2276,6 +2506,40 @@ def status_tag(s):
     return STATUS_TAG.get(s, f'<span class="tag tag-gray">{s}</span>')
 
 
+def get_node_chain_ids(node, node_type):
+    """
+    返回节点所属的所有 chain-id 列表
+    node_type: "task" | "dataset" | "experiment" | "checkpoint" | "eval"
+    """
+    if node_type == "task":
+        # 采集任务 → 找所有使用它的数据集
+        datasets = [ds for ds in DATASETS if node["id"] in ds.get("source_tasks", [])]
+        return [f"chain_{ds['id']}" for ds in datasets]
+
+    elif node_type == "dataset":
+        # 数据集本身就是链路锚点
+        return [f"chain_{node['id']}"]
+
+    elif node_type == "experiment":
+        # 训练任务 → 找它使用的数据集
+        ds = _dataset_by_id_or_name(node.get("dataset", ""))
+        return [f"chain_{ds['id']}"] if ds else []
+
+    elif node_type == "checkpoint":
+        # Checkpoint → 通过训练任务找数据集
+        exp = _exp_by_id(f"exp_{node['id']}")
+        if exp:
+            ds = _dataset_by_id_or_name(exp.get("dataset", ""))
+            return [f"chain_{ds['id']}"] if ds else []
+        return []
+
+    elif node_type == "eval":
+        # 评测任务暂时不追踪链路
+        return []
+
+    return []
+
+
 def progress_bar(cur, total, cls=""):
     pct = 0 if total == 0 else int(cur * 100 / total)
     cls_attr = f" {cls}" if cls else ""
@@ -3423,7 +3687,7 @@ def label():
 def datasets():
     rows = ""
     for d in DATASETS:
-        src_html = " · ".join(f'<span class="tag tag-teal">{s}</span>' for s in d["source_tasks"])
+        src_html = " · ".join(f'<span class="tag tag-teal">{resolve_task_name(s)}</span>' for s in d["source_tasks"])
         split = f'{int(d["train_ratio"]*100)} / {int(d["val_ratio"]*100)} / {int(d["test_ratio"]*100)}'
         type_tag = '<span class="tag tag-blue">训练</span>' if d["type"] == "train" else '<span class="tag tag-purple">评测</span>'
         rows += f"""<tr>
@@ -3577,6 +3841,27 @@ def model_data_query():
     return _dp_render(dp.query, "/model/data/query")
 
 
+# ── 数据集 ID 映射表（data_platform → toolchain_demo）──
+DATA_PLATFORM_DS_MAP = {
+    # data_platform 的 ds1, ds4 等映射到 toolchain_demo 的实际数据集
+    "ds1": "ds_505",   # clean_whiteboard_v3 → clean_whiteboard_v5 (最接近)
+    "ds4": "ds_501",   # 其他数据集的映射（根据实际需要调整）
+    # 已存在的 ID 保持不变
+    "ds_501": "ds_501",
+    "ds_502": "ds_502",
+    "ds_503": "ds_503",
+    "ds_504": "ds_504",
+    "ds_505": "ds_505",
+    "DEMO_DS_9001": "DEMO_DS_9001",
+    "DEMO_DS_9002": "DEMO_DS_9002",
+    "DEMO_DS_9003": "DEMO_DS_9003",
+}
+
+def _resolve_dataset_id(dp_id):
+    """将 data_platform 的数据集 ID 映射到 toolchain_demo 的 ID"""
+    return DATA_PLATFORM_DS_MAP.get(dp_id, dp_id)
+
+
 @app.route("/model/data/datasets")
 def model_data_datasets():
     if not DP_AVAILABLE:
@@ -3586,7 +3871,10 @@ def model_data_datasets():
     inner = _rewrite_dp_links(_dp_capture.get("content", "") or "")
     extra = _dp_capture.get("extra_script")
     sel = request.args.get("sel") or "ds1"
-    lineage_btn = f'<a class="btn btn-secondary" href="/model/lineage/dataset/{sel}">查看血缘</a> '
+
+    # 使用映射后的 ID 生成血缘链接
+    resolved_id = _resolve_dataset_id(sel)
+    lineage_btn = f'<a class="btn btn-secondary" href="/model/lineage/dataset/{resolved_id}">查看血缘</a> '
     raw_action = (
         '<div><button class="btn btn-secondary" onclick="document.getElementById('
         "'procDrawer').classList.add('active')\">"
@@ -3603,7 +3891,7 @@ def model_data_datasets():
 @app.route("/model/data/datasets/<ds_id>")
 def model_data_dataset_detail(ds_id):
     ds = _dataset_by_id_or_name(ds_id) or DATASETS[0]
-    src_html = " · ".join(f'<span class="tag tag-teal">{s}</span>' for s in ds["source_tasks"])
+    src_html = " · ".join(f'<span class="tag tag-teal">{resolve_task_name(s)}</span>' for s in ds["source_tasks"])
     split = f'{int(ds["train_ratio"]*100)} / {int(ds["val_ratio"]*100)} / {int(ds["test_ratio"]*100)}'
     related_exps = [e for e in EXPERIMENTS if e["dataset"] == ds["name"]]
     if not related_exps:
@@ -3965,6 +4253,7 @@ def experiments():
           <td class="muted">{e['dur']}</td>
           <td class="actions-cell">
             <a href="#" onclick="toast('Demo: 已复制配置');return false;">复制</a>
+            <a href="/model/lineage/train/{e['id']}">血缘</a>
             {stop_action}
           </td>
         </tr>"""
@@ -4952,6 +5241,7 @@ def _ckpt_rows_html(items, show_actions=True, show_status=True, status_logs=Fals
             actions_cell = f"""<td class="actions-cell">
             <a href="#" onclick="openTaskCapabilityModal();return false;">TEST</a>
             <a href="#" onclick="openTaskCapabilityModal();return false;">DAgger</a>
+            <a href="/model/lineage/checkpoint/{c['id']}">血缘</a>
             <a href="{deploy_href}">部署</a>
           </td>"""
         rows += f"""<tr data-status="{c['status']}">
@@ -5090,6 +5380,10 @@ def _new_checkpoint_drawer_html():
 
 @app.route("/model/checkpoints")
 def checkpoints():
+    # 获取 URL 参数
+    filter_name = request.args.get("name", "")
+    filter_owner = request.args.get("owner", "")
+
     visible_checkpoints = [c for c in CHECKPOINTS if c["status"] == "cached"]
     cached_count = sum(1 for c in CHECKPOINTS if c["status"] == "cached")
     all_count = len(CHECKPOINTS)
@@ -5100,8 +5394,8 @@ def checkpoints():
         "自动保留策略 · 远程同步 · 自动分支评测",
     ) + f"""
     <div class="fb-labeled">
-      <div class="ff"><label>checkpoint</label><input placeholder="请输入 checkpoint"></div>
-      <div class="ff"><label>创建人</label><input placeholder="请输入创建人"></div>
+      <div class="ff"><label>checkpoint</label><input id="filterCheckpointName" value="{filter_name}" placeholder="请输入 checkpoint"></div>
+      <div class="ff"><label>创建人</label><input id="filterCheckpointOwner" value="{filter_owner}" placeholder="请输入创建人"></div>
       <div class="filter-actions">
         <button class="btn btn-tertiary" onclick="resetFilters(this)">重置</button>
         <button class="btn btn-primary" onclick="queryFilters(this)">查询</button>
@@ -5168,6 +5462,44 @@ def checkpoint_cache_records():
         </div>
       </div>
     </div>
+    <script>
+    // 自动筛选逻辑（如果有 URL 参数）
+    document.addEventListener('DOMContentLoaded', function() {{
+      var filterName = document.getElementById('filterCheckpointName').value;
+      var filterOwner = document.getElementById('filterCheckpointOwner').value;
+
+      if (filterName || filterOwner) {{
+        // 筛选表格行
+        var rows = document.querySelectorAll('.data-table tbody tr');
+        rows.forEach(function(row) {{
+          var cells = row.querySelectorAll('td');
+          if (cells.length === 0) return;
+
+          var nameCell = cells[1]; // checkpoint 名称列
+          var ownerCell = cells[2]; // 创建人列
+
+          var nameMatch = !filterName || (nameCell && nameCell.textContent.toLowerCase().includes(filterName.toLowerCase()));
+          var ownerMatch = !filterOwner || (ownerCell && ownerCell.textContent.toLowerCase().includes(filterOwner.toLowerCase()));
+
+          if (nameMatch && ownerMatch) {{
+            row.style.display = '';
+            // 高亮匹配的行
+            if (filterName && nameCell && nameCell.textContent.toLowerCase().includes(filterName.toLowerCase())) {{
+              row.style.background = '#fffbe6';
+            }}
+          }} else {{
+            row.style.display = 'none';
+          }}
+        }});
+
+        // 滚动到第一个匹配的行
+        var firstVisible = document.querySelector('.data-table tbody tr[style=""]');
+        if (firstVisible) {{
+          firstVisible.scrollIntoView({{ behavior: 'smooth', block: 'center' }});
+        }}
+      }}
+    }});
+    </script>
     """
     return render_page("checkpoint 缓存记录", content, active="/model/checkpoints", module="model",
                        breadcrumb='模型平台 / 部署 / Checkpoint / <b>checkpoint 缓存记录</b>', mvp_note="MVP 一期")
@@ -6414,16 +6746,112 @@ def _asset_lineage_legacy_redirect():
     return redirect(f"/model/lineage{('?' + qs) if qs else ''}")
 
 
+# ── 血缘系统配置 ──
+LINEAGE_CONFIG = {
+    'dataset': {
+        'find_fn': lambda val: next((d for d in DATASETS if d["name"] == val or d["id"] == val), None),
+        'title': '血缘',
+        'subtitle': '数据集的上游采集与下游训练链路',
+        'list_path': '/model/data/datasets',
+        'detail_url_fn': lambda obj: f'/model/data/datasets?sel={obj["id"]}',
+        'breadcrumb_fn': lambda obj: f'模型平台 / 数据集 / {obj["name"]} / <b>血缘</b>',
+    },
+    'train': {
+        'find_fn': lambda val: next((e for e in EXPERIMENTS if e["name"] == val or e["id"] == val), None),
+        'title': '血缘',
+        'subtitle': '训练任务 → Checkpoint 的输入输出链路',
+        'list_path': '/model/experiments',
+        'detail_url_fn': lambda obj: f'/model/experiments',
+        'breadcrumb_fn': lambda obj: f'模型平台 / 训练任务 / {obj["name"]} / <b>血缘</b>',
+    },
+    'checkpoint': {
+        'find_fn': lambda val: next((c for c in CHECKPOINTS if c["name"] == val or c["id"] == val), None),
+        'title': '血缘',
+        'subtitle': 'Checkpoint 的训练来源与数据来源',
+        'list_path': '/model/checkpoints',
+        'detail_url_fn': lambda obj: f'/model/checkpoints',
+        'breadcrumb_fn': lambda obj: f'模型平台 / Checkpoint / {obj["id"]} / <b>血缘</b>',
+    },
+    'eval': {
+        'find_fn': lambda val: next((e for e in EVALS if e.get("name") == val or e["id"] == val), None),
+        'title': '血缘',
+        'subtitle': '评测任务的 Checkpoint 来源与数据链路',
+        'list_path': '/model/eval/tasks',
+        'detail_url_fn': lambda obj: f'/model/eval/tasks/{obj["id"]}',
+        'breadcrumb_fn': lambda obj: f'模型平台 / 评测任务 / {obj.get("name", obj["id"])} / <b>血缘</b>',
+    },
+    'task': {
+        'find_fn': lambda task_id: _task_by_id(task_id),
+        'title': '血缘',
+        'subtitle': '采集任务的下游数据集与训练链路',
+        'list_path': '/data/collect',
+        'detail_url_fn': lambda obj: f'/data/recordings?task={obj["id"]}',
+        'breadcrumb_fn': lambda obj: f'数据平台 / 采集任务 / {obj.get("name", obj["id"])} / <b>血缘</b>',
+    },
+}
+
+LINEAGE_FILTERS = [
+    {'key': 'dataset', 'label': '数据集', 'placeholder': '输入数据集名称', 'route': '/model/lineage/dataset/'},
+    {'key': 'train', 'label': '训练任务', 'placeholder': '输入训练任务名称', 'route': '/model/lineage/train/'},
+    {'key': 'checkpoint', 'label': 'Checkpoint', 'placeholder': '输入 Checkpoint 名称', 'route': '/model/lineage/checkpoint/'},
+    {'key': 'eval', 'label': '评测任务', 'placeholder': '输入评测任务名称', 'route': '/model/lineage/eval/'},
+    {'key': 'task', 'label': '采集任务', 'placeholder': '输入采集任务 ID / 名称', 'route': '/model/lineage/task/'},
+]
+
+
 def _dataset_by_id_or_name(value):
     return next((d for d in DATASETS if d["id"] == value or d["name"] == value), None)
+
+
+def resolve_task_name(task_id):
+    task = next((t for t in COLLECT_TASKS if t["id"] == task_id), None)
+    return (task["name"][:20] + "...") if task else task_id
 
 
 def _exp_by_id(value):
     return next((e for e in EXPERIMENTS if e["id"] == value), None)
 
 
+def _exp_by_id_or_name(value):
+    return next((e for e in EXPERIMENTS if e["id"] == value or e["name"] == value), None)
+
+
 def _ckpt_by_id(value):
-    return next((c for c in CHECKPOINTS if c["id"] == value), None)
+    return next((c for c in CHECKPOINTS if c["id"] == value or c["name"] == value), None)
+
+
+def _eval_by_id(value):
+    return next((e for e in EVALS if e["id"] == value or e.get("name") == value), None)
+
+
+def _task_by_id(value):
+    return next((t for t in COLLECT_TASKS if t["id"] == value or t["name"] == value), None)
+
+
+def get_tasks_for_dataset(ds):
+    """数据集 → 采集任务列表（按 source_tasks ID）"""
+    if not ds:
+        return []
+    return [t for t in COLLECT_TASKS if t["id"] in ds.get("source_tasks", [])]
+
+
+def get_experiments_for_dataset(ds_id):
+    """数据集 → 训练任务列表（全量，按 dataset_id 或 dataset_ids 列表）"""
+    def _matches(e):
+        if e.get("dataset_id") == ds_id:
+            return True
+        return ds_id in (e.get("dataset_ids") or [])
+    return [e for e in EXPERIMENTS if _matches(e)]
+
+
+def get_checkpoints_for_experiment(exp_id):
+    """训练任务 → Checkpoint 列表（全量，按 exp_id）"""
+    return [c for c in CHECKPOINTS if c.get("exp_id") == exp_id]
+
+
+def get_evals_for_checkpoint(ckpt_id):
+    """Checkpoint → 评测任务列表（全量，按 ckpt_id）"""
+    return [ev for ev in EVALS if ev.get("ckpt_id") == ckpt_id]
 
 
 def _ckpt_exp(ckpt):
@@ -6443,136 +6871,818 @@ def _exp_dataset(exp):
     return DATASETS[0]
 
 
-def _lineage_records_for_dataset(ds):
-    task_names = set(ds.get("source_tasks", [])) if ds else set()
-    task_ids = [t["id"] for t in COLLECT_TASKS if t.get("name") in task_names]
-    if not task_ids:
-        task_ids = [COLLECT_TASKS[0]["id"], COLLECT_TASKS[-1]["id"]]
-    recs = [r for r in RECORDINGS if r["task_id"] in task_ids]
-    return task_ids, recs[:8]
+def _exp_datasets(exp):
+    """训练任务 → 它挂载的所有数据集对象（支持多数据集）。
+
+    仅返回该训练任务真实挂载的数据集；无挂载时返回空列表，
+    不再 fallback 到 DATASETS[0]（否则会给无数据集的训练任务
+    凭空接上 DEMO_DS_9001 及其无关采集任务，污染血缘图）。
+    """
+    if not exp:
+        return []
+    ds_ids = exp.get("dataset_ids") or ([exp.get("dataset_id")] if exp.get("dataset_id") else [])
+    result = [_dataset_by_id_or_name(did) for did in ds_ids if did]
+    return [d for d in result if d]
 
 
 def _lineage_context(anchor_type, anchor_id):
-    exp = None
-    ckpt = None
-    ds = None
+    """以锚点为中心的定向闭包取数：上游只往上、下游只往下，不掉头。
 
+    层级方向：采集任务 → 数据集 → 训练任务 → checkpoint → 评测
+    """
+    # 用 dict 按 id 去重且保持插入顺序
+    def dedupe(items):
+        seen = {}
+        for it in items:
+            if it and it["id"] not in seen:
+                seen[it["id"]] = it
+        return list(seen.values())
+
+    # ── 上游收集器（从某层往采集任务方向回溯）──
+    def up_from_datasets(ds_list):
+        tasks = []
+        for ds in ds_list:
+            tasks.extend(get_tasks_for_dataset(ds))
+        return dedupe(tasks)
+
+    def up_from_experiments(exp_list):
+        ds_list = []
+        for e in exp_list:
+            ds_list.extend(_exp_datasets(e))
+        ds_list = dedupe(ds_list)
+        return ds_list, up_from_datasets(ds_list)
+
+    def up_from_checkpoints(ckpt_list):
+        exp_list = dedupe([_exp_by_id(c.get("exp_id") or "") for c in ckpt_list])
+        ds_list, task_list = up_from_experiments(exp_list)
+        return exp_list, ds_list, task_list
+
+    # ── 下游收集器（从某层往评测方向扩散）──
+    def down_from_datasets(ds_list):
+        exp_list = []
+        for ds in ds_list:
+            exp_list.extend(get_experiments_for_dataset(ds["id"]))
+        exp_list = dedupe(exp_list)
+        return (exp_list,) + down_from_experiments(exp_list)
+
+    def down_from_experiments(exp_list):
+        ckpt_list = []
+        for e in exp_list:
+            ckpt_list.extend(get_checkpoints_for_experiment(e["id"]))
+        ckpt_list = dedupe(ckpt_list)
+        return ckpt_list, down_from_checkpoints(ckpt_list)
+
+    def down_from_checkpoints(ckpt_list):
+        evals_list = []
+        for c in ckpt_list:
+            evals_list.extend(get_evals_for_checkpoint(c["id"]))
+        return dedupe(evals_list)
+
+    # ── 按锚点类型组装 5 个维度 ──
     if anchor_type == "train":
         exp = _exp_by_id(anchor_id) or EXPERIMENTS[0]
-        ds = _exp_dataset(exp)
-        ckpt = next((c for c in CHECKPOINTS if f"exp_{c['id']}" == exp["id"]), None)
-    elif anchor_type == "checkpoint":
-        ckpt = _ckpt_by_id(anchor_id) or CHECKPOINTS[0]
-        exp = _ckpt_exp(ckpt)
-        ds = _exp_dataset(exp)
+        experiments = [exp]
+        datasets, tasks = up_from_experiments(experiments)
+        checkpoints, evals = down_from_experiments(experiments)
     elif anchor_type == "dataset":
         ds = _dataset_by_id_or_name(anchor_id) or DATASETS[0]
-        exp = next((e for e in EXPERIMENTS if e["dataset"] == ds["name"]), None)
-        model = next((m for m in MODELS if m["from_dataset"] == ds["name"]), None)
-        if not exp and model:
-            exp = _exp_by_id(model["from_exp"])
-        exp = exp or EXPERIMENTS[0]
-        ckpt = next((c for c in CHECKPOINTS if f"exp_{c['id']}" == exp["id"]), None) or CHECKPOINTS[0]
+        datasets = [ds]
+        tasks = up_from_datasets(datasets)
+        experiments, checkpoints, evals = down_from_datasets(datasets)
+    elif anchor_type == "checkpoint":
+        ckpt = _ckpt_by_id(anchor_id) or CHECKPOINTS[0]
+        checkpoints = [ckpt]
+        experiments, datasets, tasks = up_from_checkpoints(checkpoints)
+        evals = down_from_checkpoints(checkpoints)
+    elif anchor_type == "eval":
+        ev = _eval_by_id(anchor_id) or EVALS[0]
+        evals = [ev]
+        ckpt = _ckpt_by_id(ev.get("ckpt_id") or "")
+        checkpoints = [ckpt] if ckpt else []
+        experiments, datasets, tasks = up_from_checkpoints(checkpoints)
+    elif anchor_type == "task":
+        task = _task_by_id(anchor_id) or COLLECT_TASKS[0]
+        tasks = [task]
+        datasets = dedupe([ds for ds in DATASETS if task["id"] in ds.get("source_tasks", [])])
+        experiments, checkpoints, evals = down_from_datasets(datasets)
     else:
-        ds = DATASETS[0]
-        exp = EXPERIMENTS[0]
-        ckpt = CHECKPOINTS[0]
+        task = COLLECT_TASKS[0]
+        tasks = [task]
+        datasets = dedupe([ds for ds in DATASETS if task["id"] in ds.get("source_tasks", [])])
+        experiments, checkpoints, evals = down_from_datasets(datasets)
 
-    task_ids, recs = _lineage_records_for_dataset(ds)
-    tasks = [t for t in COLLECT_TASKS if t["id"] in task_ids]
-    if not tasks:
-        tasks = COLLECT_TASKS[:2]
-    ckpts = _task_ckpts(exp)[:4] if exp else []
-    return {"anchor_type": anchor_type, "anchor_id": anchor_id, "dataset": ds, "experiment": exp,
-            "checkpoint": ckpt, "tasks": tasks, "records": recs, "steps": ckpts}
+    return {
+        "anchor_type": anchor_type,
+        "anchor_id": anchor_id,
+        "datasets": datasets,
+        "tasks": tasks,
+        "experiments": experiments,
+        "checkpoints": checkpoints,
+        "evals": evals,
+    }
 
 
 def _lineage_detail_html(anchor_type, anchor_id):
     ctx = _lineage_context(anchor_type, anchor_id)
-    ds, exp, ckpt = ctx["dataset"], ctx["experiment"], ctx["checkpoint"]
-    tasks, steps = ctx["tasks"], ctx["steps"]
+    datasets = ctx["datasets"]
+    tasks = ctx["tasks"]
+    experiments = ctx["experiments"]
+    checkpoints = ctx["checkpoints"]
+    evals = ctx["evals"]
+
+    # ── Build chain_id mapping: per-dataset and per-checkpoint chains ──
+    chain_map = {}  # {node_id: set of chain_ids}
+
+    def add_to_chain(node_id, chain_id):
+        """Helper to add chain_id to a node"""
+        if node_id not in chain_map:
+            chain_map[node_id] = set()
+        chain_map[node_id].add(chain_id)
+
+    # Step 1: 为每个训练的每个数据集分配基础 chain_id (用于区分多数据集路径)
+    for e in experiments:
+        ds_ids = e.get("dataset_ids", [])
+        if not ds_ids and e.get("dataset_id"):
+            ds_ids = [e.get("dataset_id")]
+        if not ds_ids:
+            ds_ids = [datasets[0]["id"]] if datasets else []
+
+        for ds_id in ds_ids:
+            if not ds_id:
+                continue
+
+            # 数据集维度的 chain_id
+            ds_chain = f"chain_{e['id']}_ds_{ds_id}"
+
+            # 标记数据集节点
+            add_to_chain(f'dataset_{ds_id}', ds_chain)
+
+            # 标记数据集的上游采集任务
+            ds_obj = next((d for d in datasets if d["id"] == ds_id), None)
+            if ds_obj:
+                for task_id in ds_obj.get("source_tasks", []):
+                    add_to_chain(f'task_{task_id}', ds_chain)
+
+            # 标记训练任务（会有多个 ds_chain，因为可能多个数据集）
+            add_to_chain(e['id'], ds_chain)
+
+    # Step 2: 为每个 Checkpoint 分配独立 chain_id，并继承所有数据集的 chain_id
+    for e in experiments:
+        ds_ids = e.get("dataset_ids", [])
+        if not ds_ids and e.get("dataset_id"):
+            ds_ids = [e.get("dataset_id")]
+        if not ds_ids:
+            ds_ids = [datasets[0]["id"]] if datasets else []
+
+        for c in checkpoints:
+            if c.get('exp_id') != e['id']:
+                continue
+
+            # Checkpoint 独立 chain_id
+            ckpt_chain = f"chain_{e['id']}_ckpt_{c['id']}"
+
+            # 标记 Checkpoint 节点（拥有自己的 chain_id + 继承所有数据集的 chain_id）
+            add_to_chain(f'checkpoint_{c["id"]}', ckpt_chain)
+
+            # 继承所有数据集的 chain_id（这样悬停数据集时 Checkpoint 会高亮）
+            for ds_id in ds_ids:
+                if ds_id:
+                    ds_chain = f"chain_{e['id']}_ds_{ds_id}"
+                    add_to_chain(f'checkpoint_{c["id"]}', ds_chain)
+
+            # 标记该 Checkpoint 的评测（继承 Checkpoint chain_id + 所有数据集 chain_id）
+            for ev in evals:
+                if ev.get('ckpt_id') == c['id']:
+                    add_to_chain(f'eval_{ev["id"]}', ckpt_chain)
+                    # 评测也继承所有数据集的 chain_id
+                    for ds_id in ds_ids:
+                        if ds_id:
+                            ds_chain = f"chain_{e['id']}_ds_{ds_id}"
+                            add_to_chain(f'eval_{ev["id"]}', ds_chain)
+
+            # 标记训练任务（继承 Checkpoint chain_id）
+            add_to_chain(e['id'], ckpt_chain)
+
+    # Helper to get chain_id string
+    def get_chains(node_id):
+        return ' '.join(sorted(chain_map.get(node_id, set())))
 
     def cls(kind, base):
         return base + (" anchor" if anchor_type == kind else "")
 
-    task_html = "".join(
-        f'<div class="{cls("task", "lin-node teal")}"><div class="ln-ttl">Task ID: {t["id"]}</div>'
-        f'<div class="ln-meta">{t["name"][:38]}{"..." if len(t["name"]) > 38 else ""}</div>'
-        f'<div class="ln-meta">{t["project"]} · {t["stage"]} · 已采集 {t["collected"]}</div>'
-        f'<div class="ln-meta">创建人: {t.get("owner", "joanna.qiao")} · 创建时间: {t["created"]}</div></div>'
-        for t in tasks
-    )
-    segment_count = max(1, round(ds["frames"] / 1200))
-    ds_html = (
-        f'<div class="{cls("dataset", "lin-node teal")}"><div class="ln-ttl">{ds["name"]}</div>'
-        f'<div class="ln-meta">版本号: {ds["version"]} · EP: {ds["episodes"]} · Segment: {segment_count}</div>'
-        f'<div class="ln-meta">创建人: {ds["owner"]}</div></div>'
-    )
-    exp_html = (
-        f'<div class="{cls("train", "lin-node purple")}"><div class="ln-ttl">{exp["id"]}</div>'
-        f'<div class="ln-meta">{exp["name"][:44]}{"..." if len(exp["name"]) > 44 else ""}</div>'
-        f'<div class="ln-meta">{exp["model_type"]} · {exp["status"]} · {exp["started"]}</div></div>'
-    )
-    test_items = [ev for ev in EVALS if ds["name"] in ev["benchmark"] or (ckpt and ckpt["id"] in ev["exp"])]
-    if not test_items:
-        test_items = [EVALS[0]]
-    test_html = "".join(
-        f'<div class="lin-node green"><div class="ln-ttl">{ev["id"]}</div>'
-        f'<div class="ln-meta">{ev["benchmark"]}</div>'
-        f'<div class="ln-meta">{ev["status"]} · 成功率 {ev["success_rate"] if ev["success_rate"] is not None else "—"} · {ev["at"]}</div></div>'
-        for ev in test_items[:3]
-    )
-    step_html = "".join(
-        f'<div class="lin-node amber"><div class="ln-ttl">step {s["step"]}</div>'
-        f'<div class="ln-meta">{s["storage"]} · {s["state"]} · {s["location"]}</div></div>'
-        for s in steps
-    )
-    if ckpt:
-        step_html = (
-            f'<div class="{cls("checkpoint", "lin-node amber")}"><div class="ln-ttl">Checkpoint #{ckpt["id"]}</div>'
-            f'<div class="ln-meta">{ckpt["name"]} · {ckpt["status"]} · {ckpt["created"]}</div></div>'
-            + step_html
+    # ── 采集任务卡片 ──
+    def _task_card(t):
+        is_dagger = t.get("source_type") == "dagger"
+        task_node_id = f'task_{t["id"]}'
+        # 找到该任务所属的数据集
+        ds_id = next((ds["id"] for ds in datasets if t["id"] in ds.get("source_tasks", [])), None)
+        if is_dagger:
+            src_ckpt = t.get("src_checkpoint_id", "")
+            tip = (f'失败类型: {t.get("src_failure_type","—")}｜触发时间: {t.get("src_dagger_at","—")}'
+                   f'｜触发设备: {t.get("src_trigger_device","—")}｜质检通过: {t.get("qc_pass","—")}/{t.get("collected","—")}')
+            return (
+                f'<div class="{cls("task","lin-node dagger")}" data-chain-id="{get_chains(task_node_id)}" data-node-id="{task_node_id}" data-lineage-tip="{tip}">'
+                f'<div class="ln-body">'
+                f'<div class="ln-ttl">{t["name"]}</div>'
+                f'<div class="ln-meta">Task ID: {t["id"]}</div>'
+                f'</div>'
+                f'<div class="ln-icon-actions">'
+                f'<a class="ln-icon-btn" href="/data/recordings?task={t["id"]}">详情</a>'
+                f'<a class="ln-icon-btn" href="/model/lineage/checkpoint/{src_ckpt}">来源</a>'
+                f'<a class="ln-icon-btn" href="/model/lineage/task/{t["id"]}">血缘</a>'
+                f'</div>'
+                f'</div>'
+            )
+        tip = (f'项目: {t.get("project","—")}｜阶段: {t.get("stage","—")}｜创建人: {t.get("owner","joanna.qiao")}'
+               f'｜创建时间: {t.get("created","—")}｜质检通过: {t.get("qc_pass","—")}')
+        return (
+            f'<div class="{cls("task","lin-node teal")}" data-chain-id="{get_chains(task_node_id)}" data-node-id="{task_node_id}" data-lineage-tip="{tip}">'
+            f'<div class="ln-body">'
+            f'<div class="ln-ttl">{t["name"]}</div>'
+            f'<div class="ln-meta">Task ID: {t["id"]}</div>'
+            f'</div>'
+            f'<div class="ln-icon-actions">'
+            f'<a class="ln-icon-btn" href="/data/recordings?task={t["id"]}">详情</a>'
+            f'<a class="ln-icon-btn" href="/model/lineage/task/{t["id"]}">血缘</a>'
+            f'</div>'
+            f'</div>'
         )
 
-    return f"""
+    # Group tasks by dataset when multiple datasets exist
+    if len(datasets) > 1:  # Multi-dataset: group by source
+        task_html = ""
+        rendered_task_ids = set()
+        for ds in datasets:
+            ds_tasks = [t for t in tasks if t["id"] in ds.get("source_tasks", []) and t["id"] not in rendered_task_ids]
+            if ds_tasks:
+                task_html += "".join(_task_card(t) for t in ds_tasks)
+                rendered_task_ids.update(t["id"] for t in ds_tasks)
+    else:  # Single dataset: no grouping
+        task_html = "".join(_task_card(t) for t in tasks)
+
+    # ── 数据集卡片（支持多个）──
+    def _ds_card(ds):
+        segment_count = max(1, round(ds["frames"] / 1200)) if ds.get("frames") else 1
+        ds_tip = (f'版本: {ds["version"]}｜EP: {ds["episodes"]}｜Segment: {segment_count}'
+                  f'｜创建人: {ds["owner"]}｜划分: {ds.get("train_ratio",0)}/{ds.get("val_ratio",0)}/{ds.get("test_ratio",0)}')
+        ds_node_id = f'dataset_{ds["id"]}'
+        return (
+            f'<div class="{cls("dataset","lin-node blue")}" data-chain-id="{get_chains(ds_node_id)}" data-node-id="{ds_node_id}" data-lineage-tip="{ds_tip}">'
+            f'<div class="ln-body">'
+            f'<div class="ln-ttl">{ds["name"]} {ds["version"]}</div>'
+            f'<div class="ln-meta">{ds["episodes"]} EP</div>'
+            f'</div>'
+            f'<div class="ln-icon-actions">'
+            f'<a class="ln-icon-btn" href="/model/data/datasets?sel={ds["id"]}">详情</a>'
+            f'<a class="ln-icon-btn" href="/model/lineage/dataset/{ds["id"]}">血缘</a>'
+            f'</div>'
+            f'</div>'
+        )
+    ds_html = "".join(_ds_card(ds) for ds in datasets)
+
+    # ── 训练任务卡片（全量）──
+    def _exp_card(e):
+        ename = e["name"]
+        status_map = {"running": "运行中", "done": "成功", "failed": "失败", "运行中": "运行中", "成功": "成功", "失败": "失败"}
+        status_display = status_map.get(e.get("status", ""), e.get("status", "—"))
+        tip = (f'模型: {e.get("model_type","—")}｜状态: {status_display}'
+               f'｜进度: {e.get("current_epoch","—")}/{e.get("epochs","—")}｜最佳{e.get("metric_name","指标")}: {e.get("best_metric","—")}')
+        return (
+            f'<div class="{cls("train","lin-node purple")}" data-chain-id="{get_chains(e["id"])}" data-node-id="{e["id"]}" data-lineage-tip="{tip}">'
+            f'<div class="ln-body">'
+            f'<div class="ln-ttl">{ename}</div>'
+            f'<div class="ln-meta">{status_display}</div>'
+            f'</div>'
+            f'<div class="ln-icon-actions">'
+            f'<a class="ln-icon-btn" href="/model/experiments/{e["id"]}">详情</a>'
+            f'<a class="ln-icon-btn" href="/model/lineage/train/{e["id"]}">血缘</a>'
+            f'</div>'
+            f'</div>'
+        )
+    exp_html = "".join(_exp_card(e) for e in experiments)
+
+    # ── Checkpoint 卡片（全量，去掉 step）──
+    def _ckpt_card(c):
+        import re
+        step_match = re.search(r'[_-](\d{4,6})$', c.get("name", ""))
+        step = step_match.group(1) if step_match else "—"
+        name_parts = c.get("name", "").split("_")
+        desc = "_".join(name_parts[1:-1]) if len(name_parts) > 2 else ""
+
+        tip = f'名称: {c.get("name","—")}｜状态: {c.get("status","—")}｜创建时间: {c.get("created","—")}｜owner: {c.get("owner","—")}'
+        ckpt_node_id = f'checkpoint_{c["id"]}'
+        ckpt_name = c.get("name", c["id"])
+
+        # History button only if parent exists
+        history_btn = ""
+        if c.get("parent_checkpoint_id"):
+            history_btn = f'<a class="ln-icon-btn" data-ckpt-id="{c["id"]}" onclick="showCkptHistory(this.dataset.ckptId); return false;" href="#">历史</a>'
+
+        return (
+            f'<div class="{cls("checkpoint","lin-node amber")}" data-chain-id="{get_chains(ckpt_node_id)}" data-node-id="{ckpt_node_id}" data-lineage-tip="{tip}">'
+            f'<div class="ln-body">'
+            f'<div class="ln-ttl">{ckpt_name}</div>'
+            f'<div class="ln-meta">Step {step}{(" · " + desc) if desc else ""}</div>'
+            f'</div>'
+            f'<div class="ln-icon-actions">'
+            f'<a class="ln-icon-btn" href="/model/checkpoints?name={ckpt_name}">详情</a>'
+            f'<a class="ln-icon-btn" href="/model/lineage/checkpoint/{c["id"]}">血缘</a>'
+            f'{history_btn}'
+            f'</div>'
+            f'</div>'
+        )
+    ckpt_html = "".join(_ckpt_card(c) for c in checkpoints)
+
+    # ── 评测卡片（全量）──
+    def _eval_card(ev):
+        sr = ev["success_rate"] if ev.get("success_rate") is not None else "—"
+        tip = f'benchmark: {ev.get("benchmark","—")}｜成功率: {sr}｜状态: {ev.get("status","—")}｜时间: {ev.get("at","—")}'
+        eval_node_id = f'eval_{ev["id"]}'
+        task_name = ev.get("name", "—")
+        benchmark = ev.get("benchmark", "—")
+        return (
+            f'<div class="{cls("eval","lin-node green")}" data-chain-id="{get_chains(eval_node_id)}" data-node-id="{eval_node_id}" data-lineage-tip="{tip}">'
+            f'<div class="ln-body">'
+            f'<div class="ln-ttl">{task_name}</div>'
+            f'<div class="ln-meta">{benchmark}</div>'
+            f'</div>'
+            f'<div class="ln-icon-actions">'
+            f'<a class="ln-icon-btn" href="/model/eval/tasks/{ev["id"]}">详情</a>'
+            f'<a class="ln-icon-btn" href="/model/lineage/eval/{ev["id"]}">血缘</a>'
+            f'</div>'
+            f'</div>'
+        )
+    eval_html = "".join(_eval_card(ev) for ev in evals) if evals else '<div class="lin-node muted"><div class="ln-meta">暂无评测</div></div>'
+
+    # ── 构建连线边关系 (child_node_id, parent_node_id)，parent=左列、child=右列 ──
+    edges = []
+    # 采集任务(左) → 数据集(右): parent=task, child=dataset
+    for ds in datasets:
+        for t in tasks:
+            if t["id"] in ds.get("source_tasks", []):
+                edges.append((f'dataset_{ds["id"]}', f'task_{t["id"]}'))  # (child=dataset, parent=task)
+    # 数据集(左) → 训练任务(右): parent=dataset, child=exp
+    for ds in datasets:
+        for e in experiments:
+            e_ds_ids = e.get("dataset_ids") or ([e.get("dataset_id")] if e.get("dataset_id") else [])
+            if ds["id"] in e_ds_ids:
+                edges.append((e["id"], f'dataset_{ds["id"]}'))  # (child=exp, parent=dataset)
+    # 训练任务(左) → Checkpoint(右): parent=exp, child=ckpt
+    for c in checkpoints:
+        pid = c.get("exp_id")
+        if pid:
+            edges.append((f'checkpoint_{c["id"]}', pid))  # (child=ckpt, parent=exp)
+    # Checkpoint(左) → 评测(右): parent=ckpt, child=eval
+    for ev in evals:
+        pid = ev.get("ckpt_id")
+        if pid:
+            edges.append((f'eval_{ev["id"]}', f'checkpoint_{pid}'))  # (child=eval, parent=ckpt)
+    edges_json = json.dumps(edges)
+
+    # 候选数据：各维度的 name→id 映射，用于模糊搜索
+    suggestions_data = {
+        "task":       [{"label": t["name"], "id": t["id"]} for t in COLLECT_TASKS],
+        "dataset":    [{"label": f'{d["name"]} {d["version"]}', "id": d["id"]} for d in DATASETS],
+        "train":      [{"label": e["name"], "id": e["id"]} for e in EXPERIMENTS],
+        "checkpoint": [{"label": c["name"], "id": c["id"]} for c in CHECKPOINTS],
+        "eval":       [{"label": ev["name"], "id": ev["id"]} for ev in EVALS],
+    }
+    suggestions_json = json.dumps(suggestions_data, ensure_ascii=False)
+
+    # ── 构建筛选器（下拉框 + 输入框版本）──
+    # 根据当前维度确定输入框的值（始终显示可识别的名称）
+    input_value = ""
+    if anchor_type == "dataset":
+        input_value = datasets[0]["name"] if datasets else ""
+    elif anchor_type == "train":
+        input_value = experiments[0]["name"] if experiments else ""
+    elif anchor_type == "checkpoint":
+        input_value = next((c["name"] for c in checkpoints), anchor_id)
+    elif anchor_type == "eval":
+        ev = _eval_by_id(anchor_id)
+        input_value = ev["name"] if ev else anchor_id
+    elif anchor_type == "task":
+        t = _task_by_id(anchor_id)
+        input_value = t["name"] if t else anchor_id
+
+    filter_html = f"""
     <div class="lin-filter">
-      <div class="lf-field">
-        <label>数据集</label>
-        <input id="linDatasetInput" value="{ds['name']}" placeholder="输入数据集 ID / 名称">
+      <div class="lf-input-group">
+        <select id="linDimension" class="lf-dimension-select">
+          <option value="task" {'selected' if anchor_type == 'task' else ''}>采集任务</option>
+          <option value="dataset" {'selected' if anchor_type == 'dataset' else ''}>数据集</option>
+          <option value="train" {'selected' if anchor_type == 'train' else ''}>训练任务</option>
+          <option value="checkpoint" {'selected' if anchor_type == 'checkpoint' else ''}>Checkpoint</option>
+          <option value="eval" {'selected' if anchor_type == 'eval' else ''}>评测任务</option>
+        </select>
+        <input id="linInput" value="{input_value}" placeholder="输入名称进行搜索" list="linInputSuggestions">
+        <datalist id="linInputSuggestions"></datalist>
+        <button class="btn btn-primary" onclick="linApplyFilter()">确认</button>
       </div>
-      <div class="lf-field">
-        <label>Checkpoint</label>
-        <input id="linCkptInput" value="{ckpt['id'] if ckpt else ''}" placeholder="输入 ckpt ID">
-      </div>
-      <div class="filter-actions">
-        <button class="btn btn-tertiary" onclick="linClearFilter()">重置</button>
-        <button class="btn btn-primary" onclick="linApplyFilter()">查询</button>
+    </div>"""
+
+    legend_html = """
+    <div class="lin-legend">
+      <span class="lg-item"><span class="lg-dot" style="background:#e1f5ee;border-color:#5dcaa5;"></span>原始采集</span>
+      <span class="lg-item"><span class="lg-dot" style="background:#fef0eb;border-color:#ff9500;"></span>Dagger 回流</span>
+      <span class="lg-item"><span class="lg-dot" style="background:#e6f7ff;border-color:#1890ff;"></span>数据集</span>
+      <span class="lg-item"><span class="lg-dot" style="background:#eeedfe;border-color:#7F77DD;"></span>训练任务</span>
+      <span class="lg-item"><span class="lg-dot" style="background:#fff7e6;border-color:#ffc069;"></span>Checkpoint</span>
+      <span class="lg-item"><span class="lg-dot" style="background:#edf9f0;border-color:#7bcf8a;"></span>评测</span>
+      <span class="lg-item"><span class="lg-line"></span>选中链路</span>
+    </div>
+    """
+
+    modal_html = """
+    <!-- Checkpoint History Modal -->
+    <div id="ckptHistoryModal" class="ckpt-history-modal" style="display:none;">
+      <div class="ckpt-history-overlay" onclick="closeCkptHistoryModal()"></div>
+      <div class="ckpt-history-content">
+        <div class="ckpt-history-header">
+          <h3>Checkpoint 演进历史</h3>
+          <button class="ckpt-history-close" onclick="closeCkptHistoryModal()">✕</button>
+        </div>
+        <div class="ckpt-history-body" id="ckptHistoryBody">
+          <!-- Timeline will be inserted here by JS -->
+        </div>
       </div>
     </div>
-    <div class="lin-flow lin-flow-5">
-      <div class="lin-col"><h4>采集任务</h4>{task_html}</div>
-      <div class="lin-arr">→</div>
-      <div class="lin-col"><h4>训练数据集</h4>{ds_html}</div>
-      <div class="lin-arr">→</div>
-      <div class="lin-col"><h4>训练任务</h4>{exp_html}</div>
-      <div class="lin-arr">→</div>
-      <div class="lin-col"><h4>Checkpoint</h4>{step_html}</div>
-      <div class="lin-arr">→</div>
-      <div class="lin-col"><h4>评测任务</h4>{test_html}</div>
+    """
+
+    return filter_html + legend_html + f"""
+    <div class="lin-flow lin-flow-5" id="linFlow" style="position:relative;">
+      <svg id="linSvg" style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:0;"></svg>
+      <div class="lin-col"><h4 class="lin-col-title">采集任务 ({len(tasks)})</h4>{task_html}</div>
+      <div class="lin-col"><h4 class="lin-col-title">训练数据集 ({len(datasets)})</h4>{ds_html}</div>
+      <div class="lin-col"><h4 class="lin-col-title">训练任务 ({len(experiments)})</h4>{exp_html}</div>
+      <div class="lin-col"><h4 class="lin-col-title">Checkpoint ({len(checkpoints)})</h4>{ckpt_html}</div>
+      <div class="lin-col"><h4 class="lin-col-title">评测任务 ({len(evals)})</h4>{eval_html}</div>
     </div>
+    """ + modal_html + f"""
     <script>
+    window.__linEdges = {edges_json};
+    var __linSuggestions = {suggestions_json};
+
+    // 根据当前维度填充 datalist 候选项
+    function linFillSuggestions(dimension) {{
+      var dl = document.getElementById('linInputSuggestions');
+      dl.innerHTML = '';
+      var items = __linSuggestions[dimension] || [];
+      items.forEach(function(item) {{
+        var opt = document.createElement('option');
+        opt.value = item.label;
+        opt.dataset.id = item.id;
+        dl.appendChild(opt);
+      }});
+    }}
+
     function linApplyFilter(){{
-      var ds=(document.getElementById('linDatasetInput').value||'').trim();
-      var ck=(document.getElementById('linCkptInput').value||'').trim();
-      if(ds){{ location.href='/model/lineage/dataset/'+encodeURIComponent(ds); return; }}
-      if(ck){{ location.href='/model/lineage/checkpoint/'+encodeURIComponent(ck); return; }}
-      toast('请输入数据集或 ckpt');
+      var dimension = document.getElementById('linDimension').value;
+      var rawValue = (document.getElementById('linInput').value || '').trim();
+      if (!rawValue) {{
+        toast('请输入名称或 ID');
+        return;
+      }}
+      // 优先从候选列表中匹配 label→id（支持名称输入）
+      var items = __linSuggestions[dimension] || [];
+      var matched = items.find(function(item) {{
+        return item.label === rawValue || item.id === rawValue;
+      }});
+      // 如果没精确匹配，尝试模糊匹配第一个
+      if (!matched) {{
+        var lv = rawValue.toLowerCase();
+        matched = items.find(function(item) {{
+          return item.label.toLowerCase().indexOf(lv) >= 0 || item.id.toLowerCase().indexOf(lv) >= 0;
+        }});
+      }}
+      var value = matched ? matched.id : rawValue;
+      if (dimension === 'task') {{
+        location.href = '/model/lineage/task/' + encodeURIComponent(value);
+      }} else if (dimension === 'dataset') {{
+        location.href = '/model/lineage/dataset/' + encodeURIComponent(value);
+      }} else if (dimension === 'train') {{
+        location.href = '/model/lineage/train/' + encodeURIComponent(value);
+      }} else if (dimension === 'checkpoint') {{
+        location.href = '/model/lineage/checkpoint/' + encodeURIComponent(value);
+      }} else if (dimension === 'eval') {{
+        location.href = '/model/lineage/eval/' + encodeURIComponent(value);
+      }}
     }}
-    function linClearFilter(){{
-      var ds=document.getElementById('linDatasetInput'), ck=document.getElementById('linCkptInput');
-      if(ds) ds.value='';
-      if(ck) ck.value='';
-    }}
+
+    // 下拉框切换时清空输入框并刷新候选项
+    document.getElementById('linDimension').addEventListener('change', function() {{
+      var dimension = this.value;
+      var input = document.getElementById('linInput');
+      var placeholders = {{
+        task: '输入采集任务 ID / 名称',
+        dataset: '输入数据集名称',
+        train: '输入训练任务名称',
+        checkpoint: '输入 Checkpoint 名称',
+        eval: '输入评测任务名称',
+      }};
+      input.placeholder = placeholders[dimension] || '输入名称';
+      input.value = '';
+      linFillSuggestions(dimension);
+    }});
+
+    // 初始化当前维度的候选项
+    linFillSuggestions(document.getElementById('linDimension').value);
+
+    // 回车键触发跳转
+    document.getElementById('linInput').addEventListener('keypress', function(e) {{
+      if (e.key === 'Enter') {{
+        linApplyFilter();
+      }}
+    }});
+    // 链路高亮系统
+    (function() {{
+        const nodes = document.querySelectorAll('.lin-node[data-chain-id]');
+        nodes.forEach(node => {{
+            node.addEventListener('mouseenter', function() {{
+                if (isAnyNodeLocked()) return;
+                const chainIds = this.dataset.chainId.split(' ').filter(Boolean);
+                if (chainIds.length === 0) return;
+                highlightChain(chainIds);
+            }});
+            node.addEventListener('mouseleave', function() {{
+                if (isAnyNodeLocked()) return;
+                clearHighlight();
+            }});
+            node.addEventListener('dblclick', function(e) {{
+                if (e.target.closest('.btn-link')) return;
+                const chainIds = this.dataset.chainId.split(' ').filter(Boolean);
+                if (chainIds.length === 0) return;
+                if (this.classList.contains('locked')) {{
+                    clearHighlight(); clearLock();
+                }} else {{
+                    clearLock(); highlightChain(chainIds); lockChain(chainIds);
+                }}
+            }});
+        }});
+        function highlightChain(chainIds) {{
+            // 判断当前悬停的节点类型（通过 chainIds 中的模式判断）
+            const hasCkptChain = chainIds.some(id => id.includes('_ckpt_'));
+            const hasDsChain = chainIds.some(id => id.includes('_ds_'));
+
+            nodes.forEach(node => {{
+                const nodeChains = node.dataset.chainId.split(' ').filter(Boolean);
+                if (nodeChains.length === 0) return;
+
+                let isInChain = false;
+
+                // 判断当前节点类型
+                const nodeId = node.dataset.nodeId || '';
+                const nodeIsCheckpoint = nodeId.startsWith('checkpoint_');
+                const nodeIsEval = nodeId.startsWith('eval_');
+
+                if (hasCkptChain && (nodeIsCheckpoint || nodeIsEval)) {{
+                    // 悬停的是 Checkpoint/评测，当前节点也是 Checkpoint/评测
+                    // 只检查 Checkpoint 维度的 chain_id
+                    const nodeCkptChains = nodeChains.filter(id => id.includes('_ckpt_'));
+                    const activeCkptChains = chainIds.filter(id => id.includes('_ckpt_'));
+                    isInChain = activeCkptChains.some(id => nodeCkptChains.includes(id));
+                }} else {{
+                    // 其他情况：检查所有 chain_id
+                    isInChain = chainIds.some(id => nodeChains.includes(id));
+                }}
+
+                if (isInChain) {{ node.classList.add('highlight'); node.classList.remove('dimmed'); }}
+                else {{ node.classList.add('dimmed'); node.classList.remove('highlight'); }}
+            }});
+            if (window.__linEdgeHighlight) window.__linEdgeHighlight(true, chainIds);
+        }}
+        function clearHighlight() {{
+            nodes.forEach(n => n.classList.remove('highlight','dimmed'));
+            if (window.__linEdgeHighlight) window.__linEdgeHighlight(false, []);
+        }}
+        function lockChain(chainIds) {{
+            nodes.forEach(node => {{
+                const nodeChains = node.dataset.chainId.split(' ').filter(Boolean);
+                if (nodeChains.length === 0) return;
+                if (chainIds.some(id => nodeChains.includes(id))) node.classList.add('locked');
+            }});
+        }}
+        function clearLock() {{ nodes.forEach(n => n.classList.remove('locked')); }}
+        function isAnyNodeLocked() {{ return document.querySelector('.lin-node.locked') !== null; }}
+    }})();
+    // ── SVG 连线绘制 ──
+    (function() {{
+        const svg = document.getElementById('linSvg');
+        const flow = document.getElementById('linFlow');
+        if (!svg || !flow) return;
+
+        // 父子关系：child data-node-id -> parent data-node-id 前缀匹配规则
+        // 由后端在卡片上已注入 data-node-id；父子关系通过 data-parent 属性传递
+        function nodeEl(id) {{ return flow.querySelector('[data-node-id="'+id+'"]'); }}
+
+        function draw() {{
+            svg.innerHTML = '';
+            const flowRect = flow.getBoundingClientRect();
+            const edges = window.__linEdges || [];
+            edges.forEach(([childId, parentId]) => {{
+                const c = nodeEl(childId), p = nodeEl(parentId);
+                if (!c || !p) return;  // 父级找不到不画
+                const cr = c.getBoundingClientRect(), pr = p.getBoundingClientRect();
+                // 从父卡片右缘中点 → 子卡片左缘中点
+                const x1 = pr.right - flowRect.left, y1 = pr.top + pr.height/2 - flowRect.top;
+                const x2 = cr.left - flowRect.left, y2 = cr.top + cr.height/2 - flowRect.top;
+                const dx = Math.max(24, (x2 - x1) / 2);
+                const path = document.createElementNS('http://www.w3.org/2000/svg','path');
+                path.setAttribute('d', `M ${{x1}} ${{y1}} C ${{x1+dx}} ${{y1}}, ${{x2-dx}} ${{y2}}, ${{x2}} ${{y2}}`);
+                path.setAttribute('fill','none');
+                path.setAttribute('stroke','#ddd');
+                path.setAttribute('stroke-width','2');
+                path.setAttribute('data-edge-child', childId);
+                path.setAttribute('data-edge-parent', parentId);
+                svg.appendChild(path);
+            }});
+        }}
+
+        // 首次绘制：多次延迟确保卡片布局完全稳定后再画连线
+        function scheduleDraw() {{ setTimeout(draw, 50); }}
+        window.addEventListener('load', () => setTimeout(draw, 80));
+        document.addEventListener('DOMContentLoaded', () => setTimeout(draw, 120));
+        setTimeout(draw, 200);
+        setTimeout(draw, 500);  // 兜底：防止字体/图片加载导致布局偏移
+        window.addEventListener('resize', () => setTimeout(draw, 80));
+        // 监听容器尺寸变化（卡片内容加载完成后自动重绘）
+        if (window.ResizeObserver) {{
+          new ResizeObserver(() => setTimeout(draw, 30)).observe(flow);
+        }}
+        function setEdgesHighlight(on, activeChainIds) {{
+            const paths = svg.querySelectorAll('path');
+            activeChainIds = activeChainIds || [];
+            paths.forEach(p => {{
+                if (!on) {{
+                    // 恢复默认灰线
+                    p.setAttribute('stroke', '#ddd');
+                    p.setAttribute('stroke-width', '2');
+                    p.setAttribute('opacity', '1');
+                    return;
+                }}
+                // 高亮态：检查连线两端节点是否都高亮 AND 共享对应维度的 chain_id
+                const childId = p.getAttribute('data-edge-child');
+                const parentId = p.getAttribute('data-edge-parent');
+                const childEl = nodeEl(childId), parentEl = nodeEl(parentId);
+                const bothHighlighted = childEl && parentEl
+                    && childEl.classList.contains('highlight')
+                    && parentEl.classList.contains('highlight');
+
+                if (bothHighlighted) {{
+                    const childChains = (childEl.dataset.chainId || '').split(' ').filter(Boolean);
+                    const parentChains = (parentEl.dataset.chainId || '').split(' ').filter(Boolean);
+
+                    let hasActiveSharedChain = false;
+
+                    // 判断连线类型
+                    const childIsCheckpoint = childId.startsWith('checkpoint_');
+                    const childIsEval = childId.startsWith('eval_');
+                    const parentIsCheckpoint = parentId.startsWith('checkpoint_');
+
+                    if (childIsEval) {{
+                        // 评测相关连线：只检查 Checkpoint 维度的 chain_id
+                        const childCkptChains = childChains.filter(id => id.includes('_ckpt_'));
+                        const parentCkptChains = parentChains.filter(id => id.includes('_ckpt_'));
+                        const activeCkptChains = activeChainIds.filter(id => id.includes('_ckpt_'));
+
+                        hasActiveSharedChain = activeCkptChains.some(activeId =>
+                            childCkptChains.includes(activeId) && parentCkptChains.includes(activeId)
+                        );
+                    }} else if (childIsCheckpoint) {{
+                        // Checkpoint 相关连线：优先检查 Checkpoint 维度的 chain_id
+                        const childCkptChains = childChains.filter(id => id.includes('_ckpt_'));
+                        const parentCkptChains = parentChains.filter(id => id.includes('_ckpt_'));
+                        const activeCkptChains = activeChainIds.filter(id => id.includes('_ckpt_'));
+
+                        hasActiveSharedChain = activeCkptChains.some(activeId =>
+                            childCkptChains.includes(activeId) && parentCkptChains.includes(activeId)
+                        );
+
+                        // 如果没有 Checkpoint chain_id 匹配，尝试数据集 chain_id（兼容从数据集悬停的情况）
+                        if (!hasActiveSharedChain) {{
+                            const childDsChains = childChains.filter(id => id.includes('_ds_'));
+                            const parentDsChains = parentChains.filter(id => id.includes('_ds_'));
+                            const activeDsChains = activeChainIds.filter(id => id.includes('_ds_'));
+
+                            hasActiveSharedChain = activeDsChains.some(activeId =>
+                                childDsChains.includes(activeId) && parentDsChains.includes(activeId)
+                            );
+                        }}
+                    }} else {{
+                        // 其他连线（采集任务 → 数据集 → 训练任务）：只检查数据集维度的 chain_id
+                        const childDsChains = childChains.filter(id => id.includes('_ds_'));
+                        const parentDsChains = parentChains.filter(id => id.includes('_ds_'));
+                        const activeDsChains = activeChainIds.filter(id => id.includes('_ds_'));
+
+                        hasActiveSharedChain = activeDsChains.some(activeId =>
+                            childDsChains.includes(activeId) && parentDsChains.includes(activeId)
+                        );
+                    }}
+
+                    if (hasActiveSharedChain) {{
+                        p.setAttribute('stroke', '#149DAA');
+                        p.setAttribute('stroke-width', '3');
+                        p.setAttribute('opacity', '1');
+                    }} else {{
+                        // 两端都高亮，但不共享对应维度的 chain_id → 弱化
+                        p.setAttribute('stroke', '#e8e8e8');
+                        p.setAttribute('stroke-width', '1.5');
+                        p.setAttribute('opacity', '0.5');
+                    }}
+                }} else {{
+                    p.setAttribute('stroke', '#e8e8e8');
+                    p.setAttribute('stroke-width', '1.5');
+                    p.setAttribute('opacity', '0.5');
+                }}
+            }});
+        }}
+        window.__linEdgeHighlight = setEdgesHighlight;
+        window.__linDraw = draw;
+    }})();
+    </script>
+    """ + """
+    <script>
+    function showCkptHistory(ckptId) {
+      var modal = document.getElementById('ckptHistoryModal');
+      var body = document.getElementById('ckptHistoryBody');
+
+      // Show modal with loading state
+      modal.style.display = 'flex';
+      body.innerHTML = '<div style="text-align:center;padding:40px;color:#999;">加载中...</div>';
+
+      // Fetch history chain
+      fetch('/model/lineage/checkpoint/' + ckptId + '/history')
+        .then(function(r) {
+          if (!r.ok) throw new Error('HTTP ' + r.status);
+          return r.json();
+        })
+        .then(function(chain) {
+          if (!Array.isArray(chain) || chain.length === 0) {
+            body.innerHTML = '<div style="text-align:center;padding:40px;color:#999;">无历史记录</div>';
+            return;
+          }
+
+          // Build timeline HTML
+          var html = '<div class="ckpt-timeline">';
+
+          chain.forEach(function(ckpt, idx) {
+            var isCurrent = idx === chain.length - 1;
+            var currentClass = isCurrent ? ' current' : '';
+
+            html += '<div class="ckpt-timeline-item' + currentClass + '">';
+            html += '<div class="ckpt-timeline-dot"></div>';
+            html += '<div class="ckpt-timeline-node" data-ckpt-nav="' + escapeHtml(ckpt.id) + '" onclick="navToCheckpoint(this.dataset.ckptNav)">';
+            html += '<div class="ckpt-timeline-node-id">ckpt_' + escapeHtml(ckpt.id) + '</div>';
+            html += '<div class="ckpt-timeline-node-name">' + escapeHtml(ckpt.name) + '</div>';
+            html += '<div class="ckpt-timeline-node-meta">Step ' + extractStep(ckpt.name) + ' · ' + escapeHtml(ckpt.status) + ' · ' + escapeHtml(ckpt.created.split(' ')[0]) + '</div>';
+            html += '</div></div>';
+
+            // Add connector between nodes (not after last)
+            if (idx < chain.length - 1) {
+              var nextCkpt = chain[idx + 1];
+              var connectorClass = nextCkpt.parent_type === 'dagger' ? ' dagger' : '';
+              var label = nextCkpt.parent_type === 'dagger' ? 'dagger 回流' : 'fine-tune';
+              html += '<div class="ckpt-timeline-connector' + connectorClass + '">' + label + '</div>';
+            }
+          });
+
+          html += '</div>';
+          body.innerHTML = html;
+        })
+        .catch(function(err) {
+          console.error('Failed to load checkpoint history:', err);
+          body.innerHTML = '<div style="text-align:center;padding:40px;color:#e74c3c;">加载失败，请重试</div>';
+        });
+    }
+
+    function navToCheckpoint(id) {
+      closeCkptHistoryModal();
+      window.location.href = '/model/lineage/checkpoint/' + id;
+    }
+
+    function closeCkptHistoryModal() {
+      document.getElementById('ckptHistoryModal').style.display = 'none';
+    }
+
+    function escapeHtml(str) {
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    function extractStep(name) {
+      var match = name.match(/[_-]([0-9]{4,6})$/);
+      return match ? match[1] : '—';
+    }
+
+    // Close modal on Escape key
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') {
+        closeCkptHistoryModal();
+      }
+    });
     </script>
     """
 
@@ -6583,9 +7693,12 @@ def _lineage_flow_html(selected):
     src_tasks_html = ""
     if ds:
         for tn in ds["source_tasks"]:
-            tk = next((c for c in COLLECT_TASKS if c["name"] == tn), None)
+            tk = next((c for c in COLLECT_TASKS if c["id"] == tn), None)
             if tk:
-                src_tasks_html += f'<div class="lin-node teal"><div class="ln-ttl">{tk["name"]}</div><div class="ln-meta">{tk["current"]} EP · {tk["scene"]} · {tk["robot"]}</div></div>'
+                ep_count = tk.get("current", tk.get("collected", "—"))
+                scene = tk.get("scene", "—")
+                robot = tk.get("robot", "—")
+                src_tasks_html += f'<div class="lin-node teal"><div class="ln-ttl">{tk["name"]}</div><div class="ln-meta">{ep_count} EP · {scene} · {robot}</div></div>'
             else:
                 src_tasks_html += f'<div class="lin-node teal"><div class="ln-ttl">{tn}</div><div class="ln-meta">采集任务</div></div>'
     ds_html = (f'<div class="lin-node teal"><div class="ln-ttl">{ds["name"]}</div>'
@@ -6665,55 +7778,102 @@ def lineage():
                        breadcrumb='模型平台 / 模型仓库 / <b>端到端血缘</b>', mvp_note="MVP 一期")
 
 
-@app.route("/model/lineage/train/<exp_id>")
-def lineage_train(exp_id):
-    exp = _exp_by_id(exp_id) or EXPERIMENTS[0]
+def _lineage_page(anchor_type, anchor_id):
+    """通用血缘页渲染函数"""
+    cfg = LINEAGE_CONFIG[anchor_type]
+    anchor = cfg['find_fn'](anchor_id)
+
+    if anchor is None:
+        empty_content = page_header(cfg['title'], cfg['subtitle'], "") + f"""
+        <div style="text-align:center;padding:80px 0;color:rgba(0,0,0,0.45);">
+          <div style="font-size:40px;margin-bottom:16px;">&#128269;</div>
+          <div style="font-size:15px;font-weight:500;margin-bottom:8px;color:rgba(0,0,0,0.65);">未找到匹配的节点</div>
+          <div style="font-size:13px;">"{anchor_id}" 不存在，请检查名称是否正确</div>
+          <a href="{cfg['list_path']}" class="btn" style="margin-top:24px;display:inline-block;">返回列表</a>
+        </div>
+        """
+        return render_page(cfg['title'], empty_content, active=cfg['list_path'], module="model")
+
     content = page_header(
-        "血缘",
-        "训练任务 → Checkpoint 的输入输出链路",
+        cfg['title'],
+        cfg['subtitle'],
         "采集任务 · 训练数据集 · 训练任务 · checkpoint · 评测任务",
     ) + f"""
-    <div class="lin-actions">
-      <a class="btn" href="/model/experiments/{exp['id']}">返回训练任务详情</a>
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:18px;">
+      <a href="{cfg['detail_url_fn'](anchor)}" class="btn">&#8249; 返回</a>
     </div>
-    {_lineage_detail_html("train", exp["id"])}
+    {_lineage_detail_html(anchor_type, anchor_id)}
     """
-    return render_page("血缘", content, active="/model/experiments", module="model",
-                       breadcrumb=f'模型平台 / 训练任务 / {exp["name"]} / <b>血缘</b>', mvp_note="MVP 一期")
+
+    return render_page(
+        cfg['title'],
+        content,
+        active=cfg['list_path'],
+        module="model",
+        breadcrumb=cfg['breadcrumb_fn'](anchor),
+        mvp_note="MVP 一期"
+    )
+
+
+@app.route("/model/lineage/train/<exp_id>")
+def lineage_train(exp_id):
+    return _lineage_page('train', exp_id)
 
 
 @app.route("/model/lineage/checkpoint/<ckpt_id>")
 def lineage_checkpoint(ckpt_id):
-    ckpt = _ckpt_by_id(ckpt_id) or CHECKPOINTS[0]
-    content = page_header(
-        "血缘",
-        "Checkpoint 的训练来源与数据来源",
-        "采集任务 · 训练数据集 · 训练任务 · checkpoint · 评测任务",
-    ) + f"""
-    <div class="lin-actions">
-      <a class="btn" href="/model/checkpoints/{ckpt['id']}">返回 Checkpoint 详情</a>
-    </div>
-    {_lineage_detail_html("checkpoint", ckpt["id"])}
-    """
-    return render_page("血缘", content, active="/model/checkpoints", module="model",
-                       breadcrumb=f'模型平台 / Checkpoint / {ckpt["id"]} / <b>血缘</b>', mvp_note="MVP 一期")
+    return _lineage_page('checkpoint', ckpt_id)
 
 
 @app.route("/model/lineage/dataset/<ds_id>")
 def lineage_dataset(ds_id):
-    ds = _dataset_by_id_or_name(ds_id) or DATASETS[0]
-    content = page_header(
-        "血缘",
-        "数据集的上游采集与下游训练链路",
-        "采集任务 · 训练数据集 · 训练任务 · checkpoint · 评测任务",
-    ) + f"""
-    <div class="lin-actions">
-      <a class="btn" href="/model/data/datasets/{ds['id']}">返回数据集详情</a>
-    </div>
-    {_lineage_detail_html("dataset", ds["id"])}
-    """
-    return render_page("血缘", content, active="/model/data/datasets", module="model",
-                       breadcrumb=f'模型平台 / 数据集 / {ds["name"]} / <b>血缘</b>', mvp_note="MVP 一期")
+    return _lineage_page('dataset', ds_id)
+
+
+@app.route("/model/lineage/eval/<ev_id>")
+def lineage_eval(ev_id):
+    return _lineage_page('eval', ev_id)
+
+
+@app.route("/model/lineage/task/<task_id>")
+def lineage_task(task_id):
+    return _lineage_page('task', task_id)
+
+
+@app.route("/model/lineage/checkpoint/<ckpt_id>/history")
+def checkpoint_history(ckpt_id):
+    """Return the full ancestor chain for a checkpoint as JSON"""
+    # First check if checkpoint exists
+    ckpt = _ckpt_by_id(ckpt_id)
+    if not ckpt:
+        return jsonify({"error": "Checkpoint not found"}), 404
+
+    chain = []
+    current_id = ckpt_id
+    visited = set()  # Prevent circular references
+
+    while current_id and current_id not in visited:
+        visited.add(current_id)
+        ckpt = _ckpt_by_id(current_id)
+        if not ckpt:
+            break
+
+        chain.append({
+            "id": ckpt["id"],
+            "name": ckpt["name"],
+            "status": ckpt.get("status", "—"),
+            "owner": ckpt.get("owner", "—"),
+            "created": ckpt.get("created", "—"),
+            "parent_checkpoint_id": ckpt.get("parent_checkpoint_id"),
+            "parent_type": ckpt.get("parent_type")
+        })
+
+        current_id = ckpt.get("parent_checkpoint_id")
+
+    # Reverse to show root → current (oldest to newest)
+    chain.reverse()
+
+    return jsonify(chain)
 
 
 # ════════════════════════════════════════════════════════════════
