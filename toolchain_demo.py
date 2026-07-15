@@ -7932,6 +7932,8 @@ def checkpoint_history(ckpt_id):
         chain.append({
             "id": ckpt["id"],
             "name": ckpt["name"],
+            "step": ckpt.get("step", 0),
+            "description": ckpt.get("description", ""),
             "status": ckpt.get("status", "—"),
             "owner": ckpt.get("owner", "—"),
             "created": ckpt.get("created", "—"),
