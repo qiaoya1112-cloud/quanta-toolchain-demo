@@ -1094,7 +1094,6 @@ select option:disabled { color:rgba(0,0,0,0.32); }
 .lin-node:hover { box-shadow:0 4px 12px rgba(0,0,0,0.08); border-color:#CBD5E1; }
 .lin-node.teal, .lin-node.purple, .lin-node.coral, .lin-node.blue, .lin-node.amber, .lin-node.green { background:#F8FAFC; border-color:#E2E8F0; }
 .lin-node.dagger { background:#F8FAFC; border-left:3px solid #ff9500; border-top:1px solid #E2E8F0; border-right:1px solid #E2E8F0; border-bottom:1px solid #E2E8F0; }
-.lin-node.dagger .ln-ttl::before { content:'⚡ '; color:#ff9500; font-size:14px; margin-right:2px; }
 .lin-node.anchor { background:#EFF6FF; border:2px solid #3B82F6; box-shadow:0 0 0 3px rgba(59,130,246,0.1); transform:scale(1.02); z-index:10; }
 .lin-node.dagger.anchor { background:#EFF6FF; border:2px solid #3B82F6; border-left:3px solid #ff9500; box-shadow:0 0 0 3px rgba(59,130,246,0.1); }
 
@@ -1152,22 +1151,37 @@ select option:disabled { color:rgba(0,0,0,0.32); }
 .ckpt-history-close { background:none; border:none; font-size:24px; color:#999; cursor:pointer; padding:0; width:32px; height:32px; display:flex; align-items:center; justify-content:center; border-radius:4px; }
 .ckpt-history-close:hover { background:#f5f5f5; color:#333; }
 .ckpt-history-body { padding:24px; overflow-y:auto; flex:1; }
+
+/* 骨架屏加载 */
+.ckpt-timeline-skeleton { position:relative; }
+.skeleton-item { position:relative; padding-left:40px; margin-bottom:24px; }
+.skeleton-item:last-child { margin-bottom:0; }
+.skeleton-dot { position:absolute; left:0; top:8px; width:24px; height:24px; border-radius:50%; background:#e5e7eb; }
+.skeleton-card { background:#f9fafb; border:1px solid #e5e7eb; border-radius:6px; padding:12px 16px; }
+.skeleton-line { height:12px; background:#e5e7eb; border-radius:4px; margin-bottom:8px; }
+.skeleton-line:last-child { margin-bottom:0; }
+.skeleton-line.w-1-2 { width:50%; }
+.skeleton-line.w-3-4 { width:75%; }
+@keyframes skeleton-pulse { 0%, 100% { opacity:1; } 50% { opacity:0.5; } }
+.animate-pulse { animation:skeleton-pulse 2s cubic-bezier(0.4,0,0.6,1) infinite; }
 .ckpt-timeline { position:relative; }
 .ckpt-timeline-item { position:relative; padding-left:40px; margin-bottom:24px; }
 .ckpt-timeline-item:last-child { margin-bottom:0; }
 .ckpt-timeline-item::before { content:''; position:absolute; left:11px; top:32px; bottom:0; width:2px; background:#e5e7eb; }
 .ckpt-timeline-item:last-child::before { display:none; }
-.ckpt-timeline-dot { position:absolute; left:0; top:8px; width:24px; height:24px; border-radius:50%; background:#fff; border:3px solid #d1d5db; z-index:1; }
-.ckpt-timeline-item.current .ckpt-timeline-dot { background:#f59e0b; border-color:#f59e0b; box-shadow:0 0 0 4px rgba(245,158,11,0.1); }
-.ckpt-timeline-node { background:#fff; border:1px solid #e5e7eb; border-radius:6px; padding:12px 16px; cursor:pointer; transition:all 0.2s; }
-.ckpt-timeline-node:hover { border-color:#f59e0b; box-shadow:0 2px 8px rgba(0,0,0,0.08); }
-.ckpt-timeline-node-id { font-size:11px; color:#6b7280; margin-bottom:4px; }
-.ckpt-timeline-node-name { font-size:14px; font-weight:500; color:#1a1a1a; margin-bottom:4px; word-break:break-word; overflow-wrap:break-word; }
-.ckpt-timeline-node-meta { font-size:12px; color:#6b7280; }
-.ckpt-timeline-connector { padding-left:40px; margin:12px 0; font-size:13px; color:#6b7280; display:flex; align-items:center; gap:8px; }
+.ckpt-timeline-dot { position:absolute; left:0; top:8px; width:24px; height:24px; border-radius:50%; background:#fff; border:3px solid #d1d5db; z-index:1; transition:all 0.2s ease; }
+.ckpt-timeline-item:hover .ckpt-timeline-dot { transform:scale(1.15); border-color:#f59e0b; }
+.ckpt-timeline-item.current .ckpt-timeline-dot { background:#f59e0b; border-color:#f59e0b; box-shadow:0 0 0 4px rgba(245,158,11,0.15); transform:scale(1.1); }
+.ckpt-timeline-node { background:#fff; border:1px solid #e5e7eb; border-radius:6px; padding:12px 16px; cursor:pointer; transition:all 0.2s ease; }
+.ckpt-timeline-node:hover { border-color:#f59e0b; box-shadow:0 2px 8px rgba(0,0,0,0.08); transform:translateX(2px); }
+.ckpt-timeline-item.current .ckpt-timeline-node { border-color:#f59e0b; background:#fffbeb; }
+.ckpt-timeline-node-id { font-size:11px; color:#9ca3af; margin-bottom:4px; font-family:'SF Mono',Menlo,monospace; }
+.ckpt-timeline-node-name { font-size:14px; font-weight:500; color:#1a1a1a; margin-bottom:6px; word-break:break-word; overflow-wrap:break-word; }
+.ckpt-timeline-node-meta { font-size:12px; color:#6b7280; display:flex; gap:12px; }
+.ckpt-timeline-node-time { color:#9ca3af; font-size:11px; }
+.ckpt-timeline-connector { padding-left:40px; margin:8px 0; font-size:12px; color:#9ca3af; display:flex; align-items:center; gap:8px; }
+.ckpt-timeline-connector::before { content:'↓'; font-size:14px; color:#d1d5db; }
 .ckpt-timeline-connector.dagger { color:#f59e0b; }
-.ckpt-timeline-connector::before { content:'▼'; font-size:10px; }
-.ckpt-timeline-connector.dagger::before { content:'⚡'; }
 .kv-grid { display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:12px; }
 .kv { background:#fafbfc; border:1px solid #f0f0f0; border-radius:8px; padding:12px 14px; min-width:0; }
 .kv span { display:block; font-size:12px; color:rgba(0,0,0,0.45); margin-bottom:5px; }
@@ -7337,8 +7351,8 @@ def _lineage_detail_html(anchor_type, anchor_id):
         <span class="hint-item"><span class="hint-dot gray"></span>关联节点</span>
       </span>
       <span class="hint-section">
-        <span class="hint-label">节点类型：</span>
-        <span class="hint-item"><span class="hint-bar dagger"></span>⚡ Dagger 回流</span>
+        <span class="hint-label">特殊类型：</span>
+        <span class="hint-item"><span class="hint-bar dagger"></span>Dagger 回流</span>
       </span>
     </div>
     """
@@ -7656,9 +7670,13 @@ def _lineage_detail_html(anchor_type, anchor_id):
       var modal = document.getElementById('ckptHistoryModal');
       var body = document.getElementById('ckptHistoryBody');
 
-      // Show modal with loading state
+      // Show modal with skeleton loading
       modal.style.display = 'flex';
-      body.innerHTML = '<div style="text-align:center;padding:40px;color:#999;">加载中...</div>';
+      body.innerHTML = '<div class="ckpt-timeline-skeleton animate-pulse">' +
+        '<div class="skeleton-item"><div class="skeleton-dot"></div><div class="skeleton-card"><div class="skeleton-line w-3-4"></div><div class="skeleton-line w-1-2"></div></div></div>' +
+        '<div class="skeleton-item"><div class="skeleton-dot"></div><div class="skeleton-card"><div class="skeleton-line w-3-4"></div><div class="skeleton-line w-1-2"></div></div></div>' +
+        '<div class="skeleton-item"><div class="skeleton-dot"></div><div class="skeleton-card"><div class="skeleton-line w-3-4"></div><div class="skeleton-line w-1-2"></div></div></div>' +
+        '</div>';
 
       // Fetch history chain
       fetch('/model/lineage/checkpoint/' + ckptId + '/history')
@@ -7682,16 +7700,19 @@ def _lineage_detail_html(anchor_type, anchor_id):
             html += '<div class="ckpt-timeline-item' + currentClass + '">';
             html += '<div class="ckpt-timeline-dot"></div>';
             html += '<div class="ckpt-timeline-node" data-ckpt-nav="' + escapeHtml(ckpt.id) + '" onclick="navToCheckpoint(this.dataset.ckptNav)">';
-            html += '<div class="ckpt-timeline-node-id">ckpt_' + escapeHtml(ckpt.id) + '</div>';
             html += '<div class="ckpt-timeline-node-name">' + escapeHtml(ckpt.name) + '</div>';
-            html += '<div class="ckpt-timeline-node-meta">Step ' + extractStep(ckpt.name) + ' · ' + escapeHtml(ckpt.status) + ' · ' + escapeHtml(ckpt.created.split(' ')[0]) + '</div>';
+            html += '<div class="ckpt-timeline-node-meta">';
+            html += '<span>Step ' + extractStep(ckpt.name) + '</span>';
+            if (ckpt.description) html += '<span> · ' + escapeHtml(ckpt.description) + '</span>';
+            if (ckpt.created) html += '<span class="ckpt-timeline-node-time">' + escapeHtml(ckpt.created) + '</span>';
+            html += '</div>';
             html += '</div></div>';
 
             // Add connector between nodes (not after last)
             if (idx < chain.length - 1) {
               var nextCkpt = chain[idx + 1];
               var connectorClass = nextCkpt.parent_type === 'dagger' ? ' dagger' : '';
-              var label = nextCkpt.parent_type === 'dagger' ? 'dagger 回流' : 'fine-tune';
+              var label = nextCkpt.parent_type === 'dagger' ? 'dagger 回流' : 'test任务';
               html += '<div class="ckpt-timeline-connector' + connectorClass + '">' + label + '</div>';
             }
           });
