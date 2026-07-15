@@ -322,6 +322,12 @@ EXPERIMENTS = [
      "epochs": 50, "current_epoch": 50,
      "best_metric": 0.781, "metric_name": "成功率", "status": "done",
      "started": "2026-06-20 08:00:00", "dur": "7h 40m", "owner": "Min Chen"},
+    {"id": "DEMO_EXP_9005", "name": "20260621_pi05_cleanwhiteboard_v6_queued",
+     "model_type": "Spirit v1.7", "dataset": "clean_whiteboard", "dataset_id": "DEMO_DS_9001",
+     "dataset_ids": ["DEMO_DS_9001"], "tag": "—",
+     "epochs": 50, "current_epoch": 0,
+     "best_metric": 0.0, "metric_name": "成功率", "status": "queued",
+     "started": "2026-06-21 10:00:00", "dur": "—", "owner": "joanna.qiao"},
     {"id": "exp_7916", "name": "robotwin_pi05_datamil_stack_blocks_two_top10pct_cotrain",
      "model_type": "Spirit v1.7", "dataset": "—", "dataset_id": "ds_505", "dataset_ids": ["ds_505", "ds_502"], "tag": "—",
      "epochs": 50, "current_epoch": 35,
@@ -965,18 +971,23 @@ select option:disabled { color:rgba(0,0,0,0.32); }
 .ant-table tbody td { padding:11px 16px; border-bottom:1px solid #f0f0f0; color:rgba(0,0,0,0.65); vertical-align:middle; }
 .ant-table tbody tr:hover td { background:#fafafa; }
 .actions-cell { white-space:nowrap; position:relative; overflow:visible; }
-.actions-cell a, .actions-cell .tbtn, .action-link { display:inline-flex; align-items:center; height:24px; padding:0; border:0; background:transparent; color:#149DAA; font-size:13px; line-height:24px; text-decoration:none; cursor:pointer; margin-right:14px; border-radius:0; }
+.actions-cell a, .actions-cell .tbtn, .action-link { display:inline-flex; align-items:center; height:24px; padding:0; border:0; background:transparent; color:#149DAA; font-size:13px; line-height:24px; text-decoration:none; cursor:pointer; margin-right:14px; border-radius:0; vertical-align:middle; }
 .actions-cell a:hover, .actions-cell .tbtn:hover, .action-link:hover { color:#0F8190; background:transparent; border:0; }
 .actions-cell a:last-child, .actions-cell .tbtn:last-child, .action-link:last-child { margin-right:0; }
 .actions-cell .action-disabled { color:rgba(0,0,0,0.28); cursor:not-allowed; pointer-events:none; }
 .action-more { position:relative; display:inline-flex; align-items:center; height:24px; vertical-align:middle; }
-.action-more-trigger { display:inline-flex; align-items:center; justify-content:center; min-width:24px; height:24px; color:#149DAA; font-size:16px; line-height:1; cursor:pointer; user-select:none; }
+.action-more-trigger { display:inline-flex; align-items:center; gap:3px; height:24px; color:#149DAA; font-size:13px; line-height:24px; cursor:pointer; user-select:none; }
 .action-more-trigger:hover { color:#0F8190; }
-.action-menu { display:none; position:absolute; right:0; top:calc(100% + 8px); z-index:160; min-width:136px; padding:6px 0; background:#fff; border:1px solid #e5e7eb; border-radius:6px; box-shadow:0 8px 24px rgba(0,0,0,0.12); }
+.action-more-trigger .caret { font-size:10px; transition:transform 0.2s; }
+.action-more:hover .action-more-trigger .caret { transform:rotate(180deg); }
+/* 透明桥接区域，避免 trigger 与菜单间隙导致 hover 中断，无法点击菜单项 */
+.action-more:hover::after { content:''; position:absolute; top:100%; right:0; width:100%; height:10px; }
+.action-menu { display:none; position:absolute; right:0; top:calc(100% + 8px); z-index:160; min-width:100%; padding:4px; background:#fff; border:1px solid #eef0f2; border-radius:8px; box-shadow:0 6px 20px rgba(0,0,0,0.10); animation:actionMenuIn 0.15s ease; }
 .action-more:hover .action-menu { display:block; }
-.action-menu a, .action-menu span { display:block; height:auto; padding:8px 18px; margin:0; color:rgba(0,0,0,0.72); font-size:13px; line-height:1.4; white-space:nowrap; text-decoration:none; }
-.action-menu a:hover { background:#f5f7fa; color:#149DAA; }
+.action-menu a, .action-menu span { display:flex; align-items:center; justify-content:center; height:auto; padding:7px 10px; margin:0; color:rgba(0,0,0,0.72); font-size:13px; line-height:1.4; white-space:nowrap; text-decoration:none; border-radius:6px; transition:all 0.15s; }
+.action-menu a:hover { background:rgba(20,157,170,0.08); color:#149DAA; }
 .action-menu .disabled { color:rgba(0,0,0,0.28); cursor:not-allowed; }
+@keyframes actionMenuIn { from { opacity:0; transform:translateY(-4px); } to { opacity:1; transform:translateY(0); } }
 .mono { font-family:'SF Mono',Menlo,monospace; font-size:12.5px; color:rgba(0,0,0,0.55); }
 .table-wrap { background:#fff; border:1px solid #f0f0f0; border-radius:8px; overflow:visible; }
 .table-wrap.deploy-table-wrap { overflow:visible; }
@@ -1061,14 +1072,17 @@ select option:disabled { color:rgba(0,0,0,0.32); }
 .lin-flow { display:grid; grid-template-columns:1fr 1fr 1fr; gap:24px; align-items:center; background:#fff; padding:24px 18px; border:1px solid #f0f0f0; border-radius:8px; }
 .lin-col { display:flex; flex-direction:column; gap:8px; position:relative; }
 .lin-col h4 { font-size:12px; color:rgba(0,0,0,0.55); margin:0 0 8px; font-weight:500; text-transform:uppercase; letter-spacing:0.6px; }
-.lin-col-title { font-size:14px; color:rgba(0,0,0,0.85); margin:0 0 12px; font-weight:600; text-align:center; }
+.lin-col h4.lin-col-title { display:flex; align-items:center; justify-content:center; gap:6px; font-size:15px; color:rgba(0,0,0,0.88); margin:0 0 14px; font-weight:700; letter-spacing:0.3px; text-transform:none; text-align:center; padding:8px 10px; background:linear-gradient(180deg,#f0fbfc,#e3f6f8); border:1px solid #b8e6ea; border-radius:8px; }
+.lin-col h4.lin-col-title::before { content:''; width:4px; height:15px; border-radius:2px; background:#149DAA; }
 .lin-node { padding:10px 10px 8px 10px; border-radius:8px; border:1px solid #d9d9d9; background:#fafafa; font-size:13px; line-height:1.55; position:relative; z-index:2; display:flex; flex-direction:column; gap:2px; }
 .lin-node .ln-body { flex:1; }
 .lin-node .ln-ttl { font-weight:500; color:rgba(0,0,0,0.85); font-size:13px; line-height:1.4; word-break:break-all; }
 .lin-node .ln-meta { color:rgba(0,0,0,0.45); font-size:11px; margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.lin-node .ln-icon-actions { display:flex; gap:4px; flex-wrap:wrap; margin-top:6px; padding-top:6px; border-top:1px solid rgba(0,0,0,0.06); }
-.ln-icon-btn { height:22px; padding:0 7px; display:flex; align-items:center; justify-content:center; background:rgba(47,84,235,0.07); border:1px solid rgba(47,84,235,0.18); border-radius:4px; cursor:pointer; transition:all 0.15s; text-decoration:none; color:#2f54eb; font-size:11px; font-weight:500; white-space:nowrap; }
-.ln-icon-btn:hover { background:#2f54eb; border-color:#2f54eb; color:#fff; }
+.lin-node .ln-icon-actions { display:flex; gap:8px; flex-wrap:wrap; margin-top:8px; padding-top:8px; border-top:1px solid rgba(0,0,0,0.06); }
+.ln-icon-btn { height:28px; padding:0 12px; display:flex; align-items:center; gap:4px; background:#fff; border:1px solid #149DAA; border-radius:4px; cursor:pointer; transition:all 0.2s; text-decoration:none; color:#149DAA; font-size:13px; font-weight:normal; white-space:nowrap; }
+.ln-icon-btn:hover { background:rgba(20,157,170,0.08); border-color:#0d7a85; color:#0d7a85; }
+.ln-icon-btn.primary { background:#149DAA; border-color:#149DAA; color:#fff; font-weight:500; }
+.ln-icon-btn.primary:hover { background:#0d7a85; border-color:#0d7a85; color:#fff; }
 .lin-node.teal { background:#e1f5ee; border-color:#5dcaa5; }
 .lin-node.purple { background:#eeedfe; border-color:#7F77DD; }
 .lin-node.coral { background:#fef0eb; border-color:#f0997b; }
@@ -1103,7 +1117,8 @@ select option:disabled { color:rgba(0,0,0,0.32); }
 .lin-node.highlight { opacity:1; box-shadow:0 0 0 3px rgba(20,157,170,0.3); position:relative; z-index:10; }
 .lin-node.dimmed { opacity:0.4; filter:grayscale(60%); }
 .lin-node.locked { box-shadow:0 0 0 3px rgba(20,157,170,0.5); }
-.lin-flow.lin-flow-5 { grid-template-columns:1fr 1fr 1.1fr 1fr 1fr; }
+.lin-flow.lin-flow-5 { grid-template-columns:1fr 1fr 1.1fr 1fr 1fr; align-items:stretch; }
+.lin-col-body { flex:1; display:flex; flex-direction:column; justify-content:center; gap:8px; }
 .lin-summary { display:grid; grid-template-columns:repeat(4, 1fr); gap:12px; margin-bottom:14px; }
 .lin-sum-card { background:#fff; border:1px solid #f0f0f0; border-radius:8px; padding:14px 16px; }
 .lin-sum-card .k { font-size:12px; color:rgba(0,0,0,0.45); }
@@ -4231,6 +4246,7 @@ def experiments():
             "running": '<span class="tag tag-orange">运行中</span>',
             "done":    '<span class="tag tag-green">成功</span>',
             "failed":  '<span class="tag tag-red">失败</span>',
+            "queued":  '<span class="tag tag-blue">排队中</span>',
         }.get(e["status"], f'<span class="tag tag-gray">{e["status"]}</span>')
         owner = e["owner"] if e["owner"] != "—" else owner_fallbacks[idx % len(owner_fallbacks)]
         priority = e.get("priority", priority_fallbacks[idx % len(priority_fallbacks)])
@@ -4244,6 +4260,21 @@ def experiments():
             if e["status"] == "running"
             else '<span class="action-link action-disabled">停止</span>'
         )
+        # 编辑仅在「排队中」状态显示，其余状态不出现在「更多」菜单中
+        edit_item = (
+            f'<a href="#" onclick="toast(\'Demo: 编辑训练任务\');return false;">编辑</a>'
+            if e["status"] in ("queued", "排队中")
+            else ''
+        )
+        more_menu = (
+            f'<span class="action-more">'
+            f'<span class="action-more-trigger">更多<span class="caret">&#9662;</span></span>'
+            f'<span class="action-menu">'
+            f'<a href="/model/lineage/train/{e["id"]}">血缘</a>'
+            f'{edit_item}'
+            f'</span>'
+            f'</span>'
+        )
         rows += f"""<tr>
           <td><a href="/model/experiments/{e['id']}" style="color:#149DAA">{e['name']}</a></td>
           <td>{status_html}</td>
@@ -4252,9 +4283,9 @@ def experiments():
           <td class="muted mono">{e['started']}</td>
           <td class="muted">{e['dur']}</td>
           <td class="actions-cell">
-            <a href="#" onclick="toast('Demo: 已复制配置');return false;">复制</a>
-            <a href="/model/lineage/train/{e['id']}">血缘</a>
             {stop_action}
+            <a href="#" onclick="toast('Demo: 已复制配置');return false;">复制</a>
+            {more_menu}
           </td>
         </tr>"""
 
@@ -5241,8 +5272,8 @@ def _ckpt_rows_html(items, show_actions=True, show_status=True, status_logs=Fals
             actions_cell = f"""<td class="actions-cell">
             <a href="#" onclick="openTaskCapabilityModal();return false;">TEST</a>
             <a href="#" onclick="openTaskCapabilityModal();return false;">DAgger</a>
-            <a href="/model/lineage/checkpoint/{c['id']}">血缘</a>
             <a href="{deploy_href}">部署</a>
+            <a href="/model/lineage/checkpoint/{c['id']}">血缘</a>
           </td>"""
         rows += f"""<tr data-status="{c['status']}">
           <td class="mono">{c['id']}</td>
@@ -7102,8 +7133,8 @@ def _lineage_detail_html(anchor_type, anchor_id):
             f'<div class="ln-meta">Task ID: {t["id"]}</div>'
             f'</div>'
             f'<div class="ln-icon-actions">'
-            f'<a class="ln-icon-btn" href="/data/recordings?task={t["id"]}">详情</a>'
-            f'<a class="ln-icon-btn" href="/model/lineage/task/{t["id"]}">血缘</a>'
+            f'<a class="ln-icon-btn primary" href="/model/lineage/task/{t["id"]}">查看血缘</a>'
+            f'<a class="ln-icon-btn" href="/data/recordings?task={t["id"]}" target="_blank" rel="noopener">查看详情</a>'
             f'</div>'
             f'</div>'
         )
@@ -7130,11 +7161,11 @@ def _lineage_detail_html(anchor_type, anchor_id):
             f'<div class="{cls("dataset","lin-node blue")}" data-chain-id="{get_chains(ds_node_id)}" data-node-id="{ds_node_id}" data-lineage-tip="{ds_tip}">'
             f'<div class="ln-body">'
             f'<div class="ln-ttl">{ds["name"]} {ds["version"]}</div>'
-            f'<div class="ln-meta">{ds["episodes"]} EP</div>'
+            f'<div class="ln-meta">{ds["episodes"]} Episode</div>'
             f'</div>'
             f'<div class="ln-icon-actions">'
-            f'<a class="ln-icon-btn" href="/model/data/datasets?sel={ds["id"]}">详情</a>'
-            f'<a class="ln-icon-btn" href="/model/lineage/dataset/{ds["id"]}">血缘</a>'
+            f'<a class="ln-icon-btn primary" href="/model/lineage/dataset/{ds["id"]}">查看血缘</a>'
+            f'<a class="ln-icon-btn" href="/model/data/datasets?sel={ds["id"]}" target="_blank" rel="noopener">查看详情</a>'
             f'</div>'
             f'</div>'
         )
@@ -7154,8 +7185,8 @@ def _lineage_detail_html(anchor_type, anchor_id):
             f'<div class="ln-meta">{status_display}</div>'
             f'</div>'
             f'<div class="ln-icon-actions">'
-            f'<a class="ln-icon-btn" href="/model/experiments/{e["id"]}">详情</a>'
-            f'<a class="ln-icon-btn" href="/model/lineage/train/{e["id"]}">血缘</a>'
+            f'<a class="ln-icon-btn primary" href="/model/lineage/train/{e["id"]}">查看血缘</a>'
+            f'<a class="ln-icon-btn" href="/model/experiments/{e["id"]}" target="_blank" rel="noopener">查看详情</a>'
             f'</div>'
             f'</div>'
         )
@@ -7185,8 +7216,8 @@ def _lineage_detail_html(anchor_type, anchor_id):
             f'<div class="ln-meta">Step {step}{(" · " + desc) if desc else ""}</div>'
             f'</div>'
             f'<div class="ln-icon-actions">'
-            f'<a class="ln-icon-btn" href="/model/checkpoints?name={ckpt_name}">详情</a>'
-            f'<a class="ln-icon-btn" href="/model/lineage/checkpoint/{c["id"]}">血缘</a>'
+            f'<a class="ln-icon-btn primary" href="/model/lineage/checkpoint/{c["id"]}">查看血缘</a>'
+            f'<a class="ln-icon-btn" href="/model/checkpoints?name={ckpt_name}" target="_blank" rel="noopener">查看详情</a>'
             f'{history_btn}'
             f'</div>'
             f'</div>'
@@ -7199,16 +7230,16 @@ def _lineage_detail_html(anchor_type, anchor_id):
         tip = f'benchmark: {ev.get("benchmark","—")}｜成功率: {sr}｜状态: {ev.get("status","—")}｜时间: {ev.get("at","—")}'
         eval_node_id = f'eval_{ev["id"]}'
         task_name = ev.get("name", "—")
-        benchmark = ev.get("benchmark", "—")
+        task_no = ev.get("task_no", ev.get("id", "—"))
         return (
             f'<div class="{cls("eval","lin-node green")}" data-chain-id="{get_chains(eval_node_id)}" data-node-id="{eval_node_id}" data-lineage-tip="{tip}">'
             f'<div class="ln-body">'
             f'<div class="ln-ttl">{task_name}</div>'
-            f'<div class="ln-meta">{benchmark}</div>'
+            f'<div class="ln-meta">ID {task_no}</div>'
             f'</div>'
             f'<div class="ln-icon-actions">'
-            f'<a class="ln-icon-btn" href="/model/eval/tasks/{ev["id"]}">详情</a>'
-            f'<a class="ln-icon-btn" href="/model/lineage/eval/{ev["id"]}">血缘</a>'
+            f'<a class="ln-icon-btn primary" href="/model/lineage/eval/{ev["id"]}">查看血缘</a>'
+            f'<a class="ln-icon-btn" href="/model/eval/tasks/{ev["id"]}" target="_blank" rel="noopener">查看详情</a>'
             f'</div>'
             f'</div>'
         )
@@ -7312,11 +7343,11 @@ def _lineage_detail_html(anchor_type, anchor_id):
     return filter_html + legend_html + f"""
     <div class="lin-flow lin-flow-5" id="linFlow" style="position:relative;">
       <svg id="linSvg" style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:0;"></svg>
-      <div class="lin-col"><h4 class="lin-col-title">采集任务 ({len(tasks)})</h4>{task_html}</div>
-      <div class="lin-col"><h4 class="lin-col-title">训练数据集 ({len(datasets)})</h4>{ds_html}</div>
-      <div class="lin-col"><h4 class="lin-col-title">训练任务 ({len(experiments)})</h4>{exp_html}</div>
-      <div class="lin-col"><h4 class="lin-col-title">Checkpoint ({len(checkpoints)})</h4>{ckpt_html}</div>
-      <div class="lin-col"><h4 class="lin-col-title">评测任务 ({len(evals)})</h4>{eval_html}</div>
+      <div class="lin-col"><h4 class="lin-col-title">采集任务 ({len(tasks)})</h4><div class="lin-col-body">{task_html}</div></div>
+      <div class="lin-col"><h4 class="lin-col-title">训练数据集 ({len(datasets)})</h4><div class="lin-col-body">{ds_html}</div></div>
+      <div class="lin-col"><h4 class="lin-col-title">训练任务 ({len(experiments)})</h4><div class="lin-col-body">{exp_html}</div></div>
+      <div class="lin-col"><h4 class="lin-col-title">Checkpoint ({len(checkpoints)})</h4><div class="lin-col-body">{ckpt_html}</div></div>
+      <div class="lin-col"><h4 class="lin-col-title">TEST任务 ({len(evals)})</h4><div class="lin-col-body">{eval_html}</div></div>
     </div>
     """ + modal_html + f"""
     <script>
