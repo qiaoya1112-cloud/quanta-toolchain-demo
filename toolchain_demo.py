@@ -1072,25 +1072,31 @@ select option:disabled { color:rgba(0,0,0,0.32); }
 .lin-flow { display:grid; grid-template-columns:1fr 1fr 1fr; gap:24px; align-items:center; background:#fff; padding:24px 18px; border:1px solid #f0f0f0; border-radius:8px; }
 .lin-col { display:flex; flex-direction:column; gap:8px; position:relative; }
 .lin-col h4 { font-size:12px; color:rgba(0,0,0,0.55); margin:0 0 8px; font-weight:500; text-transform:uppercase; letter-spacing:0.6px; }
-.lin-col h4.lin-col-title { display:flex; align-items:center; justify-content:center; gap:6px; font-size:15px; color:rgba(0,0,0,0.88); margin:0 0 14px; font-weight:700; letter-spacing:0.3px; text-transform:none; text-align:center; padding:8px 10px; background:linear-gradient(180deg,#f0fbfc,#e3f6f8); border:1px solid #b8e6ea; border-radius:8px; }
-.lin-col h4.lin-col-title::before { content:''; width:4px; height:15px; border-radius:2px; background:#149DAA; }
-.lin-node { padding:10px 10px 8px 10px; border-radius:8px; border:1px solid #d9d9d9; background:#fafafa; font-size:13px; line-height:1.55; position:relative; z-index:2; display:flex; flex-direction:column; gap:2px; }
-.lin-node .ln-body { flex:1; }
-.lin-node .ln-ttl { font-weight:500; color:rgba(0,0,0,0.85); font-size:13px; line-height:1.4; word-break:break-all; }
-.lin-node .ln-meta { color:rgba(0,0,0,0.45); font-size:11px; margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.lin-node .ln-icon-actions { display:flex; gap:8px; flex-wrap:wrap; margin-top:8px; padding-top:8px; border-top:1px solid rgba(0,0,0,0.06); }
-.ln-icon-btn { height:28px; padding:0 12px; display:flex; align-items:center; gap:4px; background:#fff; border:1px solid #149DAA; border-radius:4px; cursor:pointer; transition:all 0.2s; text-decoration:none; color:#149DAA; font-size:13px; font-weight:normal; white-space:nowrap; }
-.ln-icon-btn:hover { background:rgba(20,157,170,0.08); border-color:#0d7a85; color:#0d7a85; }
-.ln-icon-btn.primary { background:#149DAA; border-color:#149DAA; color:#fff; font-weight:500; }
-.ln-icon-btn.primary:hover { background:#0d7a85; border-color:#0d7a85; color:#fff; }
-.lin-node.teal { background:#e1f5ee; border-color:#5dcaa5; }
-.lin-node.purple { background:#eeedfe; border-color:#7F77DD; }
-.lin-node.coral { background:#fef0eb; border-color:#f0997b; }
-.lin-node.blue { background:#e6f7ff; border-color:#1890ff; }
-.lin-node.amber { background:#fff7e6; border-color:#ffc069; }
-.lin-node.green { background:#edf9f0; border-color:#7bcf8a; }
-.lin-node.dagger { background:#fef0eb; border-color:#ff9500; }
-.lin-node.anchor { box-shadow:0 0 0 3px rgba(20,157,170,0.14); border-color:#149DAA; }
+.lin-col h4.lin-col-title { display:flex; align-items:center; justify-content:center; gap:6px; font-size:12px; color:#64748B; margin:0 0 16px; font-weight:600; letter-spacing:0.8px; text-transform:uppercase; text-align:center; padding:0; background:transparent; border:none; }
+.lin-node { padding:10px 12px; border-radius:8px; border:1px solid #E2E8F0; background:#F8FAFC; font-size:13px; line-height:1.55; position:relative; z-index:2; transition:all 0.2s ease; }
+.lin-node .ln-ttl { font-weight:500; color:#1E293B; font-size:14px; line-height:1.5; letter-spacing:0.02em; word-break:break-all; margin-bottom:6px; }
+.lin-node .ln-footer { display:flex; justify-content:space-between; align-items:center; gap:8px; }
+.lin-node .ln-meta { color:#64748B; font-size:12px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; flex:1; }
+.lin-node .ln-icon-actions { position:absolute; bottom:8px; right:8px; display:flex; gap:4px; opacity:0; transform:translateY(4px); transition:opacity 0.2s ease, transform 0.2s ease; pointer-events:none; background:rgba(255,255,255,0.98); backdrop-filter:blur(8px); padding:4px; border-radius:8px; box-shadow:0 2px 8px rgba(0,0,0,0.08); }
+.lin-node:hover .ln-icon-actions { opacity:1; transform:translateY(0); pointer-events:auto; }
+.ln-icon-btn { height:28px; width:28px; padding:0; display:inline-flex; align-items:center; justify-content:center; background:rgba(255,255,255,0.95); border:1px solid #E2E8F0; border-radius:6px; cursor:pointer; transition:all 0.2s ease; text-decoration:none; color:#64748B; position:relative; backdrop-filter:blur(4px); box-shadow:0 1px 3px rgba(0,0,0,0.08); }
+.ln-icon-btn .icon { width:16px; height:16px; flex-shrink:0; stroke-width:1.5; transition:transform 0.2s ease; }
+.ln-icon-btn .btn-label { display:none; }
+.ln-icon-btn:hover { background:#EFF6FF; border-color:#3B82F6; color:#3B82F6; transform:translateY(-1px); box-shadow:0 2px 8px rgba(59,130,246,0.25); }
+.ln-icon-btn:hover .icon { transform:scale(1.1); }
+.ln-icon-btn:first-child:hover { background:#3B82F6; border-color:#3B82F6; color:#fff; }
+.ln-icon-btn:first-child:hover .icon { transform:scale(1.1); }
+/* Custom Tooltip */
+.ln-icon-btn::before { content:attr(data-tooltip); position:absolute; bottom:calc(100% + 8px); left:50%; transform:translateX(-50%) translateY(4px); background:rgba(0,0,0,0.9); color:#fff; padding:6px 10px; border-radius:6px; font-size:12px; white-space:nowrap; opacity:0; pointer-events:none; transition:opacity 0.2s ease, transform 0.2s ease; z-index:1000; }
+.ln-icon-btn::after { content:''; position:absolute; bottom:calc(100% + 2px); left:50%; transform:translateX(-50%); border:4px solid transparent; border-top-color:rgba(0,0,0,0.9); opacity:0; pointer-events:none; transition:opacity 0.2s ease; z-index:1000; }
+.ln-icon-btn:hover::before { opacity:1; transform:translateX(-50%) translateY(0); }
+.ln-icon-btn:hover::after { opacity:1; }
+.lin-node:hover { box-shadow:0 4px 12px rgba(0,0,0,0.08); border-color:#CBD5E1; }
+.lin-node.teal, .lin-node.purple, .lin-node.coral, .lin-node.blue, .lin-node.amber, .lin-node.green { background:#F8FAFC; border-color:#E2E8F0; }
+.lin-node.dagger { background:#F8FAFC; border-left:3px solid #ff9500; border-top:1px solid #E2E8F0; border-right:1px solid #E2E8F0; border-bottom:1px solid #E2E8F0; }
+.lin-node.dagger .ln-ttl::before { content:'⚡ '; color:#ff9500; font-size:14px; margin-right:2px; }
+.lin-node.anchor { background:#EFF6FF; border:2px solid #3B82F6; box-shadow:0 0 0 3px rgba(59,130,246,0.1); transform:scale(1.02); z-index:10; }
+.lin-node.dagger.anchor { background:#EFF6FF; border:2px solid #3B82F6; border-left:3px solid #ff9500; box-shadow:0 0 0 3px rgba(59,130,246,0.1); }
 
 /* 卡片固定高度 + 相对定位（供浮层锚定）*/
 .lin-node { position:relative; }
@@ -1104,10 +1110,15 @@ select option:disabled { color:rgba(0,0,0,0.32); }
 .lin-node[data-lineage-tip] { cursor:default; }
 .lin-node.muted { background:#fafafa; border-style:dashed; }
 /* 图例 */
-.lin-legend { display:flex; flex-wrap:wrap; gap:16px; margin-bottom:14px; padding:12px 16px; background:#fafbfc; border:1px solid #f0f0f0; border-radius:8px; font-size:12px; color:rgba(0,0,0,0.6); }
-.lin-legend .lg-item { display:flex; align-items:center; gap:6px; }
-.lin-legend .lg-dot { width:14px; height:14px; border-radius:4px; border:1.5px solid; display:inline-block; }
-.lin-legend .lg-line { width:18px; height:0; border-top:3px solid #149DAA; display:inline-block; }
+.lineage-hint { display:flex; gap:24px; margin-bottom:12px; padding:8px 12px; background:#FAFBFC; border-radius:6px; font-size:12px; color:#64748B; align-items:center; }
+.lineage-hint .hint-section { display:flex; align-items:center; gap:12px; }
+.lineage-hint .hint-label { font-weight:600; color:#475569; }
+.lineage-hint .hint-item { display:flex; align-items:center; gap:6px; }
+.lineage-hint .hint-dot { width:10px; height:10px; border-radius:2px; display:inline-block; }
+.lineage-hint .hint-dot.blue { background:#EFF6FF; border:2px solid #3B82F6; }
+.lineage-hint .hint-dot.gray { background:#F8FAFC; border:1px solid #E2E8F0; }
+.lineage-hint .hint-bar { width:3px; height:16px; border-radius:1px; display:inline-block; }
+.lineage-hint .hint-bar.dagger { background:#ff9500; }
 /* 锚点"当前"角标 */
 .lin-node.anchor { position:relative; }
 .lin-node.anchor::before { content:"当前"; position:absolute; top:-8px; left:10px; background:#149DAA; color:#fff; font-size:10px; padding:1px 6px; border-radius:3px; z-index:3; }
@@ -7101,6 +7112,12 @@ def _lineage_detail_html(anchor_type, anchor_id):
     def cls(kind, base):
         return base + (" anchor" if anchor_type == kind else "")
 
+    # ── 图标 SVG 定义（Lucide Icons） ──
+    ICON_GIT_BRANCH = '<svg class="icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="6" y1="3" x2="6" y2="15"></line><circle cx="18" cy="6" r="3"></circle><circle cx="6" cy="18" r="3"></circle><path d="M18 9a9 9 0 0 1-9 9"></path></svg>'
+    ICON_ARROW_UP_RIGHT = '<svg class="icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="7" y1="17" x2="17" y2="7"></line><polyline points="7 7 17 7 17 17"></polyline></svg>'
+    ICON_CORNER_UP_LEFT = '<svg class="icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 14 4 9 9 4"></polyline><path d="M20 20v-7a4 4 0 0 0-4-4H4"></path></svg>'
+    ICON_HISTORY = '<svg class="icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v5h5"></path><path d="M12 7v5l4 2"></path></svg>'
+
     # ── 采集任务卡片 ──
     def _task_card(t):
         is_dagger = t.get("source_type") == "dagger"
@@ -7113,14 +7130,14 @@ def _lineage_detail_html(anchor_type, anchor_id):
                    f'｜触发设备: {t.get("src_trigger_device","—")}｜质检通过: {t.get("qc_pass","—")}/{t.get("collected","—")}')
             return (
                 f'<div class="{cls("task","lin-node dagger")}" data-chain-id="{get_chains(task_node_id)}" data-node-id="{task_node_id}" data-lineage-tip="{tip}">'
-                f'<div class="ln-body">'
                 f'<div class="ln-ttl">{t["name"]}</div>'
+                f'<div class="ln-footer">'
                 f'<div class="ln-meta">Task ID: {t["id"]}</div>'
                 f'</div>'
                 f'<div class="ln-icon-actions">'
-                f'<a class="ln-icon-btn" href="/data/recordings?task={t["id"]}">详情</a>'
-                f'<a class="ln-icon-btn" href="/model/lineage/checkpoint/{src_ckpt}">来源</a>'
-                f'<a class="ln-icon-btn" href="/model/lineage/task/{t["id"]}">血缘</a>'
+                f'<a class="ln-icon-btn" href="/model/lineage/task/{t["id"]}" data-tooltip="查看血缘关系图">{ICON_GIT_BRANCH}</a>'
+                f'<a class="ln-icon-btn" href="/data/recordings?task={t["id"]}" target="_blank" rel="noopener" data-tooltip="查看任务详情">{ICON_ARROW_UP_RIGHT}</a>'
+                f'<a class="ln-icon-btn" href="/model/lineage/checkpoint/{src_ckpt}" data-tooltip="查看来源Checkpoint">{ICON_CORNER_UP_LEFT}</a>'
                 f'</div>'
                 f'</div>'
             )
@@ -7128,13 +7145,13 @@ def _lineage_detail_html(anchor_type, anchor_id):
                f'｜创建时间: {t.get("created","—")}｜质检通过: {t.get("qc_pass","—")}')
         return (
             f'<div class="{cls("task","lin-node teal")}" data-chain-id="{get_chains(task_node_id)}" data-node-id="{task_node_id}" data-lineage-tip="{tip}">'
-            f'<div class="ln-body">'
             f'<div class="ln-ttl">{t["name"]}</div>'
+            f'<div class="ln-footer">'
             f'<div class="ln-meta">Task ID: {t["id"]}</div>'
             f'</div>'
             f'<div class="ln-icon-actions">'
-            f'<a class="ln-icon-btn primary" href="/model/lineage/task/{t["id"]}">查看血缘</a>'
-            f'<a class="ln-icon-btn" href="/data/recordings?task={t["id"]}" target="_blank" rel="noopener">查看详情</a>'
+            f'<a class="ln-icon-btn" href="/model/lineage/task/{t["id"]}" data-tooltip="查看血缘关系图">{ICON_GIT_BRANCH}</a>'
+            f'<a class="ln-icon-btn" href="/data/recordings?task={t["id"]}" target="_blank" rel="noopener" data-tooltip="查看任务详情">{ICON_ARROW_UP_RIGHT}</a>'
             f'</div>'
             f'</div>'
         )
@@ -7159,13 +7176,13 @@ def _lineage_detail_html(anchor_type, anchor_id):
         ds_node_id = f'dataset_{ds["id"]}'
         return (
             f'<div class="{cls("dataset","lin-node blue")}" data-chain-id="{get_chains(ds_node_id)}" data-node-id="{ds_node_id}" data-lineage-tip="{ds_tip}">'
-            f'<div class="ln-body">'
             f'<div class="ln-ttl">{ds["name"]} {ds["version"]}</div>'
+            f'<div class="ln-footer">'
             f'<div class="ln-meta">{ds["episodes"]} Episode</div>'
             f'</div>'
             f'<div class="ln-icon-actions">'
-            f'<a class="ln-icon-btn primary" href="/model/lineage/dataset/{ds["id"]}">查看血缘</a>'
-            f'<a class="ln-icon-btn" href="/model/data/datasets?sel={ds["id"]}" target="_blank" rel="noopener">查看详情</a>'
+            f'<a class="ln-icon-btn" href="/model/lineage/dataset/{ds["id"]}" data-tooltip="查看血缘关系图">{ICON_GIT_BRANCH}</a>'
+            f'<a class="ln-icon-btn" href="/model/data/datasets?sel={ds["id"]}" target="_blank" rel="noopener" data-tooltip="查看数据集详情">{ICON_ARROW_UP_RIGHT}</a>'
             f'</div>'
             f'</div>'
         )
@@ -7180,13 +7197,13 @@ def _lineage_detail_html(anchor_type, anchor_id):
                f'｜进度: {e.get("current_epoch","—")}/{e.get("epochs","—")}｜最佳{e.get("metric_name","指标")}: {e.get("best_metric","—")}')
         return (
             f'<div class="{cls("train","lin-node purple")}" data-chain-id="{get_chains(e["id"])}" data-node-id="{e["id"]}" data-lineage-tip="{tip}">'
-            f'<div class="ln-body">'
             f'<div class="ln-ttl">{ename}</div>'
+            f'<div class="ln-footer">'
             f'<div class="ln-meta">{status_display}</div>'
             f'</div>'
             f'<div class="ln-icon-actions">'
-            f'<a class="ln-icon-btn primary" href="/model/lineage/train/{e["id"]}">查看血缘</a>'
-            f'<a class="ln-icon-btn" href="/model/experiments/{e["id"]}" target="_blank" rel="noopener">查看详情</a>'
+            f'<a class="ln-icon-btn" href="/model/lineage/train/{e["id"]}" data-tooltip="查看血缘关系图">{ICON_GIT_BRANCH}</a>'
+            f'<a class="ln-icon-btn" href="/model/experiments/{e["id"]}" target="_blank" rel="noopener" data-tooltip="查看训练详情">{ICON_ARROW_UP_RIGHT}</a>'
             f'</div>'
             f'</div>'
         )
@@ -7207,17 +7224,17 @@ def _lineage_detail_html(anchor_type, anchor_id):
         # History button only if parent exists
         history_btn = ""
         if c.get("parent_checkpoint_id"):
-            history_btn = f'<a class="ln-icon-btn" data-ckpt-id="{c["id"]}" onclick="showCkptHistory(this.dataset.ckptId); return false;" href="#">历史</a>'
+            history_btn = f'<a class="ln-icon-btn" data-ckpt-id="{c["id"]}" onclick="showCkptHistory(this.dataset.ckptId); return false;" href="#" data-tooltip="查看历史版本">{ICON_HISTORY}</a>'
 
         return (
             f'<div class="{cls("checkpoint","lin-node amber")}" data-chain-id="{get_chains(ckpt_node_id)}" data-node-id="{ckpt_node_id}" data-lineage-tip="{tip}">'
-            f'<div class="ln-body">'
             f'<div class="ln-ttl">{ckpt_name}</div>'
+            f'<div class="ln-footer">'
             f'<div class="ln-meta">Step {step}{(" · " + desc) if desc else ""}</div>'
             f'</div>'
             f'<div class="ln-icon-actions">'
-            f'<a class="ln-icon-btn primary" href="/model/lineage/checkpoint/{c["id"]}">查看血缘</a>'
-            f'<a class="ln-icon-btn" href="/model/checkpoints?name={ckpt_name}" target="_blank" rel="noopener">查看详情</a>'
+            f'<a class="ln-icon-btn" href="/model/lineage/checkpoint/{c["id"]}" data-tooltip="查看血缘关系图">{ICON_GIT_BRANCH}</a>'
+            f'<a class="ln-icon-btn" href="/model/checkpoints?name={ckpt_name}" target="_blank" rel="noopener" data-tooltip="查看Checkpoint详情">{ICON_ARROW_UP_RIGHT}</a>'
             f'{history_btn}'
             f'</div>'
             f'</div>'
@@ -7233,13 +7250,13 @@ def _lineage_detail_html(anchor_type, anchor_id):
         task_no = ev.get("task_no", ev.get("id", "—"))
         return (
             f'<div class="{cls("eval","lin-node green")}" data-chain-id="{get_chains(eval_node_id)}" data-node-id="{eval_node_id}" data-lineage-tip="{tip}">'
-            f'<div class="ln-body">'
             f'<div class="ln-ttl">{task_name}</div>'
+            f'<div class="ln-footer">'
             f'<div class="ln-meta">ID {task_no}</div>'
             f'</div>'
             f'<div class="ln-icon-actions">'
-            f'<a class="ln-icon-btn primary" href="/model/lineage/eval/{ev["id"]}">查看血缘</a>'
-            f'<a class="ln-icon-btn" href="/model/eval/tasks/{ev["id"]}" target="_blank" rel="noopener">查看详情</a>'
+            f'<a class="ln-icon-btn" href="/model/lineage/eval/{ev["id"]}" data-tooltip="查看血缘关系图">{ICON_GIT_BRANCH}</a>'
+            f'<a class="ln-icon-btn" href="/model/eval/tasks/{ev["id"]}" target="_blank" rel="noopener" data-tooltip="查看评测详情">{ICON_ARROW_UP_RIGHT}</a>'
             f'</div>'
             f'</div>'
         )
@@ -7313,14 +7330,16 @@ def _lineage_detail_html(anchor_type, anchor_id):
     </div>"""
 
     legend_html = """
-    <div class="lin-legend">
-      <span class="lg-item"><span class="lg-dot" style="background:#e1f5ee;border-color:#5dcaa5;"></span>原始采集</span>
-      <span class="lg-item"><span class="lg-dot" style="background:#fef0eb;border-color:#ff9500;"></span>Dagger 回流</span>
-      <span class="lg-item"><span class="lg-dot" style="background:#e6f7ff;border-color:#1890ff;"></span>数据集</span>
-      <span class="lg-item"><span class="lg-dot" style="background:#eeedfe;border-color:#7F77DD;"></span>训练任务</span>
-      <span class="lg-item"><span class="lg-dot" style="background:#fff7e6;border-color:#ffc069;"></span>Checkpoint</span>
-      <span class="lg-item"><span class="lg-dot" style="background:#edf9f0;border-color:#7bcf8a;"></span>评测</span>
-      <span class="lg-item"><span class="lg-line"></span>选中链路</span>
+    <div class="lineage-hint">
+      <span class="hint-section">
+        <span class="hint-label">节点状态：</span>
+        <span class="hint-item"><span class="hint-dot blue"></span>当前查看</span>
+        <span class="hint-item"><span class="hint-dot gray"></span>关联节点</span>
+      </span>
+      <span class="hint-section">
+        <span class="hint-label">节点类型：</span>
+        <span class="hint-item"><span class="hint-bar dagger"></span>⚡ Dagger 回流</span>
+      </span>
     </div>
     """
 
@@ -7521,7 +7540,7 @@ def _lineage_detail_html(anchor_type, anchor_id):
                 const path = document.createElementNS('http://www.w3.org/2000/svg','path');
                 path.setAttribute('d', `M ${{x1}} ${{y1}} C ${{x1+dx}} ${{y1}}, ${{x2-dx}} ${{y2}}, ${{x2}} ${{y2}}`);
                 path.setAttribute('fill','none');
-                path.setAttribute('stroke','#ddd');
+                path.setAttribute('stroke','#CBD5E1');
                 path.setAttribute('stroke-width','2');
                 path.setAttribute('data-edge-child', childId);
                 path.setAttribute('data-edge-parent', parentId);
@@ -7611,12 +7630,12 @@ def _lineage_detail_html(anchor_type, anchor_id):
                     }}
 
                     if (hasActiveSharedChain) {{
-                        p.setAttribute('stroke', '#149DAA');
+                        p.setAttribute('stroke', '#3B82F6');
                         p.setAttribute('stroke-width', '3');
                         p.setAttribute('opacity', '1');
                     }} else {{
                         // 两端都高亮，但不共享对应维度的 chain_id → 弱化
-                        p.setAttribute('stroke', '#e8e8e8');
+                        p.setAttribute('stroke', '#E2E8F0');
                         p.setAttribute('stroke-width', '1.5');
                         p.setAttribute('opacity', '0.5');
                     }}
