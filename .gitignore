@@ -5,6 +5,7 @@
 .claude/
 CLAUDE.md
 AGENTS.md
+.impeccable/
 
 # Python
 __pycache__/
@@ -17,3 +18,8 @@ venv/
 # IDE
 .vscode/
 .idea/
+
+# Project docs (local only)
+DESIGN.md
+PRODUCT.md
+skills-lock.json

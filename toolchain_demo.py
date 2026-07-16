@@ -1070,10 +1070,10 @@ select option:disabled { color:rgba(0,0,0,0.32); }
 .lin-pick { display:flex; gap:10px; align-items:center; margin-bottom:18px; }
 .lin-pick select { padding:7px 14px; border:1px solid #d9d9d9; border-radius:8px; font-size:14px; outline:none; min-width:280px; }
 .lin-flow { display:grid; grid-template-columns:1fr 1fr 1fr; gap:24px; align-items:center; background:#fff; padding:24px 18px; border:1px solid #f0f0f0; border-radius:8px; }
-.lin-col { display:flex; flex-direction:column; gap:8px; position:relative; }
+.lin-col { display:flex; flex-direction:column; gap:12px; position:relative; }
 .lin-col h4 { font-size:12px; color:rgba(0,0,0,0.55); margin:0 0 8px; font-weight:500; text-transform:uppercase; letter-spacing:0.6px; }
-.lin-col h4.lin-col-title { display:flex; align-items:center; justify-content:center; gap:6px; font-size:12px; color:#64748B; margin:0 0 16px; font-weight:600; letter-spacing:0.8px; text-transform:uppercase; text-align:center; padding:0; background:transparent; border:none; }
-.lin-node { padding:10px 12px; border-radius:8px; border:1px solid #E2E8F0; background:#F8FAFC; font-size:13px; line-height:1.55; position:relative; z-index:2; transition:all 0.2s ease; }
+.lin-col h4.lin-col-title { display:flex; align-items:center; justify-content:center; gap:6px; font-size:14px; color:#475569; margin:0 0 20px; font-weight:700; letter-spacing:0.8px; text-transform:uppercase; text-align:center; padding:0; background:transparent; border:none; }
+.lin-node { padding:12px 16px; border-radius:8px; border:1px solid #E2E8F0; background:#F1F5F9; font-size:13px; line-height:1.55; position:relative; z-index:2; transition:all 0.2s ease; }
 .lin-node .ln-ttl { font-weight:500; color:#1E293B; font-size:14px; line-height:1.5; letter-spacing:0.02em; word-break:break-all; margin-bottom:6px; }
 .lin-node .ln-footer { display:flex; justify-content:space-between; align-items:center; gap:8px; }
 .lin-node .ln-meta { color:#64748B; font-size:12px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; flex:1; }
@@ -1094,7 +1094,7 @@ select option:disabled { color:rgba(0,0,0,0.32); }
 .lin-node:hover { box-shadow:0 4px 12px rgba(0,0,0,0.08); border-color:#CBD5E1; }
 .lin-node.teal, .lin-node.purple, .lin-node.coral, .lin-node.blue, .lin-node.amber, .lin-node.green { background:#F8FAFC; border-color:#E2E8F0; }
 .lin-node.dagger { background:#F8FAFC; border-left:3px solid #ff9500; border-top:1px solid #E2E8F0; border-right:1px solid #E2E8F0; border-bottom:1px solid #E2E8F0; }
-.lin-node.anchor { background:#EFF6FF; border:2px solid #3B82F6; box-shadow:0 0 0 3px rgba(59,130,246,0.1); transform:scale(1.02); z-index:10; }
+.lin-node.anchor { background:#EFF6FF; border:2px solid #3B82F6; box-shadow:0 0 0 4px rgba(59,130,246,0.15); transform:scale(1.05); z-index:10; }
 .lin-node.dagger.anchor { background:#EFF6FF; border:2px solid #3B82F6; border-left:3px solid #ff9500; box-shadow:0 0 0 3px rgba(59,130,246,0.1); }
 
 /* 卡片固定高度 + 相对定位（供浮层锚定）*/
@@ -7697,13 +7697,17 @@ def _lineage_detail_html(anchor_type, anchor_id):
             var isCurrent = idx === chain.length - 1;
             var currentClass = isCurrent ? ' current' : '';
 
+            // Extract description from name (same logic as lineage cards)
+            var nameParts = ckpt.name.split('_');
+            var desc = nameParts.length > 2 ? nameParts.slice(1, -1).join('_') : '';
+
             html += '<div class="ckpt-timeline-item' + currentClass + '">';
             html += '<div class="ckpt-timeline-dot"></div>';
             html += '<div class="ckpt-timeline-node" data-ckpt-nav="' + escapeHtml(ckpt.id) + '" onclick="navToCheckpoint(this.dataset.ckptNav)">';
             html += '<div class="ckpt-timeline-node-name">' + escapeHtml(ckpt.name) + '</div>';
             html += '<div class="ckpt-timeline-node-meta">';
             html += '<span>Step ' + extractStep(ckpt.name) + '</span>';
-            if (ckpt.description) html += '<span> · ' + escapeHtml(ckpt.description) + '</span>';
+            if (desc) html += '<span> · ' + escapeHtml(desc) + '</span>';
             if (ckpt.created) html += '<span class="ckpt-timeline-node-time">' + escapeHtml(ckpt.created) + '</span>';
             html += '</div>';
             html += '</div></div>';
