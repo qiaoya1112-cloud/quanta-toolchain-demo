@@ -322,6 +322,12 @@ EXPERIMENTS = [
      "epochs": 50, "current_epoch": 50,
      "best_metric": 0.781, "metric_name": "成功率", "status": "done",
      "started": "2026-06-20 08:00:00", "dur": "7h 40m", "owner": "Min Chen"},
+    {"id": "DEMO_EXP_9005", "name": "20260621_pi05_cleanwhiteboard_v6_queued",
+     "model_type": "Spirit v1.7", "dataset": "clean_whiteboard", "dataset_id": "DEMO_DS_9001",
+     "dataset_ids": ["DEMO_DS_9001"], "tag": "—",
+     "epochs": 50, "current_epoch": 0,
+     "best_metric": 0.0, "metric_name": "成功率", "status": "queued",
+     "started": "2026-06-21 10:00:00", "dur": "—", "owner": "joanna.qiao"},
     {"id": "exp_7916", "name": "robotwin_pi05_datamil_stack_blocks_two_top10pct_cotrain",
      "model_type": "Spirit v1.7", "dataset": "—", "dataset_id": "ds_505", "dataset_ids": ["ds_505", "ds_502"], "tag": "—",
      "epochs": 50, "current_epoch": 35,
@@ -965,18 +971,23 @@ select option:disabled { color:rgba(0,0,0,0.32); }
 .ant-table tbody td { padding:11px 16px; border-bottom:1px solid #f0f0f0; color:rgba(0,0,0,0.65); vertical-align:middle; }
 .ant-table tbody tr:hover td { background:#fafafa; }
 .actions-cell { white-space:nowrap; position:relative; overflow:visible; }
-.actions-cell a, .actions-cell .tbtn, .action-link { display:inline-flex; align-items:center; height:24px; padding:0; border:0; background:transparent; color:#149DAA; font-size:13px; line-height:24px; text-decoration:none; cursor:pointer; margin-right:14px; border-radius:0; }
+.actions-cell a, .actions-cell .tbtn, .action-link { display:inline-flex; align-items:center; height:24px; padding:0; border:0; background:transparent; color:#149DAA; font-size:13px; line-height:24px; text-decoration:none; cursor:pointer; margin-right:14px; border-radius:0; vertical-align:middle; }
 .actions-cell a:hover, .actions-cell .tbtn:hover, .action-link:hover { color:#0F8190; background:transparent; border:0; }
 .actions-cell a:last-child, .actions-cell .tbtn:last-child, .action-link:last-child { margin-right:0; }
 .actions-cell .action-disabled { color:rgba(0,0,0,0.28); cursor:not-allowed; pointer-events:none; }
 .action-more { position:relative; display:inline-flex; align-items:center; height:24px; vertical-align:middle; }
-.action-more-trigger { display:inline-flex; align-items:center; justify-content:center; min-width:24px; height:24px; color:#149DAA; font-size:16px; line-height:1; cursor:pointer; user-select:none; }
+.action-more-trigger { display:inline-flex; align-items:center; gap:3px; height:24px; color:#149DAA; font-size:13px; line-height:24px; cursor:pointer; user-select:none; }
 .action-more-trigger:hover { color:#0F8190; }
-.action-menu { display:none; position:absolute; right:0; top:calc(100% + 8px); z-index:160; min-width:136px; padding:6px 0; background:#fff; border:1px solid #e5e7eb; border-radius:6px; box-shadow:0 8px 24px rgba(0,0,0,0.12); }
+.action-more-trigger .caret { font-size:10px; transition:transform 0.2s; }
+.action-more:hover .action-more-trigger .caret { transform:rotate(180deg); }
+/* 透明桥接区域，避免 trigger 与菜单间隙导致 hover 中断，无法点击菜单项 */
+.action-more:hover::after { content:''; position:absolute; top:100%; right:0; width:100%; height:10px; }
+.action-menu { display:none; position:absolute; right:0; top:calc(100% + 8px); z-index:160; min-width:100%; padding:4px; background:#fff; border:1px solid #eef0f2; border-radius:8px; box-shadow:0 6px 20px rgba(0,0,0,0.10); animation:actionMenuIn 0.15s ease; }
 .action-more:hover .action-menu { display:block; }
-.action-menu a, .action-menu span { display:block; height:auto; padding:8px 18px; margin:0; color:rgba(0,0,0,0.72); font-size:13px; line-height:1.4; white-space:nowrap; text-decoration:none; }
-.action-menu a:hover { background:#f5f7fa; color:#149DAA; }
+.action-menu a, .action-menu span { display:flex; align-items:center; justify-content:center; height:auto; padding:7px 10px; margin:0; color:rgba(0,0,0,0.72); font-size:13px; line-height:1.4; white-space:nowrap; text-decoration:none; border-radius:6px; transition:all 0.15s; }
+.action-menu a:hover { background:rgba(20,157,170,0.08); color:#149DAA; }
 .action-menu .disabled { color:rgba(0,0,0,0.28); cursor:not-allowed; }
+@keyframes actionMenuIn { from { opacity:0; transform:translateY(-4px); } to { opacity:1; transform:translateY(0); } }
 .mono { font-family:'SF Mono',Menlo,monospace; font-size:12.5px; color:rgba(0,0,0,0.55); }
 .table-wrap { background:#fff; border:1px solid #f0f0f0; border-radius:8px; overflow:visible; }
 .table-wrap.deploy-table-wrap { overflow:visible; }
@@ -1059,24 +1070,32 @@ select option:disabled { color:rgba(0,0,0,0.32); }
 .lin-pick { display:flex; gap:10px; align-items:center; margin-bottom:18px; }
 .lin-pick select { padding:7px 14px; border:1px solid #d9d9d9; border-radius:8px; font-size:14px; outline:none; min-width:280px; }
 .lin-flow { display:grid; grid-template-columns:1fr 1fr 1fr; gap:24px; align-items:center; background:#fff; padding:24px 18px; border:1px solid #f0f0f0; border-radius:8px; }
-.lin-col { display:flex; flex-direction:column; gap:8px; position:relative; }
+.lin-col { display:flex; flex-direction:column; gap:12px; position:relative; }
 .lin-col h4 { font-size:12px; color:rgba(0,0,0,0.55); margin:0 0 8px; font-weight:500; text-transform:uppercase; letter-spacing:0.6px; }
-.lin-col-title { font-size:14px; color:rgba(0,0,0,0.85); margin:0 0 12px; font-weight:600; text-align:center; }
-.lin-node { padding:10px 10px 8px 10px; border-radius:8px; border:1px solid #d9d9d9; background:#fafafa; font-size:13px; line-height:1.55; position:relative; z-index:2; display:flex; flex-direction:column; gap:2px; }
-.lin-node .ln-body { flex:1; }
-.lin-node .ln-ttl { font-weight:500; color:rgba(0,0,0,0.85); font-size:13px; line-height:1.4; word-break:break-all; }
-.lin-node .ln-meta { color:rgba(0,0,0,0.45); font-size:11px; margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.lin-node .ln-icon-actions { display:flex; gap:4px; flex-wrap:wrap; margin-top:6px; padding-top:6px; border-top:1px solid rgba(0,0,0,0.06); }
-.ln-icon-btn { height:22px; padding:0 7px; display:flex; align-items:center; justify-content:center; background:rgba(47,84,235,0.07); border:1px solid rgba(47,84,235,0.18); border-radius:4px; cursor:pointer; transition:all 0.15s; text-decoration:none; color:#2f54eb; font-size:11px; font-weight:500; white-space:nowrap; }
-.ln-icon-btn:hover { background:#2f54eb; border-color:#2f54eb; color:#fff; }
-.lin-node.teal { background:#e1f5ee; border-color:#5dcaa5; }
-.lin-node.purple { background:#eeedfe; border-color:#7F77DD; }
-.lin-node.coral { background:#fef0eb; border-color:#f0997b; }
-.lin-node.blue { background:#e6f7ff; border-color:#1890ff; }
-.lin-node.amber { background:#fff7e6; border-color:#ffc069; }
-.lin-node.green { background:#edf9f0; border-color:#7bcf8a; }
-.lin-node.dagger { background:#fef0eb; border-color:#ff9500; }
-.lin-node.anchor { box-shadow:0 0 0 3px rgba(20,157,170,0.14); border-color:#149DAA; }
+.lin-col h4.lin-col-title { display:flex; align-items:center; justify-content:center; gap:6px; font-size:14px; color:#475569; margin:0 0 20px; font-weight:700; letter-spacing:0.8px; text-transform:uppercase; text-align:center; padding:0; background:transparent; border:none; }
+.lin-node { padding:12px 16px; border-radius:8px; border:1px solid #E2E8F0; background:#F1F5F9; font-size:13px; line-height:1.55; position:relative; z-index:2; transition:all 0.2s ease; }
+.lin-node .ln-ttl { font-weight:500; color:#1E293B; font-size:14px; line-height:1.5; letter-spacing:0.02em; word-break:break-all; margin-bottom:6px; }
+.lin-node .ln-footer { display:flex; justify-content:space-between; align-items:center; gap:8px; }
+.lin-node .ln-meta { color:#64748B; font-size:12px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; flex:1; }
+.lin-node .ln-icon-actions { position:absolute; bottom:8px; right:8px; display:flex; gap:4px; opacity:0; transform:translateY(4px); transition:opacity 0.2s ease, transform 0.2s ease; pointer-events:none; background:rgba(255,255,255,0.98); backdrop-filter:blur(8px); padding:4px; border-radius:8px; box-shadow:0 2px 8px rgba(0,0,0,0.08); }
+.lin-node:hover .ln-icon-actions { opacity:1; transform:translateY(0); pointer-events:auto; }
+.ln-icon-btn { height:28px; width:28px; padding:0; display:inline-flex; align-items:center; justify-content:center; background:rgba(255,255,255,0.95); border:1px solid #E2E8F0; border-radius:6px; cursor:pointer; transition:all 0.2s ease; text-decoration:none; color:#64748B; position:relative; backdrop-filter:blur(4px); box-shadow:0 1px 3px rgba(0,0,0,0.08); }
+.ln-icon-btn .icon { width:16px; height:16px; flex-shrink:0; stroke-width:1.5; transition:transform 0.2s ease; }
+.ln-icon-btn .btn-label { display:none; }
+.ln-icon-btn:hover { background:#EFF6FF; border-color:#3B82F6; color:#3B82F6; transform:translateY(-1px); box-shadow:0 2px 8px rgba(59,130,246,0.25); }
+.ln-icon-btn:hover .icon { transform:scale(1.1); }
+.ln-icon-btn:first-child:hover { background:#3B82F6; border-color:#3B82F6; color:#fff; }
+.ln-icon-btn:first-child:hover .icon { transform:scale(1.1); }
+/* Custom Tooltip */
+.ln-icon-btn::before { content:attr(data-tooltip); position:absolute; bottom:calc(100% + 8px); left:50%; transform:translateX(-50%) translateY(4px); background:rgba(0,0,0,0.9); color:#fff; padding:6px 10px; border-radius:6px; font-size:12px; white-space:nowrap; opacity:0; pointer-events:none; transition:opacity 0.2s ease, transform 0.2s ease; z-index:1000; }
+.ln-icon-btn::after { content:''; position:absolute; bottom:calc(100% + 2px); left:50%; transform:translateX(-50%); border:4px solid transparent; border-top-color:rgba(0,0,0,0.9); opacity:0; pointer-events:none; transition:opacity 0.2s ease; z-index:1000; }
+.ln-icon-btn:hover::before { opacity:1; transform:translateX(-50%) translateY(0); }
+.ln-icon-btn:hover::after { opacity:1; }
+.lin-node:hover { box-shadow:0 4px 12px rgba(0,0,0,0.08); border-color:#CBD5E1; }
+.lin-node.teal, .lin-node.purple, .lin-node.coral, .lin-node.blue, .lin-node.amber, .lin-node.green { background:#F8FAFC; border-color:#E2E8F0; }
+.lin-node.dagger { background:#F8FAFC; border-left:3px solid #ff9500; border-top:1px solid #E2E8F0; border-right:1px solid #E2E8F0; border-bottom:1px solid #E2E8F0; }
+.lin-node.anchor { background:#EFF6FF; border:2px solid #3B82F6; box-shadow:0 0 0 4px rgba(59,130,246,0.15); transform:scale(1.05); z-index:10; }
+.lin-node.dagger.anchor { background:#EFF6FF; border:2px solid #3B82F6; border-left:3px solid #ff9500; box-shadow:0 0 0 3px rgba(59,130,246,0.1); }
 
 /* 卡片固定高度 + 相对定位（供浮层锚定）*/
 .lin-node { position:relative; }
@@ -1090,10 +1109,15 @@ select option:disabled { color:rgba(0,0,0,0.32); }
 .lin-node[data-lineage-tip] { cursor:default; }
 .lin-node.muted { background:#fafafa; border-style:dashed; }
 /* 图例 */
-.lin-legend { display:flex; flex-wrap:wrap; gap:16px; margin-bottom:14px; padding:12px 16px; background:#fafbfc; border:1px solid #f0f0f0; border-radius:8px; font-size:12px; color:rgba(0,0,0,0.6); }
-.lin-legend .lg-item { display:flex; align-items:center; gap:6px; }
-.lin-legend .lg-dot { width:14px; height:14px; border-radius:4px; border:1.5px solid; display:inline-block; }
-.lin-legend .lg-line { width:18px; height:0; border-top:3px solid #149DAA; display:inline-block; }
+.lineage-hint { display:flex; gap:24px; margin-bottom:12px; padding:8px 12px; background:#FAFBFC; border-radius:6px; font-size:12px; color:#64748B; align-items:center; }
+.lineage-hint .hint-section { display:flex; align-items:center; gap:12px; }
+.lineage-hint .hint-label { font-weight:600; color:#475569; }
+.lineage-hint .hint-item { display:flex; align-items:center; gap:6px; }
+.lineage-hint .hint-dot { width:10px; height:10px; border-radius:2px; display:inline-block; }
+.lineage-hint .hint-dot.blue { background:#EFF6FF; border:2px solid #3B82F6; }
+.lineage-hint .hint-dot.gray { background:#F8FAFC; border:1px solid #E2E8F0; }
+.lineage-hint .hint-bar { width:3px; height:16px; border-radius:1px; display:inline-block; }
+.lineage-hint .hint-bar.dagger { background:#ff9500; }
 /* 锚点"当前"角标 */
 .lin-node.anchor { position:relative; }
 .lin-node.anchor::before { content:"当前"; position:absolute; top:-8px; left:10px; background:#149DAA; color:#fff; font-size:10px; padding:1px 6px; border-radius:3px; z-index:3; }
@@ -1103,7 +1127,8 @@ select option:disabled { color:rgba(0,0,0,0.32); }
 .lin-node.highlight { opacity:1; box-shadow:0 0 0 3px rgba(20,157,170,0.3); position:relative; z-index:10; }
 .lin-node.dimmed { opacity:0.4; filter:grayscale(60%); }
 .lin-node.locked { box-shadow:0 0 0 3px rgba(20,157,170,0.5); }
-.lin-flow.lin-flow-5 { grid-template-columns:1fr 1fr 1.1fr 1fr 1fr; }
+.lin-flow.lin-flow-5 { grid-template-columns:1fr 1fr 1.1fr 1fr 1fr; align-items:stretch; }
+.lin-col-body { flex:1; display:flex; flex-direction:column; justify-content:center; gap:8px; }
 .lin-summary { display:grid; grid-template-columns:repeat(4, 1fr); gap:12px; margin-bottom:14px; }
 .lin-sum-card { background:#fff; border:1px solid #f0f0f0; border-radius:8px; padding:14px 16px; }
 .lin-sum-card .k { font-size:12px; color:rgba(0,0,0,0.45); }
@@ -1126,22 +1151,37 @@ select option:disabled { color:rgba(0,0,0,0.32); }
 .ckpt-history-close { background:none; border:none; font-size:24px; color:#999; cursor:pointer; padding:0; width:32px; height:32px; display:flex; align-items:center; justify-content:center; border-radius:4px; }
 .ckpt-history-close:hover { background:#f5f5f5; color:#333; }
 .ckpt-history-body { padding:24px; overflow-y:auto; flex:1; }
+
+/* 骨架屏加载 */
+.ckpt-timeline-skeleton { position:relative; }
+.skeleton-item { position:relative; padding-left:40px; margin-bottom:24px; }
+.skeleton-item:last-child { margin-bottom:0; }
+.skeleton-dot { position:absolute; left:0; top:8px; width:24px; height:24px; border-radius:50%; background:#e5e7eb; }
+.skeleton-card { background:#f9fafb; border:1px solid #e5e7eb; border-radius:6px; padding:12px 16px; }
+.skeleton-line { height:12px; background:#e5e7eb; border-radius:4px; margin-bottom:8px; }
+.skeleton-line:last-child { margin-bottom:0; }
+.skeleton-line.w-1-2 { width:50%; }
+.skeleton-line.w-3-4 { width:75%; }
+@keyframes skeleton-pulse { 0%, 100% { opacity:1; } 50% { opacity:0.5; } }
+.animate-pulse { animation:skeleton-pulse 2s cubic-bezier(0.4,0,0.6,1) infinite; }
 .ckpt-timeline { position:relative; }
 .ckpt-timeline-item { position:relative; padding-left:40px; margin-bottom:24px; }
 .ckpt-timeline-item:last-child { margin-bottom:0; }
 .ckpt-timeline-item::before { content:''; position:absolute; left:11px; top:32px; bottom:0; width:2px; background:#e5e7eb; }
 .ckpt-timeline-item:last-child::before { display:none; }
-.ckpt-timeline-dot { position:absolute; left:0; top:8px; width:24px; height:24px; border-radius:50%; background:#fff; border:3px solid #d1d5db; z-index:1; }
-.ckpt-timeline-item.current .ckpt-timeline-dot { background:#f59e0b; border-color:#f59e0b; box-shadow:0 0 0 4px rgba(245,158,11,0.1); }
-.ckpt-timeline-node { background:#fff; border:1px solid #e5e7eb; border-radius:6px; padding:12px 16px; cursor:pointer; transition:all 0.2s; }
-.ckpt-timeline-node:hover { border-color:#f59e0b; box-shadow:0 2px 8px rgba(0,0,0,0.08); }
-.ckpt-timeline-node-id { font-size:11px; color:#6b7280; margin-bottom:4px; }
-.ckpt-timeline-node-name { font-size:14px; font-weight:500; color:#1a1a1a; margin-bottom:4px; word-break:break-word; overflow-wrap:break-word; }
-.ckpt-timeline-node-meta { font-size:12px; color:#6b7280; }
-.ckpt-timeline-connector { padding-left:40px; margin:12px 0; font-size:13px; color:#6b7280; display:flex; align-items:center; gap:8px; }
+.ckpt-timeline-dot { position:absolute; left:0; top:8px; width:24px; height:24px; border-radius:50%; background:#fff; border:3px solid #d1d5db; z-index:1; transition:all 0.2s ease; }
+.ckpt-timeline-item:hover .ckpt-timeline-dot { transform:scale(1.15); border-color:#f59e0b; }
+.ckpt-timeline-item.current .ckpt-timeline-dot { background:#f59e0b; border-color:#f59e0b; box-shadow:0 0 0 4px rgba(245,158,11,0.15); transform:scale(1.1); }
+.ckpt-timeline-node { background:#fff; border:1px solid #e5e7eb; border-radius:6px; padding:12px 16px; cursor:pointer; transition:all 0.2s ease; }
+.ckpt-timeline-node:hover { border-color:#f59e0b; box-shadow:0 2px 8px rgba(0,0,0,0.08); transform:translateX(2px); }
+.ckpt-timeline-item.current .ckpt-timeline-node { border-color:#f59e0b; background:#fffbeb; }
+.ckpt-timeline-node-id { font-size:11px; color:#9ca3af; margin-bottom:4px; font-family:'SF Mono',Menlo,monospace; }
+.ckpt-timeline-node-name { font-size:14px; font-weight:500; color:#1a1a1a; margin-bottom:6px; word-break:break-word; overflow-wrap:break-word; }
+.ckpt-timeline-node-meta { font-size:12px; color:#6b7280; display:flex; gap:12px; }
+.ckpt-timeline-node-time { color:#9ca3af; font-size:11px; }
+.ckpt-timeline-connector { padding-left:40px; margin:8px 0; font-size:12px; color:#9ca3af; display:flex; align-items:center; gap:8px; }
+.ckpt-timeline-connector::before { content:'↓'; font-size:14px; color:#d1d5db; }
 .ckpt-timeline-connector.dagger { color:#f59e0b; }
-.ckpt-timeline-connector::before { content:'▼'; font-size:10px; }
-.ckpt-timeline-connector.dagger::before { content:'⚡'; }
 .kv-grid { display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:12px; }
 .kv { background:#fafbfc; border:1px solid #f0f0f0; border-radius:8px; padding:12px 14px; min-width:0; }
 .kv span { display:block; font-size:12px; color:rgba(0,0,0,0.45); margin-bottom:5px; }
@@ -4231,6 +4271,7 @@ def experiments():
             "running": '<span class="tag tag-orange">运行中</span>',
             "done":    '<span class="tag tag-green">成功</span>',
             "failed":  '<span class="tag tag-red">失败</span>',
+            "queued":  '<span class="tag tag-blue">排队中</span>',
         }.get(e["status"], f'<span class="tag tag-gray">{e["status"]}</span>')
         owner = e["owner"] if e["owner"] != "—" else owner_fallbacks[idx % len(owner_fallbacks)]
         priority = e.get("priority", priority_fallbacks[idx % len(priority_fallbacks)])
@@ -4244,6 +4285,21 @@ def experiments():
             if e["status"] == "running"
             else '<span class="action-link action-disabled">停止</span>'
         )
+        # 编辑仅在「排队中」状态显示，其余状态不出现在「更多」菜单中
+        edit_item = (
+            f'<a href="#" onclick="toast(\'Demo: 编辑训练任务\');return false;">编辑</a>'
+            if e["status"] in ("queued", "排队中")
+            else ''
+        )
+        more_menu = (
+            f'<span class="action-more">'
+            f'<span class="action-more-trigger">更多<span class="caret">&#9662;</span></span>'
+            f'<span class="action-menu">'
+            f'<a href="/model/lineage/train/{e["id"]}">血缘</a>'
+            f'{edit_item}'
+            f'</span>'
+            f'</span>'
+        )
         rows += f"""<tr>
           <td><a href="/model/experiments/{e['id']}" style="color:#149DAA">{e['name']}</a></td>
           <td>{status_html}</td>
@@ -4252,9 +4308,9 @@ def experiments():
           <td class="muted mono">{e['started']}</td>
           <td class="muted">{e['dur']}</td>
           <td class="actions-cell">
-            <a href="#" onclick="toast('Demo: 已复制配置');return false;">复制</a>
-            <a href="/model/lineage/train/{e['id']}">血缘</a>
             {stop_action}
+            <a href="#" onclick="toast('Demo: 已复制配置');return false;">复制</a>
+            {more_menu}
           </td>
         </tr>"""
 
@@ -5241,8 +5297,8 @@ def _ckpt_rows_html(items, show_actions=True, show_status=True, status_logs=Fals
             actions_cell = f"""<td class="actions-cell">
             <a href="#" onclick="openTaskCapabilityModal();return false;">TEST</a>
             <a href="#" onclick="openTaskCapabilityModal();return false;">DAgger</a>
-            <a href="/model/lineage/checkpoint/{c['id']}">血缘</a>
             <a href="{deploy_href}">部署</a>
+            <a href="/model/lineage/checkpoint/{c['id']}">血缘</a>
           </td>"""
         rows += f"""<tr data-status="{c['status']}">
           <td class="mono">{c['id']}</td>
@@ -7070,6 +7126,12 @@ def _lineage_detail_html(anchor_type, anchor_id):
     def cls(kind, base):
         return base + (" anchor" if anchor_type == kind else "")
 
+    # ── 图标 SVG 定义（Lucide Icons） ──
+    ICON_GIT_BRANCH = '<svg class="icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="6" y1="3" x2="6" y2="15"></line><circle cx="18" cy="6" r="3"></circle><circle cx="6" cy="18" r="3"></circle><path d="M18 9a9 9 0 0 1-9 9"></path></svg>'
+    ICON_ARROW_UP_RIGHT = '<svg class="icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="7" y1="17" x2="17" y2="7"></line><polyline points="7 7 17 7 17 17"></polyline></svg>'
+    ICON_CORNER_UP_LEFT = '<svg class="icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 14 4 9 9 4"></polyline><path d="M20 20v-7a4 4 0 0 0-4-4H4"></path></svg>'
+    ICON_HISTORY = '<svg class="icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v5h5"></path><path d="M12 7v5l4 2"></path></svg>'
+
     # ── 采集任务卡片 ──
     def _task_card(t):
         is_dagger = t.get("source_type") == "dagger"
@@ -7082,14 +7144,14 @@ def _lineage_detail_html(anchor_type, anchor_id):
                    f'｜触发设备: {t.get("src_trigger_device","—")}｜质检通过: {t.get("qc_pass","—")}/{t.get("collected","—")}')
             return (
                 f'<div class="{cls("task","lin-node dagger")}" data-chain-id="{get_chains(task_node_id)}" data-node-id="{task_node_id}" data-lineage-tip="{tip}">'
-                f'<div class="ln-body">'
                 f'<div class="ln-ttl">{t["name"]}</div>'
+                f'<div class="ln-footer">'
                 f'<div class="ln-meta">Task ID: {t["id"]}</div>'
                 f'</div>'
                 f'<div class="ln-icon-actions">'
-                f'<a class="ln-icon-btn" href="/data/recordings?task={t["id"]}">详情</a>'
-                f'<a class="ln-icon-btn" href="/model/lineage/checkpoint/{src_ckpt}">来源</a>'
-                f'<a class="ln-icon-btn" href="/model/lineage/task/{t["id"]}">血缘</a>'
+                f'<a class="ln-icon-btn" href="/model/lineage/task/{t["id"]}" data-tooltip="查看血缘关系图">{ICON_GIT_BRANCH}</a>'
+                f'<a class="ln-icon-btn" href="/data/recordings?task={t["id"]}" target="_blank" rel="noopener" data-tooltip="查看任务详情">{ICON_ARROW_UP_RIGHT}</a>'
+                f'<a class="ln-icon-btn" href="/model/lineage/checkpoint/{src_ckpt}" data-tooltip="查看来源Checkpoint">{ICON_CORNER_UP_LEFT}</a>'
                 f'</div>'
                 f'</div>'
             )
@@ -7097,13 +7159,13 @@ def _lineage_detail_html(anchor_type, anchor_id):
                f'｜创建时间: {t.get("created","—")}｜质检通过: {t.get("qc_pass","—")}')
         return (
             f'<div class="{cls("task","lin-node teal")}" data-chain-id="{get_chains(task_node_id)}" data-node-id="{task_node_id}" data-lineage-tip="{tip}">'
-            f'<div class="ln-body">'
             f'<div class="ln-ttl">{t["name"]}</div>'
+            f'<div class="ln-footer">'
             f'<div class="ln-meta">Task ID: {t["id"]}</div>'
             f'</div>'
             f'<div class="ln-icon-actions">'
-            f'<a class="ln-icon-btn" href="/data/recordings?task={t["id"]}">详情</a>'
-            f'<a class="ln-icon-btn" href="/model/lineage/task/{t["id"]}">血缘</a>'
+            f'<a class="ln-icon-btn" href="/model/lineage/task/{t["id"]}" data-tooltip="查看血缘关系图">{ICON_GIT_BRANCH}</a>'
+            f'<a class="ln-icon-btn" href="/data/recordings?task={t["id"]}" target="_blank" rel="noopener" data-tooltip="查看任务详情">{ICON_ARROW_UP_RIGHT}</a>'
             f'</div>'
             f'</div>'
         )
@@ -7128,13 +7190,13 @@ def _lineage_detail_html(anchor_type, anchor_id):
         ds_node_id = f'dataset_{ds["id"]}'
         return (
             f'<div class="{cls("dataset","lin-node blue")}" data-chain-id="{get_chains(ds_node_id)}" data-node-id="{ds_node_id}" data-lineage-tip="{ds_tip}">'
-            f'<div class="ln-body">'
             f'<div class="ln-ttl">{ds["name"]} {ds["version"]}</div>'
-            f'<div class="ln-meta">{ds["episodes"]} EP</div>'
+            f'<div class="ln-footer">'
+            f'<div class="ln-meta">{ds["episodes"]} Episode</div>'
             f'</div>'
             f'<div class="ln-icon-actions">'
-            f'<a class="ln-icon-btn" href="/model/data/datasets?sel={ds["id"]}">详情</a>'
-            f'<a class="ln-icon-btn" href="/model/lineage/dataset/{ds["id"]}">血缘</a>'
+            f'<a class="ln-icon-btn" href="/model/lineage/dataset/{ds["id"]}" data-tooltip="查看血缘关系图">{ICON_GIT_BRANCH}</a>'
+            f'<a class="ln-icon-btn" href="/model/data/datasets?sel={ds["id"]}" target="_blank" rel="noopener" data-tooltip="查看数据集详情">{ICON_ARROW_UP_RIGHT}</a>'
             f'</div>'
             f'</div>'
         )
@@ -7149,13 +7211,13 @@ def _lineage_detail_html(anchor_type, anchor_id):
                f'｜进度: {e.get("current_epoch","—")}/{e.get("epochs","—")}｜最佳{e.get("metric_name","指标")}: {e.get("best_metric","—")}')
         return (
             f'<div class="{cls("train","lin-node purple")}" data-chain-id="{get_chains(e["id"])}" data-node-id="{e["id"]}" data-lineage-tip="{tip}">'
-            f'<div class="ln-body">'
             f'<div class="ln-ttl">{ename}</div>'
+            f'<div class="ln-footer">'
             f'<div class="ln-meta">{status_display}</div>'
             f'</div>'
             f'<div class="ln-icon-actions">'
-            f'<a class="ln-icon-btn" href="/model/experiments/{e["id"]}">详情</a>'
-            f'<a class="ln-icon-btn" href="/model/lineage/train/{e["id"]}">血缘</a>'
+            f'<a class="ln-icon-btn" href="/model/lineage/train/{e["id"]}" data-tooltip="查看血缘关系图">{ICON_GIT_BRANCH}</a>'
+            f'<a class="ln-icon-btn" href="/model/experiments/{e["id"]}" target="_blank" rel="noopener" data-tooltip="查看训练详情">{ICON_ARROW_UP_RIGHT}</a>'
             f'</div>'
             f'</div>'
         )
@@ -7176,17 +7238,17 @@ def _lineage_detail_html(anchor_type, anchor_id):
         # History button only if parent exists
         history_btn = ""
         if c.get("parent_checkpoint_id"):
-            history_btn = f'<a class="ln-icon-btn" data-ckpt-id="{c["id"]}" onclick="showCkptHistory(this.dataset.ckptId); return false;" href="#">历史</a>'
+            history_btn = f'<a class="ln-icon-btn" data-ckpt-id="{c["id"]}" onclick="showCkptHistory(this.dataset.ckptId); return false;" href="#" data-tooltip="查看历史版本">{ICON_HISTORY}</a>'
 
         return (
             f'<div class="{cls("checkpoint","lin-node amber")}" data-chain-id="{get_chains(ckpt_node_id)}" data-node-id="{ckpt_node_id}" data-lineage-tip="{tip}">'
-            f'<div class="ln-body">'
             f'<div class="ln-ttl">{ckpt_name}</div>'
+            f'<div class="ln-footer">'
             f'<div class="ln-meta">Step {step}{(" · " + desc) if desc else ""}</div>'
             f'</div>'
             f'<div class="ln-icon-actions">'
-            f'<a class="ln-icon-btn" href="/model/checkpoints?name={ckpt_name}">详情</a>'
-            f'<a class="ln-icon-btn" href="/model/lineage/checkpoint/{c["id"]}">血缘</a>'
+            f'<a class="ln-icon-btn" href="/model/lineage/checkpoint/{c["id"]}" data-tooltip="查看血缘关系图">{ICON_GIT_BRANCH}</a>'
+            f'<a class="ln-icon-btn" href="/model/checkpoints?name={ckpt_name}" target="_blank" rel="noopener" data-tooltip="查看Checkpoint详情">{ICON_ARROW_UP_RIGHT}</a>'
             f'{history_btn}'
             f'</div>'
             f'</div>'
@@ -7199,16 +7261,16 @@ def _lineage_detail_html(anchor_type, anchor_id):
         tip = f'benchmark: {ev.get("benchmark","—")}｜成功率: {sr}｜状态: {ev.get("status","—")}｜时间: {ev.get("at","—")}'
         eval_node_id = f'eval_{ev["id"]}'
         task_name = ev.get("name", "—")
-        benchmark = ev.get("benchmark", "—")
+        task_no = ev.get("task_no", ev.get("id", "—"))
         return (
             f'<div class="{cls("eval","lin-node green")}" data-chain-id="{get_chains(eval_node_id)}" data-node-id="{eval_node_id}" data-lineage-tip="{tip}">'
-            f'<div class="ln-body">'
             f'<div class="ln-ttl">{task_name}</div>'
-            f'<div class="ln-meta">{benchmark}</div>'
+            f'<div class="ln-footer">'
+            f'<div class="ln-meta">ID {task_no}</div>'
             f'</div>'
             f'<div class="ln-icon-actions">'
-            f'<a class="ln-icon-btn" href="/model/eval/tasks/{ev["id"]}">详情</a>'
-            f'<a class="ln-icon-btn" href="/model/lineage/eval/{ev["id"]}">血缘</a>'
+            f'<a class="ln-icon-btn" href="/model/lineage/eval/{ev["id"]}" data-tooltip="查看血缘关系图">{ICON_GIT_BRANCH}</a>'
+            f'<a class="ln-icon-btn" href="/model/eval/tasks/{ev["id"]}" target="_blank" rel="noopener" data-tooltip="查看评测详情">{ICON_ARROW_UP_RIGHT}</a>'
             f'</div>'
             f'</div>'
         )
@@ -7282,14 +7344,16 @@ def _lineage_detail_html(anchor_type, anchor_id):
     </div>"""
 
     legend_html = """
-    <div class="lin-legend">
-      <span class="lg-item"><span class="lg-dot" style="background:#e1f5ee;border-color:#5dcaa5;"></span>原始采集</span>
-      <span class="lg-item"><span class="lg-dot" style="background:#fef0eb;border-color:#ff9500;"></span>Dagger 回流</span>
-      <span class="lg-item"><span class="lg-dot" style="background:#e6f7ff;border-color:#1890ff;"></span>数据集</span>
-      <span class="lg-item"><span class="lg-dot" style="background:#eeedfe;border-color:#7F77DD;"></span>训练任务</span>
-      <span class="lg-item"><span class="lg-dot" style="background:#fff7e6;border-color:#ffc069;"></span>Checkpoint</span>
-      <span class="lg-item"><span class="lg-dot" style="background:#edf9f0;border-color:#7bcf8a;"></span>评测</span>
-      <span class="lg-item"><span class="lg-line"></span>选中链路</span>
+    <div class="lineage-hint">
+      <span class="hint-section">
+        <span class="hint-label">节点状态：</span>
+        <span class="hint-item"><span class="hint-dot blue"></span>当前查看</span>
+        <span class="hint-item"><span class="hint-dot gray"></span>关联节点</span>
+      </span>
+      <span class="hint-section">
+        <span class="hint-label">特殊类型：</span>
+        <span class="hint-item"><span class="hint-bar dagger"></span>Dagger 回流</span>
+      </span>
     </div>
     """
 
@@ -7312,11 +7376,11 @@ def _lineage_detail_html(anchor_type, anchor_id):
     return filter_html + legend_html + f"""
     <div class="lin-flow lin-flow-5" id="linFlow" style="position:relative;">
       <svg id="linSvg" style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:0;"></svg>
-      <div class="lin-col"><h4 class="lin-col-title">采集任务 ({len(tasks)})</h4>{task_html}</div>
-      <div class="lin-col"><h4 class="lin-col-title">训练数据集 ({len(datasets)})</h4>{ds_html}</div>
-      <div class="lin-col"><h4 class="lin-col-title">训练任务 ({len(experiments)})</h4>{exp_html}</div>
-      <div class="lin-col"><h4 class="lin-col-title">Checkpoint ({len(checkpoints)})</h4>{ckpt_html}</div>
-      <div class="lin-col"><h4 class="lin-col-title">评测任务 ({len(evals)})</h4>{eval_html}</div>
+      <div class="lin-col"><h4 class="lin-col-title">采集任务 ({len(tasks)})</h4><div class="lin-col-body">{task_html}</div></div>
+      <div class="lin-col"><h4 class="lin-col-title">训练数据集 ({len(datasets)})</h4><div class="lin-col-body">{ds_html}</div></div>
+      <div class="lin-col"><h4 class="lin-col-title">训练任务 ({len(experiments)})</h4><div class="lin-col-body">{exp_html}</div></div>
+      <div class="lin-col"><h4 class="lin-col-title">Checkpoint ({len(checkpoints)})</h4><div class="lin-col-body">{ckpt_html}</div></div>
+      <div class="lin-col"><h4 class="lin-col-title">TEST任务 ({len(evals)})</h4><div class="lin-col-body">{eval_html}</div></div>
     </div>
     """ + modal_html + f"""
     <script>
@@ -7490,7 +7554,7 @@ def _lineage_detail_html(anchor_type, anchor_id):
                 const path = document.createElementNS('http://www.w3.org/2000/svg','path');
                 path.setAttribute('d', `M ${{x1}} ${{y1}} C ${{x1+dx}} ${{y1}}, ${{x2-dx}} ${{y2}}, ${{x2}} ${{y2}}`);
                 path.setAttribute('fill','none');
-                path.setAttribute('stroke','#ddd');
+                path.setAttribute('stroke','#CBD5E1');
                 path.setAttribute('stroke-width','2');
                 path.setAttribute('data-edge-child', childId);
                 path.setAttribute('data-edge-parent', parentId);
@@ -7580,12 +7644,12 @@ def _lineage_detail_html(anchor_type, anchor_id):
                     }}
 
                     if (hasActiveSharedChain) {{
-                        p.setAttribute('stroke', '#149DAA');
+                        p.setAttribute('stroke', '#3B82F6');
                         p.setAttribute('stroke-width', '3');
                         p.setAttribute('opacity', '1');
                     }} else {{
                         // 两端都高亮，但不共享对应维度的 chain_id → 弱化
-                        p.setAttribute('stroke', '#e8e8e8');
+                        p.setAttribute('stroke', '#E2E8F0');
                         p.setAttribute('stroke-width', '1.5');
                         p.setAttribute('opacity', '0.5');
                     }}
@@ -7606,9 +7670,13 @@ def _lineage_detail_html(anchor_type, anchor_id):
       var modal = document.getElementById('ckptHistoryModal');
       var body = document.getElementById('ckptHistoryBody');
 
-      // Show modal with loading state
+      // Show modal with skeleton loading
       modal.style.display = 'flex';
-      body.innerHTML = '<div style="text-align:center;padding:40px;color:#999;">加载中...</div>';
+      body.innerHTML = '<div class="ckpt-timeline-skeleton animate-pulse">' +
+        '<div class="skeleton-item"><div class="skeleton-dot"></div><div class="skeleton-card"><div class="skeleton-line w-3-4"></div><div class="skeleton-line w-1-2"></div></div></div>' +
+        '<div class="skeleton-item"><div class="skeleton-dot"></div><div class="skeleton-card"><div class="skeleton-line w-3-4"></div><div class="skeleton-line w-1-2"></div></div></div>' +
+        '<div class="skeleton-item"><div class="skeleton-dot"></div><div class="skeleton-card"><div class="skeleton-line w-3-4"></div><div class="skeleton-line w-1-2"></div></div></div>' +
+        '</div>';
 
       // Fetch history chain
       fetch('/model/lineage/checkpoint/' + ckptId + '/history')
@@ -7629,19 +7697,26 @@ def _lineage_detail_html(anchor_type, anchor_id):
             var isCurrent = idx === chain.length - 1;
             var currentClass = isCurrent ? ' current' : '';
 
+            // Extract description from name (same logic as lineage cards)
+            var nameParts = ckpt.name.split('_');
+            var desc = nameParts.length > 2 ? nameParts.slice(1, -1).join('_') : '';
+
             html += '<div class="ckpt-timeline-item' + currentClass + '">';
             html += '<div class="ckpt-timeline-dot"></div>';
             html += '<div class="ckpt-timeline-node" data-ckpt-nav="' + escapeHtml(ckpt.id) + '" onclick="navToCheckpoint(this.dataset.ckptNav)">';
-            html += '<div class="ckpt-timeline-node-id">ckpt_' + escapeHtml(ckpt.id) + '</div>';
             html += '<div class="ckpt-timeline-node-name">' + escapeHtml(ckpt.name) + '</div>';
-            html += '<div class="ckpt-timeline-node-meta">Step ' + extractStep(ckpt.name) + ' · ' + escapeHtml(ckpt.status) + ' · ' + escapeHtml(ckpt.created.split(' ')[0]) + '</div>';
+            html += '<div class="ckpt-timeline-node-meta">';
+            html += '<span>Step ' + extractStep(ckpt.name) + '</span>';
+            if (desc) html += '<span> · ' + escapeHtml(desc) + '</span>';
+            if (ckpt.created) html += '<span class="ckpt-timeline-node-time">' + escapeHtml(ckpt.created) + '</span>';
+            html += '</div>';
             html += '</div></div>';
 
             // Add connector between nodes (not after last)
             if (idx < chain.length - 1) {
               var nextCkpt = chain[idx + 1];
               var connectorClass = nextCkpt.parent_type === 'dagger' ? ' dagger' : '';
-              var label = nextCkpt.parent_type === 'dagger' ? 'dagger 回流' : 'fine-tune';
+              var label = nextCkpt.parent_type === 'dagger' ? 'dagger 回流' : 'test任务';
               html += '<div class="ckpt-timeline-connector' + connectorClass + '">' + label + '</div>';
             }
           });
@@ -7861,6 +7936,8 @@ def checkpoint_history(ckpt_id):
         chain.append({
             "id": ckpt["id"],
             "name": ckpt["name"],
+            "step": ckpt.get("step", 0),
+            "description": ckpt.get("description", ""),
             "status": ckpt.get("status", "—"),
             "owner": ckpt.get("owner", "—"),
             "created": ckpt.get("created", "—"),
