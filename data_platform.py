@@ -3484,7 +3484,7 @@ def datasets_process(did):
 
 
 def dataset_new_panel_v2():
-    steps = ["筛选", "配方", "切分", "质检门禁", "生成"]
+    steps = ["筛选", "配方", "切分", "生成"]
     step_html = ""
     for i, s in enumerate(steps):
         cls = "active" if i == 1 else ("done" if i == 0 else "")
@@ -3492,7 +3492,7 @@ def dataset_new_panel_v2():
     rec_rows = ""
     for r in RECORDINGS[:6]:
         rec_rows += f"""<tr><td><input type="checkbox" checked></td><td>#{r['id']}</td><td>{task_name(r['task'])}</td>
-        <td>{r['type']}</td><td>{r['frames']:,}</td><td>{qa_html(r['qa'])}</td></tr>"""
+        <td>{r['type']}</td><td>{r['frames']:,}</td></tr>"""
     return f"""
     <div class="detail-head"><div class="dh-title">新建数据集 <span class="tag tag-blue">向导</span></div></div>
     <div style="padding:24px;flex:1;min-height:0;overflow-y:auto;">
@@ -3502,12 +3502,12 @@ def dataset_new_panel_v2():
         <div class="filter-bar">
           <select class="has-value"><option>task: 擦白板</option></select>
           <select class="has-value"><option>类型: 采集</option></select>
-          <select class="has-value"><option>质检: PASS</option></select>
+          <select class="has-value"><option>状态: 可用</option></select>
           <button class="btn" onclick="resetFilters(this)">重置</button>
           <button class="btn-primary btn" onclick="queryFilters(this)">查询</button>
           <span class="muted">动作量排行榜 / smoothness 诊断标签可在此 flag 异常</span>
         </div>
-        <table class="ant-table"><thead><tr><th></th><th>ID</th><th>Task</th><th>类型</th><th>帧数</th><th>质检</th></tr></thead><tbody>{rec_rows}</tbody></table>
+        <table class="ant-table"><thead><tr><th></th><th>ID</th><th>Task</th><th>类型</th><th>帧数</th></tr></thead><tbody>{rec_rows}</tbody></table>
       </div>
       <div class="card" style="margin-bottom:16px;">
         <h4>② 配方 — 采样权重 + 分组 <span class="muted">(右侧实时显示 权重 vs 帧数 vs 实际采样占比 = 采样验证 ⓥ)</span></h4>
@@ -3522,19 +3522,15 @@ def dataset_new_panel_v2():
         <button class="btn-primary btn" onclick="queryFilters(this)">查询</button>
         <span class="qa qa-warn">eval 泄漏检查: 通过, 未碰评测集 recording</span></div>
       </div>
-      <div class="card" style="margin-bottom:16px;">
-        <h4>④ 质检门禁 — DOCTOR <span class="muted">(PASS 才能进训练队列 = 质检 ⓠ)</span></h4>
-        <div class="doctor-banner pass">DOCTOR 体检: PASS — 体检通过, 可生成</div>
-      </div>
-      <button class="btn-primary btn" onclick="toast('Demo: 已提交生成任务, 见执行记录')">⑤ 生成快照</button>
+      <button class="btn-primary btn" onclick="toast('Demo: 已提交生成任务, 见执行记录')">④ 生成快照</button>
     </div>
     """
 
 
 @app.route("/operators")
 def operators():
-    cat_order = ["导出", "切分", "配方", "统计", "质检"]
-    cat_color = {"导出": "tag-blue", "切分": "tag-purple", "配方": "tag-orange", "统计": "tag-gray", "质检": "tag-blue"}
+    cat_order = ["导出", "切分", "配方", "统计"]
+    cat_color = {"导出": "tag-blue", "切分": "tag-purple", "配方": "tag-orange", "统计": "tag-gray"}
 
     rows = ""
     for cat in cat_order:
@@ -3587,7 +3583,7 @@ def operators():
           <div class="fg"><label><span class="req">*</span>入口脚本 / 命令</label><textarea id="of_script" class="code-editor" rows="4" placeholder="# 入口脚本 / 命令&#10;python export_dataset.py --task-ids 3635 --include-unchecked"></textarea></div>
 
           <div class="section-label">接口定义</div>
-          <div class="fg"><label>请求参数</label><textarea id="of_params" class="code-editor" rows="4" placeholder="# 每行一个&#10;--task-ids        采集任务 id (必填)&#10;--include-unchecked  含未质检数据"></textarea></div>
+          <div class="fg"><label>请求参数</label><textarea id="of_params" class="code-editor" rows="4" placeholder="# 每行一个&#10;--task-ids        采集任务 id (必填)&#10;--output-dir      输出目录"></textarea></div>
           <div class="fg"><label>返回结果</label><textarea id="of_returns" class="code-editor" rows="3" placeholder="# 算子产出&#10;LeRobot 数据集目录 / 报告 JSON / CSV"></textarea></div>
         </div>
         <div class="drawer-foot">

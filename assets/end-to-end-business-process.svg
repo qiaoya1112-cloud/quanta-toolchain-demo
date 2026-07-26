@@ -1,0 +1,241 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1800" height="1000" viewBox="0 0 1800 1000">
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L0,6 L9,3 z" fill="#65728a"/>
+    </marker>
+    <marker id="arrow-blue" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L0,6 L9,3 z" fill="#4f82df"/>
+    </marker>
+    <marker id="arrow-green" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L0,6 L9,3 z" fill="#2a9d72"/>
+    </marker>
+    <marker id="arrow-red" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L0,6 L9,3 z" fill="#d65b5b"/>
+    </marker>
+    <style>
+      text { font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif; fill: #202a3a; }
+      .title { font-size: 30px; font-weight: 700; }
+      .subtitle { font-size: 15px; fill: #68758b; }
+      .phase { fill: #f8fafc; stroke: #ccd5e3; stroke-width: 1.2; }
+      .phase-title { font-size: 17px; font-weight: 700; }
+      .phase-no { font-size: 12px; font-weight: 700; fill: #4f82df; }
+      .node { fill: #ffffff; stroke: #8d9bb0; stroke-width: 1.3; }
+      .node-blue { fill: #eef4ff; stroke: #5f88d8; stroke-width: 1.4; }
+      .node-green { fill: #eff9f5; stroke: #48a184; stroke-width: 1.4; }
+      .check { fill: #fff7e8; stroke: #db9139; stroke-width: 1.5; }
+      .rework { fill: #fff1f1; stroke: #d65b5b; stroke-width: 1.4; }
+      .node-title { font-size: 16px; font-weight: 650; }
+      .node-note { font-size: 12px; fill: #6a7688; }
+      .key { font-size: 11px; fill: #4f82df; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+      .edge { fill: none; stroke: #65728a; stroke-width: 1.5; marker-end: url(#arrow); }
+      .bind { fill: none; stroke: #4f82df; stroke-width: 1.4; stroke-dasharray: 6 5; marker-end: url(#arrow-blue); }
+      .pass { fill: none; stroke: #2a9d72; stroke-width: 1.7; marker-end: url(#arrow-green); }
+      .reject { fill: none; stroke: #d65b5b; stroke-width: 1.5; stroke-dasharray: 6 4; marker-end: url(#arrow-red); }
+      .label { font-size: 12px; fill: #59667c; }
+      .label-pass { font-size: 12px; font-weight: 650; fill: #23815e; }
+      .label-reject { font-size: 12px; font-weight: 650; fill: #c44848; }
+      .lane { fill: #fbfcfe; stroke: #ccd5e3; stroke-width: 1.2; }
+      .lane-title { font-size: 17px; font-weight: 700; }
+      .pill { fill: #f3f6fa; stroke: #91a0b6; stroke-width: 1.2; }
+    </style>
+  </defs>
+
+  <rect width="1800" height="1000" fill="#ffffff"/>
+
+  <text x="40" y="43" class="title">端到端业务流程图</text>
+  <text x="40" y="72" class="subtitle">把采集、导入、处理、质检、标注、验收和发布组织为一条可配置主流程；人工复核与返工作为统一分支复用。</text>
+  <path d="M1330 42 H1372" class="edge"/>
+  <text x="1382" y="47" class="label">主流程</text>
+  <path d="M1465 42 H1507" class="pass"/>
+  <text x="1517" y="47" class="label">通过 / 发布</text>
+  <path d="M1625 42 H1667" class="reject"/>
+  <text x="1677" y="47" class="label">打回 / 回流</text>
+
+  <!-- Phase columns -->
+  <rect x="40" y="105" width="220" height="415" rx="12" class="phase"/>
+  <text x="58" y="130" class="phase-no">01</text>
+  <text x="86" y="130" class="phase-title">项目与流程准备</text>
+
+  <rect x="280" y="105" width="240" height="415" rx="12" class="phase"/>
+  <text x="298" y="130" class="phase-no">02</text>
+  <text x="326" y="130" class="phase-title">数据进入</text>
+
+  <rect x="540" y="105" width="230" height="415" rx="12" class="phase"/>
+  <text x="558" y="130" class="phase-no">03</text>
+  <text x="586" y="130" class="phase-title">预处理与采集质检</text>
+
+  <rect x="790" y="105" width="230" height="415" rx="12" class="phase"/>
+  <text x="808" y="130" class="phase-no">04</text>
+  <text x="836" y="130" class="phase-title">切分与标注</text>
+
+  <rect x="1040" y="105" width="230" height="415" rx="12" class="phase"/>
+  <text x="1058" y="130" class="phase-no">05</text>
+  <text x="1086" y="130" class="phase-title">标注验收</text>
+
+  <rect x="1290" y="105" width="230" height="415" rx="12" class="phase"/>
+  <text x="1308" y="130" class="phase-no">06</text>
+  <text x="1336" y="130" class="phase-title">数据集构建与终验</text>
+
+  <rect x="1540" y="105" width="220" height="415" rx="12" class="phase"/>
+  <text x="1558" y="130" class="phase-no">07</text>
+  <text x="1586" y="130" class="phase-title">发布与消费</text>
+
+  <!-- Phase 1 -->
+  <rect x="65" y="165" width="170" height="62" rx="9" class="node-blue"/>
+  <text x="150" y="191" text-anchor="middle" class="node-title">项目 Project</text>
+  <text x="150" y="212" text-anchor="middle" class="node-note">范围 · 标准 · 成员 · 成本</text>
+  <path d="M150 227 V252" class="edge"/>
+  <rect x="65" y="252" width="170" height="62" rx="9" class="node-blue"/>
+  <text x="150" y="278" text-anchor="middle" class="node-title">流程版本</text>
+  <text x="150" y="299" text-anchor="middle" class="node-note">节点 · 规则 · 算子绑定</text>
+  <path d="M150 314 V345" class="edge"/>
+  <rect x="65" y="345" width="170" height="70" rx="9" class="node-green"/>
+  <text x="150" y="372" text-anchor="middle" class="node-title">生产配置就绪</text>
+  <text x="150" y="393" text-anchor="middle" class="node-note">项目 + 流程版本 + 质量策略</text>
+
+  <!-- Phase 2 -->
+  <rect x="305" y="165" width="190" height="70" rx="9" class="node-blue"/>
+  <text x="400" y="191" text-anchor="middle" class="node-title">数据采集任务</text>
+  <text x="400" y="212" text-anchor="middle" class="key">data_collection_task</text>
+  <rect x="305" y="255" width="190" height="70" rx="9" class="node-blue"/>
+  <text x="400" y="281" text-anchor="middle" class="node-title">数据导入任务</text>
+  <text x="400" y="302" text-anchor="middle" class="key">data_import_task</text>
+  <path d="M335 235 V332 H365 V342" class="edge"/>
+  <path d="M465 325 V332 H435 V342" class="edge"/>
+  <rect x="305" y="342" width="190" height="73" rx="9" class="node-green"/>
+  <text x="400" y="369" text-anchor="middle" class="node-title">Recording</text>
+  <text x="400" y="390" text-anchor="middle" class="node-note">建立唯一标识与原始数据版本</text>
+  <path d="M235 380 H270 V200 H305" class="edge"/>
+  <path d="M270 290 H305" class="edge"/>
+
+  <!-- Phase 3 -->
+  <rect x="565" y="150" width="180" height="58" rx="9" class="node-blue"/>
+  <text x="655" y="174" text-anchor="middle" class="node-title">数据处理任务</text>
+  <text x="655" y="194" text-anchor="middle" class="key">data_processing_task</text>
+  <path d="M655 208 V224" class="edge"/>
+  <rect x="565" y="224" width="180" height="58" rx="9" class="node-green"/>
+  <text x="655" y="248" text-anchor="middle" class="node-title">发起 Pipeline Run</text>
+  <text x="655" y="268" text-anchor="middle" class="key">pipeline_run</text>
+  <path d="M655 282 V298" class="edge"/>
+  <rect x="565" y="298" width="180" height="58" rx="9" class="node"/>
+  <text x="655" y="322" text-anchor="middle" class="node-title">预处理与自动质检</text>
+  <text x="655" y="342" text-anchor="middle" class="node-note">清洗 · 转换 · 规则 / 算子检查</text>
+  <path d="M655 356 V372" class="edge"/>
+  <rect x="565" y="372" width="180" height="62" rx="9" class="check"/>
+  <text x="655" y="397" text-anchor="middle" class="node-title">采集质检节点</text>
+  <text x="655" y="418" text-anchor="middle" class="node-note">PASS / REVIEW / REJECT</text>
+  <path d="M495 378 H525 V179 H565" class="edge"/>
+
+  <!-- Phase 4 -->
+  <rect x="815" y="165" width="180" height="62" rx="9" class="node-green"/>
+  <text x="905" y="191" text-anchor="middle" class="node-title">Episode 切分</text>
+  <text x="905" y="212" text-anchor="middle" class="node-note">形成可独立处理的数据片段</text>
+  <path d="M905 227 V252" class="edge"/>
+  <rect x="815" y="252" width="180" height="62" rx="9" class="node-blue"/>
+  <text x="905" y="278" text-anchor="middle" class="node-title">标注节点</text>
+  <text x="905" y="299" text-anchor="middle" class="node-note">人工或自动化执行</text>
+  <path d="M905 314 V342" class="edge"/>
+  <rect x="815" y="342" width="180" height="73" rx="9" class="node-green"/>
+  <text x="905" y="369" text-anchor="middle" class="node-title">标注版本</text>
+  <text x="905" y="390" text-anchor="middle" class="node-note">修订生成新版本，不覆盖历史</text>
+  <path d="M745 403 H780 V196 H815" class="pass"/>
+  <text x="755" y="390" class="label-pass">PASS</text>
+
+  <!-- Phase 5 -->
+  <rect x="1065" y="240" width="180" height="95" rx="10" class="check"/>
+  <text x="1155" y="270" text-anchor="middle" class="node-title">标注验收节点</text>
+  <text x="1155" y="293" text-anchor="middle" class="node-note">规则检查 + 抽验 / 复核</text>
+  <text x="1155" y="315" text-anchor="middle" class="node-note">PASS / REVIEW / REJECT</text>
+  <path d="M995 378 H1025 V287 H1065" class="edge"/>
+
+  <!-- Phase 6 -->
+  <rect x="1315" y="165" width="180" height="62" rx="9" class="node"/>
+  <text x="1405" y="191" text-anchor="middle" class="node-title">数据集构建</text>
+  <text x="1405" y="212" text-anchor="middle" class="node-note">筛选 · 配比 · 去重</text>
+  <path d="M1405 227 V252" class="edge"/>
+  <rect x="1315" y="252" width="180" height="62" rx="9" class="node-green"/>
+  <text x="1405" y="278" text-anchor="middle" class="node-title">数据快照</text>
+  <text x="1405" y="299" text-anchor="middle" class="node-note">冻结本次终验的数据范围</text>
+  <path d="M1405 314 V342" class="edge"/>
+  <rect x="1315" y="342" width="180" height="73" rx="9" class="check"/>
+  <text x="1405" y="369" text-anchor="middle" class="node-title">数据集终验节点</text>
+  <text x="1405" y="390" text-anchor="middle" class="node-note">检查质量、分布与版本</text>
+  <path d="M1245 287 H1280 V196 H1315" class="pass"/>
+  <text x="1254" y="273" class="label-pass">PASS</text>
+
+  <!-- Phase 7 -->
+  <rect x="1565" y="190" width="170" height="73" rx="9" class="node-green"/>
+  <text x="1650" y="217" text-anchor="middle" class="node-title">数据集版本</text>
+  <text x="1650" y="238" text-anchor="middle" class="key">dataset_version</text>
+  <path d="M1650 263 V302" class="pass"/>
+  <rect x="1565" y="302" width="170" height="86" rx="9" class="node-blue"/>
+  <text x="1650" y="330" text-anchor="middle" class="node-title">训练 / 评测 / 交付</text>
+  <text x="1650" y="353" text-anchor="middle" class="node-note">固定引用已发布版本</text>
+  <path d="M1495 378 H1530 V226 H1565" class="pass"/>
+  <text x="1503" y="365" class="label-pass">PASS</text>
+
+  <!-- Shared quality branch -->
+  <text x="40" y="558" class="lane-title">统一人工协作与回流分支</text>
+  <rect x="40" y="572" width="1720" height="190" rx="12" class="lane"/>
+
+  <rect x="70" y="615" width="185" height="62" rx="9" class="check"/>
+  <text x="162" y="641" text-anchor="middle" class="node-title">任一质检 / 验收节点</text>
+  <text x="162" y="662" text-anchor="middle" class="node-note">采集 / 标注 / 终验</text>
+
+  <path d="M255 632 H305" class="edge"/>
+  <text x="280" y="620" text-anchor="middle" class="label">REVIEW</text>
+  <rect x="305" y="605" width="185" height="73" rx="9" class="node-blue"/>
+  <text x="397" y="633" text-anchor="middle" class="node-title">人工任务</text>
+  <text x="397" y="654" text-anchor="middle" class="key">human_task</text>
+  <path d="M490 642 H545" class="edge"/>
+  <rect x="545" y="605" width="175" height="73" rx="9" class="node"/>
+  <text x="632" y="633" text-anchor="middle" class="node-title">任务池</text>
+  <text x="632" y="654" text-anchor="middle" class="node-note">分配 · 领取 · SLA</text>
+  <path d="M720 642 H775" class="edge"/>
+  <rect x="775" y="605" width="190" height="73" rx="9" class="node"/>
+  <text x="870" y="633" text-anchor="middle" class="node-title">工作台</text>
+  <text x="870" y="654" text-anchor="middle" class="node-note">预览 · 工具 · 证据 · 提交</text>
+  <path d="M965 642 H1020" class="edge"/>
+  <rect x="1020" y="605" width="190" height="73" rx="9" class="node-green"/>
+  <text x="1115" y="633" text-anchor="middle" class="node-title">质量结果</text>
+  <text x="1115" y="654" text-anchor="middle" class="node-note">结论 · 问题 · 证据 · 版本</text>
+  <path d="M1210 642 H1265 V590 H162 V615" class="bind"/>
+  <text x="1310" y="626" class="label">回写原节点结果并保留前后结论</text>
+
+  <path d="M162 677 V715 H305" class="reject"/>
+  <text x="205" y="706" class="label-reject">REJECT</text>
+  <rect x="305" y="692" width="185" height="48" rx="8" class="rework"/>
+  <text x="397" y="722" text-anchor="middle" class="node-title">返工单 Rework Order</text>
+  <path d="M490 716 H575" class="reject"/>
+  <rect x="575" y="692" width="250" height="48" rx="8" class="rework"/>
+  <text x="700" y="722" text-anchor="middle" class="node-title">定位责任 Node Run / 业务任务</text>
+  <path d="M825 716 H910" class="reject"/>
+  <rect x="910" y="692" width="230" height="48" rx="8" class="rework"/>
+  <text x="1025" y="722" text-anchor="middle" class="node-title">生成新的执行与数据版本</text>
+  <path d="M1140 716 H1460 V520" class="reject"/>
+  <text x="1240" y="704" class="label-reject">按血缘回到采集、处理或标注责任阶段</text>
+
+  <!-- Data evolution -->
+  <text x="40" y="807" class="lane-title">数据版本演进与血缘</text>
+  <rect x="40" y="821" width="1720" height="135" rx="12" class="lane"/>
+  <rect x="95" y="858" width="220" height="58" rx="29" class="pill"/>
+  <text x="205" y="884" text-anchor="middle" class="node-title">Recording</text>
+  <text x="205" y="903" text-anchor="middle" class="node-note">原始记录</text>
+  <path d="M315 887 H405" class="pass"/>
+  <rect x="405" y="858" width="220" height="58" rx="29" class="pill"/>
+  <text x="515" y="884" text-anchor="middle" class="node-title">Episode</text>
+  <text x="515" y="903" text-anchor="middle" class="node-note">可处理片段</text>
+  <path d="M625 887 H715" class="pass"/>
+  <rect x="715" y="858" width="250" height="58" rx="29" class="pill"/>
+  <text x="840" y="884" text-anchor="middle" class="node-title">Annotation Version</text>
+  <text x="840" y="903" text-anchor="middle" class="node-note">不可覆盖的标注版本</text>
+  <path d="M965 887 H1055" class="pass"/>
+  <rect x="1055" y="858" width="250" height="58" rx="29" class="pill"/>
+  <text x="1180" y="884" text-anchor="middle" class="node-title">Data Snapshot</text>
+  <text x="1180" y="903" text-anchor="middle" class="node-note">固定终验范围</text>
+  <path d="M1305 887 H1395" class="pass"/>
+  <rect x="1395" y="858" width="270" height="58" rx="29" class="pill"/>
+  <text x="1530" y="884" text-anchor="middle" class="node-title">Dataset Version</text>
+  <text x="1530" y="903" text-anchor="middle" class="node-note">可稳定消费的发布资产</text>
+  <text x="900" y="942" text-anchor="middle" class="node-note">每一次转换都记录流程版本、节点实例、规则 / 算子版本、操作人、输入输出和变更原因。</text>
+</svg>

@@ -1,0 +1,223 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1080" viewBox="0 0 1600 1080" role="img" aria-labelledby="title desc">
+  <title id="title">核心概念关系图</title>
+  <desc id="desc">展示租户、项目、业务任务、流程定义与版本、流程实例、节点实例、算子运行、人工任务、任务池、工作台、质量结果、流转判断、数据快照、数据集版本和血缘之间的关系。</desc>
+  <defs>
+    <style>
+      text { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif; fill: #1f2937; }
+      .title { font-size: 30px; font-weight: 600; }
+      .subtitle { font-size: 16px; fill: #667085; }
+      .layer-title { font-size: 17px; font-weight: 600; fill: #475467; }
+      .node-title { font-size: 17px; font-weight: 600; }
+      .node-note { font-size: 13px; fill: #667085; }
+      .edge-label { font-size: 13px; font-weight: 600; fill: #667085; }
+      .edge-label-pass { font-size: 13px; font-weight: 600; fill: #23815f; }
+      .edge-label-review { font-size: 13px; font-weight: 600; fill: #b46a12; }
+      .edge-label-reject { font-size: 13px; font-weight: 600; fill: #c23b3b; }
+      .legend { font-size: 13px; fill: #475467; }
+      .layer { fill: #fbfcfe; stroke: #d5dbe5; stroke-width: 1.2; }
+      .business { fill: #eef4ff; stroke: #5d86c7; stroke-width: 1.5; }
+      .definition { fill: #f5f0ff; stroke: #8064bd; stroke-width: 1.5; }
+      .runtime { fill: #edf8f4; stroke: #3d987a; stroke-width: 1.5; }
+      .quality { fill: #fff4e8; stroke: #d4892d; stroke-width: 1.5; }
+      .data { fill: #f2f6fb; stroke: #71819a; stroke-width: 1.5; }
+      .result { fill: #fff8e8; stroke: #d6a23e; stroke-width: 1.5; }
+      .rework { fill: #fff0f0; stroke: #d55b5b; stroke-width: 1.5; }
+      .lineage { fill: #eef7ff; stroke: #5b8fbe; stroke-width: 1.5; }
+      .edge { fill: none; stroke: #667085; stroke-width: 1.8; }
+      .reference { fill: none; stroke: #4f8bd9; stroke-width: 1.6; stroke-dasharray: 6 5; }
+      .data-edge { fill: none; stroke: #2e9c76; stroke-width: 1.8; }
+      .review-edge { fill: none; stroke: #d28a34; stroke-width: 1.8; stroke-dasharray: 6 5; }
+      .reject-edge { fill: none; stroke: #d55b5b; stroke-width: 1.8; stroke-dasharray: 7 5; }
+      .lineage-edge { fill: none; stroke: #5b8fbe; stroke-width: 1.4; stroke-dasharray: 4 5; }
+    </style>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto">
+      <path d="M0 0 L10 5 L0 10 Z" fill="#667085"/>
+    </marker>
+    <marker id="arrow-blue" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto">
+      <path d="M0 0 L10 5 L0 10 Z" fill="#4f8bd9"/>
+    </marker>
+    <marker id="arrow-green" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto">
+      <path d="M0 0 L10 5 L0 10 Z" fill="#2e9c76"/>
+    </marker>
+    <marker id="arrow-orange" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto">
+      <path d="M0 0 L10 5 L0 10 Z" fill="#d28a34"/>
+    </marker>
+    <marker id="arrow-red" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto">
+      <path d="M0 0 L10 5 L0 10 Z" fill="#d55b5b"/>
+    </marker>
+  </defs>
+
+  <rect width="1600" height="1080" fill="#ffffff"/>
+  <text x="40" y="52" class="title">核心概念关系图</text>
+  <text x="40" y="82" class="subtitle">先区分“模板定义、运行实例、人工任务和数据版本”四个层次，再理解质量结果如何驱动继续、复核和回流。</text>
+
+  <line x1="1040" y1="52" x2="1090" y2="52" class="edge" marker-end="url(#arrow)"/>
+  <text x="1102" y="57" class="legend">包含 / 生成 / 执行</text>
+  <line x1="1240" y1="52" x2="1290" y2="52" class="reference" marker-end="url(#arrow-blue)"/>
+  <text x="1302" y="57" class="legend">绑定 / 引用</text>
+  <line x1="1040" y1="78" x2="1090" y2="78" class="reject-edge" marker-end="url(#arrow-red)"/>
+  <text x="1102" y="83" class="legend">拒绝 / 回流</text>
+  <line x1="1240" y1="78" x2="1290" y2="78" class="data-edge" marker-end="url(#arrow-green)"/>
+  <text x="1302" y="83" class="legend">数据演进 / 发布</text>
+
+  <text x="40" y="126" class="layer-title">业务治理边界</text>
+  <rect x="40" y="138" width="1520" height="92" rx="10" class="layer"/>
+  <rect x="110" y="155" width="220" height="58" rx="9" class="business"/>
+  <text x="220" y="179" text-anchor="middle" class="node-title">租户 Tenant</text>
+  <text x="220" y="199" text-anchor="middle" class="node-note">组织、数据、成员和权限的最高边界</text>
+  <rect x="410" y="155" width="240" height="58" rx="9" class="business"/>
+  <text x="530" y="179" text-anchor="middle" class="node-title">项目 Project</text>
+  <text x="530" y="199" text-anchor="middle" class="node-note">一次业务目标或数据交付的协作边界</text>
+  <path d="M330 184 H410" class="edge" marker-end="url(#arrow)"/>
+  <text x="370" y="174" text-anchor="middle" class="edge-label">包含多个</text>
+  <rect x="750" y="155" width="260" height="58" rx="9" class="business"/>
+  <text x="880" y="179" text-anchor="middle" class="node-title">业务任务 Business Task</text>
+  <text x="880" y="199" text-anchor="middle" class="node-note">采集 / 导入 / 处理任务</text>
+  <path d="M650 184 H750" class="edge" marker-end="url(#arrow)"/>
+  <text x="700" y="174" text-anchor="middle" class="edge-label">包含多个</text>
+  <text x="1060" y="173" class="node-note">项目定义参与者、数据范围、交付标准和成本归属。</text>
+  <text x="1060" y="201" class="node-note">业务任务管范围与进度；Run / Node Run 管具体执行。</text>
+
+  <text x="40" y="264" class="layer-title">模板与版本定义层</text>
+  <rect x="40" y="276" width="1520" height="112" rx="10" class="layer"/>
+  <rect x="90" y="298" width="240" height="68" rx="9" class="definition"/>
+  <text x="210" y="325" text-anchor="middle" class="node-title">流程定义</text>
+  <text x="210" y="347" text-anchor="middle" class="node-note">节点、依赖、分支与回流模板</text>
+  <rect x="400" y="298" width="240" height="68" rx="9" class="definition"/>
+  <text x="520" y="325" text-anchor="middle" class="node-title">流程版本</text>
+  <text x="520" y="347" text-anchor="middle" class="node-note">发布后不可变，可产生多个运行实例</text>
+  <rect x="760" y="298" width="250" height="68" rx="9" class="definition"/>
+  <text x="885" y="325" text-anchor="middle" class="node-title">规则与策略版本</text>
+  <text x="885" y="347" text-anchor="middle" class="node-note">检查条件、阈值、抽检与路由策略</text>
+  <rect x="1130" y="298" width="250" height="68" rx="9" class="definition"/>
+  <text x="1255" y="325" text-anchor="middle" class="node-title">算子版本</text>
+  <text x="1255" y="347" text-anchor="middle" class="node-note">标准输入输出、镜像、参数与代码版本</text>
+
+  <path d="M330 332 H400" class="edge" marker-end="url(#arrow)"/>
+  <text x="365" y="322" text-anchor="middle" class="edge-label">发布</text>
+  <path d="M530 213 V255 H520 V298" class="reference" marker-end="url(#arrow-blue)"/>
+  <text x="555" y="252" class="edge-label">项目绑定指定版本</text>
+  <path d="M640 332 H760" class="reference" marker-end="url(#arrow-blue)"/>
+  <text x="700" y="322" text-anchor="middle" class="edge-label">引用</text>
+  <path d="M640 350 H1070 V332 H1130" class="reference" marker-end="url(#arrow-blue)"/>
+  <text x="1060" y="365" text-anchor="end" class="edge-label">自动节点绑定算子版本</text>
+
+  <text x="40" y="424" class="layer-title">运行、任务与结果流转层</text>
+  <rect x="40" y="436" width="1520" height="292" rx="10" class="layer"/>
+
+  <rect x="80" y="462" width="230" height="68" rx="9" class="runtime"/>
+  <text x="195" y="489" text-anchor="middle" class="node-title">流程实例 Pipeline Run</text>
+  <text x="195" y="511" text-anchor="middle" class="node-note">绑定版本、参数和输入快照的一次运行</text>
+  <rect x="370" y="462" width="230" height="68" rx="9" class="runtime"/>
+  <text x="485" y="489" text-anchor="middle" class="node-title">节点实例 Node Run</text>
+  <text x="485" y="511" text-anchor="middle" class="node-note">运行状态的最小技术单元</text>
+  <rect x="910" y="462" width="230" height="68" rx="9" class="quality"/>
+  <text x="1025" y="489" text-anchor="middle" class="node-title">流转判断 Transition</text>
+  <text x="1025" y="511" text-anchor="middle" class="node-note">读取节点结果并匹配流转条件</text>
+  <rect x="1290" y="462" width="230" height="68" rx="9" class="data"/>
+  <text x="1405" y="489" text-anchor="middle" class="node-title">下一节点 / 资产提交</text>
+  <text x="1405" y="511" text-anchor="middle" class="node-note">继续处理或提交候选快照</text>
+
+  <path d="M880 213 V410 H195 V462" class="edge" marker-end="url(#arrow)"/>
+  <text x="265" y="408" class="edge-label">处理任务发起</text>
+  <path d="M520 366 V418 H195 V462" class="reference" marker-end="url(#arrow-blue)"/>
+  <text x="400" y="432" class="edge-label">实例固定引用流程版本</text>
+  <path d="M310 496 H370" class="edge" marker-end="url(#arrow)"/>
+  <text x="340" y="486" text-anchor="middle" class="edge-label">包含多个</text>
+  <path d="M600 496 H910" class="edge" marker-end="url(#arrow)"/>
+  <text x="755" y="486" text-anchor="middle" class="edge-label">节点完成后触发</text>
+
+  <rect x="330" y="574" width="220" height="62" rx="9" class="runtime"/>
+  <text x="440" y="599" text-anchor="middle" class="node-title">算子运行 Operator Run</text>
+  <text x="440" y="620" text-anchor="middle" class="node-note">自动节点的一次执行记录</text>
+  <rect x="610" y="574" width="220" height="62" rx="9" class="runtime"/>
+  <text x="720" y="599" text-anchor="middle" class="node-title">人工任务 Human Task</text>
+  <text x="720" y="620" text-anchor="middle" class="node-note">人工节点生成的可操作工作单元</text>
+  <rect x="890" y="574" width="190" height="62" rx="9" class="runtime"/>
+  <text x="985" y="599" text-anchor="middle" class="node-title">任务池 Task Pool</text>
+  <text x="985" y="620" text-anchor="middle" class="node-note">待办聚合与分配视图</text>
+  <rect x="1140" y="574" width="190" height="62" rx="9" class="runtime"/>
+  <text x="1235" y="599" text-anchor="middle" class="node-title">工作台 Workbench</text>
+  <text x="1235" y="620" text-anchor="middle" class="node-note">执行人工任务的交互界面</text>
+  <rect x="1380" y="574" width="170" height="62" rx="9" class="result"/>
+  <text x="1465" y="599" text-anchor="middle" class="node-title">质量结果</text>
+  <text x="1465" y="620" text-anchor="middle" class="node-note">结论、证据与版本</text>
+
+  <path d="M485 530 V550 H440 V574" class="edge" marker-end="url(#arrow)"/>
+  <text x="400" y="554" text-anchor="end" class="edge-label">自动节点</text>
+  <path d="M485 530 V550 H720 V574" class="edge" marker-end="url(#arrow)"/>
+  <text x="615" y="548" class="edge-label">人工节点</text>
+  <path d="M830 605 H890" class="edge" marker-end="url(#arrow)"/>
+  <text x="860" y="595" text-anchor="middle" class="edge-label">进入</text>
+  <path d="M1080 605 H1140" class="edge" marker-end="url(#arrow)"/>
+  <text x="1110" y="595" text-anchor="middle" class="edge-label">领取</text>
+  <path d="M1330 605 H1380" class="edge" marker-end="url(#arrow)"/>
+  <text x="1355" y="595" text-anchor="middle" class="edge-label">提交</text>
+  <path d="M550 605 V662 H1465 V636" class="edge" marker-end="url(#arrow)"/>
+  <path d="M1465 574 V548 H1025 V530" class="edge" marker-end="url(#arrow)"/>
+  <text x="1240" y="542" text-anchor="middle" class="edge-label">流转读取结果</text>
+  <path d="M885 366 V424 H1025 V462" class="reference" marker-end="url(#arrow-blue)"/>
+  <text x="905" y="418" class="edge-label">规则与策略决定检查和流转方式</text>
+  <path d="M1255 366 V420 H440 V574" class="reference" marker-end="url(#arrow-blue)"/>
+  <text x="650" y="414" class="edge-label">算子运行固定引用算子版本</text>
+
+  <path d="M1140 485 H1290" class="data-edge" marker-end="url(#arrow-green)"/>
+  <text x="1215" y="474" text-anchor="middle" class="edge-label-pass">PASS</text>
+  <path d="M1025 530 V550 H720 V574" class="review-edge" marker-end="url(#arrow-orange)"/>
+  <text x="855" y="544" text-anchor="middle" class="edge-label-review">REVIEW：生成复核任务</text>
+  <rect x="930" y="658" width="220" height="58" rx="8" class="rework"/>
+  <text x="1040" y="682" text-anchor="middle" class="node-title">返工单 / 回流任务</text>
+  <text x="1040" y="703" text-anchor="middle" class="node-note">重新生成 Node Run / Human Task</text>
+  <path d="M1025 530 V650 H1040 V662" class="reject-edge" marker-end="url(#arrow-red)"/>
+  <text x="1050" y="648" class="edge-label-reject">REJECT</text>
+  <path d="M930 686 H615 V520 H600" class="reject-edge" marker-end="url(#arrow-red)"/>
+
+  <text x="40" y="766" class="layer-title">数据资产与版本层</text>
+  <rect x="40" y="778" width="1520" height="150" rx="10" class="layer"/>
+  <rect x="55" y="812" width="210" height="64" rx="9" class="data"/>
+  <text x="160" y="838" text-anchor="middle" class="node-title">Recording</text>
+  <text x="160" y="859" text-anchor="middle" class="node-note">原始连续采集记录</text>
+  <rect x="315" y="812" width="210" height="64" rx="9" class="data"/>
+  <text x="420" y="838" text-anchor="middle" class="node-title">Episode</text>
+  <text x="420" y="859" text-anchor="middle" class="node-note">可独立使用的数据片段</text>
+  <rect x="575" y="812" width="210" height="64" rx="9" class="data"/>
+  <text x="680" y="838" text-anchor="middle" class="node-title">标注版本</text>
+  <text x="680" y="859" text-anchor="middle" class="node-note">不可覆盖的标注结果版本</text>
+  <rect x="835" y="812" width="210" height="64" rx="9" class="data"/>
+  <text x="940" y="838" text-anchor="middle" class="node-title">数据快照</text>
+  <text x="940" y="859" text-anchor="middle" class="node-note">一次运行固定使用的数据范围</text>
+  <rect x="1095" y="812" width="210" height="64" rx="9" class="data"/>
+  <text x="1200" y="838" text-anchor="middle" class="node-title">数据集版本</text>
+  <text x="1200" y="859" text-anchor="middle" class="node-note">终验通过后可稳定消费的资产</text>
+  <rect x="1355" y="812" width="190" height="64" rx="9" class="data"/>
+  <text x="1450" y="838" text-anchor="middle" class="node-title">训练 / 评测 / 交付</text>
+  <text x="1450" y="859" text-anchor="middle" class="node-note">固定引用数据集版本</text>
+
+  <path d="M265 844 H315" class="data-edge" marker-end="url(#arrow-green)"/>
+  <text x="290" y="834" text-anchor="middle" class="edge-label-pass">切分</text>
+  <path d="M525 844 H575" class="data-edge" marker-end="url(#arrow-green)"/>
+  <text x="550" y="834" text-anchor="middle" class="edge-label-pass">标注</text>
+  <path d="M785 844 H835" class="data-edge" marker-end="url(#arrow-green)"/>
+  <text x="810" y="834" text-anchor="middle" class="edge-label-pass">冻结</text>
+  <path d="M1045 844 H1095" class="data-edge" marker-end="url(#arrow-green)"/>
+  <text x="1070" y="834" text-anchor="middle" class="edge-label-pass">终验</text>
+  <path d="M1305 844 H1355" class="data-edge" marker-end="url(#arrow-green)"/>
+  <text x="1330" y="834" text-anchor="middle" class="edge-label-pass">引用</text>
+
+  <path d="M195 530 V744 H940 V812" class="reference" marker-end="url(#arrow-blue)"/>
+  <text x="370" y="758" class="edge-label">Run / Node Run 读写固定数据快照</text>
+  <path d="M1405 530 V748 H1200 V812" class="data-edge" marker-end="url(#arrow-green)"/>
+  <text x="1240" y="758" class="edge-label-pass">终验 PASS：提交候选快照与构建申请</text>
+  <path d="M1465 636 V740 H940 V812" class="reference" marker-end="url(#arrow-blue)"/>
+  <text x="815" y="738" class="edge-label">质量结果绑定数据快照</text>
+
+  <text x="40" y="968" class="layer-title">横向血缘关系</text>
+  <rect x="40" y="982" width="1520" height="58" rx="10" class="lineage"/>
+  <text x="800" y="1008" text-anchor="middle" class="node-title">Lineage：项目 → 业务任务 → 流程版本 → 流程实例 → 节点/执行器 → 质量结果 → 数据快照 → 数据集版本 → 下游消费</text>
+  <text x="800" y="1029" text-anchor="middle" class="node-note">血缘不复制数据；它记录对象之间的引用、输入输出、规则版本、操作人和变更原因。</text>
+  <path d="M195 530 V982" class="lineage-edge"/>
+  <path d="M485 530 V982" class="lineage-edge"/>
+  <path d="M1465 636 V982" class="lineage-edge"/>
+  <path d="M940 876 V982" class="lineage-edge"/>
+  <path d="M1200 876 V982" class="lineage-edge"/>
+</svg>

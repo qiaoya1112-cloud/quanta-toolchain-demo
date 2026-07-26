@@ -1,0 +1,241 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1800" height="1040" viewBox="0 0 1800 1040">
+  <defs>
+    <marker id="arrow-blue" markerWidth="11" markerHeight="11" refX="9" refY="4" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L0,8 L10,4 z" fill="#4f82df"/>
+    </marker>
+    <marker id="arrow-green" markerWidth="11" markerHeight="11" refX="9" refY="4" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L0,8 L10,4 z" fill="#2a9d72"/>
+    </marker>
+    <marker id="arrow-orange" markerWidth="11" markerHeight="11" refX="9" refY="4" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L0,8 L10,4 z" fill="#d58a32"/>
+    </marker>
+    <marker id="arrow-gray" markerWidth="11" markerHeight="11" refX="9" refY="4" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L0,8 L10,4 z" fill="#6f7c90"/>
+    </marker>
+    <style>
+      text { font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif; fill: #202a3a; }
+      .title { font-size: 31px; font-weight: 700; }
+      .subtitle { font-size: 15px; fill: #68758b; }
+      .boundary { fill: #fbfcfe; stroke: #9aa9bd; stroke-width: 1.5; stroke-dasharray: 9 7; }
+      .boundary-label { font-size: 14px; font-weight: 650; fill: #5e6d82; }
+      .pipeline { fill: #eef4ff; stroke: #5f83ce; stroke-width: 1.8; }
+      .asset { fill: #fff7e8; stroke: #d58a32; stroke-width: 1.7; }
+      .factory { fill: #eff9f5; stroke: #3b9a78; stroke-width: 1.7; }
+      .platform { fill: #f3f5f8; stroke: #98a4b5; stroke-width: 1.3; }
+      .external { fill: #ffffff; stroke: #97a4b7; stroke-width: 1.3; }
+      .node { fill: rgba(255,255,255,0.88); stroke: #94a2b6; stroke-width: 1.1; }
+      .node-blue { fill: #ffffff; stroke: #7f9edc; stroke-width: 1.2; }
+      .node-green { fill: #ffffff; stroke: #79b69f; stroke-width: 1.2; }
+      .node-orange { fill: #ffffff; stroke: #dfaa69; stroke-width: 1.2; }
+      .module-title { font-size: 21px; font-weight: 700; }
+      .module-note { font-size: 12.5px; fill: #637087; }
+      .scope-primary { fill: #4f82df; }
+      .scope-support { fill: #2a9d72; }
+      .scope-base { fill: #d58a32; }
+      .scope-text { font-size: 12px; font-weight: 650; fill: #ffffff; }
+      .node-title { font-size: 15px; font-weight: 650; }
+      .node-note { font-size: 11.5px; fill: #68758b; }
+      .external-title { font-size: 15px; font-weight: 650; }
+      .external-note { font-size: 11.5px; fill: #68758b; }
+      .edge-blue { fill: none; stroke: #4f82df; stroke-width: 2; marker-end: url(#arrow-blue); }
+      .edge-green { fill: none; stroke: #2a9d72; stroke-width: 1.9; marker-end: url(#arrow-green); }
+      .edge-orange { fill: none; stroke: #d58a32; stroke-width: 1.9; marker-end: url(#arrow-orange); }
+      .edge-gray { fill: none; stroke: #6f7c90; stroke-width: 1.5; marker-end: url(#arrow-gray); }
+      .edge-dashed { stroke-dasharray: 7 5; }
+      .edge-label { font-size: 11.5px; fill: #58667c; }
+      .legend { font-size: 12px; fill: #68758b; }
+      .key { font-size: 10.5px; fill: #4f82df; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+    </style>
+  </defs>
+
+  <rect width="1800" height="1040" fill="#ffffff"/>
+  <text x="40" y="46" class="title">Quanta 数据平台产品边界与模块关系</text>
+  <text x="40" y="75" class="subtitle">数据 Pipeline 负责编排业务流；数据工厂经营管理提供人员与产能；数据资产管理提供数据事实、版本和血缘。三者共享平台治理能力。</text>
+
+  <!-- Platform boundary -->
+  <rect x="205" y="110" width="1390" height="835" rx="18" class="boundary"/>
+  <rect x="235" y="96" width="176" height="28" rx="14" fill="#ffffff" stroke="#9aa9bd"/>
+  <text x="323" y="115" text-anchor="middle" class="boundary-label">Quanta 数据平台边界</text>
+
+  <!-- External sources -->
+  <rect x="25" y="245" width="150" height="92" rx="11" class="external"/>
+  <text x="100" y="275" text-anchor="middle" class="external-title">机器人 / 设备</text>
+  <text x="100" y="298" text-anchor="middle" class="external-note">采集端 · Recording</text>
+  <text x="100" y="318" text-anchor="middle" class="external-note">设备与任务状态</text>
+
+  <rect x="25" y="365" width="150" height="92" rx="11" class="external"/>
+  <text x="100" y="395" text-anchor="middle" class="external-title">外部数据源</text>
+  <text x="100" y="418" text-anchor="middle" class="external-note">文件 · 对象存储</text>
+  <text x="100" y="438" text-anchor="middle" class="external-note">第三方数据平台</text>
+
+  <!-- External consumers -->
+  <rect x="1625" y="270" width="150" height="92" rx="11" class="external"/>
+  <text x="1700" y="300" text-anchor="middle" class="external-title">训练 / 评测</text>
+  <text x="1700" y="323" text-anchor="middle" class="external-note">固定引用数据集版本</text>
+  <text x="1700" y="343" text-anchor="middle" class="external-note">读取血缘与质量信息</text>
+
+  <rect x="1625" y="390" width="150" height="92" rx="11" class="external"/>
+  <text x="1700" y="420" text-anchor="middle" class="external-title">交付 / 下游应用</text>
+  <text x="1700" y="443" text-anchor="middle" class="external-note">数据导出 · API</text>
+  <text x="1700" y="463" text-anchor="middle" class="external-note">版本订阅 · Webhook</text>
+
+  <!-- Data Pipeline -->
+  <rect x="245" y="145" width="1310" height="385" rx="15" class="pipeline"/>
+  <text x="275" y="181" class="module-title">数据 Pipeline</text>
+  <text x="275" y="205" class="module-note">负责数据进入、处理、质检、标注、验收和人工作业，输出候选快照、质量结果与资产构建申请</text>
+  <rect x="1428" y="162" width="98" height="27" rx="13.5" class="scope-primary"/>
+  <text x="1477" y="180" text-anchor="middle" class="scope-text">本期重点建设</text>
+
+  <rect x="275" y="230" width="1250" height="62" rx="10" class="node-blue"/>
+  <text x="305" y="257" class="node-title">项目与流程配置</text>
+  <text x="305" y="278" class="node-note">项目范围与角色权限　·　Pipeline Definition / Version　·　Step / Node / Transition　·　规则与工作台 Schema</text>
+
+  <rect x="275" y="328" width="210" height="112" rx="10" class="node-blue"/>
+  <text x="380" y="358" text-anchor="middle" class="node-title">数据采集任务</text>
+  <text x="380" y="380" text-anchor="middle" class="key">data_collection_task</text>
+  <text x="380" y="405" text-anchor="middle" class="node-note">下发采集要求、跟踪进度</text>
+  <text x="380" y="425" text-anchor="middle" class="node-note">产生 Recording</text>
+
+  <rect x="515" y="328" width="210" height="112" rx="10" class="node-blue"/>
+  <text x="620" y="358" text-anchor="middle" class="node-title">数据导入任务</text>
+  <text x="620" y="380" text-anchor="middle" class="key">data_import_task</text>
+  <text x="620" y="405" text-anchor="middle" class="node-note">校验、去重、解析与失败重试</text>
+  <text x="620" y="425" text-anchor="middle" class="node-note">统一形成 Recording</text>
+
+  <rect x="755" y="318" width="300" height="132" rx="10" class="node-blue"/>
+  <text x="905" y="348" text-anchor="middle" class="node-title">数据处理任务与流程运行</text>
+  <text x="905" y="370" text-anchor="middle" class="key">data_processing_task / pipeline_run</text>
+  <text x="905" y="396" text-anchor="middle" class="node-note">质检 · 标注 · 验收 · 自动算子</text>
+  <text x="905" y="417" text-anchor="middle" class="node-note">质量结果驱动继续、复核或返工</text>
+  <text x="905" y="438" text-anchor="middle" class="node-note">固定流程版本与数据快照</text>
+
+  <rect x="1085" y="328" width="190" height="112" rx="10" class="node-blue"/>
+  <text x="1180" y="358" text-anchor="middle" class="node-title">任务中心 / 工作台</text>
+  <text x="1180" y="382" text-anchor="middle" class="node-note">人工任务 · 连续作业</text>
+  <text x="1180" y="405" text-anchor="middle" class="node-note">提交 · 复核 · 返工</text>
+  <text x="1180" y="426" text-anchor="middle" class="node-note">执行记录与证据</text>
+
+  <rect x="1305" y="328" width="190" height="112" rx="10" class="node-blue"/>
+  <text x="1400" y="358" text-anchor="middle" class="node-title">流程结果输出</text>
+  <text x="1400" y="382" text-anchor="middle" class="node-note">Data Snapshot</text>
+  <text x="1400" y="405" text-anchor="middle" class="node-note">Quality Result · 血缘信息</text>
+  <text x="1400" y="426" text-anchor="middle" class="node-note">数据集构建 / 发布申请</text>
+
+  <path d="M485 350 V306 H735 V350 H755" class="edge-blue"/>
+  <path d="M725 405 H755" class="edge-blue"/>
+  <path d="M1055 384 H1085" class="edge-blue"/>
+  <path d="M1275 384 H1305" class="edge-blue"/>
+  <text x="620" y="316" text-anchor="middle" class="edge-label">采集与导入是两种可独立运行的数据进入方式</text>
+  <text x="740" y="396" text-anchor="middle" class="edge-label">形成输入范围</text>
+  <text x="1070" y="370" text-anchor="middle" class="edge-label">生成人工任务</text>
+
+  <!-- Data Asset Management -->
+  <rect x="245" y="575" width="770" height="270" rx="15" class="asset"/>
+  <text x="275" y="611" class="module-title">数据资产管理</text>
+  <text x="275" y="635" class="module-note">承载数据事实、可发现性、版本和可追溯关系，是 Pipeline 运行与下游消费的必要底座</text>
+  <rect x="888" y="592" width="98" height="27" rx="13.5" class="scope-base"/>
+  <text x="937" y="610" text-anchor="middle" class="scope-text">必要能力建设</text>
+
+  <rect x="275" y="670" width="160" height="115" rx="10" class="node-orange"/>
+  <text x="355" y="702" text-anchor="middle" class="node-title">数据湖</text>
+  <text x="355" y="727" text-anchor="middle" class="node-note">原始对象 · Recording</text>
+  <text x="355" y="749" text-anchor="middle" class="node-note">Episode · 衍生结果</text>
+  <text x="355" y="771" text-anchor="middle" class="node-note">标准化存储</text>
+
+  <rect x="455" y="670" width="160" height="115" rx="10" class="node-orange"/>
+  <text x="535" y="702" text-anchor="middle" class="node-title">Catalog</text>
+  <text x="535" y="727" text-anchor="middle" class="node-note">统一组织与元数据</text>
+  <text x="535" y="749" text-anchor="middle" class="node-note">检索 · 筛选 · 预览</text>
+  <text x="535" y="771" text-anchor="middle" class="node-note">访问控制</text>
+
+  <rect x="635" y="670" width="160" height="115" rx="10" class="node-orange"/>
+  <text x="715" y="702" text-anchor="middle" class="node-title">数据集构建</text>
+  <text x="715" y="727" text-anchor="middle" class="node-note">筛选与组合规则</text>
+  <text x="715" y="749" text-anchor="middle" class="node-note">固定 Data Snapshot</text>
+  <text x="715" y="771" text-anchor="middle" class="node-note">形成候选 Dataset</text>
+
+  <rect x="815" y="670" width="170" height="115" rx="10" class="node-orange"/>
+  <text x="900" y="702" text-anchor="middle" class="node-title">数据集版本与发布</text>
+  <text x="900" y="727" text-anchor="middle" class="node-note">冻结 · 发布 · 废弃</text>
+  <text x="900" y="749" text-anchor="middle" class="node-note">Dataset Version</text>
+  <text x="900" y="771" text-anchor="middle" class="node-note">血缘与消费权限</text>
+
+  <path d="M435 727 H455" class="edge-orange"/>
+  <path d="M615 727 H635" class="edge-orange"/>
+  <path d="M795 727 H815" class="edge-orange"/>
+
+  <!-- Factory Operations -->
+  <rect x="1045" y="575" width="510" height="270" rx="15" class="factory"/>
+  <text x="1075" y="611" class="module-title">数据工厂经营管理</text>
+  <text x="1075" y="635" class="module-note">围绕人工生产组织人员、分配任务并核算产能与成本</text>
+  <rect x="1428" y="592" width="98" height="27" rx="13.5" class="scope-support"/>
+  <text x="1477" y="610" text-anchor="middle" class="scope-text">接口与指标</text>
+
+  <rect x="1075" y="670" width="135" height="115" rx="10" class="node-green"/>
+  <text x="1142" y="702" text-anchor="middle" class="node-title">组织与人员</text>
+  <text x="1142" y="727" text-anchor="middle" class="node-note">供应商 · 团队</text>
+  <text x="1142" y="749" text-anchor="middle" class="node-note">人员 · 技能</text>
+  <text x="1142" y="771" text-anchor="middle" class="node-note">培训与考核</text>
+
+  <rect x="1225" y="670" width="135" height="115" rx="10" class="node-green"/>
+  <text x="1292" y="702" text-anchor="middle" class="node-title">任务运营</text>
+  <text x="1292" y="727" text-anchor="middle" class="node-note">任务池 · 分配</text>
+  <text x="1292" y="749" text-anchor="middle" class="node-note">优先级 · SLA</text>
+  <text x="1292" y="771" text-anchor="middle" class="node-note">进度与异常</text>
+
+  <rect x="1375" y="670" width="150" height="115" rx="10" class="node-green"/>
+  <text x="1450" y="702" text-anchor="middle" class="node-title">经营分析</text>
+  <text x="1450" y="727" text-anchor="middle" class="node-note">产能 · 质量 · 成本</text>
+  <text x="1450" y="749" text-anchor="middle" class="node-note">激励 · 结算</text>
+  <text x="1450" y="771" text-anchor="middle" class="node-note">交付看板</text>
+
+  <path d="M1210 727 H1225" class="edge-green"/>
+  <path d="M1360 727 H1375" class="edge-green"/>
+
+  <!-- Inter-module relations -->
+  <path d="M500 530 V555 H535 V575" class="edge-orange"/>
+  <text x="505" y="553" text-anchor="middle" class="edge-label">写入 Recording / 结果</text>
+
+  <path d="M760 575 V555 H820 V530" class="edge-orange edge-dashed"/>
+  <text x="790" y="549" text-anchor="middle" class="edge-label">提供快照与数据范围</text>
+
+  <path d="M1400 440 V486 H1025 V560 H715 V670" class="edge-orange"/>
+  <text x="1210" y="479" text-anchor="middle" class="edge-label">提交候选快照、质量结果与数据集构建 / 发布申请</text>
+
+  <path d="M1140 530 V555 H1210 V575" class="edge-green"/>
+  <text x="1175" y="553" text-anchor="middle" class="edge-label">下发人工任务与工作量</text>
+
+  <path d="M1390 575 V555 H1320 V530" class="edge-green edge-dashed"/>
+  <text x="1355" y="549" text-anchor="middle" class="edge-label">回传分配与执行记录</text>
+
+  <path d="M1015 765 H1045" class="edge-gray edge-dashed"/>
+  <text x="1030" y="750" text-anchor="middle" class="edge-label">统计口径</text>
+
+  <!-- Platform capabilities -->
+  <rect x="245" y="875" width="1310" height="48" rx="10" class="platform"/>
+  <text x="275" y="905" class="node-title">共享平台能力：</text>
+  <text x="405" y="905" class="node-note">租户与项目权限　·　元数据与对象存储　·　消息与任务队列　·　日志监控与审计　·　API / Webhook</text>
+
+  <!-- External relations -->
+  <path d="M175 291 H225 V365 H275" class="edge-blue"/>
+  <text x="218" y="347" text-anchor="middle" class="edge-label">采集</text>
+  <path d="M175 411 H235 V400 H515" class="edge-blue"/>
+  <text x="220" y="397" text-anchor="middle" class="edge-label">导入</text>
+
+  <path d="M985 727 H1025 V860 H1608 V316" fill="none" stroke="#d58a32" stroke-width="1.9"/>
+  <path d="M1608 316 H1625" class="edge-orange"/>
+  <path d="M1608 316 V436 H1625" class="edge-orange"/>
+  <text x="1280" y="854" text-anchor="middle" class="edge-label">已发布 Dataset Version</text>
+  <text x="1598" y="303" text-anchor="middle" class="edge-label">稳定版本引用</text>
+  <text x="1597" y="426" text-anchor="middle" class="edge-label">发布 / 订阅</text>
+
+  <!-- Legend -->
+  <circle cx="255" cy="984" r="5" fill="#4f82df"/>
+  <text x="270" y="989" class="legend">蓝色：主业务编排与任务流</text>
+  <circle cx="505" cy="984" r="5" fill="#d58a32"/>
+  <text x="520" y="989" class="legend">橙色：数据写入、读取与版本流</text>
+  <circle cx="800" cy="984" r="5" fill="#2a9d72"/>
+  <text x="815" y="989" class="legend">绿色：人员、任务分配与执行反馈</text>
+  <line x1="1120" y1="984" x2="1160" y2="984" stroke="#6f7c90" stroke-width="1.5" stroke-dasharray="7 5"/>
+  <text x="1172" y="989" class="legend">虚线：支撑关系或统计口径，不承载主业务状态</text>
+</svg>

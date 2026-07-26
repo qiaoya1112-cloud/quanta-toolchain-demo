@@ -1,0 +1,237 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="860" viewBox="0 0 1600 860" role="img" aria-labelledby="title desc">
+  <title id="title">用户与业务环节泳道图</title>
+  <desc id="desc">展示六类平台用户在项目准备、流程配置、任务生产、数据集发布和运营优化五个业务环节中的主责与参与关系。</desc>
+  <defs>
+    <style>
+      text { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif; fill: #1f2937; }
+      .title { font-size: 30px; font-weight: 600; }
+      .subtitle { font-size: 16px; fill: #667085; }
+      .stage { font-size: 18px; font-weight: 600; }
+      .stage-en { font-size: 12px; fill: #667085; }
+      .role { font-size: 17px; font-weight: 600; }
+      .role-note { font-size: 13px; fill: #667085; }
+      .cell-title { font-size: 15px; font-weight: 600; }
+      .cell-note { font-size: 13px; fill: #475467; }
+      .legend { font-size: 14px; fill: #475467; }
+      .grid { stroke: #d9dee8; stroke-width: 1; }
+      .primary { fill: #eaf2ff; stroke: #4f8bd9; stroke-width: 1.5; }
+      .support { fill: #f8fafc; stroke: #a8b2c3; stroke-width: 1.2; stroke-dasharray: 5 4; }
+      .stage-box { fill: #f2f6fc; stroke: #cbd5e1; stroke-width: 1; }
+      .role-box { fill: #fbfcfe; stroke: #d9dee8; stroke-width: 1; }
+      .lane-a { fill: #ffffff; }
+      .lane-b { fill: #fafbfc; }
+    </style>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto">
+      <path d="M0 0 L10 5 L0 10 Z" fill="#7b8798"/>
+    </marker>
+  </defs>
+
+  <rect width="1600" height="860" fill="#ffffff"/>
+  <text x="40" y="52" class="title">用户 × 业务环节泳道图</text>
+  <text x="40" y="82" class="subtitle">横向表示数据项目从准备到持续优化的业务阶段；纵向表示用户角色。质检、验收和复核作为普通任务纳入任务生产，不单设角色或业务阶段。</text>
+
+  <rect x="40" y="116" width="240" height="78" rx="8" class="stage-box"/>
+  <text x="160" y="151" text-anchor="middle" class="stage">用户角色</text>
+  <text x="160" y="174" text-anchor="middle" class="stage-en">WHO</text>
+
+  <rect x="300" y="116" width="240" height="78" rx="8" class="stage-box"/>
+  <circle cx="330" cy="145" r="14" fill="#4f8bd9"/>
+  <text x="330" y="150" text-anchor="middle" font-size="13" font-weight="600" fill="#ffffff">1</text>
+  <text x="420" y="148" text-anchor="middle" class="stage">项目准备</text>
+  <text x="420" y="172" text-anchor="middle" class="stage-en">目标、范围、资源</text>
+
+  <rect x="555" y="116" width="240" height="78" rx="8" class="stage-box"/>
+  <circle cx="585" cy="145" r="14" fill="#4f8bd9"/>
+  <text x="585" y="150" text-anchor="middle" font-size="13" font-weight="600" fill="#ffffff">2</text>
+  <text x="675" y="148" text-anchor="middle" class="stage">流程配置</text>
+  <text x="675" y="172" text-anchor="middle" class="stage-en">模板、节点、规则</text>
+
+  <rect x="810" y="116" width="240" height="78" rx="8" class="stage-box"/>
+  <circle cx="840" cy="145" r="14" fill="#4f8bd9"/>
+  <text x="840" y="150" text-anchor="middle" font-size="13" font-weight="600" fill="#ffffff">3</text>
+  <text x="930" y="148" text-anchor="middle" class="stage">任务生产</text>
+  <text x="930" y="172" text-anchor="middle" class="stage-en">执行、验收、复核、返工</text>
+
+  <rect x="1065" y="116" width="240" height="78" rx="8" class="stage-box"/>
+  <circle cx="1095" cy="145" r="14" fill="#4f8bd9"/>
+  <text x="1095" y="150" text-anchor="middle" font-size="13" font-weight="600" fill="#ffffff">4</text>
+  <text x="1185" y="148" text-anchor="middle" class="stage">数据集发布</text>
+  <text x="1185" y="172" text-anchor="middle" class="stage-en">构建、终验、冻结、发布</text>
+
+  <rect x="1320" y="116" width="240" height="78" rx="8" class="stage-box"/>
+  <circle cx="1350" cy="145" r="14" fill="#4f8bd9"/>
+  <text x="1350" y="150" text-anchor="middle" font-size="13" font-weight="600" fill="#ffffff">5</text>
+  <text x="1440" y="148" text-anchor="middle" class="stage">运营优化</text>
+  <text x="1440" y="172" text-anchor="middle" class="stage-en">进度、产能、成本</text>
+
+  <path d="M540 155 H555 M795 155 H810 M1050 155 H1065 M1305 155 H1320" stroke="#7b8798" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <rect x="40" y="210" width="1520" height="84" class="lane-a"/>
+  <rect x="40" y="294" width="1520" height="84" class="lane-b"/>
+  <rect x="40" y="378" width="1520" height="84" class="lane-a"/>
+  <rect x="40" y="462" width="1520" height="84" class="lane-b"/>
+  <rect x="40" y="546" width="1520" height="84" class="lane-a"/>
+  <rect x="40" y="630" width="1520" height="84" class="lane-b"/>
+
+  <g class="grid">
+    <line x1="40" y1="210" x2="1560" y2="210"/>
+    <line x1="40" y1="294" x2="1560" y2="294"/>
+    <line x1="40" y1="378" x2="1560" y2="378"/>
+    <line x1="40" y1="462" x2="1560" y2="462"/>
+    <line x1="40" y1="546" x2="1560" y2="546"/>
+    <line x1="40" y1="630" x2="1560" y2="630"/>
+    <line x1="40" y1="714" x2="1560" y2="714"/>
+    <line x1="280" y1="210" x2="280" y2="714"/>
+    <line x1="300" y1="210" x2="300" y2="714"/>
+    <line x1="555" y1="210" x2="555" y2="714"/>
+    <line x1="810" y1="210" x2="810" y2="714"/>
+    <line x1="1065" y1="210" x2="1065" y2="714"/>
+    <line x1="1320" y1="210" x2="1320" y2="714"/>
+    <line x1="1560" y1="210" x2="1560" y2="714"/>
+  </g>
+
+  <!-- Roles -->
+  <g>
+    <rect x="40" y="210" width="240" height="84" class="role-box"/>
+    <text x="58" y="244" class="role">项目 / 数据运营负责人</text>
+    <text x="58" y="268" class="role-note">对范围、周期、交付和成本负责</text>
+
+    <rect x="40" y="294" width="240" height="84" class="role-box"/>
+    <text x="58" y="328" class="role">数据工厂管理员</text>
+    <text x="58" y="352" class="role-note">对人员、供应商、产能和结算负责</text>
+
+    <rect x="40" y="378" width="240" height="84" class="role-box"/>
+    <text x="58" y="412" class="role">一线操作人员</text>
+    <text x="58" y="436" class="role-note">执行采集、质检、标注、复核和返工</text>
+
+    <rect x="40" y="462" width="240" height="84" class="role-box"/>
+    <text x="58" y="496" class="role">算法 / 数据工程师</text>
+    <text x="58" y="520" class="role-note">对自动化算子和数据可复现性负责</text>
+
+    <rect x="40" y="546" width="240" height="84" class="role-box"/>
+    <text x="58" y="580" class="role">数据集 / 交付管理员</text>
+    <text x="58" y="604" class="role-note">对构建、终验、版本和消费负责</text>
+
+    <rect x="40" y="630" width="240" height="84" class="role-box"/>
+    <text x="58" y="664" class="role">平台管理员</text>
+    <text x="58" y="688" class="role-note">对租户、权限、资源和审计负责</text>
+  </g>
+
+  <!-- Project / data operations -->
+  <g>
+    <rect x="308" y="218" width="224" height="68" rx="7" class="primary"/>
+    <text x="420" y="245" text-anchor="middle" class="cell-title">定义目标与数据范围</text>
+    <text x="420" y="267" text-anchor="middle" class="cell-note">交付标准 · 预算 · 周期</text>
+    <rect x="563" y="218" width="224" height="68" rx="7" class="primary"/>
+    <text x="675" y="245" text-anchor="middle" class="cell-title">选择流程版本</text>
+    <text x="675" y="267" text-anchor="middle" class="cell-note">配置规则 · 参数 · 发起 Run</text>
+    <rect x="818" y="218" width="224" height="68" rx="7" class="support"/>
+    <text x="930" y="245" text-anchor="middle" class="cell-title">监控项目运行</text>
+    <text x="930" y="267" text-anchor="middle" class="cell-note">进度 · 积压 · 重大异常</text>
+    <rect x="1073" y="218" width="224" height="68" rx="7" class="primary"/>
+    <text x="1185" y="245" text-anchor="middle" class="cell-title">确认数据交付</text>
+    <text x="1185" y="267" text-anchor="middle" class="cell-note">范围确认 · 交付验收</text>
+    <rect x="1328" y="218" width="224" height="68" rx="7" class="support"/>
+    <text x="1440" y="245" text-anchor="middle" class="cell-title">项目复盘</text>
+    <text x="1440" y="267" text-anchor="middle" class="cell-note">周期 · 返工 · 成本</text>
+  </g>
+
+  <!-- Factory manager -->
+  <g>
+    <rect x="308" y="302" width="224" height="68" rx="7" class="primary"/>
+    <text x="420" y="329" text-anchor="middle" class="cell-title">规划人员与产能</text>
+    <text x="420" y="351" text-anchor="middle" class="cell-note">供应商 · 技能 · 排班</text>
+    <rect x="563" y="302" width="224" height="68" rx="7" class="support"/>
+    <text x="675" y="329" text-anchor="middle" class="cell-title">配置分配策略</text>
+    <text x="675" y="351" text-anchor="middle" class="cell-note">技能匹配 · 优先级 · SLA</text>
+    <rect x="818" y="302" width="224" height="68" rx="7" class="primary"/>
+    <text x="930" y="329" text-anchor="middle" class="cell-title">调度任务生产</text>
+    <text x="930" y="351" text-anchor="middle" class="cell-note">分配 · 积压 · 补充产能</text>
+    <rect x="1073" y="302" width="224" height="68" rx="7" class="support"/>
+    <text x="1185" y="329" text-anchor="middle" class="cell-title">交付收口</text>
+    <text x="1185" y="351" text-anchor="middle" class="cell-note">工时确认 · 结算数据</text>
+    <rect x="1328" y="302" width="224" height="68" rx="7" class="primary"/>
+    <text x="1440" y="329" text-anchor="middle" class="cell-title">运营效率优化</text>
+    <text x="1440" y="351" text-anchor="middle" class="cell-note">产能 · 人效 · 返工成本</text>
+  </g>
+
+  <!-- Front-line operators -->
+  <g>
+    <rect x="563" y="386" width="224" height="68" rx="7" class="support"/>
+    <text x="675" y="413" text-anchor="middle" class="cell-title">查看作业与验收标准</text>
+    <text x="675" y="435" text-anchor="middle" class="cell-note">SOP · 规则提示 · 示例</text>
+    <rect x="818" y="386" width="224" height="68" rx="7" class="primary"/>
+    <text x="930" y="413" text-anchor="middle" class="cell-title">领取并连续执行</text>
+    <text x="930" y="435" text-anchor="middle" class="cell-note">处理 · 质检 · 标注 · 复核 · 返工</text>
+    <rect x="1073" y="386" width="224" height="68" rx="7" class="support"/>
+    <text x="1185" y="413" text-anchor="middle" class="cell-title">处理终验退回</text>
+    <text x="1185" y="435" text-anchor="middle" class="cell-note">补采 · 修订 · 重新提交</text>
+    <rect x="1328" y="386" width="224" height="68" rx="7" class="support"/>
+    <text x="1440" y="413" text-anchor="middle" class="cell-title">查看个人反馈</text>
+    <text x="1440" y="435" text-anchor="middle" class="cell-note">效率 · 合格率 · 常见问题</text>
+  </g>
+
+  <!-- Algorithm / data engineers -->
+  <g>
+    <rect x="308" y="470" width="224" height="68" rx="7" class="support"/>
+    <text x="420" y="497" text-anchor="middle" class="cell-title">明确数据需求</text>
+    <text x="420" y="519" text-anchor="middle" class="cell-note">样本口径 · 模态 · 分布</text>
+    <rect x="563" y="470" width="224" height="68" rx="7" class="primary"/>
+    <text x="675" y="497" text-anchor="middle" class="cell-title">交付算子版本</text>
+    <text x="675" y="519" text-anchor="middle" class="cell-note">封装 · 调试 · 阈值验证</text>
+    <rect x="818" y="470" width="224" height="68" rx="7" class="primary"/>
+    <text x="930" y="497" text-anchor="middle" class="cell-title">运行自动节点</text>
+    <text x="930" y="519" text-anchor="middle" class="cell-note">执行监控 · 失败诊断</text>
+    <rect x="1073" y="470" width="224" height="68" rx="7" class="support"/>
+    <text x="1185" y="497" text-anchor="middle" class="cell-title">验证数据分布</text>
+    <text x="1185" y="519" text-anchor="middle" class="cell-note">覆盖度 · 偏差 · 可用性</text>
+    <rect x="1328" y="470" width="224" height="68" rx="7" class="primary"/>
+    <text x="1440" y="497" text-anchor="middle" class="cell-title">提升自动化能力</text>
+    <text x="1440" y="519" text-anchor="middle" class="cell-note">算子效果 · 覆盖率 · 成本</text>
+  </g>
+
+  <!-- Dataset / delivery manager -->
+  <g>
+    <rect x="308" y="554" width="224" height="68" rx="7" class="support"/>
+    <text x="420" y="581" text-anchor="middle" class="cell-title">定义交付口径</text>
+    <text x="420" y="603" text-anchor="middle" class="cell-note">版本规则 · 消费要求</text>
+    <rect x="563" y="554" width="224" height="68" rx="7" class="support"/>
+    <text x="675" y="581" text-anchor="middle" class="cell-title">配置构建规则</text>
+    <text x="675" y="603" text-anchor="middle" class="cell-note">筛选 · 配比 · 冻结条件</text>
+    <rect x="818" y="554" width="224" height="68" rx="7" class="support"/>
+    <text x="930" y="581" text-anchor="middle" class="cell-title">准备候选快照</text>
+    <text x="930" y="603" text-anchor="middle" class="cell-note">核对范围与上游结果</text>
+    <rect x="1073" y="554" width="224" height="68" rx="7" class="primary"/>
+    <text x="1185" y="581" text-anchor="middle" class="cell-title">构建并发布版本</text>
+    <text x="1185" y="603" text-anchor="middle" class="cell-note">终验 · 冻结 · 发布记录</text>
+    <rect x="1328" y="554" width="224" height="68" rx="7" class="primary"/>
+    <text x="1440" y="581" text-anchor="middle" class="cell-title">跟踪版本消费</text>
+    <text x="1440" y="603" text-anchor="middle" class="cell-note">训练 / 评测引用 · 反馈</text>
+  </g>
+
+  <!-- Platform administrator -->
+  <g>
+    <rect x="308" y="638" width="224" height="68" rx="7" class="primary"/>
+    <text x="420" y="665" text-anchor="middle" class="cell-title">准备平台边界</text>
+    <text x="420" y="687" text-anchor="middle" class="cell-note">租户 · 角色 · 资源配额</text>
+    <rect x="563" y="638" width="224" height="68" rx="7" class="support"/>
+    <text x="675" y="665" text-anchor="middle" class="cell-title">配置平台能力</text>
+    <text x="675" y="687" text-anchor="middle" class="cell-note">集成 · 审批 · 安全策略</text>
+    <rect x="818" y="638" width="224" height="68" rx="7" class="support"/>
+    <text x="930" y="665" text-anchor="middle" class="cell-title">保障稳定运行</text>
+    <text x="930" y="687" text-anchor="middle" class="cell-note">资源 · 调度 · 异常处理</text>
+    <rect x="1073" y="638" width="224" height="68" rx="7" class="support"/>
+    <text x="1185" y="665" text-anchor="middle" class="cell-title">控制发布权限</text>
+    <text x="1185" y="687" text-anchor="middle" class="cell-note">审批人 · 消费授权</text>
+    <rect x="1328" y="638" width="224" height="68" rx="7" class="primary"/>
+    <text x="1440" y="665" text-anchor="middle" class="cell-title">平台治理优化</text>
+    <text x="1440" y="687" text-anchor="middle" class="cell-note">稳定性 · 成本 · 合规</text>
+  </g>
+
+  <rect x="40" y="754" width="18" height="18" rx="4" class="primary"/>
+  <text x="68" y="769" class="legend">主责：对该环节的结果负责</text>
+  <rect x="300" y="754" width="18" height="18" rx="4" class="support"/>
+  <text x="328" y="769" class="legend">参与 / 支撑：提供输入、协作处理或读取结果</text>
+  <text x="40" y="812" class="legend">职责归并：项目 / 数据运营负责人维护流程标准并处理重大异常；一线人员执行质检、复核与返工任务；数据集 / 交付管理员负责终验和版本发布。</text>
+  <text x="40" y="838" class="legend">设计原则：角色与人员分离；生产与最终验收适度分离；所有角色读取同一套任务、处理结果和血缘事实。</text>
+</svg>

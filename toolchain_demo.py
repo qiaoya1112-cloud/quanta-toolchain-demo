@@ -7,7 +7,7 @@ Framework: Flask + HTML/CSS (inline templates), Ant Design v4 theme (primary #14
 
 架构 (火山引擎风格):
   / (门户)                  控制台总览 · 平台入口卡片 · 数据飞轮总览 · 资源概览
-  /data/*  (数据平台)        采集任务 / 自动处理 / 质检 / 标注 / 数据集
+  /data/*  (数据平台)        项目 / 任务管理 / 流程运行 / 人工任务 / 数据资产 / 数据集版本
   /model/* (模型平台)        训练实验 / 评测 / 部署 / 模型仓库
   /device/* (设备平台)       设备列表 / 真机预约
   /asset/* (资产平台)        端到端血缘
@@ -28,6 +28,8 @@ import re
 import sys
 from urllib.parse import quote
 from flask import Flask, render_template_string, request, redirect
+
+import data_platform_refactor as data_refactor
 
 app = Flask(__name__)
 app.secret_key = "embodied-toolchain-mvp-demo"
@@ -407,35 +409,9 @@ PLATFORMS = {
         "name": "数据平台",
         "short": "数",
         "color": "data",
-        "tagline": "采集 → 质检 → 标注 → 数据集",
+        "tagline": "项目 → Pipeline → 数据处理 → 数据集版本",
         "home": "/data",
-        "nav": [
-            ("概览", [
-                ("/data", "快速入门", "&#9728;", "新增"),
-            ]),
-            ("管理", [
-                ("/data/collect", "任务管理", "&#9776;", "优化"),
-                ("/data/recordings", "数据管理", "&#9783;", "优化"),
-                ("/data/dashboard", "分析看板", "&#9636;", "不对外"),
-            ]),
-            ("工作台", [
-                ("/data/workbench", "工作台", "&#9881;", "优化"),
-            ]),
-            ("工作流", [
-                ("/data/operators", "算子管理", "&#9881;", "不对外"),
-                ("/data/pipelines", "工作流管理", "&#9783;", "不对外"),
-                ("/data/runs", "执行记录", "&#9654;", "不对外"),
-            ]),
-            ("模块配置", [
-                ("/data/instructions", "采集指令", "&#9881;", "不对外"),
-                ("/data/rules", "规则管理", "&#9745;", "新增"),
-            ]),
-            ("公共配置", [
-                ("/data/scenes",  "场景管理",   "&#9711;", "新增"),
-                ("/data/prompts", "提示词管理", "&#9998;", "优化"),
-                ("/data/tags",    "标签管理",   "&#9873;", "优化"),
-            ]),
-        ],
+        "nav": data_refactor.DATA_PLATFORM_NAV,
     },
     "model": {
         "name": "模型平台",
@@ -1542,7 +1518,7 @@ BASE_TEMPLATE = """<!DOCTYPE html>
 <script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/mode/javascript/javascript.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/mode/yaml/yaml.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/mode/shell/shell.min.js"></script>
-<style>""" + BASE_CSS + """</style>
+<style>""" + BASE_CSS + data_refactor.DATA_PLATFORM_CSS + """</style>
 </head>
 <body>
 <header class="top-nav">
@@ -2250,6 +2226,37 @@ def render_page(title, content, active="", breadcrumb=None, extra_script=None,
     )
 
 
+def _render_data_refactor_page(page_key):
+    spec = data_refactor.PAGE_SPECS[page_key]
+    return render_page(
+        spec["title"],
+        data_refactor.render_product_page(page_key),
+        active=spec["path"],
+        module="data",
+        breadcrumb=f'数据平台 / <b>{spec["title"]}</b>',
+        mvp_note=None,
+    )
+
+
+for _data_page_key, _data_page_spec in data_refactor.PAGE_SPECS.items():
+    if _data_page_key == "workspace":
+        continue
+
+    def _data_page_view(page_key=_data_page_key):
+        return _render_data_refactor_page(page_key)
+
+    app.add_url_rule(
+        _data_page_spec["path"],
+        endpoint=f"data_refactor_{_data_page_key}",
+        view_func=_data_page_view,
+    )
+
+
+@app.route("/data/architecture")
+def retired_data_architecture():
+    return redirect("/data/operations")
+
+
 # ════════════════════════════════════════════════════════════════
 # Section 4: Helpers
 # ════════════════════════════════════════════════════════════════
@@ -2325,7 +2332,6 @@ def mod_entry(href, no, name, sub, stat_text=None):
 @app.route("/")
 def home():
     # 跨平台 stats
-    n_collect = len(COLLECT_TASKS)
     n_collect_running = sum(1 for c in COLLECT_TASKS if c["status"] == "running")
     n_episodes = sum(p["ep_count"] for p in PROCESS_JOBS if p["status"] == "done")
     n_datasets_active = sum(1 for d in DATASETS if d["status"] == "active")
@@ -2338,9 +2344,13 @@ def home():
 
     # 平台入口卡数据
     cards = [
-        ("data", "数据平台", "采集 → 质检 → 标注 → 数据集", "/data", "数",
-         [("任务", n_collect), ("Episode", n_episodes), ("数据集", n_datasets_active)],
-         ["采集任务", "自动处理", "质检", "标注", "数据集"]),
+        ("data", "数据平台", "项目 → Pipeline → 数据处理 → 数据集版本", "/data", "数",
+         [
+             ("项目", len(data_refactor.PROJECTS)),
+             ("运行中", sum(1 for r in data_refactor.PIPELINE_RUNS if r["status"] in ("running", "reviewing"))),
+             ("已发布版本", sum(1 for d in data_refactor.DATASET_VERSIONS if d["status"] == "published")),
+         ],
+         ["项目", "任务管理", "流程运行", "人工任务", "数据资产", "数据集版本"]),
         ("model", "模型平台", "训练 → 评测 → 部署", "/model", "模",
          [("训练实验", len(EXPERIMENTS)), ("模型版本", n_models), ("已部署", n_deployed)],
          ["训练实验", "评测", "部署", "模型仓库"]),
@@ -2394,7 +2404,7 @@ def home():
       <div class="pfw-ttl">具身数据飞轮 <span class="sub">· 一期端到端打通</span></div>
       <div class="pfw-loop">
         <span class="pfw-step">采集</span><span class="pfw-arr">→</span>
-        <span class="pfw-step">质检</span><span class="pfw-arr">→</span>
+        <span class="pfw-step">处理</span><span class="pfw-arr">→</span>
         <span class="pfw-step">标注</span><span class="pfw-arr">→</span>
         <span class="pfw-step">训练</span><span class="pfw-arr">→</span>
         <span class="pfw-step">评测</span><span class="pfw-arr">→</span>
@@ -2424,14 +2434,13 @@ def home():
 
 @app.route("/data")
 def data_home():
-    desc = "数据平台覆盖一条完整 pipeline: 从采集任务管理、自动处理 (时间戳对齐 / 抽帧 / 切 Episode), 到质检、标注, 最终沉淀为可被训练引用的数据集。"
-    content = welcome_card("数据平台", "采集 → 质检 → 标注 → 数据集", desc)
-    return render_page("数据平台 · 快速入门", content, active="/data", module="data",
-                       breadcrumb='<b>数据平台</b> / 快速入门', mvp_note="MVP 一期")
+    return _render_data_refactor_page("workspace")
 
 
 @app.route("/data/collect")
 def collect():
+    return redirect("/data/tasks")
+
     stage = request.args.get("stage", "all")
     substage = request.args.get("sub", "all")
     if stage not in ("all", "采集", "质检", "标注"):
@@ -2651,6 +2660,8 @@ THIRD_PARTY_DATASETS = [
 
 @app.route("/data/recordings")
 def data_recordings():
+    return redirect("/data/assets")
+
     task_filter = request.args.get("task", "")
     recordings = [r for r in RECORDINGS if not task_filter or r["task_id"] == task_filter]
 
@@ -2822,6 +2833,8 @@ WB_TASKS = [
 
 @app.route("/data/workbench")
 def data_workbench():
+    return redirect("/data/task-pool")
+
     # 顶部 stat 卡: 今日 / 本周 / 合格率, 每张带同比变化
     wb_stats = [
         {"label": "今日完成任务量", "value": "127",  "base": "昨日 113",  "delta": "+12.4%", "dir": "up"},
@@ -3015,6 +3028,8 @@ PIPELINE_FUNNEL = [
 
 @app.route("/data/dashboard")
 def data_dashboard():
+    return redirect("/data/operations")
+
     max_count = max(s["count"] for s in PIPELINE_FUNNEL)
     n = len(PIPELINE_FUNNEL)
     funnel_rows = ""
@@ -3120,6 +3135,8 @@ RULES = [
 
 @app.route("/data/rules")
 def data_rules():
+    return redirect("/data/capabilities")
+
     cat = request.args.get("cat", "全部")
     all_cats = ["全部", "质检规则", "切分规则", "标注规则", "标注验收规则", "终验规则"]
     if cat not in all_cats:
@@ -3258,6 +3275,8 @@ def data_config():
 
 @app.route("/data/process")
 def process():
+    return redirect("/data/pipeline-runs")
+
     rows = ""
     for p in PROCESS_JOBS:
         rows += f"""<tr>
@@ -3309,6 +3328,8 @@ def process():
 
 @app.route("/data/qc")
 def qc():
+    return redirect("/data/tasks")
+
     rows = ""
     for q in QC_RUNS:
         if q["ep_count"]:
@@ -3480,27 +3501,27 @@ def datasets():
 # ── 数据平台 · 复用 data_platform 的 raw / operators / pipelines / runs handler ──
 @app.route("/data/raw")
 def data_raw():
-    return _dp_render(dp.raw_data, "/data/raw", prefix="/data", module="data")
+    return redirect("/data/assets")
 
 
 @app.route("/data/operators")
 def data_operators():
-    return _dp_render(dp.operators, "/data/operators", prefix="/data", module="data")
+    return redirect("/data/capabilities")
 
 
 @app.route("/data/pipelines")
 def data_pipelines():
-    return _dp_render(dp.pipelines, "/data/pipelines", prefix="/data", module="data")
+    return redirect("/data/pipeline-definitions")
 
 
 @app.route("/data/pipelines/<pid>")
 def data_pipeline_editor(pid):
-    return _dp_render(lambda: dp.pipeline_editor(pid), "/data/pipelines", prefix="/data", module="data")
+    return redirect("/data/pipeline-definitions")
 
 
 @app.route("/data/runs")
 def data_runs():
-    return _dp_render(dp.runs, "/data/runs", prefix="/data", module="data")
+    return redirect("/data/pipeline-runs")
 
 
 # ════════════════════════════════════════════════════════════════
