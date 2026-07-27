@@ -1240,10 +1240,26 @@ select option:disabled { color:rgba(0,0,0,0.32); }
 .adv-tabs .at.active { color:#149DAA; border-bottom-color:#149DAA; font-weight:500; }
 .adv-tabs .at-reset { margin-left:auto; font-size:12px; color:rgba(0,0,0,0.55); padding:4px 10px; border:1px solid #d9d9d9; border-radius:5px; cursor:pointer; background:#fff; }
 .adv-tabs .at-reset:hover { border-color:#149DAA; color:#149DAA; }
-.yaml-area { width:100%; min-height:300px; padding:12px 14px; font-family:'SF Mono',Menlo,Consolas,monospace; font-size:12.5px; line-height:1.65; background:#fafbfc; border:1px solid #e5e7eb; border-radius:8px; resize:vertical; outline:none; color:rgba(0,0,0,0.85); box-sizing:border-box; white-space:pre; overflow:auto; }
-.yaml-area:focus { border-color:#149DAA; box-shadow:0 0 0 2px rgba(20,157,170,0.12); }
+.fg textarea.yaml-area { width:100%; min-height:460px; padding:12px 14px; font-family:'SF Mono',Menlo,Consolas,monospace; font-size:12.5px; line-height:1.65; background:#fafbfc; border:1px solid #e5e7eb; border-radius:8px; resize:vertical; outline:none; color:rgba(0,0,0,0.85); box-sizing:border-box; white-space:pre; overflow:auto; }
+.fg textarea.yaml-area:focus { border-color:#149DAA; box-shadow:0 0 0 2px rgba(20,157,170,0.12); }
 .entry-command-area { width:100%; min-height:220px; padding:12px 14px; font-family:'SF Mono',Menlo,Consolas,monospace; font-size:12.5px; line-height:1.65; background:#fafbfc; border:1px solid #e5e7eb; border-radius:8px; resize:vertical; outline:none; color:rgba(0,0,0,0.85); box-sizing:border-box; white-space:pre; overflow:auto; }
 .entry-command-area:focus { border-color:#149DAA; box-shadow:0 0 0 2px rgba(20,157,170,0.12); }
+
+/* ── 训练代码模糊搜索下拉菜单 (统一两行轻量列表) ── */
+.tc-menu { display:none; position:absolute; left:0; right:0; top:100%; margin-top:2px; background:#fff; border:1px solid #e5e7eb; border-radius:8px; box-shadow:0 4px 16px rgba(0,0,0,0.1); z-index:20; max-height:280px; overflow-y:auto; }
+.tc-menu.open { display:block; }
+.tc-item { padding:10px 14px; cursor:pointer; border-bottom:1px solid #f5f5f5; }
+.tc-item:last-child { border-bottom:0; }
+.tc-item:hover { background:#f5fbfc; }
+/* 第一行: 分支名 · Commit ID */
+.tc-item .tc-line1 { display:flex; align-items:baseline; gap:8px; font-size:13px; line-height:1.5; }
+.tc-item .tc-branch { color:rgba(0,0,0,0.85); font-weight:600; }
+.tc-item .tc-sep { color:rgba(0,0,0,0.25); }
+.tc-item .tc-commit { font-family:'SF Mono',Menlo,Consolas,monospace; font-size:12px; color:rgba(0,0,0,0.5); }
+/* 第二行: Commit Message */
+.tc-item .tc-msg { font-size:12px; color:rgba(0,0,0,0.45); margin-top:3px; line-height:1.5; }
+.tc-hl { background:#fff3cd; color:inherit; border-radius:2px; padding:0 1px; }
+.tc-empty { padding:10px 14px; font-size:12.5px; color:rgba(0,0,0,0.4); }
 
 /* ── 部署任务: 设备数胶囊 + hover/click 弹出清单 ── */
 .devs-cell { position:relative; display:inline-block; }
@@ -2220,14 +2236,137 @@ function initTrainCodeEditor(id, mode){
 function openTrainDrawer(){
   openDrawer('drawerNewTrain');
   updateTrainImagePath();
-  setTimeout(function(){
-    initTrainCodeEditor('yamlEditor', 'yaml');
-    initTrainCodeEditor('entryCommandEditor', 'shell');
-  }, 50);
+  // 重置表单联动状态并生成默认配置
+  var ov = document.getElementById('yamlOverride');
+  if (ov) ov.value = '';
+  regenDefaultConfig();
 }
 function updateNameCount(input){
   var c = document.getElementById('nameCount');
   if (c) c.textContent = (input.value.length) + ' / 50';
+}
+
+/* ── 训练任务: 默认配置 / 参数覆盖联动 ── */
+// 读取当前 模型 × 是否使用新感知 对应的整套模板
+// trainRobotSel: new=新感知(cfg2) / old=旧感知(cfg1)
+function currentTrainTemplate(){
+  var model = (document.getElementById('trainModelSel')||{}).value || 'pi05';
+  var robot = (document.getElementById('trainRobotSel')||{}).value || 'new';
+  var tpl = (window.TRAIN_YAML_TEMPLATES || {})[model + '|' + robot];
+  return tpl || '';
+}
+// 底盘类型: 覆盖 moz1_structure 单行 (wholebody / wholebody_without_base / dualarm)
+function applyBaseStructure(yamlText){
+  var base = (document.getElementById('trainBaseSel')||{}).value || 'wholebody';
+  return yamlText.replace(/^(\\s*moz1_structure:).*$/m, '$1 "' + base + '"');
+}
+// 把 override 里填写的 key: value 覆盖到 yaml 文本对应行 (顶层 + 缩进 key 均匹配)
+function mergeOverride(baseYaml, overrideText){
+  if (!overrideText) return baseYaml;
+  var overrides = {};
+  overrideText.split('\\n').forEach(function(line){
+    var s = line.trim();
+    if (!s || s[0] === '#') return;
+    var i = s.indexOf(':');
+    if (i <= 0) return;
+    var key = s.slice(0, i).trim();
+    var val = s.slice(i + 1).trim();
+    if (key) overrides[key] = val;
+  });
+  var lines = baseYaml.split('\\n');
+  for (var k in overrides){
+    if (!overrides.hasOwnProperty(k)) continue;
+    var re = new RegExp('^(\\\\s*' + k.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\\\$&') + '\\\\s*:).*$');
+    for (var j = 0; j < lines.length; j++){
+      if (re.test(lines[j])){
+        lines[j] = lines[j].replace(re, '$1 ' + overrides[k]);
+        break;
+      }
+    }
+  }
+  return lines.join('\\n');
+}
+// 把 job_name 写入 yaml 文本
+function applyJobName(yamlText, name){
+  if (name == null) return yamlText;
+  return yamlText.replace(/^(job_name:).*$/m, '$1 "' + name + '"');
+}
+// 依据下拉框 + 名称 + 覆盖, 重新生成默认配置
+function regenDefaultConfig(){
+  var editor = document.getElementById('yamlEditor');
+  if (!editor) return;
+  var yaml = currentTrainTemplate();
+  var name = (document.getElementById('trainNameInput')||{}).value || '';
+  yaml = applyJobName(yaml, name);
+  yaml = applyBaseStructure(yaml);
+  var ov = (document.getElementById('yamlOverride')||{}).value || '';
+  yaml = mergeOverride(yaml, ov);
+  editor.value = yaml;
+}
+// 名称输入 → 同步 job_name
+function syncJobName(input){
+  regenDefaultConfig();
+}
+// 参数覆盖输入 → 实时写入默认配置
+function applyOverride(){
+  regenDefaultConfig();
+}
+// 恢复默认: 清空覆盖并重生
+function resetTrainConfig(){
+  var ov = document.getElementById('yamlOverride');
+  if (ov) ov.value = '';
+  regenDefaultConfig();
+  toast('Demo: 已恢复默认');
+}
+
+/* ── 训练代码模糊查询 ── */
+function tcEsc(s){
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+// 高亮命中的关键词, 不改变布局
+function tcHi(text, q){
+  if (!q) return tcEsc(text);
+  var idx = String(text).toLowerCase().indexOf(q);
+  if (idx < 0) return tcEsc(text);
+  return tcEsc(text.slice(0, idx)) +
+         '<mark class="tc-hl">' + tcEsc(text.slice(idx, idx + q.length)) + '</mark>' +
+         tcEsc(text.slice(idx + q.length));
+}
+function filterTrainCode(input){
+  var menu = document.getElementById('trainCodeMenu');
+  if (!menu) return;
+  var q = (input.value || '').trim().toLowerCase();
+  var refs = window.TRAIN_CODE_REFS || [];
+  // 分支名或 Commit ID 任一模糊命中即返回, 结果结构完全一致
+  var matched = refs.filter(function(r){
+    return !q || r.ref.toLowerCase().indexOf(q) >= 0 || r.commit.toLowerCase().indexOf(q) >= 0;
+  });
+  if (!matched.length){
+    menu.innerHTML = '<div class="tc-empty">无匹配的分支名或 Commit ID</div>';
+  } else {
+    menu.innerHTML = matched.map(function(r){
+      return '<div class="tc-item" onmousedown="pickTrainCode(\\'' + r.ref + '\\',\\'' + r.commit + '\\')">' +
+             '<div class="tc-line1"><span class="tc-branch">' + tcHi(r.ref, q) + '</span>' +
+             '<span class="tc-sep">·</span>' +
+             '<span class="tc-commit">' + tcHi(r.commit, q) + '</span></div>' +
+             '<div class="tc-msg">' + tcHi(r.desc, q) + '</div></div>';
+    }).join('');
+  }
+  menu.classList.add('open');
+}
+function pickTrainCode(ref, commit){
+  var input = document.getElementById('trainCodeInput');
+  if (input){
+    // 展示 分支名 · Commit ID; 同时锁定 commit 以保证训练可复现
+    input.value = ref + ' · ' + commit;
+    input.dataset.branch = ref;
+    input.dataset.commit = commit;
+  }
+  hideTrainCodeMenu();
+}
+function hideTrainCodeMenu(){
+  var menu = document.getElementById('trainCodeMenu');
+  if (menu) setTimeout(function(){ menu.classList.remove('open'); }, 120);
 }
 var TRAIN_IMAGE_MODE = 'default';
 var DEFAULT_TRAIN_IMAGE = {
@@ -2276,10 +2415,17 @@ function updateTrainImagePath(){
   }
   pathEl.textContent = 'spirit-ai-cn-beijing.cr.volces.com/spirit-ai/' + nameSel.value + ':' + versionSel.value;
 }
-function switchAdvTab(el){
+function switchAdvTab(el, tab){
   var tabs = el.parentNode.querySelectorAll('.at');
   tabs.forEach(function(t){ t.classList.remove('active'); });
   el.classList.add('active');
+  var def = document.getElementById('yamlEditor');
+  var ov = document.getElementById('yamlOverride');
+  if (def && ov){
+    var showOverride = (tab === 'override');
+    def.style.display = showOverride ? 'none' : '';
+    ov.style.display = showOverride ? '' : 'none';
+  }
 }
 /* 训练详情 5 个 tab 切换 */
 function switchDetTab(el, tabId){
@@ -4260,6 +4406,198 @@ def _eval_task_detail_with_tabs(tid):
     )
 
 
+# ── 新增训练任务: YAML 模板 (与飞书云文档 cfg1/cfg2 一致) ──
+# key = "<model>|<perception>":  model ∈ {pi05, spiritv1_6}, perception ∈ {old, new}
+# 本体机型 → perception:  Moz1 2025 → old;  Moz1 2026 / Moz1 2026 pro → new
+# spiritv1_6 模板为对应 pi05 模板的复制体, 仅 policy.type 改为占位值 spiritv1_6
+
+_YAML_PI05_OLD = """# FSDP training configuration file
+# Directly corresponds to TrainPipelineConfig in lerobot/configs/train.py
+
+# Quanta 会自动填充dataset相关的内容，不需要填写dataset下的repo_id、root、sample_weights_cfg
+# 请确认是否需要修改checkpoint.tos.prefix，checkpoint上传到tos的路径为tos://{bucket}/{prefix}/{job_name}/checkpoints/
+
+# === Dataset configuration ===
+use_raw_dataset: true
+dataset:
+  num_stats_samples: 10000
+  mistake_filter: "drop_error_prefix"
+  unknown_filter: true
+
+# === Basic configuration ===
+device: "cuda"
+job_name: ""
+output_dir: "outputs/${job_name}"
+seed: 42
+
+# === Training parameters ===
+num_workers_per_rank: 8
+batch_size: 32
+steps: 100000
+eval_freq: 100000
+log_freq: 100
+
+# === Checkpoint configuration ===
+checkpoint:
+  save_checkpoint: true
+  save_freq: 1000
+  tos:
+    keep_local_checkpoint_versions: 0
+    prefix: "default"
+    enable: true
+
+# === Policy configuration ===
+policy:
+  type: "pi05"
+  chunk_size: 60
+  n_action_steps: 60
+  use_delta_joint_actions_aloha: true
+  freeze_vision_encoder: false
+  use_amp: true
+  tokenizer_max_length: 120
+  observation_config:
+    robot_type: "moz1"
+    moz1_structure: "wholebody_without_base"
+    use_gripper_action: true
+    auto_pad_missing_components: true
+    state_mask_config:
+      leftarm: [true, true, false, true, true, true]
+      rightarm: [true, true, false, true, true, true]
+      torso: [true, true, true, true, true, true]
+    use_stop_signal: true
+  tokenizer_path: "/mnt/vepfs01/output/junliang/cache/pi05_base_torch/paligemma_tokenizer.model"
+  tokenizer_type: "sentencepiece"
+
+# === Optimizer and scheduler configuration ===
+use_policy_training_preset: false
+auto_resume: true
+checkpoint_path: "/mnt/vepfs01/output/junliang/mozbrain_pi05/outputs/pi05_cotrain_0929_ft_wb/checkpoints/005000"
+load_optimizer: false
+optimizer:
+  type: "adamw"
+  lr: 5e-5
+  weight_decay: 1e-10
+  betas: [0.9, 0.95]
+  eps: 1e-8
+  grad_clip_norm: 1.0
+  fused: true
+scheduler:
+  type: "cosine_decay_with_warmup"
+  num_decay_steps: 200000
+  num_warmup_steps: 1000
+  peak_lr: 5e-05
+  decay_lr: 5e-05
+
+# === WandB configuration ===
+wandb:
+  enable: true
+  project: "lerobot"
+"""
+
+_YAML_PI05_NEW = """# FSDP training configuration file
+# Directly corresponds to TrainPipelineConfig in lerobot/configs/train.py
+
+# Quanta 会自动填充dataset相关的内容，不需要填写dataset下的repo_id、root、sample_weights_cfg
+# 请确认是否需要修改checkpoint.tos.prefix，checkpoint上传到tos的路径为tos://{bucket}/{prefix}/{job_name}/checkpoints/
+
+# === Dataset configuration ===
+use_raw_dataset: true
+dataset:
+  num_stats_samples: 5000
+  mistake_filter: "drop_error_prefix"
+  unknown_filter: true
+  use_stats_cache: true
+
+# === Basic configuration ===
+device: "cuda"
+job_name: ""
+output_dir: "outputs/${job_name}"
+seed: 42
+
+# === Training parameters ===
+num_workers_per_rank: 8
+batch_size: 128
+steps: 200000
+eval_freq: 2000
+log_freq: 100
+
+# === Checkpoint configuration ===
+checkpoint:
+  save_checkpoint: true
+  save_freq: 1000
+  tos:
+    keep_local_checkpoint_versions: 2
+    prefix: "default"
+    enable: true
+
+# === Policy configuration ===
+policy:
+  type: "pi05"
+  chunk_size: 60
+  n_action_steps: 60
+  use_delta_joint_actions_aloha: true
+  freeze_vision_encoder: false
+  use_amp: true
+  tokenizer_max_length: 128
+  observation_config:
+    robot_type: "moz1"
+    moz1_structure: "wholebody"
+    use_gripper_action: true
+    auto_pad_missing_components: true
+    use_stop_signal: true
+    camera_rois:
+      cam_high: [50, 130, 380, 380]
+      cam_left_wrist: [50, 130, 380, 380]
+      cam_right_wrist: [50, 130, 380, 380]
+  tokenizer_path: "/mnt/vepfs01/output/maple.liu/cache/pi05_base_torch/paligemma_tokenizer.model"
+  tokenizer_type: "sentencepiece"
+  enable_training_time_rtc: false
+  max_delay: 12
+
+# === Optimizer and scheduler configuration ===
+use_policy_training_preset: false
+auto_resume: true
+pretrained_ckpt_path: "/mnt/vepfs01/output/maple.liu/cache/pi05_base_torch/model.safetensors"
+load_optimizer: false
+optimizer:
+  type: "adamw"
+  lr: 5e-5
+  weight_decay: 1e-10
+  betas: [0.9, 0.95]
+  eps: 1e-8
+  grad_clip_norm: 1.0
+  fused: true
+scheduler:
+  type: "cosine_decay_with_warmup"
+  num_decay_steps: 200000
+  num_warmup_steps: 1000
+  peak_lr: 5e-05
+  decay_lr: 5e-05
+
+# === WandB configuration ===
+wandb:
+  enable: true
+  project: "lerobot"
+"""
+
+TRAIN_YAML_TEMPLATES = {
+    "pi05|old": _YAML_PI05_OLD,
+    "pi05|new": _YAML_PI05_NEW,
+    # spiritv1.6 结构与 pi0.5 类似, 先复制并改 policy.type 占位
+    "spiritv1_6|old": _YAML_PI05_OLD.replace('type: "pi05"', 'type: "spiritv1_6"'),
+    "spiritv1_6|new": _YAML_PI05_NEW.replace('type: "pi05"', 'type: "spiritv1_6"'),
+}
+
+# 训练代码: 模糊查询候选 (Demo mock, 分支 + commit)
+TRAIN_CODE_REFS = [
+    {"ref": "main", "commit": "a5ebbdd", "desc": "feat: 优化工具链Demo UI/UX和血缘系统"},
+    {"ref": "collaborative-edit", "commit": "8bc8bbd", "desc": "Merge branch collaborative-edit"},
+    {"ref": "feature/lineage", "commit": "c7fdb73", "desc": "Add model lineage system"},
+    {"ref": "develop", "commit": "e2ef00a", "desc": "Update model and data platform UI"},
+    {"ref": "release/v1.0", "commit": "5bf7c91", "desc": "Update Quanta toolchain demo flows"},
+]
+
+
 @app.route("/model/experiments")
 def experiments():
     rows = ""
@@ -4316,6 +4654,8 @@ def experiments():
 
     running_count = sum(1 for e in EXPERIMENTS if e["status"] == "running")
     total_count = len(EXPERIMENTS)
+    train_yaml_json = json.dumps(TRAIN_YAML_TEMPLATES, ensure_ascii=False)
+    train_code_json = json.dumps(TRAIN_CODE_REFS, ensure_ascii=False)
     content = page_header(
         "训练任务",
         "数据集挂载 · 实验管理 · 超参 · Checkpoint",
@@ -4365,13 +4705,17 @@ def experiments():
       <input class="pg-goto" placeholder=""><span class="pg-go">go</span>
     </div>
 
+    <script>
+      window.TRAIN_YAML_TEMPLATES = {train_yaml_json};
+      window.TRAIN_CODE_REFS = {train_code_json};
+    </script>
     <div class="drawer drawer-wide" id="drawerNewTrain">
       <div class="drawer-head"><h3>新增训练任务</h3><span class="dismiss" onclick="closeDrawer()">&times;</span></div>
       <div class="drawer-body">
 
         <div class="fg">
           <label class="fg-req">名称</label>
-          <input placeholder="请输入名称（A-z,0-9,_）" maxlength="50" oninput="updateNameCount(this)">
+          <input id="trainNameInput" placeholder="请输入名称（A-z,0-9,_）" maxlength="50" oninput="updateNameCount(this);syncJobName(this)">
           <div class="fg-hint" style="text-align:right" id="nameCount">0 / 50</div>
         </div>
 
@@ -4422,6 +4766,14 @@ def experiments():
           </div>
         </div>
 
+        <div class="fg" style="position:relative;">
+          <label class="fg-req">训练代码</label>
+          <input id="trainCodeInput" placeholder="搜索分支名或 Commit ID" autocomplete="off"
+                 oninput="filterTrainCode(this)" onfocus="filterTrainCode(this)" onblur="hideTrainCodeMenu()">
+          <div class="fg-hint">支持按分支名或 Commit ID 模糊搜索，选中后锁定到具体 Commit</div>
+          <div id="trainCodeMenu" class="tc-menu"></div>
+        </div>
+
         <div class="fg-row">
           <div class="fg"><label class="fg-req">训练队列</label>
             <select><option>CPU</option><option>GPU-A100</option><option>GPU-H100</option></select>
@@ -4443,47 +4795,39 @@ def experiments():
           </div>
         </div>
 
-        <div class="fg">
-          <label class="fg-req">高级配置</label>
-          <div class="adv-tabs">
-            <span class="at active" onclick="switchAdvTab(this)">Custom configuration</span>
-            <span class="at" onclick="switchAdvTab(this)">Base configuration</span>
-            <button class="at-reset" onclick="toast('Demo: 已恢复默认')">恢复默认</button>
+        <div class="fg-row">
+          <div class="fg"><label class="fg-req">模型</label>
+            <select id="trainModelSel" onchange="regenDefaultConfig()">
+              <option value="pi05">pi0.5</option>
+              <option value="spiritv1_6">spiritv1.6</option>
+            </select>
           </div>
-          <textarea id="yamlEditor" class="yaml-area" spellcheck="false"># Quanta 会自动填充 dataset 相关的内容, 不需要填写 dataset 下的 repo_id、root、sample_weights_cfg
-# 请确认是否需要修改 checkpoint.tos.prefix, checkpoint 上传到 tos 的路径为 tos://{{bucket}}/{{prefix}}/{{job_
-
-# === Dataset configuration ===
-extends: ./base.yaml
-use_raw_dataset: true
-dataset:
-  num_stats_samples: 20000
-
-# eval_dataset:
-#   repo_id: "lerobot/OrganizePencilCase"
-#   root: "/mnt/vepfs01/output/multi_task/datasets/lerobot/OrganizePencilCase/"
-#   sample_weights_cfg: "/mnt/vepfs01/output/multi_task/datasets/lerobot/OrganizePencilCase/2
-
-# === Basic configuration ===
-</textarea>
+          <div class="fg"><label class="fg-req">是否使用新感知</label>
+            <select id="trainRobotSel" onchange="regenDefaultConfig()">
+              <option value="new">是</option>
+              <option value="old">否</option>
+            </select>
+          </div>
+          <div class="fg"><label class="fg-req">底盘类型</label>
+            <select id="trainBaseSel" onchange="regenDefaultConfig()">
+              <option value="wholebody">wholebody</option>
+              <option value="wholebody_without_base">wholebody_without_base</option>
+              <option value="dualarm">dualarm</option>
+            </select>
+          </div>
         </div>
 
         <div class="fg">
-          <label class="fg-req">入口命令</label>
-          <textarea id="entryCommandEditor" class="entry-command-area" spellcheck="false"># 需要填写个人的 WANDB_API_KEY，如 export WANDB_API_KEY=aaffxxxx
-export WANDB_API_KEY=put_your_wandb_api_key_here
-export WANDB_BASE_URL=https://api.bandw.top
-
-export XDG_CACHE_HOME=${{XDG_CACHE_HOME:-/mnt/vepfs01/output/qhj/cache/}}
-export HF_HOME=${{HF_HOME:-/mnt/vepfs01/output/lmz/cache}}
-export HF_ENDPOINT=https://hf-mirror.com
-export HF_HUB_OFFLINE=1
-
-export ENABLE_REPORT_QUANTA=True
-export QUANTA_SERVICE_URL="https://quanta.i.spirit-ai.com"
-
-# Quanta 会自动填充 experiment_id 为实际的 experiment_id，请不要修改 yaml 文件路径
-bash lerobot/scripts/train_unified.sh --gpus 8 --cuda-devices "0,1,2,3,4,5,6,7" /mnt/vepfs01/output/configs/train.yaml</textarea>
+          <label class="fg-req">高级配置</label>
+          <div class="adv-tabs">
+            <span class="at active" onclick="switchAdvTab(this,'default')">默认配置</span>
+            <span class="at" onclick="switchAdvTab(this,'override')">参数覆盖</span>
+            <button class="at-reset" onclick="resetTrainConfig()">恢复默认</button>
+          </div>
+          <textarea id="yamlEditor" class="yaml-area" spellcheck="false" readonly></textarea>
+          <textarea id="yamlOverride" class="yaml-area" spellcheck="false" style="display:none;"
+                    placeholder="# 只填写需要覆盖的参数, 例如:&#10;batch_size: 64&#10;steps: 300000&#10;&#10;# 这些值会覆盖到左侧「默认配置」中"
+                    oninput="applyOverride()"></textarea>
         </div>
 
       </div>

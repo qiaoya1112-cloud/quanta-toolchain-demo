@@ -1,0 +1,101 @@
+# FSDP training configuration file
+# Directly corresponds to TrainPipelineConfig in lerobot/configs/train.py
+# This configuration replaces hardcoded parameters in the original bash script
+
+# === Dataset configuration ===
+use_raw_dataset: true
+dataset:
+  repo_id: "20260720_pi05_robot_game_catering"
+  root: "/mnt/vepfs01/output/posttrain/robot_games"
+  num_stats_samples: 10000
+  sample_weights_cfg: "configs/20260720_pi05_robot_game_catering.json"
+  tasks_path: "meta/tasks.jsonl"
+  mistake_filter: "drop_error_prefix"
+  unknown_filter: true
+
+
+# === Basic configuration ===
+device: "cuda"
+job_name: "20260720_pi05_robot_game_catering"
+output_dir: "outputs/${job_name}"  # Will automatically add job_name and timestamp
+
+seed: 42
+
+# === Training parameters ===
+num_workers_per_rank: 8 # Corresponds to NUM_WORKERS=($NPROC_PER_NODE * 8) in original bash
+batch_size: 32   # Corresponds to BATCH_SIZE_PER_GPU in original bash
+# eval_batch_size: 32
+# eval_steps: 200
+# eval_select_action: true
+steps: 100000     # Corresponds to OFFLINE_STEPS in original bash
+eval_freq: 100000
+log_freq: 100
+
+# === Checkpoint configuration ===
+checkpoint:
+  save_checkpoint: true
+  save_freq: 1000
+  tos:
+    keep_local_checkpoint_versions: 0
+    prefix: "zhihao.chen"
+    enable: true
+
+# === Policy configuration ===
+policy:
+  type: "pi05"  # Corresponds to POLICY in original bash
+  # path: "lerobot/pi0"  # Corresponds to POLICY in original bash
+  # PI0 policy specific parameters
+  chunk_size: 60
+  n_action_steps: 60
+  use_delta_joint_actions_aloha: true
+  freeze_vision_encoder: false
+  use_amp: true
+  tokenizer_max_length: 120
+  observation_config:
+    robot_type: "moz1"
+    moz1_structure: "wholebody_without_base"
+    use_gripper_action: true
+    auto_pad_missing_components: true
+    state_mask_config:
+      leftarm: [true, true, false, true, true, true]
+      rightarm: [true, true, false, true, true, true]
+      torso: [true, true, true, true, true, true]
+    use_stop_signal: true
+  tokenizer_path: "/mnt/vepfs01/output/junliang/cache/pi05_base_torch/paligemma_tokenizer.model"
+  tokenizer_type: "sentencepiece"
+  # maskz_state: true
+
+  # enable_training_time_rtc: true
+  # max_delay: 12
+
+
+
+# === Optimizer and scheduler configuration ===
+use_policy_training_preset: false  # Use custom optimizer configuration
+auto_resume: true
+# pretrained_ckpt_path: "/mnt/vepfs01/output/junliang/cache/pi05_base_torch/model.safetensors"
+checkpoint_path: "/mnt/vepfs01/output/junliang/mozbrain_pi05/outputs/pi05_cotrain_0929_ft_wb/checkpoints/005000"
+load_optimizer: false  # Skip loading optimizer state due to model structure mismatch
+
+
+optimizer:
+  type: "adamw"
+  lr: 5e-5
+  weight_decay: 1e-10
+  betas: [0.9, 0.95]
+  eps: 1e-8
+  grad_clip_norm: 1.0
+  fused: true
+
+scheduler:
+  type: "cosine_decay_with_warmup"
+  num_decay_steps: 200000  # Automatically uses the value of steps
+  num_warmup_steps: 1000
+  peak_lr: 5e-05
+  decay_lr: 5e-05
+
+# === WandB configuration ===
+wandb:
+  enable: true  # Corresponds to ENABLE_WANDB in original bash
+  project: "lerobot"
+
