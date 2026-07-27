@@ -4769,7 +4769,6 @@ def experiments():
           <label class="fg-req">训练代码</label>
           <input id="trainCodeInput" placeholder="搜索 Commit ID" autocomplete="off"
                  oninput="filterTrainCode(this)" onfocus="filterTrainCode(this)" onblur="hideTrainCodeMenu()">
-          <div class="fg-hint">支持按 Commit ID 模糊搜索</div>
           <div id="trainCodeMenu" class="tc-menu"></div>
         </div>
 
