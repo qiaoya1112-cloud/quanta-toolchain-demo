@@ -2337,18 +2337,17 @@ function filterTrainCode(input){
   if (!menu) return;
   var q = (input.value || '').trim().toLowerCase();
   var refs = window.TRAIN_CODE_REFS || [];
-  // 分支名或 Commit ID 任一模糊命中即返回, 结果结构完全一致
+  // 目前只支持按 Commit ID 模糊搜索
   var matched = refs.filter(function(r){
-    return !q || r.ref.toLowerCase().indexOf(q) >= 0 || r.commit.toLowerCase().indexOf(q) >= 0;
+    // return !q || r.ref.toLowerCase().indexOf(q) >= 0 || r.commit.toLowerCase().indexOf(q) >= 0;  // 暂时注释：按分支名搜索
+    return !q || r.commit.toLowerCase().indexOf(q) >= 0;
   });
   if (!matched.length){
-    menu.innerHTML = '<div class="tc-empty">无匹配的分支名或 Commit ID</div>';
+    menu.innerHTML = '<div class="tc-empty">无匹配的 Commit ID</div>';
   } else {
     menu.innerHTML = matched.map(function(r){
       return '<div class="tc-item" onmousedown="pickTrainCode(\\'' + r.ref + '\\',\\'' + r.commit + '\\')">' +
-             '<div class="tc-line1"><span class="tc-branch">' + tcHi(r.ref, q) + '</span>' +
-             '<span class="tc-sep">·</span>' +
-             '<span class="tc-commit">' + tcHi(r.commit, q) + '</span></div>' +
+             '<div class="tc-line1"><span class="tc-commit">' + tcHi(r.commit, q) + '</span></div>' +
              '<div class="tc-msg">' + tcHi(r.desc, q) + '</div></div>';
     }).join('');
   }
@@ -2357,8 +2356,8 @@ function filterTrainCode(input){
 function pickTrainCode(ref, commit){
   var input = document.getElementById('trainCodeInput');
   if (input){
-    // 展示 分支名 · Commit ID; 同时锁定 commit 以保证训练可复现
-    input.value = ref + ' · ' + commit;
+    // 只展示 Commit ID; 同时锁定 commit 以保证训练可复现
+    input.value = commit;
     input.dataset.branch = ref;
     input.dataset.commit = commit;
   }
@@ -4768,9 +4767,9 @@ def experiments():
 
         <div class="fg" style="position:relative;">
           <label class="fg-req">训练代码</label>
-          <input id="trainCodeInput" placeholder="搜索分支名或 Commit ID" autocomplete="off"
+          <input id="trainCodeInput" placeholder="搜索 Commit ID" autocomplete="off"
                  oninput="filterTrainCode(this)" onfocus="filterTrainCode(this)" onblur="hideTrainCodeMenu()">
-          <div class="fg-hint">支持按分支名或 Commit ID 模糊搜索，选中后锁定到具体 Commit</div>
+          <div class="fg-hint">支持按 Commit ID 模糊搜索</div>
           <div id="trainCodeMenu" class="tc-menu"></div>
         </div>
 
