@@ -1529,7 +1529,7 @@ function resetFilters(btn){
     var base = el.getAttribute('data-base') || '筛选';
     el.classList.remove('has-value');
     var label = el.querySelector('.ms-label');
-    if(label) label.textContent = base.replace(/\s*\(\d+\)$/, '');
+    if(label) label.textContent = base.replace(/\\s*\\(\\d+\\)$/, '');
   });
   refreshSelectPlaceholders(root);
   toast('Demo: 已重置');
