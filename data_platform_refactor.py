@@ -18,20 +18,27 @@ PAGE_SPECS = {
     "collection_tasks": {
         "path": "/data/collection-tasks",
         "title": "采集任务",
-        "subtitle": "管理指令采集、自由采集和 DAgger 采集任务",
+        "subtitle": "管理指令采集、自由采集、DAgger 采集和数据导入任务",
         "icon": "&#9776;",
     },
     "processing_tasks": {
         "path": "/data/processing-tasks",
         "title": "处理任务",
-        "subtitle": "按质检环节和标注环节管理数据处理任务",
+        "subtitle": "用持续筛选条件接收数据，并编排多个独立处理流程",
         "icon": "&#9776;",
     },
     "allocation_management": {
         "path": "/data/allocations",
         "title": "分配管理",
-        "subtitle": "查看处理环节滞留并分配人员、供应商和处理流程",
+        "subtitle": "先发现处理问题，再调整资源或补充处理绑定",
         "icon": "&#8646;",
+    },
+    "allocation_management_old": {
+        "path": "/data/allocations-legacy",
+        "title": "分配管理-旧",
+        "subtitle": "按资源调度、处理绑定和数据再处理三个场景管理分配",
+        "icon": "&#8646;",
+        "hidden": True,
     },
     "data_management": {
         "path": "/data/recordings",
@@ -51,6 +58,7 @@ PAGE_SPECS = {
         "title": "个人看板",
         "subtitle": "查看个人任务、产能与处理趋势",
         "icon": "&#9636;",
+        "badge": "草稿",
         "legacy": True,
     },
     "workflow_management": {
@@ -60,11 +68,18 @@ PAGE_SPECS = {
         "icon": "&#8644;",
         "legacy": True,
     },
+    "user_group_management": {
+        "path": "/data/user-groups",
+        "title": "用户组管理",
+        "subtitle": "管理人工节点的领取范围与共享任务池",
+        "icon": "&#9786;",
+    },
     "execution_records": {
         "path": "/data/runs",
         "title": "执行记录",
         "subtitle": "查看流程执行状态、输入、输出与日志",
         "icon": "&#9654;",
+        "badge": "草稿",
         "legacy": True,
     },
     "operator_management": {
@@ -72,6 +87,7 @@ PAGE_SPECS = {
         "title": "算子管理",
         "subtitle": "管理工作流可复用处理算子",
         "icon": "&#9881;",
+        "badge": "草稿",
         "legacy": True,
     },
     "workbench_management": {
@@ -98,6 +114,7 @@ PAGE_SPECS = {
         "title": "场景管理",
         "subtitle": "统一维护业务场景定义",
         "icon": "&#9711;",
+        "badge": "草稿",
         "legacy": True,
     },
     "tag_management": {
@@ -119,25 +136,32 @@ PAGE_SPECS = {
         "title": "供应商管理",
         "subtitle": "管理外部供应商、协议与交付状态",
         "icon": "&#9635;",
+        "badge": "草稿",
     },
     "personnel_management": {
         "path": "/data/personnel",
         "title": "人员管理",
         "subtitle": "管理人员、技能、状态与供应商归属",
         "icon": "&#9786;",
+        "badge": "草稿",
     },
     "permission_management": {
         "path": "/data/permissions",
         "title": "权限管理",
         "subtitle": "管理角色、资源权限与授权关系",
         "icon": "&#9634;",
+        "badge": "草稿",
     },
 }
 
 NAV_GROUPS = [
     (
         "任务管理",
-        ["collection_tasks", "processing_tasks", "allocation_management"],
+        [
+            "collection_tasks",
+            "processing_tasks",
+            "allocation_management",
+        ],
     ),
     ("数据资产", ["data_management", "dataset_management"]),
     ("工作台", ["workbench", "personal_dashboard"]),
@@ -145,9 +169,10 @@ NAV_GROUPS = [
         "工作流",
         [
             "workflow_management",
-            "execution_records",
-            "operator_management",
+            "user_group_management",
             "workbench_management",
+            "operator_management",
+            "execution_records",
         ],
     ),
     (
@@ -163,17 +188,15 @@ NAV_GROUPS = [
 
 def build_navigation():
     """Return the tuple format consumed by the shared Quanta sidebar."""
+    def nav_entry(page_key):
+        spec = PAGE_SPECS[page_key]
+        entry = (spec["path"], spec["title"], spec["icon"])
+        return entry + (spec["badge"],) if spec.get("badge") else entry
+
     return [
         (
             group,
-            [
-                (
-                    PAGE_SPECS[key]["path"],
-                    PAGE_SPECS[key]["title"],
-                    PAGE_SPECS[key]["icon"],
-                )
-                for key in page_keys
-            ],
+            [nav_entry(key) for key in page_keys],
         )
         for group, page_keys in NAV_GROUPS
     ]
@@ -214,7 +237,9 @@ NODE_TYPES = {
 }
 
 WORKBENCH_COMPONENTS = {
+    "basic_info": ("基础信息", "任务 ID、记录 ID、序列号、采集员等上下文"),
     "multi_view_video": ("多视角视频", "头部、左臂、右臂视频同步播放与逐帧定位"),
+    "head_view_video": ("头部视频", "单头部摄像头视频播放与逐帧定位"),
     "playback_timeline": ("播放时间轴", "播放窗口、问题区间与标注片段的时间映射"),
     "instruction_context": ("任务说明", "采集指令、处理规则与任务上下文"),
     "quality_issue_editor": ("质检记录", "失误区间、严重程度、问题描述与证据"),
@@ -223,13 +248,19 @@ WORKBENCH_COMPONENTS = {
     "quality_result_viewer": ("质检信息", "质检结论、问题区间与规则版本"),
     "annotation_result_viewer": ("标注信息", "动作片段、标注版本与结构化结果"),
     "tag_viewer": ("标签信息", "场景、动作、设备与质量标签"),
+    "high_low_editor": ("High/Low level 编辑器", "编辑 highlevel 与 lowlevel 两级动作描述"),
+    "action_element_editor": ("动作元素编辑器", "编辑动作元素与动作描述"),
     "conclusion_selector": ("结论选择", "合格、不合格、操作失误三类业务结论"),
     "workbench_log": ("处理日志", "查看当前数据的处理、提交与退回日志"),
     "task_actions": ("任务操作", "提交、驳回与后续任务流转"),
+    "submit_actions": ("提交操作栏", "只展示提交与暂离"),
+    "reject_submit_actions": ("驳回与提交操作栏", "展示驳回、提交与暂离"),
 }
 
 WORKBENCH_COMPONENT_USAGE = {
+    "basic_info": "全部工作台",
     "multi_view_video": "质检、标注、详情",
+    "head_view_video": "标注、详情",
     "playback_timeline": "质检、标注",
     "instruction_context": "质检、标注",
     "quality_issue_editor": "质检、详情",
@@ -238,31 +269,156 @@ WORKBENCH_COMPONENT_USAGE = {
     "quality_result_viewer": "标注、详情",
     "annotation_result_viewer": "详情",
     "tag_viewer": "详情",
+    "high_low_editor": "标注",
+    "action_element_editor": "标注",
     "conclusion_selector": "质检、标注、详情",
     "workbench_log": "质检、标注、详情",
     "task_actions": "质检、标注、详情",
+    "submit_actions": "质检、标注、详情",
+    "reject_submit_actions": "质检、标注、详情",
 }
 
-PROCESSING_FLOW_HUMAN_NODES = {
-    "多级复核数据处理流程": [
-        "质检环节 · 抽检复核",
-        "质检环节 · 供应商复核",
-        "质检环节 · 申诉复核",
-        "标注环节 · 一轮复核",
-        "标注环节 · 二轮复核",
-        "标注环节 · 内部验收",
-        "验收环节 · 验收",
-    ],
-    "双轮人工数据处理流程": [
-        "质检环节 · 质检",
-        "质检环节 · 抽检",
-        "标注环节 · 标注",
-        "标注环节 · 抽验",
-        "验收环节 · 验收",
-    ],
-    "标准训练数据流水线": [],
-    "DAgger 数据流水线": [],
+WORKBENCH_COMPONENT_META = {
+    "basic_info": ("基础信息", "context", "required"),
+    "instruction_context": ("基础信息", "context", "optional"),
+    "multi_view_video": ("视频区", "video", "exclusive"),
+    "head_view_video": ("视频区", "video", "exclusive"),
+    "playback_timeline": ("视频区", "timeline", "optional"),
+    "trajectory_viewer": ("工作区", "tabs", "optional"),
+    "quality_issue_editor": ("工作区", "tabs", "optional"),
+    "quality_result_viewer": ("工作区", "tabs", "optional"),
+    "annotation_segment_editor": ("工作区", "tabs", "optional"),
+    "annotation_result_viewer": ("工作区", "tabs", "optional"),
+    "tag_viewer": ("工作区", "tabs", "optional"),
+    "workbench_log": ("工作区", "tabs", "optional"),
+    "high_low_editor": ("处理表单", "editor", "exclusive"),
+    "action_element_editor": ("处理表单", "editor", "exclusive"),
+    "conclusion_selector": ("结论", "decision", "optional"),
+    "submit_actions": ("操作栏", "actions", "exclusive"),
+    "reject_submit_actions": ("操作栏", "actions", "exclusive"),
+    "task_actions": ("操作栏", "actions", "legacy"),
 }
+
+PROCESSING_FLOWS = [
+    {
+        "id": "flow.quality.multi-review@3",
+        "name": "多级质检复核流程",
+        "stage": "质检",
+        "version": "v3",
+        "input_contract": "完整 Recording 元数据",
+        "output_contract": "quality_conclusion + quality_records",
+        "human_nodes": ["抽检复核", "供应商复核", "申诉复核"],
+    },
+    {
+        "id": "flow.quality.double-review@2",
+        "name": "双轮人工质检流程",
+        "stage": "质检",
+        "version": "v2",
+        "input_contract": "完整 Recording 元数据",
+        "output_contract": "quality_conclusion + quality_records",
+        "human_nodes": ["质检", "抽检"],
+    },
+    {
+        "id": "flow.annotation.e2e-review@2",
+        "name": "端到端切分标注流程",
+        "stage": "标注",
+        "version": "v2",
+        "input_contract": "quality_conclusion=合格/操作失误",
+        "output_contract": "annotation_payload + annotation_version",
+        "human_nodes": ["供应商复核", "供应商复核 R2", "内部复核"],
+    },
+    {
+        "id": "flow.annotation.double-pass@2",
+        "name": "双轮人工标注流程",
+        "stage": "标注",
+        "version": "v2",
+        "input_contract": "quality_conclusion=合格/操作失误",
+        "output_contract": "annotation_payload + annotation_version",
+        "human_nodes": ["标注", "抽验"],
+    },
+    {
+        "id": "flow.acceptance.final@1",
+        "name": "数据验收流程",
+        "stage": "验收",
+        "version": "v1",
+        "input_contract": "质检与标注流程输出",
+        "output_contract": "acceptance_conclusion",
+        "human_nodes": ["验收"],
+    },
+    {
+        "id": "flow.quality.standard-training@1",
+        "name": "标准训练数据自动质检流程",
+        "stage": "质检",
+        "version": "v1",
+        "input_contract": "完整 Recording 元数据",
+        "output_contract": "quality_conclusion + normalized_recording",
+        "human_nodes": [],
+    },
+    {
+        "id": "flow.quality.dagger@1",
+        "name": "DAgger 数据自动质检流程",
+        "stage": "质检",
+        "version": "v1",
+        "input_contract": "DAgger Recording 元数据",
+        "output_contract": "quality_conclusion + statistics",
+        "human_nodes": [],
+    },
+]
+
+PROCESSING_RULES = [
+    {"stage": "质检", "name": "通用质检规则", "version": "v3"},
+    {"stage": "质检", "name": "自动化质检规则", "version": "v2"},
+    {"stage": "质检", "name": "DAgger 质检规则", "version": "v1"},
+    {"stage": "标注", "name": "通用动作标注规则", "version": "v3"},
+    {"stage": "标注", "name": "端到端切分标注规则", "version": "v2"},
+]
+
+USER_GROUPS = [
+    {
+        "id": "group.annotation",
+        "name": "标注员用户组",
+        "members": 10,
+        "organizations": [
+            {"name": "供应商 A", "members": 6},
+            {"name": "光轮智能", "members": 4},
+        ],
+        "skills": "动作标注",
+    },
+    {
+        "id": "group.annotation-sampling",
+        "name": "标注抽验员用户组",
+        "members": 20,
+        "organizations": [
+            {"name": "平台自有", "members": 12},
+            {"name": "光轮智能", "members": 8},
+        ],
+        "skills": "标注抽验",
+    },
+    {
+        "id": "group.experimental-annotation",
+        "name": "新规实验标注员用户组",
+        "members": 8,
+        "organizations": [{"name": "联合项目组", "members": 8}],
+        "skills": "新规则实验标注",
+    },
+    {
+        "id": "group.quality-review",
+        "name": "质检复核用户组",
+        "members": 12,
+        "organizations": [
+            {"name": "光轮智能", "members": 8},
+            {"name": "平台自有", "members": 4},
+        ],
+        "skills": "质检与申诉复核",
+    },
+    {
+        "id": "group.acceptance",
+        "name": "内部验收用户组",
+        "members": 6,
+        "organizations": [{"name": "平台自有", "members": 6}],
+        "skills": "交付验收",
+    },
+]
 
 OPERATORS = {
     "op.timestamp-align@2.1.0": "时间戳对齐",
@@ -278,6 +434,7 @@ WORKBENCH_SCHEMAS = [
         "type": "质检",
         "regions": ["context", "video", "tabs", "decision", "actions"],
         "components": [
+            "basic_info",
             "instruction_context",
             "multi_view_video",
             "playback_timeline",
@@ -285,7 +442,7 @@ WORKBENCH_SCHEMAS = [
             "quality_issue_editor",
             "conclusion_selector",
             "workbench_log",
-            "task_actions",
+            "reject_submit_actions",
         ],
         "actions": ["submit", "reject"],
         "preview": "/data/workbench-management/preview/quality?task=WB-2026-0718-QC",
@@ -298,15 +455,17 @@ WORKBENCH_SCHEMAS = [
         "type": "标注",
         "regions": ["context", "video", "tabs", "decision", "actions"],
         "components": [
+            "basic_info",
             "instruction_context",
             "multi_view_video",
             "playback_timeline",
             "trajectory_viewer",
             "quality_result_viewer",
             "annotation_segment_editor",
+            "high_low_editor",
             "conclusion_selector",
             "workbench_log",
-            "task_actions",
+            "reject_submit_actions",
         ],
         "actions": ["submit", "reject"],
         "preview": "/data/workbench-management/preview/annotation?task=WB-2026-0922-LB",
@@ -319,6 +478,7 @@ WORKBENCH_SCHEMAS = [
         "type": "详情",
         "regions": ["video", "tabs", "decision", "actions"],
         "components": [
+            "basic_info",
             "multi_view_video",
             "trajectory_viewer",
             "quality_result_viewer",
@@ -326,7 +486,7 @@ WORKBENCH_SCHEMAS = [
             "tag_viewer",
             "conclusion_selector",
             "workbench_log",
-            "task_actions",
+            "submit_actions",
         ],
         "actions": ["submit", "reject"],
         "preview": "/data/workbench-management/preview/detail?task=WB-2026-0922-AC",
@@ -363,10 +523,6 @@ TASK_PROJECT_LABELS = {
     "PRJ-MOZ1-SFT-07": "demo 项目",
     "PRJ-EVAL-GEN-02": "宁德项目",
 }
-COLLECTION_PROCESSING_BINDINGS = {
-    "COL-2026-0718": "PROC-2026-0921",
-}
-
 PROJECTS = [
     {
         "id": "PRJ-MOZ1-SFT-07",
@@ -413,7 +569,7 @@ BUSINESS_TASKS = [
         "pipeline": "—",
         "snapshot": "—",
         "progress": 83,
-        "priority": "高",
+        "priority": "P0",
         "created": "2026-07-18 10:24",
         "due": "2026-07-31",
         "collection_progress": {"done": 1240, "total": 1500},
@@ -433,7 +589,7 @@ BUSINESS_TASKS = [
         "pipeline": "—",
         "snapshot": "—",
         "progress": 86,
-        "priority": "中",
+        "priority": "P1",
         "created": "2026-07-21 09:36",
         "due": "2026-08-03",
         "collection_progress": {"done": 860, "total": 1000},
@@ -453,7 +609,7 @@ BUSINESS_TASKS = [
         "pipeline": "—",
         "snapshot": "—",
         "progress": 53,
-        "priority": "中",
+        "priority": "P1",
         "created": "2026-07-24 13:12",
         "due": "2026-08-08",
         "collection_progress": {"done": 420, "total": 800},
@@ -473,7 +629,7 @@ BUSINESS_TASKS = [
         "pipeline": "—",
         "snapshot": "—",
         "progress": 31,
-        "priority": "低",
+        "priority": "P2",
         "created": "2026-07-26 11:08",
         "due": "2026-08-12",
         "collection_progress": {"done": 188, "total": 600},
@@ -493,7 +649,7 @@ BUSINESS_TASKS = [
         "pipeline": "—",
         "snapshot": "—",
         "progress": 87,
-        "priority": "高",
+        "priority": "P0",
         "created": "2026-07-15 16:45",
         "due": "2026-07-30",
         "collection_progress": {"done": 312, "total": 360},
@@ -505,6 +661,7 @@ BUSINESS_TASKS = [
         "id": "IMP-2026-0042",
         "type": "data_import_task",
         "type_name": "数据导入",
+        "collection_mode": "import",
         "name": "供应商 Batch-12 导入",
         "project": "PRJ-MOZ2-PRE-03",
         "input": "s3://vendor/batch-12 · LeRobot v2",
@@ -512,9 +669,12 @@ BUSINESS_TASKS = [
         "pipeline": "—",
         "snapshot": "—",
         "progress": 96,
-        "priority": "中",
+        "collection_progress": {"done": 982, "total": 1024},
+        "priority": "P1",
         "created": "2026-07-22 14:06",
         "due": "2026-07-29",
+        "operator": "供应商 A",
+        "creator": "Lance Li",
         "status": "running",
     },
     {
@@ -528,7 +688,7 @@ BUSINESS_TASKS = [
         "pipeline": "pv.capture-to-dataset@7",
         "snapshot": "snap-moz1-0718-r3",
         "progress": 72,
-        "priority": "高",
+        "priority": "P0",
         "created": "2026-07-24 09:42",
         "due": "2026-08-02",
         "stage_progress": [
@@ -536,10 +696,22 @@ BUSINESS_TASKS = [
             {"label": "标注", "done": 488, "total": 842},
             {"label": "验收", "done": 240, "total": 842},
         ],
-        "processing_stage": "cleaning",
-        "flow_name": "多级复核数据处理流程",
-        "node_name": "时间戳对齐",
-        "operator": "包媛桐",
+        "enabled": True,
+        "runtime_status": "积压",
+        "filter_summary": "所属项目=demo 项目；数据来源=采集；来源任务=COL-2026-0718",
+        "filter_rules": [
+            ("所属项目", "demo 项目"),
+            ("数据来源", "采集"),
+            ("来源任务 ID", "COL-2026-0718"),
+        ],
+        "flow_bindings": [
+            ("质检", "多级质检复核流程", "v3"),
+            ("标注", "端到端切分标注流程", "v2"),
+            ("验收", "数据验收流程", "v1"),
+        ],
+        "input_count": 1206,
+        "processed_count": 842,
+        "backlog_count": 364,
         "creator": "joanna.qiao",
         "status": "running",
     },
@@ -554,7 +726,7 @@ BUSINESS_TASKS = [
         "pipeline": "pv.capture-to-dataset@7",
         "snapshot": "snap-moz1-episodes-r2",
         "progress": 58,
-        "priority": "高",
+        "priority": "P0",
         "created": "2026-07-25 16:20",
         "due": "2026-08-05",
         "stage_progress": [
@@ -562,10 +734,20 @@ BUSINESS_TASKS = [
             {"label": "标注", "done": 488, "total": 842},
             {"label": "验收", "done": 320, "total": 842},
         ],
-        "processing_stage": "annotation",
-        "flow_name": "双轮人工数据处理流程",
-        "node_name": "动作分段标注",
-        "operator": "供应商 A",
+        "enabled": True,
+        "runtime_status": "正常",
+        "filter_summary": "所属项目=demo 项目；质检结论=合格/操作失误",
+        "filter_rules": [
+            ("所属项目", "demo 项目"),
+            ("质检结论", "合格、操作失误"),
+        ],
+        "flow_bindings": [
+            ("标注", "双轮人工标注流程", "v2"),
+            ("验收", "数据验收流程", "v1"),
+        ],
+        "input_count": 842,
+        "processed_count": 488,
+        "backlog_count": 354,
         "creator": "joanna.qiao",
         "status": "running",
     },
@@ -580,7 +762,7 @@ BUSINESS_TASKS = [
         "pipeline": "pv.vendor-import@3",
         "snapshot": "snap-eval-q3-input",
         "progress": 100,
-        "priority": "中",
+        "priority": "P1",
         "created": "2026-07-23 11:08",
         "due": "2026-07-30",
         "stage_progress": [
@@ -588,10 +770,21 @@ BUSINESS_TASKS = [
             {"label": "标注", "done": 488, "total": 488},
             {"label": "验收", "done": 452, "total": 488},
         ],
-        "processing_stage": "acceptance",
-        "flow_name": "多级复核数据处理流程",
-        "node_name": "交付验收",
-        "operator": "Wei Zhang",
+        "enabled": False,
+        "runtime_status": "已关闭",
+        "filter_summary": "所属项目=宁德项目；数据来源=采集/导入；标注状态=已标注",
+        "filter_rules": [
+            ("所属项目", "宁德项目"),
+            ("数据来源", "采集、导入"),
+            ("标注状态", "已标注"),
+        ],
+        "flow_bindings": [
+            ("质检", "标准训练数据自动质检流程", "v1"),
+            ("验收", "数据验收流程", "v1"),
+        ],
+        "input_count": 488,
+        "processed_count": 452,
+        "backlog_count": 0,
         "creator": "Wei Zhang",
         "status": "succeeded",
     },
@@ -663,6 +856,14 @@ DATA_SNAPSHOTS = [
         "created_by": "run-eval-0314",
         "immutable": True,
     },
+    {
+        "id": "snap-moz1-0709-r1",
+        "project": "PRJ-MOZ1-SFT-07",
+        "members": "96 Recording",
+        "checksum": "sha256:0f42…bb17",
+        "created_by": "COL-2026-0715",
+        "immutable": True,
+    },
 ]
 
 PIPELINE_RUNS = [
@@ -672,11 +873,15 @@ PIPELINE_RUNS = [
         "business_task": "PROC-2026-0921",
         "pipeline_version": "pv.capture-to-dataset@7",
         "input_snapshot": "snap-moz1-0718-r3",
+        "input_members": "1,206 Recording",
+        "recording_ids": ["4057808", "4057761", "4057711", "4057669"],
         "current_node": "Episode 切分",
         "node_progress": "3 / 5",
         "status": "running",
         "idempotency_key": "idem:0c92…cf18",
         "started": "2026-07-26 09:42",
+        "ended": "—",
+        "duration": "运行中 04:18:32",
     },
     {
         "id": "run-moz1-0922",
@@ -684,11 +889,15 @@ PIPELINE_RUNS = [
         "business_task": "PROC-2026-0922",
         "pipeline_version": "pv.capture-to-dataset@7",
         "input_snapshot": "snap-moz1-episodes-r2",
+        "input_members": "842 Episode",
+        "recording_ids": ["4057808", "4057761", "4057711", "4057669"],
         "current_node": "动作标注",
         "node_progress": "4 / 5",
         "status": "running",
         "idempotency_key": "idem:812e…31ad",
         "started": "2026-07-25 16:20",
+        "ended": "—",
+        "duration": "运行中 21:40:18",
     },
     {
         "id": "run-eval-0314",
@@ -696,11 +905,32 @@ PIPELINE_RUNS = [
         "business_task": "PROC-2026-0888",
         "pipeline_version": "pv.vendor-import@3",
         "input_snapshot": "snap-eval-q3-input",
+        "input_members": "1,238 Episode",
+        "recording_ids": ["5088112", "5088076", "5088029"],
         "current_node": "数据集构建",
         "node_progress": "3 / 3",
         "status": "succeeded",
         "idempotency_key": "idem:aa02…908c",
         "started": "2026-07-23 11:08",
+        "ended": "2026-07-23 11:50",
+        "duration": "00:42:16",
+    },
+    {
+        "id": "run-moz1-0908",
+        "project": "PRJ-MOZ1-SFT-07",
+        "business_task": "PROC-2026-0921",
+        "pipeline_version": "pv.capture-to-dataset@7",
+        "input_snapshot": "snap-moz1-0709-r1",
+        "input_members": "96 Recording",
+        "recording_ids": ["4057422", "4057419"],
+        "current_node": "时间戳对齐",
+        "node_progress": "2 / 5",
+        "status": "failed",
+        "idempotency_key": "idem:7b31…aa62",
+        "started": "2026-07-22 18:06",
+        "ended": "2026-07-22 18:14",
+        "duration": "00:08:27",
+        "error": "传感器时间戳缺失，自动重试 2 次后失败",
     },
 ]
 
@@ -770,6 +1000,18 @@ NODE_RUNS = [
         "attempt": 1,
         "output": "snap-eval-q3-build",
         "status": "succeeded",
+    },
+    {
+        "id": "nr-0908-align-002",
+        "pipeline_run": "run-moz1-0908",
+        "node": "时间戳对齐",
+        "node_type": "operator",
+        "input_snapshot": "snap-moz1-0709-r1",
+        "executor_version": "op.timestamp-align@2.1.0",
+        "attempt": 3,
+        "output": "—",
+        "status": "failed",
+        "error": "missing timestamp: left_arm_camera",
     },
 ]
 
@@ -1201,7 +1443,7 @@ ALLOCATION_BACKLOGS = [
         "project": "demo 项目",
         "count": 140,
         "status": "已分配未处理",
-        "supplier": "光轮智能",
+        "supplier": "质检复核用户组",
         "operator": "包媛桐",
         "stalled": "18 小时",
         "priority": "P1",
@@ -1225,7 +1467,7 @@ ALLOCATION_BACKLOGS = [
         "project": "预训练采集",
         "count": 186,
         "status": "已分配未处理",
-        "supplier": "供应商 A",
+        "supplier": "标注员用户组",
         "operator": "供应商 A-017",
         "stalled": "14 小时",
         "priority": "P1",
@@ -1261,9 +1503,11 @@ STREAM_CAPACITY_BACKLOGS = [
         "id": "STREAM-0718-QC",
         "project": "宁德项目",
         "source_task": "COL-2026-0718",
+        "source_tasks": ["COL-2026-0718", "COL-2026-0719", "IMP-2026-0042"],
         "processing_task": "PROC-2026-0921",
         "workflow": "厨房数据质检流程 v3",
         "stage": "质检",
+        "node": "供应商复核",
         "input_rate": 180,
         "throughput": 120,
         "backlog": 96,
@@ -1276,13 +1520,15 @@ STREAM_CAPACITY_BACKLOGS = [
         "id": "STREAM-0719-LB",
         "project": "demo 项目",
         "source_task": "COL-2026-0719",
+        "source_tasks": ["COL-2026-0719", "COL-2026-0718"],
         "processing_task": "PROC-2026-0922",
         "workflow": "家居动作标注流程 v2",
         "stage": "标注",
+        "node": "标注抽验",
         "input_rate": 96,
         "throughput": 72,
         "backlog": 140,
-        "supplier": "供应商 A",
+        "supplier": "标注抽验员用户组",
         "operator": "供应商 A-017",
         "stalled": "18 小时",
         "priority": "P1",
@@ -1294,6 +1540,7 @@ STREAM_CAPACITY_BACKLOGS = [
         "processing_task": "PROC-2026-0930",
         "workflow": "三方数据导入质检流程 v4",
         "stage": "标注",
+        "node": "供应商标注",
         "input_rate": 220,
         "throughput": 128,
         "backlog": 186,
@@ -1304,15 +1551,16 @@ STREAM_CAPACITY_BACKLOGS = [
     },
     {
         "id": "STREAM-0718-AC",
-        "project": "宁德项目",
+        "project": "demo 项目",
         "source_task": "COL-2026-0718",
         "processing_task": "PROC-2026-0922",
         "workflow": "家居动作标注流程 v2",
         "stage": "验收",
+        "node": "内部验收",
         "input_rate": 84,
         "throughput": 56,
         "backlog": 86,
-        "supplier": "平台自有",
+        "supplier": "内部验收用户组",
         "operator": "joanna.qiao",
         "stalled": "6 小时",
         "priority": "P1",
@@ -1327,7 +1575,7 @@ UNBOUND_DATA_POOLS = [
         "source_task": "COL-2026-0721",
         "count": 842,
         "created": "2026-07-27 08:30",
-        "reason": "采集任务未绑定处理任务",
+        "reason": "未命中任何启用中的处理任务筛选条件",
         "operator": "刘素粉",
     },
     {
@@ -1337,7 +1585,7 @@ UNBOUND_DATA_POOLS = [
         "source_task": "IMP-2026-0048",
         "count": 388,
         "created": "2026-07-26 19:10",
-        "reason": "导入任务未指定处理任务",
+        "reason": "未命中任何启用中的处理任务筛选条件",
         "operator": "数据导入服务",
     },
     {
@@ -1347,7 +1595,7 @@ UNBOUND_DATA_POOLS = [
         "source_task": "COL-2026-0720",
         "count": 254,
         "created": "2026-07-27 10:06",
-        "reason": "采集任务未绑定处理任务",
+        "reason": "已有关联任务关闭，当前无有效订阅",
         "operator": "陈晨",
     },
 ]
@@ -1611,11 +1859,34 @@ def validate_architecture():
     all_page_keys = [key for _, keys in NAV_GROUPS for key in keys]
     if len(all_page_keys) != len(set(all_page_keys)):
         errors.append("navigation contains duplicate page keys")
-    if set(all_page_keys) != set(PAGE_SPECS):
+    visible_page_keys = {
+        key for key, spec in PAGE_SPECS.items() if not spec.get("hidden")
+    }
+    if set(all_page_keys) != visible_page_keys:
         errors.append("navigation and page registry are inconsistent")
     paths = [spec["path"] for spec in PAGE_SPECS.values()]
     if len(paths) != len(set(paths)):
         errors.append("page paths must be unique")
+
+    flow_catalog = {
+        (flow["stage"], flow["name"], flow["version"])
+        for flow in PROCESSING_FLOWS
+    }
+    user_group_ids = [group["id"] for group in USER_GROUPS]
+    if len(user_group_ids) != len(set(user_group_ids)):
+        errors.append("user group identifiers must be unique")
+    for task in BUSINESS_TASKS:
+        if task["type"] == "data_collection_task" and task.get("pipeline") != "—":
+            errors.append(f"{task['id']} must write to the data lake without a direct processing binding")
+        if task["type"] != "data_processing_task":
+            continue
+        if not task.get("filter_rules"):
+            errors.append(f"{task['id']} must define persistent data-lake filters")
+        if not task.get("flow_bindings"):
+            errors.append(f"{task['id']} must bind at least one versioned processing flow")
+        for binding in task.get("flow_bindings", []):
+            if tuple(binding) not in flow_catalog:
+                errors.append(f"{task['id']} references an unknown processing flow: {binding}")
 
     for task_id, records in TASK_DETAIL_RECORDS.items():
         for record in records:
@@ -1775,12 +2046,32 @@ def _state(value):
         "frozen": "已冻结",
         "published": "已发布",
         "succeeded": "已完成",
+        "failed": "失败",
     }.get(normalized, value)
     return f'<span class="dpr-state {tone}">{_e(label)}</span>'
 
 
-def _intro(title, subtitle, eyebrow="DATA PIPELINE", action_html=""):
+def _intro(
+    title,
+    subtitle,
+    eyebrow="DATA PIPELINE",
+    action_html="",
+    inline_action=False,
+):
     eyebrow_html = f'<div class="dpr-eyebrow">{_e(eyebrow)}</div>' if eyebrow else ""
+    if inline_action:
+        return f"""
+        <div class="dpr-intro dpr-intro-inline-action">
+          <div>
+            {eyebrow_html}
+            <div class="dpr-intro-title-row">
+              <h1>{_e(title)}</h1>
+              <div class="dpr-intro-actions">{action_html}</div>
+            </div>
+            <p>{_e(subtitle)}</p>
+          </div>
+        </div>
+        """
     return f"""
     <div class="dpr-intro">
       <div>
@@ -1862,6 +2153,19 @@ def _record_tag(value):
         "已分配未处理": "orange",
     }.get(value, "gray")
     return f'<span class="dpr-record-tag {tone}">{_e(value)}</span>'
+
+
+def _priority_tag(value):
+    normalized = {
+        "高": "P0",
+        "中": "P1",
+        "低": "P2",
+    }.get(str(value), str(value))
+    tone = normalized.lower() if normalized in ("P0", "P1", "P2") else "p2"
+    return (
+        f'<span class="dpr-priority wb-priority {_e(tone)}">'
+        f'{_e(normalized)}</span>'
+    )
 
 
 def _table(headers, rows, empty="暂无数据", table_id="", row_attrs=None):
@@ -2009,40 +2313,52 @@ def render_collection_tasks():
         ("instruction", "指令采集"),
         ("free", "自由采集"),
         ("dagger", "DAgger 采集"),
+        ("import", "数据导入"),
     ]
-    tasks = [item for item in BUSINESS_TASKS if item["type"] == "data_collection_task"]
+    tasks = [
+        item for item in BUSINESS_TASKS
+        if item["type"] in ("data_collection_task", "data_import_task")
+    ]
     counts = {
         mode: sum(1 for item in tasks if item["collection_mode"] == mode)
         for mode, _ in tab_specs
     }
     tabs = "".join(
-        f'<button type="button" class="dpr-task-tab{" active" if index == 0 else ""}" '
+        f'<span class="det-tab dpr-collection-tab{" active" if index == 0 else ""}" '
+        f'role="tab" tabindex="0" '
         f'data-task-mode="{_e(mode)}" onclick="dprSwitchCollectionTab(this, \'{_e(mode)}\')">'
-        f'{_e(label)} <b>{counts[mode]}</b></button>'
+        f'{_e(label)} <b>{counts[mode]}</b></span>'
         for index, (mode, label) in enumerate(tab_specs)
     )
     rows = []
     row_attrs = []
     for item in tasks:
-        detail_path = f'/data/tasks/{_e(item["id"])}'
+        detail_path = (
+            f'/data/recordings?source=import&task={_e(item["id"])}'
+            if item["type"] == "data_import_task"
+            else f'/data/tasks/{_e(item["id"])}'
+        )
         project_label = TASK_PROJECT_LABELS[item["project"]]
-        processing_task = COLLECTION_PROCESSING_BINDINGS.get(item["id"], "")
         drawer_data = (
             f'data-task-id="{_e(item["id"])}" '
             f'data-task-name="{_e(item["name"])}" '
             f'data-collection-type="{_e(item["type_name"])}" '
             f'data-project="{_e(project_label)}" '
-            f'data-priority="{_e(item["priority"])}" '
-            f'data-processing-task="{_e(processing_task)}"'
+            f'data-priority="{_e(item["priority"])}"'
         )
         rows.append(
             [
                 f'<code>{_e(item["id"])}</code>',
                 f'<a class="dpr-task-name" href="{detail_path}"><b>{_e(item["name"])}</b></a>',
                 _record_tag(item["type_name"]),
-                _progress(item["progress"]),
-                f'<span class="dpr-priority">{_e(item["priority"])}</span>',
-                _e(item["operator"]),
+                (
+                    '<div class="dpr-task-progress-line dpr-collection-progress-line">'
+                    f'<i class="teal" style="width:{item["progress"]}%"></i>'
+                    f'<b>{item["collection_progress"]["done"]:,} / '
+                    f'{item["collection_progress"]["total"]:,} · '
+                    f'{item["progress"]}%</b></div>'
+                ),
+                _priority_tag(item["priority"]),
                 _e(item["creator"]),
                 _e(item["created"]),
                 (
@@ -2062,21 +2378,23 @@ def render_collection_tasks():
         [
             ("任务 ID", "input", []),
             ("名称", "input", []),
-            ("类型", "select", ["全部类型", "指令采集", "自由采集", "DAgger 采集"]),
+            ("类型", "select", ["全部类型", "指令采集", "自由采集", "DAgger 采集", "数据导入"]),
             ("操作人", "select", ["全部操作人", "刘素粉", "王一帆", "采集团队 B", "供应商 A", "DAgger 小组"]),
         ]
     )
     table = _table(
-        ["任务 ID", "名称", "类型", "进度", "优先级", "操作人", "创建人", "创建时间", "操作"],
+        ["任务 ID", "名称", "类型", "进度", "优先级", "创建人", "创建时间", "操作"],
         rows,
         table_id="dpr-collection-task-table",
         row_attrs=row_attrs,
     )
+    new_task_button = """
+    <button type="button" class="btn btn-primary" id="newCollectionTaskButton"
+      onclick="dprOpenCollectionTaskDrawer('new')">+ 新建采集任务</button>
+    """
     body = f"""
-    <div class="dpr-toolbar">
-      <div class="dpr-task-tabs" role="tablist">{tabs}</div>
-      <button type="button" class="btn btn-primary"
-        onclick="dprOpenCollectionTaskDrawer('new')">+ 新建采集任务</button>
+    <div class="det-tabs dpr-allocation-tabs dpr-collection-tabs" role="tablist">
+      {tabs}
     </div>
     {filters}
     {table}
@@ -2096,6 +2414,7 @@ def render_collection_tasks():
             <option>指令采集</option>
             <option>自由采集</option>
             <option>DAgger 采集</option>
+            <option>数据导入</option>
           </select>
         </div>
         <div class="fg">
@@ -2109,20 +2428,13 @@ def render_collection_tasks():
         <div class="fg">
           <label class="fg-req">优先级</label>
           <select id="collectionTaskPriority" name="priority">
-            <option>中</option>
-            <option>高</option>
-            <option>低</option>
+            <option>P1</option>
+            <option>P0</option>
+            <option>P2</option>
           </select>
         </div>
-        <div class="fg">
-          <label>处理任务 <span class="dpr-optional">（可选，选择则流式流转）</span></label>
-          <select id="collectionTaskProcessing" name="processing_task">
-            <option value="">不关联处理任务</option>
-            <option value="PROC-2026-0921">PROC-2026-0921 · 厨房数据标准化处理</option>
-            <option value="PROC-2026-0922">PROC-2026-0922 · 家居动作分段标注</option>
-            <option value="PROC-2026-0888">PROC-2026-0888 · 通用评测集季度构建</option>
-          </select>
-          <div class="dpr-field-help">选择后，采集产生的数据将持续流转到对应处理任务。</div>
+        <div class="dpr-source-task-note">
+          采集结果统一写入数据湖。处理任务将根据数据来源、来源任务 ID、项目及质量状态等条件持续筛选数据。
         </div>
       </div>
       <div class="drawer-foot">
@@ -2132,32 +2444,45 @@ def render_collection_tasks():
       </div>
     </div>
     <script>
+    var DPR_COLLECTION_ACTIVE_MODE = 'instruction';
     function dprSwitchCollectionTab(button, taskMode) {{
-      document.querySelectorAll('.dpr-task-tab').forEach(function(tab) {{
+      DPR_COLLECTION_ACTIVE_MODE = taskMode;
+      document.querySelectorAll('.dpr-collection-tab').forEach(function(tab) {{
         tab.classList.toggle('active', tab === button);
       }});
       document.querySelectorAll('#dpr-collection-task-table tbody tr').forEach(function(row) {{
         row.style.display = row.dataset.taskMode === taskMode ? '' : 'none';
       }});
+      document.getElementById('newCollectionTaskButton').textContent =
+        taskMode === 'import' ? '+ 新建导入任务' : '+ 新建采集任务';
     }}
     function dprOpenCollectionTaskDrawer(mode, trigger) {{
+      var typeByMode = {{
+        instruction: '指令采集',
+        free: '自由采集',
+        dagger: 'DAgger 采集',
+        import: '数据导入'
+      }};
       var data = trigger ? trigger.dataset : {{
         taskName: '',
-        collectionType: '指令采集',
+        collectionType: typeByMode[DPR_COLLECTION_ACTIVE_MODE] || '指令采集',
         project: '预训练采集',
-        priority: '中',
-        processingTask: ''
+        priority: 'P1'
       }};
       var drawer = document.getElementById('drawerCollectionTaskForm');
       var isDetail = mode === 'detail';
+      var isImport = data.collectionType === '数据导入';
       drawer.dataset.mode = mode;
       document.getElementById('collectionTaskDrawerTitle').textContent =
-        mode === 'new' ? '新建采集任务' : (isDetail ? '采集任务详情' : '编辑采集任务');
+        mode === 'new'
+          ? (isImport ? '新建数据导入任务' : '新建采集任务')
+          : (isDetail
+            ? (isImport ? '数据导入任务详情' : '采集任务详情')
+            : (isImport ? '编辑数据导入任务' : '编辑采集任务'));
       document.getElementById('collectionTaskName').value = data.taskName || '';
       document.getElementById('collectionTaskType').value = data.collectionType || '指令采集';
       document.getElementById('collectionTaskProject').value = data.project || '预训练采集';
-      document.getElementById('collectionTaskPriority').value = data.priority || '中';
-      document.getElementById('collectionTaskProcessing').value = data.processingTask || '';
+      document.getElementById('collectionTaskPriority').value = data.priority || 'P1';
       drawer.querySelectorAll('input, select').forEach(function(control) {{
         control.disabled = isDetail;
       }});
@@ -2175,12 +2500,14 @@ def render_collection_tasks():
     """
     return _intro(
         "采集任务",
-        "管理数据采集任务，支持指令采集、自由采集和 DAgger 采集三种模式，适配预训练与 Demo 场景。",
+        "管理数据采集与导入任务，支持指令采集、自由采集、DAgger 采集和数据导入。",
         "",
+        new_task_button,
+        inline_action=True,
     ) + body
 
 
-def render_processing_tasks():
+def _render_processing_tasks_legacy():
     workflow_names = list(PROCESSING_FLOW_HUMAN_NODES)
     workflow_options = "".join(
         f"<option>{_e(workflow_name)}</option>"
@@ -2239,13 +2566,14 @@ def render_processing_tasks():
                 _e(item["flow_name"]),
                 _record_tag(item["node_name"]),
                 progress_stack,
-                f'<span class="dpr-priority">{_e(item["priority"])}</span>',
+                _priority_tag(item["priority"]),
                 _e(item["operator"]),
                 _e(item["creator"]),
                 _e(item["created"]),
                 (
                     f'<div class="dpr-task-actions">'
                     f'<a href="{detail_path}">数据</a>'
+                    f'<a href="/data/runs?task={_e(item["id"])}">执行记录</a>'
                     f'<button type="button" {drawer_data} '
                     f'onclick="dprOpenProcessingTaskDrawer(\'detail\', this)">详情</button>'
                     f'<button type="button" {drawer_data} '
@@ -2468,6 +2796,367 @@ def render_processing_tasks():
         "处理任务",
         "管理数据处理任务；不同业务可绑定不同工作流，流程整体分为质检、标注和验收三个环节，每个环节可由多个节点组成。",
         "",
+    ) + body
+
+
+def render_processing_tasks():
+    """Render the v2 continuous processing-task model.
+
+    A processing task subscribes to matching lake data and binds one or more
+    independently versioned flows. Human assignment intentionally does not
+    live here; it belongs to the human-node configuration and its user groups.
+    """
+    flow_catalog_json = json.dumps(
+        PROCESSING_FLOWS,
+        ensure_ascii=False,
+    ).replace("</", "<\\/")
+    rule_catalog_json = json.dumps(
+        PROCESSING_RULES,
+        ensure_ascii=False,
+    ).replace("</", "<\\/")
+    tasks = [item for item in BUSINESS_TASKS if item["type"] == "data_processing_task"]
+    rows = []
+    for item in tasks:
+        detail_path = f'/data/tasks/{_e(item["id"])}'
+        project_label = TASK_PROJECT_LABELS[item["project"]]
+        filter_payload = json.dumps(item["filter_rules"], ensure_ascii=False)
+        flow_payload = json.dumps(item["flow_bindings"], ensure_ascii=False)
+        drawer_data = (
+            f'data-task-id="{_e(item["id"])}" '
+            f'data-task-name="{_e(item["name"])}" '
+            f'data-project="{_e(project_label)}" '
+            f'data-priority="{_e(item["priority"])}" '
+            f'data-enabled="{"true" if item["enabled"] else "false"}" '
+            f'data-filters="{_e(filter_payload)}" '
+            f'data-flows="{_e(flow_payload)}"'
+        )
+        progress_by_stage = {
+            progress["label"]: progress
+            for progress in item["stage_progress"]
+        }
+        stage_tones = {"质检": "blue", "标注": "teal", "验收": "green"}
+        flow_bindings = "".join(
+            (
+                f'<div class="dpr-flow-binding-chip" data-progress-stage="{_e(stage)}">'
+                f'<span>{_e(stage)}</span><div class="dpr-flow-binding-name">'
+                f'<b>{_e(flow)}</b><code>{_e(version)}</code></div>'
+                f'<div class="dpr-task-progress-line dpr-flow-progress-line">'
+                f'<i class="{_e(stage_tones[stage])}" '
+                f'style="width:{round(progress_by_stage[stage]["done"] / progress_by_stage[stage]["total"] * 100) if progress_by_stage[stage]["total"] else 0}%"></i>'
+                f'<b>{progress_by_stage[stage]["done"]:,} / '
+                f'{progress_by_stage[stage]["total"]:,} · '
+                f'{round(progress_by_stage[stage]["done"] / progress_by_stage[stage]["total"] * 100) if progress_by_stage[stage]["total"] else 0}%</b>'
+                f'</div></div>'
+            )
+            for stage, flow, version in item["flow_bindings"]
+        )
+        status_control = (
+            f'<label class="dpr-task-enable" title="关闭后停止接收新数据，已进入流程的数据继续处理">'
+            f'<input type="checkbox" {"checked" if item["enabled"] else ""} '
+            f'onchange="dprToggleProcessingTask(this, \'{_e(item["id"])}\')">'
+            f'<i></i><span>{"开启" if item["enabled"] else "关闭"}</span></label>'
+        )
+        rows.append(
+            [
+                f'<code>{_e(item["id"])}</code>',
+                f'<a class="dpr-task-name" href="{detail_path}"><b>{_e(item["name"])}</b></a>',
+                status_control,
+                f'<div class="dpr-flow-binding-list">{flow_bindings}</div>',
+                _priority_tag(item["priority"]),
+                _e(item["creator"]),
+                _e(item["created"]),
+                (
+                    f'<div class="dpr-task-actions">'
+                    f'<a href="{detail_path}">数据</a>'
+                    f'<a href="/data/runs?task={_e(item["id"])}">执行记录</a>'
+                    f'<button type="button" {drawer_data} '
+                    f'onclick="dprOpenProcessingTaskDrawer(\'detail\', this)">详情</button>'
+                    f'<button type="button" {drawer_data} '
+                    f'onclick="dprOpenProcessingTaskDrawer(\'edit\', this)">编辑</button>'
+                    f"</div>"
+                ),
+            ]
+        )
+
+    filters = _task_filter_bar(
+        [
+            ("任务 ID", "input", []),
+            ("名称", "input", []),
+            ("任务状态", "select", ["全部状态", "开启", "关闭"]),
+            ("数据来源", "select", ["全部来源", "采集", "导入"]),
+            (
+                "处理流程",
+                "select",
+                ["全部流程", *[flow["name"] for flow in PROCESSING_FLOWS]],
+            ),
+        ]
+    )
+    table = _table(
+        [
+            "任务 ID",
+            "名称",
+            "状态",
+            "绑定流程",
+            "优先级",
+            "创建人",
+            "创建时间",
+            "操作",
+        ],
+        rows,
+        table_id="dpr-processing-task-table",
+    )
+    new_task_button = """
+    <button type="button" class="btn btn-primary"
+      onclick="dprOpenProcessingTaskDrawer('new')">+ 新建处理任务</button>
+    """
+    body = f"""
+    {filters}
+    {table}
+    <div class="drawer dpr-collection-drawer dpr-processing-drawer"
+      id="drawerProcessingTaskForm" data-mode="new">
+      <div class="drawer-head">
+        <h3 id="processingTaskDrawerTitle">新建处理任务</h3>
+        <span class="dismiss" onclick="closeDrawer()">&times;</span>
+      </div>
+      <div class="drawer-body">
+        <div class="fg">
+          <label class="fg-req">任务名称</label>
+          <input id="processingTaskName" name="task_name" placeholder="请输入处理任务名称">
+        </div>
+        <div class="fg">
+          <label class="fg-req">所属项目</label>
+          <select id="processingTaskProject" name="project">
+            <option>预训练采集</option><option>demo 项目</option><option>宁德项目</option>
+          </select>
+        </div>
+        <div class="fg">
+          <label class="fg-req">优先级</label>
+          <select id="processingTaskPriority" name="priority">
+            <option>P1</option><option>P0</option><option>P2</option>
+          </select>
+        </div>
+        <div class="fg">
+          <label class="fg-req">任务状态</label>
+          <select id="processingTaskEnabled" name="enabled">
+            <option value="true">开启</option><option value="false">关闭</option>
+          </select>
+          <div class="dpr-field-help">
+            关闭后停止接收新数据；已经进入流程的数据继续处理完成。
+          </div>
+        </div>
+        <div class="dpr-task-config-block">
+          <div class="dpr-task-config-head">
+            <div><b>持续筛选条件</b><span>默认不限制；数据字段变化后重新判断，命中记录只进入一次。</span></div>
+            <button type="button" onclick="dprAddTaskFilter()">+ 添加条件</button>
+          </div>
+          <div class="dpr-task-config-cols dpr-filter-cols">
+            <span>字段</span><span>字段值</span><span></span>
+          </div>
+          <div id="processingTaskFilters"></div>
+          <div class="dpr-task-config-empty" id="processingTaskFilterEmpty">
+            不限制：所有新入湖数据均可进入该任务
+          </div>
+        </div>
+        <div class="dpr-task-config-block">
+          <div class="dpr-task-config-head">
+            <div><b>处理流程</b><span>按质检、标注、验收顺序执行。</span></div>
+          </div>
+          <div class="dpr-task-config-cols dpr-flow-cols">
+            <span>业务环节</span><span>处理流程</span><span>版本</span><span>规则</span>
+          </div>
+          <div id="processingTaskFlowBindings"></div>
+        </div>
+      </div>
+      <div class="drawer-foot">
+        <button type="button" class="btn" onclick="closeDrawer()">取消</button>
+        <button type="button" class="btn btn-primary" id="processingTaskDrawerSubmit"
+          onclick="dprSubmitProcessingTask()">创建</button>
+      </div>
+    </div>
+    <script>
+    var DPR_PROCESSING_FLOWS = {flow_catalog_json};
+    var DPR_PROCESSING_RULES = {rule_catalog_json};
+    var DPR_TASK_FILTER_VALUES = {{
+      '所属项目': ['预训练采集', 'demo 项目', '宁德项目'],
+      '数据来源': ['采集', '导入'],
+      '来源任务 ID': [],
+      'recording_id': [],
+      '采集员': [],
+      '供应商': [],
+      '质检结论': ['合格', '不合格', '操作失误'],
+      '标注状态': ['未标注', '已标注'],
+      '上传状态': ['未上传', '上传中', '上传成功', '上传失败'],
+      '采集结论': ['成功', '失败']
+    }};
+    function dprProcessingEscape(value) {{
+      return String(value || '').replace(/&/g, '&amp;').replace(/</g, '&lt;')
+        .replace(/"/g, '&quot;');
+    }}
+    function dprToggleProcessingTask(input, taskId) {{
+      input.parentNode.querySelector('span').textContent = input.checked ? '开启' : '关闭';
+      toast(input.checked
+        ? '已开启 ' + taskId + '，将继续接收命中数据'
+        : '已关闭 ' + taskId + '，不再接收新数据；在途流程继续执行');
+    }}
+    function dprTaskFilterValueControl(field, value) {{
+      var options = DPR_TASK_FILTER_VALUES[field] || [];
+      if (!options.length) {{
+        return '<input class="dpr-task-filter-value" value="' +
+          dprProcessingEscape(value) + '" placeholder="请输入字段值">';
+      }}
+      return '<select class="dpr-task-filter-value">' +
+        options.map(function(item) {{
+          return '<option' + (item === value ? ' selected' : '') + '>' +
+            dprProcessingEscape(item) + '</option>';
+        }}).join('') + '</select>';
+    }}
+    function dprTaskFilterRow(field, value) {{
+      var fields = Object.keys(DPR_TASK_FILTER_VALUES);
+      var selectedField = fields.indexOf(field) >= 0 ? field : fields[0];
+      return '<div class="dpr-task-config-row dpr-filter-row">' +
+        '<select class="dpr-task-filter-field" onchange="dprTaskFilterFieldChange(this)">' +
+          fields.map(function(item) {{
+            return '<option' + (item === selectedField ? ' selected' : '') + '>' +
+              dprProcessingEscape(item) + '</option>';
+          }}).join('') + '</select>' +
+        '<div class="dpr-task-filter-value-wrap">' +
+          dprTaskFilterValueControl(selectedField, value) + '</div>' +
+        '<button type="button" class="dpr-task-config-remove" ' +
+          'onclick="dprRemoveTaskFilter(this)">&times;</button></div>';
+    }}
+    function dprRenderTaskFilters(filters) {{
+      var holder = document.getElementById('processingTaskFilters');
+      holder.innerHTML = (filters || []).map(function(item) {{
+        return dprTaskFilterRow(item[0], item[1]);
+      }}).join('');
+      document.getElementById('processingTaskFilterEmpty').style.display =
+        holder.children.length ? 'none' : '';
+    }}
+    function dprAddTaskFilter() {{
+      document.getElementById('processingTaskFilters').insertAdjacentHTML(
+        'beforeend', dprTaskFilterRow('所属项目', '预训练采集'));
+      document.getElementById('processingTaskFilterEmpty').style.display = 'none';
+    }}
+    function dprRemoveTaskFilter(button) {{
+      button.closest('.dpr-filter-row').remove();
+      var holder = document.getElementById('processingTaskFilters');
+      document.getElementById('processingTaskFilterEmpty').style.display =
+        holder.children.length ? 'none' : '';
+    }}
+    function dprTaskFilterFieldChange(select) {{
+      select.closest('.dpr-filter-row').querySelector(
+        '.dpr-task-filter-value-wrap').innerHTML =
+          dprTaskFilterValueControl(select.value, '');
+    }}
+    function dprFlowsForStage(stage) {{
+      return DPR_PROCESSING_FLOWS.filter(function(flow) {{ return flow.stage === stage; }});
+    }}
+    function dprRulesForStage(stage) {{
+      return DPR_PROCESSING_RULES.filter(function(rule) {{ return rule.stage === stage; }});
+    }}
+    function dprFlowBindingRow(stage, flowName, version, ruleName) {{
+      var flows = dprFlowsForStage(stage);
+      var selectedFlow = flows.some(function(flow) {{ return flow.name === flowName; }})
+        ? flowName : (flows[0] ? flows[0].name : '');
+      var flow = flows.find(function(item) {{ return item.name === selectedFlow; }});
+      var rules = dprRulesForStage(stage);
+      var selectedRule = rules.some(function(rule) {{ return rule.name === ruleName; }})
+        ? ruleName : (rules[0] ? rules[0].name : '');
+      var ruleControl = rules.length
+        ? '<select class="dpr-flow-rule">' +
+          rules.map(function(rule) {{
+            return '<option' + (rule.name === selectedRule ? ' selected' : '') + '>' +
+              dprProcessingEscape(rule.name + ' ' + rule.version) + '</option>';
+          }}).join('') + '</select>'
+        : '<span class="dpr-flow-rule-empty">—</span>';
+      return '<div class="dpr-task-config-row dpr-flow-row">' +
+        '<b class="dpr-flow-stage-fixed">' + dprProcessingEscape(stage) + '</b>' +
+        '<select class="dpr-flow-name" onchange="dprFlowNameChange(this)">' +
+          flows.map(function(item) {{
+            return '<option' + (item.name === selectedFlow ? ' selected' : '') + '>' +
+              dprProcessingEscape(item.name) + '</option>';
+          }}).join('') + '</select>' +
+        '<code class="dpr-flow-version">' +
+          dprProcessingEscape(version || (flow && flow.version) || '—') + '</code>' +
+        ruleControl + '</div>';
+    }}
+    function dprRenderFlowBindings(bindings) {{
+      var bindingMap = {{}};
+      (bindings || []).forEach(function(item) {{
+        bindingMap[item[0]] = item;
+      }});
+      document.getElementById('processingTaskFlowBindings').innerHTML =
+        ['质检', '标注', '验收'].map(function(stage) {{
+          var item = bindingMap[stage] || [stage, '', '', ''];
+          return dprFlowBindingRow(stage, item[1], item[2], item[3]);
+        }}).join('');
+    }}
+    function dprFlowNameChange(select) {{
+      var flow = DPR_PROCESSING_FLOWS.find(function(item) {{
+        return item.name === select.value;
+      }});
+      select.closest('.dpr-flow-row').querySelector('.dpr-flow-version').textContent =
+        flow ? flow.version : '—';
+    }}
+    function dprOpenProcessingTaskDrawer(mode, trigger) {{
+      var data = trigger ? trigger.dataset : {{
+        taskName: '',
+        project: '预训练采集',
+        priority: 'P1',
+        enabled: 'true',
+        filters: '[]',
+        flows: JSON.stringify([
+          ['质检', '多级质检复核流程', 'v3', '通用质检规则'],
+          ['标注', '端到端切分标注流程', 'v2', '通用动作标注规则'],
+          ['验收', '数据验收流程', 'v1']
+        ])
+      }};
+      var drawer = document.getElementById('drawerProcessingTaskForm');
+      var isDetail = mode === 'detail';
+      drawer.dataset.mode = mode;
+      document.getElementById('processingTaskDrawerTitle').textContent =
+        mode === 'new' ? '新建处理任务' : (isDetail ? '处理任务详情' : '编辑处理任务');
+      document.getElementById('processingTaskName').value = data.taskName || '';
+      document.getElementById('processingTaskProject').value = data.project || '预训练采集';
+      document.getElementById('processingTaskPriority').value = data.priority || 'P1';
+      document.getElementById('processingTaskEnabled').value = data.enabled || 'true';
+      var filters = [];
+      var flows = [];
+      try {{ filters = JSON.parse(data.filters || '[]'); }} catch (error) {{}}
+      try {{ flows = JSON.parse(data.flows || '[]'); }} catch (error) {{}}
+      dprRenderTaskFilters(filters);
+      dprRenderFlowBindings(flows);
+      drawer.querySelectorAll('input, select').forEach(function(control) {{
+        control.disabled = isDetail;
+      }});
+      drawer.querySelectorAll(
+        '.dpr-task-config-head button, .dpr-task-config-remove').forEach(function(button) {{
+          button.style.display = isDetail ? 'none' : '';
+        }});
+      var submit = document.getElementById('processingTaskDrawerSubmit');
+      submit.style.display = isDetail ? 'none' : '';
+      submit.textContent = mode === 'new' ? '创建' : '保存';
+      openDrawer('drawerProcessingTaskForm');
+    }}
+    function dprSubmitProcessingTask() {{
+      if (!document.querySelector('#processingTaskFlowBindings .dpr-flow-row')) {{
+        toast('请至少绑定一个处理流程');
+        return;
+      }}
+      var mode = document.getElementById('drawerProcessingTaskForm').dataset.mode;
+      toast(mode === 'new'
+        ? 'Demo: 已创建持续处理任务并开始监听数据湖'
+        : 'Demo: 已保存处理任务');
+      closeDrawer();
+    }}
+    </script>
+    """
+    return _intro(
+        "处理任务",
+        "处理任务是持续运行的数据筛选器；任务命中数据后，按业务顺序进入多个独立、可版本化的处理流程。",
+        "",
+        new_task_button,
+        inline_action=True,
     ) + body
 
 
@@ -2983,7 +3672,7 @@ def _render_allocation_management_legacy():
     )
 
 
-def render_allocation_management():
+def render_allocation_management_old():
     project_switcher = """
     <label class="dpr-project-scope">
       <span>项目视角</span>
@@ -3042,12 +3731,13 @@ def render_allocation_management():
       </select></div>
       <div class="ff"><label>任务 ID</label>
         <input id="dprStreamTask" placeholder="采集任务 / 处理任务"></div>
-      <div class="ff"><label>当前供应商</label><select id="dprStreamSupplier">
-        <option value="">全部供应商</option><option>平台自有</option>
-        <option>光轮智能</option><option>供应商 A</option>
+      <div class="ff"><label>当前用户组</label><select id="dprStreamSupplier">
+        <option value="">全部用户组</option><option>质检复核用户组</option>
+        <option>标注员用户组</option><option>标注抽验员用户组</option>
+        <option>内部验收用户组</option>
       </select></div>
-      <div class="ff"><label>当前处理人</label>
-        <input id="dprStreamOperator" placeholder="请输入处理人"></div>
+      <div class="ff"><label>当前成员</label>
+        <input id="dprStreamOperator" placeholder="请输入成员"></div>
       <div class="filter-actions">
         <button class="btn btn-tertiary" type="button" onclick="dprResetStreamFilters()">重置</button>
         <button class="btn btn-primary" type="button" onclick="dprFilterStreamRows()">查询</button>
@@ -3062,7 +3752,7 @@ def render_allocation_management():
             "当前处理流程",
             "输入 / 吞吐",
             "积压数据",
-            "当前供应商 / 处理人",
+            "当前任务池 / 当前成员",
             "最长滞留",
             "优先级",
             "操作",
@@ -3076,7 +3766,7 @@ def render_allocation_management():
         <div class="dpr-scenario-summary">
           <div><span>吞吐不足任务</span><b id="dprStreamVisibleTasks">4</b><small>个</small></div>
           <div><span>当前积压</span><b id="dprStreamBacklogCount">508</b><small>条</small></div>
-          <p>当前处理流程保持不变，仅重新指派供应商和处理人。</p>
+          <p>当前流程实例保持不变，仅调整人工节点的用户组或指定成员。</p>
         </div>
         """
         + _section(
@@ -3112,7 +3802,7 @@ def render_allocation_management():
                 _e(item["reason"]),
                 _e(item["operator"]),
                 f'<button type="button" class="dpr-link-button" {drawer_data} '
-                f'onclick="dprOpenBindTask(this)">指定处理任务</button>',
+                f'onclick="dprOpenBindTask(this)">补充处理绑定</button>',
             ]
         )
         unbound_attrs.append(
@@ -3144,7 +3834,7 @@ def render_allocation_management():
             "来源任务",
             "数据量",
             "进入数据池时间",
-            "未绑定原因",
+            "未命中原因",
             "操作人",
             "操作",
         ],
@@ -3155,20 +3845,20 @@ def render_allocation_management():
     unbound_tab = (
         """
         <div class="dpr-scenario-summary">
-          <div><span>未绑定批次</span><b id="dprUnboundVisibleBatches">3</b><small>个</small></div>
+          <div><span>未命中批次</span><b id="dprUnboundVisibleBatches">3</b><small>个</small></div>
           <div><span>待分配数据</span><b id="dprUnboundDataCount">1,484</b><small>条</small></div>
-          <p>为池中数据指定处理任务，并为该任务绑定处理流程。</p>
+          <p>通过补充处理任务筛选条件，让池中数据进入持续处理链路。</p>
         </div>
         """
         + _section(
-            "未绑定处理任务的数据",
+            "未命中处理任务的数据",
             unbound_filters
             + unbound_table
             + '<div class="dpr-allocation-table-foot">'
             + '<span>已选择 <b id="dprUnboundSelectedCount">0</b> 个批次</span>'
             + '<button type="button" class="btn btn-primary" id="dprBulkBindTask" '
-            + 'disabled onclick="dprOpenBindTask()">批量指定处理任务</button></div>',
-            "只展示尚未进入任何处理任务的数据。",
+            + 'disabled onclick="dprOpenBindTask()">批量补充处理绑定</button></div>',
+            "只展示尚未命中任何启用中处理任务筛选条件的数据。",
         )
     )
 
@@ -3242,7 +3932,7 @@ def render_allocation_management():
     drawers_and_script = """
     <div class="drawer dpr-allocation-drawer" id="drawerStreamReassign">
       <div class="drawer-head">
-        <h3>重新指派流式处理资源</h3>
+        <h3>重新指派任务池资源</h3>
         <span class="dismiss" onclick="closeDrawer()">&times;</span>
       </div>
       <div class="drawer-body">
@@ -3251,14 +3941,15 @@ def render_allocation_management():
           <span>当前处理任务<b id="dprStreamCurrentTask">—</b></span>
           <span>当前处理流程<b id="dprStreamCurrentWorkflow">—</b></span>
         </div>
-        <div class="dpr-inline-notice">处理任务和处理流程保持不变，本次只调整执行资源。</div>
-        <div class="fg"><label class="fg-req">重新指派供应商</label>
+        <div class="dpr-inline-notice">处理任务和流程实例保持不变，本次仅调整人工节点任务池的领取范围。</div>
+        <div class="fg"><label class="fg-req">重新指派用户组</label>
           <select id="dprStreamNewSupplier" onchange="dprSyncStreamOperators()">
-            <option>平台自有</option><option>光轮智能</option><option>供应商 A</option>
+            <option>质检复核用户组</option><option>标注员用户组</option>
+            <option>标注抽验员用户组</option><option>内部验收用户组</option>
           </select>
         </div>
-        <div class="fg"><label class="fg-req">重新指派处理人</label>
-          <select id="dprStreamNewOperator"></select>
+        <div class="fg"><label>指定成员 <span class="dpr-optional">（可选）</span></label>
+          <select id="dprStreamNewOperator"><option value="">由用户组成员领取</option></select>
         </div>
         <div class="fg"><label>指派原因</label>
           <textarea id="dprStreamReason" rows="3" placeholder="例如：当前处理吞吐不足"></textarea>
@@ -3272,23 +3963,24 @@ def render_allocation_management():
 
     <div class="drawer dpr-allocation-drawer" id="drawerBindProcessingTask">
       <div class="drawer-head">
-        <h3>指定处理任务</h3>
+        <h3>补充处理绑定</h3>
         <span class="dismiss" onclick="closeDrawer()">&times;</span>
       </div>
       <div class="drawer-body">
         <div class="dpr-drawer-summary" id="dprBindTaskSummary">—</div>
-        <div class="fg"><label class="fg-req">处理任务</label>
+        <div class="dpr-inline-notice">来源任务不再直接绑定处理任务；系统将把本批数据对应条件补充到持续处理任务中。</div>
+        <div class="fg"><label class="fg-req">持续处理任务</label>
           <select id="dprBindProcessingTask">
             <option>PROC-2026-0941 · 宁德采集数据处理</option>
             <option>PROC-2026-0942 · 预训练数据质检</option>
             <option>PROC-2026-0943 · Demo 数据处理</option>
           </select>
         </div>
-        <div class="fg"><label class="fg-req">绑定处理流程</label>
+        <div class="fg"><label class="fg-req">新增流程绑定</label>
           <select id="dprBindWorkflow">
-            <option>厨房数据质检流程 v3</option>
-            <option>家居动作标注流程 v2</option>
-            <option>三方数据导入质检流程 v4</option>
+            <option>多级质检复核流程 v3</option>
+            <option>端到端切分标注流程 v2</option>
+            <option>数据验收流程 v1</option>
           </select>
         </div>
         <div class="fg"><label>优先级</label>
@@ -3404,17 +4096,18 @@ def render_allocation_management():
     function dprSyncStreamOperators() {
       var supplier = document.getElementById('dprStreamNewSupplier').value;
       var options = {
-        '平台自有':['joanna.qiao','包媛桐'],
-        '光轮智能':['刘素粉','光轮-QC-021'],
-        '供应商 A':['供应商 A-017','供应商 A-026']
+        '质检复核用户组':['','包媛桐','光轮-QC-021'],
+        '标注员用户组':['','供应商 A-017','供应商 A-026'],
+        '标注抽验员用户组':['','joanna.qiao','标注抽验-008'],
+        '内部验收用户组':['','joanna.qiao','Wei Zhang']
       };
       document.getElementById('dprStreamNewOperator').innerHTML =
         (options[supplier] || []).map(function(name) {
-          return '<option>' + name + '</option>';
+          return '<option value="' + name + '">' + (name || '由用户组成员领取') + '</option>';
         }).join('');
     }
     function dprSubmitStreamReassign() {
-      toast('Demo: 已重新指派供应商和处理人，当前处理流程保持不变');
+      toast('Demo: 已调整用户组任务池，当前流程实例保持不变');
       closeDrawer();
     }
     function dprUpdateUnboundSelection() {
@@ -3464,7 +4157,7 @@ def render_allocation_management():
       openDrawer('drawerBindProcessingTask');
     }
     function dprSubmitBindTask() {
-      toast('Demo: 已指定处理任务并绑定处理流程');
+      toast('Demo: 已补充持续处理任务的筛选条件与流程绑定');
       closeDrawer();
     }
     function dprFilterReprocessOverview() {
@@ -3529,8 +4222,8 @@ def render_allocation_management():
 
     return (
         _intro(
-            "分配管理",
-            "处理流式吞吐积压、未绑定处理任务的数据，以及面向训练需求的数据再处理。",
+            "分配管理-旧",
+            "按任务池调度人工处理资源，补充持续处理任务的筛选绑定，并支持面向训练需求的数据再处理。",
             "",
             project_switcher,
         )
@@ -3551,6 +4244,947 @@ def render_allocation_management():
     )
 
 
+def render_allocation_management():
+    stage_cards = ""
+    for item in ALLOCATION_STAGE_SUMMARY:
+        total = item["total"] or 1
+        pending = item["unassigned"] + item["assigned_waiting"]
+        segments = "".join(
+            f'<i class="{tone}" data-dispatch-segment="{key}" '
+            f'style="width:{round(value / total * 100, 1)}%"></i>'
+            for key, value, tone in (
+                ("unassigned", item["unassigned"], "unassigned"),
+                ("assigned_waiting", item["assigned_waiting"], "assigned"),
+                ("processing", item["processing"], "processing"),
+                ("completed", item["completed"], "completed"),
+            )
+        )
+        stage_cards += f"""
+        <button type="button" class="dpr-dispatch-stage-card"
+          data-dispatch-stage="{_e(item["stage"])}"
+          onclick="dprSelectDispatchStage(this)">
+          <div class="dpr-dispatch-stage-title">
+            <span>{_e(item["stage"])}</span>
+            <b data-stage-pending>{pending:,}<small>待处理</small></b>
+          </div>
+          <div class="dpr-allocation-bar">{segments}</div>
+          <div class="dpr-dispatch-stage-values">
+            <span><i class="unassigned"></i>未分配
+              <b data-stage-value="unassigned">{item["unassigned"]:,}</b></span>
+            <span><i class="assigned"></i>已分配待处理
+              <b data-stage-value="assigned_waiting">{item["assigned_waiting"]:,}</b></span>
+            <span><i class="processing"></i>处理中
+              <b data-stage-value="processing">{item["processing"]:,}</b></span>
+            <span><i class="completed"></i>已完成
+              <b data-stage-value="completed">{item["completed"]:,}</b></span>
+          </div>
+        </button>
+        """
+
+    issue_rows = []
+    issue_attrs = []
+    stage_groups = {}
+    for stream_item in STREAM_CAPACITY_BACKLOGS:
+        group_key = (stream_item["processing_task"], stream_item["node"])
+        source_tasks = stream_item.get(
+            "source_tasks", [stream_item["source_task"]]
+        )
+        if group_key not in stage_groups:
+            stage_groups[group_key] = {
+                **stream_item,
+                "source_tasks": list(dict.fromkeys(source_tasks)),
+            }
+            continue
+        group = stage_groups[group_key]
+        group["source_tasks"] = list(
+            dict.fromkeys(group["source_tasks"] + list(source_tasks))
+        )
+        group["input_rate"] += stream_item["input_rate"]
+        group["backlog"] += stream_item["backlog"]
+        group["throughput"] = max(
+            group["throughput"], stream_item["throughput"]
+        )
+        if int(stream_item["stalled"].split()[0]) > int(
+            group["stalled"].split()[0]
+        ):
+            group["stalled"] = stream_item["stalled"]
+        if stream_item["priority"] == "P0":
+            group["priority"] = "P0"
+
+    task_groups = {}
+    for stage_item in stage_groups.values():
+        task_id = stage_item["processing_task"]
+        if task_id not in task_groups:
+            task_groups[task_id] = {
+                "processing_task": task_id,
+                "project": stage_item["project"],
+                "source_tasks": [],
+                "stages": [],
+            }
+        task_group = task_groups[task_id]
+        task_group["source_tasks"] = list(
+            dict.fromkeys(
+                task_group["source_tasks"] + stage_item["source_tasks"]
+            )
+        )
+        task_group["stages"].append(stage_item)
+
+    for task_group in task_groups.values():
+        stages = task_group["stages"]
+        source_tasks = task_group["source_tasks"]
+        source_task_payload = "|".join(source_tasks)
+        processing_task = task_group["processing_task"]
+        total_backlog = sum(item["backlog"] for item in stages)
+        longest_age = max(int(item["stalled"].split()[0]) for item in stages)
+        highest_priority = (
+            "P0" if any(item["priority"] == "P0" for item in stages) else "P1"
+        )
+        stage_names = [item["stage"] for item in stages]
+        search_tasks = " ".join(source_tasks + [processing_task])
+        issue_rows.append(
+            [
+                '<span class="dpr-dispatch-issue capacity">吞吐不足</span>',
+                f'<div class="dpr-dispatch-object">'
+                f'<span><i>来源任务</i><button type="button" '
+                f'class="dpr-dispatch-source-link" '
+                f'data-sources="{_e(source_task_payload)}" '
+                f'onclick="dprOpenDispatchSources(this)">'
+                f'{len(source_tasks)} 个 · 查看</button></span>'
+                f'<span><i>处理任务</i><code>{_e(processing_task)}</code></span>'
+                f'</div>',
+                _e(task_group["project"]),
+                f'<button type="button" class="dpr-dispatch-stage-count" '
+                f'onclick="dprToggleDispatchTask(this)">'
+                f'{len(stages)} 个处理节点积压</button>',
+                f'<b>{total_backlog:,}</b> 条',
+                f'<span class="dpr-stalled">{longest_age} 小时</span>',
+                '<span class="dpr-dispatch-current">多个处理节点能力不足'
+                '<small>展开查看各节点的吞吐与处理资源</small></span>',
+                _priority_tag(highest_priority),
+                '<button type="button" class="dpr-link-button '
+                'dpr-dispatch-expand-button" '
+                'onclick="dprToggleDispatchTask(this)">展开</button>',
+            ]
+        )
+        issue_attrs.append(
+            f'class="dpr-dispatch-task-row" '
+            f'data-dispatch-role="parent" '
+            f'data-dispatch-type="capacity" '
+            f'data-dispatch-group="{_e(processing_task)}" '
+            f'data-dispatch-project="{_e(task_group["project"])}" '
+            f'data-dispatch-stages="{_e("|".join(stage_names))}" '
+            f'data-dispatch-task="{_e(search_tasks)}" '
+            f'data-dispatch-count="{total_backlog}" '
+            f'data-dispatch-age="{longest_age}" '
+            f'data-dispatch-expanded="false"'
+        )
+
+        for item in stages:
+            age = int(item["stalled"].split()[0])
+            issue_rows.append(
+                [
+                    '<span class="dpr-dispatch-tree-branch">↳</span>',
+                    '<span class="dpr-dispatch-child-label">节点明细</span>',
+                    '<span class="muted">—</span>',
+                    _record_tag(item["node"]),
+                    f'<b>{item["backlog"]:,}</b> 条',
+                    f'<span class="dpr-stalled">{_e(item["stalled"])}</span>',
+                    f'<span class="dpr-dispatch-current">'
+                    f'输入 {item["input_rate"]} / 处理 {item["throughput"]} 条/小时'
+                    f'<small>处理资源：{_e(item["supplier"])}</small></span>',
+                    _priority_tag(item["priority"]),
+                    f'<button type="button" class="dpr-link-button" '
+                    f'data-processing-task="{_e(item["processing_task"])}" '
+                    f'data-workflow="{_e(item["workflow"])}" '
+                    f'data-stage="{_e(item["stage"])}" '
+                    f'data-node="{_e(item["node"])}" '
+                    f'data-backlog="{item["backlog"]}" '
+                    f'data-input-rate="{item["input_rate"]}" '
+                    f'data-throughput="{item["throughput"]}" '
+                    f'data-supplier="{_e(item["supplier"])}" '
+                    f'data-operator="{_e(item["operator"])}" '
+                    f'onclick="dprOpenDispatchResource(this)">分配积压数据</button>',
+                ]
+            )
+            issue_attrs.append(
+                f'class="dpr-dispatch-stage-row" '
+                f'data-dispatch-role="child" '
+                f'data-dispatch-type="capacity" '
+                f'data-dispatch-parent="{_e(processing_task)}" '
+                f'data-dispatch-project="{_e(task_group["project"])}" '
+                f'data-dispatch-stage="{_e(item["stage"])}" '
+                f'data-dispatch-count="{item["backlog"]}" '
+                f'data-dispatch-age="{age}" '
+                f'style="display:none"'
+            )
+
+    unbound_ages = (31, 22, 17)
+    for index, item in enumerate(UNBOUND_DATA_POOLS):
+        age = unbound_ages[index]
+        priority = "P0" if item["count"] >= 800 else "P1"
+        issue_rows.append(
+            [
+                '<span class="dpr-dispatch-issue unbound">未进入处理</span>',
+                f'<div class="dpr-dispatch-object">'
+                f'<span><i>来源任务</i><button type="button" '
+                f'class="dpr-dispatch-source-link" '
+                f'data-sources="{_e(item["source_task"])}" '
+                f'onclick="dprOpenDispatchSources(this)">1 个 · 查看</button></span>'
+                f'<span><i>处理任务</i><code class="empty">—</code></span>'
+                f'</div>',
+                _e(item["project"]),
+                '<span class="muted">—</span>',
+                f'<b>{item["count"]:,}</b> 条',
+                f'<span class="dpr-stalled">{age} 小时</span>',
+                f'<span class="dpr-dispatch-current">{_e(item["reason"])}'
+                f'<small>数据来源：{_e(item["source"])} · '
+                f'操作人：{_e(item["operator"])}</small></span>',
+                _priority_tag(priority),
+                f'<button type="button" class="dpr-link-button" '
+                f'data-pool-id="{_e(item["id"])}" '
+                f'data-source-task="{_e(item["source_task"])}" '
+                f'data-source="{_e(item["source"])}" '
+                f'data-count="{item["count"]}" '
+                f'onclick="dprOpenDispatchBinding(this)">绑定处理任务</button>',
+            ]
+        )
+        issue_attrs.append(
+            f'data-dispatch-role="standalone" '
+            f'data-dispatch-type="unbound" '
+            f'data-dispatch-project="{_e(item["project"])}" '
+            f'data-dispatch-stage="" '
+            f'data-dispatch-task="{_e(item["source_task"])} {_e(item["id"])}" '
+            f'data-dispatch-count="{item["count"]}" '
+            f'data-dispatch-age="{age}"'
+        )
+
+    issue_table = _table(
+        [
+            "问题类型",
+            "影响任务",
+            "项目",
+            "处理节点",
+            "影响数据",
+            "滞留时间",
+            "当前状态",
+            "优先级",
+            "操作",
+        ],
+        issue_rows,
+        table_id="dpr-dispatch-issue-table",
+        row_attrs=issue_attrs,
+    )
+
+    reprocess_preview = _table(
+        ["项目", "数据来源", "可见数据", "原处理流程", "当前状态"],
+        [
+            [
+                _e(item["project"]),
+                _record_tag(item["source"]),
+                f'{item["count"]:,} 条',
+                _e(item["current_process"]),
+                _e(item["status"]),
+            ]
+            for item in REPROCESS_DATA_OVERVIEW
+        ],
+        table_id="dpr-dispatch-reprocess-preview",
+        row_attrs=[
+            f'data-project="{_e(item["project"])}"'
+            for item in REPROCESS_DATA_OVERVIEW
+        ],
+    )
+
+    project_summary_json = json.dumps(
+        ALLOCATION_PROJECT_STAGE_SUMMARY, ensure_ascii=False
+    ).replace("</", "<\\/")
+    reprocess_counts_json = json.dumps(
+        {
+            "全部项目": sum(item["count"] for item in REPROCESS_DATA_OVERVIEW),
+            **{
+                item["project"]: item["count"]
+                for item in REPROCESS_DATA_OVERVIEW
+            },
+        },
+        ensure_ascii=False,
+    ).replace("</", "<\\/")
+
+    project_switcher = """
+    <label class="dpr-project-scope">
+      <span>项目</span>
+      <select id="dprDispatchProjectScope" onchange="dprRefreshDispatchPage()">
+        <option>全部项目</option>
+        <option>宁德项目</option>
+        <option>demo 项目</option>
+        <option>预训练采集</option>
+      </select>
+    </label>
+    """
+
+    drawers_and_script = """
+    <div class="drawer dpr-dispatch-source-drawer" id="drawerDispatchSources">
+      <div class="drawer-head">
+        <h3>来源任务明细</h3>
+        <span class="dismiss" onclick="closeDrawer()">&times;</span>
+      </div>
+      <div class="drawer-body">
+        <div class="dpr-inline-notice">
+          当前处理任务通过筛选条件持续接收数据，可能同时命中多个采集或导入任务。
+        </div>
+        <div class="dpr-dispatch-source-list" id="dprDispatchSourceList"></div>
+      </div>
+      <div class="drawer-foot">
+        <button type="button" class="btn btn-primary" onclick="closeDrawer()">知道了</button>
+      </div>
+    </div>
+
+    <div class="drawer dpr-allocation-drawer" id="drawerDispatchResource">
+      <div class="drawer-head">
+        <h3>分配存量积压</h3>
+        <span class="dismiss" onclick="closeDrawer()">&times;</span>
+      </div>
+      <div class="drawer-body">
+        <div class="dpr-drawer-summary" id="dprDispatchResourceSummary">—</div>
+        <div class="dpr-dispatch-backlog-context">
+          <div><span>处理流程</span><b id="dprDispatchCurrentFlow">—</b></div>
+          <div><span>输入 / 处理速度</span>
+            <b><i id="dprDispatchCurrentInput">—</i> / <i id="dprDispatchCurrentThroughput">—</i></b>
+          </div>
+          <div><span>当前积压</span><b id="dprDispatchCurrentBacklog">—</b></div>
+        </div>
+        <div class="dpr-task-config-block dpr-dispatch-assignment-block">
+          <div class="dpr-task-config-head">
+            <div><b>分配对象</b><span>本期仅支持将当前积压拆分给多个用户组。</span></div>
+            <button type="button" onclick="dprAddDispatchAssignment()">
+              + 添加分配
+            </button>
+          </div>
+          <div class="dpr-task-config-cols dpr-dispatch-assignment-cols">
+            <span>对象类型</span><span>用户组</span>
+            <span>分配条数</span><span></span>
+          </div>
+          <div id="dprDispatchAssignmentRows"></div>
+          <div class="dpr-dispatch-assignment-total">
+            <span>分配合计</span>
+            <b id="dprDispatchAssignmentTotal">0 / — 条</b>
+          </div>
+        </div>
+        <div class="dpr-inline-notice">
+          本次分配只影响当前存量积压数据，不修改流程模板中的用户组配置；
+          后续新增数据仍按原有流转与分配规则执行。
+        </div>
+      </div>
+      <div class="drawer-foot">
+        <button type="button" class="btn" onclick="closeDrawer()">取消</button>
+        <button type="button" class="btn btn-primary"
+          onclick="dprSubmitDispatchResource()">确认分配</button>
+      </div>
+    </div>
+
+    <div class="drawer dpr-allocation-drawer" id="drawerDispatchBinding">
+      <div class="drawer-head">
+        <h3>绑定处理任务</h3>
+        <span class="dismiss" onclick="closeDrawer()">&times;</span>
+      </div>
+      <div class="drawer-body">
+        <div class="dpr-drawer-summary" id="dprDispatchBindingSummary">—</div>
+        <div class="dpr-dispatch-current-card">
+          <span>当前状态</span>
+          <b>数据已进入数据湖，但尚未命中处理任务</b>
+          <small id="dprDispatchBindingSource">—</small>
+        </div>
+        <div class="fg"><label>优先级</label>
+          <select id="dprDispatchBindingPriority">
+            <option>P1</option><option>P0</option><option>P2</option>
+          </select>
+        </div>
+        <div class="fg dpr-dispatch-task-picker"><label class="fg-req">处理任务</label>
+          <select id="dprDispatchProcessingTask"
+            onchange="dprRenderDispatchBindingFlows()">
+            <option value="" selected disabled>请选择处理任务</option>
+            <option value="PROC-2026-0941">PROC-2026-0941 · 宁德采集数据处理</option>
+            <option value="PROC-2026-0942">PROC-2026-0942 · 预训练数据质检</option>
+            <option value="PROC-2026-0943">PROC-2026-0943 · Demo 数据处理</option>
+          </select>
+        </div>
+        <div class="dpr-task-config-block dpr-dispatch-binding-flows">
+          <div class="dpr-task-config-head">
+            <div><b>处理流程</b><span>由所选处理任务自动带出，不支持在此修改。</span></div>
+          </div>
+          <div class="dpr-task-config-cols dpr-flow-cols">
+            <span>业务环节</span><span>处理流程</span><span>版本</span><span>规则</span>
+          </div>
+          <div id="dprDispatchBindingFlows"></div>
+        </div>
+        <div class="dpr-inline-notice success">
+          确认后，本批数据将从所选处理任务的第一个匹配流程开始处理。
+        </div>
+      </div>
+      <div class="drawer-foot">
+        <button type="button" class="btn" onclick="closeDrawer()">取消</button>
+        <button type="button" class="btn btn-primary"
+          onclick="dprSubmitDispatchBinding()">确认绑定处理任务</button>
+      </div>
+    </div>
+
+    <div class="drawer dpr-dispatch-reprocess-drawer" id="drawerDispatchReprocess">
+      <div class="drawer-head">
+        <h3>发起数据再处理</h3>
+        <span class="dismiss" onclick="closeDrawer()">&times;</span>
+      </div>
+      <div class="drawer-body">
+        <div class="dpr-dispatch-steps">
+          <span class="active" data-dispatch-step-indicator="1"><b>1</b>筛选数据</span>
+          <i></i>
+          <span data-dispatch-step-indicator="2"><b>2</b>配置处理任务</span>
+        </div>
+        <div class="dpr-dispatch-step active" data-dispatch-step="1">
+          <div class="dpr-dispatch-filter-grid">
+            <div class="ff"><label>recording_id</label>
+              <input id="dprDispatchReprocessRecording" placeholder="请输入 recording_id"></div>
+            <div class="ff"><label>数据来源</label>
+              <select id="dprDispatchReprocessSource"><option value="">全部来源</option>
+                <option>采集</option><option>导入</option></select></div>
+            <div class="ff"><label>来源任务 ID</label>
+              <input id="dprDispatchReprocessTask" placeholder="请输入任务 ID"></div>
+            <div class="ff"><label>质检结论</label>
+              <select id="dprDispatchReprocessQuality"><option value="">全部结论</option>
+                <option>合格</option><option>不合格</option><option>操作失误</option></select></div>
+            <div class="ff"><label>标注状态</label>
+              <select id="dprDispatchReprocessAnnotation"><option value="">全部状态</option>
+                <option>未标注</option><option>已标注</option></select></div>
+            <div class="ff"><label>已有处理流程</label>
+              <select id="dprDispatchReprocessFlow"><option value="">全部流程</option>
+                <option>厨房数据质检流程 v3</option>
+                <option>家居动作标注流程 v2</option>
+                <option>三方数据导入质检流程 v4</option></select></div>
+          </div>
+          <div class="dpr-dispatch-filter-actions">
+            <button type="button" class="btn btn-tertiary"
+              onclick="dprResetDispatchReprocess()">重置</button>
+            <button type="button" class="btn btn-primary"
+              onclick="dprCalculateDispatchReprocess()">查询</button>
+          </div>
+          <div class="dpr-dispatch-match">
+            <span>符合条件的数据</span>
+            <b><em id="dprDispatchReprocessCount">4,218</em> 条</b>
+            <small>请确认数据范围后继续</small>
+          </div>
+          <div class="dpr-dispatch-preview-title">命中数据概览</div>
+          __REPROCESS_PREVIEW__
+        </div>
+        <div class="dpr-dispatch-step" data-dispatch-step="2">
+          <div class="dpr-drawer-summary">
+            将为 <b id="dprDispatchReprocessConfirmCount">4,218</b> 条数据创建新的处理任务
+          </div>
+          <div class="fg"><label class="fg-req">任务名称</label>
+            <input id="dprDispatchReprocessName" placeholder="请输入再处理任务名称"></div>
+          <div class="fg"><label class="fg-req">处理流程</label>
+            <select><option>训练数据专项质检流程 v1</option>
+              <option>家居动作精标流程 v3</option>
+              <option>评测数据复核流程 v2</option></select></div>
+          <div class="fg"><label>优先级</label>
+            <select><option>P1</option><option>P0</option><option>P2</option></select></div>
+          <div class="fg"><label class="fg-req">原流程</label>
+            <select id="dprDispatchOriginalFlow"><option>继续</option><option>终止</option></select></div>
+          <div class="dpr-inline-notice success">
+            新流程独立生成处理记录；原流程是否继续由上方配置决定。
+          </div>
+        </div>
+      </div>
+      <div class="drawer-foot">
+        <button type="button" class="btn" onclick="closeDrawer()">取消</button>
+        <button type="button" class="btn" id="dprDispatchReprocessBack"
+          style="display:none" onclick="dprShowDispatchReprocessStep(1)">上一步</button>
+        <button type="button" class="btn btn-primary" id="dprDispatchReprocessNext"
+          onclick="dprShowDispatchReprocessStep(2)">下一步</button>
+        <button type="button" class="btn btn-primary" id="dprDispatchReprocessSubmit"
+          style="display:none" onclick="dprSubmitDispatchReprocess()">确认发起</button>
+      </div>
+    </div>
+
+    <script>
+    var dprDispatchProjectStages = __PROJECT_STAGE_DATA__;
+    var dprDispatchReprocessCounts = __REPROCESS_COUNTS__;
+    var dprDispatchIssueType = 'all';
+    var dprDispatchStage = '';
+    var dprDispatchResourceBacklog = 0;
+    var dprDispatchResourceStage = '';
+    var dprDispatchResourceNode = '';
+    var dprDispatchAssignmentOptions = {
+      '质检': {
+        groups: ['质检复核用户组'],
+        users: ['包媛桐', '光轮-QC-021']
+      },
+      '标注': {
+        groups: ['标注员用户组', '标注抽验员用户组'],
+        users: ['供应商 A-017', '供应商 A-026', '抽验员-008', '抽验员-015']
+      },
+      '验收': {
+        groups: ['内部验收用户组'],
+        users: ['joanna.qiao', 'Wei Zhang']
+      }
+    };
+    var dprDispatchProcessingTaskConfigs = {
+      'PROC-2026-0941': [
+        ['质检', '多级质检复核流程', 'v3', '通用质检规则 v3'],
+        ['标注', '端到端切分标注流程', 'v2', '通用动作标注规则 v3'],
+        ['验收', '数据验收流程', 'v1', '—']
+      ],
+      'PROC-2026-0942': [
+        ['质检', '标准训练数据自动质检流程', 'v1', '自动化质检规则 v2'],
+        ['标注', '双轮人工标注流程', 'v2', '通用动作标注规则 v3'],
+        ['验收', '数据验收流程', 'v1', '—']
+      ],
+      'PROC-2026-0943': [
+        ['质检', 'DAgger 数据自动质检流程', 'v1', 'DAgger 质检规则 v1'],
+        ['标注', '端到端切分标注流程', 'v2', '端到端切分标注规则 v2'],
+        ['验收', '数据验收流程', 'v1', '—']
+      ]
+    };
+
+    function dprDispatchProject() {
+      return document.getElementById('dprDispatchProjectScope').value;
+    }
+    function dprSetDispatchIssueType(button) {
+      document.querySelectorAll('.dpr-dispatch-type-button').forEach(function(item) {
+        item.classList.toggle('active', item === button);
+      });
+      dprDispatchIssueType = button.dataset.issueType;
+      dprFilterDispatchIssues();
+    }
+    function dprSelectDispatchStage(card) {
+      var next = card.classList.contains('active') ? '' : card.dataset.dispatchStage;
+      dprDispatchStage = next;
+      document.querySelectorAll('.dpr-dispatch-stage-card').forEach(function(item) {
+        item.classList.toggle('active', item.dataset.dispatchStage === next);
+      });
+      dprFilterDispatchIssues();
+    }
+    function dprUpdateDispatchStageCards() {
+      var summary = dprDispatchProjectStages[dprDispatchProject()] || [];
+      summary.forEach(function(stage) {
+        var card = document.querySelector(
+          '.dpr-dispatch-stage-card[data-dispatch-stage="' + stage.stage + '"]'
+        );
+        if(!card) return;
+        var total = stage.total || 1;
+        card.querySelector('[data-stage-pending]').childNodes[0].nodeValue =
+          (stage.unassigned + stage.assigned_waiting).toLocaleString();
+        ['unassigned','assigned_waiting','processing','completed'].forEach(function(key) {
+          card.querySelector('[data-stage-value="' + key + '"]').textContent =
+            stage[key].toLocaleString();
+          card.querySelector('[data-dispatch-segment="' + key + '"]').style.width =
+            (stage[key] / total * 100) + '%';
+        });
+      });
+    }
+    function dprFilterDispatchIssues() {
+      var project = dprDispatchProject();
+      var query = document.getElementById('dprDispatchTaskQuery').value.trim().toLowerCase();
+      var capacityItems = 0;
+      var capacityData = 0;
+      var unboundItems = 0;
+      var unboundData = 0;
+      var longest = 0;
+      var visible = 0;
+      var childRows = Array.from(document.querySelectorAll(
+        '#dpr-dispatch-issue-table tbody tr[data-dispatch-role="child"]'
+      ));
+      document.querySelectorAll(
+        '#dpr-dispatch-issue-table tbody tr[data-dispatch-role="parent"]'
+      ).forEach(function(row) {
+        var stages = (row.dataset.dispatchStages || '').split('|');
+        var matches = (project === '全部项目' || row.dataset.dispatchProject === project)
+          && (dprDispatchIssueType === 'all' || dprDispatchIssueType === 'capacity')
+          && (!dprDispatchStage || stages.indexOf(dprDispatchStage) >= 0)
+          && (!query || row.dataset.dispatchTask.toLowerCase().indexOf(query) >= 0);
+        row.style.display = matches ? '' : 'none';
+        var matchingChildren = childRows.filter(function(child) {
+          return child.dataset.dispatchParent === row.dataset.dispatchGroup
+            && (!dprDispatchStage || child.dataset.dispatchStage === dprDispatchStage);
+        });
+        matchingChildren.forEach(function(child) {
+          child.style.display = matches && row.dataset.dispatchExpanded === 'true'
+            ? '' : 'none';
+        });
+        childRows.filter(function(child) {
+          return child.dataset.dispatchParent === row.dataset.dispatchGroup
+            && matchingChildren.indexOf(child) < 0;
+        }).forEach(function(child) {
+          child.style.display = 'none';
+        });
+        if(!matches) return;
+        visible += 1;
+        capacityItems += 1;
+        if(dprDispatchStage) {
+          matchingChildren.forEach(function(child) {
+            capacityData += Number(child.dataset.dispatchCount || 0);
+            longest = Math.max(longest, Number(child.dataset.dispatchAge || 0));
+          });
+        } else {
+          capacityData += Number(row.dataset.dispatchCount || 0);
+          longest = Math.max(longest, Number(row.dataset.dispatchAge || 0));
+        }
+      });
+      document.querySelectorAll(
+        '#dpr-dispatch-issue-table tbody tr[data-dispatch-role="standalone"]'
+      ).forEach(function(row) {
+        var matches = (project === '全部项目' || row.dataset.dispatchProject === project)
+          && (dprDispatchIssueType === 'all' || dprDispatchIssueType === 'unbound')
+          && !dprDispatchStage
+          && (!query || row.dataset.dispatchTask.toLowerCase().indexOf(query) >= 0);
+        row.style.display = matches ? '' : 'none';
+        if(!matches) return;
+        visible += 1;
+        unboundItems += 1;
+        unboundData += Number(row.dataset.dispatchCount || 0);
+        longest = Math.max(longest, Number(row.dataset.dispatchAge || 0));
+      });
+      document.getElementById('dprDispatchCapacityItems').textContent = capacityItems;
+      document.getElementById('dprDispatchCapacityData').textContent =
+        capacityData.toLocaleString();
+      document.getElementById('dprDispatchUnboundItems').textContent = unboundItems;
+      document.getElementById('dprDispatchUnboundData').textContent =
+        unboundData.toLocaleString();
+      document.getElementById('dprDispatchLongest').textContent = longest;
+      document.getElementById('dprDispatchVisibleCount').textContent = visible;
+      document.getElementById('dprDispatchEmpty').style.display = visible ? 'none' : 'block';
+    }
+    function dprToggleDispatchTask(button) {
+      var row = button.closest('tr[data-dispatch-role="parent"]');
+      if(!row) return;
+      var expanded = row.dataset.dispatchExpanded !== 'true';
+      row.dataset.dispatchExpanded = expanded ? 'true' : 'false';
+      row.classList.toggle('expanded', expanded);
+      var toggle = row.querySelector('.dpr-dispatch-expand-button');
+      if(toggle) toggle.textContent = expanded ? '收起' : '展开';
+      dprFilterDispatchIssues();
+    }
+    function dprResetDispatchFilters() {
+      document.getElementById('dprDispatchTaskQuery').value = '';
+      dprDispatchIssueType = 'all';
+      dprDispatchStage = '';
+      document.querySelectorAll('.dpr-dispatch-type-button').forEach(function(item) {
+        item.classList.toggle('active', item.dataset.issueType === 'all');
+      });
+      document.querySelectorAll('.dpr-dispatch-stage-card').forEach(function(item) {
+        item.classList.remove('active');
+      });
+      dprFilterDispatchIssues();
+    }
+    function dprRefreshDispatchPage() {
+      dprDispatchStage = '';
+      document.querySelectorAll('.dpr-dispatch-stage-card').forEach(function(item) {
+        item.classList.remove('active');
+      });
+      dprUpdateDispatchStageCards();
+      dprFilterDispatchIssues();
+    }
+    function dprOpenDispatchSources(button) {
+      var sources = (button.dataset.sources || '').split('|').filter(Boolean);
+      document.getElementById('dprDispatchSourceList').innerHTML =
+        sources.map(function(taskId) {
+          var type = taskId.indexOf('IMP-') === 0 ? '数据导入任务' : '采集任务';
+          return '<div><span>' + type + '</span><code>' + taskId + '</code></div>';
+        }).join('');
+      openDrawer('drawerDispatchSources');
+    }
+    function dprDispatchTargetOptions(selected) {
+      var options = dprDispatchAssignmentOptions[dprDispatchResourceStage] || {
+        groups: [], users: []
+      };
+      return options.groups.map(function(name) {
+        return '<option' + (name === selected ? ' selected' : '') + '>' +
+          name + '</option>';
+      }).join('');
+    }
+    function dprDispatchAssignmentRow(target, count) {
+      return '<div class="dpr-task-config-row dpr-dispatch-assignment-row">' +
+        '<select class="dpr-dispatch-assignment-type" disabled ' +
+          'title="本期仅支持分配到用户组">' +
+          '<option value="group" selected>用户组</option>' +
+        '</select>' +
+        '<select class="dpr-dispatch-assignment-target">' +
+          dprDispatchTargetOptions(target) + '</select>' +
+        '<input class="dpr-dispatch-assignment-count" type="number" min="1" ' +
+          'max="' + dprDispatchResourceBacklog + '" step="1" value="' +
+          (count || '') + '" placeholder="请输入条数" ' +
+          'oninput="dprUpdateDispatchAssignmentTotal()">' +
+        '<button type="button" class="dpr-task-config-remove" ' +
+          'onclick="dprRemoveDispatchAssignment(this)">&times;</button></div>';
+    }
+    function dprAddDispatchAssignment(target, count) {
+      document.getElementById('dprDispatchAssignmentRows').insertAdjacentHTML(
+        'beforeend', dprDispatchAssignmentRow(target || '', count || '')
+      );
+      dprUpdateDispatchAssignmentTotal();
+    }
+    function dprRemoveDispatchAssignment(button) {
+      var holder = document.getElementById('dprDispatchAssignmentRows');
+      if(holder.children.length <= 1) {
+        toast('至少保留一组分配');
+        return;
+      }
+      button.closest('.dpr-dispatch-assignment-row').remove();
+      dprUpdateDispatchAssignmentTotal();
+    }
+    function dprUpdateDispatchAssignmentTotal() {
+      var total = 0;
+      document.querySelectorAll('.dpr-dispatch-assignment-count')
+        .forEach(function(input) {
+          var count = Number(input.value || 0);
+          if(Number.isFinite(count) && count > 0) total += count;
+        });
+      var summary = document.getElementById('dprDispatchAssignmentTotal');
+      summary.textContent = total.toLocaleString() + ' / ' +
+        dprDispatchResourceBacklog.toLocaleString() + ' 条';
+      summary.classList.toggle('over', total > dprDispatchResourceBacklog);
+    }
+    function dprRenderDispatchBindingFlows() {
+      var taskId = document.getElementById('dprDispatchProcessingTask').value;
+      var bindings = dprDispatchProcessingTaskConfigs[taskId] || [];
+      if(!bindings.length) {
+        document.getElementById('dprDispatchBindingFlows').innerHTML =
+          '<div class="dpr-task-config-empty">请先选择处理任务</div>';
+        return;
+      }
+      document.getElementById('dprDispatchBindingFlows').innerHTML =
+        bindings.map(function(item) {
+          return '<div class="dpr-task-config-row dpr-flow-row ' +
+            'dpr-dispatch-flow-readonly">' +
+            '<b class="dpr-flow-stage-fixed">' + item[0] + '</b>' +
+            '<span class="dpr-dispatch-flow-name">' + item[1] + '</span>' +
+            '<code class="dpr-flow-version">' + item[2] + '</code>' +
+            '<span class="dpr-dispatch-flow-rule">' + item[3] + '</span>' +
+            '</div>';
+        }).join('');
+    }
+    function dprOpenDispatchResource(button) {
+      dprDispatchResourceBacklog = Number(button.dataset.backlog || 0);
+      dprDispatchResourceStage = button.dataset.stage;
+      dprDispatchResourceNode = button.dataset.node;
+      document.getElementById('dprDispatchResourceSummary').innerHTML =
+        '<b>' + button.dataset.processingTask + '</b> · ' +
+        button.dataset.node + '节点积压 <b>' +
+        dprDispatchResourceBacklog.toLocaleString() + '</b> 条';
+      document.getElementById('dprDispatchCurrentFlow').textContent = button.dataset.workflow;
+      document.getElementById('dprDispatchCurrentInput').textContent =
+        button.dataset.inputRate + ' 条/小时';
+      document.getElementById('dprDispatchCurrentThroughput').textContent =
+        button.dataset.throughput + ' 条/小时';
+      document.getElementById('dprDispatchCurrentBacklog').textContent =
+        dprDispatchResourceBacklog.toLocaleString() + ' 条';
+      document.getElementById('dprDispatchAssignmentRows').innerHTML = '';
+      dprAddDispatchAssignment('', '');
+      openDrawer('drawerDispatchResource');
+    }
+    function dprSubmitDispatchResource() {
+      var rows = Array.from(document.querySelectorAll(
+        '#dprDispatchAssignmentRows .dpr-dispatch-assignment-row'
+      ));
+      var assignments = [];
+      var targets = {};
+      var total = 0;
+      for(var index = 0; index < rows.length; index += 1) {
+        var row = rows[index];
+        var target = row.querySelector('.dpr-dispatch-assignment-target').value;
+        var input = row.querySelector('.dpr-dispatch-assignment-count');
+        var value = input.value.trim();
+        var count = Number(value);
+        if(!value || !Number.isInteger(count) || count < 1) {
+          toast('第 ' + (index + 1) + ' 组请输入大于 0 的整数条数');
+          input.focus();
+          return;
+        }
+        if(!target) {
+          toast('第 ' + (index + 1) + ' 组请选择分配对象');
+          return;
+        }
+        if(targets[target]) {
+          toast('同一分配对象不能重复添加');
+          return;
+        }
+        targets[target] = true;
+        total += count;
+        assignments.push({target: target, count: count});
+      }
+      if(total > dprDispatchResourceBacklog) {
+        toast('分配合计不能超过当前积压数量 ' +
+          dprDispatchResourceBacklog.toLocaleString() + ' 条');
+        return;
+      }
+      toast('Demo: 已将 ' + total.toLocaleString() + ' 条' +
+        dprDispatchResourceNode + '节点的存量积压分配给 ' +
+        assignments.length + ' 个对象，增量分配规则保持不变');
+      closeDrawer();
+    }
+    function dprOpenDispatchBinding(button) {
+      document.getElementById('dprDispatchBindingSummary').innerHTML =
+        '<b>' + button.dataset.sourceTask + '</b> · 待处理 <b>' +
+        Number(button.dataset.count).toLocaleString() + '</b> 条';
+      document.getElementById('dprDispatchBindingSource').textContent =
+        button.dataset.source + '数据 · ' + button.dataset.poolId;
+      document.getElementById('dprDispatchProcessingTask').value = '';
+      document.getElementById('dprDispatchBindingPriority').value = 'P1';
+      dprRenderDispatchBindingFlows();
+      openDrawer('drawerDispatchBinding');
+    }
+    function dprSubmitDispatchBinding() {
+      if(!document.getElementById('dprDispatchProcessingTask').value) {
+        toast('请选择处理任务');
+        document.getElementById('dprDispatchProcessingTask').focus();
+        return;
+      }
+      toast('Demo: 数据已绑定处理任务并开始进入处理链路');
+      closeDrawer();
+    }
+    function dprOpenDispatchReprocess() {
+      dprResetDispatchReprocess();
+      dprShowDispatchReprocessStep(1);
+      openDrawer('drawerDispatchReprocess');
+    }
+    function dprCalculateDispatchReprocess() {
+      var count = dprDispatchReprocessCounts[dprDispatchProject()] || 0;
+      var factors = [
+        ['dprDispatchReprocessSource', .72],
+        ['dprDispatchReprocessQuality', .31],
+        ['dprDispatchReprocessAnnotation', .58],
+        ['dprDispatchReprocessFlow', .46]
+      ];
+      factors.forEach(function(item) {
+        if(document.getElementById(item[0]).value) count = Math.floor(count * item[1]);
+      });
+      if(document.getElementById('dprDispatchReprocessTask').value.trim()) {
+        count = Math.min(count, 842);
+      }
+      if(document.getElementById('dprDispatchReprocessRecording').value.trim()) count = 1;
+      document.getElementById('dprDispatchReprocessCount').textContent =
+        count.toLocaleString();
+      document.getElementById('dprDispatchReprocessConfirmCount').textContent =
+        count.toLocaleString();
+      document.querySelectorAll('#dpr-dispatch-reprocess-preview tbody tr')
+        .forEach(function(row) {
+          row.style.display = dprDispatchProject() === '全部项目' ||
+            row.dataset.project === dprDispatchProject() ? '' : 'none';
+        });
+    }
+    function dprResetDispatchReprocess() {
+      ['dprDispatchReprocessSource','dprDispatchReprocessQuality',
+       'dprDispatchReprocessAnnotation','dprDispatchReprocessFlow']
+        .forEach(function(id) { document.getElementById(id).selectedIndex = 0; });
+      document.getElementById('dprDispatchReprocessTask').value = '';
+      document.getElementById('dprDispatchReprocessRecording').value = '';
+      dprCalculateDispatchReprocess();
+    }
+    function dprShowDispatchReprocessStep(step) {
+      document.querySelectorAll('[data-dispatch-step]').forEach(function(item) {
+        item.classList.toggle('active', item.dataset.dispatchStep === String(step));
+      });
+      document.querySelectorAll('[data-dispatch-step-indicator]').forEach(function(item) {
+        item.classList.toggle('active',
+          Number(item.dataset.dispatchStepIndicator) <= step);
+      });
+      document.getElementById('dprDispatchReprocessBack').style.display =
+        step === 2 ? '' : 'none';
+      document.getElementById('dprDispatchReprocessNext').style.display =
+        step === 1 ? '' : 'none';
+      document.getElementById('dprDispatchReprocessSubmit').style.display =
+        step === 2 ? '' : 'none';
+    }
+    function dprSubmitDispatchReprocess() {
+      if(!document.getElementById('dprDispatchReprocessName').value.trim()) {
+        toast('请输入任务名称');
+        return;
+      }
+      var original = document.getElementById('dprDispatchOriginalFlow').value;
+      toast(original === '继续'
+        ? 'Demo: 已创建新的处理任务，原流程继续'
+        : 'Demo: 已创建新的处理任务，原流程终止');
+      closeDrawer();
+    }
+    dprRenderDispatchBindingFlows();
+    dprRefreshDispatchPage();
+    </script>
+    """
+    drawers_and_script = (
+        drawers_and_script
+        .replace("__PROJECT_STAGE_DATA__", project_summary_json)
+        .replace("__REPROCESS_COUNTS__", reprocess_counts_json)
+        .replace("__REPROCESS_PREVIEW__", reprocess_preview)
+    )
+
+    return (
+        _intro(
+            "分配管理",
+            "先查看质检、标注和验收的处理情况，再处理吞吐不足或尚未进入处理链路的数据。",
+            "",
+            project_switcher,
+        )
+        + """
+        <section class="dpr-section dpr-dispatch-overview">
+          <div class="dpr-section-head">
+            <div><h2>处理概览</h2>
+              <p>点击业务环节，可以筛选下方与该环节相关的待处理事项。</p></div>
+          </div>
+          <div class="dpr-dispatch-stage-grid">
+            __STAGE_CARDS__
+          </div>
+        </section>
+        <div class="dpr-dispatch-alerts">
+          <button type="button" class="dpr-dispatch-alert"
+            onclick="dprSetDispatchIssueType(document.querySelector('[data-issue-type=capacity]'))">
+            <span>处理吞吐不足</span>
+            <b><em id="dprDispatchCapacityItems">3</em> 项</b>
+            <small>影响 <strong id="dprDispatchCapacityData">508</strong> 条数据</small>
+          </button>
+          <button type="button" class="dpr-dispatch-alert"
+            onclick="dprSetDispatchIssueType(document.querySelector('[data-issue-type=unbound]'))">
+            <span>未进入处理</span>
+            <b><em id="dprDispatchUnboundItems">3</em> 个批次</b>
+            <small>待处理 <strong id="dprDispatchUnboundData">1,484</strong> 条数据</small>
+          </button>
+          <div class="dpr-dispatch-alert risk">
+            <span>最长滞留</span>
+            <b><em id="dprDispatchLongest">31</em> 小时</b>
+            <small>建议优先处理 P0 事项</small>
+          </div>
+        </div>
+        """
+        .replace("__STAGE_CARDS__", stage_cards)
+        + _section(
+            "待处理事项",
+            """
+            <div class="dpr-dispatch-toolbar">
+              <div class="dpr-dispatch-type-switch" role="tablist">
+                <button type="button" class="dpr-dispatch-type-button active"
+                  data-issue-type="all" onclick="dprSetDispatchIssueType(this)">全部问题</button>
+                <button type="button" class="dpr-dispatch-type-button"
+                  data-issue-type="capacity" onclick="dprSetDispatchIssueType(this)">吞吐不足</button>
+                <button type="button" class="dpr-dispatch-type-button"
+                  data-issue-type="unbound" onclick="dprSetDispatchIssueType(this)">未进入处理</button>
+              </div>
+              <div class="dpr-dispatch-search">
+                <input id="dprDispatchTaskQuery" placeholder="搜索采集/处理任务 ID">
+                <button type="button" class="btn btn-tertiary"
+                  onclick="dprResetDispatchFilters()">重置</button>
+                <button type="button" class="btn btn-primary"
+                  onclick="dprFilterDispatchIssues()">查询</button>
+              </div>
+            </div>
+            """
+            + issue_table
+            + """
+            <div class="dpr-dispatch-empty" id="dprDispatchEmpty">当前条件下没有待处理事项</div>
+            <div class="dpr-dispatch-table-summary">
+              当前显示 <b id="dprDispatchVisibleCount">6</b> 个待处理事项
+            </div>
+            """,
+            "统一展示需要人工决策的问题；数据再处理请使用页面右上角入口。",
+        )
+        + drawers_and_script
+    )
+
+
 def render_task_detail(task_id):
     task = next((item for item in BUSINESS_TASKS if item["id"] == task_id), None)
     if not task or task["type"] == "data_import_task":
@@ -3564,7 +5198,7 @@ def render_task_detail(task_id):
     back_label = "采集任务" if task["type"] == "data_collection_task" else "处理任务"
     is_collection_task = task["type"] == "data_collection_task"
     rows = ""
-    for record in records:
+    for record_index, record in enumerate(records):
         if is_collection_task:
             managed_record = next(
                 (
@@ -3590,6 +5224,24 @@ def render_task_detail(task_id):
             </tr>
             """
         else:
+            flow_bindings = task.get("flow_bindings", [])
+            binding = flow_bindings[record_index % len(flow_bindings)] if flow_bindings else (
+                "—",
+                "未绑定流程",
+                "—",
+            )
+            stage, flow_name, flow_version = binding
+            node_by_stage = {
+                "质检": "供应商复核",
+                "标注": "动作分段标注",
+                "验收": "内部验收",
+            }
+            group_by_stage = {
+                "质检": "质检复核用户组",
+                "标注": "标注员用户组",
+                "验收": "内部验收用户组",
+            }
+            instance_state = ("处理中", "等待领取", "已完成", "已驳回")[record_index % 4]
             rows += f"""
         <tr>
           <td><code>{_e(record["id"])}</code></td>
@@ -3598,14 +5250,15 @@ def render_task_detail(task_id):
               <span class="vid-thumb"></span><span class="vid-thumb"></span><span class="vid-thumb"></span>
             </div>
           </td>
-          <td>{_record_tag(record["node"])}</td>
-          <td>{_record_tag(record["quality"])}</td>
-          <td>{_record_tag(record["annotation"])}</td>
-          <td>{_record_tag(record["acceptance"])}</td>
-          <td><span class="dpr-record-operator">{_e(record["operators"])}</span></td>
+          <td><b>{_e(flow_name)}</b><br><code>run-{_e(task["id"].lower())}-{record_index + 1:03d}</code></td>
+          <td><code>{_e(flow_version)}</code></td>
+          <td>{_record_tag(stage)}<br><small>{_e(node_by_stage.get(stage, record["node"]))}</small></td>
+          <td>{_record_tag(instance_state)}</td>
+          <td><b>{_e(group_by_stage.get(stage, "—"))}</b><br>
+            <span class="dpr-record-operator">{_e(record["operators"])}</span></td>
           <td class="dpr-record-actions">
-            <a href="#" onclick="toast('Demo: 查看轨迹');return false;">轨迹</a>
-            <a href="#" onclick="toast('Demo: 查看更多');return false;">⋯ 更多</a>
+            <a href="/data/recordings/{_e(record["id"])}">数据详情</a>
+            <a href="/data/runs?task={_e(task["id"])}&amp;recording={_e(record["id"])}">执行记录</a>
           </td>
         </tr>
         """
@@ -3622,15 +5275,16 @@ def render_task_detail(task_id):
         )
         empty_colspan = 6
     else:
-        summary = " · ".join(
-            f'{stage["label"]} <b>{stage["done"]:,}</b> / {stage["total"]:,} 条'
-            for stage in task["stage_progress"]
+        summary = (
+            f'命中 <b>{task.get("input_count", 0):,}</b> 条 · '
+            f'已完成 <b>{task.get("processed_count", 0):,}</b> 条 · '
+            f'待处理 <b>{task.get("backlog_count", 0):,}</b> 条'
         )
         table_class = "ant-table dpr-record-table"
         table_head = (
-            "<th>recording_id</th><th>视频</th><th>处理环节</th>"
-            "<th>质检结论</th><th>标注状态</th>"
-            "<th>验收状态</th><th>操作人</th><th>操作</th>"
+            "<th>recording_id</th><th>视频</th><th>流程实例</th>"
+            "<th>流程版本</th><th>当前节点</th><th>实例状态</th>"
+            "<th>任务池 / 当前处理人</th><th>操作</th>"
         )
         empty_colspan = 8
 
@@ -3680,23 +5334,34 @@ def render_data_management():
         rows = ""
         for record in records:
             row_id = f'process-tree-{record["id"]}'
-            flow_rows = "".join(
-                f"""
+            flow_rows = ""
+            for flow_index, flow in enumerate(record["flows"]):
+                flow_parts = flow["name"].rsplit(" ", 1)
+                flow_name = flow_parts[0]
+                flow_version = flow_parts[1] if len(flow_parts) > 1 else "v1"
+                processing_task_id = (
+                    "PROC-2026-0921"
+                    if flow_index == 0
+                    else "PROC-2026-0922"
+                )
+                instance_state = "已完成" if flow["annotation"] == "已标注" else "处理中"
+                flow_rows += f"""
                 <tr>
-                  <td><b>{_e(flow["name"])}</b></td>
+                  <td><code>{_e(processing_task_id)}</code></td>
+                  <td><a href="/data/runs?task={_e(processing_task_id)}&amp;recording={_e(record["id"])}"><b>{_e(flow_name)}</b></a><br><code>run-{_e(record["id"])}-{flow_index + 1}</code></td>
+                  <td><code>{_e(flow_version)}</code></td>
                   <td>{_record_tag(flow["node"])}</td>
+                  <td>{_record_tag(instance_state)}</td>
                   <td>{_record_tag(flow["quality"])}</td>
-                  <td>{_record_tag(flow["annotation"])}</td>
+                  <td>{_record_tag("是" if flow["annotation"] == "已标注" else "否")}</td>
                 </tr>
                 """
-                for flow in record["flows"]
-            )
             rows += f"""
             <tr class="dpr-record-main-row">
               <td>
                 <button type="button" class="dpr-tree-toggle" aria-expanded="false"
                   onclick="dprToggleProcessTree('{_e(row_id)}', this)">&#9656;</button>
-                <a href="/data/recordings/{_e(record["id"])}"><code>{_e(record["id"])}</code></a>
+                <code>{_e(record["id"])}</code>
               </td>
               <td>{_record_tag(DATA_SOURCE_LABELS[record["source_type"]])}</td>
               <td>
@@ -3706,13 +5371,15 @@ def render_data_management():
               </td>
               <td>{_record_tag(record["upload"])}</td>
               <td>{_record_tag(record["collection"])}</td>
-              <td>{_record_tag(record["quality"])}</td>
-              <td>{_record_tag(record["annotation"])}</td>
+              <td><b>{_e(record["operator"])}</b></td>
               <td>
                 <button type="button" class="dpr-flow-link"
                   onclick="dprToggleProcessTree('{_e(row_id)}', this)">
                   {len(record["flows"])} 条 · {_e(record["flows"][0]["name"])}
                 </button>
+              </td>
+              <td class="dpr-record-actions">
+                <a href="/data/workbench/edit?mode=detail&amp;task=WB-2026-0922-AC&amp;recording_id={_e(record["id"])}&amp;source=data-management">查看详情</a>
               </td>
             </tr>
             <tr id="{_e(row_id)}" class="dpr-process-tree-row" style="display:none;">
@@ -3724,7 +5391,9 @@ def render_data_management():
                   </div>
                   <table>
                     <thead><tr>
-                      <th>流程名称</th><th>当前节点</th><th>质检结论</th><th>标注状态</th>
+                      <th>处理任务</th><th>处理流程</th><th>流程版本</th>
+                      <th>当前节点</th><th>处理状态</th>
+                      <th>质检结论</th><th>是否标注</th>
                     </tr></thead>
                     <tbody>{flow_rows}</tbody>
                   </table>
@@ -3735,10 +5404,7 @@ def render_data_management():
         filters = f"""
         <div class="fb-labeled dpr-record-filters">
           <div class="ff"><label>recording_id</label><input placeholder="请输入 recording_id"></div>
-          <div class="ff"><label>来源任务 ID</label><input placeholder="请输入来源任务 ID"></div>
-          <div class="ff"><label>数据来源</label><select><option>全部来源</option><option>采集</option><option>导入</option></select></div>
-          <div class="ff"><label>设备序列号</label><select><option>全部设备</option><option>UDAS-007</option><option>Vendor-MOZ2-03</option></select></div>
-          <div class="ff"><label>操作人</label><select><option>全部操作人</option><option>刘素粉</option><option>供应商 Batch-12</option></select></div>
+          <div class="ff"><label>流程 ID</label><input placeholder="请输入流程 ID"></div>
           <div class="filter-actions">
             <button class="btn btn-tertiary" onclick="resetFilters(this)">重置</button>
             <button class="btn btn-primary" onclick="queryFilters(this)">查询</button>
@@ -3754,7 +5420,7 @@ def render_data_management():
           <table class="ant-table dpr-management-record-table">
             <thead><tr>
               <th>recording_id</th><th>数据来源</th><th>视频</th><th>上传状态</th><th>采集结论</th>
-              <th>质检结论</th><th>标注状态</th><th>关联处理流程</th>
+              <th>采集人</th><th>处理流程</th><th>操作</th>
             </tr></thead>
             <tbody>{rows}</tbody>
           </table>
@@ -3872,6 +5538,12 @@ _RECORD_PREVIEW_SCRIPT = """
     var flowName = document.getElementById('dprProcessFlow').value;
     var flow = processData[flowName];
     if(!flow) return;
+    document.getElementById('dprProcessInstanceMeta').innerHTML =
+      '<span>处理任务 <code>' + esc(flow.processing_task) + '</code></span>'
+      + '<span>流程实例 <code>' + esc(flow.instance_id) + '</code></span>'
+      + '<span>流程版本 <b>' + esc(flow.flow_version) + '</b></span>'
+      + '<span>实例状态 <b>' + esc(flow.instance_state) + '</b></span>'
+      + '<span>当前节点 <b>' + esc(flow.node) + '</b></span>';
     var qualityVersion = document.getElementById('dprQualityRuleVersion').value;
     var annotationVersion = document.getElementById('dprAnnotationRuleVersion').value;
     var qualityRule = flow.quality_rules.find(function(item){
@@ -4082,6 +5754,18 @@ def render_record_detail(recording_id):
                 }
             )
         process_data[flow["name"]] = {
+            "processing_task": (
+                "PROC-2026-0921" if flow_index == 0 else "PROC-2026-0922"
+            ),
+            "instance_id": f"run-{recording_id}-{flow_index + 1}",
+            "flow_version": (
+                flow["name"].rsplit(" ", 1)[-1]
+                if " " in flow["name"]
+                else "v1"
+            ),
+            "instance_state": (
+                "已完成" if flow["annotation"] == "已标注" else "处理中"
+            ),
             "node": flow["node"],
             "quality_rules": quality_rule_items,
             "annotation_rules": annotation_rule_items,
@@ -4137,7 +5821,8 @@ def render_record_detail(recording_id):
       <div class="dpr-record-detail-meta">
         <span>设备序列号 <code>{_e(record["device"])}</code></span>
         <span>操作人 <b>{_e(record["operator"])}</b></span>
-        <span>关联流程 <b>{len(record["flows"])} 条</b></span>
+        <span>关联处理任务 <b>{len(record["flows"])} 个</b></span>
+        <span>流程实例 <b>{len(record["flows"])} 条</b></span>
       </div>
       <div class="dpr-preview-toolbar">
         <div class="dpr-preview-tabs" role="tablist">
@@ -4204,6 +5889,7 @@ def render_record_detail(recording_id):
 
       <div class="dpr-preview-pane" data-preview-pane="process" style="display:none;">
         <div class="dpr-preview-camera-row">{cameras}</div>
+        <div class="dpr-process-instance-meta" id="dprProcessInstanceMeta"></div>
         <div class="dpr-preview-seg-timeline">
           <div class="dpr-preview-seg-row">
             <span id="dprProcessSegmentCount"></span>
@@ -4306,38 +5992,283 @@ def render_pipeline_definitions():
 
 
 def render_pipeline_runs():
+    task_catalog = {
+        task["id"]: task
+        for task in BUSINESS_TASKS
+        if task["type"] == "data_processing_task"
+    }
+    flow_catalog = {
+        definition["published_version"]: definition
+        for definition in PIPELINE_DEFINITIONS
+    }
+    run_catalog = {
+        run["id"]: run
+        for run in PIPELINE_RUNS
+    }
+    human_task_by_node_run = {
+        task["node_run"]: task
+        for task in HUMAN_TASKS
+    }
     rows = []
+    row_attrs = []
     for run in PIPELINE_RUNS:
+        task = task_catalog.get(run["business_task"], {})
+        flow = flow_catalog.get(run["pipeline_version"], {})
+        recording_ids = run.get("recording_ids", [])
+        search_values = [
+            run["id"],
+            run["project"],
+            run["business_task"],
+            task.get("name", ""),
+            run["pipeline_version"],
+            flow.get("name", ""),
+            run["input_snapshot"],
+            *recording_ids,
+        ]
+        error = run.get("error")
+        state_detail = (
+            f'<br><small class="dpr-risk">{_e(error)}</small>'
+            if error
+            else f'<br><small>{_e(run["duration"])}</small>'
+        )
         rows.append(
             [
-                f'<code>{_e(run["id"])}</code><br><small>{_e(run["started"])}</small>',
-                f'<code>{_e(run["project"])}</code><br><code>{_e(run["business_task"])}</code>',
-                f'<code>{_e(run["pipeline_version"])}</code>',
-                f'<code>{_e(run["input_snapshot"])}</code>',
+                (
+                    f'<b>{_e(flow.get("name", "未识别流程"))}</b><br>'
+                    f'<code>{_e(run["pipeline_version"])}</code><br>'
+                    f'<small>{_e(run["id"])}</small>'
+                ),
+                (
+                    f'<a href="/data/tasks/{_e(run["business_task"])}">'
+                    f'<b>{_e(task.get("name", run["business_task"]))}</b></a><br>'
+                    f'<code>{_e(run["business_task"])}</code> · '
+                    f'<small>{_e(run["project"])}</small>'
+                ),
+                (
+                    f'<code>{_e(run["input_snapshot"])}</code><br>'
+                    f'<small>{_e(run.get("input_members", "—"))}</small>'
+                ),
                 f'<b>{_e(run["current_node"])}</b><br><span>{_e(run["node_progress"])}</span>',
-                f'<code>{_e(run["idempotency_key"])}</code>',
-                _state(run["status"]),
-                '<a href="/data/lineage">血缘</a> · <a href="#" onclick="toast(\'Demo: 查看 Node Run\');return false;">节点记录</a>',
+                (
+                    _state(run["status"])
+                    + state_detail
+                    + f'<br><small>{_e(run["started"])}</small>'
+                ),
+                (
+                    f'<button type="button" class="dpr-run-open" '
+                    f'onclick="dprOpenNodeRuns(\'{_e(run["id"])}\')">'
+                    f'查看节点</button>'
+                ),
             ]
         )
+        row_attrs.append(
+            f'class="dpr-execution-run-row" '
+            f'data-run-id="{_e(run["id"])}" '
+            f'data-run-task="{_e(run["business_task"])}" '
+            f'data-run-flow="{_e(run["pipeline_version"])}" '
+            f'data-run-status="{_e(run["status"])}" '
+            f'data-run-search="{_e(" ".join(search_values).lower())}"'
+        )
+
     node_rows = []
+    node_row_attrs = []
     for node_run in NODE_RUNS:
+        run = run_catalog.get(node_run["pipeline_run"], {})
+        flow = flow_catalog.get(run.get("pipeline_version"), {})
+        task = task_catalog.get(run.get("business_task"), {})
+        human_task = human_task_by_node_run.get(node_run["id"])
+        error = node_run.get("error")
+        action = (
+            '<a href="#" onclick="toast(\'Demo: 查看节点日志\');return false;">日志</a>'
+        )
+        if node_run["status"] == "failed":
+            action += (
+                ' · <a href="#" onclick="toast(\'Demo: 已基于原输入创建新的 Attempt\');'
+                'return false;">重试</a>'
+            )
         node_rows.append(
             [
-                f'<code>{_e(node_run["id"])}</code>',
-                f'<code>{_e(node_run["pipeline_run"])}</code>',
-                f'<b>{_e(node_run["node"])}</b><br><code>{_e(node_run["node_type"])}</code>',
-                f'<code>{_e(node_run["input_snapshot"])}</code>',
-                f'<code>{_e(node_run["executor_version"])}</code>',
-                str(node_run["attempt"]),
-                f'<code>{_e(node_run["output"])}</code>',
-                _state(node_run["status"]),
+                (
+                    f'<b>{_e(node_run["node"])}</b><br>'
+                    f'<code>{_e(node_run["executor_version"])}</code><br>'
+                    f'<small>{_e(node_run["id"])}</small>'
+                ),
+                (
+                    f'<b>{_e(flow.get("name", "未识别流程"))}</b><br>'
+                    f'<code>{_e(run.get("pipeline_version", "—"))}</code><br>'
+                    f'<small>{_e(node_run["pipeline_run"])}</small>'
+                ),
+                (
+                    f'<code>{_e(node_run["input_snapshot"])}</code>'
+                    f'<span class="dpr-io-arrow">→</span>'
+                    f'<code>{_e(node_run["output"])}</code>'
+                ),
+                f'Attempt {node_run["attempt"]}',
+                (
+                    _state(node_run["status"])
+                    + (f'<br><small class="dpr-risk">{_e(error)}</small>' if error else "")
+                ),
+                action,
             ]
         )
+        node_search_values = [
+            node_run["id"],
+            node_run["node"],
+            node_run["executor_version"],
+            node_run["pipeline_run"],
+            run.get("pipeline_version", ""),
+            run.get("business_task", ""),
+            task.get("name", ""),
+            node_run["input_snapshot"],
+            node_run["output"],
+            *(run.get("recording_ids") or []),
+        ]
+        if human_task:
+            node_search_values.extend(
+                [human_task["id"], human_task["assignee"]]
+            )
+        node_row_attrs.append(
+            f'data-node-parent="{_e(node_run["pipeline_run"])}" '
+            f'data-node-status="{_e(node_run["status"])}" '
+            f'data-node-search="{_e(" ".join(node_search_values).lower())}"'
+        )
+
+    filters = """
+    <div class="fb-labeled dpr-task-filters dpr-execution-filters">
+      <div class="ff"><label>版本 / 任务 / 运行 ID</label>
+        <input id="dprExecutionKeyword" placeholder="请输入关键词"></div>
+      <div class="ff"><label>运行状态</label>
+        <select id="dprExecutionStatus">
+          <option value="">全部状态</option>
+          <option value="running">运行中</option>
+          <option value="succeeded">已完成</option>
+          <option value="failed">失败</option>
+        </select>
+      </div>
+      <div class="filter-actions">
+        <button type="button" class="btn btn-tertiary" onclick="dprResetExecutionRuns()">重置</button>
+        <button type="button" class="btn btn-primary" onclick="dprFilterExecutionRuns()">查询</button>
+      </div>
+    </div>
+    """
+    run_table = _table(
+        [
+            "流程版本",
+            "处理任务 / 项目",
+            "输入数据",
+            "当前节点 / 进度",
+            "状态 / 时间",
+            "操作",
+        ],
+        rows,
+        table_id="dpr-execution-run-table",
+        row_attrs=row_attrs,
+    )
+    node_table = _table(
+        [
+            "节点版本",
+            "所属流程版本",
+            "输入 → 输出",
+            "执行次数",
+            "状态 / 异常",
+            "操作",
+        ],
+        node_rows,
+        table_id="dpr-node-run-table",
+        row_attrs=node_row_attrs,
+    )
+    script = f"""
+    <script>
+    var dprExecutionTab = 'flow';
+    function dprExecutionRunRows() {{
+      return Array.from(document.querySelectorAll('#dpr-execution-run-table tbody tr[data-run-id]'));
+    }}
+    function dprExecutionNodeRows() {{
+      return Array.from(document.querySelectorAll('#dpr-node-run-table tbody tr[data-node-parent]'));
+    }}
+    function dprSwitchExecutionTab(button, tabName) {{
+      dprExecutionTab = tabName;
+      document.querySelectorAll('[data-execution-tab]').forEach(function(item) {{
+        item.classList.toggle('active', item.dataset.executionTab === tabName);
+      }});
+      document.querySelectorAll('[data-execution-pane]').forEach(function(pane) {{
+        pane.style.display = pane.dataset.executionPane === tabName ? '' : 'none';
+      }});
+      dprFilterExecutionRuns();
+    }}
+    function dprFilterExecutionRuns() {{
+      var keyword = document.getElementById('dprExecutionKeyword').value.trim().toLowerCase();
+      var status = document.getElementById('dprExecutionStatus').value;
+      var visibleRuns = [];
+      dprExecutionRunRows().forEach(function(row) {{
+        var matched = (!keyword || row.dataset.runSearch.indexOf(keyword) >= 0)
+          && (!status || row.dataset.runStatus === status);
+        row.style.display = matched ? '' : 'none';
+        if (matched) visibleRuns.push(row);
+      }});
+      var visibleNodes = [];
+      dprExecutionNodeRows().forEach(function(row) {{
+        var matched = (!keyword || row.dataset.nodeSearch.indexOf(keyword) >= 0)
+          && (!status || row.dataset.nodeStatus === status);
+        row.style.display = matched ? '' : 'none';
+        if (matched) visibleNodes.push(row);
+      }});
+      var visible = dprExecutionTab === 'flow' ? visibleRuns.length : visibleNodes.length;
+      var result = document.getElementById('dprExecutionResultCount');
+      if (result) result.textContent = '当前展示 ' + visible + ' 条记录';
+    }}
+    function dprOpenNodeRuns(runId) {{
+      document.getElementById('dprExecutionKeyword').value = runId;
+      document.getElementById('dprExecutionStatus').value = '';
+      var nodeTab = document.querySelector('[data-execution-tab="node"]');
+      dprSwitchExecutionTab(nodeTab, 'node');
+    }}
+    function dprResetExecutionRuns() {{
+      document.getElementById('dprExecutionKeyword').value = '';
+      document.getElementById('dprExecutionStatus').value = '';
+      dprFilterExecutionRuns();
+    }}
+    document.addEventListener('DOMContentLoaded', function() {{
+      var params = new URLSearchParams(window.location.search);
+      var keyword = params.get('run') || params.get('recording') || params.get('task') || '';
+      var status = params.get('status') || '';
+      if (keyword) document.getElementById('dprExecutionKeyword').value = keyword;
+      if (status) document.getElementById('dprExecutionStatus').value = status;
+      dprFilterExecutionRuns();
+    }});
+    </script>
+    """
     return (
-        _intro("运行实例", "查看流程运行状态、当前节点与执行记录。", "", '<a class="btn btn-primary" href="#" onclick="toast(\'Demo: 发起运行\');return false;">发起运行</a>')
-        + _section("运行列表", _table(["运行 / 发起时间", "项目 / 业务任务", "流程版本", "输入快照", "当前节点", "幂等键", "状态", "操作"], rows))
-        + _section("节点执行记录", _table(["Node Run", "Pipeline Run", "节点 / 类型", "输入快照", "执行器版本", "Attempt", "结构化输出", "状态"], node_rows))
+        _intro(
+            "执行记录",
+            "查看流程与节点的执行状态、版本和异常信息。",
+            "",
+        )
+        + f"""
+        <div class="dpr-list-tab-card dpr-execution-tabbar">
+          <div class="dpr-task-tabs dpr-execution-tabs" role="tablist">
+            <button type="button" class="dpr-task-tab active"
+              data-execution-tab="flow"
+              onclick="dprSwitchExecutionTab(this,'flow')">
+              流程执行记录 <b>{len(PIPELINE_RUNS)}</b>
+            </button>
+            <button type="button" class="dpr-task-tab"
+              data-execution-tab="node"
+              onclick="dprSwitchExecutionTab(this,'node')">
+              节点执行记录 <b>{len(NODE_RUNS)}</b>
+            </button>
+          </div>
+          <span id="dprExecutionResultCount">当前展示 {len(PIPELINE_RUNS)} 条记录</span>
+        </div>
+        {filters}
+        <div class="dpr-execution-pane" data-execution-pane="flow">
+          {run_table}
+        </div>
+        <div class="dpr-execution-pane" data-execution-pane="node" style="display:none;">
+          {node_table}
+        </div>
+        """
+        + script
     )
 
 
@@ -4517,11 +6448,20 @@ def render_project_management():
     ]
     return (
         _intro("项目管理", "维护采集与处理任务所属项目。", "")
-        + _table(["项目名称", "项目描述", "负责人"], rows)
+        + _section(
+            "项目列表",
+            _table(["项目名称", "项目描述", "负责人"], rows),
+            "统一维护项目基础信息，供采集任务和处理任务选择。",
+            (
+                '<a class="btn btn-primary" href="#" '
+                'onclick="toast(\'Demo: 新建项目\');return false;">'
+                "+ 新建项目</a>"
+            ),
+        )
     )
 
 
-def render_workbench_management():
+def _render_workbench_management_legacy():
     workbench_rows = [
         [
             f'<code>{_e(schema["id"])}</code>',
@@ -4575,6 +6515,301 @@ def render_workbench_management():
     )
 
 
+def render_workbench_management():
+    schema_json = json.dumps(WORKBENCH_SCHEMAS, ensure_ascii=False).replace(
+        "</", "<\\/"
+    )
+    workbench_rows = []
+    for schema in WORKBENCH_SCHEMAS:
+        payload = json.dumps(schema["components"], ensure_ascii=False)
+        trigger_data = (
+            f'data-workbench-id="{_e(schema["id"])}" '
+            f'data-workbench-name="{_e(schema["name"])}" '
+            f'data-workbench-type="{_e(schema["type"])}" '
+            f'data-workbench-components="{_e(payload)}"'
+        )
+        workbench_rows.append(
+            [
+                f'<code>{_e(schema["id"])}</code>',
+                f'<b>{_e(schema["name"])}</b>',
+                _record_tag(schema["type"]),
+                str(len(schema["components"])),
+                _state(schema["status"]),
+                (
+                    f'<button class="dpr-link-button" {trigger_data} '
+                    f'onclick="dprOpenWorkbenchBuilder(\'preview\',this)">预览</button> · '
+                    f'<button class="dpr-link-button" {trigger_data} '
+                    f'onclick="dprOpenWorkbenchBuilder(\'edit\',this)">编辑</button>'
+                ),
+            ]
+        )
+
+    category_order = ["基础信息", "视频区", "工作区", "处理表单", "结论", "操作栏"]
+    component_controls = []
+    for category in category_order:
+        controls = []
+        for component_id, (name, description) in WORKBENCH_COMPONENTS.items():
+            meta = WORKBENCH_COMPONENT_META.get(component_id)
+            if not meta or meta[0] != category or meta[2] == "legacy":
+                continue
+            input_type = "radio" if meta[2] == "exclusive" else "checkbox"
+            required = meta[2] == "required"
+            input_name = f' name="wb-slot-{_e(meta[1])}"' if input_type == "radio" else ""
+            controls.append(
+                f'<label class="dpr-wb-component-option" data-component-option="{_e(component_id)}">'
+                f'<input type="{input_type}"{input_name} value="{_e(component_id)}" '
+                f'{"checked disabled" if required else ""} onchange="dprRenderWorkbenchPreview()">'
+                f'<span><b>{_e(name)}</b><small>{_e(description)}</small></span></label>'
+            )
+        if controls:
+            component_controls.append(
+                f'<div class="dpr-wb-component-group"><h4>{_e(category)}</h4>'
+                f'<div>{"".join(controls)}</div></div>'
+            )
+
+    component_rows = []
+    component_preview_modes = {
+        "playback_timeline": "annotation",
+        "annotation_segment_editor": "annotation",
+        "high_low_editor": "annotation",
+        "action_element_editor": "annotation",
+        "head_view_video": "detail",
+        "quality_result_viewer": "detail",
+        "annotation_result_viewer": "detail",
+        "tag_viewer": "detail",
+    }
+    for component_id, (name, description) in WORKBENCH_COMPONENTS.items():
+        meta = WORKBENCH_COMPONENT_META.get(component_id, ("其他", "custom", "optional"))
+        if meta[2] == "legacy":
+            continue
+        preview_mode = component_preview_modes.get(component_id, "quality")
+        component_rows.append(
+            [
+                f'<code>{_e(component_id)}</code>',
+                f'<b>{_e(name)}</b>',
+                _record_tag(meta[0]),
+                _e(description),
+                _e(WORKBENCH_COMPONENT_USAGE[component_id]),
+                '<span class="dpr-state green">可用</span>',
+                (
+                    f'<button class="dpr-link-button" '
+                    f'onclick="dprOpenComponentPreview('
+                    f'\'{_e(component_id)}\',\'{_e(name)}\',\'{preview_mode}\')">'
+                    f'预览</button>'
+                ),
+            ]
+        )
+
+    return (
+        _intro(
+            "工作台管理",
+            "用可复用组件组合人工节点的交互界面；节点只选择已发布的工作台版本。",
+            "",
+            '<button class="btn btn-primary" onclick="dprOpenWorkbenchBuilder(\'new\')">+ 新建工作台</button>',
+        )
+        + f"""
+        <div class="det-tabs">
+          <span class="det-tab active" onclick="switchDetTab(this,'workbench-config')">工作台</span>
+          <span class="det-tab" onclick="switchDetTab(this,'component-config')">组件</span>
+        </div>
+        <div id="det-pane-workbench-config" class="det-pane active">
+          {_section(
+              "工作台配置",
+              _table(
+                  ["工作台 ID", "名称", "业务类型", "组件数", "状态", "操作"],
+                  workbench_rows,
+              ),
+              "工作台发布后版本冻结；后续修改保存为新版本。",
+          )}
+        </div>
+        <div id="det-pane-component-config" class="det-pane">
+          {_section(
+              "组件列表",
+              _table(
+                  ["组件 ID", "组件名称", "区域", "功能", "适用工作台", "状态", "操作"],
+                  component_rows,
+              ),
+              "视频布局、处理表单和操作栏为互斥插槽；其他工作区组件可自由组合。",
+          )}
+        </div>
+        <div class="drawer dpr-workbench-builder" id="drawerWorkbenchBuilder" data-mode="new">
+          <div class="drawer-head">
+            <h3 id="workbenchBuilderTitle">新建工作台</h3>
+            <span class="dismiss" onclick="closeDrawer()">&times;</span>
+          </div>
+          <div class="drawer-body">
+            <div class="dpr-wb-builder-layout">
+              <div class="dpr-wb-builder-form">
+                <div class="dpr-wb-basic-grid">
+                  <label><span>工作台名称</span><input id="wbBuilderName" placeholder="请输入工作台名称"></label>
+                  <label><span>英文标识</span><input id="wbBuilderId" placeholder="workbench.identifier"></label>
+                  <label><span>业务类型</span><select id="wbBuilderType">
+                    <option>质检</option><option>标注</option><option>验收</option><option>通用</option>
+                  </select></label>
+                  <label><span>版本</span><input id="wbBuilderVersion" value="v1-draft" disabled></label>
+                </div>
+                <div class="dpr-wb-component-catalog">{"".join(component_controls)}</div>
+              </div>
+              <div class="dpr-wb-live-preview">
+                <div class="dpr-wb-live-head"><b>工作台预览</b></div>
+                <div id="workbenchLivePreview" class="dpr-wb-preview-viewport">
+                  <iframe id="workbenchPreviewFrame" title="高保真工作台预览"
+                    onload="dprFitPreviewFrame(this)"></iframe>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="drawer-foot">
+            <button class="btn" onclick="closeDrawer()">取消</button>
+            <button class="btn" id="workbenchSaveDraft" onclick="dprSaveWorkbench('draft')">保存草稿</button>
+            <button class="btn btn-primary" id="workbenchPublish" onclick="dprSaveWorkbench('publish')">发布工作台</button>
+          </div>
+        </div>
+        <div class="drawer dpr-component-preview-drawer" id="drawerComponentPreview">
+          <div class="drawer-head">
+            <div>
+              <h3 id="componentPreviewTitle">预览组件</h3>
+              <p id="componentPreviewDescription">在高保真工作台中查看组件的真实呈现效果</p>
+            </div>
+            <span class="dismiss" onclick="closeDrawer()">&times;</span>
+          </div>
+          <div class="drawer-body">
+            <div class="dpr-component-preview-browser">
+              <iframe id="componentPreviewFrame" title="高保真组件预览"
+                onload="dprFitPreviewFrame(this)"></iframe>
+            </div>
+          </div>
+          <div class="drawer-foot">
+            <button class="btn" onclick="closeDrawer()">关闭</button>
+          </div>
+        </div>
+        <script>
+        var DPR_WORKBENCH_SCHEMAS = {schema_json};
+        var DPR_WORKBENCH_PREVIEW_ROUTES = {{
+          quality: '/data/workbench-management/preview/quality?task=WB-2026-0718-QC',
+          annotation: '/data/workbench-management/preview/annotation?task=WB-2026-0922-LB',
+          detail: '/data/workbench-management/preview/detail?task=WB-2026-0922-AC'
+        }};
+        var DPR_WORKBENCH_PREVIEW_TIMER = null;
+        function dprWorkbenchSelectedComponents() {{
+          return Array.from(document.querySelectorAll(
+            '#drawerWorkbenchBuilder [data-component-option] input:checked'
+          )).map(function(input) {{ return input.value; }});
+        }}
+        function dprWorkbenchPreviewMode() {{
+          var type = document.getElementById('wbBuilderType').value;
+          return type === '质检' ? 'quality' : (type === '标注' ? 'annotation' : 'detail');
+        }}
+        function dprWorkbenchPreviewUrl(mode, components, focus) {{
+          var url = DPR_WORKBENCH_PREVIEW_ROUTES[mode] || DPR_WORKBENCH_PREVIEW_ROUTES.detail;
+          url += '&embed=1';
+          if (components && components.length) {{
+            url += '&components=' + encodeURIComponent(components.join(','));
+          }}
+          if (focus) {{
+            url += '&focus=' + encodeURIComponent(focus);
+          }}
+          return url;
+        }}
+        function dprFitPreviewFrame(frame) {{
+          if (!frame || !frame.parentElement) return;
+          var viewport = frame.parentElement;
+          var naturalWidth = 1440;
+          var scale = viewport.clientWidth / naturalWidth;
+          if (!scale || scale <= 0) return;
+          frame.style.width = naturalWidth + 'px';
+          frame.style.height = Math.ceil(viewport.clientHeight / scale) + 'px';
+          frame.style.transform = 'scale(' + scale + ')';
+        }}
+        function dprFitAllPreviewFrames() {{
+          dprFitPreviewFrame(document.getElementById('workbenchPreviewFrame'));
+          dprFitPreviewFrame(document.getElementById('componentPreviewFrame'));
+        }}
+        function dprRenderWorkbenchPreview() {{
+          var selected = dprWorkbenchSelectedComponents();
+          var frame = document.getElementById('workbenchPreviewFrame');
+          if (!frame) return;
+          window.clearTimeout(DPR_WORKBENCH_PREVIEW_TIMER);
+          DPR_WORKBENCH_PREVIEW_TIMER = window.setTimeout(function() {{
+            frame.src = dprWorkbenchPreviewUrl(
+              dprWorkbenchPreviewMode(), selected, ''
+            );
+            dprFitPreviewFrame(frame);
+          }}, 80);
+        }}
+        function dprOpenComponentPreview(componentId, componentName, mode) {{
+          document.getElementById('componentPreviewTitle').textContent =
+            '预览组件 · ' + componentName;
+          document.getElementById('componentPreviewDescription').textContent =
+            componentId + ' · 在高保真工作台中定位展示';
+          document.getElementById('componentPreviewFrame').src =
+            dprWorkbenchPreviewUrl(mode, [], componentId);
+          openDrawer('drawerComponentPreview');
+        }}
+        function dprOpenWorkbenchBuilder(mode, trigger) {{
+          var drawer = document.getElementById('drawerWorkbenchBuilder');
+          var data = trigger ? trigger.dataset : {{
+            workbenchId: '', workbenchName: '', workbenchType: '通用',
+            workbenchComponents: JSON.stringify([
+              'basic_info','multi_view_video','trajectory_viewer','submit_actions'
+            ])
+          }};
+          var previewOnly = mode === 'preview';
+          drawer.dataset.mode = mode;
+          document.getElementById('workbenchBuilderTitle').textContent =
+            previewOnly ? '预览工作台' : (mode === 'new' ? '新建工作台' : '编辑工作台');
+          document.getElementById('wbBuilderName').value = data.workbenchName || '';
+          document.getElementById('wbBuilderId').value = data.workbenchId || '';
+          document.getElementById('wbBuilderType').value = data.workbenchType || '通用';
+          var selected = [];
+          try {{ selected = JSON.parse(data.workbenchComponents || '[]'); }} catch (error) {{}}
+          document.querySelectorAll(
+            '#drawerWorkbenchBuilder [data-component-option] input').forEach(function(input) {{
+              input.checked = input.value === 'basic_info' || selected.indexOf(input.value) >= 0;
+              input.disabled = previewOnly || input.value === 'basic_info';
+            }});
+          drawer.querySelectorAll('.dpr-wb-basic-grid input, .dpr-wb-basic-grid select').forEach(
+            function(control) {{ control.disabled = previewOnly || control.id === 'wbBuilderVersion'; }}
+          );
+          document.getElementById('workbenchSaveDraft').style.display = previewOnly ? 'none' : '';
+          document.getElementById('workbenchPublish').style.display = previewOnly ? 'none' : '';
+          dprRenderWorkbenchPreview();
+          openDrawer('drawerWorkbenchBuilder');
+        }}
+        function dprSaveWorkbench(action) {{
+          if (!document.getElementById('wbBuilderName').value.trim()) {{
+            toast('请输入工作台名称'); return;
+          }}
+          var components = dprWorkbenchSelectedComponents();
+          if (!components.some(function(id) {{
+            return id === 'multi_view_video' || id === 'head_view_video';
+          }})) {{ toast('请选择一种视频布局'); return; }}
+          if (!components.some(function(id) {{
+            return id === 'submit_actions' || id === 'reject_submit_actions';
+          }})) {{ toast('请选择一种操作栏'); return; }}
+          toast(action === 'publish'
+            ? 'Demo: 已发布工作台新版本，节点可选择该版本'
+            : 'Demo: 已保存工作台草稿');
+          closeDrawer();
+        }}
+        document.getElementById('wbBuilderType').addEventListener(
+          'change', dprRenderWorkbenchPreview
+        );
+        window.addEventListener('resize', dprFitAllPreviewFrames);
+        if (window.ResizeObserver) {{
+          var dprPreviewResizeObserver = new ResizeObserver(dprFitAllPreviewFrames);
+          dprPreviewResizeObserver.observe(
+            document.getElementById('workbenchLivePreview')
+          );
+          dprPreviewResizeObserver.observe(
+            document.querySelector('.dpr-component-preview-browser')
+          );
+        }}
+        </script>
+        """
+    )
+
+
 def render_supplier_management():
     rows = [
         ["SUP-001", "<b>光轮智能</b>", "采集服务", "Moz1 家居场景", "12 人", "2026-12-31", _state("running"), '<a href="#">详情</a>'],
@@ -4588,16 +6823,78 @@ def render_supplier_management():
     )
 
 
+def _render_user_group_section():
+    pool_counts = {
+        "group.annotation": ("1 个", "142 条"),
+        "group.annotation-sampling": ("1 个", "42 条"),
+        "group.experimental-annotation": ("1 个", "28 条"),
+        "group.quality-review": ("2 个", "124 条"),
+        "group.acceptance": ("1 个", "54 条"),
+    }
+    group_rows = []
+    for group in USER_GROUPS:
+        pool_count, backlog = pool_counts[group["id"]]
+        organizations = group["organizations"]
+        organization_detail = "；".join(
+            f'{item["name"]}：{item["members"]} 人' for item in organizations
+        )
+        group_rows.append(
+            [
+                f'<code>{_e(group["id"])}</code>',
+                f'<b>{_e(group["name"])}</b>',
+                (
+                    f'<span class="dpr-org-count" tabindex="0" '
+                    f'title="{_e(organization_detail)}" '
+                    f'aria-label="{_e(f"共 {len(organizations)} 个组织；{organization_detail}")}">'
+                    f'{len(organizations)}</span>'
+                ),
+                f'{group["members"]} 人',
+                _e(group["skills"]),
+                pool_count,
+                backlog,
+                '<a href="#" onclick="toast(\'Demo: 编辑用户组\');return false;">编辑</a>',
+            ]
+        )
+    return _section(
+        "用户组列表",
+        _table(
+            ["用户组标识", "用户组名称", "组织归属", "成员", "技能范围", "关联任务池", "待领取", "操作"],
+            group_rows,
+        ),
+        "流程人工节点通过用户组决定谁可以领取任务，同一用户组的多个节点汇入共享任务池。",
+        '<a class="btn btn-primary" href="#" onclick="toast(\'Demo: 新建用户组\');return false;">+ 新建用户组</a>',
+    )
+
+
+def render_user_group_management():
+    return (
+        _intro(
+            "用户组管理",
+            "管理人工节点的领取范围；同一用户组的多个节点汇入共享任务池。",
+            "",
+        )
+        + _render_user_group_section()
+    )
+
+
 def render_personnel_management():
     rows = [
-        ["USR-2105", "<b>joanna.qiao</b>", "平台自有", "标注 · 验收", "P0 / P1", "工作中", "2026-07-27 10:42", '<a href="#">详情</a>'],
-        ["USR-2217", "<b>刘素粉</b>", "光轮智能", "数据采集", "P1", "工作中", "2026-07-27 10:35", '<a href="#">详情</a>'],
-        ["USR-2240", "<b>包媛桐</b>", "平台自有", "数据处理", "P0 / P1", "在线", "2026-07-27 10:38", '<a href="#">详情</a>'],
-        ["USR-2298", "<b>供应商 A-017</b>", "供应商 A", "动作标注", "P1", "离线", "2026-07-26 18:12", '<a href="#">详情</a>'],
+        ["USR-2105", "<b>joanna.qiao</b>", "平台自有", "标注抽验员用户组 · 内部验收用户组", "标注 · 验收", "工作中", "2026-07-27 10:42", '<a href="#">详情</a>'],
+        ["USR-2217", "<b>刘素粉</b>", "光轮智能", "质检复核用户组", "数据质检", "工作中", "2026-07-27 10:35", '<a href="#">详情</a>'],
+        ["USR-2240", "<b>包媛桐</b>", "平台自有", "质检复核用户组", "数据质检", "在线", "2026-07-27 10:38", '<a href="#">详情</a>'],
+        ["USR-2298", "<b>供应商 A-017</b>", "供应商 A", "标注员用户组", "动作标注", "离线", "2026-07-26 18:12", '<a href="#">详情</a>'],
     ]
+    personnel_section = _section(
+        "人员列表",
+        _table(
+            ["人员 ID", "姓名", "归属", "所属用户组", "技能", "状态", "最近活跃", "操作"],
+            rows,
+        ),
+        actions='<a class="btn btn-primary" href="#" onclick="toast(\'Demo: 添加人员\');return false;">+ 添加人员</a>',
+    )
     return (
-        _intro("人员管理", "管理人员归属、技能、可承接优先级与工作状态。", "", '<a class="btn btn-primary" href="#" onclick="toast(\'Demo: 添加人员\');return false;">+ 添加人员</a>')
-        + _section("人员列表", _table(["人员 ID", "姓名", "归属", "技能", "任务等级", "状态", "最近活跃", "操作"], rows))
+        _intro("人员管理", "管理人员、技能、状态与供应商归属。", "")
+        + personnel_section
     )
 
 
@@ -4610,6 +6907,8 @@ def render_permission_management():
     resource_rows = [
         ["RES-PROJECT", "项目", "PRJ-*", "查看 · 编辑 · 管理成员"],
         ["RES-TASK", "任务", "COL-* / PROC-*", "查看 · 执行 · 分配"],
+        ["RES-USER-GROUP", "用户组", "group.*", "查看 · 编辑成员 · 绑定节点"],
+        ["RES-TASK-POOL", "任务池", "POOL-*", "查看 · 领取 · 转派"],
         ["RES-DATASET", "数据集", "dataset.*", "查看 · 构建 · 发布"],
         ["RES-CONFIG", "配置", "规则 / 场景 / 标签", "查看 · 编辑"],
     ]
@@ -4657,8 +6956,11 @@ PAGE_RENDERERS = {
     "collection_tasks": render_collection_tasks,
     "processing_tasks": render_processing_tasks,
     "allocation_management": render_allocation_management,
+    "allocation_management_old": render_allocation_management_old,
     "data_management": render_data_management,
+    "execution_records": render_pipeline_runs,
     "project_management": render_project_management,
+    "user_group_management": render_user_group_management,
     "workbench_management": render_workbench_management,
     "supplier_management": render_supplier_management,
     "personnel_management": render_personnel_management,
@@ -4680,6 +6982,7 @@ DATA_PLATFORM_CSS = """
 .dpr-intro{display:flex;justify-content:space-between;gap:24px;align-items:flex-end;margin:0 0 22px;padding:4px 0}
 .dpr-intro h1{margin:3px 0 6px;font-size:24px;font-weight:650;letter-spacing:-.2px;color:#142b33}
 .dpr-intro p{margin:0;max-width:820px;color:#607078;font-size:13px;line-height:1.7}
+.dpr-intro-inline-action{justify-content:flex-start;align-items:flex-start}.dpr-intro-inline-action>div{width:100%}.dpr-intro-title-row{display:flex;align-items:center;justify-content:flex-start;width:100%;gap:12px;margin-bottom:6px}.dpr-intro-title-row h1{margin:3px 0 0}.dpr-intro-title-row .dpr-intro-actions{margin:3px 0 0 auto}
 .dpr-eyebrow{font-size:11px;letter-spacing:1.2px;color:#149DAA;font-weight:700}
 .dpr-intro-actions{display:flex;align-items:center;gap:8px;flex:none}
 .dpr-role{display:flex;align-items:center;gap:8px;padding:7px 10px;background:#fff;border:1px solid #e2e7e9;border-radius:8px;font-size:12px;color:#607078}
@@ -4703,24 +7006,37 @@ DATA_PLATFORM_CSS = """
 .dpr-run-meta{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0}.dpr-run-meta span{font:11px 'SF Mono',Menlo,monospace;background:#f2f6f7;padding:3px 7px;border-radius:4px;color:#5c6d73}
 .dpr-stage-rail{display:flex;gap:4px;margin:13px 0 7px}.dpr-stage-rail i{height:5px;flex:1;background:#e5e9eb;border-radius:4px}.dpr-stage-rail i.done{background:#5fb39b}.dpr-stage-rail i.active{background:#149DAA;box-shadow:0 0 0 2px rgba(20,157,170,.13)}
 .dpr-run-card small{color:#829096}
+.dpr-list-tab-card{display:flex;align-items:stretch;justify-content:space-between;gap:20px;min-height:51px;margin-bottom:14px;padding:0 20px;border:1px solid #e8edef;border-radius:10px;background:#fff;box-shadow:0 1px 2px rgba(16,42,50,.025);box-sizing:border-box}.dpr-execution-tabbar>span{display:flex;align-items:center;color:#7b898e;font-size:11.5px;white-space:nowrap}.dpr-execution-tabs{flex:1}
+.dpr-execution-filters .ff:first-child{min-width:310px}.dpr-execution-filters .ff:first-child input{min-width:310px}
+.dpr-run-open{padding:0;border:0;background:transparent;color:#149DAA;font-size:12px;cursor:pointer;white-space:nowrap}.dpr-run-open:hover{text-decoration:underline}
+.dpr-io-arrow{display:inline-block;margin:0 7px;color:#94a1a6}#dpr-execution-run-table,#dpr-node-run-table{min-width:820px}#dpr-execution-run-table td,#dpr-node-run-table td{vertical-align:top}
 .dpr-risk{color:#c64b40!important}.dpr-ok{color:#2f8d70!important}
 .dpr-state{display:inline-flex;align-items:center;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:650;white-space:nowrap}.dpr-state.green{color:#26785f;background:#e5f5ee}.dpr-state.blue{color:#136f78;background:#dff4f6}.dpr-state.amber{color:#946118;background:#fff2d7}.dpr-state.red{color:#b34239;background:#fdebea}.dpr-state.purple{color:#6c4ba2;background:#f1eafa}.dpr-state.gray{color:#66757b;background:#edf0f1}
 .dpr-table-wrap{overflow:auto;border:1px solid #e8edef;border-radius:8px}.dpr-table{width:100%;border-collapse:separate;border-spacing:0;min-width:920px;font-size:12px}
 .dpr-table th{padding:10px 12px;text-align:left;background:#f6f8f9;color:#65747a;font-weight:600;white-space:nowrap;border-bottom:1px solid #e4e9eb}
 .dpr-table td{padding:12px;vertical-align:middle;color:#334a52;border-bottom:1px solid #eef1f2;line-height:1.55}.dpr-table tbody tr:last-child td{border-bottom:0}.dpr-table tbody tr:hover td{background:#fbfdfd}
+.dpr-org-count{display:inline-flex;align-items:center;justify-content:center;min-width:26px;height:24px;padding:0 7px;border-radius:12px;background:#e8f7f8;color:#117a83;font-weight:700;line-height:24px;cursor:help;box-sizing:border-box}.dpr-org-count:focus{outline:2px solid rgba(20,157,170,.25);outline-offset:2px}
 .dpr-table code,.dpr-pipeline-card code,.dpr-schema-card code,.dpr-run-top code,.dpr-history code,.dpr-line-node code{font:11px 'SF Mono',Menlo,monospace;color:#50636a}.dpr-table small{color:#7d8b90}
 .dpr-empty{text-align:center!important;color:#8b989d!important;padding:32px!important}
 .dpr-progress{display:flex;align-items:center;gap:8px;min-width:100px}.dpr-progress-track{height:6px;flex:1;background:#edf1f2;border-radius:5px;overflow:hidden}.dpr-progress-track span{display:block;height:100%;background:#149DAA;border-radius:5px}.dpr-progress b{font-size:11px;color:#52666d}
 .dpr-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}.dpr-task-tabs{display:flex;align-items:center;gap:24px;border-bottom:1px solid #e5eaec}.dpr-task-tab{position:relative;border:0;background:transparent;padding:7px 2px 10px;color:#65757b;font-size:13px;cursor:pointer}.dpr-task-tab:hover{color:#149DAA}.dpr-task-tab.active{color:#149DAA;font-weight:650}.dpr-task-tab.active:after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:2px;background:#149DAA;border-radius:2px}.dpr-task-tab b{display:inline-flex;align-items:center;justify-content:center;min-width:18px;height:18px;margin-left:4px;padding:0 5px;border-radius:9px;background:#edf2f3;color:#65757b;font-size:10px}.dpr-task-tab.active b{background:#dff4f6;color:#136f78}
+.dpr-collection-tabs{align-items:stretch}.dpr-collection-tabs .dpr-collection-tab{display:flex;align-items:center;gap:7px}.dpr-collection-tabs .dpr-collection-tab b{display:inline-flex;align-items:center;justify-content:center;min-width:19px;height:19px;padding:0 5px;border-radius:10px;background:#f0f3f4;color:#718087;box-sizing:border-box;font:600 10px 'SF Mono',Menlo,monospace}.dpr-collection-tabs .dpr-collection-tab.active b{background:#e5f6f7;color:#149DAA}
 #dpr-task-table{background:#fff}#dpr-task-table td{background:#fff}#dpr-task-table tbody tr:hover td{background:#fbfdfd}
 .dpr-task-filters{width:100%;margin-bottom:16px;box-sizing:border-box}.dpr-task-filters .ff{min-width:155px}.dpr-task-filters .ff input,.dpr-task-filters .ff select{min-width:155px}
 .dpr-collection-drawer{width:500px;max-width:calc(100vw - 24px)}.dpr-collection-drawer .drawer-body{padding-top:24px}.dpr-collection-drawer .fg{margin-bottom:20px}.dpr-collection-drawer .fg input,.dpr-collection-drawer .fg select{height:38px;box-sizing:border-box;background:#fff}.dpr-optional{color:#829096;font-weight:400}.dpr-field-help{margin-top:1px;color:#849298;font-size:11.5px;line-height:1.5}.dpr-processing-drawer{width:720px}.dpr-processing-assignment{margin-top:8px;padding-top:18px;border-top:1px solid #edf1f2}.dpr-processing-assignment-title{display:flex;align-items:baseline;justify-content:space-between;gap:14px;margin-bottom:12px}.dpr-processing-assignment-title b{font-size:14px;color:#2b434b}.dpr-processing-assignment-title span{font-size:11px;color:#829197}.dpr-processing-assignment-card{margin-bottom:10px;padding:12px;border:1px solid #e2e8ea;border-radius:8px;background:#fafcfc}.dpr-processing-assignment-head{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:10px}.dpr-processing-assignment-head>div{display:flex;align-items:center;gap:7px}.dpr-processing-assignment-head b{font-size:12.5px;color:#2e464e}.dpr-processing-assignment-head>div span{padding:2px 6px;border-radius:8px;background:#e5f5ee;color:#2f8064;font-size:9.5px}.dpr-processing-assignment-head label{display:flex;align-items:center;gap:7px;color:#718087;font-size:11px}.dpr-processing-assignment-head select{width:94px;height:30px;padding:0 7px;border:1px solid #d8e0e3;border-radius:5px;background:#fff;color:#324950}.dpr-processing-assignment-cols,.dpr-processing-assignment-row{display:grid;grid-template-columns:1fr 110px 26px;align-items:center;gap:7px}.dpr-processing-assignment-cols{margin-bottom:4px;color:#879398;font-size:9.5px}.dpr-processing-assignment-row{margin-bottom:6px}.dpr-processing-assignment-row select,.dpr-processing-percent input{width:100%;height:32px;box-sizing:border-box;border:1px solid #d9e0e2;border-radius:6px;background:#fff;color:#334a52}.dpr-processing-assignment-row select{padding:0 8px}.dpr-processing-percent{position:relative}.dpr-processing-percent input{padding:0 24px 0 8px}.dpr-processing-percent span{position:absolute;right:8px;top:7px;color:#89959a;font-size:11px}.dpr-processing-assignment-remove{width:26px;height:26px;border:0;background:transparent;color:#a7b0b4;font-size:17px;cursor:pointer}.dpr-processing-assignment-remove:hover{color:#d05a50}.dpr-processing-assignment-foot{display:flex;align-items:center;justify-content:space-between;margin-top:7px}.dpr-processing-assignment-foot button{padding:0;border:0;background:transparent;color:#149DAA;font-size:11px;cursor:pointer}.dpr-processing-assignment-foot span{color:#74848a;font-size:11px}.dpr-processing-assignment-foot b.ok{color:#2f8d70}.dpr-processing-assignment-foot b.bad{color:#c64b40}.dpr-processing-assignment-empty{padding:18px;border:1px dashed #d6dfe2;border-radius:8px;background:#fafcfc;color:#7d8c91;font-size:12px;text-align:center}
-.dpr-scenario-summary{display:flex;align-items:center;gap:28px;margin-bottom:16px;padding:14px 18px;border:1px solid #dce8ea;border-radius:9px;background:#f7fbfb}.dpr-scenario-summary>div{display:flex;align-items:baseline;gap:6px}.dpr-scenario-summary span{color:#66777d;font-size:12px}.dpr-scenario-summary b{color:#149DAA;font-size:24px}.dpr-scenario-summary small{color:#829096}.dpr-scenario-summary p{margin:0 0 0 auto;color:#53666d;font-size:12px}.dpr-capacity-overload{color:#b45246;font-weight:650;white-space:nowrap}.dpr-assignment-context{display:grid;grid-template-columns:1fr;gap:8px;margin-bottom:12px;padding:12px 14px;border:1px solid #e1e7e9;border-radius:7px;background:#fafcfc}.dpr-assignment-context span{display:flex;justify-content:space-between;gap:18px;color:#74848a;font-size:12px}.dpr-assignment-context b{color:#2f464e}.dpr-inline-notice{margin-bottom:18px;padding:10px 12px;border-left:3px solid #e5a64c;border-radius:5px;background:#fff8e8;color:#76591f;font-size:12px}.dpr-inline-notice.success{border-left-color:#69ad8d;background:#f0faf5;color:#3f725d}.dpr-project-scope{display:flex;align-items:center;gap:9px;color:#63757c;font-size:12px;white-space:nowrap}.dpr-project-scope select{min-width:152px;height:36px;padding:0 32px 0 11px;border:1px solid #d8e0e3;border-radius:7px;background:#fff;color:#2d444c}.dpr-allocation-tabs{margin-bottom:16px}.dpr-allocation-funnel{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.dpr-allocation-stage{padding:15px;border:1px solid #e4eaec;border-radius:9px;background:#fbfdfd}.dpr-allocation-stage-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:13px}.dpr-allocation-stage-head>div{display:flex;flex-direction:column;gap:4px}.dpr-allocation-stage-head b{font-size:15px;color:#263f47}.dpr-allocation-stage-head span{font-size:11px;color:#7a898f}.dpr-allocation-stage-head strong{font-size:22px;color:#273f47;text-align:right}.dpr-allocation-stage-head strong small{display:block;font-size:10px;color:#89969b;font-weight:400}.dpr-allocation-bar{display:flex;height:12px;overflow:hidden;border-radius:6px;background:#edf1f2}.dpr-allocation-bar i{display:block;height:100%}.dpr-allocation-bar i.unassigned,.dpr-allocation-legend i.unassigned{background:#d96c62}.dpr-allocation-bar i.assigned,.dpr-allocation-legend i.assigned{background:#e5a64c}.dpr-allocation-bar i.processing,.dpr-allocation-legend i.processing{background:#5c9db3}.dpr-allocation-bar i.completed,.dpr-allocation-legend i.completed{background:#69ad8d}.dpr-allocation-legend{display:grid;grid-template-columns:1fr 1fr;gap:7px 12px;margin-top:12px;color:#6c7c82;font-size:10.5px}.dpr-allocation-legend span{white-space:nowrap}.dpr-allocation-legend b{font-weight:400}.dpr-allocation-legend i{display:inline-block;width:7px;height:7px;margin-right:5px;border-radius:2px}.dpr-allocation-filters{margin-bottom:14px}.dpr-allocation-filters .ff{min-width:135px}.dpr-allocation-filters .ff input,.dpr-allocation-filters .ff select{min-width:135px}.dpr-allocation-table-foot{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:12px;color:#738289;font-size:12px}.dpr-allocation-table-foot button:disabled{opacity:.45;cursor:not-allowed}.dpr-stalled{color:#b45246;font-weight:650;white-space:nowrap}.dpr-link-button{padding:0;border:0;background:transparent;color:#149DAA;font:inherit;cursor:pointer;white-space:nowrap}#dpr-allocation-backlog-table{min-width:1320px}#dpr-allocation-backlog-table th:first-child,#dpr-allocation-backlog-table td:first-child{width:28px;text-align:center}#dpr-stream-backlog-table{min-width:1280px}#dpr-unbound-pool-table{min-width:1180px}#dpr-stream-backlog-table th:first-child,#dpr-stream-backlog-table td:first-child,#dpr-unbound-pool-table th:first-child,#dpr-unbound-pool-table td:first-child{width:28px;text-align:center}.dpr-flow-assignment-filters{display:grid;grid-template-columns:repeat(4,minmax(150px,1fr));gap:14px}.dpr-flow-assignment-filters .ff{display:flex;flex-direction:column;gap:6px}.dpr-flow-assignment-filters .ff label{font-size:12px;color:#5b6b72}.dpr-flow-assignment-filters .ff input,.dpr-flow-assignment-filters .ff select{width:100%;height:36px;padding:0 10px;border:1px solid #d9e0e2;border-radius:6px;background:#fff;box-sizing:border-box}.dpr-flow-assignment-filters .filter-actions{display:flex;align-items:flex-end;gap:8px}.dpr-flow-match{display:flex;align-items:center;justify-content:space-between;gap:18px;margin-top:18px;padding:16px 18px;border:1px solid #cfe5e7;border-radius:9px;background:#f4fbfb}.dpr-flow-match>div{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}.dpr-flow-match span{color:#5b6d73;font-size:12px}.dpr-flow-match b{font-size:14px;color:#2a424a}.dpr-flow-match em{font-size:26px;font-style:normal;color:#149DAA}.dpr-flow-match small{color:#839197}.dpr-allocation-drawer{width:500px;max-width:calc(100vw - 24px)}.dpr-allocation-drawer .drawer-body{padding-top:22px}.dpr-allocation-drawer .fg{margin-bottom:18px}.dpr-allocation-drawer .fg input,.dpr-allocation-drawer .fg select,.dpr-allocation-drawer .fg textarea{width:100%;box-sizing:border-box;background:#fff}.dpr-allocation-drawer .fg input,.dpr-allocation-drawer .fg select{height:38px}.dpr-allocation-drawer .fg textarea{padding:9px 11px;border:1px solid #d9e0e2;border-radius:6px;resize:vertical}.dpr-drawer-summary{margin-bottom:20px;padding:12px 14px;border-radius:7px;background:#f1f7f8;color:#53666d;font-size:12px}.dpr-drawer-summary b{color:#149DAA}
+.dpr-source-task-note{padding:12px 14px;border:1px solid #dcebed;border-radius:8px;background:#f4fafb;color:#567078;font-size:12px;line-height:1.6}.dpr-processing-task-note{max-width:760px;color:#5d737b;font-size:12px}.dpr-task-enable{display:inline-flex;align-items:center;gap:6px;cursor:pointer}.dpr-task-enable input{display:none}.dpr-task-enable i{position:relative;width:30px;height:17px;border-radius:10px;background:#cbd4d7;transition:.2s}.dpr-task-enable i:after{content:"";position:absolute;left:2px;top:2px;width:13px;height:13px;border-radius:50%;background:#fff;transition:.2s}.dpr-task-enable input:checked+i{background:#149DAA}.dpr-task-enable input:checked+i:after{left:15px}.dpr-task-enable span{font-size:11px;color:#536a72}.dpr-task-enable+small{display:block;margin-top:5px}.dpr-filter-summary{display:block;max-width:240px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#4d656d}.dpr-flow-binding-list{display:flex;flex-direction:column;gap:6px;min-width:480px}.dpr-flow-binding-chip{display:grid;grid-template-columns:34px minmax(145px,1fr) 30px minmax(170px,.9fr);align-items:center;gap:7px}.dpr-flow-binding-chip span{padding:2px 5px;border-radius:8px;background:#edf5f6;color:#247783;font-size:9px;text-align:center}.dpr-flow-binding-chip b{font-size:10.5px;font-weight:500;color:#405860}.dpr-flow-binding-chip code{font-size:9.5px;color:#839197}.dpr-flow-progress-line{min-width:170px}.dpr-processing-volume{display:flex;flex-direction:column;gap:3px;white-space:nowrap;color:#74848a;font-size:10px}.dpr-processing-volume b{color:#334b53}.dpr-processing-volume .risk,.dpr-processing-volume .risk b{color:#bc5549}.dpr-task-config-block{margin-top:14px;padding:14px;border:1px solid #e3e9eb;border-radius:9px;background:#fbfcfc}.dpr-task-config-head{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;margin-bottom:12px}.dpr-task-config-head>div{display:flex;flex-direction:column;gap:3px}.dpr-task-config-head b{font-size:13px;color:#2a434b}.dpr-task-config-head span{color:#849298;font-size:10.5px}.dpr-task-config-head button{border:0;background:transparent;color:#149DAA;font-size:11px;cursor:pointer}.dpr-task-config-cols,.dpr-task-config-row{display:grid;align-items:center;gap:7px}.dpr-filter-cols,.dpr-filter-row{grid-template-columns:170px 1fr 26px}.dpr-flow-cols,.dpr-flow-row{grid-template-columns:64px minmax(185px,1fr) 52px minmax(158px,.9fr)}.dpr-task-config-cols{margin-bottom:5px;color:#879399;font-size:9.5px}.dpr-task-config-row{margin-bottom:7px}.dpr-task-config-row select,.dpr-task-config-row input{width:100%;height:34px;box-sizing:border-box;border:1px solid #d8e0e3;border-radius:6px;background:#fff;padding:0 9px;color:#344c54}.dpr-task-config-row code{padding:8px 4px;color:#60747b;font-size:10.5px}.dpr-flow-stage-fixed{font-size:11px;font-weight:600;color:#405860}.dpr-flow-rule-empty{color:#9aa6aa;text-align:center}.dpr-task-config-remove{width:26px;height:26px;border:0;background:transparent;color:#9da9ad;font-size:17px;cursor:pointer}.dpr-task-config-remove:hover{color:#cf584e}.dpr-task-config-empty{padding:12px;border:1px dashed #d8e1e3;border-radius:7px;color:#849298;font-size:11px;text-align:center}
+.dpr-flow-binding-chip{grid-template-columns:34px minmax(190px,max-content) minmax(170px,.9fr)}.dpr-flow-binding-name{display:flex;align-items:center;gap:5px;min-width:0;white-space:nowrap}.dpr-flow-binding-name b{overflow:hidden;text-overflow:ellipsis}.dpr-flow-binding-name code{flex:none}
+.dpr-scenario-summary{display:flex;align-items:center;gap:28px;margin-bottom:16px;padding:14px 18px;border:1px solid #dce8ea;border-radius:9px;background:#f7fbfb}.dpr-scenario-summary>div{display:flex;align-items:baseline;gap:6px}.dpr-scenario-summary span{color:#66777d;font-size:12px}.dpr-scenario-summary b{color:#149DAA;font-size:24px}.dpr-scenario-summary small{color:#829096}.dpr-scenario-summary p{margin:0 0 0 auto;color:#53666d;font-size:12px}.dpr-capacity-overload{color:#b45246;font-weight:650;white-space:nowrap}.dpr-assignment-context{display:grid;grid-template-columns:1fr;gap:8px;margin-bottom:12px;padding:12px 14px;border:1px solid #e1e7e9;border-radius:7px;background:#fafcfc}.dpr-assignment-context span{display:flex;justify-content:space-between;gap:18px;color:#74848a;font-size:12px}.dpr-assignment-context b{color:#2f464e}.dpr-inline-notice{margin-bottom:18px;padding:10px 12px;border-left:3px solid #e5a64c;border-radius:5px;background:#fff8e8;color:#76591f;font-size:12px}.dpr-inline-notice.success{border-left-color:#69ad8d;background:#f0faf5;color:#3f725d}.dpr-project-scope{display:flex;align-items:center;gap:9px;color:#63757c;font-size:12px;white-space:nowrap}.dpr-project-scope select{min-width:152px;height:36px;padding:0 32px 0 11px;border:1px solid #d8e0e3;border-radius:7px;background:#fff;color:#2d444c}.dpr-allocation-tabs{margin-bottom:16px}.dpr-allocation-funnel{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.dpr-allocation-stage{padding:15px;border:1px solid #e4eaec;border-radius:9px;background:#fbfdfd}.dpr-allocation-stage-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:13px}.dpr-allocation-stage-head>div{display:flex;flex-direction:column;gap:4px}.dpr-allocation-stage-head b{font-size:15px;color:#263f47}.dpr-allocation-stage-head span{font-size:11px;color:#7a898f}.dpr-allocation-stage-head strong{font-size:22px;color:#273f47;text-align:right}.dpr-allocation-stage-head strong small{display:block;font-size:10px;color:#89969b;font-weight:400}.dpr-allocation-bar{display:flex;height:12px;overflow:hidden;border-radius:6px;background:#edf1f2}.dpr-allocation-bar i{display:block;height:100%}.dpr-allocation-bar i.unassigned,.dpr-allocation-legend i.unassigned{background:#d96c62}.dpr-allocation-bar i.assigned,.dpr-allocation-legend i.assigned{background:#e5a64c}.dpr-allocation-bar i.processing,.dpr-allocation-legend i.processing{background:#5c9db3}.dpr-allocation-bar i.completed,.dpr-allocation-legend i.completed{background:#69ad8d}.dpr-allocation-legend{display:grid;grid-template-columns:1fr 1fr;gap:7px 12px;margin-top:12px;color:#6c7c82;font-size:10.5px}.dpr-allocation-legend span{white-space:nowrap}.dpr-allocation-legend b{font-weight:400}.dpr-allocation-legend i{display:inline-block;width:7px;height:7px;border-radius:2px;margin-right:5px}.dpr-allocation-filters{margin-bottom:14px}.dpr-allocation-filters .ff{min-width:135px}.dpr-allocation-filters .ff input,.dpr-allocation-filters .ff select{min-width:135px}.dpr-allocation-table-foot{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:12px;color:#738289;font-size:12px}.dpr-allocation-table-foot button:disabled{opacity:.45;cursor:not-allowed}.dpr-stalled{color:#b45246;font-weight:650;white-space:nowrap}.dpr-link-button{padding:0;border:0;background:transparent;color:#149DAA;font:inherit;cursor:pointer;white-space:nowrap}#dpr-allocation-backlog-table{min-width:1320px}#dpr-allocation-backlog-table th:first-child,#dpr-allocation-backlog-table td:first-child{width:28px;text-align:center}#dpr-stream-backlog-table{min-width:1280px}#dpr-unbound-pool-table{min-width:1180px}#dpr-stream-backlog-table th:first-child,#dpr-stream-backlog-table td:first-child,#dpr-unbound-pool-table th:first-child,#dpr-unbound-pool-table td:first-child{width:28px;text-align:center}.dpr-flow-assignment-filters{display:grid;grid-template-columns:repeat(4,minmax(150px,1fr));gap:14px}.dpr-flow-assignment-filters .ff{display:flex;flex-direction:column;gap:6px}.dpr-flow-assignment-filters .ff label{font-size:12px;color:#5b6b72}.dpr-flow-assignment-filters .ff input,.dpr-flow-assignment-filters .ff select{width:100%;height:36px;padding:0 10px;border:1px solid #d9e0e2;border-radius:6px;background:#fff;box-sizing:border-box}.dpr-flow-assignment-filters .filter-actions{display:flex;align-items:flex-end;gap:8px}.dpr-flow-match{display:flex;align-items:center;justify-content:space-between;gap:18px;margin-top:18px;padding:16px 18px;border:1px solid #cfe5e7;border-radius:9px;background:#f4fbfb}.dpr-flow-match>div{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}.dpr-flow-match span{color:#5b6d73;font-size:12px}.dpr-flow-match b{font-size:14px;color:#2a424a}.dpr-flow-match em{font-size:26px;font-style:normal;color:#149DAA}.dpr-flow-match small{color:#839197}.dpr-allocation-drawer{width:500px;max-width:calc(100vw - 24px)}.dpr-allocation-drawer .drawer-body{padding-top:22px}.dpr-allocation-drawer .fg{margin-bottom:18px}.dpr-allocation-drawer .fg input,.dpr-allocation-drawer .fg select,.dpr-allocation-drawer .fg textarea{width:100%;box-sizing:border-box;background:#fff}.dpr-allocation-drawer .fg input,.dpr-allocation-drawer .fg select{height:38px}.dpr-allocation-drawer .fg textarea{padding:9px 11px;border:1px solid #d9e0e2;border-radius:6px;resize:vertical}.dpr-drawer-summary{margin-bottom:20px;padding:12px 14px;border-radius:7px;background:#f1f7f8;color:#53666d;font-size:12px}.dpr-drawer-summary b{color:#149DAA}
+.dpr-dispatch-stage-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.dpr-dispatch-stage-card{display:block;width:100%;padding:16px;border:1px solid #e2e9eb;border-radius:9px;background:#fff;color:#30464e;text-align:left;cursor:pointer;transition:.18s}.dpr-dispatch-stage-card:hover{border-color:#8bcbd0;box-shadow:0 3px 12px rgba(20,157,170,.08)}.dpr-dispatch-stage-card.active{border-color:#149DAA;background:#f3fbfb;box-shadow:0 0 0 1px rgba(20,157,170,.1)}.dpr-dispatch-stage-title{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:12px}.dpr-dispatch-stage-title>span{font-size:15px;font-weight:650}.dpr-dispatch-stage-title>b{font-size:22px;color:#20383f;text-align:right}.dpr-dispatch-stage-title small{display:block;margin-top:2px;color:#879399;font-size:10px;font-weight:400}.dpr-dispatch-stage-values{display:grid;grid-template-columns:1fr 1fr;gap:7px 12px;margin-top:11px;color:#718188;font-size:10.5px}.dpr-dispatch-stage-values span{white-space:nowrap}.dpr-dispatch-stage-values b{margin-left:3px;color:#425860;font-weight:600}.dpr-dispatch-stage-values i{display:inline-block;width:7px;height:7px;margin-right:5px;border-radius:2px}.dpr-dispatch-stage-values i.unassigned{background:#d96c62}.dpr-dispatch-stage-values i.assigned{background:#e5a64c}.dpr-dispatch-stage-values i.processing{background:#5c9db3}.dpr-dispatch-stage-values i.completed{background:#69ad8d}.dpr-dispatch-alerts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-bottom:16px}.dpr-dispatch-alert{display:flex;align-items:baseline;gap:8px;min-height:72px;padding:14px 16px;border:1px solid #e2e8ea;border-radius:9px;background:#fff;color:#5e7077;text-align:left}.dpr-dispatch-alert:is(button){font:inherit;cursor:pointer}.dpr-dispatch-alert:is(button):hover{border-color:#8bcbd0;background:#fbfefe}.dpr-dispatch-alert>span{font-size:12px}.dpr-dispatch-alert>b{color:#263e46;font-size:13px}.dpr-dispatch-alert em{color:#149DAA;font-size:24px;font-style:normal}.dpr-dispatch-alert small{margin-left:auto;color:#839096;font-size:10.5px}.dpr-dispatch-alert strong{color:#52676e}.dpr-dispatch-alert.risk em{color:#c85a4f}.dpr-dispatch-toolbar{display:flex;align-items:center;justify-content:space-between;gap:18px;margin-bottom:14px}.dpr-dispatch-type-switch{display:flex;align-items:center;gap:20px}.dpr-dispatch-type-button{position:relative;padding:4px 1px 10px;border:0;background:transparent;color:#6c7c82;font-size:12px;cursor:pointer}.dpr-dispatch-type-button.active{color:#149DAA;font-weight:650}.dpr-dispatch-type-button.active:after{content:"";position:absolute;right:0;bottom:0;left:0;height:2px;border-radius:2px;background:#149DAA}.dpr-dispatch-search{display:flex;align-items:center;gap:8px}.dpr-dispatch-search input{width:230px;height:34px;padding:0 10px;border:1px solid #d8e0e3;border-radius:6px;background:#fff;box-sizing:border-box}.dpr-dispatch-issue{display:inline-flex;padding:3px 8px;border-radius:10px;font-size:10.5px;font-weight:650;white-space:nowrap}.dpr-dispatch-issue.capacity{background:#fdebea;color:#b34239}.dpr-dispatch-issue.unbound{background:#fff2d7;color:#946118}#dpr-dispatch-issue-table{min-width:1120px}.dpr-dispatch-object{display:flex;flex-direction:column;gap:5px;min-width:205px}.dpr-dispatch-object span{display:grid;grid-template-columns:54px 1fr;align-items:center;gap:7px}.dpr-dispatch-object i{color:#8a979c;font-size:10px;font-style:normal}.dpr-dispatch-object code{color:#2f474f;font-size:10.5px}.dpr-dispatch-object code.empty{color:#a5afb2}.dpr-dispatch-source-link{justify-self:start;padding:0;border:0;background:transparent;color:#149DAA;font-size:10.5px;cursor:pointer}.dpr-dispatch-source-link:hover{color:#0f7780}.dpr-dispatch-source-drawer{width:420px;max-width:calc(100vw - 24px)}.dpr-dispatch-source-list{display:flex;flex-direction:column;border:1px solid #e3e9eb;border-radius:8px;overflow:hidden}.dpr-dispatch-source-list>div{display:flex;align-items:center;justify-content:space-between;gap:18px;padding:12px 14px;border-bottom:1px solid #edf1f2}.dpr-dispatch-source-list>div:last-child{border-bottom:0}.dpr-dispatch-source-list span{color:#74858b;font-size:11px}.dpr-dispatch-source-list code{color:#304850;font-size:11px}.dpr-dispatch-current small{display:block;margin-top:4px;color:#849197;font-size:10.5px}.dpr-dispatch-current{display:block;max-width:250px;color:#405860;line-height:1.45}.dpr-dispatch-empty{display:none;padding:24px;color:#879499;text-align:center}.dpr-dispatch-table-summary{margin-top:12px;color:#78878d;font-size:11.5px}.dpr-dispatch-table-summary b{color:#3e565e}.dpr-dispatch-compare{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:18px}.dpr-dispatch-compare>div{padding:14px;border:1px solid #e1e8ea;border-radius:8px;background:#fafcfc}.dpr-dispatch-compare>div.next{border-color:#cce4e6;background:#f5fbfb}.dpr-dispatch-compare>div>span{display:block;margin-bottom:11px;color:#546970;font-size:12px;font-weight:650}.dpr-dispatch-compare dl{display:grid;grid-template-columns:72px 1fr;gap:9px 8px;margin:0;font-size:11px}.dpr-dispatch-compare dt{color:#849197}.dpr-dispatch-compare dd{margin:0;color:#344c54}.dpr-dispatch-compare .fg{margin-bottom:10px}.dpr-dispatch-current-card{display:flex;flex-direction:column;gap:5px;margin-bottom:18px;padding:13px 14px;border:1px solid #e1e8ea;border-radius:8px;background:#fafcfc}.dpr-dispatch-current-card span{color:#849197;font-size:10.5px}.dpr-dispatch-current-card b{color:#334b53;font-size:12px}.dpr-dispatch-current-card small{color:#75868c;font-size:11px}.dpr-dispatch-reprocess-drawer{width:760px;max-width:calc(100vw - 24px)}.dpr-dispatch-reprocess-drawer .drawer-body{padding-top:18px}.dpr-dispatch-steps{display:flex;align-items:center;justify-content:center;gap:10px;margin:0 0 22px}.dpr-dispatch-steps span{display:flex;align-items:center;gap:7px;color:#89969b;font-size:11.5px}.dpr-dispatch-steps span b{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:#edf1f2;color:#7b898f}.dpr-dispatch-steps span.active{color:#149DAA;font-weight:650}.dpr-dispatch-steps span.active b{background:#149DAA;color:#fff}.dpr-dispatch-steps i{width:70px;height:1px;background:#dfe6e8}.dpr-dispatch-step{display:none}.dpr-dispatch-step.active{display:block}.dpr-dispatch-filter-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}.dpr-dispatch-filter-grid .ff{display:flex;flex-direction:column;gap:6px}.dpr-dispatch-filter-grid label{color:#62747b;font-size:11.5px}.dpr-dispatch-filter-grid input,.dpr-dispatch-filter-grid select{width:100%;height:36px;padding:0 9px;border:1px solid #d8e0e3;border-radius:6px;background:#fff;box-sizing:border-box}.dpr-dispatch-filter-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:14px}.dpr-dispatch-match{display:flex;align-items:baseline;gap:11px;margin:16px 0;padding:13px 15px;border:1px solid #cfe5e7;border-radius:8px;background:#f4fbfb}.dpr-dispatch-match span{color:#60747b;font-size:11.5px}.dpr-dispatch-match b{color:#2c454d;font-size:12px}.dpr-dispatch-match em{color:#149DAA;font-size:23px;font-style:normal}.dpr-dispatch-match small{margin-left:auto;color:#819096;font-size:10.5px}.dpr-dispatch-preview-title{margin:17px 0 9px;color:#3a5159;font-size:12px;font-weight:650}#dpr-dispatch-reprocess-preview{min-width:680px}
+#drawerDispatchResource{width:640px}#drawerDispatchBinding{width:720px}.dpr-dispatch-backlog-context{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(190px,1.4fr) minmax(85px,.7fr);gap:10px;margin-bottom:18px}.dpr-dispatch-backlog-context>div{display:flex;flex-direction:column;gap:5px;padding:11px 12px;border:1px solid #e1e8ea;border-radius:7px;background:#fafcfc}.dpr-dispatch-backlog-context span{color:#849197;font-size:10.5px}.dpr-dispatch-backlog-context b{color:#344c54;font-size:11px;font-weight:600}.dpr-dispatch-backlog-context>div:nth-child(2) b{white-space:nowrap}.dpr-dispatch-backlog-context i{font-style:normal}.dpr-dispatch-assignment-block{margin:0 0 18px}.dpr-dispatch-assignment-cols,.dpr-dispatch-assignment-row{grid-template-columns:92px minmax(190px,1fr) 112px 26px}.dpr-dispatch-assignment-type:disabled{border-color:#e1e5e6;background:#f1f3f4;color:#8b969a;cursor:not-allowed}.dpr-dispatch-assignment-total{display:flex;align-items:center;justify-content:flex-end;gap:9px;margin-top:9px;padding-top:10px;border-top:1px solid #e5eaec;color:#78878d;font-size:11px}.dpr-dispatch-assignment-total b{color:#405860}.dpr-dispatch-assignment-total b.over{color:#c24f45}.dpr-dispatch-task-picker{margin-bottom:8px!important}.dpr-dispatch-binding-flows{margin:0 0 18px}.dpr-dispatch-flow-readonly{min-height:34px}.dpr-dispatch-flow-name,.dpr-dispatch-flow-rule{overflow:hidden;color:#405860;font-size:10.5px;text-overflow:ellipsis;white-space:nowrap}.dpr-dispatch-flow-rule{color:#60747b}
+.dpr-dispatch-task-row td{border-top:1px solid #dfe8ea;background:#fbfdfd}.dpr-dispatch-task-row.expanded td{background:#f4fbfb}.dpr-dispatch-stage-row td{background:#fff}.dpr-dispatch-stage-row td:first-child{padding-left:20px}.dpr-dispatch-tree-branch{color:#8fb0b6;font-size:15px}.dpr-dispatch-child-label{color:#7d8b90;font-size:10.5px}.dpr-dispatch-stage-count{padding:0;border:0;background:transparent;color:#149DAA;font-size:11px;cursor:pointer}.dpr-dispatch-stage-count:hover{color:#0f7780}
 .dpr-task-name{color:#20383f}.dpr-task-name:hover{color:#149DAA}.dpr-priority{font-weight:650;color:#354b52}.dpr-task-actions{display:flex;align-items:center;gap:10px;white-space:nowrap}.dpr-task-actions a,.dpr-task-actions button{padding:0;border:0;background:transparent;color:#149DAA;font:inherit;cursor:pointer}.dpr-task-actions a:hover,.dpr-task-actions button:hover{color:#0f7780}.dpr-task-progress-stack{display:flex;flex-direction:column;gap:5px;min-width:230px}.dpr-task-progress-stack.collection{max-width:300px}.dpr-task-progress-item{display:grid;grid-template-columns:30px minmax(170px,1fr);align-items:center;gap:6px;white-space:nowrap}.dpr-task-progress-label{font-size:10.5px;color:#354b52;font-weight:600}.dpr-task-progress-line{position:relative;height:14px;background:#edf1f2;border-radius:7px;overflow:hidden}.dpr-task-progress-line i{position:absolute;inset:0 auto 0 0;display:block;height:100%;border-radius:7px;background:#149DAA;opacity:.62}.dpr-task-progress-line i.blue{background:#5a82d1}.dpr-task-progress-line i.teal{background:#149DAA}.dpr-task-progress-line i.green{background:#5fab91}.dpr-task-progress-line b{position:relative;z-index:1;display:block;padding:0 6px;font:9px/14px 'SF Mono',Menlo,monospace;color:#30454d;text-align:center;white-space:nowrap}.dpr-record-page{width:100%;max-width:100%;min-width:0;overflow:hidden;padding-top:2px;box-sizing:border-box}.dpr-record-top{display:flex;align-items:center;justify-content:space-between;gap:16px;max-width:100%;margin-bottom:14px}.dpr-record-top>div{display:flex;align-items:center;gap:12px;min-width:0}.dpr-record-top a{font-size:12px;color:#149DAA}.dpr-record-top b{font-size:16px;color:#233a42}.dpr-record-top code{font:11px 'SF Mono',Menlo,monospace;color:#718188;background:#edf2f3;padding:3px 7px;border-radius:4px}.dpr-record-filters{width:100%;max-width:100%;margin-bottom:16px;box-sizing:border-box}.dpr-record-summary{display:flex;align-items:center;gap:8px;max-width:100%;margin:0 0 12px;color:#52636a;font-size:13px}.dpr-record-summary span:first-child:after{content:"：";margin-left:2px}.table-wrap.dpr-record-table-wrap{width:100%;max-width:100%;min-width:0;overflow-x:auto;overflow-y:hidden;background:#fff;box-sizing:border-box}.dpr-record-table{width:100%;min-width:1480px}.dpr-record-table.dpr-collection-record-table{min-width:940px}.dpr-record-table td{vertical-align:middle}.dpr-video-group{display:flex;align-items:center;white-space:nowrap}.dpr-record-table .vid-thumb{width:86px;height:54px}.dpr-record-tag{display:inline-flex;align-items:center;padding:3px 8px;border:1px solid transparent;border-radius:5px;font-size:11.5px;white-space:nowrap}.dpr-record-tag.green{color:#2f8d60;background:#edf8f2;border-color:#caead9}.dpr-record-tag.orange{color:#a96b13;background:#fff8e6;border-color:#f5dda4}.dpr-record-tag.red{color:#b7473f;background:#fdeeee;border-color:#f3cbc8}.dpr-record-tag.blue{color:#4f69aa;background:#eef2fb;border-color:#cad5f0}.dpr-record-tag.teal{color:#117a83;background:#e8f7f8;border-color:#b9e3e7}.dpr-record-tag.purple{color:#7447ad;background:#f4edfb;border-color:#ddc9f2}.dpr-record-tag.gray{color:#7b878c;background:#f3f5f5;border-color:#e2e6e7}.dpr-record-operator{font-size:11.5px;color:#67777d;white-space:nowrap}.dpr-record-actions{white-space:nowrap}.dpr-record-actions a{margin-right:10px;color:#149DAA}
+.dpr-collection-progress-line{min-width:190px}
 .dpr-data-management{width:100%;max-width:100%;min-width:0;overflow:hidden}.dpr-data-management .det-tabs{margin-bottom:16px}.dpr-management-record-table{width:100%;min-width:1240px}.dpr-management-record-table .vid-thumb{width:76px;height:48px}.dpr-third-party-table{width:100%;min-width:1080px}.dpr-management-summary{display:flex;align-items:center;justify-content:space-between;gap:16px;margin:0 0 14px;color:#52636a;font-size:13px}.dpr-management-summary .btn{flex:none}
 .dpr-tree-toggle{width:24px;height:24px;margin-right:7px;padding:0;border:0;border-radius:5px;background:#edf5f6;color:#147c86;cursor:pointer}.dpr-flow-link{padding:0;border:0;background:transparent;color:#149DAA;font-size:12px;cursor:pointer}.dpr-process-tree-row>td{padding:0!important;background:#f8fafb!important}.dpr-process-tree{padding:14px 20px 17px 50px}.dpr-process-tree-meta{display:flex;gap:24px;flex-wrap:wrap;margin-bottom:10px;color:#6c7d83;font-size:11.5px}.dpr-process-tree table{width:100%;border-collapse:collapse;background:#fff;border:1px solid #e2e8ea;border-radius:7px;overflow:hidden}.dpr-process-tree th,.dpr-process-tree td{padding:9px 12px;border-bottom:1px solid #edf1f2;font-size:11.5px;text-align:left}.dpr-process-tree th{background:#f2f6f7;color:#68787e}.dpr-process-tree tbody tr:last-child td{border-bottom:0}
 .dpr-record-detail-meta{display:flex;gap:22px;flex-wrap:wrap;margin:0 0 16px;padding:11px 14px;border:1px solid #e5eaec;border-radius:8px;background:#fff;color:#6a7a80;font-size:12px}.dpr-record-detail-meta code{font:11px 'SF Mono',Menlo,monospace;color:#486068}.dpr-record-detail-meta b{color:#2f454d}.dpr-record-page>.det-tabs{margin-bottom:16px}.dpr-detail-video-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-bottom:18px}.dpr-detail-video{position:relative;display:flex;align-items:center;justify-content:center;aspect-ratio:16/9;border-radius:8px;background:linear-gradient(135deg,#283545,#17202c);color:#fff}.dpr-detail-video span{position:absolute;left:12px;top:10px;font-size:11px;color:rgba(255,255,255,.72)}.dpr-detail-video b{font-size:26px;color:rgba(255,255,255,.72)}.dpr-trajectory-card{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:12px}.dpr-trajectory-card>div{display:flex;flex-direction:column;gap:4px;padding:13px;border:1px solid #e5eaec;border-radius:8px;background:#fff}.dpr-trajectory-card span{font-size:11px;color:#7c8a8f}.dpr-trajectory-card b{font-size:15px;color:#2a424a}.dpr-trajectory-chart{display:flex;align-items:center;justify-content:center;height:230px;border:1px dashed #cdd8dc;border-radius:8px;background:linear-gradient(180deg,#fbfdfd,#f3f8f9);color:#7e8d92;font-size:12px}.dpr-version-switch{display:flex;gap:8px;margin-bottom:12px}.dpr-version-button{padding:6px 14px;border:1px solid #dce4e6;border-radius:6px;background:#fff;color:#617278;cursor:pointer}.dpr-version-button.active{border-color:#149DAA;background:#e8f7f8;color:#117a83;font-weight:650}.dpr-version-pane{padding:16px;border:1px solid #e5eaec;border-radius:8px;background:#fff;margin-bottom:18px}.dpr-version-meta{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}.dpr-version-meta>div{display:flex;flex-direction:column;gap:6px}.dpr-version-meta span{font-size:11px;color:#7b898f}.dpr-version-meta b{font-size:12px;color:#30474f}.dpr-version-note{display:flex;gap:12px;margin-top:14px;padding-top:12px;border-top:1px solid #eef1f2;font-size:12px}.dpr-version-note b{color:#30474f}.dpr-version-note span{color:#6f7f85}
 .dpr-record-preview-page{background:#fff;border:1px solid #e7ecee;border-radius:10px;padding:18px}.dpr-preview-toolbar{display:flex;align-items:flex-end;justify-content:space-between;gap:18px;min-height:43px;border-bottom:1px solid #e6ebed;margin-bottom:16px}.dpr-preview-tabs{display:flex;align-items:flex-end;gap:4px;flex:none}.dpr-preview-tab{padding:10px 16px;border:0;border-bottom:2px solid transparent;background:transparent;color:#66777d;font-size:13px;cursor:pointer}.dpr-preview-tab:hover{color:#149DAA}.dpr-preview-tab.active{color:#149DAA;border-bottom-color:#149DAA;font-weight:650}.dpr-preview-pane{min-height:560px}.dpr-preview-camera-row{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-bottom:16px}.dpr-preview-camera{position:relative;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:7px;height:150px;border-radius:8px;background:linear-gradient(135deg,#283545,#131b27);color:rgba(255,255,255,.72)}.dpr-preview-camera>span{position:absolute;left:9px;top:8px;padding:2px 7px;border-radius:4px;background:rgba(0,0,0,.58);font:10px 'SF Mono',Menlo,monospace;color:#fff}.dpr-preview-camera>b{font-size:24px}.dpr-preview-camera>small{font-size:10px;color:rgba(255,255,255,.42)}.dpr-preview-traj-bar{display:flex;align-items:center;gap:14px;padding:10px 0;border-bottom:1px solid #edf1f2;margin-bottom:10px}.dpr-preview-traj-tabs{display:flex;align-items:center;gap:6px;flex:1}.dpr-preview-traj-tabs button{padding:5px 12px;border:1px solid #d8e0e3;border-radius:6px;background:#fff;color:#607178;font-size:11.5px;cursor:pointer}.dpr-preview-traj-tabs button.on{border-color:#149DAA;background:#149DAA;color:#fff}.dpr-preview-traj-tabs>i{width:1px;height:18px;background:#e3e8ea;margin:0 2px}.dpr-preview-traj-legend{display:flex;gap:12px;color:#65767c;font-size:11px}.dpr-preview-traj-legend i{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:4px}.dpr-preview-traj-legend .cmd{background:#1F80A0}.dpr-preview-traj-legend .state{background:#52c41a}.dpr-preview-play{display:flex;gap:6px}.dpr-preview-play button{width:29px;height:29px;border:1px solid #dfe5e7;border-radius:6px;background:#fff;color:#149DAA;cursor:pointer}.dpr-preview-traj-views{height:340px;overflow:hidden}.dpr-preview-traj-grid{width:100%;height:100%;border-collapse:collapse;table-layout:fixed}.dpr-preview-traj-grid th{padding:5px 10px;border-bottom:1px solid #edf1f2;text-align:center;font-size:12px;color:#344b53}.dpr-preview-traj-grid th:first-child,.dpr-preview-traj-grid td:first-child{width:34px;text-align:center;color:#78868b}.dpr-preview-traj-grid td{padding:3px 10px;border-bottom:1px solid #f4f6f7}.dpr-preview-spark{display:block;width:100%;height:100%;min-height:18px}.dpr-preview-base-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;height:100%}.dpr-preview-base-grid>div{display:flex;flex-direction:column;gap:12px;padding:14px;border:1px solid #e5eaec;border-radius:8px;color:#40575f;font-size:12px}.dpr-preview-chart-line{display:block;flex:1;border-radius:6px;background-color:#f8fbfb;background-size:28px 28px;background-image:linear-gradient(#ebf0f1 1px,transparent 1px),linear-gradient(90deg,#ebf0f1 1px,transparent 1px);position:relative}.dpr-preview-chart-line:after{content:"";position:absolute;left:5%;right:5%;top:45%;height:3px;background:#149DAA;transform:skewY(-8deg);box-shadow:0 13px 0 #62aa72}.dpr-preview-chart-line.two:after{left:22%;right:22%;top:49%;height:90px;border:3px solid #149DAA;border-radius:50%;background:transparent;transform:none;box-shadow:5px 4px 0 #62aa72}.dpr-preview-moz{position:relative;height:100%;overflow:hidden;border:1px solid #e5eaec;border-radius:8px;background:#fbfcfd}.dpr-preview-moz-floor{position:absolute;left:0;right:0;bottom:0;height:70%;background-size:40px 40px;background-image:linear-gradient(#e8edef 1px,transparent 1px),linear-gradient(90deg,#e8edef 1px,transparent 1px);transform:perspective(600px) rotateX(55deg);transform-origin:bottom}.dpr-preview-robot{position:absolute;left:48%;top:40%;display:flex;flex-direction:column;align-items:center;font-size:62px;color:#c5ccd1}.dpr-preview-robot span{font-size:11px;color:#6d7d83}.dpr-preview-moz-info{position:absolute;right:14px;top:14px;display:flex;flex-direction:column;gap:8px;width:290px;padding:12px;border:1px solid #e3e9eb;border-radius:9px;background:#fff;box-shadow:0 4px 14px rgba(0,0,0,.05);font:10px 'SF Mono',Menlo,monospace;color:#687980}.dpr-preview-moz-info b{font:600 12px sans-serif;color:#314850}.dpr-preview-slider{width:100%;margin-top:13px;accent-color:#149DAA}.dpr-process-switcher{display:flex;align-items:center;gap:10px;justify-content:flex-end;min-width:0;margin:0 0 7px auto;white-space:nowrap}.dpr-process-switcher label{display:flex;align-items:center;gap:6px;color:#64757b;font-size:11.5px}.dpr-process-switcher select{width:146px;min-width:0;height:32px;padding:0 9px;border:1px solid #d8e0e3;border-radius:6px;background:#fff;color:#324850}.dpr-process-switcher label:first-child select{width:190px}.dpr-process-version-meta{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:14px}.dpr-process-version-meta>div{display:flex;flex-direction:column;gap:5px;padding:10px 12px;border:1px solid #e7ecee;border-radius:7px;background:#fafcfc}.dpr-process-version-meta span{font-size:10.5px;color:#7c8a8f}.dpr-process-version-meta b{font-size:12px;color:#30474f}.dpr-preview-seg-timeline{margin:16px 0 8px}.dpr-preview-seg-row{display:flex;align-items:center;gap:8px}.dpr-preview-seg-row>span{display:flex;align-items:center;justify-content:center;width:23px;height:23px;border-radius:50%;background:#e8f5f6;color:#127a84;font-size:10.5px;font-weight:650}.dpr-preview-seg-track{display:flex;flex:1;height:15px;gap:2px;overflow:hidden;border-radius:4px;background:#f1f4f5}.dpr-preview-segment{height:100%;cursor:pointer}.dpr-preview-segment:hover{filter:brightness(1.06)}.dpr-preview-process-caption{margin:18px 0 5px;color:#334b53;font-size:13px;font-weight:650}.dpr-preview-process-caption span{margin-left:7px;color:#849197;font-size:11px;font-weight:400}.dpr-preview-process-table{width:100%;border-collapse:collapse;font-size:12px}.dpr-preview-process-table th{padding:8px 11px;border-bottom:1px solid #e8edef;text-align:left;color:#77868c;font-weight:500}.dpr-preview-process-table td{padding:8px 11px;border-bottom:1px solid #f1f4f5;color:#354b52}.dpr-preview-process-table tr:hover td{background:#fafcfc}.dpr-preview-process-parent td{background:#f8fafb;font-weight:650}.dpr-preview-process-num{display:inline-flex;align-items:center;justify-content:center;width:19px;height:19px;margin-right:7px;border-radius:50%;background:#edf1f2;color:#6d7c82;font-size:10px}.dpr-preview-process-note{display:flex;gap:12px;margin-top:13px;padding:11px 13px;border:1px solid #e7ecee;border-radius:7px;background:#fafcfc;font-size:11.5px}.dpr-preview-process-note b{color:#344b53}.dpr-preview-process-note span{color:#6f7f85}
+.dpr-process-instance-meta{display:flex;align-items:center;gap:16px;flex-wrap:wrap;padding:10px 12px;border:1px solid #dfe7e9;border-radius:7px;background:#f8fbfb;color:#6d7d83;font-size:10.5px}.dpr-process-instance-meta code{font:10px 'SF Mono',Menlo,monospace;color:#3f5962}.dpr-process-instance-meta b{color:#30474f}
 .dpr-history-toolbar{display:flex;align-items:center;justify-content:space-between;gap:18px;min-height:44px;margin-bottom:12px;border-bottom:1px solid #e8edef}.dpr-history-tabs{display:flex;align-items:center;gap:18px;align-self:stretch}.dpr-history-tab{position:relative;padding:0 2px;border:0;background:transparent;color:#687980;font-size:12px;cursor:pointer}.dpr-history-tab.active{color:#149DAA;font-weight:650}.dpr-history-tab.active:after{content:"";position:absolute;right:0;bottom:-1px;left:0;height:2px;background:#149DAA}.dpr-history-switcher{display:flex;align-items:center;gap:10px;padding-bottom:6px;white-space:nowrap}.dpr-history-switcher label{display:flex;align-items:center;gap:6px;color:#64757b;font-size:11.5px}.dpr-history-switcher select{width:148px;height:32px;padding:0 9px;border:1px solid #d8e0e3;border-radius:6px;background:#fff;color:#324850}.dpr-history-switcher label:first-child select{width:210px}.dpr-history-table th:first-child,.dpr-history-table td:first-child{width:18%}.dpr-history-table th:nth-child(2),.dpr-history-table td:nth-child(2){width:22%}
 .dpr-pipeline-list{display:flex;flex-direction:column;gap:14px}.dpr-pipeline-card{border:1px solid #e1e7e9;border-radius:9px;padding:17px}.dpr-pipeline-head{display:flex;justify-content:space-between;gap:20px}.dpr-pipeline-head h3{margin:4px 0;font-size:15px}.dpr-pipeline-head span{font-size:11.5px;color:#7a898f}.dpr-version-stack{display:flex;flex-direction:column;gap:4px;text-align:right}.dpr-version-stack span{background:#f4f7f8;padding:4px 8px;border-radius:4px}
 .dpr-node-flow{display:flex;align-items:center;gap:6px;overflow-x:auto;padding:17px 0 13px}.dpr-node{display:flex;flex-direction:column;min-width:118px;padding:9px 10px;border:1px solid #dfe6e8;border-radius:7px;background:#fafcfc}.dpr-node i{font:9px 'SF Mono',Menlo,monospace;text-transform:uppercase;color:#839197}.dpr-node b{font-size:12px;margin:3px 0;color:#31484f}.dpr-node small{font:9.5px 'SF Mono',Menlo,monospace;color:#7d8a90;max-width:155px;overflow:hidden;text-overflow:ellipsis}.dpr-node.operator{border-top:3px solid #6d8fda}.dpr-node.human{border-top:3px solid #d18a4f}.dpr-node.gateway{border-top:3px solid #8b6eb5}.dpr-node-arrow{color:#9aa5a9}
@@ -4728,7 +7044,35 @@ DATA_PLATFORM_CSS = """
 .dpr-publish-conditions{display:flex;align-items:center;gap:10px;flex-wrap:wrap}.dpr-publish-conditions span,.dpr-publish-conditions b{padding:10px 12px;background:#f4f7f8;border:1px solid #e3e8ea;border-radius:7px;font-size:12px}.dpr-publish-conditions i{font-style:normal;color:#97a3a7}.dpr-publish-conditions b{background:#e7f6f3;border-color:#b9ddd3;color:#26785f}
 .dpr-lineage{display:flex;flex-direction:column;gap:13px}.dpr-line-chain{display:flex;align-items:center;gap:7px;overflow:auto;padding:12px;background:#f7f9fa;border-radius:8px}.dpr-line-node{display:flex;flex-direction:column;min-width:135px;padding:9px;background:#fff;border:1px solid #e2e8ea;border-radius:7px}.dpr-line-node span{font-size:10px;color:#149DAA;font-weight:650;margin-bottom:4px}.dpr-line-arrow{color:#89969b}
 .dpr-lock{display:inline-flex;padding:2px 7px;border-radius:10px;background:#f1eafa;color:#6c4ba2;font-size:11px}
+.dpr-workbench-builder{width:min(1600px,calc(100vw - 24px))}
+.dpr-workbench-builder .drawer-body{padding:14px 16px;overflow:hidden}
+.dpr-wb-builder-layout{display:grid;grid-template-columns:minmax(330px,400px) minmax(0,1fr);gap:16px;height:100%;min-height:0}
+.dpr-wb-builder-form{min-height:0;overflow-y:auto;padding-right:8px}
+.dpr-wb-basic-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.dpr-wb-basic-grid label{display:flex;flex-direction:column;gap:5px;color:#64777e;font-size:10.5px}
+.dpr-wb-basic-grid input,.dpr-wb-basic-grid select{height:35px;box-sizing:border-box;border:1px solid #d8e0e3;border-radius:6px;background:#fff;padding:0 9px;color:#334b53}
+.dpr-wb-component-catalog{margin-top:16px}
+.dpr-wb-component-group{margin-bottom:13px}
+.dpr-wb-component-group h4{margin:0 0 7px;color:#324b53;font-size:12px}
+.dpr-wb-component-group>div{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+.dpr-wb-component-option{display:flex;align-items:flex-start;gap:8px;min-height:50px;padding:9px;border:1px solid #e0e7e9;border-radius:7px;background:#fff;cursor:pointer}
+.dpr-wb-component-option:has(input:checked){border-color:#69bdc5;background:#f2fbfb}
+.dpr-wb-component-option span{display:flex;flex-direction:column;gap:3px}
+.dpr-wb-component-option b{color:#344d55;font-size:11px}
+.dpr-wb-component-option small{color:#849298;font-size:9.5px;line-height:1.35}
+.dpr-wb-live-preview{position:relative;align-self:stretch;min-height:0;border:1px solid #dce4e6;border-radius:10px;background:#fff;overflow:hidden}
+.dpr-wb-live-head{display:flex;align-items:center;min-height:40px;box-sizing:border-box;padding:10px 13px;border-bottom:1px solid #e2e8ea;background:#fff}
+.dpr-wb-live-head b{font-size:12px}
+.dpr-wb-preview-viewport{position:relative;height:calc(100% - 40px);min-height:0;overflow:hidden;background:#fff}
+.dpr-wb-preview-viewport iframe{position:absolute;top:0;left:0;width:1440px;height:1120px;border:0;background:#fff;transform:scale(.6);transform-origin:0 0}
+.dpr-component-preview-drawer{width:min(1120px,calc(100vw - 32px))}
+.dpr-component-preview-drawer .drawer-head>div{min-width:0}
+.dpr-component-preview-drawer .drawer-head p{margin:4px 0 0;color:#839197;font-size:11px}
+.dpr-component-preview-drawer .drawer-body{padding:16px;background:#eef2f4}
+.dpr-component-preview-browser{position:relative;height:720px;overflow:auto;border:1px solid #d9e1e4;border-radius:9px;background:#fff;box-shadow:0 8px 26px rgba(27,48,56,.08)}
+.dpr-component-preview-browser iframe{position:absolute;top:0;left:0;width:1440px;height:1040px;border:0;background:#fff;transform:scale(.74);transform-origin:0 0}
 .dpr-schema-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.dpr-schema-card{display:flex;flex-direction:column;padding:16px;border:1px solid #e3e9eb;border-radius:9px}.dpr-schema-head{display:flex;justify-content:space-between;gap:8px}.dpr-schema-head h3{margin:5px 0 12px;font-size:14px}.dpr-schema-label{font-size:10px;color:#89969b;text-transform:uppercase;letter-spacing:.5px;margin:9px 0 5px}.dpr-region-row,.dpr-component-list{display:flex;gap:5px;flex-wrap:wrap}.dpr-code{font:9.5px 'SF Mono',Menlo,monospace;background:#f2f5f6;color:#52666d;padding:3px 5px;border-radius:4px}.dpr-schema-card .dpr-card-foot{margin-top:auto;padding-top:13px}
-@media(max-width:1180px){.dpr-metrics{grid-template-columns:repeat(2,1fr)}.dpr-role-grid{grid-template-columns:repeat(2,1fr)}.dpr-schema-grid{grid-template-columns:1fr}.dpr-allocation-funnel{grid-template-columns:1fr}.dpr-flow-assignment-filters{grid-template-columns:repeat(2,minmax(150px,1fr))}}
-@media(max-width:780px){.dpr-intro{align-items:flex-start;flex-direction:column}.dpr-metrics,.dpr-role-grid,.dpr-run-grid,.dpr-detail-video-grid,.dpr-trajectory-card,.dpr-version-meta,.dpr-flow-assignment-filters{grid-template-columns:1fr}.dpr-record-top>div{align-items:flex-start;flex-direction:column;gap:5px}.dpr-record-summary{align-items:flex-start;flex-direction:column}.dpr-flow-match,.dpr-allocation-table-foot{align-items:flex-start;flex-direction:column}}
+.wbx-data-detail-return{display:flex;align-items:center;gap:14px;margin:0 0 12px;padding:10px 14px;border:1px solid #e3e9eb;border-radius:8px;background:#fff;color:#344b53}.wbx-data-detail-return a{color:#149DAA}.wbx-data-detail-return>b{font-size:14px}.wbx-data-detail-return>span{display:inline-flex;align-items:center;gap:5px;margin-left:auto;color:#7d8b90;font-size:11.5px}.wbx-data-detail-return>span b{color:#149DAA;font:600 11.5px 'SF Mono',Menlo,monospace}
+@media(max-width:1180px){.dpr-metrics{grid-template-columns:repeat(2,1fr)}.dpr-role-grid{grid-template-columns:repeat(2,1fr)}.dpr-schema-grid{grid-template-columns:1fr}.dpr-allocation-funnel{grid-template-columns:1fr}.dpr-flow-assignment-filters{grid-template-columns:repeat(2,minmax(150px,1fr))}.dpr-dispatch-stage-grid,.dpr-dispatch-alerts{grid-template-columns:1fr}.dpr-workbench-builder .drawer-body{overflow-y:auto}.dpr-wb-builder-layout{grid-template-columns:1fr;height:auto}.dpr-wb-builder-form{overflow:visible}.dpr-wb-preview-viewport{height:620px}.dpr-wb-live-preview{position:relative}}
+@media(max-width:780px){.dpr-intro{align-items:flex-start;flex-direction:column}.dpr-metrics,.dpr-role-grid,.dpr-run-grid,.dpr-detail-video-grid,.dpr-trajectory-card,.dpr-version-meta,.dpr-flow-assignment-filters,.dpr-dispatch-filter-grid,.dpr-dispatch-compare{grid-template-columns:1fr}.dpr-dispatch-toolbar,.dpr-dispatch-alert{align-items:flex-start;flex-direction:column}.dpr-dispatch-alert small{margin-left:0}.dpr-dispatch-search{width:100%;flex-wrap:wrap}.dpr-dispatch-search input{width:100%}.dpr-record-top>div{align-items:flex-start;flex-direction:column;gap:5px}.dpr-record-summary{align-items:flex-start;flex-direction:column}.dpr-flow-match,.dpr-allocation-table-foot{align-items:flex-start;flex-direction:column}}
 """

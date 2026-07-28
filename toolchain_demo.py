@@ -23,6 +23,7 @@ Usage:
 
 import math
 import html
+import json
 import os
 import re
 import sys
@@ -628,10 +629,12 @@ a { color:#149DAA; text-decoration:none; } a:hover { color:#0F8190; }
 .sn-tag.t-new { background:rgba(82,196,116,0.20); color:rgba(160,230,176,0.95); }
 .sn-tag.t-opt { background:rgba(70,160,235,0.18); color:rgba(150,205,250,0.95); }
 .sn-tag.t-tbd { background:rgba(245,180,70,0.20); color:rgba(255,215,150,0.95); }
+.sn-tag.t-draft { background:rgba(178,155,215,0.18); color:rgba(214,199,238,0.92); }
 .sn-item.active .sn-tag { background:rgba(255,255,255,0.22); color:rgba(255,255,255,0.85); }
 .sn-item.active .sn-tag.t-new { background:rgba(82,196,116,0.42); color:#fff; }
 .sn-item.active .sn-tag.t-opt { background:rgba(70,160,235,0.42); color:#fff; }
 .sn-item.active .sn-tag.t-tbd { background:rgba(245,180,70,0.42); color:#fff; }
+.sn-item.active .sn-tag.t-draft { background:rgba(178,155,215,0.40); color:#fff; }
 
 /* ── Main area ── */
 .q-main { margin-left:220px; flex:1; min-width:0; min-height:calc(100vh - 52px); background:#f5f7fa; border-top-left-radius:10px; }
@@ -816,6 +819,7 @@ select option:disabled { color:rgba(0,0,0,0.32); }
 .tag-teal { color:#0f6e56; background:#e1f5ee; border-color:#5dcaa5; }
 .dataset-tag-path-list { display:flex; flex-wrap:wrap; gap:6px; padding:7px 9px; border:1px solid #d9d9d9; border-radius:8px; background:#fff; }
 .dataset-tag-path-chip { display:inline-flex; align-items:center; min-height:26px; padding:2px 10px; border:1px solid #b8e2e8; border-radius:5px; background:#eef9fa; color:#0F8190; font-size:12.5px; font-weight:400; line-height:20px; }
+[data-dataset-info-field="tags"] .dataset-tag-path-list { padding:0; border:0; background:transparent; }
 .qa { display:inline-flex; align-items:center; gap:5px; font-size:13px; }
 .qa::before { content:''; width:7px; height:7px; border-radius:50%; }
 .qa-pass { color:#389e0d; } .qa-pass::before { background:#52c41a; }
@@ -1056,6 +1060,7 @@ select option:disabled { color:rgba(0,0,0,0.32); }
 .det-pane.active { display:block; }
 
 /* ── 个人看板: 个人待办、产出、质量与排名 ── */
+.pd-dashboard { display:flex; height:calc(100vh - 112px); min-height:0; flex-direction:column; overflow:hidden; }
 .pd-kpi-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:14px; margin-bottom:16px; }
 .pd-kpi { position:relative; overflow:hidden; min-height:116px; padding:18px 20px; border:1px solid #edf0f1; border-radius:10px; background:#fff; box-sizing:border-box; }
 .pd-kpi::after { content:''; position:absolute; top:0; right:0; width:72px; height:72px; border-radius:0 0 0 72px; background:#eef9fa; }
@@ -1067,14 +1072,14 @@ select option:disabled { color:rgba(0,0,0,0.32); }
 .pd-kpi .sub b { color:#149DAA; font-weight:500; }
 .pd-kpi.warn .sub b { color:#d48806; }
 .pd-kpi.good .sub b { color:#2e9e5b; }
-.pd-layout { display:grid; grid-template-columns:minmax(0,1.55fr) minmax(350px,.75fr); gap:16px; align-items:start; }
-.pd-main { display:flex; min-width:0; flex-direction:column; gap:16px; }
-.pd-card { margin:0 !important; padding:0 !important; overflow:hidden; }
+.pd-layout { display:grid; min-height:0; flex:1; grid-template-columns:minmax(0,1.55fr) minmax(350px,.75fr); gap:16px; align-items:stretch; overflow:hidden; }
+.pd-main { display:grid; height:100%; min-width:0; min-height:0; grid-template-rows:minmax(0,.86fr) minmax(0,1.14fr); gap:16px; }
+.pd-card { display:flex; min-height:0; margin:0 !important; padding:0 !important; flex-direction:column; overflow:hidden; }
 .pd-card-head { display:flex; align-items:flex-start; justify-content:space-between; gap:16px; padding:17px 20px 14px; border-bottom:1px solid #f0f0f0; }
 .pd-card-head h3 { margin:0 0 4px; color:rgba(0,0,0,.86); font-size:15.5px; font-weight:600; }
 .pd-card-head p { margin:0; color:rgba(0,0,0,.42); font-size:12px; }
 .pd-card-head .meta { flex:none; color:rgba(0,0,0,.42); font-size:12px; }
-.pd-todo-list { display:flex; flex-direction:column; }
+.pd-todo-list { display:flex; min-height:0; flex:1; flex-direction:column; overflow-y:auto; overscroll-behavior:contain; }
 .pd-todo { display:grid; grid-template-columns:minmax(190px,1.45fr) 74px 62px 92px 140px 70px; gap:12px; align-items:center; min-height:62px; padding:0 20px; border-bottom:1px solid #f3f4f5; font-size:12.5px; }
 .pd-todo:last-child { border-bottom:0; }
 .pd-todo .task strong { display:block; overflow:hidden; margin-bottom:3px; color:rgba(0,0,0,.82); font-size:13.5px; font-weight:550; text-overflow:ellipsis; white-space:nowrap; }
@@ -1087,8 +1092,8 @@ select option:disabled { color:rgba(0,0,0,0.32); }
 .pd-risk { color:rgba(0,0,0,.45); font-size:11.5px; }
 .pd-risk.warn { color:#d48806; }
 .pd-todo a { justify-self:end; }
-.pd-bottom-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
-.pd-trend { height:210px; padding:16px 20px 12px; box-sizing:border-box; }
+.pd-bottom-grid { display:grid; min-height:0; grid-template-columns:1fr 1fr; gap:16px; }
+.pd-trend { min-height:0; padding:16px 20px 12px; box-sizing:border-box; flex:1; overflow-y:auto; overscroll-behavior:contain; }
 .pd-bars { display:flex; height:148px; align-items:flex-end; justify-content:space-between; gap:10px; border-bottom:1px solid #e8eaec; }
 .pd-bar-item { display:flex; height:100%; min-width:0; flex:1; flex-direction:column; align-items:center; justify-content:flex-end; gap:5px; }
 .pd-bar-value { color:rgba(0,0,0,.52); font-family:'SF Mono',Menlo,monospace; font-size:10.5px; }
@@ -1102,13 +1107,14 @@ select option:disabled { color:rgba(0,0,0,0.32); }
 .pd-stage-table td { padding:13px 12px; border-top:1px solid #f1f2f3; color:rgba(0,0,0,.68); white-space:nowrap; }
 .pd-stage-table td:first-child { color:rgba(0,0,0,.82); font-weight:500; }
 .pd-stage-table .good { color:#2e9e5b; }
-.pd-rank-card { position:sticky; top:14px; }
+.pd-stage-scroll { min-height:0; flex:1; overflow:auto; overscroll-behavior:contain; }
+.pd-rank-card { height:100%; }
 .pd-my-rank { display:grid; grid-template-columns:80px 1fr; gap:14px; align-items:center; margin:16px; padding:14px 16px; border:1px solid #a9dfe3; border-radius:9px; background:#eef9fa; }
 .pd-my-rank .rank-no { color:#149DAA; font-size:30px; font-weight:700; text-align:center; }
 .pd-my-rank .rank-no span { display:block; color:rgba(0,0,0,.42); font-size:10.5px; font-weight:400; }
 .pd-my-rank strong { display:block; margin-bottom:5px; color:rgba(0,0,0,.82); font-size:13.5px; }
 .pd-my-rank p { margin:0; color:rgba(0,0,0,.48); font-size:11.5px; line-height:1.6; }
-.pd-ranking { margin:0; padding:0 16px 12px; list-style:none; }
+.pd-ranking { min-height:0; margin:0; padding:0 16px 12px; flex:1; overflow-y:auto; overscroll-behavior:contain; list-style:none; }
 .pd-ranking li { display:grid; grid-template-columns:28px minmax(90px,1fr) 58px 56px; gap:8px; align-items:center; min-height:39px; border-bottom:1px solid #f2f3f4; font-size:11.5px; }
 .pd-ranking li:last-child { border-bottom:0; }
 .pd-ranking .rank { color:rgba(0,0,0,.4); font-family:'SF Mono',Menlo,monospace; text-align:center; }
@@ -1119,9 +1125,12 @@ select option:disabled { color:rgba(0,0,0,0.32); }
 .pd-ranking-head { display:grid; grid-template-columns:28px minmax(90px,1fr) 58px 56px; gap:8px; padding:0 16px 8px; color:rgba(0,0,0,.38); font-size:10.5px; }
 .pd-ranking-head span:nth-child(n+3) { text-align:right; }
 @media (max-width:1200px) {
+  .pd-dashboard { height:auto; overflow:visible; }
   .pd-kpi-grid { grid-template-columns:1fr 1fr; }
-  .pd-layout { grid-template-columns:1fr; }
-  .pd-rank-card { position:static; }
+  .pd-layout { display:grid; overflow:visible; grid-template-columns:1fr; }
+  .pd-main { display:flex; height:auto; }
+  .pd-card,.pd-rank-card { height:auto; }
+  .pd-todo-list,.pd-trend,.pd-stage-scroll,.pd-ranking { overflow:visible; }
 }
 @media (max-width:840px) {
   .pd-bottom-grid { grid-template-columns:1fr; }
@@ -1145,7 +1154,7 @@ select option:disabled { color:rgba(0,0,0,0.32); }
 .wb-card.p0 { border-left-color:#d4504e; }
 .wb-card.p1 { border-left-color:#d48806; }
 .wb-card.p2 { border-left-color:#149DAA; }
-.wb-card-fields { display:grid; grid-template-columns:minmax(220px,1.6fr) 90px minmax(140px,1fr) 80px 90px; gap:14px; align-items:center; }
+.wb-card-fields { display:grid; grid-template-columns:minmax(190px,1.5fr) 64px minmax(110px,1fr) minmax(130px,1fr) minmax(125px,1fr) 54px minmax(170px,1.2fr); gap:12px; align-items:center; }
 .wb-card-field { display:flex; flex-direction:column; gap:5px; min-width:0; }
 .wb-card-field > span { color:rgba(0,0,0,0.45); font-size:12px; }
 .wb-card-field > b { overflow:hidden; color:rgba(0,0,0,0.84); font-size:14px; font-weight:500; text-overflow:ellipsis; white-space:nowrap; }
@@ -1158,7 +1167,7 @@ select option:disabled { color:rgba(0,0,0,0.32); }
 .wb-task-home-head a { display:inline-block; margin-bottom:10px; font-size:13px; }
 .wb-task-home-head h2 { margin:0 0 7px; color:rgba(0,0,0,0.86); font-size:20px; font-weight:600; }
 .wb-task-home-head p { margin:0; color:rgba(0,0,0,0.48); font-size:13px; }
-.wb-task-brief { display:grid; grid-template-columns:2fr .8fr 1fr .7fr .7fr; gap:12px; margin:18px 0; }
+.wb-task-brief { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:12px; margin:18px 0; }
 .wb-task-brief > div { display:flex; flex-direction:column; gap:5px; padding:12px 14px; border:1px solid #edf0f1; border-radius:8px; background:#fafbfc; }
 .wb-task-brief span { color:rgba(0,0,0,0.42); font-size:11.5px; }
 .wb-task-brief b { color:rgba(0,0,0,0.8); font-size:13px; font-weight:500; }
@@ -1214,10 +1223,80 @@ select option:disabled { color:rgba(0,0,0,0.32); }
 .wb-card.amber   { border-left-color:#d48806; }
 .wb-badge.green  { background:#f0faf4; color:#2e9e5b; border-color:#a3dbb8; }
 .wb-card.green   { border-left-color:#389e0d; }
-@media (max-width:1100px) {
-  .wb-card-fields { grid-template-columns:1.3fr 70px 1fr 70px 80px; gap:10px; }
+.wb-operator-summary { display:flex; align-items:center; justify-content:space-between; gap:20px; margin-bottom:14px; padding:13px 18px; border:1px solid #e7ecee; border-radius:9px; background:#fff; }
+.wb-operator-summary > div { display:flex; align-items:baseline; gap:7px; min-width:0; }
+.wb-operator-summary span { color:rgba(0,0,0,.48); font-size:12px; }
+.wb-operator-summary b { color:#149DAA; font:600 20px 'SF Mono',Menlo,monospace; }
+.wb-operator-summary i { overflow:hidden; margin-left:12px; color:rgba(0,0,0,.36); font-size:11.5px; font-style:normal; text-overflow:ellipsis; white-space:nowrap; }
+.wb-operator-summary a { flex:none; font-size:12px; }
+.wb-home-tabs { margin-bottom:16px; }
+.wb-home-tabs .det-tab { display:flex; align-items:center; gap:7px; }
+.wb-home-tabs .det-tab b { display:inline-flex; min-width:19px; height:19px; align-items:center; justify-content:center; padding:0 5px; border-radius:10px; background:#f0f3f4; color:#718087; box-sizing:border-box; font:600 10px 'SF Mono',Menlo,monospace; }
+.wb-home-tabs .det-tab.active b { background:#e5f6f7; color:#149DAA; }
+.wb-section-head { display:flex; align-items:flex-end; justify-content:space-between; gap:16px; margin:2px 2px 12px; }
+.wb-section-head h2 { margin:0 0 3px; color:rgba(0,0,0,.84); font-size:16px; }
+.wb-section-head p { margin:0; color:rgba(0,0,0,.42); font-size:11.5px; }
+.wb-my-job-list { display:flex; flex-direction:column; gap:10px; }
+.wb-my-job { display:grid; grid-template-columns:100px minmax(260px,1.35fr) minmax(250px,1fr) 56px 90px; gap:16px; align-items:center; min-height:72px; padding:12px 16px; border:1px solid #e7ecee; border-left:3px solid #149DAA; border-radius:9px; background:#fff; box-sizing:border-box; }
+.wb-my-job.paused { border-left-color:#d48806; }
+.wb-my-job.returned { border-left-color:#d4504e; }
+.wb-job-state-wrap { display:flex; align-items:flex-start; flex-direction:column; gap:6px; }
+.wb-job-state-wrap small { color:rgba(0,0,0,.38); font-size:10px; white-space:nowrap; }
+.wb-job-state { display:inline-flex; width:max-content; align-items:center; padding:4px 9px; border-radius:5px; background:#e8f7f8; color:#147c86; font-size:11.5px; font-weight:600; }
+.wb-job-state.paused { background:#fff7e6; color:#a96500; }
+.wb-job-state.returned { background:#fff1f0; color:#c43d39; }
+.wb-job-primary,.wb-job-context { display:flex; min-width:0; flex-direction:column; gap:5px; }
+.wb-job-label { color:rgba(0,0,0,.4); font-size:10.5px; }
+.wb-job-primary b { overflow:hidden; color:rgba(0,0,0,.82); font-size:13.5px; text-overflow:ellipsis; white-space:nowrap; }
+.wb-job-primary code { color:#6d7d83; font:10.5px 'SF Mono',Menlo,monospace; }
+.wb-job-context b { overflow:hidden; color:rgba(0,0,0,.7); font-size:12.5px; font-weight:500; text-overflow:ellipsis; white-space:nowrap; }
+.wb-pool-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:14px; }
+.wb-pool-card { display:flex; min-width:0; flex-direction:column; padding:18px; border:1px solid #e4e9eb; border-top:3px solid #149DAA; border-radius:10px; background:#fff; transition:box-shadow .18s,transform .15s; }
+.wb-pool-card:hover { box-shadow:0 5px 18px rgba(29,54,62,.07); transform:translateY(-1px); }
+.wb-pool-card.p0 { border-top-color:#d4504e; }
+.wb-pool-card.p1 { border-top-color:#d48806; }
+.wb-pool-card.p2 { border-top-color:#149DAA; }
+.wb-pool-head { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; }
+.wb-pool-head h3 { margin:5px 0 4px; color:rgba(0,0,0,.84); font-size:15px; }
+.wb-pool-head p { margin:0; color:rgba(0,0,0,.43); font-size:11.5px; }
+.wb-pool-stage { color:#149DAA; font-size:10.5px; font-weight:600; }
+.wb-pool-volume { display:grid; grid-template-columns:1fr 1fr 1.25fr; gap:8px; margin:18px 0 13px; }
+.wb-pool-volume > div { display:flex; min-width:0; flex-direction:column; gap:4px; padding:10px 9px; border-radius:7px; background:#f7f9fa; }
+.wb-pool-volume b { overflow:hidden; color:#2f454d; font:600 16px 'SF Mono',Menlo,monospace; text-overflow:ellipsis; white-space:nowrap; }
+.wb-pool-volume span { color:rgba(0,0,0,.4); font-size:10px; }
+.wb-pool-priorities { display:flex; min-height:23px; gap:6px; flex-wrap:wrap; }
+.wb-pool-priorities span { padding:3px 8px; border-radius:4px; background:#f2f5f6; color:#68777d; font:600 10px 'SF Mono',Menlo,monospace; }
+.wb-pool-priorities .p0 { background:#fff1f0; color:#c43d39; }
+.wb-pool-priorities .p1 { background:#fff7e6; color:#a96500; }
+.wb-pool-priorities .p2 { background:#eaf5f8; color:#147b99; }
+.wb-pool-foot { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-top:14px; padding-top:13px; border-top:1px solid #edf0f1; }
+.wb-pool-foot > span { color:rgba(0,0,0,.4); font-size:10.5px; }
+.wb-pool-foot .btn { flex:none; }
+.wb-pool-brief { grid-template-columns:repeat(5,minmax(0,1fr)); }
+.wb-source-section { margin:0 0 16px; }
+.wb-source-title { display:flex; align-items:center; justify-content:space-between; gap:18px; }
+.wb-source-title > div { min-width:0; }
+.wb-source-filter { display:flex; flex:none; align-items:center; gap:7px; }
+.wb-source-filter input { width:210px; height:32px; padding:0 10px; border:1px solid #d9dfe2; border-radius:6px; background:#fff; box-sizing:border-box; font-size:11.5px; outline:none; }
+.wb-source-filter input:focus { border-color:#149DAA; box-shadow:0 0 0 2px rgba(20,157,170,.1); }
+.wb-source-table { min-width:980px; }
+.wb-source-table td:nth-child(2) b,.wb-source-table td:nth-child(4) span { display:block; color:rgba(0,0,0,.76); font-size:12px; font-weight:500; }
+.wb-source-table td:nth-child(2) code,.wb-source-table td:nth-child(4) small { display:block; margin-top:4px; color:rgba(0,0,0,.4); font:10px 'SF Mono',Menlo,monospace; }
+.wb-source-table tr.selected td { background:#f1fafb; }
+.wb-source-choice label { display:flex; align-items:center; gap:6px; color:#6c7b81; font-size:10.5px; cursor:pointer; white-space:nowrap; }
+.wb-source-choice input { width:15px; height:15px; margin:0; accent-color:#149DAA; cursor:pointer; }
+.wb-source-table tr.selected .wb-source-choice span { color:#147c86; font-weight:600; }
+.wb-source-empty { padding:28px !important; color:rgba(0,0,0,.42) !important; text-align:center !important; }
+.wb-selected-source { display:flex; align-items:center; gap:7px; margin:0 0 12px; color:rgba(0,0,0,.45); font-size:11.5px; }
+.wb-selected-source b { color:rgba(0,0,0,.72); }
+.wb-selected-source code { padding:2px 6px; border-radius:4px; background:#f1f4f5; color:#607178; font-size:10px; }
+@media (max-width:1280px) {
+  .wb-card-fields { grid-template-columns:1.4fr 70px 1fr 1fr; gap:10px; }
   .wb-task-brief { grid-template-columns:1fr 1fr; }
+  .wb-pool-brief { grid-template-columns:repeat(5,minmax(0,1fr)); }
   .wb-filter-grid { grid-template-columns:1fr 1fr; }
+  .wb-my-job { grid-template-columns:100px minmax(210px,1.2fr) minmax(190px,1fr) 56px 90px; gap:12px; }
+  .wb-pool-grid { grid-template-columns:1fr 1fr; }
 }
 @media (max-width:780px) {
   .wb-card { align-items:flex-start; flex-direction:column; }
@@ -1225,6 +1304,16 @@ select option:disabled { color:rgba(0,0,0,0.32); }
   .wb-card-fields,.wb-task-brief,.wb-task-config-grid { grid-template-columns:1fr; }
   .wb-filter-grid { grid-template-columns:1fr; }
   .wb-rule-groups { grid-template-columns:1fr; }
+  .wb-operator-summary { align-items:flex-start; flex-direction:column; }
+  .wb-operator-summary i { display:none; }
+  .wb-my-job { grid-template-columns:1fr 70px; }
+  .wb-my-job .wb-job-state-wrap,.wb-my-job .wb-job-primary,.wb-my-job .wb-job-context { grid-column:1 / 3; }
+  .wb-my-job .btn { grid-column:2; }
+  .wb-pool-grid { grid-template-columns:1fr; }
+  .wb-pool-foot { align-items:flex-start; flex-direction:column; }
+  .wb-source-title { align-items:flex-start; flex-direction:column; }
+  .wb-source-filter { width:100%; }
+  .wb-source-filter input { min-width:0; flex:1; }
 }
 
 /* ── 任务管理: stage 切换 tab + 新建按钮同一行 ── */
@@ -1413,6 +1502,9 @@ button.tm-subtab { border:0; background:transparent; font-family:inherit; cursor
 .lab-meta .ver { display:inline-flex; align-items:center; gap:6px; background:rgba(255,255,255,0.08); padding:4px 12px; border-radius:6px; cursor:pointer; font-size:12.5px; }
 .lab-meta .ver:hover { background:rgba(255,255,255,0.14); }
 .lab-meta .ver .caret { font-size:9px; opacity:0.55; }
+.lab-meta .flow-version-select { display:inline-flex; align-items:center; gap:7px; color:rgba(255,255,255,0.55); font-size:12.5px; }
+.lab-meta .flow-version-select select { height:28px; padding:0 28px 0 10px; border:1px solid rgba(255,255,255,0.18); border-radius:6px; background:#34414d; color:#fff; outline:none; cursor:pointer; }
+.lab-meta .flow-version-select select:focus { border-color:#48b5c0; box-shadow:0 0 0 2px rgba(72,181,192,0.16); }
 .lab-meta .status-pass { background:#3DC470; color:#fff; padding:3px 12px; border-radius:6px; font-size:12px; font-weight:500; letter-spacing:0.5px; }
 .lab-vid-grid { display:grid; grid-template-columns:1fr 1fr 1fr; gap:6px; background:#0d0d0d; padding:6px; border-radius:8px; margin-bottom:14px; position:relative; }
 .lab-vid { background:linear-gradient(135deg,#262b31,#1c2025); border-radius:6px; position:relative; min-height:300px; display:flex; align-items:center; justify-content:center; color:rgba(255,255,255,0.18); font-size:32px; overflow:hidden; }
@@ -1781,7 +1873,7 @@ BASE_TEMPLATE = """<!DOCTYPE html>
       <div class="sn-label">{{ group_label }}</div>
       {% for entry in items %}
       {% set _badge = entry[3] if entry|length > 3 else None %}
-      <a href="{{ entry[0] }}" class="sn-item {% if active==entry[0] %}active{% endif %}"><span class="ic">{{ entry[2]|safe }}</span>{{ entry[1] }}{% if _badge %}<span class="sn-tag{% if _badge == '新增' %} t-new{% elif _badge == '优化' %} t-opt{% elif _badge == '待定' %} t-tbd{% endif %}">{{ _badge }}</span>{% endif %}</a>
+      <a href="{{ entry[0] }}" class="sn-item {% if active==entry[0] %}active{% endif %}"><span class="ic">{{ entry[2]|safe }}</span>{{ entry[1] }}{% if _badge %}<span class="sn-tag{% if _badge == '新增' %} t-new{% elif _badge == '优化' %} t-opt{% elif _badge == '待定' %} t-tbd{% elif _badge == '草稿' %} t-draft{% endif %}">{{ _badge }}</span>{% endif %}</a>
       {% endfor %}
       {% endfor %}
     </nav>
@@ -2446,7 +2538,6 @@ for _data_page_key, _data_page_spec in data_refactor.PAGE_SPECS.items():
 
 _DATA_COMPAT_REDIRECTS = {
     "/data/tasks": "/data/collection-tasks",
-    "/data/task-pool": "/data/workbench",
     "/data/pipeline-definitions": "/data/pipelines",
     "/data/pipeline-runs": "/data/runs",
     "/data/assets": "/data/recordings",
@@ -3063,11 +3154,18 @@ def _legacy_data_recordings_reference():
 WB_TASKS = [
     {
         "id": "WB-2026-0718-QC",
+        "pool": "POOL-QUALITY-REVIEW",
+        "task_name": "厨房采集数据质检任务",
+        "processing_task": "PROC-2026-0718",
+        "project": "宁德项目",
+        "user_group": "质检复核用户组",
+        "workbench": "质检工作台 v2.0",
         "flow": "厨房数据质检流程 v3",
         "stage": "质检",
         "node": "完整性质检",
         "priority": "P0",
         "count": 96,
+        "processing": 18,
         "filters": [
             ("所属项目", "宁德项目"),
             ("来源任务", "COL-2026-0718"),
@@ -3092,11 +3190,18 @@ WB_TASKS = [
     },
     {
         "id": "WB-2026-0922-AC",
+        "pool": "POOL-INTERNAL-ACCEPTANCE",
+        "task_name": "家居动作标注验收任务",
+        "processing_task": "PROC-2026-0922-AC",
+        "project": "demo 项目",
+        "user_group": "内部验收用户组",
+        "workbench": "详情工作台 v1.0",
         "flow": "家居动作标注流程 v2",
         "stage": "验收",
         "node": "标注成果验收",
         "priority": "P0",
         "count": 42,
+        "processing": 8,
         "filters": [
             ("所属项目", "demo 项目"),
             ("处理任务", "PROC-2026-0922"),
@@ -3119,11 +3224,18 @@ WB_TASKS = [
     },
     {
         "id": "WB-2026-0922-LB",
+        "pool": "POOL-ACTION-ANNOTATION",
+        "task_name": "家居动作分段标注任务",
+        "processing_task": "PROC-2026-0922",
+        "project": "宁德项目",
+        "user_group": "标注员用户组",
+        "workbench": "标注工作台 v4.1",
         "flow": "家居动作标注流程 v2",
         "stage": "标注",
         "node": "动作分段标注",
         "priority": "P1",
         "count": 142,
+        "processing": 27,
         "filters": [
             ("所属项目", "宁德项目"),
             ("处理任务", "PROC-2026-0922"),
@@ -3146,11 +3258,18 @@ WB_TASKS = [
     },
     {
         "id": "WB-2026-0930-REVIEW",
+        "pool": "POOL-QUALITY-REVIEW",
+        "task_name": "三方导入数据抽检任务",
+        "processing_task": "PROC-2026-0930",
+        "project": "预训练采集",
+        "user_group": "质检复核用户组",
+        "workbench": "质检工作台 v2.0",
         "flow": "三方数据导入质检流程 v4",
         "stage": "质检",
         "node": "质检抽检",
         "priority": "P1",
         "count": 28,
+        "processing": 6,
         "filters": [
             ("所属项目", "预训练采集"),
             ("来源任务", "IMP-2026-0042"),
@@ -3172,11 +3291,18 @@ WB_TASKS = [
     },
     {
         "id": "WB-2026-0888-FINAL",
+        "pool": "POOL-INTERNAL-ACCEPTANCE",
+        "task_name": "评测集入湖终验任务",
+        "processing_task": "PROC-2026-0888",
+        "project": "demo 项目",
+        "user_group": "内部验收用户组",
+        "workbench": "详情工作台 v1.0",
         "flow": "评测集质检流程 v4",
         "stage": "验收",
         "node": "入湖终验",
         "priority": "P2",
         "count": 12,
+        "processing": 3,
         "filters": [
             ("所属项目", "demo 项目"),
             ("处理任务", "PROC-2026-0888"),
@@ -3201,76 +3327,231 @@ WB_TASKS = [
 
 WB_PRIORITY_ORDER = {"P0": 0, "P1": 1, "P2": 2}
 
+WB_POOL_META = {
+    "POOL-QUALITY-REVIEW": {
+        "name": "质检复核任务池",
+        "oldest_wait": "4.6 小时",
+        "risk": "2 条接近超时",
+    },
+    "POOL-ACTION-ANNOTATION": {
+        "name": "动作标注任务池",
+        "oldest_wait": "2.8 小时",
+        "risk": "运行正常",
+    },
+    "POOL-INTERNAL-ACCEPTANCE": {
+        "name": "内部验收任务池",
+        "oldest_wait": "6.2 小时",
+        "risk": "5 条接近超时",
+    },
+}
 
+WB_MY_JOBS = [
+    {
+        "recording_id": "recording_4057808",
+        "task_id": "WB-2026-0718-QC",
+        "state": "处理中",
+        "updated": "8 分钟前",
+    },
+    {
+        "recording_id": "recording_4057761",
+        "task_id": "WB-2026-0922-LB",
+        "state": "暂离待继续",
+        "updated": "32 分钟前",
+    },
+    {
+        "recording_id": "recording_4057711",
+        "task_id": "WB-2026-0922-AC",
+        "state": "驳回重做",
+        "updated": "1 小时前",
+    },
+]
+
+
+@app.route("/data/task-pool")
 @app.route("/data/workbench")
 def data_workbench():
-    # 顶部 stat 卡: 今日 / 本周 / 合格率, 每张带同比变化
-    wb_stats = [
-        {"label": "今日完成任务量", "value": "127",  "base": "昨日 113",  "delta": "+12.4%", "dir": "up"},
-        {"label": "本周完成任务量", "value": "856",  "base": "上周 790",  "delta": "+8.4%",  "dir": "up"},
-        {"label": "任务合格率",     "value": "92.4%", "base": "上周 93.6%", "delta": "-1.2%", "dir": "down"},
-    ]
-    stat_cards_html = ""
-    for s in wb_stats:
-        arrow = "&uarr;" if s["dir"] == "up" else ("&darr;" if s["dir"] == "down" else "&minus;")
-        trend_cls = f"trend-{s['dir']}"
-        stat_cards_html += f"""
-        <div class="stat-card">
-          <div class="stat-label">{s['label']}</div>
-          <div class="stat-value">{s['value']}</div>
-          <div class="stat-sub"><span class="{trend_cls}">{arrow} {s['delta']}</span> 同比{s['base']}</div>
+    tasks_by_id = {item["id"]: item for item in WB_TASKS}
+    state_class = {
+        "处理中": "processing",
+        "暂离待继续": "paused",
+        "驳回重做": "returned",
+    }
+    my_job_rows = ""
+    sorted_my_jobs = sorted(
+        WB_MY_JOBS,
+        key=lambda item: WB_PRIORITY_ORDER[
+            tasks_by_id[item["task_id"]]["priority"]
+        ],
+    )
+    for job in sorted_my_jobs:
+        task = tasks_by_id[job["task_id"]]
+        job_state_class = state_class[job["state"]]
+        priority_cls = task["priority"].lower()
+        my_job_rows += f"""
+        <div class="wb-my-job {job_state_class}"
+          data-job-priority="{html.escape(task['priority'])}">
+          <div class="wb-job-state-wrap">
+            <span class="wb-job-state {job_state_class}">{html.escape(job['state'])}</span>
+            <small>{html.escape(job['updated'])}</small>
+          </div>
+          <div class="wb-job-primary">
+            <span class="wb-job-label">处理任务</span>
+            <b>{html.escape(task['task_name'])}</b>
+            <code>{html.escape(task['processing_task'])}</code>
+          </div>
+          <div class="wb-job-context">
+            <span class="wb-job-label">当前节点</span>
+            <b>{html.escape(task['stage'])} · {html.escape(task['node'])}</b>
+          </div>
+          <span class="wb-priority {priority_cls}">{html.escape(task['priority'])}</span>
+          <a class="btn btn-primary" href="/data/workbench/edit?task={quote(task['id'])}&recording_id={quote(job['recording_id'])}">继续处理</a>
         </div>
         """
 
-    cards = ""
-    sorted_tasks = sorted(
-        WB_TASKS,
-        key=lambda item: (WB_PRIORITY_ORDER[item["priority"]], item["id"]),
+    pool_groups = {}
+    for task in WB_TASKS:
+        pool_groups.setdefault(task["pool"], []).append(task)
+
+    pool_cards = ""
+    sorted_pools = sorted(
+        pool_groups.items(),
+        key=lambda item: (
+            min(WB_PRIORITY_ORDER[t["priority"]] for t in item[1]),
+            item[0],
+        ),
     )
-    for t in sorted_tasks:
-        priority_cls = t["priority"].lower()
-        cards += f"""
-        <div class="wb-card {priority_cls}"
-          data-workbench-priority="{html.escape(t['priority'])}">
-          <div class="wb-main">
-            <div class="wb-card-fields">
-              <div class="wb-card-field flow">
-                <span>流程名称</span><b>{html.escape(t['flow'])}</b>
-              </div>
-              <div class="wb-card-field">
-                <span>环节</span><b>{html.escape(t['stage'])}</b>
-              </div>
-              <div class="wb-card-field">
-                <span>节点</span><b>{html.escape(t['node'])}</b>
-              </div>
-              <div class="wb-card-field">
-                <span>优先级</span>
-                <b class="wb-priority {priority_cls}">{html.escape(t['priority'])}</b>
-              </div>
-              <div class="wb-card-field">
-                <span>数据量</span><b>{t['count']:,} 条</b>
-              </div>
+    for pool_id, pool_tasks in sorted_pools:
+        meta = WB_POOL_META[pool_id]
+        lead = sorted(
+            pool_tasks,
+            key=lambda item: (WB_PRIORITY_ORDER[item["priority"]], item["id"]),
+        )[0]
+        total_waiting = sum(item["count"] for item in pool_tasks)
+        total_processing = sum(item["processing"] for item in pool_tasks)
+        highest_priority = lead["priority"]
+        priority_cls = highest_priority.lower()
+        priority_counts = []
+        for priority in ("P0", "P1", "P2"):
+            count = sum(
+                item["count"] for item in pool_tasks
+                if item["priority"] == priority
+            )
+            if count:
+                priority_counts.append(
+                    f'<span class="{priority.lower()}">{priority} {count:,}</span>'
+                )
+        pool_cards += f"""
+        <article class="wb-pool-card {priority_cls}"
+          data-pool-priority="{html.escape(highest_priority)}">
+          <div class="wb-pool-head">
+            <div>
+              <span class="wb-pool-stage">{html.escape(lead['stage'])}</span>
+              <h3>{html.escape(meta['name'])}</h3>
+              <p>{html.escape(lead['user_group'])}</p>
             </div>
+            <span class="wb-priority {priority_cls}">最高 {html.escape(highest_priority)}</span>
           </div>
-          <div class="wb-side">
+          <div class="wb-pool-volume">
+            <div><b>{total_waiting:,}</b><span>待领取</span></div>
+            <div><b>{total_processing:,}</b><span>处理中</span></div>
+            <div><b>{html.escape(meta['oldest_wait'])}</b><span>最长滞留</span></div>
+          </div>
+          <div class="wb-pool-priorities">{"".join(priority_counts)}</div>
+          <div class="wb-pool-foot">
+            <span>{len(pool_tasks)} 个任务来源 · {html.escape(meta['risk'])}</span>
             <a class="btn btn-primary"
-              href="/data/workbench/tasks/{quote(t['id'])}">进入工作台 &rsaquo;</a>
+              href="/data/workbench/pools/{quote(pool_id)}">进入任务池 &rsaquo;</a>
           </div>
-        </div>
+        </article>
         """
     content = f"""
-    <div class="stat-grid">{stat_cards_html}</div>
-    <div class="wb-list">{cards}</div>
+    <div class="wb-operator-summary">
+      <div>
+        <span>今日已完成</span><b>127</b><span>条</span>
+        <i>先继续已领取作业，再从任务池领取新数据</i>
+      </div>
+      <a href="/data/dashboard">查看个人看板 &rsaquo;</a>
+    </div>
+    <div class="det-tabs wb-home-tabs">
+      <span class="det-tab active" onclick="switchDetTab(this,'my-work')">我的作业 <b>{len(sorted_my_jobs)}</b></span>
+      <span class="det-tab" onclick="switchDetTab(this,'available-pools')">可领取任务池 <b>{len(sorted_pools)}</b></span>
+    </div>
+    <div id="det-pane-my-work" class="det-pane active">
+      <div class="wb-section-head">
+        <div><h2>我的作业</h2><p>已领取或需要继续处理的数据</p></div>
+      </div>
+      <div class="wb-my-job-list">{my_job_rows}</div>
+    </div>
+    <div id="det-pane-available-pools" class="det-pane">
+      <div class="wb-section-head">
+        <div><h2>可领取任务池</h2><p>仅展示当前用户所属用户组可处理的任务池</p></div>
+      </div>
+      <div class="wb-pool-grid">{pool_cards}</div>
+    </div>
     """
     return render_page("工作台", content, active="/data/workbench", module="data",
                        breadcrumb='数据平台 / <b>工作台</b>', mvp_note="MVP 一期")
 
 
-@app.route("/data/workbench/tasks/<task_id>")
-def data_workbench_task_home(task_id):
-    task = next((item for item in WB_TASKS if item["id"] == task_id), None)
-    if not task:
+def _render_workbench_pool_home(pool_id, selected_task_id=None):
+    pool_tasks = [item for item in WB_TASKS if item["pool"] == pool_id]
+    if not pool_tasks:
         return redirect("/data/workbench")
+    pool_tasks = sorted(
+        pool_tasks,
+        key=lambda item: (WB_PRIORITY_ORDER[item["priority"]], item["id"]),
+    )
+    task_id_query = request.args.get("task_id", "").strip()
+    visible_pool_tasks = [
+        item for item in pool_tasks
+        if not task_id_query
+        or task_id_query.lower() in item["processing_task"].lower()
+    ]
+    task = next(
+        (item for item in pool_tasks if item["id"] == selected_task_id),
+        visible_pool_tasks[0] if visible_pool_tasks else pool_tasks[0],
+    )
+    if task_id_query and visible_pool_tasks and task not in visible_pool_tasks:
+        task = visible_pool_tasks[0]
+    meta = WB_POOL_META[pool_id]
+    total_waiting = sum(item["count"] for item in pool_tasks)
+    total_processing = sum(item["processing"] for item in pool_tasks)
+
+    source_rows = ""
+    for source in visible_pool_tasks:
+        selected = source["id"] == task["id"]
+        priority_cls = source["priority"].lower()
+        source_url = (
+            f"/data/workbench/pools/{quote(pool_id)}"
+            f"?source={quote(source['id'])}"
+        )
+        if task_id_query:
+            source_url += f"&task_id={quote(task_id_query)}"
+        source_rows += f"""
+        <tr class="{'selected' if selected else ''}">
+          <td class="wb-source-choice">
+            <label>
+              <input type="radio" name="wbSourceTask"
+                aria-label="选择 {html.escape(source['processing_task'])}"
+                {'checked' if selected else ''}
+                onchange="window.location.href='{source_url}'">
+              <span>{'已选择' if selected else '选择'}</span>
+            </label>
+          </td>
+          <td><b>{html.escape(source['task_name'])}</b><code>{html.escape(source['processing_task'])}</code></td>
+          <td>{html.escape(source['project'])}</td>
+          <td><span>{html.escape(source['flow'])}</span><small>{html.escape(source['node'])}</small></td>
+          <td><span class="wb-priority {priority_cls}">{html.escape(source['priority'])}</span></td>
+          <td>{source['count']:,}</td>
+          <td>{source['processing']:,}</td>
+        </tr>
+        """
+    if not source_rows:
+        source_rows = """
+        <tr><td colspan="7" class="wb-source-empty">
+          未找到匹配的任务 ID，请修改筛选条件
+        </td></tr>
+        """
 
     mistake_rule_items = "".join(
         f"<li>{html.escape(rule)}</li>"
@@ -3282,21 +3563,48 @@ def data_workbench_task_home(task_id):
     )
     priority_cls = task["priority"].lower()
     content = f"""
-    <div class="wb-task-home">
+    <div class="wb-task-home wb-pool-home">
       <div class="wb-task-home-head">
         <div>
           <a href="/data/workbench">&larr; 返回工作台</a>
-          <h2>{html.escape(task['flow'])}</h2>
-          <p>进入处理前，请确认本任务的数据范围和处理规则。</p>
+          <h2>{html.escape(meta['name'])}</h2>
+          <p>{html.escape(task['stage'])} · {html.escape(task['user_group'])}，从多个处理任务统一领取数据。</p>
         </div>
-        <span class="wb-priority {priority_cls}">{html.escape(task['priority'])}</span>
+        <span class="wb-priority {priority_cls}">最高 {html.escape(task['priority'])}</span>
       </div>
-      <div class="wb-task-brief">
-        <div><span>流程名称</span><b>{html.escape(task['flow'])}</b></div>
+      <div class="wb-task-brief wb-pool-brief">
         <div><span>环节</span><b>{html.escape(task['stage'])}</b></div>
-        <div><span>节点</span><b>{html.escape(task['node'])}</b></div>
-        <div><span>优先级</span><b>{html.escape(task['priority'])}</b></div>
-        <div><span>数据量</span><b>{task['count']:,} 条</b></div>
+        <div><span>用户组</span><b>{html.escape(task['user_group'])}</b></div>
+        <div><span>待领取</span><b>{total_waiting:,} 条</b></div>
+        <div><span>处理中</span><b>{total_processing:,} 条</b></div>
+        <div><span>最长滞留</span><b>{html.escape(meta['oldest_wait'])}</b></div>
+      </div>
+      <section class="wb-task-config wb-source-section">
+        <div class="wb-task-config-title wb-source-title">
+          <div>
+            <h3>任务来源</h3><span>请选择本次要处理的任务，规则和优先级随选择切换</span>
+          </div>
+          <form class="wb-source-filter" method="get"
+            action="/data/workbench/pools/{quote(pool_id)}">
+            <input name="task_id" value="{html.escape(task_id_query, quote=True)}"
+              placeholder="请输入任务 ID">
+            <button class="btn btn-sm" type="submit">查询</button>
+            <a class="btn btn-sm" href="/data/workbench/pools/{quote(pool_id)}">重置</a>
+          </form>
+        </div>
+        <div class="table-wrap">
+          <table class="ant-table wb-source-table">
+            <thead><tr>
+              <th>选择</th><th>处理任务</th><th>项目</th><th>流程 / 节点</th>
+              <th>优先级</th><th>待领取</th><th>处理中</th>
+            </tr></thead>
+            <tbody>{source_rows}</tbody>
+          </table>
+        </div>
+      </section>
+      <div class="wb-selected-source">
+        当前来源：<b>{html.escape(task['task_name'])}</b>
+        <code>{html.escape(task['processing_task'])}</code>
       </div>
       <div class="wb-task-config-grid">
         <section class="wb-task-config">
@@ -3339,12 +3647,12 @@ def data_workbench_task_home(task_id):
                 </select>
               </div>
             </div>
-            <div class="wb-filter-tip">不填写时默认处理该任务下全部待处理数据</div>
+            <div class="wb-filter-tip">不填写时默认处理当前来源下优先级最高的数据</div>
           </form>
         </section>
         <section class="wb-task-config">
           <div class="wb-task-config-title">
-            <h3>处理规则</h3><span>开始处理后按以下规则执行</span>
+            <h3>处理规则</h3><span>{html.escape(task['task_name'])}</span>
           </div>
           <div class="wb-rule-groups">
             <div class="wb-rule-group mistake">
@@ -3363,37 +3671,79 @@ def data_workbench_task_home(task_id):
         </section>
       </div>
       <div class="wb-task-home-actions">
+        <a class="btn" href="/data/workbench/edit?task={quote(task['id'])}">领取优先级最高的数据</a>
         <button class="btn" form="wbFilterForm" type="reset">重置</button>
         <button class="btn btn-primary" form="wbFilterForm"
-          type="submit">开始处理</button>
+          type="submit">按筛选条件开始处理</button>
       </div>
     </div>
     """
     return render_page(
-        "工作台 · 任务首页",
+        "工作台 · 任务池",
         content,
         active="/data/workbench",
         module="data",
         breadcrumb=(
             "数据平台 / 工作台 / "
-            f"<b>{html.escape(task['node'])}</b>"
+            f"<b>{html.escape(meta['name'])}</b>"
         ),
         mvp_note="MVP 一期",
     )
 
 
+@app.route("/data/workbench/pools/<pool_id>")
+def data_workbench_pool_home(pool_id):
+    return _render_workbench_pool_home(pool_id, request.args.get("source"))
+
+
+@app.route("/data/workbench/tasks/<task_id>")
+def data_workbench_task_home(task_id):
+    task = next((item for item in WB_TASKS if item["id"] == task_id), None)
+    if not task:
+        return redirect("/data/workbench")
+    return _render_workbench_pool_home(task["pool"], task["id"])
+
+
 # ── 工作台 · 质检 / 标注 / 详情共用组件 ──
 def _workbench_meta_html(task, status="待处理"):
+    recording_id = task.get("recording_id", "3298698")
+    device = task.get("recording_device", "UDAS-00002-2983")
+    collector = task.get("recording_collector", "柳少龙")
+    flow_versions = task.get("flow_versions", [])
+    selected_flow_version = task.get(
+        "selected_flow_version",
+        flow_versions[0] if flow_versions else "",
+    )
+    if flow_versions:
+        version_options = "".join(
+            f'<option value="{html.escape(version)}"'
+            f'{" selected" if version == selected_flow_version else ""}>'
+            f'{html.escape(version)}</option>'
+            for version in flow_versions
+        )
+        version_control = f"""
+        <label class="flow-version-select">
+          <span>流程版本:</span>
+          <select id="wbxRecordFlowVersion"
+            onchange="wbSwitchRecordFlowVersion(this)">{version_options}</select>
+        </label>
+        """
+    else:
+        version_control = """
+        <div class="ver" onclick="toast('Demo: 切换版本')">
+          第1版<span class="caret">&#9662;</span>
+        </div>
+        """
     return f"""
-    <div class="lab-meta">
+    <div class="lab-meta" data-component="basic_info">
       <div class="lf"><span class="lbl">任务ID:</span><span class="val">{html.escape(task['id'])}</span></div>
       <div class="lf"><span class="lbl">流程名称:</span><span class="val">{html.escape(task['flow'])}</span></div>
       <div class="lf"><span class="lbl">节点:</span><span class="val">{html.escape(task['node'])}</span></div>
       <div class="grow"></div>
-      <div class="lf mono"><span class="lbl">序列号:</span><span class="val">UDAS-00002-2983</span></div>
-      <div class="lf"><span class="lbl">采集员:</span><span class="val">柳少龙</span></div>
-      <div class="lf mono"><span class="lbl">数据ID:</span><span class="val">3298698</span></div>
-      <div class="ver" onclick="toast('Demo: 切换版本')">第1版<span class="caret">&#9662;</span></div>
+      <div class="lf mono"><span class="lbl">序列号:</span><span class="val">{html.escape(device)}</span></div>
+      <div class="lf"><span class="lbl">采集员:</span><span class="val">{html.escape(collector)}</span></div>
+      <div class="lf mono"><span class="lbl">数据ID:</span><span class="val">{html.escape(recording_id)}</span></div>
+      {version_control}
       <div class="lf"><span class="lbl">状态:</span><span class="status-pass">{html.escape(status)}</span></div>
     </div>
     """
@@ -3507,6 +3857,192 @@ def _workbench_tabs_script_html():
     }
     </script>
     """
+
+
+def _render_embedded_workbench(page_html):
+    """Turn the existing high-fidelity workbench page into an iframe preview."""
+    component_ids = [
+        item
+        for item in request.args.get("components", "").split(",")
+        if re.fullmatch(r"[a-z0-9_]+", item)
+    ]
+    focus_id = request.args.get("focus", "")
+    if not re.fullmatch(r"[a-z0-9_]+", focus_id):
+        focus_id = ""
+    component_json = json.dumps(component_ids, ensure_ascii=False).replace("</", "<\\/")
+    focus_json = json.dumps(focus_id, ensure_ascii=False).replace("</", "<\\/")
+    embedded_css = """
+    <style id="workbench-embed-style">
+    html,body.workbench-embed{min-width:1380px;min-height:100%;background:#fff}
+    body.workbench-embed{overflow:auto}
+    body.workbench-embed .top-nav,
+    body.workbench-embed .q-sider,
+    body.workbench-embed .drawer-mask,
+    body.workbench-embed .modal-mask{display:none!important}
+    body.workbench-embed .q-layout{min-height:100vh;padding-top:0;background:#fff}
+    body.workbench-embed .q-main{min-height:100vh;margin-left:0;border-radius:0;background:#fff}
+    body.workbench-embed .q-content{padding:16px 18px 92px;background:#fff}
+    body.workbench-embed .wbx-execution{right:18px;left:18px}
+    body.workbench-embed .workbench-component-wireframe{
+      isolation:isolate;pointer-events:none!important;border-color:#d8e0e3!important;
+      box-shadow:none!important
+    }
+    body.workbench-embed .workbench-component-wireframe>*{
+      visibility:hidden!important
+    }
+    body.workbench-embed .workbench-component-wireframe::after{
+      content:"";position:absolute;inset:0;z-index:40;box-sizing:border-box;
+      border:1px dashed #c7d1d5;border-radius:inherit;
+      background-color:#fafbfc;
+      background-image:
+        linear-gradient(32deg,transparent calc(50% - .5px),#e5eaec 50%,transparent calc(50% + .5px)),
+        linear-gradient(-32deg,transparent calc(50% - .5px),#e5eaec 50%,transparent calc(50% + .5px));
+      opacity:.88
+    }
+    body.workbench-embed .workbench-component-focus{
+      position:relative;z-index:30;outline:4px solid rgba(20,157,170,.72);
+      outline-offset:4px;box-shadow:0 0 0 9px rgba(20,157,170,.12),0 16px 40px rgba(18,74,82,.18)
+    }
+    body.workbench-embed.component-focus-mode::before{
+      content:"组件预览";position:fixed;top:12px;right:16px;z-index:80;
+      padding:6px 12px;border-radius:16px;background:#149DAA;color:#fff;
+      font-size:12px;font-weight:600;box-shadow:0 5px 16px rgba(20,157,170,.25)
+    }
+    </style>
+    """
+    embedded_script = f"""
+    <script id="workbench-embed-script">
+    (function() {{
+      var selected = {component_json};
+      var focus = {focus_json};
+      var aliases = {{
+        multi_view_video: ['multi_view_video', 'head_view_video'],
+        quality_workbench_tabs: [
+          'trajectory_viewer', 'quality_issue_editor', 'workbench_log'
+        ],
+        annotation_workbench_tabs: [
+          'trajectory_viewer', 'quality_result_viewer',
+          'annotation_segment_editor', 'high_low_editor',
+          'action_element_editor', 'workbench_log'
+        ],
+        detail_tabs: [
+          'trajectory_viewer', 'quality_result_viewer',
+          'annotation_result_viewer', 'tag_viewer', 'workbench_log'
+        ],
+        annotation_segment_editor: [
+          'annotation_segment_editor', 'high_low_editor', 'action_element_editor'
+        ],
+        sticky_decision_actions: [
+          'conclusion_selector', 'submit_actions', 'reject_submit_actions'
+        ]
+      }};
+      function isEnabled(componentId) {{
+        if (!selected.length) return true;
+        if (selected.indexOf(componentId) >= 0) return true;
+        var mapped = aliases[componentId] || [];
+        return mapped.some(function(id) {{ return selected.indexOf(id) >= 0; }});
+      }}
+      document.body.classList.add('workbench-embed');
+      if (selected.length) {{
+        document.querySelectorAll('[data-component]').forEach(function(element) {{
+          if (!isEnabled(element.dataset.component)) element.style.display = 'none';
+        }});
+        document.querySelectorAll('.wbx-detail-tabs').forEach(function(tabs) {{
+          var firstVisible = null;
+          tabs.querySelectorAll('.wbx-detail-tab').forEach(function(button) {{
+            var pane = tabs.querySelector(
+              '[data-detail-pane="' + button.dataset.detailTab + '"]'
+            );
+            var visible = pane && pane.style.display !== 'none';
+            button.style.display = visible ? '' : 'none';
+            if (visible && !firstVisible) firstVisible = button;
+          }});
+          var activeButton = tabs.querySelector(
+            '.wbx-detail-tab.active:not([style*="display: none"])'
+          );
+          if (!activeButton && firstVisible) firstVisible.click();
+        }});
+        if (
+          selected.indexOf('head_view_video') >= 0 &&
+          selected.indexOf('multi_view_video') < 0
+        ) {{
+          document.querySelectorAll('.lab-vid-grid').forEach(function(grid) {{
+            var videos = grid.querySelectorAll('.lab-vid');
+            videos.forEach(function(video, index) {{
+              video.style.display = index === 1 ? '' : 'none';
+            }});
+            grid.style.gridTemplateColumns = '1fr';
+          }});
+        }}
+      }}
+      if (focus) {{
+        document.body.classList.add('component-focus-mode');
+        var focusSelectors = {{
+          basic_info: '[data-component="basic_info"]',
+          head_view_video: '[data-component="multi_view_video"] .lab-vid:nth-child(2)',
+          quality_issue_editor: '.lab-tbl[data-component="quality_issue_editor"]',
+          annotation_segment_editor: '.lab-tbl[data-component="annotation_segment_editor"]',
+          high_low_editor: '.lab-tbl[data-component="annotation_segment_editor"]',
+          action_element_editor: '.lab-tbl[data-component="annotation_segment_editor"]',
+          workbench_log: '.wbx-log-list[data-component="workbench_log"]',
+          conclusion_selector: '[data-component="sticky_decision_actions"] .wbx-conclusion-panel',
+          submit_actions: '[data-component="sticky_decision_actions"] .wbx-operation-panel',
+          reject_submit_actions: '[data-component="sticky_decision_actions"] .wbx-operation-panel'
+        }};
+        var selector = focusSelectors[focus] || '[data-component="' + focus + '"]';
+        var target = document.querySelector(selector);
+        if (target) {{
+          var pane = target.closest('.wbx-detail-pane');
+          if (pane && !pane.classList.contains('active')) {{
+            var tabs = pane.closest('.wbx-detail-tabs');
+            var button = tabs && tabs.querySelector(
+              '[data-detail-tab="' + pane.dataset.detailPane + '"]'
+            );
+            if (button) button.click();
+          }}
+          document.querySelectorAll('[data-component]').forEach(function(element) {{
+            if (
+              element === target ||
+              element.contains(target) ||
+              target.contains(element)
+            ) return;
+            if (window.getComputedStyle(element).position === 'static') {{
+              element.style.position = 'relative';
+            }}
+            element.classList.add('workbench-component-wireframe');
+            element.setAttribute('aria-hidden', 'true');
+          }});
+          if (
+            focus === 'head_view_video' &&
+            target.classList.contains('lab-vid')
+          ) {{
+            target.parentElement.querySelectorAll('.lab-vid').forEach(function(video) {{
+              if (video === target) return;
+              video.classList.add('workbench-component-wireframe');
+            }});
+          }}
+          var execution = target.closest('[data-component="sticky_decision_actions"]');
+          if (execution) {{
+            execution.querySelectorAll('.wbx-module').forEach(function(module) {{
+              if (module === target || module.contains(target)) return;
+              if (window.getComputedStyle(module).position === 'static') {{
+                module.style.position = 'relative';
+              }}
+              module.classList.add('workbench-component-wireframe');
+            }});
+          }}
+          target.classList.add('workbench-component-focus');
+          window.setTimeout(function() {{
+            target.scrollIntoView({{block:'center',behavior:'auto'}});
+          }}, 30);
+        }}
+      }}
+    }})();
+    </script>
+    """
+    page_html = page_html.replace("<body>", "<body class=\"workbench-embed\">", 1)
+    page_html = page_html.replace("</head>", embedded_css + "</head>", 1)
+    return page_html.replace("</body>", embedded_script + "</body>", 1)
 
 
 def _workbench_execution_html():
@@ -3665,8 +4201,25 @@ def _render_quality_workbench(task, management_preview=False):
 
 
 def _render_detail_workbench(task, management_preview=False):
+    from_data_management = request.args.get("source") == "data-management"
+    recording_id = task.get("recording_id")
+    selected_flow_version = task.get("selected_flow_version", "—")
+    return_bar = (
+        f"""
+        <div class="wbx-data-detail-return">
+          <a href="/data/recordings">&larr; 返回数据管理</a>
+          <b>Recording {html.escape(recording_id)}</b>
+          <span>当前流程版本
+            <b data-record-flow-version-value>{html.escape(selected_flow_version)}</b>
+          </span>
+        </div>
+        """
+        if from_data_management and recording_id
+        else ""
+    )
     content = (
-        _workbench_meta_html(task, "详情复核")
+        return_bar
+        + _workbench_meta_html(task, "详情复核")
         + _workbench_video_html()
         + f"""
         <div class="wbx-detail-tabs" data-component="detail_tabs">
@@ -3712,16 +4265,40 @@ def _render_detail_workbench(task, management_preview=False):
         </div>
         """
         + _workbench_tabs_script_html()
+        + """
+        <script>
+        function wbSwitchRecordFlowVersion(select) {
+          document.querySelectorAll('[data-record-flow-version-value]').forEach(
+            function(item) { item.textContent = select.value; }
+          );
+          toast('Demo: 已切换至流程版本 ' + select.value);
+        }
+        </script>
+        """
         + _workbench_execution_html()
     )
-    active_path = "/data/workbench-management" if management_preview else "/data/workbench"
-    breadcrumb = (
-        "数据平台 / 工作流 / 工作台管理 / <b>详情工作台预览</b>"
-        if management_preview
-        else f"数据平台 / 工作台 / <b>{html.escape(task['node'])}</b>"
+    active_path = (
+        "/data/recordings"
+        if from_data_management
+        else ("/data/workbench-management" if management_preview else "/data/workbench")
     )
+    if from_data_management and recording_id:
+        breadcrumb = (
+            "数据平台 / 数据资产 / 数据管理 / "
+            f"<b>{html.escape(recording_id)}</b>"
+        )
+    else:
+        breadcrumb = (
+            "数据平台 / 工作流 / 工作台管理 / <b>详情工作台预览</b>"
+            if management_preview
+            else f"数据平台 / 工作台 / <b>{html.escape(task['node'])}</b>"
+        )
     return render_page(
-        "工作台预览 · 详情工作台" if management_preview else "详情工作台",
+        (
+            "数据详情"
+            if from_data_management
+            else ("工作台预览 · 详情工作台" if management_preview else "详情工作台")
+        ),
         content,
         active=active_path,
         module="data",
@@ -3741,6 +4318,33 @@ def data_workbench_edit(preview_mode=None):
         (item for item in WB_TASKS if item["id"] == requested_task_id),
         WB_TASKS[0],
     )
+    recording_id = request.args.get("recording_id", "")
+    if recording_id:
+        recording = next(
+            (
+                item
+                for item in data_refactor.DATA_MANAGEMENT_RECORDS
+                if item["id"] == recording_id
+            ),
+            None,
+        )
+        if recording:
+            workbench_task = dict(workbench_task)
+            primary_flow = recording["flows"][0]
+            workbench_task.update(
+                {
+                    "recording_id": recording["id"],
+                    "recording_device": recording["device"],
+                    "recording_collector": recording["operator"],
+                    "flow": primary_flow["name"],
+                    "node": primary_flow["node"],
+                    "flow_versions": [
+                        version
+                        for version, *_ in recording["versions"]
+                    ],
+                    "selected_flow_version": recording["versions"][0][0],
+                }
+            )
     workbench_mode = preview_mode or request.args.get("mode") or {
         "质检": "quality",
         "标注": "annotation",
@@ -3748,9 +4352,19 @@ def data_workbench_edit(preview_mode=None):
     }.get(workbench_task["stage"], "detail")
     management_preview = preview_mode is not None
     if workbench_mode == "quality":
-        return _render_quality_workbench(workbench_task, management_preview)
+        rendered = _render_quality_workbench(workbench_task, management_preview)
+        return (
+            _render_embedded_workbench(rendered)
+            if management_preview and request.args.get("embed") == "1"
+            else rendered
+        )
     if workbench_mode == "detail":
-        return _render_detail_workbench(workbench_task, management_preview)
+        rendered = _render_detail_workbench(workbench_task, management_preview)
+        return (
+            _render_embedded_workbench(rendered)
+            if management_preview and request.args.get("embed") == "1"
+            else rendered
+        )
 
     DUR_TOTAL = 42.80
     rows = [
@@ -3896,7 +4510,7 @@ def data_workbench_edit(preview_mode=None):
         else "数据平台 / 工作台 / "
         f"<b>{html.escape(workbench_task['node'])}</b>"
     )
-    return render_page(
+    rendered = render_page(
         "工作台预览 · 标注工作台"
         if management_preview
         else f"标注工作台 · {workbench_task['node']}",
@@ -3905,6 +4519,11 @@ def data_workbench_edit(preview_mode=None):
         module="data",
         breadcrumb=breadcrumb,
         mvp_note="MVP 一期",
+    )
+    return (
+        _render_embedded_workbench(rendered)
+        if management_preview and request.args.get("embed") == "1"
+        else rendered
     )
 
 
@@ -4022,6 +4641,7 @@ def data_dashboard():
     )
 
     content = f"""
+    <div class="pd-dashboard">
     <div class="pd-kpi-grid">
       <div class="pd-kpi warn">
         <div class="label">今日待处理</div>
@@ -4080,7 +4700,7 @@ def data_dashboard():
                 <p>我的效率与提交质量</p>
               </div>
             </div>
-            <div class="table-wrap">
+            <div class="table-wrap pd-stage-scroll">
               <table class="pd-stage-table">
                 <thead><tr><th>环节</th><th>完成</th><th>平均耗时</th><th>一次通过率</th><th>退回</th></tr></thead>
                 <tbody>{stage_rows}</tbody>
@@ -4112,6 +4732,7 @@ def data_dashboard():
         </div>
       </aside>
     </div>
+    </div>
     """
     return render_page("个人看板", content, active="/data/dashboard", module="data",
                        breadcrumb='数据平台 / <b>个人看板</b>', mvp_note="MVP 一期")
@@ -4119,33 +4740,31 @@ def data_dashboard():
 
 # ── 规则管理 ──
 RULES = [
-    {"id": "RL-001", "name": "缺帧检测规则",       "category": "质检规则",     "stage": "质检",     "type": "自动", "owner": "joanna.qiao", "created": "2026-05-12", "enabled": True,  "desc": "检测 recording 中是否存在缺失帧, 超过 3% 自动判定不合格"},
-    {"id": "RL-002", "name": "图像模糊度检测",     "category": "质检规则",     "stage": "质检",     "type": "自动", "owner": "Lance Li",   "created": "2026-05-15", "enabled": True,  "desc": "用 Laplacian 算子检测画面模糊度, 阈值 < 100 自动告警"},
-    {"id": "RL-003", "name": "动作分段必备字段",   "category": "标注规则",     "stage": "标注",     "type": "自动", "owner": "joanna.qiao", "created": "2026-05-20", "enabled": True,  "desc": "校验动作分段是否包含起始/结束时间戳, 缺失则不允许提交"},
-    {"id": "RL-004", "name": "关键帧标注完整性",   "category": "标注规则",     "stage": "标注",     "type": "自动", "owner": "Wei Zhang",  "created": "2026-05-22", "enabled": False, "desc": "校验关键帧标注数量 >= 5, 缺失关键帧无法通过验收"},
-    {"id": "RL-005", "name": "Episode 时长阈值",   "category": "切分规则",     "stage": "切分",     "type": "自动", "owner": "Min Chen",   "created": "2026-05-25", "enabled": True,  "desc": "切分后的 episode 时长 [3s, 60s] 区间外自动标红"},
-    {"id": "RL-006", "name": "切分起止动作检测",   "category": "切分规则",     "stage": "切分",     "type": "自动", "owner": "Min Chen",   "created": "2026-05-26", "enabled": True,  "desc": "用动作分类器自动检测 episode 起始/结束姿态"},
-    {"id": "RL-007", "name": "标注一致性校验",     "category": "标注验收规则", "stage": "标注验收", "type": "自动", "owner": "joanna.qiao", "created": "2026-05-28", "enabled": True,  "desc": "同一 episode 多个标注员结果一致性 < 0.85 则打回"},
-    {"id": "RL-008", "name": "终验抽检比例",       "category": "终验规则",     "stage": "终验",     "type": "手动", "owner": "joanna.qiao", "created": "2026-06-01", "enabled": True,  "desc": "每批次终验抽检 10% (最少 20 条), 不合格则整批退回"},
+    {"id": "RL-001", "name": "缺帧检测规则",       "stage": "质检", "owner": "joanna.qiao", "created": "2026-05-12", "enabled": True,  "desc": "检测 recording 中是否存在缺失帧, 超过 3% 自动判定不合格"},
+    {"id": "RL-002", "name": "图像模糊度检测",     "stage": "质检", "owner": "Lance Li",   "created": "2026-05-15", "enabled": True,  "desc": "用 Laplacian 算子检测画面模糊度, 阈值 < 100 自动告警"},
+    {"id": "RL-003", "name": "动作分段必备字段",   "stage": "标注", "owner": "joanna.qiao", "created": "2026-05-20", "enabled": True,  "desc": "校验动作分段是否包含起始/结束时间戳, 缺失则不允许提交"},
+    {"id": "RL-004", "name": "关键帧标注完整性",   "stage": "标注", "owner": "Wei Zhang",  "created": "2026-05-22", "enabled": False, "desc": "校验关键帧标注数量 >= 5, 缺失关键帧无法通过验收"},
+    {"id": "RL-005", "name": "Episode 时长阈值",   "stage": "标注", "owner": "Min Chen",   "created": "2026-05-25", "enabled": True,  "desc": "切分后的 episode 时长 [3s, 60s] 区间外自动标红"},
+    {"id": "RL-006", "name": "切分起止动作检测",   "stage": "标注", "owner": "Min Chen",   "created": "2026-05-26", "enabled": True,  "desc": "用动作分类器自动检测 episode 起始/结束姿态"},
+    {"id": "RL-007", "name": "标注一致性校验",     "stage": "验收", "owner": "joanna.qiao", "created": "2026-05-28", "enabled": True,  "desc": "同一 episode 多个标注员结果一致性 < 0.85 则打回"},
+    {"id": "RL-008", "name": "终验抽检比例",       "stage": "验收", "owner": "joanna.qiao", "created": "2026-06-01", "enabled": True,  "desc": "每批次终验抽检 10% (最少 20 条), 不合格则整批退回"},
 ]
 
 
 @app.route("/data/rules")
 def data_rules():
     cat = request.args.get("cat", "全部")
-    all_cats = ["全部", "质检规则", "切分规则", "标注规则", "标注验收规则", "终验规则"]
+    all_cats = ["全部", "质检", "标注", "验收"]
     if cat not in all_cats:
         cat = "全部"
-    counts = {c: sum(1 for r in RULES if c == "全部" or r["category"] == c) for c in all_cats}
+    counts = {c: sum(1 for r in RULES if c == "全部" or r["stage"] == c) for c in all_cats}
     counts["全部"] = len(RULES)
-    rules = RULES if cat == "全部" else [r for r in RULES if r["category"] == cat]
+    rules = RULES if cat == "全部" else [r for r in RULES if r["stage"] == cat]
 
     cat_color = {
-        "质检规则":     "blue",
-        "切分规则":     "purple",
-        "标注规则":     "orange",
-        "标注验收规则": "amber",
-        "终验规则":     "green",
+        "质检": "blue",
+        "标注": "orange",
+        "验收": "green",
     }
 
     def _cat_tab(key):
@@ -4156,17 +4775,14 @@ def data_rules():
 
     rows = ""
     for r in rules:
-        color = cat_color.get(r["category"], "blue")
-        type_tag = ('<span class="tag tag-blue">自动</span>' if r["type"] == "自动"
-                    else '<span class="tag tag-gray">手动</span>')
+        color = cat_color.get(r["stage"], "blue")
         enabled_tag = ('<span class="qa qa-pass">启用</span>' if r["enabled"]
                        else '<span class="qa qa-pend">已禁用</span>')
         rows += f"""<tr>
           <td class="mono">{r['id']}</td>
-          <td><span class="wb-badge {color}">{r['category']}</span></td>
+          <td><span class="wb-badge {color}">{r['stage']}</span></td>
           <td><b>{r['name']}</b></td>
           <td class="muted" style="max-width:380px;font-size:12.5px;line-height:1.55;">{r['desc']}</td>
-          <td>{type_tag}</td>
           <td>{enabled_tag}</td>
           <td>{r['owner']}</td>
           <td class="muted mono">{r['created']}</td>
@@ -4186,16 +4802,15 @@ def data_rules():
       <table class="ant-table">
         <thead><tr>
           <th>规则 ID</th>
-          <th>分类</th>
+          <th>适用环节</th>
           <th>规则名称</th>
           <th>描述</th>
-          <th>执行方式</th>
           <th>状态</th>
           <th>创建人</th>
           <th>创建时间</th>
           <th>操作</th>
         </tr></thead>
-        <tbody>{rows or '<tr><td colspan="9" style="text-align:center;padding:30px;color:rgba(0,0,0,0.25);">暂无数据</td></tr>'}</tbody>
+        <tbody>{rows or '<tr><td colspan="8" style="text-align:center;padding:30px;color:rgba(0,0,0,0.25);">暂无数据</td></tr>'}</tbody>
       </table>
     </div>
     """
@@ -4473,7 +5088,7 @@ def data_pipeline_editor(pid):
 
 @app.route("/data/runs")
 def data_runs():
-    return _dp_render(dp.runs, "/data/runs", prefix="/data", module="data")
+    return _render_data_refactor_page("execution_records")
 
 
 # ════════════════════════════════════════════════════════════════
