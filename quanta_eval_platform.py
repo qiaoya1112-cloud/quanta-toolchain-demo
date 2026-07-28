@@ -19,6 +19,7 @@ Usage:
 
 import json
 import math
+import re
 import uuid
 import random
 from datetime import datetime, timedelta
@@ -1476,173 +1477,238 @@ INLINE_INPUT = 'style="width:100%;padding:5px 12px;height:36px;border:1px solid 
 
 @app.route("/prompts")
 def prompts_page():
-    # Pre-build tree selector HTML (reused in forms)
     tree_html = build_tree_selector_html("shared")
+    filter_tree = build_tree_selector_html("filter")
+    creators_set = sorted(set(p["creator"] for p in PROMPTS))
+    creator_options = "".join(f"<option>{c}</option>" for c in creators_set)
+
+    difficulty_names = {1: "简单", 2: "较易", 3: "中等", 4: "较难", 5: "困难"}
+
+    def difficulty_html(value):
+        value = max(1, min(5, int(value or 3)))
+        return f'<span class="prompt-difficulty">{value}（{difficulty_names[value]}）</span>'
 
     rows = ""
     for p in PROMPTS:
+        pid = p["id"]
+        enabled = p.get("enabled", True)
         agg_labels = prompt_aggregated_labels(p)
         labels_html = render_tags_html(agg_labels)
-
-        enabled = p.get("enabled", True)
-        status_html = '<span class="ant-tag ant-tag-green">\u5df2\u542f\u7528</span>' if enabled else '<span class="ant-tag">\u672a\u542f\u7528</span>'
-
-        if enabled:
-            actions_html = icon_btn(f'/prompts/{p["id"]}/copy', ICON_COPY, "\u590d\u5236", "default")
-        else:
-            actions_html = (
-                f'<a class="act-icon act-primary" href="javascript:;" onclick="showAddChild(\'{p["id"]}\')" title="\u589e\u52a0\u4e0b\u7ea7">{ICON_ADD_CHILD}</a>'
-                + icon_btn(f'/prompts/{p["id"]}/toggle', ICON_ENABLE, "\u542f\u7528", "default")
-                + icon_btn(f'/prompts/{p["id"]}/copy', ICON_COPY, "\u590d\u5236", "default")
-                + icon_btn(f'/prompts/{p["id"]}/delete', ICON_DELETE, "\u5220\u9664", "danger")
-            )
-
         labels_tip = _build_tip_text(agg_labels)
-        rows += '<tr class="row-parent" data-id="' + p["id"] + '">'
-        rows += f'<td><button class="expand-btn" data-target="sub-{p["id"]}">&#9654;</button></td>'
+        toggle_icon = ICON_DISABLE if enabled else ICON_ENABLE
+        toggle_title = "停用" if enabled else "启用"
+        actions_html = (
+            f'<a class="act-icon act-primary" href="javascript:;" onclick="showAddChild(\'{pid}\')" '
+            f'title="增加下级" data-tip="增加下级">{ICON_ADD_CHILD}</a>'
+            + icon_btn(f'/prompts/{pid}/toggle', toggle_icon, toggle_title, "default")
+            + icon_btn(f'/prompts/{pid}/copy', ICON_COPY, "复制", "default")
+        )
+        if not enabled:
+            actions_html += icon_btn(f'/prompts/{pid}/delete', ICON_DELETE, "删除", "danger")
+
+        rows += f'<tr class="row-parent prompt-parent-row" data-id="{pid}">'
+        rows += f'<td class="prompt-tree-cell"><button class="expand-btn" data-target="sub-{pid}">&#9654;</button></td>'
+        rows += td_tip(labels_html, tip_text=labels_tip)
+        rows += '<td class="prompt-seq prompt-seq-parent">—</td>'
         rows += td_tip(p["high_level"], 'style="font-weight:600;"')
         rows += td_tip(p["high_level_en"])
-        rows += td_tip(labels_html, tip_text=labels_tip)
-        rows += f'<td>{status_html}</td>'
+        rows += f'<td>{difficulty_html(p.get("difficulty", 3))}</td>'
         rows += f'<td>{p["creator"]}</td>'
         rows += f'<td class="actions-cell">{actions_html}</td>'
         rows += '</tr>'
 
-        for ll in p["low_levels"]:
-            ll_labels_html = render_tags_html(ll.get("labels", []))
-            ll_tip = _build_tip_text(ll.get("labels", []))
-            child_actions = '' if enabled else icon_btn(f'/prompts/{p["id"]}/del-child/{ll["id"]}', ICON_DELETE, "\u5220\u9664", "danger")
-
-            rows += f'<tr class="sub-row sub-{p["id"]} row-child">'
-            rows += '<td class="child-line"></td>'
+        for index, ll in enumerate(p["low_levels"], start=1):
+            child_actions = icon_btn(
+                f'/prompts/{pid}/del-child/{ll["id"]}',
+                ICON_DELETE,
+                "删除",
+                "danger",
+            )
+            rows += (
+                f'<tr class="sub-row sub-{pid} row-child prompt-child-row" '
+                f'data-parent="{pid}" data-child-id="{ll["id"]}" draggable="true">'
+            )
+            rows += '<td class="prompt-drag-cell"><span class="prompt-drag-handle" title="拖拽调整顺序">&#8942;&#8942;</span></td>'
+            rows += '<td></td>'
+            rows += f'<td class="prompt-seq">{index}</td>'
             rows += td_tip(ll["zh"])
             rows += td_tip(ll["en"])
-            rows += td_tip(ll_labels_html, tip_text=ll_tip)
-            rows += '<td></td>'
+            rows += f'<td>{difficulty_html(ll.get("difficulty", 3))}</td>'
             rows += '<td></td>'
             rows += f'<td class="actions-cell">{child_actions}</td>'
             rows += '</tr>'
 
-        # Hidden inline add-child row (shown by JS, with tree selector)
-        if not enabled:
-            child_tree = build_tree_selector_html(f"child-{p['id']}")
-            rows += f'''<tr class="sub-row sub-{p['id']} row-child row-inline-child" id="add-child-{p['id']}" style="display:none;">
-                <td class="child-line"></td>
-                <td><input type="text" form="form-child-{p['id']}" name="zh" placeholder="\u8f93\u5165\u5b50\u6b65\u9aa4 (\u4e2d\u6587)" {INLINE_INPUT}></td>
-                <td><input type="text" form="form-child-{p['id']}" name="en" placeholder="Sub-step (English)" {INLINE_INPUT}></td>
-                <td>
-                  <div class="ts-wrap" id="ts-child-{p['id']}">
-                    <div class="ts-trigger" onclick="tsToggle('ts-child-{p['id']}')"><span class="ts-placeholder">\u9009\u62e9\u6807\u7b7e</span></div>
-                    <div class="ts-panel">{child_tree}</div>
-                    <input type="hidden" form="form-child-{p['id']}" name="labels" value="">
-                  </div>
-                </td>
-                <td></td>
-                <td></td>
-                <td class="actions-cell">
-                    <button type="submit" form="form-child-{p['id']}" class="ant-btn ant-btn-sm ant-btn-primary">\u4fdd\u5b58</button>
-                    <button type="button" class="ant-btn ant-btn-sm" onclick="hideAddChild('{p['id']}')">\u53d6\u6d88</button>
-                </td>
-            </tr>
-            <form id="form-child-{p['id']}" method="POST" action="/prompts/{p['id']}/add-child" style="display:none;"></form>'''
-
-    # Build filter tag options (tree-style multi-select for filter)
-    filter_tree = build_tree_selector_html("filter")
-
-    # Collect unique creators
-    creators_set = sorted(set(p["creator"] for p in PROMPTS))
-    creator_options = "".join(f"<option>{c}</option>" for c in creators_set)
+        child_tree = build_tree_selector_html(f"child-{pid}")
+        rows += f'''
+        <tr class="row-child row-inline-child prompt-add-child-row" id="add-child-{pid}" data-parent="{pid}" style="display:none;">
+          <td class="prompt-drag-cell"><span class="prompt-drag-placeholder"></span></td>
+          <td></td>
+          <td class="prompt-seq">{len(p["low_levels"]) + 1}</td>
+          <td><input type="text" form="form-child-{pid}" name="zh" placeholder="输入 Low level" {INLINE_INPUT}></td>
+          <td><input type="text" form="form-child-{pid}" name="en" placeholder="输入 Task-Prompt" {INLINE_INPUT}></td>
+          <td>
+            <div class="prompt-difficulty-stepper">
+              <button type="button" onclick="stepPromptDifficulty(this,-1)">−</button>
+              <input type="number" form="form-child-{pid}" name="difficulty" min="1" max="5" value="3" readonly>
+              <button type="button" onclick="stepPromptDifficulty(this,1)">＋</button>
+            </div>
+          </td>
+          <td></td>
+          <td class="actions-cell prompt-save-actions">
+            <button type="submit" form="form-child-{pid}" class="ant-btn ant-btn-sm ant-btn-primary">保存</button>
+            <button type="button" class="ant-btn ant-btn-sm" onclick="hideAddChild('{pid}')">取消</button>
+          </td>
+        </tr>
+        <form id="form-child-{pid}" method="POST" action="/prompts/{pid}/add-child" style="display:none;">
+          <input type="hidden" name="labels" value="">
+        </form>'''
 
     content = f'''
     <form id="inline-add" method="POST" action="/prompts/create" style="display:none;"></form>
-    <div class="filter-bar">
-      <input type="text" placeholder="High level" style="min-width:140px;">
-      <input type="text" placeholder="Low level" style="min-width:140px;">
-      <div class="ts-wrap" id="ts-filter" style="min-width:200px;max-width:360px;">
-        <div class="ts-trigger" onclick="tsToggle('ts-filter')" style="min-height:36px;"><span class="ts-placeholder">\u6807\u7b7e</span></div>
-        <div class="ts-panel">{filter_tree}</div>
-        <input type="hidden" name="filter_tags" value="">
+    <div class="prompt-page-heading">
+      <strong>任务提示词</strong>
+      <div class="prompt-heading-actions">
+        <input id="prompt-json-file" type="file" accept="application/json,.json" hidden onchange="promptImportJson(this)">
+        <button class="ant-btn" type="button" onclick="document.getElementById('prompt-json-file').click()">导入 JSON</button>
+        <button class="ant-btn ant-btn-primary" type="button" onclick="showNewParent()">新增测试任务</button>
       </div>
-      <select style="min-width:120px;"><option value="">\u521b\u5efa\u4eba</option>{creator_options}</select>
-      <button class="ant-btn" onclick="clearFilters()">\u6e05\u7a7a</button>
-      <button class="ant-btn ant-btn-primary" onclick="doSearch()">\u641c\u7d22</button>
-      <div style="flex:1;"></div>
-      <button class="ant-btn ant-btn-primary" onclick="showNewParent()">+ \u65b0\u589e High Level</button>
     </div>
-    <div class="ant-card ant-card-bordered">
+
+    <div class="filter-bar prompt-filter-bar">
+      <div class="prompt-filter-item prompt-filter-labels">
+        <label>Labels</label>
+        <div class="ts-wrap" id="ts-filter">
+          <div class="ts-trigger" onclick="tsToggle('ts-filter')"><span class="ts-placeholder">Select label</span></div>
+          <div class="ts-panel">{filter_tree}</div>
+          <input type="hidden" name="filter_tags" value="">
+        </div>
+      </div>
+      <div class="prompt-filter-item"><label>High level</label><input type="text" placeholder="Enter task"></div>
+      <div class="prompt-filter-item"><label>Low level</label><input type="text" placeholder="Enter prompt"></div>
+      <div class="prompt-filter-item"><label>Creator</label><select><option value="">请选择创建人</option>{creator_options}</select></div>
+      <button class="ant-btn prompt-reset-btn" type="button" onclick="clearFilters()" title="重置筛选">&#8635;</button>
+      <div style="flex:1;"></div>
+      <button class="ant-btn prompt-high-level-btn" type="button" onclick="showNewParent()">+ High Level</button>
+    </div>
+
+    <div class="ant-card ant-card-bordered prompt-table-card">
       <table class="ant-table" id="prompt-table">
         <thead><tr>
-            <th style="width:32px;"></th>
-            <th>\u4efb\u52a1\u63d0\u793a\u8bcd</th>
-            <th>Task Prompt</th>
-            <th>\u6807\u7b7e</th>
-            <th>\u72b6\u6001</th>
-            <th>\u521b\u5efa\u4eba</th>
-            <th>\u64cd\u4f5c</th>
+          <th></th>
+          <th>Labels</th>
+          <th>序号</th>
+          <th>任务提示词</th>
+          <th>Task-Prompt</th>
+          <th>Difficulty</th>
+          <th>Creator</th>
+          <th>Actions</th>
         </tr></thead>
         <tbody>
-          <!-- New parent row (hidden, shown at top) -->
+          {rows}
           <tr class="row-new-parent" id="new-parent-row" style="display:none;">
             <td></td>
-            <td><input type="text" form="inline-add" name="high_level" placeholder="\u8f93\u5165\u4efb\u52a1\u540d\u79f0 (\u4e2d\u6587)" {INLINE_INPUT}></td>
-            <td><input type="text" form="inline-add" name="high_level_en" placeholder="Task name (English)" {INLINE_INPUT}></td>
             <td>
               <div class="ts-wrap" id="ts-new-parent">
-                <div class="ts-trigger" onclick="tsToggle('ts-new-parent')"><span class="ts-placeholder">\u9009\u62e9\u6807\u7b7e</span></div>
+                <div class="ts-trigger" onclick="tsToggle('ts-new-parent')"><span class="ts-placeholder">选择标签</span></div>
                 <div class="ts-panel">{tree_html}</div>
                 <input type="hidden" form="inline-add" name="parent_labels" value="">
               </div>
             </td>
-            <td></td>
-            <td style="color:rgba(0,0,0,0.45);font-size:13px;">Joanna Qiao</td>
-            <td class="actions-cell">
-                <a class="act-icon act-primary" href="javascript:;" onclick="addNewChildRow()" title="\u6dfb\u52a0\u5b50\u6b65\u9aa4">{ICON_ADD_CHILD}</a>
-                <button type="submit" form="inline-add" class="ant-btn ant-btn-sm ant-btn-primary">\u4fdd\u5b58</button>
-                <button type="button" class="ant-btn ant-btn-sm" onclick="cancelNewParent()">\u53d6\u6d88</button>
+            <td class="prompt-seq">—</td>
+            <td><input type="text" form="inline-add" name="high_level" placeholder="输入 High level" {INLINE_INPUT}></td>
+            <td><input type="text" form="inline-add" name="high_level_en" placeholder="输入 Task-Prompt" {INLINE_INPUT}></td>
+            <td>
+              <div class="prompt-difficulty-stepper">
+                <button type="button" onclick="stepPromptDifficulty(this,-1)">−</button>
+                <input type="number" form="inline-add" name="difficulty" min="1" max="5" value="3" readonly>
+                <button type="button" onclick="stepPromptDifficulty(this,1)">＋</button>
+              </div>
+            </td>
+            <td class="prompt-muted">Joanna Qiao</td>
+            <td class="actions-cell prompt-save-actions">
+              <a class="act-icon act-primary" href="javascript:;" onclick="addNewChildRow()" title="增加下级">{ICON_ADD_CHILD}</a>
+              <button type="submit" form="inline-add" class="ant-btn ant-btn-sm ant-btn-primary">保存</button>
+              <button type="button" class="ant-btn ant-btn-sm" onclick="cancelNewParent()">取消</button>
             </td>
           </tr>
-          <!-- Dynamic new-child rows inserted here by JS -->
           <tr id="new-children-anchor" style="display:none;"></tr>
-    <!-- Hidden tree-selector template for JS cloning -->
-    <template id="tree-tpl">{tree_html}</template>
-          {rows}
         </tbody>
       </table>
+      <template id="tree-tpl">{tree_html}</template>
     </div>
-    <div style="margin-top:16px;display:flex;justify-content:flex-end;align-items:center;gap:12px;font-size:13px;color:rgba(0,0,0,0.45);">
-      <span>10\u6761/\u9875</span>
-      <span style="display:inline-flex;gap:4px;">
-        <span style="padding:4px 10px;background:#1F80A0;color:#fff;border-radius:8px;">1</span>
-        <span style="padding:4px 10px;background:#f5f5f5;border-radius:8px;cursor:pointer;">2</span>
-      </span>
+
+    <div class="prompt-pagination">
+      <select><option>10条/页</option><option>20条/页</option></select>
+      <button disabled>&lsaquo;</button><button class="active">1</button><button>2</button><button>3</button><button>4</button><button>&rsaquo;</button>
+      <input aria-label="跳转页码"><span>go</span>
     </div>
 
     <style>
-      #prompt-table {{ table-layout: fixed; }}
-      #prompt-table th:nth-child(1) {{ width: 32px; }}
-      #prompt-table th:nth-child(2) {{ width: 22%; }}
-      #prompt-table th:nth-child(3) {{ width: 24%; }}
-      #prompt-table th:nth-child(4) {{ width: 20%; }}
-      #prompt-table th:nth-child(5) {{ width: 72px; }}
-      #prompt-table th:nth-child(6) {{ width: 80px; }}
-      #prompt-table th:nth-child(7) {{ width: 120px; }}
-      #prompt-table td {{ text-overflow: ellipsis; white-space: nowrap; max-width: 0; overflow: hidden; }}
-      .row-parent td {{ font-weight: 500; }}
-      .row-child td {{ font-size: 13px; background: #fafafa; }}
-      .row-child td.child-line {{ border-left: 2px solid #e8e8e8; }}
-      .row-child:hover td {{ background: #e6f4f8; }}
-      .row-child:hover td.child-line {{ border-left-color: #1F80A0; }}
-      .row-new-parent td, .row-new-child td {{ vertical-align: middle; white-space: normal !important; overflow: visible !important; }}
-      .row-new-child td {{ background: #fafafa; }}
-      .row-new-child td:first-child {{ border-left: 2px solid #1F80A0; }}
+      .prompt-page-heading {{ height:52px; margin:-24px -24px 14px; padding:0 24px; display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid #f0f0f0; background:#fff; }}
+      .prompt-page-heading strong {{ font-size:16px; font-weight:600; }}
+      .prompt-heading-actions {{ display:flex; gap:10px; }}
+      .prompt-filter-bar {{ align-items:flex-end; background:#fff; border:0; padding:0 0 12px; gap:8px; margin-bottom:0; }}
+      .prompt-filter-item {{ width:168px; min-width:0; }}
+      .prompt-filter-labels {{ width:168px; }}
+      .prompt-filter-item label {{ display:block; color:rgba(0,0,0,.55); font-size:12px; margin:0 0 5px; }}
+      .prompt-filter-item input, .prompt-filter-item select {{ width:100%; }}
+      .prompt-reset-btn {{ width:36px; padding:0; font-size:18px; }}
+      .prompt-high-level-btn {{ color:#1F80A0; border-color:#1F80A0; }}
+      .prompt-table-card {{ border-radius:0; overflow:visible; }}
+      #prompt-table {{ table-layout:fixed; }}
+      #prompt-table th:nth-child(1) {{ width:42px; }}
+      #prompt-table th:nth-child(2) {{ width:14%; }}
+      #prompt-table th:nth-child(3) {{ width:62px; }}
+      #prompt-table th:nth-child(4) {{ width:25%; }}
+      #prompt-table th:nth-child(5) {{ width:25%; }}
+      #prompt-table th:nth-child(6) {{ width:100px; }}
+      #prompt-table th:nth-child(7) {{ width:100px; }}
+      #prompt-table th:nth-child(8) {{ width:172px; }}
+      #prompt-table td {{ text-overflow:ellipsis; white-space:nowrap; max-width:0; overflow:hidden; }}
+      #prompt-table .actions-cell {{ overflow:visible; white-space:nowrap; }}
+      .prompt-parent-row td {{ font-weight:500; background:#fff; }}
+      .prompt-child-row td, .prompt-add-child-row td, .row-new-child td {{ background:#fff; font-size:13px; }}
+      .prompt-child-row:hover td {{ background:#fafafa; }}
+      .prompt-child-row.prompt-dragging td {{ opacity:.45; background:#e6f4f8; }}
+      .prompt-child-row.prompt-drag-over td {{ border-top:2px solid #1F80A0; }}
+      .prompt-drag-cell {{ text-align:center; overflow:visible !important; }}
+      .prompt-drag-handle {{ display:inline-block; color:#1F80A0; font-size:15px; letter-spacing:-4px; cursor:grab; user-select:none; padding:6px 8px; }}
+      .prompt-drag-handle:active {{ cursor:grabbing; }}
+      .prompt-seq {{ text-align:center; color:rgba(0,0,0,.65); font-variant-numeric:tabular-nums; }}
+      .prompt-seq-parent {{ color:rgba(0,0,0,.2); }}
+      .prompt-difficulty {{ color:#ad8b00; white-space:nowrap; }}
+      .prompt-difficulty-stepper {{ height:34px; display:inline-flex; align-items:center; border:1px solid #d9d9d9; border-radius:6px; overflow:hidden; background:#fff; }}
+      .prompt-difficulty-stepper button {{ width:28px; height:32px; border:0; background:#fafafa; cursor:pointer; color:rgba(0,0,0,.55); }}
+      .prompt-difficulty-stepper input {{ width:36px; height:32px; border:0; border-left:1px solid #f0f0f0; border-right:1px solid #f0f0f0; text-align:center; outline:0; appearance:textfield; }}
+      .prompt-save-actions {{ display:table-cell; }}
+      .prompt-save-actions .ant-btn {{ margin-left:6px; }}
+      .prompt-muted {{ color:rgba(0,0,0,.45); font-size:13px; }}
+      .row-new-parent td, .row-new-child td, .prompt-add-child-row td {{ vertical-align:middle; white-space:normal !important; overflow:visible !important; }}
+      .row-new-parent td {{ border-top:2px solid #1F80A0; background:#f8fcfd; }}
+      .row-new-child td:first-child, .prompt-add-child-row td:first-child {{ border-left:2px solid #1F80A0; }}
+      .prompt-pagination {{ display:flex; justify-content:flex-end; align-items:center; gap:6px; margin-top:14px; }}
+      .prompt-pagination select, .prompt-pagination button, .prompt-pagination input {{ height:32px; border:1px solid #d9d9d9; border-radius:6px; background:#fff; color:rgba(0,0,0,.65); }}
+      .prompt-pagination button {{ min-width:32px; cursor:pointer; }}
+      .prompt-pagination button.active {{ color:#1F80A0; border-color:#1F80A0; }}
+      .prompt-pagination input {{ width:48px; }}
+      .prompt-pagination span {{ color:#1F80A0; font-size:13px; }}
     </style>
 
     <script>
-    // === New parent + children (combined creation) ===
     let newChildCount = 0;
+    let promptDraggedRow = null;
+
+    function promptImportJson(input) {{
+      if (!input.files || !input.files.length) return;
+      showToast('已选择 ' + input.files[0].name + '，JSON 导入完成', 'success');
+      input.value = '';
+    }}
     function showNewParent() {{
-      document.getElementById('new-parent-row').style.display = 'table-row';
-      if (newChildCount === 0) addNewChildRow();  // auto-add first child
+      const row = document.getElementById('new-parent-row');
+      row.style.display = 'table-row';
+      if (newChildCount === 0) addNewChildRow();
+      row.scrollIntoView({{behavior:'smooth', block:'center'}});
+      row.querySelector('input[name="high_level"]').focus();
     }}
     function cancelNewParent() {{
       document.getElementById('new-parent-row').style.display = 'none';
@@ -1652,49 +1718,102 @@ def prompts_page():
     function addNewChildRow() {{
       const idx = newChildCount++;
       const tsId = 'ts-newchild-' + idx;
-      const treeContent = document.getElementById('tree-tpl').innerHTML;
       const anchor = document.getElementById('new-children-anchor');
       const tr = document.createElement('tr');
       tr.className = 'row-new-child';
       tr.innerHTML = `
-        <td style="border-left:2px solid #1F80A0;"></td>
-        <td><input type="text" form="inline-add" name="child_zh_${{idx}}" placeholder="\u5b50\u6b65\u9aa4 (\u4e2d\u6587)" {INLINE_INPUT}></td>
-        <td><input type="text" form="inline-add" name="child_en_${{idx}}" placeholder="Sub-step (English)" {INLINE_INPUT}></td>
+        <td class="prompt-drag-cell"><span class="prompt-drag-placeholder"></span></td>
         <td>
           <div class="ts-wrap" id="${{tsId}}">
-            <div class="ts-trigger" onclick="tsToggle('${{tsId}}')"><span class="ts-placeholder">\u9009\u62e9\u6807\u7b7e</span></div>
-            <div class="ts-panel">${{treeContent}}</div>
+            <div class="ts-trigger" onclick="tsToggle('${{tsId}}')"><span class="ts-placeholder">选择标签</span></div>
+            <div class="ts-panel">${{document.getElementById('tree-tpl').innerHTML}}</div>
             <input type="hidden" form="inline-add" name="child_labels_${{idx}}" value="">
           </div>
         </td>
-        <td></td><td></td>
-        <td class="actions-cell">
-          <a class="act-icon act-danger" href="javascript:;" onclick="this.closest('tr').remove()" title="\u5220\u9664">{ICON_DELETE}</a>
-        </td>`;
+        <td class="prompt-seq">${{idx + 1}}</td>
+        <td><input type="text" form="inline-add" name="child_zh_${{idx}}" placeholder="输入 Low level" {INLINE_INPUT}></td>
+        <td><input type="text" form="inline-add" name="child_en_${{idx}}" placeholder="输入 Task-Prompt" {INLINE_INPUT}></td>
+        <td><div class="prompt-difficulty-stepper"><button type="button" onclick="stepPromptDifficulty(this,-1)">−</button><input type="number" form="inline-add" name="child_difficulty_${{idx}}" min="1" max="5" value="3" readonly><button type="button" onclick="stepPromptDifficulty(this,1)">＋</button></div></td>
+        <td></td>
+        <td class="actions-cell"><button type="button" class="ant-btn ant-btn-sm" onclick="this.closest('tr').remove()">删除</button></td>`;
       anchor.parentNode.insertBefore(tr, anchor);
-      // bind checkbox events for the new tree selector
       tsInit(document.getElementById(tsId));
       let h = document.getElementById('inline-child-count');
-      if (!h) {{ h = document.createElement('input'); h.type='hidden'; h.id='inline-child-count'; h.name='child_count'; document.getElementById('inline-add').appendChild(h); }}
+      if (!h) {{
+        h = document.createElement('input');
+        h.type = 'hidden'; h.id = 'inline-child-count'; h.name = 'child_count';
+        document.getElementById('inline-add').appendChild(h);
+      }}
       h.value = newChildCount;
     }}
-
-    // === Existing parent: inline add child ===
     function showAddChild(pid) {{
       const btn = document.querySelector('tr[data-id="'+pid+'"] .expand-btn');
       if (btn && !btn.classList.contains('expanded')) btn.click();
       const row = document.getElementById('add-child-' + pid);
-      if (row) {{ row.style.display = 'table-row'; tsInit(document.getElementById('ts-child-' + pid)); }}
+      if (!row) return;
+      row.style.display = 'table-row';
+      row.scrollIntoView({{behavior:'smooth', block:'nearest'}});
+      row.querySelector('input[name="zh"]').focus();
     }}
     function hideAddChild(pid) {{
       const row = document.getElementById('add-child-' + pid);
       if (row) row.style.display = 'none';
     }}
+    function stepPromptDifficulty(btn, delta) {{
+      const input = btn.parentElement.querySelector('input');
+      input.value = Math.max(1, Math.min(5, Number(input.value || 3) + delta));
+    }}
+    function updatePromptSequence(pid) {{
+      document.querySelectorAll('.prompt-child-row[data-parent="'+pid+'"]').forEach((row, idx) => {{
+        row.querySelector('.prompt-seq').textContent = idx + 1;
+      }});
+      const addRow = document.getElementById('add-child-' + pid);
+      if (addRow) addRow.querySelector('.prompt-seq').textContent =
+        document.querySelectorAll('.prompt-child-row[data-parent="'+pid+'"]').length + 1;
+    }}
+    function persistPromptOrder(pid) {{
+      const order = Array.from(document.querySelectorAll('.prompt-child-row[data-parent="'+pid+'"]')).map(row => row.dataset.childId);
+      fetch('/prompts/' + pid + '/reorder-children', {{
+        method:'POST',
+        headers:{{'Content-Type':'application/json'}},
+        body:JSON.stringify({{order:order}})
+      }}).then(response => {{
+        if (!response.ok) throw new Error('save failed');
+        showToast('顺序已保存，序号已自动更新', 'success');
+      }}).catch(() => showToast('顺序保存失败，请重试', 'error'));
+    }}
+    function initPromptDrag() {{
+      document.querySelectorAll('.prompt-child-row').forEach(row => {{
+        row.addEventListener('dragstart', event => {{
+          if (!event.target.closest('.prompt-drag-handle')) {{ event.preventDefault(); return; }}
+          promptDraggedRow = row;
+          row.classList.add('prompt-dragging');
+          event.dataTransfer.effectAllowed = 'move';
+        }});
+        row.addEventListener('dragover', event => {{
+          if (!promptDraggedRow || promptDraggedRow.dataset.parent !== row.dataset.parent) return;
+          event.preventDefault();
+          row.classList.add('prompt-drag-over');
+          const rect = row.getBoundingClientRect();
+          const tbody = row.parentElement;
+          if (event.clientY < rect.top + rect.height / 2) tbody.insertBefore(promptDraggedRow, row);
+          else tbody.insertBefore(promptDraggedRow, row.nextSibling);
+        }});
+        row.addEventListener('dragleave', () => row.classList.remove('prompt-drag-over'));
+        row.addEventListener('drop', event => event.preventDefault());
+        row.addEventListener('dragend', () => {{
+          const pid = row.dataset.parent;
+          document.querySelectorAll('.prompt-child-row').forEach(r => r.classList.remove('prompt-dragging','prompt-drag-over'));
+          promptDraggedRow = null;
+          updatePromptSequence(pid);
+          persistPromptOrder(pid);
+        }});
+      }});
+    }}
 
-    // === TreeSelect ===
     function tsToggle(wrapId) {{
       const w = document.getElementById(wrapId);
-      w.classList.toggle('open');
+      if (w) w.classList.toggle('open');
     }}
     document.addEventListener('click', function(e) {{
       document.querySelectorAll('.ts-wrap.open').forEach(w => {{
@@ -1704,7 +1823,6 @@ def prompts_page():
     function tsInit(wrap) {{
       if (!wrap || wrap.dataset.tsInit) return;
       wrap.dataset.tsInit = '1';
-      // Arrow click → expand/collapse children
       wrap.querySelectorAll('.ts-arrow:not(.empty)').forEach(arrow => {{
         arrow.addEventListener('click', function(e) {{
           e.stopPropagation();
@@ -1713,7 +1831,6 @@ def prompts_page():
           if (children) children.classList.toggle('expanded');
         }});
       }});
-      // Row click → select/deselect
       wrap.querySelectorAll('.ts-row[data-id]').forEach(row => {{
         row.addEventListener('click', function(e) {{
           if (e.target.classList.contains('ts-arrow')) return;
@@ -1728,32 +1845,30 @@ def prompts_page():
       const selected = wrap.querySelectorAll('.ts-row.selected');
       const ids = []; let chips = '';
       selected.forEach(row => {{
-        const id = row.dataset.id;
-        const path = row.dataset.path;
-        ids.push(id);
-        chips += '<span class="ts-chip"><span class="ts-chip-text">' + path + '</span><span class="ts-chip-close" data-rid="'+id+'" onclick="event.stopPropagation();tsRemove(this)">&times;</span></span>';
+        ids.push(row.dataset.id);
+        chips += '<span class="ts-chip"><span class="ts-chip-text">' + row.dataset.path + '</span><span class="ts-chip-close" data-rid="'+row.dataset.id+'" onclick="event.stopPropagation();tsRemove(this)">&times;</span></span>';
       }});
-      trigger.innerHTML = chips || '<span class="ts-placeholder">\u9009\u62e9\u6807\u7b7e</span>';
+      trigger.innerHTML = chips || '<span class="ts-placeholder">选择标签</span>';
       if (hidden) hidden.value = ids.join(',');
     }}
     function tsRemove(closeBtn) {{
       const wrap = closeBtn.closest('.ts-wrap');
-      const rid = closeBtn.dataset.rid;
-      const row = wrap.querySelector('.ts-row[data-id="'+rid+'"]');
+      const row = wrap.querySelector('.ts-row[data-id="'+closeBtn.dataset.rid+'"]');
       if (row) row.classList.remove('selected');
       tsSync(wrap);
     }}
-    // Init all on load
     document.querySelectorAll('.ts-wrap').forEach(w => tsInit(w));
+    initPromptDrag();
     </script>
     '''
-    return render_page("\u63d0\u793a\u8bcd\u7ba1\u7406", content, active="prompts")
+    return render_page("提示词管理", content, active="prompts")
 
 
 @app.route("/prompts/create", methods=["POST"])
 def prompts_create():
     hl = request.form.get("high_level", "").strip()
     hl_en = request.form.get("high_level_en", "").strip()
+    difficulty = max(1, min(5, request.form.get("difficulty", 3, type=int)))
     parent_labels = [l.strip() for l in request.form.get("parent_labels", "").split(",") if l.strip()]
     if not hl:
         flash("\u4efb\u52a1\u540d\u79f0\u4e0d\u80fd\u4e3a\u7a7a", "error")
@@ -1765,13 +1880,24 @@ def prompts_create():
     for i in range(child_count):
         zh = request.form.get(f"child_zh_{i}", "").strip()
         en = request.form.get(f"child_en_{i}", "").strip()
+        child_difficulty = max(
+            1,
+            min(5, request.form.get(f"child_difficulty_{i}", 3, type=int)),
+        )
         cl = [l.strip() for l in request.form.get(f"child_labels_{i}", "").split(",") if l.strip()]
         if zh:
-            low_levels.append({"id": f"{new_id}-{len(low_levels)+1}", "zh": zh, "en": en, "labels": cl or parent_labels})
-    PROMPTS.insert(0, {
+            low_levels.append({
+                "id": f"{new_id}-{len(low_levels)+1}",
+                "zh": zh,
+                "en": en,
+                "difficulty": child_difficulty,
+                "labels": cl or parent_labels,
+            })
+    PROMPTS.append({
         "id": new_id,
         "high_level": hl,
         "high_level_en": hl_en,
+        "difficulty": difficulty,
         "enabled": False,
         "creator": "Joanna Qiao",
         "low_levels": low_levels,
@@ -1788,12 +1914,37 @@ def prompt_add_child_post(pid):
         return redirect(url_for("prompts_page"))
     zh = request.form.get("zh", "").strip()
     en = request.form.get("en", "").strip()
+    difficulty = max(1, min(5, request.form.get("difficulty", 3, type=int)))
     labels = [l.strip() for l in request.form.get("labels", "").split(",") if l.strip()]
     if zh:
         child_id = f"{pid}-{len(p['low_levels'])+1}"
-        p["low_levels"].append({"id": child_id, "zh": zh, "en": en, "labels": labels})
+        p["low_levels"].append({
+            "id": child_id,
+            "zh": zh,
+            "en": en,
+            "difficulty": difficulty,
+            "labels": labels,
+        })
         flash(f"\u5b50\u7ea7\u300c{zh}\u300d\u6dfb\u52a0\u6210\u529f", "success")
     return redirect(url_for("prompts_page"))
+
+
+@app.route("/prompts/<pid>/reorder-children", methods=["POST"])
+def prompt_reorder_children(pid):
+    p = next((item for item in PROMPTS if item["id"] == pid), None)
+    if not p:
+        return jsonify({"ok": False, "message": "提示词不存在"}), 404
+
+    payload = request.get_json(silent=True) or {}
+    order = payload.get("order") or []
+    child_by_id = {child["id"]: child for child in p["low_levels"]}
+    ordered = [child_by_id[cid] for cid in order if cid in child_by_id]
+    ordered_ids = {child["id"] for child in ordered}
+    ordered.extend(
+        child for child in p["low_levels"] if child["id"] not in ordered_ids
+    )
+    p["low_levels"] = ordered
+    return jsonify({"ok": True, "order": [child["id"] for child in ordered]})
 
 
 @app.route("/prompts/<pid>/toggle")
@@ -1852,108 +2003,462 @@ def prompt_del_child(pid, cid):
 # ── Tag Management ──
 @app.route("/tags")
 def tags_page():
-    dims = TAXONOMY["dimensions"]
+    base_dims = TAXONOMY["dimensions"]
+    extra_dims = [
+        {
+            "id": "quality", "name": "质量标签", "name_en": "Quality Tags", "color": "red",
+            "tags": [
+                {"id": "q_collection", "name": "采集质量", "name_en": "Collection Quality",
+                 "description": "记录采集阶段的数据有效性和异常类型",
+                 "sub_tags": [{"id": "q_success", "name": "成功"}, {"id": "q_failed", "name": "失败"}, {"id": "q_operator_error", "name": "操作失误"}]},
+                {"id": "q_upload", "name": "上传状态", "name_en": "Upload Status",
+                 "description": "记录数据上传链路状态",
+                 "sub_tags": [{"id": "q_not_uploaded", "name": "未上传"}, {"id": "q_uploading", "name": "上传中"}, {"id": "q_uploaded", "name": "上传成功"}, {"id": "q_upload_failed", "name": "上传失败"}]},
+                {"id": "q_review", "name": "质检结论", "name_en": "QA Result",
+                 "description": "人工或自动质检结果",
+                 "sub_tags": [{"id": "q_passed", "name": "合格"}, {"id": "q_rejected", "name": "不合格"}, {"id": "q_need_review", "name": "需复核"}]},
+            ],
+        },
+        {
+            "id": "process", "name": "处理标签", "name_en": "Process Tags", "color": "purple",
+            "tags": [
+                {"id": "proc_stage", "name": "处理环节", "name_en": "Process Stage",
+                 "description": "标识数据当前处理节点",
+                 "sub_tags": [{"id": "proc_cleaning", "name": "清洗"}, {"id": "proc_qa", "name": "质检"}, {"id": "proc_annotation", "name": "标注"}, {"id": "proc_acceptance", "name": "验收"}]},
+                {"id": "proc_annotation_status", "name": "标注状态", "name_en": "Annotation Status",
+                 "description": "标注任务执行状态",
+                 "sub_tags": [{"id": "proc_unlabeled", "name": "未标注"}, {"id": "proc_labeling", "name": "标注中"}, {"id": "proc_labeled", "name": "已标注"}]},
+            ],
+        },
+        {
+            "id": "project_delivery", "name": "项目交付标签", "name_en": "Project Delivery Tags", "color": "cyan",
+            "tags": [
+                {"id": "project_type", "name": "项目类型", "name_en": "Project Type",
+                 "description": "区分数据归属项目和训练用途",
+                 "sub_tags": [{"id": "project_pretrain", "name": "预训练"}, {"id": "project_posttrain", "name": "后训练"}, {"id": "project_demo", "name": "demo 项目"}, {"id": "project_ningde", "name": "宁德项目"}]},
+                {"id": "delivery_status", "name": "交付状态", "name_en": "Delivery Status",
+                 "description": "面向项目交付和验收的状态标签",
+                 "sub_tags": [{"id": "delivery_pending", "name": "待验收"}, {"id": "delivery_accepted", "name": "验收通过"}, {"id": "delivery_rejected", "name": "验收退回"}]},
+                {"id": "supplier_scope", "name": "供应商范围", "name_en": "Supplier Scope",
+                 "description": "标识数据来源团队与供应商归属",
+                 "sub_tags": [{"id": "supplier_internal", "name": "平台自有"}, {"id": "supplier_guanglun", "name": "光轮智能"}, {"id": "supplier_a", "name": "供应商 A"}]},
+            ],
+        },
+    ]
+    dim_by_id = {dim["id"]: dim for dim in base_dims + extra_dims}
+    current_user = "joanna.qiao"
+    tag_groups = [
+        {
+            "id": "platform_standard_taxonomy", "name": "平台通用标签体系",
+            "desc": "由平台统一维护的标准标签体系，覆盖能力、动作、物体等基础语义，用于数据标注、检索、训练与评测",
+            "owners": ["joanna.qiao", "Lance Li"], "enabled": True,
+            "reference_count": 12, "dims": ["capability", "action", "object"],
+        },
+        {
+            "id": "quality_tag_group", "name": "质量处理标签组",
+            "desc": "用于采集结论、质检结论和处理状态",
+            "owners": ["tao.wang", "包媛桐"], "enabled": True,
+            "reference_count": 8, "dims": ["quality", "process"],
+        },
+        {
+            "id": "delivery_tag_group", "name": "项目交付标签组",
+            "desc": "用于项目、供应商和交付验收管理",
+            "owners": ["Lance Li", "Joanna Qiao"], "enabled": False,
+            "reference_count": 0, "dims": ["project_delivery"],
+        },
+        {
+            "id": "custom_tag", "name": "自定义标签",
+            "desc": "历史标签迁移",
+            "owners": ["Alan Li", "Dream", "Raleigh", "Oasis", "Joanna"],
+            "enabled": True, "reference_count": 0, "dims": [],
+        },
+    ]
 
-    # Flatten taxonomy into tree rows (supports unlimited depth)
-    all_rows = []
-    counter = {"n": 0}
+    def group_dims(group):
+        return [dim_by_id[dim_id] for dim_id in group["dims"] if dim_id in dim_by_id]
 
-    def walk(node, level, parent_chain, is_dim=False):
-        nid = node.get("id") or f"_n{counter['n']}"
-        counter["n"] += 1
-        children = (node.get("tags") if is_dim else node.get("sub_tags")) or []
-        all_rows.append({
-            "id": nid,
-            "level": level,
-            "name": node.get("name", ""),
-            "name_en": node.get("name_en", ""),
-            "description": node.get("description", ""),
-            "children_count": len(children),
-            "parent_chain": list(parent_chain),
-            "has_children": bool(children),
-            "is_dim": is_dim,
-        })
-        for c in children:
-            walk(c, level + 1, parent_chain + [nid], False)
-
-    for dim in dims:
-        walk(dim, 0, [], is_dim=True)
-
-    rows_html = ""
-    for r in all_rows:
-        indent_px = r["level"] * 20
-        if r["has_children"]:
-            caret = f'<span class="tree-caret" onclick="tagToggle(\'{r["id"]}\')">\u25be</span>'
-        else:
-            caret = '<span style="display:inline-block;width:16px;"></span>'
-
-        if r["is_dim"]:
-            name_style = "font-size:15px;font-weight:600;color:#1F80A0;"
-        elif r["level"] == 1:
-            name_style = "font-size:14px;font-weight:500;color:rgba(0,0,0,0.85);"
-        else:
-            name_style = "font-size:13px;color:rgba(0,0,0,0.65);"
-
-        parent_attr = ",".join(r["parent_chain"])
-        count_tag = f'<span class="ant-tag" style="font-size:11px;">{r["children_count"]}</span>' if r["has_children"] else ""
-        desc = r["description"] or ("\u2014" if not r["is_dim"] else "")
-        name_en_html = f'<span style="margin-left:8px;font-size:12px;color:rgba(0,0,0,0.35);">{r["name_en"]}</span>' if r["name_en"] else ""
-
-        add_btn = icon_btn("#", ICON_ADD_CHILD, "\u65b0\u589e\u5b50\u6807\u7b7e", "default")
-        edit_btn = icon_btn("#", ICON_EDIT, "\u7f16\u8f91", "default")
-        del_btn = icon_btn("#", ICON_DELETE, "\u5220\u9664", "danger")
-
-        rows_html += (
-            f'<tr data-id="{r["id"]}" data-parent="{parent_attr}" data-level="{r["level"]}">'
-            f'<td style="padding-left:{16 + indent_px}px;white-space:nowrap;">{caret} <span style="{name_style}">{r["name"]}</span>{name_en_html}</td>'
-            f'<td style="color:rgba(0,0,0,0.65);">{desc}</td>'
-            f'<td style="text-align:center;">{count_tag}</td>'
-            f'<td class="actions-cell">{add_btn}{edit_btn}{del_btn}</td>'
-            f'</tr>'
+    def group_stats(dims):
+        return (
+            len(dims),
+            sum(len(d["tags"]) for d in dims),
+            sum(sum(len(t.get("sub_tags", [])) for t in d["tags"]) for d in dims),
         )
 
-    total_dims = len(dims)
-    total_l2 = sum(len(d["tags"]) for d in dims)
-    total_l3 = sum(sum(len(t.get("sub_tags", [])) for t in d["tags"]) for d in dims)
+    group_payload = []
+    for group in tag_groups:
+        dims = group_dims(group)
+        total_dims, total_l2, total_l3 = group_stats(dims)
+        group_payload.append({
+            **group,
+            "dims_data": dims,
+            "total_dims": total_dims,
+            "total_l2": total_l2,
+            "total_l3": total_l3,
+            "total_rows": total_dims + total_l2 + total_l3,
+        })
+
+    active_group = group_payload[0]
+
+    # Flatten taxonomy into tree rows (supports unlimited depth)
+    rows_html = ""
+
+    def build_rows_for_group(group, is_active):
+        all_rows = []
+        counter = {"n": 0}
+
+        def walk(node, level, parent_chain, is_dim=False):
+            raw_id = node.get("id") or f"_n{counter['n']}"
+            nid = f"{group['id']}-{raw_id}"
+            counter["n"] += 1
+            children = (node.get("tags") if is_dim else node.get("sub_tags")) or []
+            all_rows.append({
+                "id": nid,
+                "level": level,
+                "name": node.get("name", ""),
+                "name_en": node.get("name_en", ""),
+                "description": node.get("description", ""),
+                "children_count": len(children),
+                "parent_chain": list(parent_chain),
+                "has_children": bool(children),
+                "is_dim": is_dim,
+            })
+            for child in children:
+                walk(child, level + 1, parent_chain + [nid], False)
+
+        for dim in group["dims_data"]:
+            walk(dim, 0, [], is_dim=True)
+
+        name_en_fallbacks = {
+            "act_pick": "pick up", "act_place": "place", "act_put_in": "put in",
+            "act_take_out": "take out", "act_stack": "stack", "act_throw": "throw",
+            "act_push": "push", "act_pull": "pull", "act_rotate": "rotate",
+            "act_flip": "flip", "act_drag": "drag", "act_swap": "swap",
+            "act_open": "open", "act_close": "close", "act_twist_open": "twist open",
+            "act_pull_open": "pull open", "act_push_open": "push open",
+            "act_lift_open": "lift open", "act_fold": "fold", "act_unfold": "unfold",
+            "act_assemble": "assemble", "act_disassemble": "disassemble",
+            "act_stick": "attach", "act_peel_off": "peel off",
+        }
+        group_rows_html = ""
+        for row_index, r in enumerate(all_rows):
+            indent_px = r["level"] * 18
+            if r["has_children"]:
+                caret = f'<span class="tree-caret" onclick="event.stopPropagation();tagToggle(\'{r["id"]}\')">\u25be</span>'
+            else:
+                caret = '<span class="tree-caret empty"></span>'
+
+            parent_attr = ",".join(r["parent_chain"])
+            raw_id = r["id"].split("-", 1)[-1]
+            name_en = r["name_en"] or name_en_fallbacks.get(raw_id, raw_id.replace("_", " "))
+            level_number = r["level"] + 1
+            checkbox = (
+                '<span class="tag-row-check-placeholder"></span>'
+                if r["level"] == 0
+                else '<input class="tag-row-check" type="checkbox" aria-label="选择标签">'
+            )
+            created_at = f'2026-07-{18 + (row_index % 9):02d} {9 + (row_index % 8):02d}:{(row_index * 7) % 60:02d}'
+            creator_id = group.get("owners", [current_user])[0]
+            edit_btn = icon_btn("#", ICON_EDIT, "\u7f16\u8f91", "primary")
+            add_btn = icon_btn("#", ICON_ADD_CHILD, "\u65b0\u589e\u5b50\u6807\u7b7e", "default")
+            detail_btn = icon_btn("#", ICON_VIEW, "\u67e5\u770b\u8be6\u60c5", "primary")
+            del_btn = icon_btn("#", ICON_DELETE, "\u5220\u9664", "danger")
+            display_style = "" if is_active else "display:none;"
+
+            group_rows_html += (
+                f'<tr data-group="{group["id"]}" data-id="{r["id"]}" data-parent="{parent_attr}" data-level="{r["level"]}" style="{display_style}">'
+                f'<td class="tag-name-cell" style="padding-left:{12 + indent_px}px;">'
+                f'<span class="tag-drag-handle" title="拖动排序">&#8942;&#8942;</span>{checkbox}{caret}'
+                f'<span class="tag-row-name {"is-root" if r["level"] == 0 else ""}">{r["name"]}</span></td>'
+                f'<td><span class="tag-level-badge level-{min(level_number, 3)}">{level_number}</span></td>'
+                f'<td class="tag-row-english">{name_en}</td>'
+                f'<td><span class="tag-published-status">已发布</span></td>'
+                f'<td class="tag-row-meta">{created_at}</td>'
+                f'<td class="tag-row-meta">{creator_id}</td>'
+                f'<td class="actions-cell tag-row-actions">{edit_btn}{add_btn}{detail_btn}{del_btn}</td>'
+                f'</tr>'
+            )
+        return group_rows_html
+
+    group_cards = ""
+    def can_current_user_manage(owners):
+        def normalize(value):
+            normalized = re.sub(r"[^a-z0-9]", "", str(value).lower())
+            return "joannaqiao" if normalized == "joanna" else normalized
+        current_identity = normalize(current_user)
+        return any(normalize(owner) == current_identity for owner in owners)
+
+    for idx, group in enumerate(group_payload):
+        is_active = idx == 0
+        rows_html += build_rows_for_group(group, is_active)
+        enabled = bool(group.get("enabled", True))
+        owners = group.get("owners", [])
+        owners_value = "|".join(owners)
+        owners_html = "".join(f'<span class="tag-owner-pill">{owner}</span>' for owner in owners)
+        reference_count = int(group.get("reference_count", 0))
+        can_edit = can_current_user_manage(owners)
+        edit_action = f'''
+          <span class="tag-card-action-wrap tag-card-edit-wrap" data-tip="{'编辑' if can_edit else '仅支持负责人编辑'}">
+            <button type="button" class="tag-card-action act-icon act-default" aria-label="编辑"
+              {'onclick="tagOpenEditGroup(event,this)"' if can_edit else 'disabled'}>{ICON_EDIT}</button>
+          </span>
+        '''
+        if reference_count:
+            delete_action = f'''
+              <span class="tag-card-action-wrap" data-tip="当前标签组已被引用，不支持删除">
+                <button type="button" class="tag-card-action act-icon act-danger" aria-label="删除" disabled>{ICON_DELETE}</button>
+              </span>
+            '''
+        else:
+            delete_action = f'''
+              <button type="button" class="tag-card-action act-icon act-danger" aria-label="删除"
+                data-tip="删除" onclick="tagDeleteGroup(event,this)">{ICON_DELETE}</button>
+            '''
+        group_cards += f'''
+          <div class="tag-group-card {'active' if is_active else ''}" data-group-id="{group["id"]}"
+            data-title="{group["name"]}" data-identifier="{group["id"]}" data-desc="{group["desc"]}"
+            data-dims="{group["total_dims"]}" data-l2="{group["total_l2"]}" data-l3="{group["total_l3"]}"
+            data-rows="{group["total_rows"]}"
+            data-owners="{owners_value}" data-references="{reference_count}"
+            data-can-manage="{'true' if can_edit else 'false'}"
+            data-enabled="{'true' if enabled else 'false'}"
+            onclick="tagSelectGroup(this)">
+            <div class="tag-card-actions" onclick="event.stopPropagation()">
+              {edit_action}
+              {delete_action}
+            </div>
+            <div class="tag-group-field"><span class="tag-group-key">名称</span><b>{group["name"]}</b></div>
+            <div class="tag-group-field description"><span class="tag-group-key">描述</span><small data-tip="{group["desc"]}">{group["desc"]}</small></div>
+            <div class="tag-group-field"><span class="tag-group-key">负责人</span><em class="tag-owner-list">{owners_html}</em></div>
+            <div class="tag-group-field">
+              <span class="tag-group-key">启用状态</span>
+              <span class="tag-status-control" onclick="event.stopPropagation()">
+                <label class="tag-status-switch">
+                  <input type="checkbox" {'checked' if enabled else ''} onchange="tagToggleGroupStatus(event,this)">
+                  <span class="tag-status-track"></span>
+                </label>
+                <span class="tag-status-copy">{'启用' if enabled else '停用'}</span>
+              </span>
+            </div>
+          </div>
+        '''
+
+    total_rows = active_group["total_rows"]
 
     content = f'''
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
-      <div style="font-size:13px;color:rgba(0,0,0,0.45);">
-        \u6807\u7b7e\u4f53\u7cfb v{TAXONOMY["version"]} &middot;
-        {total_dims} \u4e2a\u7ef4\u5ea6 &middot; {total_l2} \u4e2a\u4e8c\u7ea7 &middot; {total_l3} \u4e2a\u4e09\u7ea7
-      </div>
-      <div style="display:flex;gap:8px;">
-        <button class="ant-btn" onclick="tagExpandAll(true)">\u5168\u90e8\u5c55\u5f00</button>
-        <button class="ant-btn" onclick="tagExpandAll(false)">\u5168\u90e8\u6536\u8d77</button>
-        <button class="ant-btn ant-btn-primary">+ \u65b0\u589e\u7ef4\u5ea6</button>
+    <div class="tag-layout">
+      <aside class="tag-group-panel">
+        <div class="tag-group-head">
+          <span>标签组</span>
+          <button type="button" class="tag-group-create-button" onclick="tagOpenCreateGroup()">+ 新建</button>
+        </div>
+        <div class="tag-group-search">
+          <input class="ant-input" id="tagGroupSearchInput" placeholder="搜索标签组"
+            oninput="tagFilterGroups(this.value)">
+        </div>
+        <div class="tag-group-list">{group_cards}</div>
+      </aside>
+
+      <div class="tag-main-panel">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:16px;margin-bottom:16px;">
+          <div style="min-width:0;">
+            <div id="tagGroupTitle" style="font-size:16px;font-weight:600;color:rgba(0,0,0,0.86);margin-bottom:5px;">{active_group["name"]}</div>
+            <div id="tagGroupDesc" class="tag-group-description" data-tip="{active_group["desc"]}">{active_group["desc"]}</div>
+          </div>
+          <div class="tag-detail-actions" style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;">
+            <button class="ant-btn" onclick="tagExpandAll(true)">\u5168\u90e8\u5c55\u5f00</button>
+            <button class="ant-btn" onclick="tagExpandAll(false)">\u5168\u90e8\u6536\u8d77</button>
+            <button class="ant-btn tag-publish-button" onclick="tagPublishLabels()">发布标签</button>
+          </div>
+        </div>
+
+        <div class="ant-card ant-card-bordered tag-list-card">
+          <div class="tag-list-toolbar">
+            <div class="tag-list-search">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-4-4"></path></svg>
+              <input class="ant-input" id="tagSearchInput" placeholder="请输入标签名称" oninput="tagSearchRows(this.value)">
+            </div>
+            <button class="ant-btn tag-list-create-action" onclick="toast('Demo: 打开新建一级标签')">新建一级标签</button>
+          </div>
+          <div class="tag-list-table-wrap">
+            <table class="ant-table" id="tag-tree-tbl">
+              <thead><tr>
+                <th style="width:270px;">标签名称</th>
+                <th style="width:72px;">层级</th>
+                <th style="width:190px;">英文名称</th>
+                <th style="width:94px;">状态 <span class="tag-status-help" data-tip="发布后可在任务与数据处理中使用">?</span></th>
+                <th style="width:150px;">创建时间</th>
+                <th style="width:130px;">创建人 ID</th>
+                <th style="width:136px;">操作</th>
+              </tr></thead>
+              <tbody>{rows_html}</tbody>
+            </table>
+          </div>
+          <div class="tag-list-pagination">
+            <span>共 <b id="tagPaginationTotal">{total_rows}</b> 条</span>
+            <select aria-label="每页条数"><option>20条/页</option><option>50条/页</option><option>100条/页</option></select>
+            <button type="button" aria-label="上一页" disabled>&lsaquo;</button>
+            <b class="current-page">1</b>
+            <button type="button" aria-label="下一页">&rsaquo;</button>
+          </div>
+        </div>
       </div>
     </div>
 
-    <div class="ant-card ant-card-bordered">
-      <table class="ant-table" id="tag-tree-tbl">
-        <thead><tr>
-          <th>\u540d\u79f0</th>
-          <th>\u63cf\u8ff0</th>
-          <th style="width:60px;text-align:center;">\u5b50\u9879</th>
-          <th style="width:120px;">\u64cd\u4f5c</th>
-        </tr></thead>
-        <tbody>{rows_html}</tbody>
-      </table>
+    <div class="ant-drawer-mask" id="create-tag-group-drawer">
+      <div class="ant-drawer-content" style="width:480px;">
+        <div class="ant-drawer-header">
+          <h3 id="tagGroupDrawerTitle">新建标签组</h3>
+          <button class="ant-drawer-close" onclick="closeModal('create-tag-group-drawer')">&times;</button>
+        </div>
+        <div class="ant-drawer-body">
+          <div class="form-group"><label class="req">名称</label><input type="text" id="newTagGroupName" placeholder="请输入标签组名称"></div>
+          <div class="form-group"><label class="req">标识</label><input type="text" id="newTagGroupIdentifier" placeholder="请输入英文唯一标识"></div>
+          <div class="form-group"><label class="req">描述</label><textarea id="newTagGroupDescription" rows="3" placeholder="请输入标签组描述"></textarea></div>
+          <div class="form-group">
+            <label class="req">负责人</label>
+            <div class="tag-owner-editor" onclick="document.getElementById('newTagGroupOwner').focus()">
+              <span id="tagGroupOwnerChips"></span>
+              <input type="text" id="newTagGroupOwner" placeholder="输入负责人后按回车"
+                onkeydown="tagOwnerInputKeydown(event)" oninput="tagOwnerInputChanged(this)"
+                onblur="tagCommitOwnerInput()">
+            </div>
+            <div class="tag-form-hint">支持添加多个负责人，按回车或逗号确认</div>
+          </div>
+          <div class="form-group">
+            <label>启用状态</label>
+            <div class="tag-form-status">
+              <label class="tag-status-switch">
+                <input type="checkbox" id="newTagGroupEnabled" checked onchange="tagSyncCreateStatus(this)">
+                <span class="tag-status-track"></span>
+              </label>
+              <span id="newTagGroupEnabledCopy">启用</span>
+            </div>
+          </div>
+        </div>
+        <div class="ant-drawer-footer">
+          <button class="ant-btn" onclick="closeModal('create-tag-group-drawer')">取消</button>
+          <button class="ant-btn ant-btn-primary" id="tagGroupDrawerSubmit" onclick="tagSaveGroup()">创建</button>
+        </div>
+      </div>
     </div>
 
     <style>
-      .tree-caret {{ cursor:pointer; display:inline-block; width:16px; text-align:center; color:rgba(0,0,0,0.45); transition:transform 0.2s; user-select:none; margin-right:2px; font-size:10px; }}
+      .tag-layout {{ display:grid; grid-template-columns:320px minmax(0,1fr); gap:16px; align-items:start; }}
+      .tag-group-panel {{ position:sticky; top:68px; max-height:calc(100vh - 84px); min-height:600px; align-self:start; background:#f4fbfd; border:1px solid #dfecef; border-radius:8px; overflow:auto; }}
+      .tag-group-head {{ display:flex; align-items:center; justify-content:space-between; gap:8px; padding:14px 16px; border-bottom:1px solid #dfecef; background:#f8fcfd; font-size:13px; font-weight:600; color:rgba(0,0,0,0.78); }}
+      .tag-group-create-button {{ appearance:none; border:0; outline:0; padding:4px 0; background:transparent; color:#1F80A0; font:inherit; font-weight:500; cursor:pointer; }}
+      .tag-group-create-button:hover {{ color:#176a88; }}
+      .tag-group-search {{ padding:12px 12px 0; }}
+      .tag-group-search .ant-input {{ width:100%; box-sizing:border-box; background:#fff; }}
+      .tag-group-list {{ display:flex; flex-direction:column; gap:10px; padding:12px; }}
+      .tag-group-card {{ position:relative; width:100%; padding:14px; border:1px solid transparent; border-radius:8px; background:rgba(255,255,255,0.58); text-align:left; cursor:pointer; transition:all .15s; box-sizing:border-box; }}
+      .tag-group-card:hover {{ border-color:#b7e1e6; background:#fff; }}
+      .tag-group-card.active {{ border-color:#8fd8e1; background:#e9f9fb; box-shadow:inset 3px 0 0 #1F80A0; }}
+      .tag-card-actions {{ position:absolute; top:8px; right:8px; display:flex; align-items:center; gap:4px; padding:2px; border-radius:6px; background:rgba(255,255,255,.94); box-shadow:0 2px 8px rgba(0,0,0,.08); opacity:0; transform:translateY(-2px); pointer-events:none; transition:.15s; }}
+      .tag-group-card:hover .tag-card-actions,.tag-group-card:focus-within .tag-card-actions {{ opacity:1; transform:translateY(0); pointer-events:auto; }}
+      .tag-card-action-wrap {{ display:inline-flex; }}
+      .tag-card-action[disabled] {{ pointer-events:none; cursor:not-allowed; opacity:.3; }}
+      .tag-group-field {{ display:grid; grid-template-columns:58px minmax(0,1fr); align-items:center; gap:8px; margin-top:8px; }}
+      .tag-card-actions + .tag-group-field {{ margin-top:0; padding-right:64px; }}
+      .tag-group-field.description {{ align-items:center; min-width:0; }}
+      .tag-group-key {{ color:rgba(0,0,0,0.38); font-size:11px; }}
+      .tag-group-card b {{ color:rgba(0,0,0,0.86); font-size:14px; }}
+      .tag-group-card small {{ display:block; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:rgba(0,0,0,0.58); font-size:12px; line-height:1.5; }}
+      .tag-group-card em {{ color:rgba(0,0,0,0.65); font-size:12px; font-style:normal; }}
+      .tag-owner-list {{ display:flex; flex-wrap:wrap; gap:4px; }}
+      .tag-owner-pill {{ display:inline-flex; align-items:center; max-width:100%; padding:1px 6px; border-radius:4px; background:#eef4f5; color:rgba(0,0,0,.65); line-height:20px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }}
+      .tag-status-control,.tag-form-status {{ display:inline-flex; align-items:center; gap:8px; color:rgba(0,0,0,.58); font-size:12px; }}
+      .tag-status-switch {{ position:relative; display:inline-block; width:38px; height:20px; flex:none; cursor:pointer; }}
+      .tag-status-switch input {{ position:absolute; opacity:0; width:0; height:0; }}
+      .tag-status-track {{ position:absolute; inset:0; border-radius:20px; background:#bfbfbf; transition:.18s; }}
+      .tag-status-track::before {{ content:''; position:absolute; left:3px; top:3px; width:14px; height:14px; border-radius:50%; background:#fff; box-shadow:0 1px 3px rgba(0,0,0,.18); transition:.18s; }}
+      .tag-status-switch input:checked + .tag-status-track {{ background:#1F80A0; }}
+      .tag-status-switch input:checked + .tag-status-track::before {{ transform:translateX(18px); }}
+      .tag-form-status {{ min-height:32px; }}
+      .tag-owner-editor {{ min-height:36px; display:flex; flex-wrap:wrap; align-items:center; gap:6px; padding:4px 8px; border:1px solid #d9d9d9; border-radius:8px; background:#fff; box-sizing:border-box; cursor:text; transition:border-color .15s,box-shadow .15s; }}
+      .tag-owner-editor:focus-within {{ border-color:#1F80A0; box-shadow:0 0 0 2px rgba(31,128,160,.12); }}
+      #tagGroupOwnerChips {{ display:contents; }}
+      .tag-owner-edit-chip {{ display:inline-flex; align-items:center; gap:5px; padding:2px 6px 2px 8px; border-radius:5px; background:#eef7f8; color:#176a88; font-size:12px; line-height:22px; }}
+      .tag-owner-edit-chip button {{ appearance:none; border:0; padding:0; background:transparent; color:rgba(0,0,0,.35); cursor:pointer; font-size:14px; line-height:1; }}
+      .tag-owner-edit-chip button:hover {{ color:#ff4d4f; }}
+      #newTagGroupOwner {{ flex:1; min-width:150px; width:auto; height:26px; padding:0; border:0; outline:0; box-shadow:none; }}
+      #newTagGroupIdentifier:disabled {{ background:#f5f5f5; color:rgba(0,0,0,.38); cursor:not-allowed; }}
+      .tag-form-hint {{ margin-top:6px; font-size:12px; color:rgba(0,0,0,.38); }}
+      .tag-main-panel {{ min-width:0; }}
+      .tag-main-panel.tag-readonly .tag-detail-actions {{ display:none !important; }}
+      .tag-main-panel.tag-readonly .tag-list-create-action {{ display:none; }}
+      .tag-main-panel.tag-readonly #tag-tree-tbl th:last-child,
+      .tag-main-panel.tag-readonly #tag-tree-tbl td.actions-cell {{ display:none; }}
+      .tag-publish-button {{ border:1px solid #d9d9d9; background:#fff; color:rgba(0,0,0,.65); box-shadow:none; }}
+      .tag-publish-button:hover {{ border-color:#1F80A0; background:#fff; color:#1F80A0; }}
+      .tag-group-description {{ max-width:760px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:13px; color:rgba(0,0,0,0.45); }}
+      .tag-list-card {{ overflow:hidden; background:#fff; }}
+      .tag-list-toolbar {{ min-height:56px; display:flex; align-items:center; justify-content:space-between; gap:16px; padding:10px 14px; border-bottom:1px solid #f0f0f0; box-sizing:border-box; }}
+      .tag-list-search {{ position:relative; width:240px; }}
+      .tag-list-search svg {{ position:absolute; left:11px; top:50%; width:15px; height:15px; transform:translateY(-50%); fill:none; stroke:#a6adb4; stroke-width:1.8; pointer-events:none; z-index:1; }}
+      .tag-list-search .ant-input {{ width:100%; padding-left:34px; box-sizing:border-box; }}
+      .tag-list-create-action {{ border-color:#1F80A0; background:#fff; color:#1F80A0; }}
+      .tag-list-create-action:hover {{ border-color:#176a88; background:#f4fbfd; color:#176a88; }}
+      .tag-list-table-wrap {{ min-height:420px; max-height:calc(100vh - 330px); overflow:auto; }}
+      #tag-tree-tbl {{ width:100%; min-width:1042px; table-layout:fixed; }}
+      #tag-tree-tbl thead th {{ position:sticky; top:0; z-index:3; height:46px; padding-top:0; padding-bottom:0; background:#fafafa; color:rgba(0,0,0,.45); font-size:12px; font-weight:500; }}
+      #tag-tree-tbl tbody td {{ height:54px; padding-top:0; padding-bottom:0; color:rgba(0,0,0,.72); font-size:13px; box-sizing:border-box; }}
+      #tag-tree-tbl thead th:last-child,#tag-tree-tbl tbody td:last-child {{ position:sticky; right:0; z-index:2; background:#fff; box-shadow:-6px 0 10px rgba(0,0,0,.035); }}
+      #tag-tree-tbl thead th:last-child {{ z-index:4; background:#fafafa; }}
+      .tag-name-cell {{ display:flex; align-items:center; gap:8px; white-space:nowrap; overflow:hidden; }}
+      .tag-drag-handle {{ flex:none; width:14px; color:#c6cdd3; font-size:13px; letter-spacing:-4px; cursor:grab; user-select:none; }}
+      .tag-row-check,.tag-row-check-placeholder {{ width:16px; height:16px; margin:0; flex:none; box-sizing:border-box; }}
+      .tag-row-check {{ appearance:none; border:1px solid #d9dfe5; border-radius:3px; background:#fff; cursor:pointer; }}
+      .tag-row-check:checked {{ border-color:#1F80A0; background:#1F80A0; box-shadow:inset 0 0 0 3px #fff; }}
+      .tag-row-name {{ min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:rgba(0,0,0,.82); }}
+      .tag-row-name.is-root {{ font-weight:600; }}
+      .tag-level-badge {{ display:inline-flex; align-items:center; justify-content:center; width:26px; height:26px; border-radius:50%; font-size:12px; font-weight:500; }}
+      .tag-level-badge.level-1 {{ background:#ffe8ea; color:#ff7a82; }}
+      .tag-level-badge.level-2 {{ background:#fff1dc; color:#f2aa45; }}
+      .tag-level-badge.level-3 {{ background:#e9f6ff; color:#4297c2; }}
+      .tag-row-english {{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:rgba(0,0,0,.72); }}
+      .tag-published-status {{ display:inline-flex; align-items:center; padding:2px 9px; border-radius:10px; background:#f1fae9; color:#52b836; font-size:12px; font-weight:500; }}
+      .tag-row-meta {{ color:rgba(0,0,0,.46) !important; font-size:12px !important; white-space:nowrap; }}
+      .tag-status-help {{ display:inline-flex; align-items:center; justify-content:center; width:14px; height:14px; border-radius:50%; background:#989fa6; color:#fff; font-size:9px; cursor:help; vertical-align:middle; }}
+      .tag-row-actions {{ white-space:nowrap; }}
+      .tag-row-actions .act-icon {{ margin-right:5px; }}
+      .tag-row-actions .act-icon:nth-child(2) svg {{ stroke:#52c41a; }}
+      .tag-list-pagination {{ min-height:58px; display:flex; align-items:center; justify-content:flex-end; gap:14px; padding:10px 16px; border-top:1px solid #f0f0f0; color:rgba(0,0,0,.55); font-size:13px; box-sizing:border-box; }}
+      .tag-list-pagination b {{ font-weight:500; color:rgba(0,0,0,.65); }}
+      .tag-list-pagination select {{ height:34px; min-width:100px; padding:0 30px 0 12px; border:1px solid #d9d9d9; border-radius:6px; background:#fff; color:rgba(0,0,0,.65); }}
+      .tag-list-pagination button {{ appearance:none; width:30px; height:30px; border:0; background:transparent; color:#8c8c8c; cursor:pointer; font-size:18px; }}
+      .tag-list-pagination button:disabled {{ color:#d9d9d9; cursor:not-allowed; }}
+      .tag-list-pagination .current-page {{ color:#1F80A0; font-weight:600; }}
+      .tree-caret {{ cursor:pointer; display:inline-block; width:16px; flex:none; text-align:center; color:rgba(0,0,0,0.55); transition:transform 0.2s; user-select:none; margin-right:0; font-size:10px; }}
+      .tree-caret.empty {{ cursor:default; }}
       .tree-caret:hover {{ color:#1F80A0; }}
       .tree-caret.collapsed {{ transform:rotate(-90deg); }}
+      @media (max-width: 980px) {{
+        .tag-layout {{ grid-template-columns:1fr; }}
+        .tag-group-panel {{ position:relative; top:auto; max-height:none; min-height:0; overflow:visible; }}
+        .tag-group-list {{ display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); }}
+        .tag-list-table-wrap {{ max-height:none; }}
+      }}
     </style>
 
     <script>
+    var currentTagGroup = '{active_group["id"]}';
+    var currentTagUser = '{current_user}';
+    var tagEditingGroup = null;
+    var tagGroupOwners = [];
+    function tagRowsInCurrentGroup() {{
+      return Array.prototype.slice.call(document.querySelectorAll('#tag-tree-tbl tbody tr[data-group="' + currentTagGroup + '"]'));
+    }}
+    function tagUpdatePaginationTotal(count) {{
+      var target = document.getElementById('tagPaginationTotal');
+      if (target) target.textContent = String(count);
+    }}
     function tagToggle(id) {{
       var caret = document.querySelector('tr[data-id="' + id + '"] .tree-caret');
       if (!caret) return;
       var wasCollapsed = caret.classList.contains('collapsed');
       caret.classList.toggle('collapsed');
-      document.querySelectorAll('#tag-tree-tbl tbody tr[data-parent]').forEach(function(tr) {{
+      document.querySelectorAll('#tag-tree-tbl tbody tr[data-parent][data-group="' + currentTagGroup + '"]').forEach(function(tr) {{
         var chain = (tr.getAttribute('data-parent') || '').split(',');
         if (chain.indexOf(id) >= 0) {{
           tr.style.display = wasCollapsed ? '' : 'none';
@@ -1966,15 +2471,298 @@ def tags_page():
       }});
     }}
     function tagExpandAll(expand) {{
-      document.querySelectorAll('.tree-caret').forEach(function(c) {{
+      tagRowsInCurrentGroup().forEach(function(tr) {{
+        var c = tr.querySelector('.tree-caret');
+        if (!c) return;
         if (expand) c.classList.remove('collapsed');
         else c.classList.add('collapsed');
       }});
       document.querySelectorAll('#tag-tree-tbl tbody tr').forEach(function(tr) {{
+        if (tr.getAttribute('data-group') !== currentTagGroup) {{ tr.style.display = 'none'; return; }}
         var p = tr.getAttribute('data-parent') || '';
         if (p) tr.style.display = expand ? '' : 'none';
+        else tr.style.display = '';
+      }});
+      tagSearchRows(document.getElementById('tagSearchInput').value);
+    }}
+    function tagSyncManagePermission(card) {{
+      var canManage = !!card && card.dataset.canManage === 'true';
+      var panel = document.querySelector('.tag-main-panel');
+      panel.classList.toggle('tag-readonly', !canManage);
+      panel.setAttribute('data-can-manage', canManage ? 'true' : 'false');
+    }}
+    function tagSelectGroup(btn) {{
+      currentTagGroup = btn.dataset.groupId;
+      document.querySelectorAll('.tag-group-card').forEach(function(item) {{
+        item.classList.toggle('active', item === btn);
+      }});
+      document.getElementById('tagGroupTitle').textContent = btn.dataset.title;
+      document.getElementById('tagGroupDesc').textContent = btn.dataset.desc;
+      document.getElementById('tagGroupDesc').setAttribute('data-tip', btn.dataset.desc);
+      tagSyncManagePermission(btn);
+      tagUpdatePaginationTotal(Number(btn.dataset.rows || 0));
+      document.querySelectorAll('#tag-tree-tbl tbody tr').forEach(function(tr) {{
+        tr.style.display = tr.getAttribute('data-group') === currentTagGroup ? '' : 'none';
+        var c = tr.querySelector('.tree-caret');
+        if (c) c.classList.remove('collapsed');
+      }});
+      document.getElementById('tagSearchInput').value = '';
+    }}
+    function tagToggleGroupStatus(event, input) {{
+      event.stopPropagation();
+      var card = input.closest('.tag-group-card');
+      var copy = input.closest('.tag-status-control').querySelector('.tag-status-copy');
+      card.dataset.enabled = input.checked ? 'true' : 'false';
+      copy.textContent = input.checked ? '启用' : '停用';
+      toast(input.checked ? '标签组已启用' : '标签组已停用');
+    }}
+    function tagSyncCreateStatus(input) {{
+      document.getElementById('newTagGroupEnabledCopy').textContent = input.checked ? '启用' : '停用';
+    }}
+    function tagRenderOwnerChips() {{
+      var box = document.getElementById('tagGroupOwnerChips');
+      box.innerHTML = '';
+      tagGroupOwners.forEach(function(owner) {{
+        var chip = document.createElement('span');
+        chip.className = 'tag-owner-edit-chip';
+        var copy = document.createElement('span');
+        copy.textContent = owner;
+        var remove = document.createElement('button');
+        remove.type = 'button';
+        remove.setAttribute('aria-label', '移除 ' + owner);
+        remove.textContent = '\u00d7';
+        remove.onclick = function(event) {{
+          event.stopPropagation();
+          tagGroupOwners = tagGroupOwners.filter(function(item) {{ return item !== owner; }});
+          tagRenderOwnerChips();
+        }};
+        chip.appendChild(copy);
+        chip.appendChild(remove);
+        box.appendChild(chip);
       }});
     }}
+    function tagAddOwners(raw) {{
+      String(raw || '').split(/[,，]/).forEach(function(item) {{
+        var owner = item.trim();
+        if (owner && tagGroupOwners.indexOf(owner) < 0) tagGroupOwners.push(owner);
+      }});
+      tagRenderOwnerChips();
+    }}
+    function tagCommitOwnerInput() {{
+      var input = document.getElementById('newTagGroupOwner');
+      if (!input) return;
+      tagAddOwners(input.value);
+      input.value = '';
+    }}
+    function tagOwnerInputKeydown(event) {{
+      if (event.key === 'Enter' || event.key === ',' || event.key === '，') {{
+        event.preventDefault();
+        tagCommitOwnerInput();
+      }}
+      if (event.key === 'Backspace' && !event.currentTarget.value && tagGroupOwners.length) {{
+        tagGroupOwners.pop();
+        tagRenderOwnerChips();
+      }}
+    }}
+    function tagOwnerInputChanged(input) {{
+      if (input.value.indexOf(',') >= 0 || input.value.indexOf('，') >= 0) tagCommitOwnerInput();
+    }}
+    function tagResetGroupForm() {{
+      tagEditingGroup = null;
+      tagGroupOwners = [];
+      document.getElementById('tagGroupDrawerTitle').textContent = '新建标签组';
+      document.getElementById('tagGroupDrawerSubmit').textContent = '创建';
+      document.getElementById('newTagGroupName').value = '';
+      document.getElementById('newTagGroupIdentifier').value = '';
+      document.getElementById('newTagGroupIdentifier').disabled = false;
+      document.getElementById('newTagGroupDescription').value = '';
+      document.getElementById('newTagGroupOwner').value = '';
+      document.getElementById('newTagGroupEnabled').checked = true;
+      tagSyncCreateStatus(document.getElementById('newTagGroupEnabled'));
+      tagRenderOwnerChips();
+    }}
+    function tagOpenCreateGroup() {{
+      tagResetGroupForm();
+      openModal('create-tag-group-drawer');
+    }}
+    function tagOpenEditGroup(event, button) {{
+      event.stopPropagation();
+      var card = button.closest('.tag-group-card');
+      tagEditingGroup = card;
+      tagGroupOwners = (card.dataset.owners || '').split('|').filter(Boolean);
+      document.getElementById('tagGroupDrawerTitle').textContent = '编辑标签组';
+      document.getElementById('tagGroupDrawerSubmit').textContent = '保存';
+      document.getElementById('newTagGroupName').value = card.dataset.title || '';
+      document.getElementById('newTagGroupIdentifier').value = card.dataset.identifier || '';
+      document.getElementById('newTagGroupIdentifier').disabled = true;
+      document.getElementById('newTagGroupDescription').value = card.dataset.desc || '';
+      document.getElementById('newTagGroupOwner').value = '';
+      document.getElementById('newTagGroupEnabled').checked = card.dataset.enabled === 'true';
+      tagSyncCreateStatus(document.getElementById('newTagGroupEnabled'));
+      tagRenderOwnerChips();
+      openModal('create-tag-group-drawer');
+    }}
+    function tagRenderOwners(card, owners) {{
+      var ownerList = card.querySelector('.tag-owner-list');
+      ownerList.innerHTML = '';
+      owners.forEach(function(owner) {{
+        var item = document.createElement('span');
+        item.className = 'tag-owner-pill';
+        item.textContent = owner;
+        ownerList.appendChild(item);
+      }});
+    }}
+    function tagOwnerIdentity(value) {{
+      var normalized = String(value || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+      return normalized === 'joanna' ? 'joannaqiao' : normalized;
+    }}
+    function tagCurrentUserOwns(owners) {{
+      var currentIdentity = tagOwnerIdentity(currentTagUser);
+      return owners.some(function(owner) {{ return tagOwnerIdentity(owner) === currentIdentity; }});
+    }}
+    function tagSyncEditPermission(card, owners) {{
+      var canEdit = tagCurrentUserOwns(owners);
+      var wrap = card.querySelector('.tag-card-edit-wrap');
+      var button = wrap.querySelector('button');
+      card.dataset.canManage = canEdit ? 'true' : 'false';
+      wrap.setAttribute('data-tip', canEdit ? '编辑' : '仅支持负责人编辑');
+      button.disabled = !canEdit;
+      if (canEdit) button.setAttribute('onclick', 'tagOpenEditGroup(event,this)');
+      else button.removeAttribute('onclick');
+      if (card.classList.contains('active')) tagSyncManagePermission(card);
+    }}
+    function tagApplyGroupCard(card, name, description, owners, enabled) {{
+      card.dataset.title = name;
+      card.dataset.desc = description;
+      card.dataset.owners = owners.join('|');
+      card.dataset.enabled = enabled ? 'true' : 'false';
+      card.querySelector('b').textContent = name;
+      card.querySelector('small').textContent = description;
+      card.querySelector('small').setAttribute('data-tip', description);
+      tagRenderOwners(card, owners);
+      tagSyncEditPermission(card, owners);
+      var checkbox = card.querySelector('.tag-status-switch input');
+      checkbox.checked = enabled;
+      card.querySelector('.tag-status-copy').textContent = enabled ? '启用' : '停用';
+    }}
+    function tagBuildGroupCard() {{
+      var card = document.createElement('div');
+      card.className = 'tag-group-card';
+      card.dataset.dims = '0';
+      card.dataset.l2 = '0';
+      card.dataset.l3 = '0';
+      card.dataset.rows = '0';
+      card.dataset.references = '0';
+      card.onclick = function() {{ tagSelectGroup(card); }};
+      card.innerHTML =
+        '<div class="tag-card-actions" onclick="event.stopPropagation()">' +
+          '<span class="tag-card-action-wrap tag-card-edit-wrap" data-tip="仅支持负责人编辑">' +
+            '<button type="button" class="tag-card-action act-icon act-default" aria-label="编辑" disabled>{ICON_EDIT}</button>' +
+          '</span>' +
+          '<button type="button" class="tag-card-action act-icon act-danger" aria-label="删除" data-tip="删除" onclick="tagDeleteGroup(event,this)">{ICON_DELETE}</button>' +
+        '</div>' +
+        '<div class="tag-group-field"><span class="tag-group-key">名称</span><b></b></div>' +
+        '<div class="tag-group-field description"><span class="tag-group-key">描述</span><small></small></div>' +
+        '<div class="tag-group-field"><span class="tag-group-key">负责人</span><em class="tag-owner-list"></em></div>' +
+        '<div class="tag-group-field"><span class="tag-group-key">启用状态</span><span class="tag-status-control" onclick="event.stopPropagation()">' +
+          '<label class="tag-status-switch"><input type="checkbox" onchange="tagToggleGroupStatus(event,this)"><span class="tag-status-track"></span></label>' +
+          '<span class="tag-status-copy"></span></span></div>';
+      return card;
+    }}
+    function tagCreateGroup(name, identifier, description, owners, enabled) {{
+      var id = 'tag_group_' + Date.now();
+      var card = tagBuildGroupCard();
+      card.dataset.groupId = id;
+      card.dataset.identifier = identifier;
+      tagApplyGroupCard(card, name, description, owners, enabled);
+      document.querySelector('.tag-group-list').appendChild(card);
+      tagSelectGroup(card);
+      toast('标签组已创建');
+    }}
+    function tagUpdateGroup(card, name, description, owners, enabled) {{
+      tagApplyGroupCard(card, name, description, owners, enabled);
+      if (card.classList.contains('active')) {{
+        document.getElementById('tagGroupTitle').textContent = name;
+        document.getElementById('tagGroupDesc').textContent = description;
+        document.getElementById('tagGroupDesc').setAttribute('data-tip', description);
+      }}
+      toast('标签组已更新');
+    }}
+    function tagIdentifierExists(identifier, excludedCard) {{
+      var normalized = String(identifier || '').trim().toLowerCase();
+      return Array.prototype.some.call(document.querySelectorAll('.tag-group-card'), function(card) {{
+        return card !== excludedCard && String(card.dataset.identifier || '').trim().toLowerCase() === normalized;
+      }});
+    }}
+    function tagSaveGroup() {{
+      tagCommitOwnerInput();
+      var name = document.getElementById('newTagGroupName').value.trim();
+      var identifier = document.getElementById('newTagGroupIdentifier').value.trim();
+      var description = document.getElementById('newTagGroupDescription').value.trim();
+      var enabled = document.getElementById('newTagGroupEnabled').checked;
+      if (!name || !identifier || !description || !tagGroupOwners.length) {{
+        toast('请完整填写名称、标识、描述和负责人');
+        return;
+      }}
+      if (tagIdentifierExists(identifier, tagEditingGroup)) {{
+        toast('标识已存在，请更换');
+        return;
+      }}
+      if (tagEditingGroup) tagUpdateGroup(tagEditingGroup, name, description, tagGroupOwners.slice(), enabled);
+      else tagCreateGroup(name, identifier, description, tagGroupOwners.slice(), enabled);
+      closeModal('create-tag-group-drawer');
+      tagResetGroupForm();
+      tagFilterGroups(document.getElementById('tagGroupSearchInput').value);
+    }}
+    function tagDeleteGroup(event, button) {{
+      event.stopPropagation();
+      var card = button.closest('.tag-group-card');
+      var references = Number(card.dataset.references || 0);
+      if (references > 0) {{
+        toast('当前标签组已被引用，不支持删除');
+        return;
+      }}
+      if (!window.confirm('确定删除标签组“' + card.dataset.title + '”吗？')) return;
+      var wasActive = card.classList.contains('active');
+      var fallback = card.nextElementSibling || card.previousElementSibling;
+      document.querySelectorAll('#tag-tree-tbl tbody tr[data-group="' + card.dataset.groupId + '"]').forEach(function(row) {{ row.remove(); }});
+      card.remove();
+      if (wasActive && fallback) tagSelectGroup(fallback);
+      toast('标签组已删除');
+    }}
+    function tagFilterGroups(keyword) {{
+      var value = String(keyword || '').trim().toLowerCase();
+      document.querySelectorAll('.tag-group-card').forEach(function(card) {{
+        var searchable = [card.dataset.title, card.dataset.identifier, card.dataset.desc, card.dataset.owners].join(' ').toLowerCase();
+        card.style.display = !value || searchable.indexOf(value) >= 0 ? '' : 'none';
+      }});
+    }}
+    function tagPublishLabels() {{
+      var active = document.querySelector('.tag-group-card.active');
+      toast((active ? active.dataset.title : '当前标签组') + '已发布');
+    }}
+    function tagSearchRows(keyword) {{
+      var kw = String(keyword || '').trim().toLowerCase();
+      if (!kw) {{
+        var total = 0;
+        document.querySelectorAll('#tag-tree-tbl tbody tr').forEach(function(tr) {{
+          var inCurrentGroup = tr.getAttribute('data-group') === currentTagGroup;
+          tr.style.display = inCurrentGroup ? '' : 'none';
+          if (inCurrentGroup) total += 1;
+        }});
+        tagUpdatePaginationTotal(total);
+        return;
+      }}
+      var matches = 0;
+      document.querySelectorAll('#tag-tree-tbl tbody tr').forEach(function(tr) {{
+        if (tr.getAttribute('data-group') !== currentTagGroup) {{ tr.style.display = 'none'; return; }}
+        var matched = tr.innerText.toLowerCase().indexOf(kw) >= 0;
+        tr.style.display = matched ? '' : 'none';
+        if (matched) matches += 1;
+      }});
+      tagUpdatePaginationTotal(matches);
+    }}
+    tagSyncManagePermission(document.querySelector('.tag-group-card.active'));
     </script>
     '''
     return render_page("\u6807\u7b7e\u7ba1\u7406", content, active="tags")

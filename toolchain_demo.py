@@ -7,7 +7,7 @@ Framework: Flask + HTML/CSS (inline templates), Ant Design v4 theme (primary #14
 
 架构 (火山引擎风格):
   / (门户)                  控制台总览 · 平台入口卡片 · 数据飞轮总览 · 资源概览
-  /data/*  (数据平台)        项目 / 任务管理 / 流程运行 / 人工任务 / 数据资产 / 数据集版本
+  /data/*  (数据平台)        采集任务 / 处理任务 / 数据管理 / 工作流 / 配置 / 运营
   /model/* (模型平台)        训练实验 / 评测 / 部署 / 模型仓库
   /device/* (设备平台)       设备列表 / 真机预约
   /asset/* (资产平台)        端到端血缘
@@ -180,19 +180,23 @@ DATASETS = [
     {"id": "ds_501", "name": "clean_whiteboard_v4", "version": "v4", "type": "train",
      "episodes": 137, "frames": 51200, "train_ratio": 0.8, "val_ratio": 0.1, "test_ratio": 0.1,
      "owner": "joanna.qiao", "status": "active", "created": "2026-06-14 10:00",
-     "source_tasks": ["擦白板 · 第 3 批", "擦白板 · 补采"]},
+     "source_tasks": ["擦白板 · 第 3 批", "擦白板 · 补采"],
+     "tags": ["场景标签 > 作业区域 > 白板区", "动作标签 > 清洁类 > 擦拭", "质量标签 > 数据质量 > 高质量"]},
     {"id": "ds_502", "name": "tidy_desk_v2", "version": "v2", "type": "train",
      "episodes": 118, "frames": 44600, "train_ratio": 0.8, "val_ratio": 0.1, "test_ratio": 0.1,
      "owner": "Lance Li", "status": "active", "created": "2026-06-09 17:00",
-     "source_tasks": ["整理桌面 · 导师演示"]},
+     "source_tasks": ["整理桌面 · 导师演示"],
+     "tags": ["场景标签 > 作业区域 > 桌面", "动作标签 > 拿放类 > 拿取", "动作标签 > 拿放类 > 放置"]},
     {"id": "ds_503", "name": "plant_pour_pilot", "version": "v1", "type": "train",
      "episodes": 0, "frames": 0, "train_ratio": 0.8, "val_ratio": 0.1, "test_ratio": 0.1,
      "owner": "Min Chen", "status": "pending", "created": "2026-06-16 14:30",
-     "source_tasks": ["浇花 · 试点"]},
+     "source_tasks": ["浇花 · 试点"],
+     "tags": ["场景标签 > 作业区域 > 绿植区", "动作标签 > 操作类 > 倾倒", "质量标签 > 数据质量 > 待复核"]},
     {"id": "ds_504", "name": "clean_whiteboard_eval_v1", "version": "v1", "type": "eval",
      "episodes": 12, "frames": 4400, "train_ratio": 0.0, "val_ratio": 0.0, "test_ratio": 1.0,
      "owner": "joanna.qiao", "status": "active", "created": "2026-06-14 11:00",
-     "source_tasks": ["擦白板 · 评测留出"]},
+     "source_tasks": ["擦白板 · 评测留出"],
+     "tags": ["场景标签 > 作业区域 > 白板区", "动作标签 > 清洁类 > 擦拭", "质量标签 > 数据用途 > 评测"]},
 ]
 
 # ── 模型平台 ──
@@ -409,7 +413,7 @@ PLATFORMS = {
         "name": "数据平台",
         "short": "数",
         "color": "data",
-        "tagline": "项目 → Pipeline → 数据处理 → 数据集版本",
+        "tagline": "采集任务 · 处理任务 · 数据管理",
         "home": "/data",
         "nav": data_refactor.DATA_PLATFORM_NAV,
     },
@@ -810,6 +814,8 @@ select option:disabled { color:rgba(0,0,0,0.32); }
 .tag-orange { color:#ad6800; background:#fffbe6; border-color:#ffe58f; }
 .tag-coral { color:#993c1d; background:#fef0eb; border-color:#f0997b; }
 .tag-teal { color:#0f6e56; background:#e1f5ee; border-color:#5dcaa5; }
+.dataset-tag-path-list { display:flex; flex-wrap:wrap; gap:6px; padding:7px 9px; border:1px solid #d9d9d9; border-radius:8px; background:#fff; }
+.dataset-tag-path-chip { display:inline-flex; align-items:center; min-height:26px; padding:2px 10px; border:1px solid #b8e2e8; border-radius:5px; background:#eef9fa; color:#0F8190; font-size:12.5px; font-weight:400; line-height:20px; }
 .qa { display:inline-flex; align-items:center; gap:5px; font-size:13px; }
 .qa::before { content:''; width:7px; height:7px; border-radius:50%; }
 .qa-pass { color:#389e0d; } .qa-pass::before { background:#52c41a; }
@@ -1049,26 +1055,83 @@ select option:disabled { color:rgba(0,0,0,0.32); }
 .det-pane { display:none; }
 .det-pane.active { display:block; }
 
-/* ── 分析看板: 漏斗 + 处理能力 (两列, 等高) ── */
-.dash-row { display:grid; grid-template-columns:1fr 1fr; gap:16px; align-items:stretch; }
-@media (max-width: 1100px) { .dash-row { grid-template-columns:1fr; } }
-.dash-row > .card { display:flex; flex-direction:column; margin-bottom:0; }
-.dash-row > .card > .funnel { flex:1; justify-content:center; }
-.dash-row > .card > .table-wrap { flex:1; }
-.funnel { padding:10px 0 6px; display:flex; flex-direction:column; gap:0; }
-.funnel-row { display:flex; justify-content:center; padding:2px 0; }
-.funnel-bar { padding:10px 16px; color:#fff; border-radius:6px; display:flex; align-items:center; justify-content:space-between; gap:14px; min-width:140px; box-sizing:border-box; transition:width 0.3s, transform 0.15s; }
-.funnel-bar:hover { transform:translateY(-1px); }
-.funnel-bar .fb-stage { font-size:13px; font-weight:500; letter-spacing:0.3px; white-space:nowrap; }
-.funnel-bar .fb-num { font-size:15px; font-weight:600; font-family:'SF Mono',Menlo,monospace; letter-spacing:0.2px; white-space:nowrap; }
-.funnel-drop { text-align:center; font-size:11.5px; color:rgba(0,0,0,0.5); padding:3px 0; display:flex; justify-content:center; align-items:center; gap:12px; }
-.funnel-drop .pct { color:#149DAA; font-weight:500; font-family:'SF Mono',Menlo,monospace; }
-.funnel-drop .loss { color:#d4504e; font-family:'SF Mono',Menlo,monospace; }
-.funnel-drop .arr { color:rgba(0,0,0,0.3); font-size:13px; }
-.fk-cap { display:inline-flex; align-items:center; gap:6px; padding:2px 10px; border-radius:11px; background:#f5f7fa; font-size:12px; color:rgba(0,0,0,0.65); }
-.fk-cap b { font-family:'SF Mono',Menlo,monospace; color:rgba(0,0,0,0.85); }
-.fk-ratio { font-family:'SF Mono',Menlo,monospace; font-size:13px; }
-.fk-ratio.ok { color:#2e9e5b; } .fk-ratio.warn { color:#d48806; } .fk-ratio.bad { color:#d4504e; }
+/* ── 个人看板: 个人待办、产出、质量与排名 ── */
+.pd-kpi-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:14px; margin-bottom:16px; }
+.pd-kpi { position:relative; overflow:hidden; min-height:116px; padding:18px 20px; border:1px solid #edf0f1; border-radius:10px; background:#fff; box-sizing:border-box; }
+.pd-kpi::after { content:''; position:absolute; top:0; right:0; width:72px; height:72px; border-radius:0 0 0 72px; background:#eef9fa; }
+.pd-kpi.warn::after { background:#fff7e6; }
+.pd-kpi.good::after { background:#edf8f1; }
+.pd-kpi .label { position:relative; z-index:1; color:rgba(0,0,0,.48); font-size:12.5px; }
+.pd-kpi .value { position:relative; z-index:1; margin:8px 0 5px; color:rgba(0,0,0,.86); font-size:28px; font-weight:650; line-height:1.1; }
+.pd-kpi .sub { position:relative; z-index:1; color:rgba(0,0,0,.45); font-size:12px; }
+.pd-kpi .sub b { color:#149DAA; font-weight:500; }
+.pd-kpi.warn .sub b { color:#d48806; }
+.pd-kpi.good .sub b { color:#2e9e5b; }
+.pd-layout { display:grid; grid-template-columns:minmax(0,1.55fr) minmax(350px,.75fr); gap:16px; align-items:start; }
+.pd-main { display:flex; min-width:0; flex-direction:column; gap:16px; }
+.pd-card { margin:0 !important; padding:0 !important; overflow:hidden; }
+.pd-card-head { display:flex; align-items:flex-start; justify-content:space-between; gap:16px; padding:17px 20px 14px; border-bottom:1px solid #f0f0f0; }
+.pd-card-head h3 { margin:0 0 4px; color:rgba(0,0,0,.86); font-size:15.5px; font-weight:600; }
+.pd-card-head p { margin:0; color:rgba(0,0,0,.42); font-size:12px; }
+.pd-card-head .meta { flex:none; color:rgba(0,0,0,.42); font-size:12px; }
+.pd-todo-list { display:flex; flex-direction:column; }
+.pd-todo { display:grid; grid-template-columns:minmax(190px,1.45fr) 74px 62px 92px 140px 70px; gap:12px; align-items:center; min-height:62px; padding:0 20px; border-bottom:1px solid #f3f4f5; font-size:12.5px; }
+.pd-todo:last-child { border-bottom:0; }
+.pd-todo .task strong { display:block; overflow:hidden; margin-bottom:3px; color:rgba(0,0,0,.82); font-size:13.5px; font-weight:550; text-overflow:ellipsis; white-space:nowrap; }
+.pd-todo .task span { color:rgba(0,0,0,.4); font-size:11.5px; }
+.pd-stage { display:inline-flex; width:max-content; padding:3px 9px; border-radius:5px; background:#eaf7f8; color:#149DAA; font-size:11.5px; }
+.pd-priority { font-family:'SF Mono',Menlo,monospace; font-weight:600; }
+.pd-priority.p0 { color:#d4504e; }
+.pd-priority.p1 { color:#d48806; }
+.pd-todo .count { color:rgba(0,0,0,.78); font-family:'SF Mono',Menlo,monospace; font-weight:600; }
+.pd-risk { color:rgba(0,0,0,.45); font-size:11.5px; }
+.pd-risk.warn { color:#d48806; }
+.pd-todo a { justify-self:end; }
+.pd-bottom-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+.pd-trend { height:210px; padding:16px 20px 12px; box-sizing:border-box; }
+.pd-bars { display:flex; height:148px; align-items:flex-end; justify-content:space-between; gap:10px; border-bottom:1px solid #e8eaec; }
+.pd-bar-item { display:flex; height:100%; min-width:0; flex:1; flex-direction:column; align-items:center; justify-content:flex-end; gap:5px; }
+.pd-bar-value { color:rgba(0,0,0,.52); font-family:'SF Mono',Menlo,monospace; font-size:10.5px; }
+.pd-bar { width:min(30px,72%); min-height:4px; border-radius:5px 5px 0 0; background:#8ad4da; transition:height .2s; }
+.pd-bar.today { background:#149DAA; }
+.pd-bar-day { color:rgba(0,0,0,.4); font-size:10.5px; transform:translateY(22px); }
+.pd-trend-note { display:flex; justify-content:space-between; margin-top:28px; color:rgba(0,0,0,.42); font-size:11px; }
+.pd-trend-note b { color:#149DAA; font-weight:500; }
+.pd-stage-table { width:100%; border-collapse:collapse; font-size:12px; }
+.pd-stage-table th { padding:10px 12px; background:#fafbfc; color:rgba(0,0,0,.45); font-weight:500; text-align:left; white-space:nowrap; }
+.pd-stage-table td { padding:13px 12px; border-top:1px solid #f1f2f3; color:rgba(0,0,0,.68); white-space:nowrap; }
+.pd-stage-table td:first-child { color:rgba(0,0,0,.82); font-weight:500; }
+.pd-stage-table .good { color:#2e9e5b; }
+.pd-rank-card { position:sticky; top:14px; }
+.pd-my-rank { display:grid; grid-template-columns:80px 1fr; gap:14px; align-items:center; margin:16px; padding:14px 16px; border:1px solid #a9dfe3; border-radius:9px; background:#eef9fa; }
+.pd-my-rank .rank-no { color:#149DAA; font-size:30px; font-weight:700; text-align:center; }
+.pd-my-rank .rank-no span { display:block; color:rgba(0,0,0,.42); font-size:10.5px; font-weight:400; }
+.pd-my-rank strong { display:block; margin-bottom:5px; color:rgba(0,0,0,.82); font-size:13.5px; }
+.pd-my-rank p { margin:0; color:rgba(0,0,0,.48); font-size:11.5px; line-height:1.6; }
+.pd-ranking { margin:0; padding:0 16px 12px; list-style:none; }
+.pd-ranking li { display:grid; grid-template-columns:28px minmax(90px,1fr) 58px 56px; gap:8px; align-items:center; min-height:39px; border-bottom:1px solid #f2f3f4; font-size:11.5px; }
+.pd-ranking li:last-child { border-bottom:0; }
+.pd-ranking .rank { color:rgba(0,0,0,.4); font-family:'SF Mono',Menlo,monospace; text-align:center; }
+.pd-ranking li:nth-child(-n+3) .rank { display:inline-flex; width:22px; height:22px; align-items:center; justify-content:center; border-radius:50%; background:#fff3d6; color:#b56b00; font-weight:600; }
+.pd-ranking .name { overflow:hidden; color:rgba(0,0,0,.74); text-overflow:ellipsis; white-space:nowrap; }
+.pd-ranking .done,.pd-ranking .score { color:rgba(0,0,0,.56); font-family:'SF Mono',Menlo,monospace; text-align:right; }
+.pd-ranking .score { color:#149DAA; font-weight:600; }
+.pd-ranking-head { display:grid; grid-template-columns:28px minmax(90px,1fr) 58px 56px; gap:8px; padding:0 16px 8px; color:rgba(0,0,0,.38); font-size:10.5px; }
+.pd-ranking-head span:nth-child(n+3) { text-align:right; }
+@media (max-width:1200px) {
+  .pd-kpi-grid { grid-template-columns:1fr 1fr; }
+  .pd-layout { grid-template-columns:1fr; }
+  .pd-rank-card { position:static; }
+}
+@media (max-width:840px) {
+  .pd-bottom-grid { grid-template-columns:1fr; }
+  .pd-todo { grid-template-columns:1fr 70px 60px 72px; padding:12px 16px; }
+  .pd-todo .pd-risk { grid-column:1 / 4; }
+  .pd-todo a { grid-column:4; }
+}
+@media (max-width:560px) {
+  .pd-kpi-grid { grid-template-columns:1fr; }
+}
 
 /* ── 工作台: 任务卡片列表 (一行一张) ── */
 .wb-list { display:flex; flex-direction:column; gap:12px; }
@@ -1079,6 +1142,57 @@ select option:disabled { color:rgba(0,0,0,0.32); }
 .wb-card .wb-name { font-size:15.5px; font-weight:500; color:rgba(0,0,0,0.85); }
 .wb-card .wb-desc { font-size:13px; color:rgba(0,0,0,0.55); line-height:1.65; }
 .wb-card .wb-side { display:flex; align-items:center; gap:22px; flex:none; }
+.wb-card.p0 { border-left-color:#d4504e; }
+.wb-card.p1 { border-left-color:#d48806; }
+.wb-card.p2 { border-left-color:#149DAA; }
+.wb-card-fields { display:grid; grid-template-columns:minmax(220px,1.6fr) 90px minmax(140px,1fr) 80px 90px; gap:14px; align-items:center; }
+.wb-card-field { display:flex; flex-direction:column; gap:5px; min-width:0; }
+.wb-card-field > span { color:rgba(0,0,0,0.45); font-size:12px; }
+.wb-card-field > b { overflow:hidden; color:rgba(0,0,0,0.84); font-size:14px; font-weight:500; text-overflow:ellipsis; white-space:nowrap; }
+.wb-priority { display:inline-flex; align-items:center; justify-content:center; width:max-content; min-width:40px; padding:3px 9px; border-radius:5px; font-size:12px !important; font-weight:600 !important; }
+.wb-priority.p0 { background:#fff1f0; color:#cf3f3b !important; }
+.wb-priority.p1 { background:#fff7e6; color:#b56b00 !important; }
+.wb-priority.p2 { background:#e6f4f8; color:#147b99 !important; }
+.wb-task-home { background:#fff; border:1px solid #f0f0f0; border-radius:10px; padding:22px 24px; }
+.wb-task-home-head { display:flex; align-items:flex-start; justify-content:space-between; gap:24px; padding-bottom:18px; border-bottom:1px solid #f0f0f0; }
+.wb-task-home-head a { display:inline-block; margin-bottom:10px; font-size:13px; }
+.wb-task-home-head h2 { margin:0 0 7px; color:rgba(0,0,0,0.86); font-size:20px; font-weight:600; }
+.wb-task-home-head p { margin:0; color:rgba(0,0,0,0.48); font-size:13px; }
+.wb-task-brief { display:grid; grid-template-columns:2fr .8fr 1fr .7fr .7fr; gap:12px; margin:18px 0; }
+.wb-task-brief > div { display:flex; flex-direction:column; gap:5px; padding:12px 14px; border:1px solid #edf0f1; border-radius:8px; background:#fafbfc; }
+.wb-task-brief span { color:rgba(0,0,0,0.42); font-size:11.5px; }
+.wb-task-brief b { color:rgba(0,0,0,0.8); font-size:13px; font-weight:500; }
+.wb-task-config-grid { display:grid; grid-template-columns:1fr; gap:16px; }
+.wb-task-config { overflow:hidden; border:1px solid #e7ebed; border-radius:9px; background:#fff; }
+.wb-task-config-title { padding:14px 16px 12px; border-bottom:1px solid #edf0f1; background:#fafcfc; }
+.wb-task-config-title h3 { display:inline; margin:0 10px 0 0; color:rgba(0,0,0,0.84); font-size:15px; font-weight:600; }
+.wb-task-config-title span { color:rgba(0,0,0,0.4); font-size:11.5px; }
+.wb-filter-form { padding:16px; }
+.wb-filter-grid { display:grid; grid-template-columns:1fr 1.5fr 1fr 1fr; gap:14px; }
+.wb-filter-field { display:flex; min-width:0; flex-direction:column; gap:7px; }
+.wb-filter-field label { color:rgba(0,0,0,.58); font-size:12px; }
+.wb-filter-field input,.wb-filter-field select { width:100%; height:38px; padding:0 11px; border:1px solid #d9dfe2; border-radius:7px; background:#fff; color:rgba(0,0,0,.78); box-sizing:border-box; font-family:inherit; font-size:12.5px; outline:none; }
+.wb-filter-field input:focus,.wb-filter-field select:focus { border-color:#149DAA; box-shadow:0 0 0 2px rgba(20,157,170,.1); }
+.wb-filter-field input::placeholder { color:rgba(0,0,0,.28); }
+.wb-date-range { display:grid; grid-template-columns:1fr 12px 1fr; gap:7px; align-items:center; }
+.wb-date-range > span { color:rgba(0,0,0,.3); font-size:11px; text-align:center; }
+.wb-filter-tip { display:flex; align-items:center; gap:6px; margin-top:13px; color:rgba(0,0,0,.4); font-size:11.5px; }
+.wb-filter-tip::before { content:'i'; display:inline-flex; width:15px; height:15px; flex:none; align-items:center; justify-content:center; border-radius:50%; background:#eaf7f8; color:#149DAA; font-family:serif; font-size:10px; font-weight:600; }
+.wb-rule-groups { display:grid; grid-template-columns:1fr 1fr; gap:18px; padding:18px 20px 20px; }
+.wb-rule-group { display:flex; min-width:0; flex-direction:column; }
+.wb-rule-group-head { display:flex; align-items:center; gap:9px; margin:0 0 12px; font-size:15px; font-weight:600; }
+.wb-rule-group-head .icon { display:inline-flex; width:20px; height:20px; align-items:center; justify-content:center; border-radius:50%; color:#fff; font-size:12px; font-weight:700; }
+.wb-rule-group.mistake .wb-rule-group-head { color:#d99024; }
+.wb-rule-group.mistake .icon { background:#e7a035; }
+.wb-rule-group.rejection .wb-rule-group-head { color:#f05d61; }
+.wb-rule-group.rejection .icon { background:#f36b70; }
+.wb-rule-box { height:100%; min-height:190px; padding:14px 18px; border:1px solid; border-radius:8px; box-sizing:border-box; }
+.wb-rule-group.mistake .wb-rule-box { border-color:#efa43b; background:#fff9ef; }
+.wb-rule-group.rejection .wb-rule-box { border-color:#ff777b; background:#fff4f4; }
+.wb-rule-box ol { margin:0; padding:0; list-style:none; counter-reset:wb-rule; }
+.wb-rule-box li { display:grid; grid-template-columns:28px minmax(0,1fr); gap:10px; padding:7px 0; color:rgba(0,0,0,.73); font-size:13px; line-height:1.65; counter-increment:wb-rule; }
+.wb-rule-box li::before { content:counter(wb-rule) "."; color:#1685a4; font-family:'SF Mono',Menlo,monospace; font-weight:600; }
+.wb-task-home-actions { display:flex; justify-content:flex-end; gap:10px; margin-top:20px; padding-top:18px; border-top:1px solid #f0f0f0; }
 .wb-card .wb-progress { width:260px; display:flex; flex-direction:column; gap:8px; }
 .wb-card .wb-progress .wp-bar { position:relative; height:10px; background:#f0f0f0; border-radius:5px; overflow:hidden; }
 .wb-card .wb-progress .wp-fill { height:100%; background:#149DAA; border-radius:5px; transition:width 0.3s; }
@@ -1100,6 +1214,18 @@ select option:disabled { color:rgba(0,0,0,0.32); }
 .wb-card.amber   { border-left-color:#d48806; }
 .wb-badge.green  { background:#f0faf4; color:#2e9e5b; border-color:#a3dbb8; }
 .wb-card.green   { border-left-color:#389e0d; }
+@media (max-width:1100px) {
+  .wb-card-fields { grid-template-columns:1.3fr 70px 1fr 70px 80px; gap:10px; }
+  .wb-task-brief { grid-template-columns:1fr 1fr; }
+  .wb-filter-grid { grid-template-columns:1fr 1fr; }
+}
+@media (max-width:780px) {
+  .wb-card { align-items:flex-start; flex-direction:column; }
+  .wb-card .wb-side { width:100%; justify-content:flex-end; }
+  .wb-card-fields,.wb-task-brief,.wb-task-config-grid { grid-template-columns:1fr; }
+  .wb-filter-grid { grid-template-columns:1fr; }
+  .wb-rule-groups { grid-template-columns:1fr; }
+}
 
 /* ── 任务管理: stage 切换 tab + 新建按钮同一行 ── */
 .tm-bar { display:flex; align-items:flex-end; justify-content:space-between; border-bottom:1px solid #f0f0f0; margin:0 2px 16px; padding:0 4px; gap:24px; }
@@ -1335,6 +1461,72 @@ button.tm-subtab { border:0; background:transparent; font-family:inherit; cursor
 .lab-foot .btn { padding:8px 28px; font-size:14px; min-width:120px; justify-content:center; }
 .lab-foot .btn-primary { background:#149DAA; color:#fff; border-color:#149DAA; }
 .lab-foot .btn-primary:hover { background:#0F8190; border-color:#0F8190; }
+.wbx-instruction { display:flex; align-items:flex-start; gap:10px; margin-bottom:12px; padding:12px 16px; border:1px solid #dcecef; border-radius:8px; background:#f5fbfc; color:rgba(0,0,0,.72); font-size:13px; line-height:1.65; }
+.wbx-instruction b { flex:none; color:#149DAA; }
+.wbx-quality-timeline { margin-bottom:14px; padding:15px 18px; border:1px solid #f0f0f0; border-radius:10px; background:#fff; }
+.wbx-quality-track { position:relative; height:12px; margin:12px 0 8px; border-radius:6px; background:#e9edf1; }
+.wbx-quality-track i { position:absolute; top:0; bottom:0; border:1px solid #ff777b; background:#f4b4b7; box-sizing:border-box; }
+.wbx-quality-scale { display:flex; justify-content:space-between; color:rgba(0,0,0,.4); font-family:'SF Mono',Menlo,monospace; font-size:10.5px; }
+.wbx-quality-review-timeline { margin-bottom:16px; padding:14px 16px 12px; border:1px solid #edf0f1; border-radius:9px; background:#fafcfc; }
+.wbx-quality-review-timeline .wbx-quality-track { margin-top:0; }
+.wbx-quality-markers { position:relative; height:36px; margin:0 0 4px; }
+.wbx-quality-marker { position:absolute; bottom:4px; transform:translateX(-50%); max-width:190px; padding:4px 8px; border:1px solid #f09b9e; border-radius:5px; background:#fff0f0; color:#d4504e; font-size:10.5px; line-height:1.2; white-space:nowrap; box-shadow:0 2px 6px rgba(212,80,78,.08); }
+.wbx-quality-marker b { margin-right:5px; font-family:'SF Mono',Menlo,monospace; font-size:10px; font-weight:500; }
+.wbx-quality-marker::after { content:''; position:absolute; left:50%; bottom:-5px; width:7px; height:7px; transform:translateX(-50%) rotate(45deg); border-right:1px solid #f09b9e; border-bottom:1px solid #f09b9e; background:#fff0f0; }
+.wbx-record-title { display:flex; align-items:center; justify-content:space-between; gap:16px; padding:12px 16px; border-bottom:1px solid #edf0f1; }
+.wbx-record-title strong { color:rgba(0,0,0,.82); font-size:14px; }
+.wbx-record-title span { color:#149DAA; font-size:12px; }
+.wbx-severity { display:flex; align-items:center; gap:12px; white-space:nowrap; }
+.wbx-severity label { display:inline-flex; align-items:center; gap:5px; cursor:pointer; }
+.wbx-severity input { accent-color:#149DAA; }
+.wbx-execution { position:fixed; right:28px; bottom:0; left:248px; z-index:120; display:flex; align-items:stretch; justify-content:center; gap:8px; margin:0; padding:10px 0 12px; background:linear-gradient(to bottom,rgba(245,247,250,0),#f5f7fa 28%); }
+.q-layout.portal-mode .wbx-execution { right:40px; left:40px; }
+.wbx-module { display:grid; grid-template-columns:52px minmax(0,1fr); flex:1 1 0; width:auto; max-width:520px; min-width:0; align-items:center; gap:12px; box-sizing:border-box; padding:10px 14px; border:1px solid #dfe5e7; border-radius:9px; background:#fff; box-shadow:0 -3px 12px rgba(20,42,50,.075); }
+.wbx-conclusion-panel { border-color:#cfe3e6; }
+.wbx-operation-panel { box-shadow:0 -2px 8px rgba(20,42,50,.055); }
+.wbx-module-title { color:rgba(0,0,0,.48); font-size:12px; font-weight:500; text-align:right; }
+.wbx-conclusions,.wbx-operation-actions { display:flex; min-width:0; align-items:center; gap:8px; flex-wrap:wrap; }
+.wbx-conclusion { height:32px; padding:0 13px; border:1px solid #dfe3e6; border-radius:6px; background:#fff; color:rgba(0,0,0,.64); cursor:pointer; font-family:inherit; font-size:12.5px; }
+.wbx-conclusion:hover { border-color:#149DAA; color:#149DAA; }
+.wbx-conclusion.active { border-color:#149DAA; background:#eaf7f8; color:#0f8190; font-weight:600; }
+.wbx-operation-actions .btn { min-width:88px; justify-content:center; }
+.wbx-reject { border-color:#efb7b7 !important; color:#d4504e !important; }
+.wbx-operation-actions .btn:disabled { border-color:#e3e6e8 !important; background:#f4f5f6 !important; color:rgba(0,0,0,.28) !important; cursor:not-allowed; }
+.wbx-log-list { display:flex; flex-direction:column; gap:0; }
+.wbx-log-item { display:grid; grid-template-columns:128px 82px 1fr; gap:12px; padding:11px 0; border-bottom:1px solid #f0f0f0; color:rgba(0,0,0,.68); font-size:12.5px; }
+.wbx-log-item:last-child { border-bottom:0; }
+.wbx-log-item time { color:rgba(0,0,0,.42); font-family:'SF Mono',Menlo,monospace; }
+.wbx-log-item b { color:rgba(0,0,0,.76); font-weight:500; }
+.wbx-log-summary { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:8px; color:rgba(0,0,0,.45); font-size:11.5px; }
+.wbx-detail-tabs { overflow:hidden; margin-bottom:92px; border:1px solid #e6eaec; border-radius:10px; background:#fff; }
+.wbx-detail-tabbar { display:flex; gap:2px; padding:0 18px; border-bottom:1px solid #edf0f1; }
+.wbx-detail-tab { padding:13px 20px; border:0; border-bottom:2px solid transparent; background:transparent; color:rgba(0,0,0,.58); cursor:pointer; font-family:inherit; font-size:13.5px; }
+.wbx-detail-tab.active { border-bottom-color:#149DAA; color:#149DAA; font-weight:600; }
+.wbx-detail-pane { display:none; min-height:210px; padding:18px 20px; }
+.wbx-detail-pane.active { display:block; }
+.wbx-trajectory { display:grid; grid-template-columns:minmax(0,1.4fr) minmax(320px,.8fr); gap:16px; }
+.wbx-trajectory-chart { height:190px; padding:10px; border:1px solid #e7ebed; border-radius:8px; background:linear-gradient(#f3f5f6 1px,transparent 1px),linear-gradient(90deg,#f3f5f6 1px,transparent 1px); background-size:100% 38px,52px 100%; box-sizing:border-box; }
+.wbx-trajectory-chart svg { width:100%; height:100%; }
+.wbx-mini-table { width:100%; border-collapse:collapse; font-size:12px; }
+.wbx-mini-table th { padding:9px 10px; background:#f7f9fa; color:rgba(0,0,0,.48); font-weight:500; text-align:left; }
+.wbx-mini-table td { padding:10px; border-top:1px solid #edf0f1; color:rgba(0,0,0,.7); }
+.wbx-detail-tags { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px; }
+.wbx-tag-group { padding:14px; border:1px solid #e8ecee; border-radius:8px; background:#fafcfc; }
+.wbx-tag-group strong { display:block; margin-bottom:10px; color:rgba(0,0,0,.7); font-size:12px; }
+.wbx-tag-group span { display:inline-flex; margin:0 6px 6px 0; padding:4px 9px; border-radius:5px; background:#e8f6f7; color:#147b88; font-size:11.5px; }
+@media (max-width:1100px) {
+  .wbx-trajectory { grid-template-columns:1fr; }
+}
+@media (max-width:760px) {
+  .lab-vid-grid { grid-template-columns:1fr; }
+  .wbx-detail-tabbar { overflow-x:auto; }
+  .wbx-detail-tags { grid-template-columns:1fr; }
+  .wbx-execution { flex-direction:column; }
+  .wbx-module { grid-template-columns:42px minmax(0,1fr); width:100%; max-width:none; gap:8px; padding:9px 10px; }
+  .wbx-operation-actions .btn { flex:1; min-width:70px; }
+  .wbx-quality-markers { height:44px; }
+  .wbx-quality-marker { max-width:125px; overflow:hidden; text-overflow:ellipsis; }
+}
 
 /* ── 设备预约: 占用看板 tab + Gantt ── */
 .bk-tabs { display:flex; border-bottom:1px solid #f0f0f0; margin:0 2px 18px; padding:0 4px; gap:4px; }
@@ -2239,7 +2431,7 @@ def _render_data_refactor_page(page_key):
 
 
 for _data_page_key, _data_page_spec in data_refactor.PAGE_SPECS.items():
-    if _data_page_key == "workspace":
+    if _data_page_spec.get("legacy"):
         continue
 
     def _data_page_view(page_key=_data_page_key):
@@ -2252,9 +2444,75 @@ for _data_page_key, _data_page_spec in data_refactor.PAGE_SPECS.items():
     )
 
 
+_DATA_COMPAT_REDIRECTS = {
+    "/data/tasks": "/data/collection-tasks",
+    "/data/task-pool": "/data/workbench",
+    "/data/pipeline-definitions": "/data/pipelines",
+    "/data/pipeline-runs": "/data/runs",
+    "/data/assets": "/data/recordings",
+    "/data/dataset-versions": "/data/datasets",
+    "/data/lineage": "/data/datasets",
+    "/data/capabilities": "/data/operators",
+    "/data/workbench-schemas": "/data/workbench-management",
+    "/data/operations": "/data/dashboard",
+    "/data/query": "/data/recordings",
+    "/data/ds_progress": "/data/datasets",
+    "/data/lake": "/data/datasets",
+}
+
+for _compat_path, _compat_target in _DATA_COMPAT_REDIRECTS.items():
+    def _compat_view(target=_compat_target):
+        return redirect(target)
+
+    app.add_url_rule(
+        _compat_path,
+        endpoint=f"data_compat_{_compat_path.rsplit('/', 1)[-1].replace('-', '_')}",
+        view_func=_compat_view,
+    )
+
+
+@app.route("/data/tasks/<task_id>")
+def data_task_detail(task_id):
+    task = next(
+        (item for item in data_refactor.BUSINESS_TASKS if item["id"] == task_id),
+        None,
+    )
+    try:
+        content = data_refactor.render_task_detail(task_id)
+    except KeyError:
+        return redirect("/data/collection-tasks")
+    collection_task = task and task["type"] == "data_collection_task"
+    active_path = "/data/collection-tasks" if collection_task else "/data/processing-tasks"
+    menu_title = "采集任务" if collection_task else "处理任务"
+    return render_page(
+        "任务详情",
+        content,
+        active=active_path,
+        module="data",
+        breadcrumb=f'数据平台 / {menu_title} / <b>{html.escape(task_id)}</b>',
+        mvp_note=None,
+    )
+
+
+@app.route("/data/recordings/<recording_id>")
+def data_record_detail(recording_id):
+    try:
+        content = data_refactor.render_record_detail(recording_id)
+    except KeyError:
+        return redirect("/data/recordings")
+    return render_page(
+        "数据详情",
+        content,
+        active="/data/recordings",
+        module="data",
+        breadcrumb=f'数据平台 / 数据管理 / <b>{html.escape(recording_id)}</b>',
+        mvp_note=None,
+    )
+
+
 @app.route("/data/architecture")
 def retired_data_architecture():
-    return redirect("/data/operations")
+    return redirect("/data/dashboard")
 
 
 # ════════════════════════════════════════════════════════════════
@@ -2344,13 +2602,13 @@ def home():
 
     # 平台入口卡数据
     cards = [
-        ("data", "数据平台", "项目 → Pipeline → 数据处理 → 数据集版本", "/data", "数",
+        ("data", "数据平台", "采集任务 · 处理任务 · 数据管理", "/data", "数",
          [
-             ("项目", len(data_refactor.PROJECTS)),
-             ("运行中", sum(1 for r in data_refactor.PIPELINE_RUNS if r["status"] in ("running", "reviewing"))),
-             ("已发布版本", sum(1 for d in data_refactor.DATASET_VERSIONS if d["status"] == "published")),
+             ("采集任务", sum(1 for t in data_refactor.BUSINESS_TASKS if t["type"] == "data_collection_task")),
+             ("处理任务", sum(1 for t in data_refactor.BUSINESS_TASKS if t["type"] == "data_processing_task")),
+             ("数据记录", len(data_refactor.DATA_MANAGEMENT_RECORDS)),
          ],
-         ["项目", "任务管理", "流程运行", "人工任务", "数据资产", "数据集版本"]),
+         ["采集任务", "处理任务", "数据管理", "工作台", "工作流", "数据集管理"]),
         ("model", "模型平台", "训练 → 评测 → 部署", "/model", "模",
          [("训练实验", len(EXPERIMENTS)), ("模型版本", n_models), ("已部署", n_deployed)],
          ["训练实验", "评测", "部署", "模型仓库"]),
@@ -2434,12 +2692,12 @@ def home():
 
 @app.route("/data")
 def data_home():
-    return _render_data_refactor_page("workspace")
+    return redirect("/data/collection-tasks")
 
 
 @app.route("/data/collect")
 def collect():
-    return redirect("/data/tasks")
+    return redirect("/data/collection-tasks")
 
     stage = request.args.get("stage", "all")
     substage = request.args.get("sub", "all")
@@ -2658,8 +2916,7 @@ THIRD_PARTY_DATASETS = [
 ]
 
 
-@app.route("/data/recordings")
-def data_recordings():
+def _legacy_data_recordings_reference():
     return redirect("/data/assets")
 
     task_filter = request.args.get("task", "")
@@ -2804,37 +3061,149 @@ def data_recordings():
 
 # ── 工作台: 任务卡片列表 ──
 WB_TASKS = [
-    {"type": "人工质检", "color": "blue",
-     "name": "20260529_河北省石家庄_白板区采集 · 合格性判定",
-     "desc": "对采集后的 recording 进行人工合格性判定 (画面 / 动作 / 物料 是否符合 SOP)",
-     "pending": 9, "done": 171},
-    {"type": "质检抽检", "color": "teal",
-     "name": "20260607_山东德州_批次抽检",
-     "desc": "对自动质检结果做 5% 抽检, 校验自动质检准确率",
-     "pending": 28, "done": 0},
-    {"type": "切分", "color": "purple",
-     "name": "20260605_白板补采_episode 切分",
-     "desc": "按动作分段把 recording 切成 episode (起始 / 结束 / 关键帧标记)",
-     "pending": 50, "done": 0},
-    {"type": "标注", "color": "orange",
-     "name": "20260529_白板区_动作分段标注",
-     "desc": "对切分后的 episode 做动作分段 + 关键帧 + 抓取点标注",
-     "pending": 142, "done": 89},
-    {"type": "标注验收", "color": "amber",
-     "name": "20260518_HouseHold_标注成果验收",
-     "desc": "对标注员产出的标注结果做一致性验收, 不合格回流到标注重做",
-     "pending": 24, "done": 118},
-    {"type": "终验", "color": "green",
-     "name": "20260529_数据集 v4_入湖前终验",
-     "desc": "数据集入湖前的最终验收, 抽检通过后正式发布到数据湖",
-     "pending": 3, "done": 12},
+    {
+        "id": "WB-2026-0718-QC",
+        "flow": "厨房数据质检流程 v3",
+        "stage": "质检",
+        "node": "完整性质检",
+        "priority": "P0",
+        "count": 96,
+        "filters": [
+            ("所属项目", "宁德项目"),
+            ("来源任务", "COL-2026-0718"),
+            ("数据来源", "采集"),
+            ("质检状态", "待质检"),
+        ],
+        "mistake_rules": [
+            "夹爪超出画面（自动化）",
+            "采集动作不规范：手部脱离夹爪（自动化）",
+            "采集动作不规范：其它身体部位辅助",
+            "画面异常：全程部分遮挡 / 部分时间完全遮挡",
+            "无意义动作 / 假动作",
+        ],
+        "rejection_rules": [
+            "三路视频完整性与时间戳一致性检测（自动化）",
+            "改造设备进行采集（自动化）",
+            "采集时长不足（自动化）",
+            "视频损坏或相机卡死（自动化）",
+            "画面异常：全程完全遮挡（自动化）",
+            "设备穿戴不规范（全程）（自动化）",
+        ],
+    },
+    {
+        "id": "WB-2026-0922-AC",
+        "flow": "家居动作标注流程 v2",
+        "stage": "验收",
+        "node": "标注成果验收",
+        "priority": "P0",
+        "count": 42,
+        "filters": [
+            ("所属项目", "demo 项目"),
+            ("处理任务", "PROC-2026-0922"),
+            ("标注状态", "已标注"),
+            ("验收状态", "待验收"),
+        ],
+        "mistake_rules": [
+            "动作起止点存在轻微偏移",
+            "动作元素选择错误但不影响主体语义",
+            "动作描述不够完整或存在错别字",
+            "关键帧选择偏离动作发生时刻",
+        ],
+        "rejection_rules": [
+            "动作起止点与视频语义不一致",
+            "关键帧、动作元素或动作描述缺失",
+            "动作层级或分类选择错误",
+            "标注结果无法支撑训练目标",
+            "验收不通过时退回原标注节点重新处理",
+        ],
+    },
+    {
+        "id": "WB-2026-0922-LB",
+        "flow": "家居动作标注流程 v2",
+        "stage": "标注",
+        "node": "动作分段标注",
+        "priority": "P1",
+        "count": 142,
+        "filters": [
+            ("所属项目", "宁德项目"),
+            ("处理任务", "PROC-2026-0922"),
+            ("质检结论", "合格"),
+            ("标注状态", "未标注"),
+        ],
+        "mistake_rules": [
+            "动作切分边界偏移但主体动作完整",
+            "动作元素选择不准确",
+            "highlevel / lowlevel 描述不一致",
+            "无法识别片段未完整填写原因",
+        ],
+        "rejection_rules": [
+            "未按照 highlevel / lowlevel 两级结构切分",
+            "动作片段缺少开始或结束时间",
+            "关键动作片段漏标或重复标注",
+            "动作元素与视频内容不一致",
+            "无法标注的数据未使用规定状态",
+        ],
+    },
+    {
+        "id": "WB-2026-0930-REVIEW",
+        "flow": "三方数据导入质检流程 v4",
+        "stage": "质检",
+        "node": "质检抽检",
+        "priority": "P1",
+        "count": 28,
+        "filters": [
+            ("所属项目", "预训练采集"),
+            ("来源任务", "IMP-2026-0042"),
+            ("数据来源", "导入"),
+            ("抽检策略", "自动质检结果 5%"),
+        ],
+        "mistake_rules": [
+            "抽检样本未覆盖全部供应商批次",
+            "自动质检失败原因复核不完整",
+            "问题类型选择不准确",
+            "异常截图或说明缺失",
+        ],
+        "rejection_rules": [
+            "未按供应商批次执行分层随机抽样",
+            "自动质检结论与人工复核结果冲突",
+            "发现严重质量问题但未升级处理",
+            "批次准确率低于 95% 时未触发全量质检",
+        ],
+    },
+    {
+        "id": "WB-2026-0888-FINAL",
+        "flow": "评测集质检流程 v4",
+        "stage": "验收",
+        "node": "入湖终验",
+        "priority": "P2",
+        "count": 12,
+        "filters": [
+            ("所属项目", "demo 项目"),
+            ("处理任务", "PROC-2026-0888"),
+            ("质检结论", "合格"),
+            ("标注状态", "已标注"),
+        ],
+        "mistake_rules": [
+            "处理记录字段存在非关键缺失",
+            "版本备注不完整",
+            "数据集标签使用不规范",
+            "终验说明未关联对应问题记录",
+        ],
+        "rejection_rules": [
+            "质检、标注或验收记录未全部完成",
+            "数据版本与处理规则版本未固定",
+            "存在未关闭的退回或整改记录",
+            "数据血缘信息无法追溯",
+            "终验未通过的数据不得进入数据集版本",
+        ],
+    },
 ]
+
+WB_PRIORITY_ORDER = {"P0": 0, "P1": 1, "P2": 2}
 
 
 @app.route("/data/workbench")
 def data_workbench():
-    return redirect("/data/task-pool")
-
     # 顶部 stat 卡: 今日 / 本周 / 合格率, 每张带同比变化
     wb_stats = [
         {"label": "今日完成任务量", "value": "127",  "base": "昨日 113",  "delta": "+12.4%", "dir": "up"},
@@ -2854,28 +3223,38 @@ def data_workbench():
         """
 
     cards = ""
-    for t in WB_TASKS:
-        total = t["pending"] + t["done"]
-        pct = round(t["done"] / total * 100) if total else 0
+    sorted_tasks = sorted(
+        WB_TASKS,
+        key=lambda item: (WB_PRIORITY_ORDER[item["priority"]], item["id"]),
+    )
+    for t in sorted_tasks:
+        priority_cls = t["priority"].lower()
         cards += f"""
-        <div class="wb-card {t['color']}">
+        <div class="wb-card {priority_cls}"
+          data-workbench-priority="{html.escape(t['priority'])}">
           <div class="wb-main">
-            <div class="wb-head">
-              <span class="wb-badge {t['color']}">{t['type']}</span>
-              <span class="wb-name">{t['name']}</span>
-            </div>
-            <div class="wb-desc">{t['desc']}</div>
-          </div>
-          <div class="wb-side">
-            <div class="wb-progress">
-              <div class="wp-bar"><div class="wp-fill" style="width:{pct}%;"></div></div>
-              <div class="wp-meta">
-                <span class="done">已处理 <b>{t['done']}</b></span>
-                <span class="pend">待处理 <b>{t['pending']}</b></span>
-                <span class="pct">{pct}%</span>
+            <div class="wb-card-fields">
+              <div class="wb-card-field flow">
+                <span>流程名称</span><b>{html.escape(t['flow'])}</b>
+              </div>
+              <div class="wb-card-field">
+                <span>环节</span><b>{html.escape(t['stage'])}</b>
+              </div>
+              <div class="wb-card-field">
+                <span>节点</span><b>{html.escape(t['node'])}</b>
+              </div>
+              <div class="wb-card-field">
+                <span>优先级</span>
+                <b class="wb-priority {priority_cls}">{html.escape(t['priority'])}</b>
+              </div>
+              <div class="wb-card-field">
+                <span>数据量</span><b>{t['count']:,} 条</b>
               </div>
             </div>
-            <a class="btn btn-primary" href="/data/workbench/edit">进入工作台 &rsaquo;</a>
+          </div>
+          <div class="wb-side">
+            <a class="btn btn-primary"
+              href="/data/workbench/tasks/{quote(t['id'])}">进入工作台 &rsaquo;</a>
           </div>
         </div>
         """
@@ -2887,9 +3266,492 @@ def data_workbench():
                        breadcrumb='数据平台 / <b>工作台</b>', mvp_note="MVP 一期")
 
 
-# ── 工作台 · 标注 editor (单条任务进入后的标注界面) ──
+@app.route("/data/workbench/tasks/<task_id>")
+def data_workbench_task_home(task_id):
+    task = next((item for item in WB_TASKS if item["id"] == task_id), None)
+    if not task:
+        return redirect("/data/workbench")
+
+    mistake_rule_items = "".join(
+        f"<li>{html.escape(rule)}</li>"
+        for rule in task["mistake_rules"]
+    )
+    rejection_rule_items = "".join(
+        f"<li>{html.escape(rule)}</li>"
+        for rule in task["rejection_rules"]
+    )
+    priority_cls = task["priority"].lower()
+    content = f"""
+    <div class="wb-task-home">
+      <div class="wb-task-home-head">
+        <div>
+          <a href="/data/workbench">&larr; 返回工作台</a>
+          <h2>{html.escape(task['flow'])}</h2>
+          <p>进入处理前，请确认本任务的数据范围和处理规则。</p>
+        </div>
+        <span class="wb-priority {priority_cls}">{html.escape(task['priority'])}</span>
+      </div>
+      <div class="wb-task-brief">
+        <div><span>流程名称</span><b>{html.escape(task['flow'])}</b></div>
+        <div><span>环节</span><b>{html.escape(task['stage'])}</b></div>
+        <div><span>节点</span><b>{html.escape(task['node'])}</b></div>
+        <div><span>优先级</span><b>{html.escape(task['priority'])}</b></div>
+        <div><span>数据量</span><b>{task['count']:,} 条</b></div>
+      </div>
+      <div class="wb-task-config-grid">
+        <section class="wb-task-config">
+          <div class="wb-task-config-title">
+            <h3>筛选条件</h3><span>设置本次进入工作台的数据范围</span>
+          </div>
+          <form class="wb-filter-form" id="wbFilterForm"
+            action="/data/workbench/edit" method="get">
+            <input type="hidden" name="task" value="{html.escape(task['id'])}">
+            <div class="wb-filter-grid">
+              <div class="wb-filter-field">
+                <label for="wbRecordingId">recording_id</label>
+                <input id="wbRecordingId" name="recording_id"
+                  placeholder="请输入 recording_id">
+              </div>
+              <div class="wb-filter-field">
+                <label>采集时间</label>
+                <div class="wb-date-range">
+                  <input aria-label="采集开始时间" name="collected_from" type="date">
+                  <span>至</span>
+                  <input aria-label="采集结束时间" name="collected_to" type="date">
+                </div>
+              </div>
+              <div class="wb-filter-field">
+                <label for="wbCollector">采集员</label>
+                <select id="wbCollector" name="collector">
+                  <option value="">全部采集员</option>
+                  <option>柳少龙</option>
+                  <option>刘素粉</option>
+                  <option>包媛桐</option>
+                </select>
+              </div>
+              <div class="wb-filter-field">
+                <label for="wbSupplier">供应商</label>
+                <select id="wbSupplier" name="supplier">
+                  <option value="">全部供应商</option>
+                  <option>宁德时代自营</option>
+                  <option>千寻智能</option>
+                  <option>灵巧智造</option>
+                </select>
+              </div>
+            </div>
+            <div class="wb-filter-tip">不填写时默认处理该任务下全部待处理数据</div>
+          </form>
+        </section>
+        <section class="wb-task-config">
+          <div class="wb-task-config-title">
+            <h3>处理规则</h3><span>开始处理后按以下规则执行</span>
+          </div>
+          <div class="wb-rule-groups">
+            <div class="wb-rule-group mistake">
+              <div class="wb-rule-group-head">
+                <span class="icon">&#10003;</span><span>失误标准</span>
+              </div>
+              <div class="wb-rule-box"><ol>{mistake_rule_items}</ol></div>
+            </div>
+            <div class="wb-rule-group rejection">
+              <div class="wb-rule-group-head">
+                <span class="icon">&times;</span><span>不合格标准</span>
+              </div>
+              <div class="wb-rule-box"><ol>{rejection_rule_items}</ol></div>
+            </div>
+          </div>
+        </section>
+      </div>
+      <div class="wb-task-home-actions">
+        <button class="btn" form="wbFilterForm" type="reset">重置</button>
+        <button class="btn btn-primary" form="wbFilterForm"
+          type="submit">开始处理</button>
+      </div>
+    </div>
+    """
+    return render_page(
+        "工作台 · 任务首页",
+        content,
+        active="/data/workbench",
+        module="data",
+        breadcrumb=(
+            "数据平台 / 工作台 / "
+            f"<b>{html.escape(task['node'])}</b>"
+        ),
+        mvp_note="MVP 一期",
+    )
+
+
+# ── 工作台 · 质检 / 标注 / 详情共用组件 ──
+def _workbench_meta_html(task, status="待处理"):
+    return f"""
+    <div class="lab-meta">
+      <div class="lf"><span class="lbl">任务ID:</span><span class="val">{html.escape(task['id'])}</span></div>
+      <div class="lf"><span class="lbl">流程名称:</span><span class="val">{html.escape(task['flow'])}</span></div>
+      <div class="lf"><span class="lbl">节点:</span><span class="val">{html.escape(task['node'])}</span></div>
+      <div class="grow"></div>
+      <div class="lf mono"><span class="lbl">序列号:</span><span class="val">UDAS-00002-2983</span></div>
+      <div class="lf"><span class="lbl">采集员:</span><span class="val">柳少龙</span></div>
+      <div class="lf mono"><span class="lbl">数据ID:</span><span class="val">3298698</span></div>
+      <div class="ver" onclick="toast('Demo: 切换版本')">第1版<span class="caret">&#9662;</span></div>
+      <div class="lf"><span class="lbl">状态:</span><span class="status-pass">{html.escape(status)}</span></div>
+    </div>
+    """
+
+
+def _workbench_video_html():
+    views = ("左臂视角", "头部视角", "右臂视角")
+    panels = "".join(
+        f"""
+        <div class="lab-vid">
+          <span class="vid-label">{view}</span>
+          <span class="vid-expand" onclick="toast('Demo: 放大')" title="放大">&#9974;</span>
+          &#9658;
+        </div>
+        """
+        for view in views
+    )
+    return f"""
+    <div class="lab-vid-grid" data-component="multi_view_video">
+      {panels}
+      <div class="lab-fab" onclick="toast('Demo: 录屏')" title="录屏">&#9209;</div>
+    </div>
+    """
+
+
+def _workbench_log_panel_html():
+    log_items = [
+        ("2026-07-27 10:42", "系统", "领取任务并锁定当前数据"),
+        ("2026-07-27 10:45", "柳少龙", "查看三路视频并定位到 30.00s"),
+        ("2026-07-27 10:48", "柳少龙", "保存当前处理草稿"),
+    ]
+    log_html = "".join(
+        f'<div class="wbx-log-item"><time>{time}</time><b>{operator}</b><span>{record}</span></div>'
+        for time, operator, record in log_items
+    )
+    return f"""
+    <div class="wbx-log-summary"><span>当前数据处理记录</span><span>共 {len(log_items)} 条</span></div>
+    <div class="wbx-log-list" data-component="workbench_log">{log_html}</div>
+    """
+
+
+def _workbench_trajectory_panel_html():
+    return """
+    <div class="wbx-trajectory">
+      <div class="wbx-trajectory-chart">
+        <svg viewBox="0 0 600 170" preserveAspectRatio="none" aria-label="轨迹曲线">
+          <polyline fill="none" stroke="#149DAA" stroke-width="3" points="0,125 70,116 135,128 205,72 275,86 345,44 420,68 500,30 600,48"/>
+          <polyline fill="none" stroke="#8B47C7" stroke-width="2" points="0,92 70,78 135,96 205,112 275,82 345,104 420,64 500,88 600,58"/>
+          <polyline fill="none" stroke="#E29845" stroke-width="2" points="0,145 70,136 135,112 205,126 275,102 345,88 420,110 500,72 600,84"/>
+        </svg>
+      </div>
+      <table class="wbx-mini-table">
+        <thead><tr><th>时间</th><th>末端位姿</th><th>夹爪</th></tr></thead>
+        <tbody>
+          <tr><td>0.00s</td><td>[0.42, 0.18, 0.71]</td><td>开启</td></tr>
+          <tr><td>4.97s</td><td>[0.38, 0.26, 0.64]</td><td>闭合</td></tr>
+          <tr><td>13.89s</td><td>[0.51, 0.31, 0.58]</td><td>闭合</td></tr>
+        </tbody>
+      </table>
+    </div>
+    """
+
+
+def _workbench_quality_result_panel_html():
+    return """
+    <div class="wbx-quality-review-timeline" data-component="quality_result_timeline">
+      <div class="wbx-quality-markers" aria-label="质检失误区间">
+        <span class="wbx-quality-marker" style="left:10%;">
+          <b>2.00s - 12.00s</b>夹爪超出画面
+        </span>
+        <span class="wbx-quality-marker" style="left:38%;">
+          <b>1:28.00 - 1:30.00</b>画面异常
+        </span>
+        <span class="wbx-quality-marker" style="left:70%;">
+          <b>2:45.00 - 2:46.00</b>动作不规范
+        </span>
+      </div>
+      <div class="wbx-quality-track" aria-label="质检问题时间条">
+        <i style="left:2%;width:5%;"></i>
+        <i style="left:12%;width:4%;"></i>
+        <i style="left:36%;width:2%;"></i>
+        <i style="left:68%;width:5%;"></i>
+        <i style="left:84%;width:7%;"></i>
+      </div>
+      <div class="wbx-quality-scale">
+        <span>0.00s</span><span>1:00</span><span>2:00</span><span>3:00</span><span>4:02.10</span>
+      </div>
+    </div>
+    <table class="wbx-mini-table">
+      <thead><tr><th>质检版本</th><th>质检结论</th><th>问题区间</th><th>问题描述</th></tr></thead>
+      <tbody>
+        <tr><td>质检规则 v3.2</td><td>不合格</td><td>2.00s - 12.00s</td><td>夹爪超出画面</td></tr>
+        <tr><td>质检规则 v3.2</td><td>不合格</td><td>1:28.00 - 1:30.00</td><td>画面异常：部分时间完全遮挡</td></tr>
+        <tr><td>质检规则 v3.2</td><td>操作失误</td><td>2:45.00 - 2:46.00</td><td>采集动作不规范</td></tr>
+      </tbody>
+    </table>
+    """
+
+
+def _workbench_tabs_script_html():
+    return """
+    <script>
+    function switchWorkbenchDetailTab(button, tabName) {
+      var tabs = button.closest('.wbx-detail-tabs');
+      tabs.querySelectorAll('.wbx-detail-tab').forEach(function(tab) {
+        tab.classList.toggle('active', tab === button);
+      });
+      tabs.querySelectorAll('.wbx-detail-pane').forEach(function(pane) {
+        pane.classList.toggle('active', pane.dataset.detailPane === tabName);
+      });
+    }
+    </script>
+    """
+
+
+def _workbench_execution_html():
+    return f"""
+    <div class="wbx-execution" data-component="sticky_decision_actions">
+      <section class="wbx-module wbx-conclusion-panel"
+        data-workbench-module="conclusion">
+        <span class="wbx-module-title">结论</span>
+        <div class="wbx-conclusions">
+          <button type="button" class="wbx-conclusion"
+            onclick="wbSelectConclusion(this)">合格</button>
+          <button type="button" class="wbx-conclusion"
+            onclick="wbSelectConclusion(this)">不合格</button>
+          <button type="button" class="wbx-conclusion"
+            onclick="wbSelectConclusion(this)">操作失误</button>
+        </div>
+      </section>
+      <section class="wbx-module wbx-operation-panel"
+        data-workbench-module="operation">
+        <span class="wbx-module-title">操作</span>
+        <div class="wbx-operation-actions">
+          <button type="button" class="btn btn-primary wbx-submit"
+            disabled onclick="wbSubmitWorkbench(this)">提交</button>
+          <button type="button" class="btn wbx-reject"
+            onclick="toast('Demo: 已驳回当前数据')">驳回</button>
+          <button type="button" class="btn"
+            onclick="wbResetWorkbench()">重置</button>
+          <button type="button" class="btn"
+            onclick="toast('Demo: 已保存草稿并暂离')">暂离</button>
+        </div>
+      </section>
+    </div>
+    <script>
+    function wbSelectConclusion(button) {{
+      document.querySelectorAll('.wbx-conclusion').forEach(function(item) {{
+        item.classList.toggle('active', item === button);
+      }});
+      var submit = document.querySelector('.wbx-submit');
+      if (submit) {{
+        submit.disabled = false;
+      }}
+    }}
+    function wbResetWorkbench() {{
+      document.querySelectorAll('.wbx-conclusion').forEach(function(item) {{
+        item.classList.remove('active');
+      }});
+      var submit = document.querySelector('.wbx-submit');
+      if (submit) {{
+        submit.disabled = true;
+      }}
+      toast('Demo: 已重置当前修改');
+    }}
+    function wbSubmitWorkbench(button) {{
+      if (button.disabled) return;
+      var selected = document.querySelector('.wbx-conclusion.active');
+      toast('Demo: 已提交' + (selected ? ' · ' + selected.textContent.trim() : ''));
+    }}
+    </script>
+    """
+
+
+def _render_quality_workbench(task, management_preview=False):
+    issue_rows = [
+        ("1", "2.00s - 12.00s", "夹爪超出画面"),
+        ("2", "30.00s - 36.00s", "采集动作不规范：手部脱离夹爪"),
+        ("3", "1:28.00 - 1:30.00", "画面异常：部分时间完全遮挡"),
+        ("4", "2:20.00 - 2:21.00", "无意义动作 / 假动作"),
+    ]
+    rows_html = "".join(
+        f"""
+        <tr>
+          <td>{number}</td>
+          <td>{period}</td>
+          <td>
+            <div class="wbx-severity">
+              <label><input type="radio" name="severity-{number}">轻微</label>
+              <label><input type="radio" name="severity-{number}" checked>严重</label>
+            </div>
+          </td>
+          <td><select class="mock"><option>{description}</option><option>视频损坏</option><option>相机卡死</option></select></td>
+          <td><a href="#" onclick="toast('Demo: 已删除记录');return false;" style="color:#e25c5c;">删除</a></td>
+        </tr>
+        """
+        for number, period, description in issue_rows
+    )
+    quality_panel_html = f"""
+    <div class="wbx-quality-timeline" data-component="playback_timeline">
+      <div class="wbx-quality-scale"><span>0.00s</span><span>1:00</span><span>2:00</span><span>3:00</span><span>4:02.10</span></div>
+      <div class="wbx-quality-track">
+        <i style="left:2%;width:5%;"></i><i style="left:12%;width:4%;"></i>
+        <i style="left:36%;width:2%;"></i><i style="left:68%;width:5%;"></i>
+        <i style="left:84%;width:7%;"></i>
+      </div>
+      <div class="lab-tools">
+        <div class="lab-tools-left">
+          <span class="lab-tool">&laquo;</span><span class="lab-speed">1x</span>
+          <span class="lab-tool">&raquo;</span><span class="lab-tool play">&#9654;</span>
+        </div>
+      </div>
+    </div>
+    <div class="lab-tbl" data-component="quality_issue_editor">
+      <div class="wbx-record-title"><strong>失误记录</strong><span>已记录 {len(issue_rows)} 个问题区间</span></div>
+      <table>
+        <thead><tr><th>序号</th><th>失误时间</th><th>失误程度</th><th>失误描述</th><th>操作</th></tr></thead>
+        <tbody>{rows_html}</tbody>
+      </table>
+    </div>
+    """
+    content = (
+        _workbench_meta_html(task, "待质检")
+        + """
+        <div class="wbx-instruction" data-component="instruction_context">
+          <b>采集指令</b>
+          <span>清洁门窗本体与窗框：使用毛巾、抹布等清洁布擦拭门窗表面及窗框，去除浮尘与污渍，保障开闭顺畅和外观整洁。</span>
+        </div>
+        """
+        + _workbench_video_html()
+        + f"""
+        <div class="wbx-detail-tabs" data-component="quality_workbench_tabs">
+          <div class="wbx-detail-tabbar" role="tablist">
+            <button class="wbx-detail-tab" data-detail-tab="trajectory"
+              onclick="switchWorkbenchDetailTab(this,'trajectory')">轨迹</button>
+            <button class="wbx-detail-tab active" data-detail-tab="quality"
+              onclick="switchWorkbenchDetailTab(this,'quality')">质检</button>
+            <button class="wbx-detail-tab" data-detail-tab="log"
+              onclick="switchWorkbenchDetailTab(this,'log')">日志</button>
+          </div>
+          <div class="wbx-detail-pane" data-detail-pane="trajectory" data-component="trajectory_viewer">
+            {_workbench_trajectory_panel_html()}
+          </div>
+          <div class="wbx-detail-pane active" data-detail-pane="quality" data-component="quality_issue_editor">
+            {quality_panel_html}
+          </div>
+          <div class="wbx-detail-pane" data-detail-pane="log" data-component="workbench_log">
+            {_workbench_log_panel_html()}
+          </div>
+        </div>
+        """
+        + _workbench_tabs_script_html()
+        + _workbench_execution_html()
+    )
+    active_path = "/data/workbench-management" if management_preview else "/data/workbench"
+    breadcrumb = (
+        "数据平台 / 工作流 / 工作台管理 / <b>质检工作台预览</b>"
+        if management_preview
+        else f"数据平台 / 工作台 / <b>{html.escape(task['node'])}</b>"
+    )
+    return render_page(
+        "工作台预览 · 质检工作台" if management_preview else "质检工作台",
+        content,
+        active=active_path,
+        module="data",
+        breadcrumb=breadcrumb,
+        mvp_note="MVP 一期",
+    )
+
+
+def _render_detail_workbench(task, management_preview=False):
+    content = (
+        _workbench_meta_html(task, "详情复核")
+        + _workbench_video_html()
+        + f"""
+        <div class="wbx-detail-tabs" data-component="detail_tabs">
+          <div class="wbx-detail-tabbar" role="tablist">
+            <button class="wbx-detail-tab active" data-detail-tab="trajectory"
+              onclick="switchWorkbenchDetailTab(this,'trajectory')">轨迹</button>
+            <button class="wbx-detail-tab" data-detail-tab="quality"
+              onclick="switchWorkbenchDetailTab(this,'quality')">质检</button>
+            <button class="wbx-detail-tab" data-detail-tab="annotation"
+              onclick="switchWorkbenchDetailTab(this,'annotation')">标注</button>
+            <button class="wbx-detail-tab" data-detail-tab="tag"
+              onclick="switchWorkbenchDetailTab(this,'tag')">标签</button>
+            <button class="wbx-detail-tab" data-detail-tab="log"
+              onclick="switchWorkbenchDetailTab(this,'log')">日志</button>
+          </div>
+          <div class="wbx-detail-pane active" data-detail-pane="trajectory" data-component="trajectory_viewer">
+            {_workbench_trajectory_panel_html()}
+          </div>
+          <div class="wbx-detail-pane" data-detail-pane="quality" data-component="quality_result_viewer">
+            {_workbench_quality_result_panel_html()}
+          </div>
+          <div class="wbx-detail-pane" data-detail-pane="annotation" data-component="annotation_result_viewer">
+            <table class="wbx-mini-table">
+              <thead><tr><th>层级</th><th>动作描述</th><th>开始</th><th>结束</th><th>版本</th></tr></thead>
+              <tbody>
+                <tr><td>High-level</td><td>擦拭桌面并收纳纸张</td><td>0.00s</td><td>42.80s</td><td>标注规则 v2.4</td></tr>
+                <tr><td>Low-level 1</td><td>夹取抹布并移动到桌面</td><td>0.00s</td><td>4.97s</td><td>标注规则 v2.4</td></tr>
+                <tr><td>Low-level 2</td><td>擦拭桌面并收拢纸张</td><td>4.97s</td><td>24.74s</td><td>标注规则 v2.4</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="wbx-detail-pane" data-detail-pane="tag" data-component="tag_viewer">
+            <div class="wbx-detail-tags">
+              <div class="wbx-tag-group"><strong>场景标签</strong><span>室内</span><span>厨房</span><span>桌面整理</span></div>
+              <div class="wbx-tag-group"><strong>动作标签</strong><span>抓取</span><span>擦拭</span><span>收纳</span></div>
+              <div class="wbx-tag-group"><strong>设备标签</strong><span>Moz1</span><span>双臂</span><span>灵巧手</span></div>
+              <div class="wbx-tag-group"><strong>质量标签</strong><span>三路视频完整</span><span>时间戳对齐</span></div>
+            </div>
+          </div>
+          <div class="wbx-detail-pane" data-detail-pane="log" data-component="workbench_log">
+            {_workbench_log_panel_html()}
+          </div>
+        </div>
+        """
+        + _workbench_tabs_script_html()
+        + _workbench_execution_html()
+    )
+    active_path = "/data/workbench-management" if management_preview else "/data/workbench"
+    breadcrumb = (
+        "数据平台 / 工作流 / 工作台管理 / <b>详情工作台预览</b>"
+        if management_preview
+        else f"数据平台 / 工作台 / <b>{html.escape(task['node'])}</b>"
+    )
+    return render_page(
+        "工作台预览 · 详情工作台" if management_preview else "详情工作台",
+        content,
+        active=active_path,
+        module="data",
+        breadcrumb=breadcrumb,
+        mvp_note="MVP 一期",
+    )
+
+
+# ── 工作台 · 按任务环节进入对应工作台 ──
+@app.route("/data/workbench-management/preview/<preview_mode>")
 @app.route("/data/workbench/edit")
-def data_workbench_edit():
+def data_workbench_edit(preview_mode=None):
+    if preview_mode and preview_mode not in {"quality", "annotation", "detail"}:
+        return redirect("/data/workbench-management")
+    requested_task_id = request.args.get("task", WB_TASKS[0]["id"])
+    workbench_task = next(
+        (item for item in WB_TASKS if item["id"] == requested_task_id),
+        WB_TASKS[0],
+    )
+    workbench_mode = preview_mode or request.args.get("mode") or {
+        "质检": "quality",
+        "标注": "annotation",
+        "验收": "detail",
+    }.get(workbench_task["stage"], "detail")
+    management_preview = preview_mode is not None
+    if workbench_mode == "quality":
+        return _render_quality_workbench(workbench_task, management_preview)
+    if workbench_mode == "detail":
+        return _render_detail_workbench(workbench_task, management_preview)
+
     DUR_TOTAL = 42.80
     rows = [
         {"no": 1, "start": 0.00,  "end": 1.94,  "color": "#E45A52", "desc": "无法标注",       "el_placeholder": "选择动作元素"},
@@ -2934,18 +3796,13 @@ def data_workbench_edit():
         </tr>"""
 
     content = f"""
-    <div class="lab-meta">
-      <div class="lf"><span class="lbl">任务ID:</span><span class="val">9805</span></div>
-      <div class="lf"><span class="lbl">任务名称:</span><span class="val">20260601_SortPills_V2_NarrowTable_FrontDeskDemo_Udas</span></div>
-      <div class="grow"></div>
-      <div class="lf mono"><span class="lbl">序列号:</span><span class="val">UDAS-00002-2983</span></div>
-      <div class="lf"><span class="lbl">采集员:</span><span class="val">柳少龙</span></div>
-      <div class="lf mono"><span class="lbl">数据ID:</span><span class="val">3298698</span></div>
-      <div class="ver" onclick="toast('Demo: 切换版本')">第1版<span class="caret">&#9662;</span></div>
-      <div class="lf"><span class="lbl">状态:</span><span class="status-pass">通过</span></div>
+    {_workbench_meta_html(workbench_task, "待标注")}
+    <div class="wbx-instruction" data-component="instruction_context">
+      <b>任务描述</b>
+      <span>用抹布擦拭桌下柜子内部，并将地面散落的纸张收纳到柜子里。</span>
     </div>
 
-    <div class="lab-vid-grid">
+    <div class="lab-vid-grid" data-component="multi_view_video">
       <div class="lab-vid">
         <span class="vid-label">左臂视角</span>
         <span class="vid-expand" onclick="toast('Demo: 放大')" title="放大">&#9974;</span>
@@ -2964,7 +3821,25 @@ def data_workbench_edit():
       <div class="lab-fab" onclick="toast('Demo: 录屏')" title="录屏">&#9209;</div>
     </div>
 
-    <div class="lab-tools-card">
+    <div class="wbx-detail-tabs" data-component="annotation_workbench_tabs">
+      <div class="wbx-detail-tabbar" role="tablist">
+        <button class="wbx-detail-tab" data-detail-tab="trajectory"
+          onclick="switchWorkbenchDetailTab(this,'trajectory')">轨迹</button>
+        <button class="wbx-detail-tab" data-detail-tab="quality"
+          onclick="switchWorkbenchDetailTab(this,'quality')">质检</button>
+        <button class="wbx-detail-tab active" data-detail-tab="annotation"
+          onclick="switchWorkbenchDetailTab(this,'annotation')">标注</button>
+        <button class="wbx-detail-tab" data-detail-tab="log"
+          onclick="switchWorkbenchDetailTab(this,'log')">日志</button>
+      </div>
+      <div class="wbx-detail-pane" data-detail-pane="trajectory" data-component="trajectory_viewer">
+        {_workbench_trajectory_panel_html()}
+      </div>
+      <div class="wbx-detail-pane" data-detail-pane="quality" data-component="quality_result_viewer">
+        {_workbench_quality_result_panel_html()}
+      </div>
+      <div class="wbx-detail-pane active" data-detail-pane="annotation" data-component="annotation_segment_editor">
+    <div class="lab-tools-card" data-component="playback_timeline">
       <div class="lab-timeline">
         <div class="lab-tl-ticks">{ticks_html}</div>
         <div class="lab-tl-bar"><div class="lab-tl-seg orange" style="left:0;width:{seg1_pct:.2f}%;"></div></div>
@@ -2989,7 +3864,7 @@ def data_workbench_edit():
       </div>
     </div>
 
-    <div class="lab-tbl">
+    <div class="lab-tbl" data-component="annotation_segment_editor">
       <table>
         <thead><tr>
           <th class="nowrap" style="width:72px;">序号</th>
@@ -3005,119 +3880,241 @@ def data_workbench_edit():
         <tbody>{body_rows}</tbody>
       </table>
     </div>
-
-    <div class="lab-foot">
-      <a class="btn btn-primary" href="#" onclick="toast('Demo: 已提交');return false;">&#9729; 提交</a>
-      <a class="btn" href="#" onclick="toast('Demo: 下一条');return false;">下一条 &rsaquo;</a>
+      </div>
+      <div class="wbx-detail-pane" data-detail-pane="log" data-component="workbench_log">
+        {_workbench_log_panel_html()}
+      </div>
     </div>
+
+    {_workbench_tabs_script_html()}
+    {_workbench_execution_html()}
     """
-    return render_page("工作台 · 标注", content, active="/data/workbench", module="data",
-                       breadcrumb='数据平台 / 工作台 / <b>标注 #9805</b>', mvp_note="MVP 一期")
+    active_path = "/data/workbench-management" if management_preview else "/data/workbench"
+    breadcrumb = (
+        "数据平台 / 工作流 / 工作台管理 / <b>标注工作台预览</b>"
+        if management_preview
+        else "数据平台 / 工作台 / "
+        f"<b>{html.escape(workbench_task['node'])}</b>"
+    )
+    return render_page(
+        "工作台预览 · 标注工作台"
+        if management_preview
+        else f"标注工作台 · {workbench_task['node']}",
+        content,
+        active=active_path,
+        module="data",
+        breadcrumb=breadcrumb,
+        mvp_note="MVP 一期",
+    )
 
 
-# ── 数据看板: 漏斗 + 各环节处理能力 ──
-PIPELINE_FUNNEL = [
-    {"stage": "采集",     "count": 1250, "daily": 200, "pass_rate": 88, "color": "#7B8FE5"},
-    {"stage": "质检",     "count": 1100, "daily": 250, "pass_rate": 92, "color": "#5DCAA5"},
-    {"stage": "切分",     "count": 1012, "daily": 180, "pass_rate": 90, "color": "#9B6DBF"},
-    {"stage": "标注",     "count":  911, "daily": 120, "pass_rate": 88, "color": "#F0AF7D"},
-    {"stage": "标注验收", "count":  802, "daily": 200, "pass_rate": 95, "color": "#E8B940"},
-    {"stage": "终验",     "count":  762, "daily": 250, "pass_rate": 98, "color": "#5BB87E"},
+# ── 个人看板: 个人待办、处理表现与团队排名 ──
+PERSONAL_TODOS = [
+    {
+        "task": "厨房数据质检流程 v3",
+        "node": "完整性质检",
+        "stage": "质检",
+        "priority": "P0",
+        "count": 36,
+        "risk": "8 条即将超时",
+        "task_id": "WB-2026-0718-QC",
+    },
+    {
+        "task": "家居动作标注流程 v2",
+        "node": "动作分段标注",
+        "stage": "标注",
+        "priority": "P1",
+        "count": 112,
+        "risk": "6 条即将超时",
+        "task_id": "WB-2026-0922-LB",
+    },
+    {
+        "task": "家居动作标注流程 v2",
+        "node": "标注成果验收",
+        "stage": "验收",
+        "priority": "P0",
+        "count": 32,
+        "risk": "4 条即将超时",
+        "task_id": "WB-2026-0922-AC",
+    },
+]
+
+PERSONAL_STAGE_STATS = [
+    {"stage": "质检", "done": 28, "avg": "1分02秒", "pass_rate": "97.9%", "returned": 1},
+    {"stage": "标注", "done": 41, "avg": "2分24秒", "pass_rate": "95.1%", "returned": 2},
+    {"stage": "验收", "done": 17, "avg": "1分31秒", "pass_rate": "98.2%", "returned": 0},
+]
+
+OPERATOR_RANKING = [
+    {"name": "陈晓", "done": 612, "score": 98.6},
+    {"name": "李安", "done": 588, "score": 97.9},
+    {"name": "王可", "done": 571, "score": 97.5},
+    {"name": "赵晴", "done": 559, "score": 96.8},
+    {"name": "周宁", "done": 548, "score": 96.2},
+    {"name": "孙悦", "done": 531, "score": 95.7},
+    {"name": "林嘉", "done": 526, "score": 95.1},
+    {"name": "吴桐", "done": 518, "score": 94.8},
+    {"name": "郑一", "done": 504, "score": 94.3},
+    {"name": "徐晨", "done": 496, "score": 93.9},
 ]
 
 
 @app.route("/data/dashboard")
 def data_dashboard():
-    return redirect("/data/operations")
-
-    max_count = max(s["count"] for s in PIPELINE_FUNNEL)
-    n = len(PIPELINE_FUNNEL)
-    funnel_rows = ""
-    for i, s in enumerate(PIPELINE_FUNNEL):
-        # 宽度 = min(数量占比, 索引强制收缩) — 保证一定有漏斗形状
-        ratio_pct = s["count"] / max_count * 100
-        max_pct = 100 - i * (60 / max(n - 1, 1))  # 第一行 100, 最后一行 ~40
-        width_pct = round(min(ratio_pct, max_pct))
-        funnel_rows += f"""
-        <div class="funnel-row">
-          <div class="funnel-bar" style="width:{width_pct}%; background:{s['color']};">
-            <span class="fb-stage">{s['stage']}</span>
-            <span class="fb-num">{s['count']:,} 条</span>
+    todo_rows = ""
+    for item in sorted(
+        PERSONAL_TODOS,
+        key=lambda task: (WB_PRIORITY_ORDER[task["priority"]], -task["count"]),
+    ):
+        priority_cls = item["priority"].lower()
+        todo_rows += f"""
+        <div class="pd-todo" data-priority="{item['priority']}">
+          <div class="task">
+            <strong>{html.escape(item['task'])}</strong>
+            <span>{html.escape(item['node'])}</span>
           </div>
+          <span class="pd-stage">{html.escape(item['stage'])}</span>
+          <span class="pd-priority {priority_cls}">{item['priority']}</span>
+          <span class="count">{item['count']:,} 条</span>
+          <span class="pd-risk warn">{html.escape(item['risk'])}</span>
+          <a href="/data/workbench/tasks/{quote(item['task_id'])}">去处理</a>
         </div>
         """
-        # drop indicator (除了最后一个环节)
-        if i < len(PIPELINE_FUNNEL) - 1:
-            next_count = PIPELINE_FUNNEL[i + 1]["count"]
-            loss = s["count"] - next_count
-            funnel_rows += f"""
-            <div class="funnel-drop">
-              <span class="pct">通过率 {s['pass_rate']}%</span>
-              <span class="arr">&darr;</span>
-              <span class="loss">-{loss:,} 条</span>
-            </div>
-            """
 
-    cap_rows = ""
-    for s in PIPELINE_FUNNEL:
-        # 日吞吐率 = daily / count
-        ratio = round(s["daily"] / s["count"] * 100, 1)
-        ratio_cls = "ok" if ratio >= 25 else ("warn" if ratio >= 12 else "bad")
-        # 预计周期 = count / daily days
-        days = s["count"] / s["daily"] if s["daily"] else 0
-        # 通过率颜色
-        pr_cls = "ok" if s["pass_rate"] >= 92 else ("warn" if s["pass_rate"] >= 85 else "bad")
-        cap_rows += f"""<tr>
-          <td><span class="fk-cap" style="background:{s['color']}22;color:{s['color']};"><b>{s['stage']}</b></span></td>
-          <td class="mono"><b>{s['count']:,}</b> 条</td>
-          <td class="mono">{s['daily']} / 天</td>
-          <td class="fk-ratio {ratio_cls}">{ratio}%</td>
-          <td class="mono">{days:.1f} 天</td>
-          <td class="fk-ratio {pr_cls}">{s['pass_rate']}%</td>
-        </tr>"""
+    trend_values = [68, 76, 71, 83, 92, 88, 86]
+    trend_days = ["周一", "周二", "周三", "周四", "周五", "周六", "今天"]
+    trend_max = max(trend_values)
+    trend_bars = "".join(
+        f"""
+        <div class="pd-bar-item">
+          <span class="pd-bar-value">{value}</span>
+          <div class="pd-bar{' today' if day == '今天' else ''}"
+            style="height:{round(value / trend_max * 112)}px;"></div>
+          <span class="pd-bar-day">{day}</span>
+        </div>
+        """
+        for day, value in zip(trend_days, trend_values)
+    )
 
-    # Summary stats
-    total_in = PIPELINE_FUNNEL[0]["count"]
-    total_out = PIPELINE_FUNNEL[-1]["count"]
-    e2e_rate = round(total_out / total_in * 100, 1)
-    weakest = min(PIPELINE_FUNNEL, key=lambda x: x["daily"] / x["count"])
+    stage_rows = "".join(
+        f"""
+        <tr>
+          <td>{html.escape(item['stage'])}</td>
+          <td>{item['done']} 条</td>
+          <td>{html.escape(item['avg'])}</td>
+          <td class="good">{item['pass_rate']}</td>
+          <td>{item['returned']} 条</td>
+        </tr>
+        """
+        for item in PERSONAL_STAGE_STATS
+    )
+
+    ranking_rows = "".join(
+        f"""
+        <li data-rank="{rank}">
+          <span class="rank">{rank}</span>
+          <span class="name">{html.escape(item['name'])}</span>
+          <span class="done">{item['done']}</span>
+          <span class="score">{item['score']:.1f}</span>
+        </li>
+        """
+        for rank, item in enumerate(OPERATOR_RANKING, start=1)
+    )
 
     content = f"""
-    <div class="stat-grid">
-      <div class="stat-card"><div class="stat-label">采集端入口</div><div class="stat-value">{total_in:,}</div><div class="stat-sub">条 recording</div></div>
-      <div class="stat-card"><div class="stat-label">终验入湖</div><div class="stat-value">{total_out:,}</div><div class="stat-sub">条 episode</div></div>
-      <div class="stat-card"><div class="stat-label">端到端通过率</div><div class="stat-value">{e2e_rate}%</div><div class="stat-sub">采集 → 终验</div></div>
-      <div class="stat-card"><div class="stat-label">瓶颈环节</div><div class="stat-value" style="color:#d4504e;">{weakest['stage']}</div><div class="stat-sub">日吞吐率最低</div></div>
+    <div class="pd-kpi-grid">
+      <div class="pd-kpi warn">
+        <div class="label">今日待处理</div>
+        <div class="value">180</div>
+        <div class="sub"><b>18 条</b>将在 2 小时内超时</div>
+      </div>
+      <div class="pd-kpi">
+        <div class="label">今日已完成</div>
+        <div class="value">86</div>
+        <div class="sub">目标 100 条 · 完成 <b>86%</b></div>
+      </div>
+      <div class="pd-kpi good">
+        <div class="label">一次通过率</div>
+        <div class="value">96.8%</div>
+        <div class="sub">较近 7 日提升 <b>1.6%</b></div>
+      </div>
+      <div class="pd-kpi good">
+        <div class="label">平均处理时长</div>
+        <div class="value">1分48秒</div>
+        <div class="sub">较近 7 日缩短 <b>14 秒</b></div>
+      </div>
     </div>
 
-    <div class="dash-row">
-      <div class="card">
-        <h3>采集 → 标注 数据漏斗</h3>
-        <div class="muted" style="font-size:12.5px;margin-bottom:4px;">每个环节的当前数据量 + 通过率 + 流转损耗</div>
-        <div class="funnel">{funnel_rows}</div>
-      </div>
+    <div class="pd-layout">
+      <div class="pd-main">
+        <section class="card pd-card">
+          <div class="pd-card-head">
+            <div>
+              <h3>我的待办</h3>
+              <p>仅展示当前分配给我的数据，按优先级排序</p>
+            </div>
+            <span class="meta">共 180 条</span>
+          </div>
+          <div class="pd-todo-list">{todo_rows}</div>
+        </section>
 
-      <div class="card">
-        <h3>各环节处理能力</h3>
-        <div class="muted" style="font-size:12.5px;margin-bottom:14px;">日吞吐率 = 日处理量 / 当前积压</div>
-        <div class="table-wrap">
-          <table class="ant-table">
-            <thead><tr>
-              <th>环节</th>
-              <th>当前</th>
-              <th>日处理</th>
-              <th>吞吐率</th>
-              <th>周期</th>
-              <th>通过率</th>
-            </tr></thead>
-            <tbody>{cap_rows}</tbody>
-          </table>
+        <div class="pd-bottom-grid">
+          <section class="card pd-card">
+            <div class="pd-card-head">
+              <div>
+                <h3>近 7 日处理趋势</h3>
+                <p>个人每日完成数据量</p>
+              </div>
+              <span class="meta">本周 564 条</span>
+            </div>
+            <div class="pd-trend">
+              <div class="pd-bars">{trend_bars}</div>
+              <div class="pd-trend-note"><span>日均 80.6 条</span><b>较上周 +8.4%</b></div>
+            </div>
+          </section>
+
+          <section class="card pd-card">
+            <div class="pd-card-head">
+              <div>
+                <h3>今日分环节表现</h3>
+                <p>我的效率与提交质量</p>
+              </div>
+            </div>
+            <div class="table-wrap">
+              <table class="pd-stage-table">
+                <thead><tr><th>环节</th><th>完成</th><th>平均耗时</th><th>一次通过率</th><th>退回</th></tr></thead>
+                <tbody>{stage_rows}</tbody>
+              </table>
+            </div>
+          </section>
         </div>
       </div>
+
+      <aside class="card pd-card pd-rank-card">
+        <div class="pd-card-head">
+          <div>
+            <h3>操作员排行榜</h3>
+            <p>同项目 · 本周综合表现</p>
+          </div>
+          <span class="meta">Top 10</span>
+        </div>
+        <div class="pd-my-rank">
+          <div class="rank-no">12<span>我的位次</span></div>
+          <div>
+            <strong>我 · 91.8 分</strong>
+            <p>本周完成 478 条，距第 10 名还差 18 条</p>
+          </div>
+        </div>
+        <div class="pd-ranking-head"><span>排名</span><span>操作员</span><span>完成量</span><span>得分</span></div>
+        <ol class="pd-ranking">{ranking_rows}</ol>
+        <div class="muted" style="padding:0 16px 16px;font-size:11px;line-height:1.6;">
+          综合得分由有效完成量、一次通过率与平均处理时长计算。
+        </div>
+      </aside>
     </div>
     """
-    return render_page("分析看板", content, active="/data/dashboard", module="data",
-                       breadcrumb='数据平台 / <b>分析看板</b>', mvp_note="MVP 一期")
+    return render_page("个人看板", content, active="/data/dashboard", module="data",
+                       breadcrumb='数据平台 / <b>个人看板</b>', mvp_note="MVP 一期")
 
 
 # ── 规则管理 ──
@@ -3135,8 +4132,6 @@ RULES = [
 
 @app.route("/data/rules")
 def data_rules():
-    return redirect("/data/capabilities")
-
     cat = request.args.get("cat", "全部")
     all_cats = ["全部", "质检规则", "切分规则", "标注规则", "标注验收规则", "终验规则"]
     if cat not in all_cats:
@@ -3275,7 +4270,7 @@ def data_config():
 
 @app.route("/data/process")
 def process():
-    return redirect("/data/pipeline-runs")
+    return redirect("/data/runs")
 
     rows = ""
     for p in PROCESS_JOBS:
@@ -3297,7 +4292,7 @@ def process():
     content = page_header(
         "自动处理",
         "时间戳对齐 · 抽帧 · 切 Episode",
-        "清洗 · 自动预标注 · 数据增强 · 隐私脱敏",
+        "质检 · 自动预标注 · 数据增强 · 隐私脱敏",
     ) + stat_grid([
         ("处理任务", str(len(PROCESS_JOBS)), f'<span class="ok">成功 {n_done}</span> · <span class="warn">运行 {n_running}</span> · <span class="err">失败 {n_failed}</span>'),
         ("已切分 Episode", f"{total_eps:,}", "供下游质检"),
@@ -3328,7 +4323,7 @@ def process():
 
 @app.route("/data/qc")
 def qc():
-    return redirect("/data/tasks")
+    return redirect("/data/processing-tasks")
 
     rows = ""
     for q in QC_RUNS:
@@ -3442,86 +4437,43 @@ def label():
 
 @app.route("/data/datasets")
 def datasets():
-    rows = ""
-    for d in DATASETS:
-        src_html = " · ".join(f'<span class="tag tag-teal">{s}</span>' for s in d["source_tasks"])
-        split = f'{int(d["train_ratio"]*100)} / {int(d["val_ratio"]*100)} / {int(d["test_ratio"]*100)}'
-        type_tag = '<span class="tag tag-blue">训练</span>' if d["type"] == "train" else '<span class="tag tag-purple">评测</span>'
-        rows += f"""<tr>
-          <td class="mono">{d['id']}</td>
-          <td><b>{d['name']}</b></td>
-          <td class="mono">{d['version']}</td>
-          <td>{type_tag}</td>
-          <td class="mono">{d['episodes']}</td>
-          <td class="mono">{d['frames']:,}</td>
-          <td class="mono">{split}</td>
-          <td>{src_html}</td>
-          <td>{d['owner']}</td>
-          <td>{status_tag(d['status'])}</td>
-          <td class="actions-cell"><a href="/model/lineage?ds={d['id']}">血缘</a> · <a href="#" onclick="toast('Demo: 下载');return false;">下载</a></td>
-        </tr>"""
-    n_active = sum(1 for d in DATASETS if d["status"] == "active")
-    n_train = sum(1 for d in DATASETS if d["type"] == "train")
-    total_eps = sum(d["episodes"] for d in DATASETS)
-    total_frames = sum(d["frames"] for d in DATASETS)
-
-    content = page_header(
-        "数据集",
-        "数据集版本管理 · train / val / test 划分 · 血缘",
-        "数据湖分层 · 数据集卡片 · 语义检索",
-    ) + stat_grid([
-        ("已生效数据集", str(n_active), f"共 {len(DATASETS)} 个"),
-        ("训练数据集", str(n_train), "供训练实验引用"),
-        ("总 Episode", f"{total_eps:,}", "覆盖全部数据集"),
-        ("总帧数", f"{total_frames:,}", ""),
-    ]) + f"""
-    <div class="filter-bar">
-      <input class="grow" placeholder="搜索数据集...">
-      <select><option>全部类型</option><option>训练</option><option>评测</option></select>
-      <select><option>全部状态</option><option>已生效</option><option>待启动</option></select>
-      <div class="filter-actions">
-        <button class="btn btn-tertiary" onclick="resetFilters(this)">重置</button>
-        <button class="btn btn-primary" onclick="queryFilters(this)">查询</button>
-      </div>
-      <div class="right">
-        <a href="#" class="btn" onclick="toast('Demo: 进入数据集构建向导');return false;">+ 新建数据集</a>
-      </div>
-    </div>
-    <div class="table-wrap">
-      <table class="ant-table">
-        <thead><tr><th>ID</th><th>数据集名</th><th>版本</th><th>类型</th><th>EP</th><th>帧数</th><th>train/val/test</th><th>来源采集任务</th><th>负责人</th><th>状态</th><th>操作</th></tr></thead>
-        <tbody>{rows}</tbody>
-      </table>
-    </div>
-    """
-    return render_page("数据集", content, active="/data/datasets", module="data",
-                       breadcrumb='数据平台 / <b>数据集</b>', mvp_note="MVP 一期")
+    return _render_shared_dataset_management(
+        active="/data/datasets",
+        module="data",
+        prefix="/data",
+    )
 
 
 # ── 数据平台 · 复用 data_platform 的 raw / operators / pipelines / runs handler ──
 @app.route("/data/raw")
 def data_raw():
-    return redirect("/data/assets")
+    return redirect("/data/recordings")
 
 
 @app.route("/data/operators")
 def data_operators():
-    return redirect("/data/capabilities")
+    return _dp_render(dp.operators, "/data/operators", prefix="/data", module="data")
 
 
 @app.route("/data/pipelines")
 def data_pipelines():
-    return redirect("/data/pipeline-definitions")
+    return _dp_render(
+        dp.pipelines,
+        "/data/pipelines",
+        prefix="/data",
+        module="data",
+        title_override="流程管理",
+    )
 
 
 @app.route("/data/pipelines/<pid>")
 def data_pipeline_editor(pid):
-    return redirect("/data/pipeline-definitions")
+    return _dp_render(lambda: dp.pipeline_editor(pid), "/data/pipelines", prefix="/data", module="data")
 
 
 @app.route("/data/runs")
 def data_runs():
-    return redirect("/data/pipeline-runs")
+    return _dp_render(dp.runs, "/data/runs", prefix="/data", module="data")
 
 
 # ════════════════════════════════════════════════════════════════
@@ -3565,7 +4517,13 @@ def _rewrite_dp_links(html, prefix="/model/data"):
     return _DP_LINK_RE.sub(rf'\1{prefix}/\2\3', html)
 
 
-def _dp_render(handler_func, active, prefix="/model/data", module="model"):
+def _dp_render(
+    handler_func,
+    active,
+    prefix="/model/data",
+    module="model",
+    title_override=None,
+):
     if not DP_AVAILABLE:
         return render_page("数据子模块未启用", '<div class="card"><p class="muted">data_platform 模块未导入成功, 请检查 DP_DIR 环境变量或文件路径。</p></div>',
                            active=active, module=module)
@@ -3582,8 +4540,62 @@ def _dp_render(handler_func, active, prefix="/model/data", module="model"):
                      '<button class="ep-tab tm-subtab" onclick="rawTab(this,\'third\')">三方数据</button>', 1)
         )
     extra = _dp_capture.get("extra_script")
-    return render_page(_dp_capture.get("title", ""), content,
+    return render_page(title_override or _dp_capture.get("title", ""), content,
                        active=active, module=module, extra_script=extra)
+
+
+def _render_shared_dataset_management(active, module, prefix):
+    """Render the same full dataset workspace in the data and model platforms."""
+    if not DP_AVAILABLE:
+        return render_page(
+            "数据集管理",
+            '<div class="card"><p class="muted">数据集模块未启用，请检查 data_platform.py。</p></div>',
+            active=active,
+            module=module,
+        )
+    _dp_capture.clear()
+    dp.datasets()
+    inner = _rewrite_dp_links(_dp_capture.get("content", "") or "", prefix=prefix)
+    extra = _dp_capture.get("extra_script")
+    selected_dataset = request.args.get("sel") or "ds1"
+    action_open = '<div class="dataset-detail-actions">'
+    if module == "data":
+        lineage_btn = (
+            f'<a class="btn btn-secondary" '
+            f'href="/model/lineage/dataset/{selected_dataset}">查看血缘</a> '
+        )
+        inner = inner.replace(action_open, action_open + lineage_btn, 1)
+    else:
+        lineage_btn = (
+            f'<a class="btn btn-secondary" '
+            f'href="/model/lineage/dataset/{selected_dataset}">查看血缘</a> '
+        )
+        process_btn = (
+            '<button class="btn btn-secondary" onclick="document.getElementById('
+            "'procDrawer').classList.add('active')\">&#9881; 处理数据</button> "
+        )
+        export_btn = (
+            '<button class="btn btn-secondary" '
+            'onclick="toast(\'Demo: 已创建数据导出任务\')">导出数据</button>'
+        )
+        inner = inner.replace(process_btn, "", 1)
+        inner = inner.replace(action_open, action_open + lineage_btn, 1)
+        inner = re.sub(
+            r'(<div class="dataset-detail-actions">.*?)(</div>)',
+            rf'\1 {export_btn}\2',
+            inner,
+            count=1,
+            flags=re.S,
+        )
+    platform_label = "数据平台" if module == "data" else "模型平台"
+    return render_page(
+        _dp_capture.get("title", "数据集管理"),
+        inner,
+        active=active,
+        module=module,
+        extra_script=extra,
+        breadcrumb=f"{platform_label} / <b>数据集管理</b>",
+    )
 
 
 @app.route("/model/data")
@@ -3600,31 +4612,47 @@ def model_data_query():
 
 @app.route("/model/data/datasets")
 def model_data_datasets():
-    if not DP_AVAILABLE:
-        return _dp_render(dp.datasets, "/model/data/datasets")
-    _dp_capture.clear()
-    dp.datasets()
-    inner = _rewrite_dp_links(_dp_capture.get("content", "") or "")
-    extra = _dp_capture.get("extra_script")
-    sel = request.args.get("sel") or "ds1"
-    lineage_btn = f'<a class="btn btn-secondary" href="/model/lineage/dataset/{sel}">查看血缘</a> '
-    raw_action = (
-        '<div><button class="btn btn-secondary" onclick="document.getElementById('
-        "'procDrawer').classList.add('active')\">"
+    return _render_shared_dataset_management(
+        active="/model/data/datasets",
+        module="model",
+        prefix="/model/data",
     )
-    inner = inner.replace(
-        raw_action,
-        raw_action.replace("<div>", f"<div>{lineage_btn}"),
-        1,
-    )
-    return render_page(_dp_capture.get("title", "数据集"), inner,
-                       active="/model/data/datasets", module="model", extra_script=extra)
+
+
+def _run_data_dataset_action(handler, *args):
+    """Keep reused data-platform.py actions inside the data-platform URL space."""
+    response = handler(*args)
+    location = response.headers.get("Location", "")
+    if location.startswith("/datasets"):
+        response.headers["Location"] = f"/data{location}"
+    return response
+
+
+@app.route("/data/datasets/<did>/version/<ver>/publish")
+def data_datasets_publish(did, ver):
+    return _run_data_dataset_action(dp.datasets_publish, did, ver)
+
+
+@app.route("/data/datasets/<did>/version/<ver>/rollback")
+def data_datasets_rollback(did, ver):
+    return _run_data_dataset_action(dp.datasets_rollback, did, ver)
+
+
+@app.route("/data/datasets/<did>/process", methods=["POST"])
+def data_datasets_process(did):
+    return _run_data_dataset_action(dp.datasets_process, did)
 
 
 @app.route("/model/data/datasets/<ds_id>")
 def model_data_dataset_detail(ds_id):
     ds = _dataset_by_id_or_name(ds_id) or DATASETS[0]
     src_html = " · ".join(f'<span class="tag tag-teal">{s}</span>' for s in ds["source_tasks"])
+    tag_html = (
+        '<span class="dataset-tag-path-list">'
+        + "".join(f'<span class="dataset-tag-path-chip">{tag}</span>' for tag in ds.get("tags", []))
+        + '</span>'
+        if ds.get("tags") else "—"
+    )
     split = f'{int(ds["train_ratio"]*100)} / {int(ds["val_ratio"]*100)} / {int(ds["test_ratio"]*100)}'
     related_exps = [e for e in EXPERIMENTS if e["dataset"] == ds["name"]]
     if not related_exps:
@@ -3641,6 +4669,7 @@ def model_data_dataset_detail(ds_id):
     <div class="lin-actions">
       <a class="btn" href="/model/data/datasets">返回数据集</a>
       <a class="btn btn-secondary" href="/model/lineage/dataset/{ds['id']}">查看血缘</a>
+      <button class="btn btn-secondary" onclick="showToast('已创建数据导出任务','success')">导出数据</button>
     </div>
     {stat_grid([
         ("Episode", str(ds["episodes"]), ""),
@@ -3653,6 +4682,7 @@ def model_data_dataset_detail(ds_id):
       <div class="kv-grid">
         <div class="kv"><span>数据集 ID</span><b class="mono">{ds["id"]}</b></div>
         <div class="kv"><span>数据集版本</span><b class="mono">{ds["version"]}</b></div>
+        <div class="kv" data-dataset-info-field="tags"><span>标签</span><b>{tag_html}</b></div>
         <div class="kv"><span>创建时间</span><b class="mono">{ds["created"]}</b></div>
         <div class="kv"><span>来源采集任务</span><b>{src_html}</b></div>
       </div>

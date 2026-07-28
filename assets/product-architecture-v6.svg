@@ -1,0 +1,266 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1800" height="1200" viewBox="0 0 1800 1200" role="img" aria-labelledby="title desc">
+  <title id="title">Quanta 数据平台分层产品架构</title>
+  <desc id="desc">以业务应用层、配置与定义层、核心引擎层、数据与平台底座四层展示 Quanta 菜单、运行引擎及其依赖关系。</desc>
+  <defs>
+    <marker id="arrow-blue" markerWidth="10" markerHeight="10" refX="9" refY="4" orient="auto">
+      <path d="M0 0 L0 8 L10 4 Z" fill="#4f82df"/>
+    </marker>
+    <marker id="arrow-green" markerWidth="10" markerHeight="10" refX="9" refY="4" orient="auto">
+      <path d="M0 0 L0 8 L10 4 Z" fill="#2a9d72"/>
+    </marker>
+    <marker id="arrow-gray" markerWidth="10" markerHeight="10" refX="9" refY="4" orient="auto-start-reverse">
+      <path d="M0 0 L0 8 L10 4 Z" fill="#728096"/>
+    </marker>
+    <style>
+      text { font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif; fill: #202a3a; }
+      .title { font-size: 31px; font-weight: 700; }
+      .subtitle { font-size: 15px; fill: #68758b; }
+      .boundary { fill: #fbfcfe; stroke: #a7b3c4; stroke-width: 1.4; stroke-dasharray: 8 6; }
+      .layer-business { fill: #eef4ff; stroke: #6689d2; stroke-width: 1.5; }
+      .layer-config { fill: #fff8e9; stroke: #d49a47; stroke-width: 1.5; }
+      .layer-engine { fill: #eff8f5; stroke: #399777; stroke-width: 1.5; }
+      .layer-foundation { fill: #f2f5f9; stroke: #7f8da4; stroke-width: 1.5; }
+      .rail-business { fill: #dbe8ff; stroke: #6689d2; stroke-width: 1.4; }
+      .rail-config { fill: #ffedc9; stroke: #d49a47; stroke-width: 1.4; }
+      .rail-engine { fill: #d9f0e8; stroke: #399777; stroke-width: 1.4; }
+      .rail-foundation { fill: #e3e8ef; stroke: #7f8da4; stroke-width: 1.4; }
+      .card { fill: #ffffff; stroke: #a6b3c5; stroke-width: 1.1; }
+      .card-business { fill: #ffffff; stroke: #7f9fda; stroke-width: 1.2; }
+      .card-config { fill: #ffffff; stroke: #dda75d; stroke-width: 1.2; }
+      .card-engine { fill: #ffffff; stroke: #68ac93; stroke-width: 1.2; }
+      .layer-title { font-size: 19px; font-weight: 700; }
+      .layer-en { font-size: 11px; fill: #637087; letter-spacing: 0.4px; }
+      .module-title { font-size: 18px; font-weight: 700; }
+      .module-note { font-size: 11.5px; fill: #68758b; }
+      .menu-title { font-size: 14px; font-weight: 650; }
+      .menu-note { font-size: 11px; fill: #6a778b; }
+      .engine-title { font-size: 16px; font-weight: 700; }
+      .engine-key { font-size: 11px; fill: #39775f; }
+      .foundation-title { font-size: 13px; font-weight: 650; }
+      .section-label { font-size: 14px; font-weight: 650; fill: #5e6d82; }
+      .edge-blue { fill: none; stroke: #4f82df; stroke-width: 1.8; marker-end: url(#arrow-blue); }
+      .edge-green { fill: none; stroke: #2a9d72; stroke-width: 1.8; marker-end: url(#arrow-green); }
+      .edge-gray { fill: none; stroke: #728096; stroke-width: 1.5; marker-end: url(#arrow-gray); }
+      .edge-both { fill: none; stroke: #728096; stroke-width: 1.6; marker-start: url(#arrow-gray); marker-end: url(#arrow-gray); }
+      .edge-dashed { stroke-dasharray: 7 5; }
+      .edge-label { font-size: 11px; fill: #59677d; }
+      .pill-blue { fill: #edf3ff; stroke: #a8bde9; stroke-width: 1; }
+      .pill-orange { fill: #fff5e8; stroke: #e6bd82; stroke-width: 1; }
+      .pill-text { font-size: 11px; fill: #53647c; }
+      .legend { font-size: 12px; fill: #68758b; }
+    </style>
+  </defs>
+
+  <rect width="1800" height="1200" fill="#ffffff"/>
+  <text x="40" y="46" class="title">Quanta 数据平台产品架构</text>
+  <text x="40" y="75" class="subtitle">上层回答“用户在哪里完成业务”，中层回答“业务如何被配置”，引擎层回答“配置如何运行”，底座负责持久化、集成与治理。</text>
+
+  <rect x="40" y="105" width="1720" height="1035" rx="18" class="boundary"/>
+  <rect x="70" y="91" width="190" height="28" rx="14" fill="#ffffff" stroke="#a7b3c4"/>
+  <text x="165" y="110" text-anchor="middle" class="section-label">Quanta 分层产品架构</text>
+
+  <!-- Layer 1: Business applications -->
+  <rect x="65" y="135" width="135" height="275" rx="13" class="rail-business"/>
+  <text x="132" y="243" text-anchor="middle" class="layer-title">业务应用层</text>
+  <text x="132" y="267" text-anchor="middle" class="layer-en">BUSINESS</text>
+  <text x="132" y="298" text-anchor="middle" class="menu-note">面向业务角色</text>
+  <text x="132" y="317" text-anchor="middle" class="menu-note">创建、执行与查看</text>
+
+  <rect x="220" y="135" width="1515" height="275" rx="13" class="layer-business"/>
+
+  <rect x="245" y="160" width="400" height="225" rx="11" class="card-business"/>
+  <text x="270" y="191" class="module-title">任务管理</text>
+  <text x="270" y="212" class="module-note">业务任务与人工任务分配入口</text>
+  <rect x="270" y="235" width="105" height="112" rx="8" class="pill-blue"/>
+  <text x="322" y="266" text-anchor="middle" class="menu-title">采集任务</text>
+  <text x="322" y="291" text-anchor="middle" class="menu-note">指令 / 自由</text>
+  <text x="322" y="311" text-anchor="middle" class="menu-note">DAgger 采集</text>
+  <rect x="390" y="235" width="105" height="112" rx="8" class="pill-blue"/>
+  <text x="442" y="266" text-anchor="middle" class="menu-title">处理任务</text>
+  <text x="442" y="291" text-anchor="middle" class="menu-note">清洗 → 标注</text>
+  <text x="442" y="311" text-anchor="middle" class="menu-note">绑定流程版本</text>
+  <rect x="510" y="235" width="110" height="112" rx="8" class="pill-blue"/>
+  <text x="565" y="266" text-anchor="middle" class="menu-title">分配管理</text>
+  <text x="565" y="291" text-anchor="middle" class="menu-note">任务池 / 分配</text>
+  <text x="565" y="311" text-anchor="middle" class="menu-note">优先级 / SLA</text>
+  <text x="445" y="371" text-anchor="middle" class="module-note">产生业务命令，聚合任务进度</text>
+
+  <rect x="665" y="160" width="275" height="225" rx="11" class="card-business"/>
+  <text x="690" y="191" class="module-title">工作台</text>
+  <text x="690" y="212" class="module-note">人工节点的执行界面</text>
+  <rect x="690" y="235" width="225" height="48" rx="8" class="pill-blue"/>
+  <text x="802" y="265" text-anchor="middle" class="menu-title">工作台</text>
+  <rect x="690" y="295" width="225" height="48" rx="8" class="pill-blue"/>
+  <text x="802" y="325" text-anchor="middle" class="menu-title">个人看板</text>
+  <text x="802" y="371" text-anchor="middle" class="module-note">领取 · 操作 · 提交 · 查看反馈</text>
+
+  <rect x="960" y="160" width="360" height="225" rx="11" class="card-business"/>
+  <text x="985" y="191" class="module-title">数据资产</text>
+  <text x="985" y="212" class="module-note">过程数据与数据集的统一产品入口</text>
+  <rect x="985" y="235" width="145" height="108" rx="8" class="pill-blue"/>
+  <text x="1057" y="266" text-anchor="middle" class="menu-title">数据管理</text>
+  <text x="1057" y="291" text-anchor="middle" class="menu-note">进度 · 版本</text>
+  <text x="1057" y="311" text-anchor="middle" class="menu-note">检索 · 预览 · 血缘</text>
+  <rect x="1145" y="235" width="150" height="108" rx="8" class="pill-blue"/>
+  <text x="1220" y="266" text-anchor="middle" class="menu-title">数据集管理</text>
+  <text x="1220" y="291" text-anchor="middle" class="menu-note">构建 · 发布</text>
+  <text x="1220" y="311" text-anchor="middle" class="menu-note">版本 · 消费</text>
+  <text x="1140" y="371" text-anchor="middle" class="module-note">Dataset 生命周期归属模块</text>
+
+  <rect x="1340" y="160" width="300" height="225" rx="11" class="card-business"/>
+  <text x="1365" y="191" class="module-title">运营管理</text>
+  <text x="1365" y="212" class="module-note">生产组织与访问控制入口</text>
+  <rect x="1365" y="235" width="250" height="32" rx="7" class="pill-blue"/>
+  <text x="1490" y="256" text-anchor="middle" class="menu-title">供应商管理</text>
+  <rect x="1365" y="278" width="250" height="32" rx="7" class="pill-blue"/>
+  <text x="1490" y="299" text-anchor="middle" class="menu-title">人员管理</text>
+  <rect x="1365" y="321" width="250" height="32" rx="7" class="pill-blue"/>
+  <text x="1490" y="342" text-anchor="middle" class="menu-title">权限管理</text>
+  <text x="1490" y="371" text-anchor="middle" class="module-note">为分配、访问和项目隔离提供范围</text>
+
+  <!-- Layer 2: Configuration -->
+  <rect x="65" y="440" width="135" height="225" rx="13" class="rail-config"/>
+  <text x="132" y="528" text-anchor="middle" class="layer-title">配置与定义层</text>
+  <text x="132" y="552" text-anchor="middle" class="layer-en">CONFIGURATION</text>
+  <text x="132" y="583" text-anchor="middle" class="menu-note">沉淀可发布</text>
+  <text x="132" y="602" text-anchor="middle" class="menu-note">且可追溯的版本</text>
+
+  <rect x="220" y="440" width="1515" height="225" rx="13" class="layer-config"/>
+
+  <rect x="245" y="465" width="680" height="175" rx="11" class="card-config"/>
+  <text x="270" y="496" class="module-title">工作流</text>
+  <text x="270" y="517" class="module-note">定义流程、运行组件与运行查看入口</text>
+  <rect x="270" y="540" width="145" height="68" rx="8" class="pill-orange"/>
+  <text x="342" y="566" text-anchor="middle" class="menu-title">流程管理</text>
+  <text x="342" y="590" text-anchor="middle" class="menu-note">Pipeline Version</text>
+  <rect x="430" y="540" width="145" height="68" rx="8" class="pill-orange"/>
+  <text x="502" y="566" text-anchor="middle" class="menu-title">执行记录</text>
+  <text x="502" y="590" text-anchor="middle" class="menu-note">读取运行状态</text>
+  <rect x="590" y="540" width="145" height="68" rx="8" class="pill-orange"/>
+  <text x="662" y="566" text-anchor="middle" class="menu-title">算子管理</text>
+  <text x="662" y="590" text-anchor="middle" class="menu-note">Operator Version</text>
+  <rect x="750" y="540" width="150" height="68" rx="8" class="pill-orange"/>
+  <text x="825" y="566" text-anchor="middle" class="menu-title">工作台管理</text>
+  <text x="825" y="590" text-anchor="middle" class="menu-note">Workbench Schema</text>
+
+  <rect x="945" y="465" width="695" height="175" rx="11" class="card-config"/>
+  <text x="970" y="496" class="module-title">配置管理</text>
+  <text x="970" y="517" class="module-note">为业务任务和流程提供稳定配置引用</text>
+  <rect x="970" y="540" width="145" height="68" rx="8" class="pill-orange"/>
+  <text x="1042" y="566" text-anchor="middle" class="menu-title">项目管理</text>
+  <text x="1042" y="590" text-anchor="middle" class="menu-note">Project</text>
+  <rect x="1130" y="540" width="145" height="68" rx="8" class="pill-orange"/>
+  <text x="1202" y="566" text-anchor="middle" class="menu-title">规则管理</text>
+  <text x="1202" y="590" text-anchor="middle" class="menu-note">Policy Version</text>
+  <rect x="1290" y="540" width="145" height="68" rx="8" class="pill-orange"/>
+  <text x="1362" y="566" text-anchor="middle" class="menu-title">场景管理</text>
+  <text x="1362" y="590" text-anchor="middle" class="menu-note">Scene Config</text>
+  <rect x="1450" y="540" width="165" height="68" rx="8" class="pill-orange"/>
+  <text x="1532" y="566" text-anchor="middle" class="menu-title">标签管理</text>
+  <text x="1532" y="590" text-anchor="middle" class="menu-note">Label Schema</text>
+
+  <!-- Layer 3: Core engines -->
+  <rect x="65" y="695" width="135" height="265" rx="13" class="rail-engine"/>
+  <text x="132" y="795" text-anchor="middle" class="layer-title">核心引擎层</text>
+  <text x="132" y="819" text-anchor="middle" class="layer-en">RUNTIME</text>
+  <text x="132" y="850" text-anchor="middle" class="menu-note">执行已发布配置</text>
+  <text x="132" y="869" text-anchor="middle" class="menu-note">维护统一运行状态</text>
+
+  <rect x="220" y="695" width="1515" height="265" rx="13" class="layer-engine"/>
+
+  <rect x="245" y="730" width="260" height="185" rx="11" class="card-engine"/>
+  <text x="375" y="765" text-anchor="middle" class="engine-title">工作流引擎</text>
+  <text x="375" y="788" text-anchor="middle" class="engine-key">Workflow Engine</text>
+  <text x="375" y="821" text-anchor="middle" class="menu-note">Pipeline Run · Node Run</text>
+  <text x="375" y="846" text-anchor="middle" class="menu-note">Transition · 状态机</text>
+  <text x="375" y="871" text-anchor="middle" class="menu-note">重试 · 回流 · 幂等</text>
+
+  <rect x="520" y="730" width="260" height="185" rx="11" class="card-engine"/>
+  <text x="650" y="765" text-anchor="middle" class="engine-title">任务与分配引擎</text>
+  <text x="650" y="788" text-anchor="middle" class="engine-key">Human Task Runtime</text>
+  <text x="650" y="821" text-anchor="middle" class="menu-note">Human Task · Task Pool</text>
+  <text x="650" y="846" text-anchor="middle" class="menu-note">拆分 · 路由 · 锁定</text>
+  <text x="650" y="871" text-anchor="middle" class="menu-note">分配策略 · 优先级 · SLA</text>
+
+  <rect x="795" y="730" width="230" height="185" rx="11" class="card-engine"/>
+  <text x="910" y="765" text-anchor="middle" class="engine-title">算子运行时</text>
+  <text x="910" y="788" text-anchor="middle" class="engine-key">Operator Runtime</text>
+  <text x="910" y="821" text-anchor="middle" class="menu-note">算子版本 · Job</text>
+  <text x="910" y="846" text-anchor="middle" class="menu-note">资源调度 · 日志</text>
+  <text x="910" y="871" text-anchor="middle" class="menu-note">输入输出契约</text>
+
+  <rect x="1040" y="730" width="230" height="185" rx="11" class="card-engine"/>
+  <text x="1155" y="765" text-anchor="middle" class="engine-title">工作台运行时</text>
+  <text x="1155" y="788" text-anchor="middle" class="engine-key">Workbench Runtime</text>
+  <text x="1155" y="821" text-anchor="middle" class="menu-note">Schema 渲染</text>
+  <text x="1155" y="846" text-anchor="middle" class="menu-note">数据绑定 · 校验</text>
+  <text x="1155" y="871" text-anchor="middle" class="menu-note">暂存 · 提交 · 任务锁</text>
+
+  <rect x="1285" y="730" width="355" height="185" rx="11" class="card-engine"/>
+  <text x="1462" y="765" text-anchor="middle" class="engine-title">数据资产服务</text>
+  <text x="1462" y="788" text-anchor="middle" class="engine-key">Data Asset Services</text>
+  <text x="1462" y="821" text-anchor="middle" class="menu-note">Recording · Data Snapshot</text>
+  <text x="1462" y="846" text-anchor="middle" class="menu-note">Dataset · Dataset Version</text>
+  <text x="1462" y="871" text-anchor="middle" class="menu-note">构建 · 发布 · 血缘 · 消费权限</text>
+
+  <!-- Engine relations -->
+  <path d="M505 810 H520" class="edge-green"/>
+  <text x="512" y="798" text-anchor="middle" class="edge-label">人工节点</text>
+  <path d="M505 785 V715 H910 V730" class="edge-blue"/>
+  <text x="710" y="709" text-anchor="middle" class="edge-label">自动节点</text>
+  <path d="M650 915 V925 H1155 V915" class="edge-green"/>
+  <text x="902" y="922" text-anchor="middle" class="edge-label">分配后渲染工作台</text>
+  <path d="M375 915 V944 H1462 V915" class="edge-gray"/>
+  <text x="990" y="956" text-anchor="middle" class="edge-label">读取固定快照，写入节点结果与血缘</text>
+
+  <!-- Cross-layer relations -->
+  <path d="M585 640 V682 H375 V730" class="edge-blue"/>
+  <text x="475" y="680" text-anchor="middle" class="edge-label">发布流程版本</text>
+  <path d="M825 640 V682 H1155 V730" class="edge-blue"/>
+  <text x="990" y="680" text-anchor="middle" class="edge-label">发布组件版本</text>
+  <path d="M1292 640 V682 H1202 V695" class="edge-gray edge-dashed"/>
+  <text x="1270" y="680" text-anchor="middle" class="edge-label">固定引用配置版本</text>
+
+  <path d="M1680 410 V695" class="edge-both"/>
+  <rect x="1648" y="495" width="63" height="118" rx="8" fill="#ffffff" stroke="#a7b3c4"/>
+  <text x="1679" y="523" text-anchor="middle" class="edge-label">业务命令</text>
+  <text x="1679" y="548" text-anchor="middle" class="edge-label">查询</text>
+  <text x="1679" y="573" text-anchor="middle" class="edge-label">运行状态</text>
+  <text x="1679" y="598" text-anchor="middle" class="edge-label">数据视图</text>
+
+  <!-- Layer 4: Foundation -->
+  <rect x="65" y="990" width="135" height="120" rx="13" class="rail-foundation"/>
+  <text x="132" y="1038" text-anchor="middle" class="layer-title">数据与平台底座</text>
+  <text x="132" y="1062" text-anchor="middle" class="layer-en">FOUNDATION</text>
+  <text x="132" y="1087" text-anchor="middle" class="menu-note">共享基础能力</text>
+
+  <rect x="220" y="990" width="1515" height="120" rx="13" class="layer-foundation"/>
+  <rect x="245" y="1018" width="205" height="62" rx="9" class="card"/>
+  <text x="347" y="1045" text-anchor="middle" class="foundation-title">元数据与对象存储</text>
+  <text x="347" y="1067" text-anchor="middle" class="menu-note">Metadata · Object Storage</text>
+  <rect x="465" y="1018" width="205" height="62" rx="9" class="card"/>
+  <text x="567" y="1045" text-anchor="middle" class="foundation-title">事件与任务队列</text>
+  <text x="567" y="1067" text-anchor="middle" class="menu-note">Event Bus · Queue</text>
+  <rect x="685" y="1018" width="205" height="62" rx="9" class="card"/>
+  <text x="787" y="1045" text-anchor="middle" class="foundation-title">检索与索引</text>
+  <text x="787" y="1067" text-anchor="middle" class="menu-note">Search · Index</text>
+  <rect x="905" y="1018" width="205" height="62" rx="9" class="card"/>
+  <text x="1007" y="1045" text-anchor="middle" class="foundation-title">租户、项目与权限</text>
+  <text x="1007" y="1067" text-anchor="middle" class="menu-note">IAM · Tenant · Project</text>
+  <rect x="1125" y="1018" width="205" height="62" rx="9" class="card"/>
+  <text x="1227" y="1045" text-anchor="middle" class="foundation-title">日志、监控与审计</text>
+  <text x="1227" y="1067" text-anchor="middle" class="menu-note">Logs · Metrics · Audit</text>
+  <rect x="1345" y="1018" width="270" height="62" rx="9" class="card"/>
+  <text x="1480" y="1045" text-anchor="middle" class="foundation-title">开放接口与集成</text>
+  <text x="1480" y="1067" text-anchor="middle" class="menu-note">API · Webhook · SDK</text>
+
+  <path d="M940 960 V990" class="edge-gray"/>
+
+  <circle cx="75" cy="1165" r="5" fill="#4f82df"/>
+  <text x="90" y="1170" class="legend">蓝色：配置发布与自动运行关系</text>
+  <circle cx="370" cy="1165" r="5" fill="#2a9d72"/>
+  <text x="385" y="1170" class="legend">绿色：人工任务分配与执行关系</text>
+  <line x1="690" y1="1165" x2="730" y2="1165" stroke="#728096" stroke-width="1.5" stroke-dasharray="7 5"/>
+  <text x="742" y="1170" class="legend">虚线：运行时固定引用配置版本</text>
+  <text x="1050" y="1170" class="legend">关键边界：菜单是产品入口；真正维护状态与执行语义的是核心引擎。</text>
+</svg>

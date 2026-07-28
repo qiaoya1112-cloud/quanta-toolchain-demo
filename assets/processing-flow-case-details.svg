@@ -1,0 +1,187 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1800" height="1000" viewBox="0 0 1800 1000" role="img" aria-labelledby="title desc">
+  <title id="title">可配置处理流程 Case 展开</title>
+  <desc id="desc">作为端到端业务流程中可配置处理流程模块的详情图，展示两个真实业务流程案例。两个案例都保持清洗和标注两个环节，但节点组合、人工轮次和回流策略不同。</desc>
+  <defs>
+    <marker id="arrow-gray" markerWidth="10" markerHeight="10" refX="9" refY="4" orient="auto">
+      <path d="M0 0 L0 8 L10 4 Z" fill="#65728a"/>
+    </marker>
+    <marker id="arrow-green" markerWidth="10" markerHeight="10" refX="9" refY="4" orient="auto">
+      <path d="M0 0 L0 8 L10 4 Z" fill="#2a9d72"/>
+    </marker>
+    <marker id="arrow-red" markerWidth="10" markerHeight="10" refX="9" refY="4" orient="auto">
+      <path d="M0 0 L0 8 L10 4 Z" fill="#d65b5b"/>
+    </marker>
+    <style>
+      text { font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif; fill: #202a3a; }
+      .title { font-size: 30px; font-weight: 700; }
+      .subtitle { font-size: 15px; fill: #68758b; }
+      .context { fill: #f8fafc; stroke: #c9d3e1; stroke-width: 1.2; }
+      .case { fill: #fbfcfe; stroke: #a7b3c4; stroke-width: 1.3; }
+      .step { fill: #ffffff; stroke: #8d9bb0; stroke-width: 1.2; }
+      .step-head { fill: #f3f6fa; stroke: #9eacc1; stroke-width: 1; }
+      .node { fill: #ffffff; stroke: #8d9bb0; stroke-width: 1.2; }
+      .node-red { fill: #fff1f1; stroke: #d65b5b; stroke-width: 1.2; }
+      .case-title { font-size: 19px; font-weight: 700; }
+      .case-note { font-size: 12px; fill: #68758b; }
+      .step-title { font-size: 16px; font-weight: 700; }
+      .node-title { font-size: 14px; font-weight: 650; }
+      .node-note { font-size: 11px; fill: #68758b; }
+      .key { font-size: 10.5px; fill: #59667c; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+      .edge { fill: none; stroke: #65728a; stroke-width: 1.5; marker-end: url(#arrow-gray); }
+      .pass { fill: none; stroke: #2a9d72; stroke-width: 1.7; marker-end: url(#arrow-green); }
+      .rework { fill: none; stroke: #d65b5b; stroke-width: 1.5; stroke-dasharray: 6 4; marker-end: url(#arrow-red); }
+      .label { font-size: 10.5px; fill: #59667c; }
+      .label-pass { font-size: 10.5px; font-weight: 650; fill: #23815e; }
+      .label-rework { font-size: 10.5px; font-weight: 650; fill: #c44848; }
+      .badge { fill: #ffffff; stroke: #a7b3c4; stroke-width: 1; }
+      .caption { font-size: 12px; fill: #68758b; }
+    </style>
+  </defs>
+
+  <rect width="1800" height="1000" fill="#ffffff"/>
+  <text x="40" y="44" class="title">可配置处理流程 · Case 展开</text>
+  <text x="40" y="73" class="subtitle">这是端到端业务流程中“可配置处理流程”模块的详情：业务层都只有清洗、标注两个环节，差异由 Pipeline Version 中的节点、规则、人工轮次和回流策略表达。</text>
+  <path d="M1420 44 H1460" class="edge"/>
+  <text x="1470" y="49" class="label">正常流转</text>
+  <path d="M1560 44 H1600" class="pass"/>
+  <text x="1610" y="49" class="label">完成环节</text>
+  <path d="M1680 44 H1720" class="rework"/>
+  <text x="1730" y="49" class="label">驳回 / 回流</text>
+
+  <!-- Context -->
+  <rect x="40" y="100" width="1720" height="88" rx="12" class="context"/>
+  <rect x="90" y="119" width="260" height="50" rx="8" class="node"/>
+  <text x="220" y="141" text-anchor="middle" class="node-title">处理任务</text>
+  <text x="220" y="159" text-anchor="middle" class="key">data_processing_task</text>
+  <path d="M350 144 H440" class="edge"/>
+  <rect x="440" y="119" width="260" height="50" rx="8" class="node"/>
+  <text x="570" y="141" text-anchor="middle" class="node-title">选择并固定流程版本</text>
+  <text x="570" y="159" text-anchor="middle" class="key">pipeline_version</text>
+  <path d="M700 144 H790" class="edge"/>
+  <rect x="790" y="119" width="260" height="50" rx="8" class="node"/>
+  <text x="920" y="141" text-anchor="middle" class="node-title">生成流程实例</text>
+  <text x="920" y="159" text-anchor="middle" class="key">pipeline_run</text>
+  <path d="M1050 144 H1140" class="edge"/>
+  <rect x="1140" y="119" width="540" height="50" rx="8" class="node"/>
+  <text x="1410" y="141" text-anchor="middle" class="node-title">同一产品结构，不同 Case 运行不同节点组合</text>
+  <text x="1410" y="159" text-anchor="middle" class="node-note">环节不变，流程版本可按项目、场景和交付要求独立发布</text>
+
+  <!-- Case 1 -->
+  <rect x="40" y="215" width="1720" height="360" rx="14" class="case"/>
+  <text x="70" y="250" class="case-title">Case 1｜多轮检查与回流流程</text>
+  <text x="70" y="274" class="case-note">适用于规则严格、需要供应商复核与申诉处理的业务；人工节点支持多轮执行，并可按血缘驳回责任节点。</text>
+  <rect x="1510" y="232" width="210" height="34" rx="17" class="badge"/>
+  <text x="1615" y="254" text-anchor="middle" class="case-note">真实流程示例 · 复杂路径</text>
+
+  <!-- Case 1 clean step -->
+  <rect x="70" y="300" width="800" height="235" rx="11" class="step"/>
+  <rect x="90" y="320" width="760" height="40" rx="7" class="step-head"/>
+  <text x="470" y="346" text-anchor="middle" class="step-title">清洗环节</text>
+
+  <rect x="100" y="395" width="92" height="52" rx="8" class="node"/>
+  <text x="146" y="426" text-anchor="middle" class="node-title">输入</text>
+  <path d="M192 421 H220" class="edge"/>
+  <rect x="220" y="390" width="128" height="62" rx="8" class="node"/>
+  <text x="284" y="416" text-anchor="middle" class="node-title">自动化检查</text>
+  <text x="284" y="437" text-anchor="middle" class="node-note">规则与算子</text>
+  <path d="M348 421 H385" class="edge"/>
+  <text x="366" y="381" text-anchor="middle" class="label">全检 / 比例</text>
+  <rect x="385" y="390" width="120" height="62" rx="8" class="node"/>
+  <text x="445" y="416" text-anchor="middle" class="node-title">抽检复核</text>
+  <text x="445" y="437" text-anchor="middle" class="node-note">命中条件进入</text>
+  <path d="M505 421 H540" class="edge"/>
+  <text x="522" y="381" text-anchor="middle" class="label">不合格 / 失误</text>
+  <rect x="540" y="390" width="125" height="62" rx="8" class="node"/>
+  <text x="602" y="416" text-anchor="middle" class="node-title">供应商复核</text>
+  <text x="602" y="437" text-anchor="middle" class="node-note">支持 1–N 轮</text>
+  <path d="M665 421 H700" class="edge"/>
+  <text x="682" y="381" text-anchor="middle" class="label">不认可结论</text>
+  <rect x="700" y="390" width="120" height="62" rx="8" class="node"/>
+  <text x="760" y="416" text-anchor="middle" class="node-title">申诉复核</text>
+  <text x="760" y="437" text-anchor="middle" class="node-note">形成最终结论</text>
+  <path d="M760 452 V496 H284 V452" class="rework"/>
+  <text x="520" y="490" text-anchor="middle" class="label-rework">按问题类型回到责任节点；每次回流生成新的 Node Run 与数据版本</text>
+
+  <!-- Case 1 annotation step -->
+  <rect x="890" y="300" width="830" height="235" rx="11" class="step"/>
+  <rect x="910" y="320" width="790" height="40" rx="7" class="step-head"/>
+  <text x="1305" y="346" text-anchor="middle" class="step-title">标注环节</text>
+
+  <rect x="920" y="395" width="82" height="52" rx="8" class="node"/>
+  <text x="961" y="426" text-anchor="middle" class="node-title">输入</text>
+  <path d="M1002 421 H1028" class="edge"/>
+  <rect x="1028" y="390" width="130" height="62" rx="8" class="node"/>
+  <text x="1093" y="416" text-anchor="middle" class="node-title">端到端切分</text>
+  <text x="1093" y="437" text-anchor="middle" class="node-note">自动节点</text>
+  <path d="M1158 421 H1190" class="edge"/>
+  <text x="1174" y="381" text-anchor="middle" class="label">100%</text>
+  <rect x="1190" y="382" width="210" height="78" rx="9" class="node"/>
+  <text x="1295" y="407" text-anchor="middle" class="node-title">供应商复核</text>
+  <rect x="1212" y="420" width="72" height="25" rx="6" class="badge"/>
+  <text x="1248" y="437" text-anchor="middle" class="node-note">第一轮</text>
+  <path d="M1284 432 H1306" class="edge"/>
+  <rect x="1306" y="420" width="72" height="25" rx="6" class="badge"/>
+  <text x="1342" y="437" text-anchor="middle" class="node-note">第二轮</text>
+  <path d="M1378 432 H1356 V414 H1306" class="rework"/>
+  <path d="M1400 421 H1435" class="edge"/>
+  <text x="1417" y="381" text-anchor="middle" class="label">通过</text>
+  <rect x="1435" y="390" width="120" height="62" rx="8" class="node"/>
+  <text x="1495" y="416" text-anchor="middle" class="node-title">内部验收</text>
+  <text x="1495" y="437" text-anchor="middle" class="node-note">环节内节点</text>
+  <path d="M1555 421 H1585" class="pass"/>
+  <rect x="1585" y="395" width="105" height="52" rx="8" class="node"/>
+  <text x="1637" y="426" text-anchor="middle" class="node-title">输出</text>
+  <path d="M1495 452 V496 H1093 V452" class="rework"/>
+  <text x="1295" y="490" text-anchor="middle" class="label-rework">驳回时回到切分、标注或复核责任节点</text>
+
+  <!-- Case 2 -->
+  <rect x="40" y="600" width="1720" height="300" rx="14" class="case"/>
+  <text x="70" y="635" class="case-title">Case 2｜两轮人工处理流程</text>
+  <text x="70" y="659" class="case-note">适用于流程稳定、无需节点驳回的业务；清洗和标注均采用固定两轮人工处理。</text>
+  <rect x="1510" y="617" width="210" height="34" rx="17" class="badge"/>
+  <text x="1615" y="639" text-anchor="middle" class="case-note">真实流程示例 · 简化路径</text>
+
+  <!-- Case 2 clean step -->
+  <rect x="70" y="685" width="800" height="170" rx="11" class="step"/>
+  <rect x="90" y="705" width="760" height="38" rx="7" class="step-head"/>
+  <text x="470" y="730" text-anchor="middle" class="step-title">清洗环节</text>
+  <rect x="130" y="775" width="100" height="50" rx="8" class="node"/>
+  <text x="180" y="805" text-anchor="middle" class="node-title">输入</text>
+  <path d="M230 800 H300" class="edge"/>
+  <rect x="300" y="768" width="165" height="64" rx="8" class="node"/>
+  <text x="382" y="794" text-anchor="middle" class="node-title">第一轮：人工质检</text>
+  <text x="382" y="815" text-anchor="middle" class="node-note">完整处理</text>
+  <path d="M465 800 H535" class="edge"/>
+  <rect x="535" y="768" width="165" height="64" rx="8" class="node"/>
+  <text x="617" y="794" text-anchor="middle" class="node-title">第二轮：抽检</text>
+  <text x="617" y="815" text-anchor="middle" class="node-note">固定比例</text>
+  <path d="M700 800 H770" class="pass"/>
+  <rect x="770" y="775" width="70" height="50" rx="8" class="node"/>
+  <text x="805" y="805" text-anchor="middle" class="node-title">输出</text>
+  <text x="470" y="848" text-anchor="middle" class="case-note">固定两轮；不配置驳回路径</text>
+
+  <!-- Case 2 annotation step -->
+  <rect x="890" y="685" width="830" height="170" rx="11" class="step"/>
+  <rect x="910" y="705" width="790" height="38" rx="7" class="step-head"/>
+  <text x="1305" y="730" text-anchor="middle" class="step-title">标注环节</text>
+  <rect x="930" y="775" width="85" height="50" rx="8" class="node"/>
+  <text x="972" y="805" text-anchor="middle" class="node-title">输入</text>
+  <path d="M1015 800 H1060" class="edge"/>
+  <rect x="1060" y="768" width="165" height="64" rx="8" class="node"/>
+  <text x="1142" y="794" text-anchor="middle" class="node-title">第一轮：人工标注</text>
+  <text x="1142" y="815" text-anchor="middle" class="node-note">完整处理</text>
+  <path d="M1225 800 H1260" class="edge"/>
+  <rect x="1260" y="768" width="150" height="64" rx="8" class="node"/>
+  <text x="1335" y="794" text-anchor="middle" class="node-title">第二轮：抽检</text>
+  <text x="1335" y="815" text-anchor="middle" class="node-note">固定比例</text>
+  <path d="M1410 800 H1445" class="edge"/>
+  <rect x="1445" y="768" width="130" height="64" rx="8" class="node"/>
+  <text x="1510" y="794" text-anchor="middle" class="node-title">验收节点</text>
+  <text x="1510" y="815" text-anchor="middle" class="node-note">环节内配置</text>
+  <path d="M1575 800 H1620" class="pass"/>
+  <rect x="1620" y="775" width="75" height="50" rx="8" class="node"/>
+  <text x="1657" y="805" text-anchor="middle" class="node-title">输出</text>
+  <text x="1305" y="848" text-anchor="middle" class="case-note">固定两轮；不配置驳回路径</text>
+
+  <text x="40" y="945" class="caption">Case 与主流程的关系：端到端图只展示“处理任务 → 清洗 → 标注 → 候选快照”；本图用于解释不同 Pipeline Version 如何把真实业务差异落到节点、条件、轮次和回流上。</text>
+</svg>

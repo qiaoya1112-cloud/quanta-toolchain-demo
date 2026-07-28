@@ -76,6 +76,33 @@ TASK_TAGS = {
     "t3": ["sc_plant", "sk_pour", "sk_pick"],
 }
 
+# 数据集标签统一使用完整层级路径展示，避免多个级联下拉框割裂选择结果。
+DATASET_TAG_PATH_BY_ID = {
+    "sc_whiteboard": "场景标签 > 作业区域 > 白板区",
+    "sc_desk": "场景标签 > 作业区域 > 桌面",
+    "sc_plant": "场景标签 > 作业区域 > 绿植区",
+    "sk_wipe": "动作标签 > 清洁类 > 擦拭",
+    "sk_pick": "动作标签 > 拿放类 > 拿取",
+    "sk_place": "动作标签 > 拿放类 > 放置",
+    "sk_pour": "动作标签 > 操作类 > 倾倒",
+    "q_high": "质量标签 > 数据质量 > 高质量",
+    "q_review": "质量标签 > 数据质量 > 待复核",
+}
+DATASET_TAG_PATH_OPTIONS = [
+    "能力标签 > 方位理解 > 左右",
+    "能力标签 > 方位理解 > 前后",
+    "能力标签 > 动作理解",
+    "动作标签 > 拿放类 > 拿取",
+    "动作标签 > 拿放类 > 放置",
+    "动作标签 > 清洁类 > 擦拭",
+    "动作标签 > 操作类 > 倾倒",
+    "场景标签 > 作业区域 > 白板区",
+    "场景标签 > 作业区域 > 桌面",
+    "场景标签 > 作业区域 > 绿植区",
+    "质量标签 > 数据质量 > 高质量",
+    "质量标签 > 数据质量 > 待复核",
+]
+
 def rec_tags(r):
     """每条 recording(=episode) 的标签: 场景+技能(按 task) + 质量(按质检)。"""
     tags = list(TASK_TAGS.get(r["task"], []))
@@ -94,7 +121,7 @@ TAG_SYSTEM = {
             "移动", "拖拽", "推动", "拉动", "旋转", "翻转", "复位", "交换", "折叠", "展开", "平铺", "撑开", "抚平", "拉直",
             "卷", "挤", "拧干", "打结", "打开", "关闭", "拉开", "推开", "翻开", "掀起", "拧开", "拉上", "合上", "拆分",
             "安装", "插入", "扣紧", "拧紧", "组装", "贴", "揭下", "倒", "搅拌", "翻炒", "刮", "切", "剥", "撕", "泡", "撒",
-            "盖", "穿戴", "套", "包裹", "浇水", "磨", "铲", "清洗", "冲洗", "刷洗", "搓洗", "擦拭", "扫", "清理", "启动",
+            "盖", "穿戴", "套", "包裹", "浇水", "磨", "铲", "质检", "冲洗", "刷洗", "搓洗", "擦拭", "扫", "清理", "启动",
             "按压", "拨动", "调整", "整理", "收纳", "抖动", "拍打", "悬挂", "书写"]},
         {"name": "场景标签", "en": "Scene Tags", "desc": "采集/任务所处场景", "leaves": [
             "厨房", "客厅", "卧室", "书房", "餐厅", "卫生间", "阳台", "玄关"]},
@@ -265,7 +292,150 @@ PIPELINES = [
      "stages": ["op_check_evalset", "op_stats"],
      "schedules": ["每天 22:00"],
      "desc": "DAgger 导出 → 完整性质检 → 统计"},
+    {
+        "id": "pl3",
+        "name": "多级复核数据处理流程",
+        "creator": "joanna.qiao",
+        "status": "已保存",
+        "updated": "2026-07-27 15:20",
+        "stages": [],
+        "schedules": [],
+        "phase_count": 3,
+        "node_count": 8,
+        "desc": "自动质检、抽检、供应商复核、申诉复核、端到端切分、双轮标注复核与验收。",
+        "phases": [
+            {
+                "name": "数据质检环节",
+                "short_name": "质检环节",
+                "desc": "含人工与自动化节点，人工节点支持多轮和驳回",
+                "nodes": [
+                    {"name": "自动化质检", "kind": "automatic", "meta": "自动化节点"},
+                    {"name": "不合格 100% 等", "kind": "condition", "meta": "条件 · 比例"},
+                    {"name": "抽检复核", "kind": "human", "meta": "人工复核"},
+                    {"name": "不合格 / 失误", "kind": "condition", "meta": "条件 · 比例"},
+                    {
+                        "name": "供应商复核",
+                        "kind": "human",
+                        "meta": "人工 1-N 轮 · 支持驳回",
+                    },
+                    {"name": "不认可结论", "kind": "condition", "meta": "条件 · 比例"},
+                    {"name": "申诉复核", "kind": "human", "meta": "人工复核"},
+                ],
+            },
+            {
+                "name": "数据标注环节",
+                "short_name": "标注环节",
+                "desc": "自动切分与人工复核组合，人工节点支持多轮和驳回",
+                "nodes": [
+                    {"name": "端到端切分", "kind": "automatic", "meta": "自动化节点"},
+                    {"name": "100% 进入复核", "kind": "condition", "meta": "条件 · 比例"},
+                    {
+                        "name": "供应商复核",
+                        "kind": "group",
+                        "meta": "2 轮 · 支持驳回",
+                        "children": ["一轮复核", "二轮复核"],
+                        "bidirectional": True,
+                    },
+                    {"name": "通过 100%", "kind": "condition", "meta": "条件 · 比例"},
+                    {"name": "内部验收", "kind": "human", "meta": "人工验收"},
+                ],
+            },
+            {
+                "name": "验收环节",
+                "short_name": "验收环节",
+                "desc": "对完成质检和标注的数据进行最终验收",
+                "nodes": [
+                    {"name": "验收", "kind": "acceptance", "meta": "最终验收"},
+                ],
+            },
+        ],
+    },
+    {
+        "id": "pl4",
+        "name": "双轮人工数据处理流程",
+        "creator": "joanna.qiao",
+        "status": "已保存",
+        "updated": "2026-07-27 15:22",
+        "stages": [],
+        "schedules": [],
+        "phase_count": 3,
+        "node_count": 5,
+        "desc": "人工质检与人工标注各执行两轮处理，不支持驳回，完成后进入验收。",
+        "phases": [
+            {
+                "name": "数据质检环节",
+                "short_name": "质检环节",
+                "desc": "两轮人工质检，不支持驳回",
+                "nodes": [
+                    {
+                        "name": "人工质检",
+                        "kind": "group",
+                        "meta": "2 轮 · 不支持驳回",
+                        "children": ["质检", "抽检"],
+                        "bidirectional": False,
+                    },
+                ],
+            },
+            {
+                "name": "数据标注环节",
+                "short_name": "标注环节",
+                "desc": "两轮人工标注，不支持驳回",
+                "nodes": [
+                    {
+                        "name": "人工标注",
+                        "kind": "group",
+                        "meta": "2 轮 · 不支持驳回",
+                        "children": ["标注", "抽验"],
+                        "bidirectional": False,
+                    },
+                ],
+            },
+            {
+                "name": "验收环节",
+                "short_name": "验收环节",
+                "desc": "对质检和标注完成的数据进行最终验收",
+                "nodes": [
+                    {"name": "验收", "kind": "acceptance", "meta": "最终验收"},
+                ],
+            },
+        ],
+    },
 ]
+
+# 标准训练与 DAgger 流程沿用原算子顺序，但统一纳入「质检」环节。
+# 这里复用算子元数据，确保转换为自动化节点后仍可查看原脚本、参数与返回结果。
+_operator_by_id = {operator["id"]: operator for operator in OPERATORS}
+for _pipeline in PIPELINES:
+    if _pipeline["id"] not in {"pl1", "pl2"}:
+        continue
+    _automatic_nodes = []
+    for _stage_id in _pipeline["stages"]:
+        _operator = _operator_by_id[_stage_id]
+        _automatic_nodes.append(
+            {
+                "name": _operator["name"].split(" ")[0],
+                "kind": "automatic",
+                "meta": _operator["desc"],
+                "ident": _operator["ident"],
+                "image": "frontdesk-py3.10:latest",
+                "script": "python " + _operator["script"],
+                "params": _operator["params"],
+                "returns": _operator["returns"],
+            }
+        )
+    _pipeline["phases"] = [
+        {
+            "name": "数据质检环节",
+            "short_name": "质检环节",
+            "desc": "自动化算子按顺序完成数据质检与校验",
+            "nodes": _automatic_nodes,
+        }
+    ]
+    _pipeline["phase_count"] = 1
+    _pipeline["node_count"] = len(_automatic_nodes)
+
+_pipeline_order = {"pl3": 0, "pl4": 1, "pl1": 2, "pl2": 3}
+PIPELINES.sort(key=lambda pipeline: _pipeline_order[pipeline["id"]])
 
 RUNS = [
     {"id": "run_0612a", "pipeline": "pl1", "name": "标准训练数据流水线", "target": "clean_whiteboard_v4", "status": "running", "progress": 62, "stage": "采样配比 (3/5)", "at": "2026-06-04 01:40", "dur": "进行中 8m", "trigger": "manual", "by": "joanna.qiao"},
@@ -505,6 +675,28 @@ select option:disabled { color:rgba(0,0,0,0.32); }
 .ms-panel label:hover { background:#fafafa; }
 .ms-panel input { accent-color:#1F80A0; }
 
+/* 数据集标签：单一多选框内展示完整层级路径 */
+.dataset-tag-picker { position:relative; width:100%; }
+.dataset-tag-picker-control { min-height:42px; box-sizing:border-box; display:flex; align-items:center; gap:8px; padding:7px 38px 7px 9px; border:1px solid #d9d9d9; border-radius:8px; background:#fff; cursor:pointer; position:relative; transition:border-color .15s,box-shadow .15s; }
+.dataset-tag-picker-control:hover,.dataset-tag-picker.open .dataset-tag-picker-control { border-color:#1F80A0; }
+.dataset-tag-picker.open .dataset-tag-picker-control { box-shadow:0 0 0 2px rgba(31,128,160,0.12); }
+.dataset-tag-picker-chips { display:flex; flex:1; min-width:0; flex-wrap:wrap; gap:6px; }
+.dataset-tag-picker-placeholder { color:rgba(0,0,0,0.32); font-size:13px; line-height:26px; }
+.dataset-tag-chip { display:inline-flex; align-items:center; gap:6px; max-width:100%; min-height:26px; box-sizing:border-box; padding:2px 8px 2px 10px; border:1px solid #b8e2e8; border-radius:5px; background:#eef9fa; color:#176a88; font-size:12.5px; line-height:20px; }
+.dataset-tag-chip-text { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.dataset-tag-chip-remove { width:18px; height:18px; padding:0; border:0; background:transparent; color:#1F80A0; font-size:16px; line-height:18px; cursor:pointer; }
+.dataset-tag-picker-arrow { position:absolute; right:13px; top:50%; width:8px; height:8px; border-right:1.5px solid #9ca3af; border-bottom:1.5px solid #9ca3af; transform:translateY(-65%) rotate(45deg); transition:transform .15s; }
+.dataset-tag-picker.open .dataset-tag-picker-arrow { transform:translateY(-20%) rotate(225deg); }
+.dataset-tag-picker-panel { display:none; position:absolute; z-index:180; top:calc(100% + 5px); left:0; right:0; max-height:290px; overflow-y:auto; padding:6px; border:1px solid #e2e4e8; border-radius:8px; background:#fff; box-shadow:0 10px 28px rgba(0,0,0,0.12); }
+.dataset-tag-picker.open .dataset-tag-picker-panel { display:block; }
+.dataset-tag-picker-group { padding:7px 9px 4px; color:rgba(0,0,0,0.42); font-size:11px; font-weight:600; }
+.dataset-tag-picker-option { display:flex; align-items:flex-start; gap:8px; padding:7px 9px; border-radius:6px; color:rgba(0,0,0,0.75); font-size:12.5px; line-height:20px; cursor:pointer; }
+.dataset-tag-picker-option:hover { background:#f3f9fb; }
+.dataset-tag-picker-option input { width:auto; margin:3px 0 0; padding:0; accent-color:#1F80A0; box-shadow:none; }
+.dataset-tag-picker.readonly .dataset-tag-picker-control { cursor:default; padding-right:9px; background:#fff; }
+.dataset-tag-picker.readonly .dataset-tag-chip { padding-right:10px; }
+.dataset-tag-picker.readonly .dataset-tag-chip-remove,.dataset-tag-picker.readonly .dataset-tag-picker-arrow { display:none; }
+
 /* ── Table ── */
 .ant-table { width:100%; border-collapse:collapse; font-size:14px; background:#fff; }
 .ant-table thead th { background:#fafafa; padding:9px 16px; font-weight:500; color:rgba(0,0,0,0.85); text-align:left; border-bottom:1px solid #f0f0f0; white-space:nowrap; }
@@ -559,6 +751,9 @@ select option:disabled { color:rgba(0,0,0,0.32); }
 .tree-panel .tree-head { padding:10px 14px; border-bottom:1px solid #f0f0f0; font-size:13px; font-weight:600; color:rgba(0,0,0,0.85); display:flex; justify-content:space-between; align-items:center; }
 .tree-panel .tree-search { padding:8px 10px; border-bottom:1px solid #f5f5f5; }
 .tree-panel .tree-search input { width:100%; box-sizing:border-box; height:30px; padding:4px 10px; border:1px solid #d9d9d9; border-radius:6px; font-size:13px; outline:none; }
+.tree-panel .tree-tag-search { padding:0 10px 8px; border-bottom:1px solid #f5f5f5; }
+.tree-panel .tree-tag-search select { width:100%; min-width:0; height:30px; padding:4px 28px 4px 10px; border:1px solid #d9d9d9; border-radius:6px; background:#fff; color:rgba(0,0,0,0.72); font-size:13px; outline:none; }
+.tree-panel .tree-search input:focus,.tree-panel .tree-tag-search select:focus { border-color:#1F80A0; box-shadow:0 0 0 2px rgba(31,128,160,0.10); }
 .tree-body { flex:1; overflow-y:auto; padding:6px 0; }
 .tree-grp { padding:7px 14px; font-size:13px; color:rgba(0,0,0,0.85); cursor:pointer; display:flex; align-items:center; gap:6px; font-weight:500; }
 .tree-grp:hover { background:#fafafa; }
@@ -871,6 +1066,7 @@ select option:disabled { color:rgba(0,0,0,0.32); }
 /* ---- 右侧节点配置面板 ---- */
 .wf-config { width:0; flex:none; background:#fff; border:1px solid #f0f0f0; border-left:none; border-radius:0 8px 8px 0; overflow:hidden; transition:width 0.18s; display:flex; flex-direction:column; }
 .wf-config.open { width:340px; border-left:1px solid #f0f0f0; }
+.wf-config.open.human-mode { width:min(520px,46vw); }
 .wf-config-head { display:flex; align-items:center; justify-content:space-between; padding:14px 16px; border-bottom:1px solid #f5f5f5; font-size:15px; }
 .wf-config-body { flex:1; overflow:auto; padding:6px 16px 16px; }
 .wf-cfg-sec { font-size:13px; font-weight:600; color:rgba(0,0,0,0.85); margin:16px 0 6px; padding-left:8px; border-left:3px solid #1F80A0; }
@@ -883,6 +1079,8 @@ select option:disabled { color:rgba(0,0,0,0.32); }
 .wf-cfg-col > span { color:rgba(0,0,0,0.45); display:block; margin-bottom:5px; }
 .wf-cfg-code { margin:0; background:#1e1e1e; color:#d4d4d4; font-family:'SF Mono',Menlo,monospace; font-size:11.5px; line-height:1.55; padding:8px 10px; border-radius:6px; white-space:pre-wrap; word-break:break-all; }
 .wf-cfg-sec { display:flex; align-items:center; gap:8px; }
+.wf-advanced-toggle { margin-left:auto; display:inline-flex; align-items:center; gap:8px; color:rgba(0,0,0,0.58); font-size:12px; font-weight:400; cursor:pointer; }
+.wf-advanced-toggle .switch { flex:none; }
 .wf-sec-tag { font-weight:400; font-size:11px; padding:1px 7px; border-radius:4px; }
 .wf-sec-tag.ro { color:rgba(0,0,0,0.4); background:#f0f0f0; }
 .wf-sec-tag.ed { color:#1F80A0; background:#e6f4f8; }
@@ -915,6 +1113,94 @@ select option:disabled { color:rgba(0,0,0,0.32); }
 .foot-check { margin-right:auto; display:flex; align-items:center; gap:6px; font-size:13px; color:rgba(0,0,0,0.65); cursor:pointer; }
 .foot-check input { cursor:pointer; }
 .wf-config-foot { display:flex; gap:8px; justify-content:flex-end; padding:12px 16px; border-top:1px solid #f5f5f5; }
+.wf-edit-field { width:100%; box-sizing:border-box; height:32px; padding:4px 9px; border:1px solid #d9d9d9; border-radius:6px; outline:none; background:#fff; font-size:13px; font-family:inherit; }
+textarea.wf-edit-field { min-height:64px; height:auto; resize:vertical; line-height:1.55; }
+.wf-edit-field:focus { border-color:#1F80A0; box-shadow:0 0 0 2px rgba(31,128,160,.09); }
+.wf-human-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.wf-human-grid .full { grid-column:1/-1; }
+.wf-human-label { display:block; margin-bottom:5px; color:rgba(0,0,0,.52); font-size:12px; }
+.wf-mode-tabs { display:inline-flex; padding:3px; border-radius:7px; background:#f3f5f6; margin:2px 0 10px; }
+.wf-mode-tab { border:0; border-radius:5px; padding:4px 14px; background:transparent; color:rgba(0,0,0,.5); font-size:12px; cursor:pointer; }
+.wf-mode-tab.active { background:#fff; color:#1F80A0; box-shadow:0 1px 4px rgba(0,0,0,.1); font-weight:600; }
+.wf-condition-row { display:grid; grid-template-columns:1.18fr 1fr 24px; align-items:center; gap:6px; margin-bottom:7px; }
+.wf-condition-row .wf-edit-field { min-width:0; }
+.wf-ratio-rule { display:grid; grid-template-columns:1.08fr .92fr 82px 24px; align-items:center; gap:6px; margin-bottom:7px; }
+.wf-ratio-rule .wf-edit-field { min-width:0; }
+.wf-rule-empty { margin-bottom:8px; padding:10px 12px; border:1px dashed #dfe5e7; border-radius:7px; background:#fafbfc; color:rgba(0,0,0,.42); font-size:12px; }
+.wf-row-del { width:24px; height:24px; padding:0; border:0; background:transparent; color:#bfbfbf; cursor:pointer; font-size:17px; }
+.wf-row-del:hover { color:#ff4d4f; }
+.wf-add-link { display:inline-flex; align-items:center; gap:3px; margin-top:3px; border:0; padding:0; background:transparent; color:#1F80A0; cursor:pointer; font-size:12px; }
+.wf-component-list { display:grid; grid-template-columns:1fr 1fr; gap:7px; margin-top:9px; }
+.wf-component-check { display:flex; align-items:flex-start; gap:7px; min-height:46px; padding:8px 9px; border:1px solid #edf0f1; border-radius:7px; background:#fafbfc; cursor:pointer; box-sizing:border-box; }
+.wf-component-check:has(input:checked) { border-color:#add5df; background:#f3fafc; }
+.wf-component-check input { margin-top:2px; accent-color:#1F80A0; }
+.wf-component-check b { display:block; font-size:12px; color:rgba(0,0,0,.72); }
+.wf-component-check small { display:block; margin-top:2px; color:rgba(0,0,0,.4); font-size:10px; line-height:1.35; }
+.wf-reject-enable { display:flex; align-items:center; gap:8px; width:max-content; color:rgba(0,0,0,.72); font-size:13px; cursor:pointer; }
+.wf-reject-enable input { margin:0; accent-color:#1F80A0; }
+.wf-reject-enable:has(input:disabled) { color:rgba(0,0,0,.3); cursor:not-allowed; }
+.wf-reject-hint { margin-top:7px; color:rgba(0,0,0,.4); font-size:11px; line-height:1.5; }
+.wf-reject-wrap { margin-top:12px; }
+.wf-reject-select .ms-trigger { width:100%; box-sizing:border-box; min-height:34px; height:auto; }
+.wf-reject-select .ms-panel { left:0; right:0; min-width:100%; max-height:220px; }
+.wf-reject-select .ms-panel label { align-items:flex-start; }
+.wf-reject-select .ms-panel label span { display:block; min-width:0; }
+.wf-reject-select .ms-panel label b { display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:rgba(0,0,0,.72); font-size:12px; font-weight:500; }
+.wf-reject-select .ms-panel label small { display:block; margin-top:2px; color:rgba(0,0,0,.4); font-size:10px; }
+.wf-reject-empty { padding:12px; color:rgba(0,0,0,.38); font-size:12px; text-align:center; }
+.wf-phase-options { display:grid; gap:10px; }
+.wf-phase-option { display:flex; align-items:center; gap:12px; width:100%; padding:14px; border:1px solid #e6eaec; border-radius:9px; background:#fff; color:rgba(0,0,0,.78); text-align:left; cursor:pointer; }
+.wf-phase-option:hover:not(:disabled) { border-color:#1F80A0; background:#f5fbfc; }
+.wf-phase-option:disabled { color:rgba(0,0,0,.3); background:#f6f7f8; cursor:not-allowed; }
+.wf-phase-option i { display:flex; align-items:center; justify-content:center; width:30px; height:30px; border-radius:50%; background:#e6f4f8; color:#1F80A0; font-style:normal; font-weight:700; }
+.wf-phase-option:disabled i { background:#e8eaeb; color:#aeb5b8; }
+.wf-phase-option b { display:block; font-size:14px; }
+.wf-phase-option small { display:block; margin-top:3px; color:rgba(0,0,0,.4); font-size:11px; }
+.wf-phase-option .state { margin-left:auto; padding:2px 7px; border-radius:10px; background:#eceff0; color:#8c969a; font-size:11px; }
+
+/* ── Processing phase frames on the workflow canvas ── */
+.wf-phase-frame { position:absolute; z-index:0; box-sizing:border-box; border:2px dashed #91b8bf; border-radius:14px; background:transparent; pointer-events:none; }
+.wf-phase-label { position:absolute; top:18px; left:20px; display:flex; align-items:center; gap:9px; color:#256d78; }
+.wf-phase-label i { display:inline-flex; align-items:center; justify-content:center; width:24px; height:24px; border-radius:50%; background:#149DAA; color:#fff; font-size:11px; font-style:normal; }
+.wf-phase-label b { font-size:15px; }
+.wf-phase-label small { color:rgba(0,0,0,.4); font-size:11px; font-weight:400; }
+.wf-phase-port { position:absolute; left:50%; width:14px; height:14px; margin-left:-7px; border:2px solid #75aab3; border-radius:50%; background:#fff; box-sizing:border-box; }
+.wf-phase-port.in { top:-8px; }
+.wf-phase-port.out { bottom:-8px; }
+.wf-edges path.phase-edge { stroke:#5f9fac; stroke-width:3; }
+.wf-phase-terminal { position:absolute; top:50%; width:76px; height:40px; margin-top:-20px; display:flex; align-items:center; justify-content:center; box-sizing:border-box; border:1.5px solid #8fb6bd; border-radius:22px; background:#fff; color:#397783; font-size:12px; font-weight:600; pointer-events:auto; z-index:2; }
+.wf-phase-terminal.input { left:24px; }
+.wf-phase-terminal.output { right:24px; }
+.wf-phase-terminal .wf-port { top:50%; }
+.wf-node.automatic { border-color:#9ec8dc; background:#eef8fc; }
+.wf-node.automatic .wf-node-ic { background:#dceff7; color:#237c9c; }
+.wf-node.human { border-color:#b8d4c1; background:#f3fbf5; }
+.wf-node.human .wf-node-ic { background:#e5f5e9; color:#3f8760; }
+.wf-node.condition { height:126px; border:0; border-radius:0; background:transparent; box-shadow:none; }
+.wf-node.condition::before { content:''; position:absolute; top:15px; left:62px; width:94px; height:94px; transform:rotate(45deg); border:1.5px solid #aab5b9; border-radius:4px; background:#fff; box-shadow:0 2px 8px rgba(0,0,0,.05); }
+.wf-condition-content { position:absolute; z-index:2; top:35px; left:45px; right:45px; text-align:center; }
+.wf-condition-content strong { display:block; color:rgba(0,0,0,.78); font-size:13px; line-height:1.35; }
+.wf-condition-content small { display:block; margin-top:4px; color:rgba(0,0,0,.42); font-size:10.5px; }
+.wf-node.condition .wf-node-del { position:absolute; z-index:3; top:3px; right:33px; }
+.wf-node.condition .wf-port.in { left:36px; }
+.wf-node.condition .wf-port.out { right:36px; }
+.wf-node.condition .wf-port.out::after { content:'是'; position:absolute; top:-18px; left:3px; color:#7d8d92; font-size:10px; white-space:nowrap; }
+.wf-node.condition .wf-port.branch { top:auto; right:auto; bottom:-7px; left:50%; margin:0 0 0 -6.5px; }
+.wf-node.condition .wf-port.branch::after { content:'否'; position:absolute; top:10px; left:10px; color:#7d8d92; font-size:10px; white-space:nowrap; }
+.wf-edges path.edge.no-branch { stroke:#8c969a; stroke-dasharray:6 4; }
+.wf-node.acceptance { border-color:#a9ceb5; background:#eef9f1; }
+.wf-node.acceptance .wf-node-ic { background:#dff2e5; color:#397b53; }
+.wf-node .wf-node-phase { margin-left:auto; padding:1px 6px; border-radius:4px; background:#f2f5f6; color:rgba(0,0,0,.42); font-size:10px; font-weight:400; }
+.wf-node-type-options { display:grid; gap:10px; }
+.wf-node-type-option { display:flex; align-items:center; gap:12px; width:100%; padding:14px; border:1px solid #e6eaec; border-radius:9px; background:#fff; color:rgba(0,0,0,.78); text-align:left; cursor:pointer; }
+.wf-node-type-option:hover { border-color:#1F80A0; background:#f5fbfc; }
+.wf-node-type-option i { display:flex; align-items:center; justify-content:center; width:32px; height:32px; border-radius:8px; font-style:normal; font-weight:700; }
+.wf-node-type-option.human i { background:#e5f5e9; color:#3f8760; }
+.wf-node-type-option.automatic i { background:#dceff7; color:#237c9c; }
+.wf-node-type-option.condition i { border:1px solid #aab5b9; border-radius:4px; background:#fff; color:#7d8d92; transform:rotate(45deg); }
+.wf-node-type-option.condition i span { transform:rotate(-45deg); }
+.wf-node-type-option b { display:block; font-size:14px; }
+.wf-node-type-option small { display:block; margin-top:3px; color:rgba(0,0,0,.42); font-size:11px; }
 
 /* ── 标签管理 树表 ── */
 .tg-table td { padding:7px 16px; }
@@ -1079,6 +1365,57 @@ function msUpdate(cb){
   lab.textContent=names.join(', ');
   if(lab.scrollWidth > lab.clientWidth + 1){ lab.textContent=base+' ('+n+')'; }
 }
+function datasetTagSyncPicker(picker){
+  if(!picker || picker.classList.contains('readonly')) return;
+  var chips=picker.querySelector('.dataset-tag-picker-chips');
+  var selected=Array.prototype.slice.call(picker.querySelectorAll('.dataset-tag-picker-panel input:checked'));
+  chips.innerHTML='';
+  selected.forEach(function(cb){
+    var chip=document.createElement('span');
+    chip.className='dataset-tag-chip';
+    chip.setAttribute('data-path',cb.value);
+    var text=document.createElement('span');
+    text.className='dataset-tag-chip-text';
+    text.textContent=cb.value;
+    var remove=document.createElement('button');
+    remove.type='button';
+    remove.className='dataset-tag-chip-remove';
+    remove.setAttribute('aria-label','移除 '+cb.value);
+    remove.textContent='×';
+    remove.onclick=function(event){ datasetTagRemove(event,remove); };
+    chip.appendChild(text);
+    chip.appendChild(remove);
+    chips.appendChild(chip);
+  });
+  if(!selected.length){
+    var placeholder=document.createElement('span');
+    placeholder.className='dataset-tag-picker-placeholder';
+    placeholder.textContent='请选择或创建标签';
+    chips.appendChild(placeholder);
+  }
+}
+function datasetTagTogglePicker(event,picker){
+  event.stopPropagation();
+  if(!picker || picker.classList.contains('readonly')) return;
+  var opening=!picker.classList.contains('open');
+  document.querySelectorAll('.dataset-tag-picker.open').forEach(function(item){ item.classList.remove('open'); });
+  picker.classList.toggle('open',opening);
+}
+function datasetTagToggleOption(checkbox){ datasetTagSyncPicker(checkbox.closest('.dataset-tag-picker')); }
+function datasetTagRemove(event,button){
+  event.stopPropagation();
+  var picker=button.closest('.dataset-tag-picker');
+  var path=button.closest('.dataset-tag-chip').getAttribute('data-path');
+  picker.querySelectorAll('.dataset-tag-picker-panel input').forEach(function(cb){ if(cb.value===path) cb.checked=false; });
+  datasetTagSyncPicker(picker);
+}
+function datasetTagSetValues(id,values){
+  var picker=document.getElementById(id);
+  if(!picker) return;
+  values=values||[];
+  picker.querySelectorAll('.dataset-tag-picker-panel input').forEach(function(cb){ cb.checked=values.indexOf(cb.value)>=0; });
+  datasetTagSyncPicker(picker);
+}
 function psEsc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 function psOpen(ctrl){ var i=ctrl.closest('.ps-wrap').querySelector('.ps-input'); if(i) i.focus(); }
 function psSelectedNames(w){ return Array.prototype.map.call(w.querySelectorAll('.ps-chip'), function(c){ return c.getAttribute('data-v'); }); }
@@ -1106,6 +1443,7 @@ function psRemove(e, x){ e.stopPropagation(); x.closest('.ps-chip').remove(); }
 document.addEventListener('click', function(e){
   document.querySelectorAll('.ps-wrap.open').forEach(function(w){ if(!w.contains(e.target)) w.classList.remove('open'); });
   document.querySelectorAll('.ms-wrap.open').forEach(function(w){ if(!w.contains(e.target)) w.classList.remove('open'); });
+  document.querySelectorAll('.dataset-tag-picker.open').forEach(function(w){ if(!w.contains(e.target)) w.classList.remove('open'); });
   document.querySelectorAll('.row-act-wrap.open').forEach(function(w){ if(!w.contains(e.target)) w.classList.remove('open'); });
 });
 function openDrawerById(id){ document.getElementById(id).classList.add('active'); }
@@ -1134,7 +1472,14 @@ function toggleRowMenu(el){ var w=el.closest('.row-act-wrap'); var open=w.classL
 function rmClose(){ document.querySelectorAll('.row-act-wrap.open').forEach(function(x){x.classList.remove('open');}); }
 function openFolderEdit(name){ var m=(window._folderMeta||{})[name]||{}; var n=document.getElementById('folderEditName'); if(n)n.value=m.name||name; var idn=document.getElementById('folderEditIdent'); if(idn)idn.value=m.ident||''; var p=document.getElementById('folderEditParent'); if(p){ if(m.parent){ p.value=m.parent; } else { p.selectedIndex=0; } } openDrawerById('folderEditModal'); }
 function delFolder(name){ if(confirm('确定删除空目录「'+name+'」?')){ toast('Demo: 已删除目录「'+name+'」'); } }
-function openDsEdit(id){ var m=(window._dsMeta||{})[id]||{}; var n=document.getElementById('dsEditName'); if(n)n.value=m.name||''; var idn=document.getElementById('dsEditIdent'); if(idn)idn.value=m.ident||''; var f=document.getElementById('dsEditFolder'); if(f&&m.folder)f.value=m.folder; openDrawerById('dsEditModal'); }
+function openDsEdit(id){
+  var m=(window._dsMeta||{})[id]||{};
+  var n=document.getElementById('dsEditName'); if(n)n.value=m.name||'';
+  var idn=document.getElementById('dsEditIdent'); if(idn)idn.value=m.ident||'';
+  var f=document.getElementById('dsEditFolder'); if(f&&m.folder)f.value=m.folder;
+  datasetTagSetValues('dsEditTags',m.tags||[]);
+  openDrawerById('dsEditModal');
+}
 function switchTab(el, pane){
   var tabs=el.parentNode.querySelectorAll('.tab'); tabs.forEach(function(t){t.classList.remove('active');}); el.classList.add('active');
   var root=el.closest('.detail-panel')||document; root.querySelectorAll('.tab-pane').forEach(function(p){p.classList.remove('active');});
@@ -1226,6 +1571,66 @@ def recs_to_episodes(recs, instr=None):
 
 def _dataset_recs(d):
     return [r for r in (get_rec(i) for i in d["recordings"]) if r]
+
+
+def dataset_label_names(d):
+    """Return the distinct business labels attached to a dataset's recordings."""
+    return sorted({
+        DATASET_TAG_PATH_BY_ID.get(tag_id, TAG_LABEL.get(tag_id, tag_id))
+        for r in _dataset_recs(d)
+        for tag_id in rec_tags(r)
+    })
+
+
+def dataset_tag_picker_html(element_id, selected_paths=None, editable=True, input_name=""):
+    """Render a reusable full-path multi-select for dataset labels."""
+    selected_paths = [path for path in (selected_paths or []) if path]
+    selected_set = set(selected_paths)
+    chips = "".join(
+        f'<span class="dataset-tag-chip" data-path="{html.escape(path, quote=True)}">'
+        f'<span class="dataset-tag-chip-text">{html.escape(path)}</span>'
+        + (
+            f'<button type="button" class="dataset-tag-chip-remove" aria-label="移除 {html.escape(path, quote=True)}" '
+            'onclick="datasetTagRemove(event,this)">&times;</button>'
+            if editable else ""
+        )
+        + '</span>'
+        for path in selected_paths
+    )
+    placeholder = (
+        '<span class="dataset-tag-picker-placeholder"'
+        + (' style="display:none;"' if selected_paths else "")
+        + '>请选择或创建标签</span>'
+    )
+    readonly_class = "" if editable else " readonly"
+    arrow = '<span class="dataset-tag-picker-arrow"></span>' if editable else ""
+    panel = ""
+    if editable:
+        option_groups = {}
+        for path in DATASET_TAG_PATH_OPTIONS:
+            option_groups.setdefault(path.split(" > ", 1)[0], []).append(path)
+        options_html = ""
+        for group_name, paths in option_groups.items():
+            options_html += f'<div class="dataset-tag-picker-group">{html.escape(group_name)}</div>'
+            for path in paths:
+                checked = " checked" if path in selected_set else ""
+                name_attr = f' name="{html.escape(input_name, quote=True)}"' if input_name else ""
+                options_html += (
+                    f'<label class="dataset-tag-picker-option"><input type="checkbox"{name_attr} '
+                    f'value="{html.escape(path, quote=True)}"{checked} onchange="datasetTagToggleOption(this)">'
+                    f'<span>{html.escape(path)}</span></label>'
+                )
+        panel = f'<div class="dataset-tag-picker-panel">{options_html}</div>'
+    click = (
+        ' onclick="datasetTagTogglePicker(event,this.closest(\'.dataset-tag-picker\'))"'
+        if editable else ""
+    )
+    return (
+        f'<div class="dataset-tag-picker{readonly_class}" id="{html.escape(element_id, quote=True)}">'
+        f'<div class="dataset-tag-picker-control"{click}>'
+        f'<div class="dataset-tag-picker-chips">{chips}{placeholder}</div>{arrow}</div>{panel}</div>'
+    )
+
 
 def dataset_prompt_composition(d):
     """数据集按 prompt(任务指令) 的帧数构成。"""
@@ -2604,6 +3009,16 @@ def query():
     </div>
     """
     build_folder_opts = "".join(f"<option>{f}</option>" for f in V2_FOLDERS)
+    build_selected_tag_paths = [
+        DATASET_TAG_PATH_BY_ID.get(tag_id, TAG_LABEL.get(tag_id, tag_id))
+        for tag_id in f_tags
+    ]
+    build_tag_selector = dataset_tag_picker_html(
+        "buildDsTags",
+        build_selected_tag_paths,
+        editable=True,
+        input_name="dataset_tag",
+    )
     build_ds_drawer = f"""
     <div class="modal-mask" id="buildDsDrawer" onclick="if(event.target===this)this.classList.remove('active')">
       <div class="modal-box" style="width:460px;">
@@ -2614,6 +3029,7 @@ def query():
           <div class="fg"><label><span class="req">*</span>数据集名称</label><input id="buildDsName" placeholder="填写标识后自动带入, 可修改"></div>
           <div class="fg"><label>生成格式</label><select><option>LeRobot</option><option>Mozdataset</option></select></div>
           <div class="fg"><label>选择目录</label><select>{build_folder_opts}</select></div>
+          <div class="fg"><label>标签</label>{build_tag_selector}</div>
         </div>
         <div class="drawer-foot">
           <button class="btn" onclick="document.getElementById('buildDsDrawer').classList.remove('active')">取消</button>
@@ -2866,7 +3282,19 @@ def datasets():
             '<span class="th-actions">'
             '<a href="#" onclick="openDrawerById(\'newFolderDrawer\');return false;" style="font-size:12px;">+ 目录</a>'
             '<a href="#" onclick="openDrawerById(\'newDsDrawer\');return false;" style="font-size:12px;">+ 数据集</a></span></div>')
-    tree += '<div class="tree-search"><input placeholder="搜索数据集 / 目录..."></div><div class="tree-body">'
+    all_dataset_tags = sorted({tag for d in DATASETS for tag in dataset_label_names(d)})
+    dataset_tag_options = "".join(
+        f'<option value="{html.escape(tag, quote=True)}">{html.escape(tag)}</option>'
+        for tag in all_dataset_tags
+    )
+    tree += (
+        '<div class="tree-search"><input id="datasetTreeKeyword" placeholder="搜索数据集 / 目录..." '
+        'oninput="filterDatasetTree()"></div>'
+        '<div class="tree-tag-search">'
+        f'<select id="datasetTreeTagFilter" aria-label="标签筛选" onchange="filterDatasetTree()">'
+        f'<option value="">请选择标签</option>{dataset_tag_options}</select></div>'
+        '<div class="tree-body dataset-tree-body">'
+    )
     for folder in V2_FOLDERS:
         dss = [get_ds(i) for i in V2_FOLDER_MAP.get(folder, []) if get_ds(i)]
         empty = len(dss) == 0
@@ -2884,14 +3312,18 @@ def datasets():
         if dss:
             for d in dss:
                 cls = "active" if d["id"] == sel else ""
-                tree += (f'<div class="tree-leaf-wrap row-act-wrap">'
+                dataset_tags = dataset_label_names(d)
+                tags_attr = html.escape("|".join(dataset_tags), quote=True)
+                name_attr = html.escape(d["name"].lower(), quote=True)
+                tree += (f'<div class="tree-leaf-wrap row-act-wrap dataset-tree-item" '
+                         f'data-dataset-name="{name_attr}" data-dataset-tags="{tags_attr}">'
                          f'<a class="tree-leaf {cls}" href="/datasets?sel={d["id"]}">{d["name"]} <span class="sub">· {d["version"]}</span></a>'
                          f'<span class="leaf-act" onclick="event.stopPropagation();toggleRowMenu(this)">&#8943;</span>'
                          f'<div class="row-menu">'
                          f'<div class="rm-item" onclick="rmClose();openDsEdit(\'{d["id"]}\')">编辑</div>'
                          f'</div></div>')
         else:
-            tree += '<div class="tree-leaf muted" style="cursor:default;">（空目录）</div>'
+            tree += '<div class="tree-leaf muted dataset-empty-folder" style="cursor:default;">（空目录）</div>'
         tree += '</div>'
     tree += '</div>'
 
@@ -2908,11 +3340,20 @@ def datasets():
     for _f, _ids in V2_FOLDER_MAP.items():
         for _i in _ids:
             ds_folder_of[_i] = _f
-    ds_meta = {d["id"]: {"name": d["name"], "ident": d["id"], "folder": ds_folder_of.get(d["id"], "")} for d in DATASETS}
+    ds_meta = {
+        d["id"]: {
+            "name": d["name"],
+            "ident": d["id"],
+            "folder": ds_folder_of.get(d["id"], ""),
+            "tags": dataset_label_names(d),
+        }
+        for d in DATASETS
+    }
     _folder_slug = {"预训练": "pretrain", "后训练": "posttrain", "自定义01": "custom01", "自定义02": "custom02"}
     folder_meta = {f: {"name": f, "ident": _folder_slug.get(f, f), "parent": ""} for f in V2_FOLDERS}
     ds_meta_js = (f'<script>window._dsMeta={json.dumps(ds_meta, ensure_ascii=False)};'
                   f'window._folderMeta={json.dumps(folder_meta, ensure_ascii=False)};</script>')
+    edit_tag_selector = dataset_tag_picker_html("dsEditTags", [], editable=True)
     new_folder_drawer = f"""
     <div class="modal-mask" id="newFolderDrawer" onclick="if(event.target===this)this.classList.remove('active')">
       <div class="modal-box" style="width:440px;">
@@ -2949,6 +3390,7 @@ def datasets():
           <div class="fg"><label><span class="req">*</span>数据集名称</label><input id="dsEditName"></div>
           <div class="fg"><label>标识</label><input id="dsEditIdent" disabled><div class="hint">标识创建后不可修改</div></div>
           <div class="fg"><label>目录</label><select id="dsEditFolder">{folder_opts}</select></div>
+          <div class="fg"><label>标签</label>{edit_tag_selector}</div>
         </div>
         <div class="drawer-foot">
           <button class="btn" onclick="closeDrawerById('dsEditModal')">取消</button>
@@ -2989,6 +3431,43 @@ def datasets():
       toast('处理完成: 已生成新版本');
     """ if landed == "version" else "")
     script = """<script>
+    function filterDatasetTree(){
+      var keyword=(document.getElementById('datasetTreeKeyword').value||'').trim().toLowerCase();
+      var tag=document.getElementById('datasetTreeTagFilter').value||'';
+      var filtering=Boolean(keyword||tag), anyVisible=false;
+      document.querySelectorAll('.dataset-tree-body .tree-children').forEach(function(children){
+        var visibleInFolder=0;
+        children.querySelectorAll('.dataset-tree-item').forEach(function(item){
+          var name=item.getAttribute('data-dataset-name')||'';
+          var tags=(item.getAttribute('data-dataset-tags')||'').split('|').filter(Boolean);
+          var show=(!keyword||name.indexOf(keyword)>=0||tags.some(function(x){return x.toLowerCase().indexOf(keyword)>=0;}))
+            &&(!tag||tags.indexOf(tag)>=0);
+          item.style.display=show?'':'none';
+          if(show){ visibleInFolder+=1; anyVisible=true; }
+        });
+        var empty=children.querySelector('.dataset-empty-folder');
+        var showEmpty=Boolean(empty&&!filtering);
+        if(empty) empty.style.display=showEmpty?'':'none';
+        var group=children.previousElementSibling;
+        var showGroup=visibleInFolder>0||showEmpty;
+        if(group) group.style.display=showGroup?'':'none';
+        children.style.display=showGroup?'':'none';
+        if(filtering&&showGroup){
+          children.classList.remove('collapsed');
+          if(group) group.classList.remove('collapsed');
+        }
+      });
+      var emptyState=document.getElementById('datasetTreeFilterEmpty');
+      if(!emptyState){
+        emptyState=document.createElement('div');
+        emptyState.id='datasetTreeFilterEmpty';
+        emptyState.className='muted';
+        emptyState.style.cssText='display:none;padding:22px 14px;text-align:center;font-size:12px;';
+        emptyState.textContent='暂无匹配的数据集';
+        document.querySelector('.dataset-tree-body').appendChild(emptyState);
+      }
+      emptyState.style.display=filtering&&!anyVisible?'':'none';
+    }
     window._charts = {
       info: function(){
         var c=document.getElementById('dsHist');
@@ -3065,6 +3544,12 @@ def datasets():
 def dataset_detail_panel_v2(d, viewed_ver=""):
     ds_format = "Mozdataset" if d.get("type") in ("eval-benchmark", "custom") or "eval" in d["name"].lower() or "smoke" in d["name"].lower() else "LeRobot"
     eps = dataset_episodes(d)
+    dataset_labels = dataset_label_names(d)
+    dataset_labels_html = dataset_tag_picker_html(
+        f'datasetInfoTags-{d["id"]}',
+        dataset_labels,
+        editable=False,
+    )
     _hl_items = dataset_prompt_composition(d)   # highlevel prompt 构成 (info / compose 共用)
     preview = (f'<div class="tab-pane active" id="pane-preview">'
                f'<div class="muted" style="margin-bottom:12px;">数据集共 {d["episodes"]} 个 episode，每个 episode ← 一条原始 recording，可在左侧逐条预览</div>'
@@ -3150,6 +3635,7 @@ def dataset_detail_panel_v2(d, viewed_ver=""):
           <div class="dk">名称</div><div class="dv">{d['name']}</div>
           <div class="dk">标识</div><div class="dv" style="font-family:monospace;">{d['id']}</div>
           <div class="dk">数据格式</div><div class="dv">{ds_format}</div>
+          <div class="dk">标签</div><div class="dv" data-dataset-info-field="tags">{dataset_labels_html}</div>
           <div class="dk">本体</div><div class="dv">{d['robot']}</div>
           <div class="dk">规模</div><div class="dv">{d['episodes']} episodes · {d['frames']:,} frames · {round(d['frames']/30/60,1)} min</div>
           <div class="dk">创建人</div><div class="dv">{d['owner']}</div>
@@ -3407,7 +3893,7 @@ def dataset_detail_panel_v2(d, viewed_ver=""):
     <div class="detail-head">
       <div><div class="dh-title">{d['name']} <span class="tag tag-blue">{ds_format}</span> {ver_select}</div>
       <div class="dh-meta"><span>{d['episodes']} ep · {d['frames']:,} f</span></div></div>
-      <div><button class="btn btn-secondary" onclick="document.getElementById('procDrawer').classList.add('active')">&#9881; 处理数据</button> {publish_btn}</div>
+      <div class="dataset-detail-actions"><button class="btn btn-secondary" onclick="document.getElementById('procDrawer').classList.add('active')">&#9881; 处理数据</button> {publish_btn}</div>
     </div>
     <div class="tabs">
       <div class="tab active" onclick="switchTab(this,'preview')">数据预览</div>
@@ -3657,10 +4143,17 @@ def pipelines():
         sch_title = " / ".join(scheds) if scheds else "无周期调度"
         sch_cell = (f'<span class="sched-badge" title="{sch_title}">{n_sch}</span>'
                     if n_sch else '<span class="muted">0</span>')
+        if pl.get("phases"):
+            structure_cell = (
+                f'<b>{pl.get("phase_count", len(pl["phases"]))} 个环节</b>'
+                f'<div class="muted" style="font-size:11.5px;">{pl.get("node_count", 0)} 个处理节点</div>'
+            )
+        else:
+            structure_cell = f'1 个环节<div class="muted" style="font-size:11.5px;">{len(pl["stages"])} 个算子</div>'
         rows += f"""<tr>
           <td><b>{pl['name']}</b></td>
           <td class="muted" style="max-width:380px;"><span class="desc-clamp">{pl['desc']}</span></td>
-          <td>{len(pl['stages'])} 个算子</td>
+          <td>{structure_cell}</td>
           <td>{sch_cell}</td>
           <td>{pl['creator']}</td>
           <td><label class="switch"><input type="checkbox" checked onchange="toast(this.checked?'已启用工作流':'已停用工作流')"><span class="slider"></span></label></td>
@@ -3687,7 +4180,7 @@ def pipelines():
     </div>
     <div class="muted" style="margin-bottom:12px;">把算子编排成可复用、可调度的工作流, 用于批量重复跑数据集。</div>
     <table class="ant-table row2">
-      <thead><tr><th>名称</th><th>描述</th><th>算子数</th><th>周期调度数</th><th>创建人</th><th>状态</th><th>更新时间</th><th>操作</th></tr></thead>
+      <thead><tr><th>名称</th><th>描述</th><th>流程结构</th><th>周期调度数</th><th>创建人</th><th>状态</th><th>更新时间</th><th>操作</th></tr></thead>
       <tbody>{rows}</tbody>
     </table>
 
@@ -3728,11 +4221,12 @@ def pipelines():
 
 WF_CANVAS_JS = r"""
 (function(){
-  var NODES = __NODES__, EDGES = __EDGES__;
+  var NODES = __NODES__, EDGES = __EDGES__, FRAMES = __FRAMES__;
   var seq = NODES.length;
-  var W = 220, DEF_H = 126;
+  var W = 220, DEF_H = 126, TERM_W = 76, TERM_H = 40;
   var canvas = document.getElementById('wfCanvas');
   var pan = document.getElementById('wfPan');
+  var framesLayer = document.getElementById('wfFrames');
   var nodesLayer = document.getElementById('wfNodes');
   var edgesSvg = document.getElementById('wfEdges');
   var emptyEl = document.getElementById('wfEmpty');
@@ -3740,30 +4234,100 @@ WF_CANVAS_JS = r"""
   var selId = null, drag = null, conn = null, panning = null;
 
   function byId(id){ for(var i=0;i<NODES.length;i++) if(NODES[i].id===id) return NODES[i]; return null; }
+  function frameById(id){ for(var i=0;i<FRAMES.length;i++) if(FRAMES[i].id===id) return FRAMES[i]; return null; }
+  function frameTerminalById(id){
+    for(var i=0;i<FRAMES.length;i++){
+      var frame=FRAMES[i], inputId=frame.inputId||frame.id+'-input', outputId=frame.outputId||frame.id+'-output';
+      if(id===inputId) return {id:id,kind:'phase-input',phaseId:frame.id,x:frame.x+24,y:frame.y+(frame.h-TERM_H)/2};
+      if(id===outputId) return {id:id,kind:'phase-output',phaseId:frame.id,x:frame.x+frame.w-24-TERM_W,y:frame.y+(frame.h-TERM_H)/2};
+    }
+    return null;
+  }
+  function entityById(id){ return byId(id)||frameTerminalById(id); }
   function applyPan(){ pan.style.transform = 'translate('+panX+'px,'+panY+'px) scale('+z+')'; }
   function toLocal(cx, cy){ var r=canvas.getBoundingClientRect(); return { x:(cx-r.left-panX)/z, y:(cy-r.top-panY)/z }; }
   function nodeH(n){ var el=nodesLayer.querySelector('.wf-node[data-id="'+n.id+'"]'); return (el&&el.offsetHeight)||DEF_H; }
-  function ports(n){ var h=nodeH(n); return { inp:{x:n.x, y:n.y+h/2}, out:{x:n.x+W, y:n.y+h/2} }; }
+  function ports(n){
+    if(n.kind==='phase-input'||n.kind==='phase-output'){
+      return {
+        inp:{x:n.x, y:n.y+TERM_H/2},
+        out:{x:n.x+TERM_W, y:n.y+TERM_H/2}
+      };
+    }
+    var h=nodeH(n);
+    if(n.kind==='condition'){
+      return {
+        inp:{x:n.x+43, y:n.y+h/2},
+        out:{x:n.x+177, y:n.y+h/2},
+        branch:{x:n.x+W/2, y:n.y+h}
+      };
+    }
+    return {
+      inp:{x:n.x, y:n.y+h/2},
+      out:{x:n.x+W, y:n.y+h/2},
+      branch:{x:n.x+W/2, y:n.y+h}
+    };
+  }
   function bezier(s,t){ return 'M'+s.x+' '+s.y+' C '+(s.x+70)+' '+s.y+', '+(t.x-70)+' '+t.y+', '+t.x+' '+t.y; }
+  function branchBezier(s,t){ return 'M'+s.x+' '+s.y+' C '+s.x+' '+(s.y+62)+', '+(t.x-62)+' '+t.y+', '+t.x+' '+t.y; }
+
+  function renderFrames(){
+    if(!framesLayer) return;
+    framesLayer.innerHTML=FRAMES.map(function(frame,index){
+      var inputId=frame.inputId||frame.id+'-input', outputId=frame.outputId||frame.id+'-output';
+      return '<div class="wf-phase-frame" data-phase-id="'+frame.id+'" style="left:'+frame.x+'px;top:'+frame.y+'px;width:'+frame.w+'px;height:'+frame.h+'px;">'+
+        (index?'<div class="wf-phase-port in"></div>':'')+
+        (index<FRAMES.length-1?'<div class="wf-phase-port out"></div>':'')+
+        '<div class="wf-phase-label"><i>'+(index+1)+'</i><b>'+frame.name+'</b><small>'+frame.desc+'</small></div>'+
+        '<div class="wf-phase-terminal input" data-terminal-id="'+inputId+'"><span>输入</span><div class="wf-port out" data-port="out" data-id="'+inputId+'"></div></div>'+
+        '<div class="wf-phase-terminal output" data-terminal-id="'+outputId+'"><div class="wf-port in" data-port="in" data-id="'+outputId+'"></div><span>输出</span></div>'+
+      '</div>';
+    }).join('');
+  }
 
   function renderEdges(extra){
     var p='';
+    for(var frameIndex=0;frameIndex<FRAMES.length-1;frameIndex++){
+      var sourceFrame=FRAMES[frameIndex], targetFrame=FRAMES[frameIndex+1];
+      var sourceX=sourceFrame.x+sourceFrame.w/2, sourceY=sourceFrame.y+sourceFrame.h;
+      var targetX=targetFrame.x+targetFrame.w/2, targetY=targetFrame.y;
+      p+='<path class="phase-edge" d="M'+sourceX+' '+sourceY+' L'+targetX+' '+targetY+'" fill="none" marker-end="url(#wfPhaseArrow)" pointer-events="none"/>';
+    }
     for(var i=0;i<EDGES.length;i++){
-      var a=byId(EDGES[i].from), b=byId(EDGES[i].to); if(!a||!b) continue;
-      var s=ports(a).out, t=ports(b).inp;
-      p+='<path class="edge" data-i="'+i+'" d="'+bezier(s,t)+'" fill="none" stroke="#9ec3d6" stroke-width="2" marker-end="url(#wfArrow)"/>';
+      var a=entityById(EDGES[i].from), b=entityById(EDGES[i].to); if(!a||!b) continue;
+      var fromPort=EDGES[i].fromPort||'out';
+      var s=ports(a)[fromPort]||ports(a).out, t=ports(b).inp;
+      var path=fromPort==='branch'?branchBezier(s,t):bezier(s,t);
+      var edgeClass='edge'+(EDGES[i].branch==='no'?' no-branch':'');
+      p+='<path class="'+edgeClass+'" data-i="'+i+'" d="'+path+'" fill="none" stroke="#9ec3d6" stroke-width="2" marker-end="url(#wfArrow)"/>';
     }
     if(extra) p+=extra;
-    edgesSvg.innerHTML='<defs><marker id="wfArrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="#9ec3d6"/></marker></defs>'+p;
+    edgesSvg.innerHTML='<defs>'+
+      '<marker id="wfArrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="#9ec3d6"/></marker>'+
+      '<marker id="wfPhaseArrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="#5f9fac"/></marker>'+
+      '</defs>'+p;
   }
   function renderNodes(){
     var h='';
     for(var i=0;i<NODES.length;i++){
       var n=NODES[i];
-      h+='<div class="wf-node'+(n.id===selId?' sel':'')+'" data-id="'+n.id+'" style="left:'+n.x+'px;top:'+n.y+'px;">'+
+      var kind=n.kind||'operator';
+      var icon=kind==='condition'?'◇':(kind==='human'?'人':(kind==='acceptance'?'✓':'⚙'));
+      if(kind==='condition'){
+        h+='<div class="wf-node condition'+(n.id===selId?' sel':'')+'" data-id="'+n.id+'" data-node-kind="condition" style="left:'+n.x+'px;top:'+n.y+'px;">'+
+          '<div class="wf-port in" data-port="in" data-id="'+n.id+'"></div>'+
+          '<div class="wf-port out" data-port="out" data-id="'+n.id+'"></div>'+
+          '<div class="wf-port branch" data-port="branch" data-id="'+n.id+'"></div>'+
+          '<span class="wf-node-del" data-del="'+n.id+'" title="删除">&times;</span>'+
+          '<div class="wf-condition-content"><strong>'+n.name+'</strong><small>'+n.desc+'</small></div>'+
+        '</div>';
+        continue;
+      }
+      h+='<div class="wf-node '+kind+(n.id===selId?' sel':'')+'" data-id="'+n.id+'" data-node-kind="'+kind+'" style="left:'+n.x+'px;top:'+n.y+'px;">'+
         '<div class="wf-port in" data-port="in" data-id="'+n.id+'"></div>'+
         '<div class="wf-port out" data-port="out" data-id="'+n.id+'"></div>'+
-        '<div class="wf-node-head"><span class="wf-node-ic">&#9881;</span>'+n.name+
+        '<div class="wf-node-head"><span class="wf-node-ic">'+icon+'</span>'+n.name+
+          (n.phase?'<span class="wf-node-phase">'+n.phase+'</span>':'')+
           '<span class="wf-node-del" data-del="'+n.id+'" title="删除">&times;</span></div>'+
         '<div class="wf-node-row"><span class="k">标识</span><span class="v">'+n.ident+'</span></div>'+
         '<div class="wf-node-row"><span class="k">描述</span><span class="v">'+n.desc+'</span></div>'+
@@ -3793,9 +4357,11 @@ WF_CANVAS_JS = r"""
       var el=nodesLayer.querySelector('.wf-node[data-id="'+drag.id+'"]'); if(el){ el.style.left=n.x+'px'; el.style.top=n.y+'px'; }
       renderEdges();
     } else if(conn){
-      var a=byId(conn.from); var s=conn.side==='out'?ports(a).out:ports(a).inp;
+      var a=entityById(conn.from); if(!a) return;
+      var s=ports(a)[conn.side]||ports(a).out;
       var m=toLocal(e.clientX,e.clientY);
-      renderEdges('<path d="'+bezier(s,m)+'" fill="none" stroke="#1F80A0" stroke-width="2" stroke-dasharray="5 4"/>');
+      var previewPath=conn.side==='branch'?branchBezier(s,m):bezier(s,m);
+      renderEdges('<path d="'+previewPath+'" fill="none" stroke="#1F80A0" stroke-width="2" stroke-dasharray="5 4"/>');
     } else if(panning){
       panX=panning.ox+(e.clientX-panning.sx); panY=panning.oy+(e.clientY-panning.sy); applyPan();
     }
@@ -3803,10 +4369,17 @@ WF_CANVAS_JS = r"""
   document.addEventListener('mouseup', function(e){
     if(conn){
       var port=e.target.closest('.wf-port');
-      if(port && port.getAttribute('data-port')!==conn.side){
+      var portSide=port&&port.getAttribute('data-port');
+      var sourceSide=conn.side==='out'||conn.side==='branch';
+      var validPair=port&&(
+        (sourceSide&&portSide==='in')||
+        (!sourceSide&&(portSide==='out'||portSide==='branch'))
+      );
+      if(validPair){
         var other=port.getAttribute('data-id');
-        var f = conn.side==='out'?conn.from:other, t = conn.side==='out'?other:conn.from;
-        if(f!==t && !EDGES.some(function(x){return x.from===f&&x.to===t;})) EDGES.push({from:f,to:t});
+        var f=sourceSide?conn.from:other, t=sourceSide?other:conn.from;
+        var fromPort=sourceSide?conn.side:portSide;
+        if(f!==t && !EDGES.some(function(x){return x.from===f&&x.to===t&&((x.fromPort||'out')===fromPort);})) EDGES.push({from:f,to:t,fromPort:fromPort});
       }
       conn=null; renderNodes(); return;
     }
@@ -3814,9 +4387,183 @@ WF_CANVAS_JS = r"""
     panning=null;
   });
 
+  var CONDITION_VALUES={
+    '质检结论':['合格','不合格','操作失误'],
+    '标注状态':['未标注','已标注'],
+    '采集结论':['成功','失败'],
+    '上传状态':['未上传','上传中','上传成功','上传失败'],
+    '数据来源':['采集','导入']
+  };
+  var WORKBENCH_COMPONENTS={
+    '质检工作台':[
+      ['trajectory_viewer','轨迹信息','关节与控制轨迹'],
+      ['quality_issue_editor','质检信息','失误区间与问题描述'],
+      ['workbench_log','处理日志','提交与退回日志']
+    ],
+    '标注工作台':[
+      ['trajectory_viewer','轨迹信息','关节与控制轨迹'],
+      ['quality_result_viewer','质检信息','质检结论与问题区间'],
+      ['annotation_segment_editor','标注编辑器','动作片段与起止时间'],
+      ['workbench_log','处理日志','提交与退回日志']
+    ],
+    '详情工作台':[
+      ['trajectory_viewer','轨迹信息','关节与控制轨迹'],
+      ['quality_result_viewer','质检信息','结论、问题区间与版本'],
+      ['annotation_result_viewer','标注信息','动作片段与标注版本'],
+      ['tag_viewer','标签信息','场景、动作、设备与质量标签'],
+      ['workbench_log','处理日志','全量处理记录']
+    ]
+  };
+  function esc(v){ return String(v==null?'':v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;'); }
+  function optionList(items,selected){
+    return items.map(function(item){ return '<option'+(item===selected?' selected':'')+'>'+esc(item)+'</option>'; }).join('');
+  }
+  function isHumanNode(n){ return n&&(n.kind==='human'||n.kind==='acceptance'); }
+  function isConditionNode(n){ return n&&n.kind==='condition'; }
+  function defaultWorkbench(n){
+    if(n.kind==='acceptance'||(n.phase||'').indexOf('验收')>=0) return '详情工作台';
+    if((n.phase||'').indexOf('标注')>=0) return '标注工作台';
+    return '质检工作台';
+  }
+  function workflowFrameIndex(phaseId){
+    for(var i=0;i<FRAMES.length;i++) if(FRAMES[i].id===phaseId) return i;
+    return FRAMES.length;
+  }
+  function previousHumanNodes(n){
+    if(!n) return [];
+    var reverse={};
+    function addReverseEdge(from,to){
+      if(!from||!to) return;
+      if(!reverse[to]) reverse[to]=[];
+      reverse[to].push(from);
+    }
+    EDGES.forEach(function(edge){ addReverseEdge(edge.from,edge.to); });
+    for(var i=0;i<FRAMES.length-1;i++){
+      var source=FRAMES[i], target=FRAMES[i+1];
+      addReverseEdge(
+        source.outputId||source.id+'-output',
+        target.inputId||target.id+'-input'
+      );
+    }
+    var seen={}, stack=[n.id];
+    while(stack.length){
+      var current=stack.pop();
+      (reverse[current]||[]).forEach(function(parent){
+        if(seen[parent]) return;
+        seen[parent]=true;
+        stack.push(parent);
+      });
+    }
+    return NODES.filter(function(node){
+      return node.id!==n.id&&isHumanNode(node)&&!!seen[node.id];
+    }).sort(function(a,b){
+      var phaseDiff=workflowFrameIndex(a.phaseId)-workflowFrameIndex(b.phaseId);
+      return phaseDiff||(a.x-b.x)||(a.y-b.y);
+    });
+  }
+  function renderRejectTargets(n,selectedIds){
+    var candidates=previousHumanNodes(n);
+    var selected=(selectedIds||[]).filter(function(id){
+      return candidates.some(function(item){return item.id===id;});
+    });
+    var panel=document.getElementById('wfhRejectPanel');
+    panel.innerHTML=candidates.length?candidates.map(function(item){
+      return '<label><input type="checkbox" value="'+esc(item.id)+'"'+
+        (selected.indexOf(item.id)>=0?' checked':'')+
+        ' onchange="wfRejectTargetsUpdate(this)"><span><b>'+esc(item.name)+
+        '</b><small>'+esc(item.phase||'未归属环节')+'</small></span></label>';
+    }).join(''):'<div class="wf-reject-empty">当前节点没有前序人工节点</div>';
+    wfRejectTargetsUpdate(panel.querySelector('input'));
+    return candidates;
+  }
+  function renderConditionRows(items){
+    var rows=items||[];
+    document.getElementById('wfhConditionRows').innerHTML=rows.map(function(item){
+      var fields=Object.keys(CONDITION_VALUES);
+      var field=CONDITION_VALUES[item.field]?item.field:'质检结论';
+      var value=(CONDITION_VALUES[field].indexOf(item.value)>=0)?item.value:CONDITION_VALUES[field][0];
+      return '<div class="wf-condition-row">'+
+        '<select class="wf-edit-field wf-cond-field" onchange="wfConditionFieldChange(this)">'+optionList(fields,field)+'</select>'+
+        '<select class="wf-edit-field wf-cond-value">'+optionList(CONDITION_VALUES[field],value)+'</select>'+
+        '<button type="button" class="wf-row-del" onclick="wfRemoveCondition(this)" title="删除">&times;</button>'+
+      '</div>';
+    }).join('');
+    document.getElementById('wfhConditionEmpty').style.display=rows.length?'none':'block';
+  }
+  function renderRatioRules(items){
+    var rows=items||[];
+    document.getElementById('wfhRatioRuleRows').innerHTML=rows.map(function(item){
+      var fields=Object.keys(CONDITION_VALUES);
+      var field=CONDITION_VALUES[item.field]?item.field:'质检结论';
+      var value=(CONDITION_VALUES[field].indexOf(item.value)>=0)?item.value:CONDITION_VALUES[field][0];
+      return '<div class="wf-ratio-rule">'+
+        '<select class="wf-edit-field wf-ratio-field" onchange="wfRatioFieldChange(this)">'+optionList(fields,field)+'</select>'+
+        '<select class="wf-edit-field wf-ratio-value">'+optionList(CONDITION_VALUES[field],value)+'</select>'+
+        '<div style="position:relative;"><input class="wf-edit-field wf-ratio-percent" type="number" min="1" max="100" value="'+(item.percent==null?100:item.percent)+'" style="padding-right:21px;"><span style="position:absolute;right:8px;top:7px;color:#999;font-size:12px;">%</span></div>'+
+        '<button type="button" class="wf-row-del" onclick="wfRemoveRatioRule(this)" title="删除">&times;</button>'+
+      '</div>';
+    }).join('');
+    document.getElementById('wfhRatioRuleEmpty').style.display=rows.length?'none':'block';
+  }
+  function renderWorkbenchComponents(workbench,selected){
+    var selectedIds=selected&&selected.length?selected:(WORKBENCH_COMPONENTS[workbench]||[]).map(function(item){return item[0];});
+    document.getElementById('wfhComponents').innerHTML=(WORKBENCH_COMPONENTS[workbench]||[]).map(function(item){
+      return '<label class="wf-component-check"><input type="checkbox" value="'+item[0]+'"'+(selectedIds.indexOf(item[0])>=0?' checked':'')+'>'+
+        '<span><b>'+item[1]+'</b><small>'+item[2]+'</small></span></label>';
+    }).join('');
+  }
   function openConfig(n){
-    document.getElementById('wfConfig').classList.add('open');
+    var config=document.getElementById('wfConfig');
+    var human=isHumanNode(n);
+    var condition=isConditionNode(n);
+    config.classList.add('open');
+    config.classList.toggle('human-mode',human||condition);
     document.getElementById('wfcName').textContent=n.name+' · 配置';
+    document.getElementById('wfHumanConfig').style.display=human?'block':'none';
+    document.getElementById('wfConditionNodeConfig').style.display=condition?'block':'none';
+    document.getElementById('wfGenericConfig').style.display=(human||condition)?'none':'block';
+    if(human){
+      document.getElementById('wfhName').value=n.name||'';
+      document.getElementById('wfhIdent').value=n.ident||'';
+      document.getElementById('wfhDesc').value=n.desc||'';
+      document.getElementById('wfhPhase').value=n.phase||'质检环节';
+      var workbench=n.workbench||defaultWorkbench(n);
+      document.getElementById('wfhWorkbench').value=workbench;
+      renderWorkbenchComponents(workbench,n.visibleComponents);
+      var previousNodes=previousHumanNodes(n);
+      var inferredReject=/支持驳回|可驳回/.test(n.desc||'')&&!/不支持驳回/.test(n.desc||'');
+      var rejectEnabled=n.rejectEnabled==null?inferredReject:!!n.rejectEnabled;
+      var rejectToggle=document.getElementById('wfhRejectEnabled');
+      rejectToggle.disabled=!previousNodes.length;
+      rejectToggle.checked=!!previousNodes.length&&rejectEnabled;
+      document.getElementById('wfhRejectHint').textContent=previousNodes.length?
+        '仅可选择当前节点的前序所有人工节点。':
+        '当前节点没有前序人工节点，暂不可开启驳回。';
+      renderRejectTargets(
+        n,
+        n.rejectTargets&&n.rejectTargets.length?
+          n.rejectTargets:
+          (rejectToggle.checked?previousNodes.map(function(item){return item.id;}):[])
+      );
+      wfToggleReject(rejectToggle.checked);
+      return;
+    }
+    if(condition){
+      document.getElementById('wfcndName').value=n.name||'';
+      document.getElementById('wfcndIdent').value=n.ident||'';
+      document.getElementById('wfcndDesc').value=n.desc||'';
+      document.getElementById('wfcndPhase').value=n.phase||'质检环节';
+      wfConditionMode(n.entryMode||'config');
+      renderConditionRows(n.entryConditions);
+      document.getElementById('wfhExpression').value=n.entryExpression||'';
+      wfRatioMode(n.ratioMode||'config');
+      document.getElementById('wfhRatioAdvancedToggle').checked=!!n.ratioAdvanced;
+      wfToggleRatioAdvanced(!!n.ratioAdvanced);
+      document.getElementById('wfhEntryRatio').value=n.entryRatio==null?100:n.entryRatio;
+      renderRatioRules(n.ratioRules);
+      document.getElementById('wfhRatioExpression').value=n.ratioExpression||'100';
+      return;
+    }
     document.getElementById('wfcName2').textContent=n.name;
     document.getElementById('wfcIdent').textContent=n.ident||'—';
     document.getElementById('wfcDesc').textContent=n.desc||'—';
@@ -3838,6 +4585,128 @@ WF_CANVAS_JS = r"""
     }).join('');
     document.getElementById('wfcParamsEdit').innerHTML = html || '<div class="muted" style="font-size:12px;padding:4px 0;">该算子无入参</div>';
   }
+  window.wfConditionMode=function(mode){
+    document.querySelectorAll('#wfhConditionModes .wf-mode-tab').forEach(function(btn){ btn.classList.toggle('active',btn.getAttribute('data-mode')===mode); });
+    document.getElementById('wfhConditionConfig').style.display=mode==='config'?'block':'none';
+    document.getElementById('wfhConditionExpression').style.display=mode==='expression'?'block':'none';
+  };
+  window.wfConditionFieldChange=function(sel){
+    var valueSelect=sel.closest('.wf-condition-row').querySelector('.wf-cond-value');
+    valueSelect.innerHTML=optionList(CONDITION_VALUES[sel.value]||[],null);
+  };
+  window.wfAddCondition=function(){
+    var holder=document.getElementById('wfhConditionRows'), wrap=document.createElement('div');
+    wrap.innerHTML='<div class="wf-condition-row">'+
+      '<select class="wf-edit-field wf-cond-field" onchange="wfConditionFieldChange(this)">'+optionList(Object.keys(CONDITION_VALUES),'质检结论')+'</select>'+
+      '<select class="wf-edit-field wf-cond-value">'+optionList(CONDITION_VALUES['质检结论'],'合格')+'</select>'+
+      '<button type="button" class="wf-row-del" onclick="wfRemoveCondition(this)" title="删除">&times;</button></div>';
+    holder.appendChild(wrap.firstChild);
+    document.getElementById('wfhConditionEmpty').style.display='none';
+  };
+  window.wfRemoveCondition=function(btn){
+    btn.closest('.wf-condition-row').remove();
+    if(!document.querySelector('#wfhConditionRows .wf-condition-row')) document.getElementById('wfhConditionEmpty').style.display='block';
+  };
+  window.wfRatioMode=function(mode){
+    document.querySelectorAll('#wfhRatioModes .wf-mode-tab').forEach(function(btn){ btn.classList.toggle('active',btn.getAttribute('data-mode')===mode); });
+    document.getElementById('wfhRatioConfig').style.display=mode==='config'?'block':'none';
+    document.getElementById('wfhRatioExpressionWrap').style.display=mode==='expression'?'block':'none';
+  };
+  window.wfToggleRatioAdvanced=function(enabled){
+    document.getElementById('wfhRatioDirect').style.display=enabled?'none':'block';
+    document.getElementById('wfhRatioAdvancedWrap').style.display=enabled?'block':'none';
+  };
+  window.wfRatioFieldChange=function(sel){
+    var valueSelect=sel.closest('.wf-ratio-rule').querySelector('.wf-ratio-value');
+    valueSelect.innerHTML=optionList(CONDITION_VALUES[sel.value]||[],null);
+  };
+  window.wfAddRatioRule=function(){
+    var holder=document.getElementById('wfhRatioRuleRows'), wrap=document.createElement('div');
+    wrap.innerHTML='<div class="wf-ratio-rule">'+
+      '<select class="wf-edit-field wf-ratio-field" onchange="wfRatioFieldChange(this)">'+optionList(Object.keys(CONDITION_VALUES),'质检结论')+'</select>'+
+      '<select class="wf-edit-field wf-ratio-value">'+optionList(CONDITION_VALUES['质检结论'],'合格')+'</select>'+
+      '<div style="position:relative;"><input class="wf-edit-field wf-ratio-percent" type="number" min="1" max="100" value="100" style="padding-right:21px;"><span style="position:absolute;right:8px;top:7px;color:#999;font-size:12px;">%</span></div>'+
+      '<button type="button" class="wf-row-del" onclick="wfRemoveRatioRule(this)" title="删除">&times;</button></div>';
+    holder.appendChild(wrap.firstChild);
+    document.getElementById('wfhRatioRuleEmpty').style.display='none';
+  };
+  window.wfRemoveRatioRule=function(btn){
+    btn.closest('.wf-ratio-rule').remove();
+    if(!document.querySelector('#wfhRatioRuleRows .wf-ratio-rule')) document.getElementById('wfhRatioRuleEmpty').style.display='block';
+  };
+  window.wfWorkbenchChange=function(sel){ renderWorkbenchComponents(sel.value,null); };
+  window.wfToggleReject=function(enabled){
+    var wrap=document.getElementById('wfhRejectWrap');
+    wrap.style.display=enabled?'block':'none';
+    if(!enabled) document.getElementById('wfhRejectSelect').classList.remove('open');
+  };
+  window.wfRejectTargetsUpdate=function(cb){
+    var wrap=document.getElementById('wfhRejectSelect');
+    var checked=wrap.querySelectorAll('input:checked');
+    var trigger=wrap.querySelector('.ms-trigger');
+    var label=wrap.querySelector('.ms-label');
+    var names=[];
+    checked.forEach(function(input){
+      var name=input.parentNode.querySelector('b');
+      if(name) names.push(name.textContent);
+    });
+    trigger.classList.toggle('has-value',checked.length>0);
+    label.textContent=names.length?
+      (names.length<=2?names.join('、'):'已选择 '+names.length+' 个节点'):
+      '请选择前序人工节点';
+  };
+  window.wfSaveConfig=function(){
+    var n=byId(selId); if(!n) return;
+    if(isHumanNode(n)){
+      var humanName=document.getElementById('wfhName').value.trim();
+      if(!humanName){ toast('请填写节点名称'); return; }
+      var rejectEnabled=document.getElementById('wfhRejectEnabled').checked;
+      var rejectTargets=rejectEnabled?[].map.call(
+        document.querySelectorAll('#wfhRejectPanel input:checked'),
+        function(input){return input.value;}
+      ):[];
+      if(rejectEnabled&&!rejectTargets.length){ toast('请选择至少一个驳回节点'); return; }
+      n.name=humanName;
+      n.ident=document.getElementById('wfhIdent').value.trim();
+      n.desc=document.getElementById('wfhDesc').value.trim();
+      n.phase=document.getElementById('wfhPhase').value;
+      var humanFrame=FRAMES.find(function(frame){return phaseShortName(frame)===n.phase;});
+      if(humanFrame) n.phaseId=humanFrame.id;
+      n.workbench=document.getElementById('wfhWorkbench').value;
+      n.visibleComponents=[].map.call(document.querySelectorAll('#wfhComponents input:checked'),function(input){return input.value;});
+      n.rejectEnabled=rejectEnabled;
+      n.rejectTargets=rejectTargets;
+      delete n.rounds;
+      document.getElementById('wfcName').textContent=n.name+' · 配置';
+      renderNodes(); toast('已保存人工节点配置'); return;
+    }
+    if(isConditionNode(n)){
+      var conditionName=document.getElementById('wfcndName').value.trim();
+      if(!conditionName){ toast('请填写节点名称'); return; }
+      n.name=conditionName;
+      n.ident=document.getElementById('wfcndIdent').value.trim();
+      n.desc=document.getElementById('wfcndDesc').value.trim();
+      n.phase=document.getElementById('wfcndPhase').value;
+      var conditionFrame=FRAMES.find(function(frame){return phaseShortName(frame)===n.phase;});
+      if(conditionFrame) n.phaseId=conditionFrame.id;
+      n.entryMode=document.querySelector('#wfhConditionModes .wf-mode-tab.active').getAttribute('data-mode');
+      n.entryConditions=[].map.call(document.querySelectorAll('#wfhConditionRows .wf-condition-row'),function(row){
+        return {field:row.querySelector('.wf-cond-field').value,value:row.querySelector('.wf-cond-value').value};
+      });
+      n.entryExpression=document.getElementById('wfhExpression').value.trim();
+      n.ratioAdvanced=document.getElementById('wfhRatioAdvancedToggle').checked;
+      n.ratioMode=document.querySelector('#wfhRatioModes .wf-mode-tab.active').getAttribute('data-mode');
+      n.entryRatio=Number(document.getElementById('wfhEntryRatio').value)||0;
+      n.ratioRules=[].map.call(document.querySelectorAll('#wfhRatioRuleRows .wf-ratio-rule'),function(row){
+        return {field:row.querySelector('.wf-ratio-field').value,value:row.querySelector('.wf-ratio-value').value,percent:Number(row.querySelector('.wf-ratio-percent').value)||0};
+      });
+      n.ratioExpression=document.getElementById('wfhRatioExpression').value.trim();
+      syncConditionNoBranch(n);
+      document.getElementById('wfcName').textContent=n.name+' · 配置';
+      renderNodes(); toast('已保存条件节点配置'); return;
+    }
+    toast('Demo: 已保存节点配置');
+  };
   window.wfSrcChange=function(sel){
     sel.className='wf-param-src '+sel.value;
     var inp=sel.closest('.wf-param').querySelector('.wf-param-v');
@@ -3878,8 +4747,97 @@ WF_CANVAS_JS = r"""
   document.addEventListener('DOMContentLoaded', function(){ if(document.getElementById('schGroups')){ schAddGroup('02:00'); schAddGroup('06:00'); } });
   window.wfCloseConfig=function(){ document.getElementById('wfConfig').classList.remove('open'); selId=null; renderNodes(); };
   window.wfDeleteSel=function(){ if(!selId) return; var id=selId; EDGES=EDGES.filter(function(x){return x.from!==id&&x.to!==id;}); NODES=NODES.filter(function(x){return x.id!==id;}); wfCloseConfig(); toast('已删除节点'); };
+  var PHASE_DEFS={
+    cleaning:{name:'数据质检环节',desc:'质检与复核节点'},
+    annotation:{name:'数据标注环节',desc:'标注、复核与抽验节点'},
+    acceptance:{name:'验收环节',desc:'最终验收与结果确认节点'}
+  };
+  window.wfRefreshPhaseOptions=function(){
+    document.querySelectorAll('#phaseDrawer .wf-phase-option').forEach(function(btn){
+      var def=PHASE_DEFS[btn.getAttribute('data-phase-type')];
+      var selected=FRAMES.some(function(frame){return frame.name===def.name;});
+      btn.disabled=selected;
+      var state=btn.querySelector('.state');
+      if(state) state.textContent=selected?'已添加':'可添加';
+    });
+  };
+  window.wfOpenPhaseDrawer=function(){
+    wfRefreshPhaseOptions();
+    document.getElementById('phaseDrawer').classList.add('active');
+  };
+  window.wfAddPhase=function(type){
+    var def=PHASE_DEFS[type]; if(!def) return;
+    if(FRAMES.some(function(frame){return frame.name===def.name;})) return;
+    var previous=FRAMES.length?FRAMES[FRAMES.length-1]:null;
+    FRAMES.push({
+      id:'phase-'+(FRAMES.length+1),
+      name:def.name,
+      shortName:def.name.replace(/^数据/,''),
+      desc:def.desc,
+      x:previous?previous.x:50,
+      y:previous?(previous.y+previous.h+50):70,
+      w:previous?previous.w:1400,
+      h:previous?previous.h:230,
+      inputId:'phase-'+(FRAMES.length+1)+'-input',
+      outputId:'phase-'+(FRAMES.length+1)+'-output'
+    });
+    renderFrames(); renderEdges(); wfRefreshPhaseOptions(); wfFit();
+    toast('已添加'+def.name);
+  };
 
   var OPS = __OPS__;
+  window.wfOpenNodeDrawer=function(){
+    var phaseSelect=document.getElementById('wfNodePhaseSelect');
+    if(phaseSelect){
+      phaseSelect.innerHTML=FRAMES.map(function(frame){
+        return '<option value="'+frame.id+'">'+esc(frame.name)+'</option>';
+      }).join('');
+      phaseSelect.disabled=!FRAMES.length;
+    }
+    document.getElementById('addTaskDrawer').classList.add('active');
+  };
+  function phaseShortName(frame){ return frame.shortName||frame.name.replace(/^数据/,''); }
+  function syncConditionNoBranch(n){
+    EDGES=EDGES.filter(function(edge){
+      return !(edge.from===n.id&&(edge.fromPort||'out')==='branch'&&edge.branch==='no');
+    });
+    var frame=frameById(n.phaseId);
+    if(frame){
+      EDGES.push({from:n.id,to:frame.outputId||frame.id+'-output',fromPort:'branch',branch:'no'});
+    }
+  }
+  window.wfAddTypedNode=function(kind){
+    var phaseSelect=document.getElementById('wfNodePhaseSelect');
+    var frame=phaseSelect&&phaseSelect.value?frameById(phaseSelect.value):FRAMES[0];
+    if(!frame){ toast('请先添加环节'); return; }
+    var defs={
+      human:{name:'人工节点',desc:'使用工作台进行人工处理',icon:'人'},
+      automatic:{name:'自动化节点',desc:'通过算子自动处理数据',icon:'⚙'},
+      condition:{name:'条件节点',desc:'按条件判断结果进行分流',icon:'◇'}
+    };
+    var def=defs[kind]; if(!def) return;
+    var phaseNodes=NODES.filter(function(node){return node.phaseId===frame.id;});
+    var slot=phaseNodes.length;
+    var x=frame.x+130+slot*260;
+    var requiredRight=x+W+124;
+    if(requiredRight>frame.x+frame.w) frame.w=requiredRight-frame.x;
+    seq++; var id='n'+seq;
+    var node={
+      id:id,name:def.name,ident:kind+'_'+seq,desc:def.desc,enabled:'启用',creator:'当前用户',
+      image:kind==='automatic'?'frontdesk-py3.10:latest':(kind==='condition'?'规则引擎':'人工工作台'),
+      script:kind==='automatic'?'请选择算子':(kind==='condition'?'条件表达式':'人工任务'),
+      params:'',returns:'处理结果',kind:kind,phase:phaseShortName(frame),phaseId:frame.id,
+      x:x,y:frame.y+82
+    };
+    NODES.push(node);
+    if(!phaseNodes.length){
+      EDGES.push({from:frame.inputId||frame.id+'-input',to:id});
+      EDGES.push({from:id,to:frame.outputId||frame.id+'-output'});
+    }
+    if(kind==='condition') syncConditionNoBranch(node);
+    document.getElementById('addTaskDrawer').classList.remove('active');
+    renderFrames(); renderNodes(); toast('已添加'+def.name);
+  };
   window.wfAddNode=function(opId){
     var o=OPS[opId]; if(!o) return;
     seq++; var id='n'+seq;
@@ -3890,51 +4848,232 @@ WF_CANVAS_JS = r"""
     document.getElementById('addTaskDrawer').classList.remove('active');
     renderNodes(); toast('已添加算子: '+o.name);
   };
-  window.wfZoom=function(d){ z=Math.min(1.6, Math.max(0.4, Math.round((z+d)*10)/10)); document.getElementById('wfZlvl').textContent=Math.round(z*100)+'%'; applyPan(); };
-  window.wfFit=function(){ z=1; panX=0; panY=0; document.getElementById('wfZlvl').textContent='100%'; applyPan(); };
+  window.wfZoom=function(d){ z=Math.min(1.6, Math.max(0.25, Math.round((z+d)*10)/10)); document.getElementById('wfZlvl').textContent=Math.round(z*100)+'%'; applyPan(); };
+  window.wfFit=function(){
+    var minX=Infinity,minY=Infinity,maxX=0,maxY=0;
+    if(FRAMES.length){
+      FRAMES.forEach(function(f){ minX=Math.min(minX,f.x); minY=Math.min(minY,f.y); maxX=Math.max(maxX,f.x+f.w); maxY=Math.max(maxY,f.y+f.h); });
+    } else {
+      NODES.forEach(function(n){ minX=Math.min(minX,n.x); minY=Math.min(minY,n.y); maxX=Math.max(maxX,n.x+W); maxY=Math.max(maxY,n.y+nodeH(n)); });
+    }
+    if(minX===Infinity){ z=1; panX=0; panY=0; }
+    else {
+      var r=canvas.getBoundingClientRect(), cw=Math.max(1,maxX-minX), ch=Math.max(1,maxY-minY);
+      z=Math.min(1,Math.max(.25,Math.min((r.width-56)/cw,(r.height-56)/ch)));
+      panX=(r.width-cw*z)/2-minX*z;
+      panY=(r.height-ch*z)/2-minY*z;
+    }
+    document.getElementById('wfZlvl').textContent=Math.round(z*100)+'%';
+    applyPan();
+  };
 
-  applyPan(); renderNodes();
+  renderFrames(); applyPan(); renderNodes();
+  if(FRAMES.length) setTimeout(function(){ wfFit(); },0);
 })();
 """
+
+
+def _processing_canvas_payload(pl):
+    frame_x = 50
+    frame_y = 70
+    frame_gap = 50
+    frame_height = 230
+    node_width = 220
+    node_gap = 260
+    flattened_phases = []
+
+    for phase in pl["phases"]:
+        flattened = []
+        for node in phase["nodes"]:
+            children = node.get("children", [])
+            if children:
+                for child_index, child in enumerate(children):
+                    child_meta = f"{node['name']} · {node.get('meta', '')}"
+                    if child_index and node.get("bidirectional"):
+                        child_meta += " · 可驳回至上一轮"
+                    flattened.append(
+                        {
+                            "name": child,
+                            "kind": "human",
+                            "meta": child_meta,
+                        }
+                    )
+            else:
+                flattened.append(node)
+        flattened_phases.append(flattened)
+
+    max_nodes = max((len(nodes) for nodes in flattened_phases), default=1)
+    # 每个环节左右各保留一个明确的输入 / 输出端点。
+    frame_width = 240 + max_nodes * node_gap
+    frames = []
+    canvas_nodes = []
+    canvas_edges = []
+
+    for phase_index, (phase, phase_nodes) in enumerate(
+        zip(pl["phases"], flattened_phases)
+    ):
+        y = frame_y + phase_index * (frame_height + frame_gap)
+        frames.append(
+            {
+                "id": f"phase-{phase_index + 1}",
+                "name": phase["name"],
+                "shortName": phase["short_name"],
+                "desc": phase["desc"],
+                "x": frame_x,
+                "y": y,
+                "w": frame_width,
+                "h": frame_height,
+                "inputId": f"phase-{phase_index + 1}-input",
+                "outputId": f"phase-{phase_index + 1}-output",
+            }
+        )
+        phase_ids = []
+        condition_ids = []
+        for node_index, node in enumerate(phase_nodes):
+            node_id = f"p{phase_index + 1}n{node_index + 1}"
+            kind = node.get("kind", "operator")
+            executor = {
+                "automatic": ("frontdesk-py3.10:latest", "自动化算子"),
+                "condition": ("规则引擎", "条件表达式"),
+                "human": ("人工工作台", "人工任务"),
+                "acceptance": ("验收工作台", "人工验收"),
+            }.get(kind, ("frontdesk-py3.10:latest", "处理节点"))
+            canvas_nodes.append(
+                {
+                    "id": node_id,
+                    "name": node["name"],
+                    "ident": node.get(
+                        "ident",
+                        f"{kind}_{phase_index + 1}_{node_index + 1}",
+                    ),
+                    "desc": node.get("meta", ""),
+                    "enabled": "启用",
+                    "creator": pl["creator"],
+                    "image": node.get("image", executor[0]),
+                    "script": node.get("script", executor[1]),
+                    "params": node.get("params", node.get("meta", "")),
+                    "returns": node.get("returns", "处理结果"),
+                    "kind": kind,
+                    "phase": phase["short_name"],
+                    "phaseId": f"phase-{phase_index + 1}",
+                    "x": frame_x + 130 + node_index * node_gap,
+                    "y": y + 82,
+                }
+            )
+            phase_ids.append(node_id)
+            if kind == "condition":
+                condition_ids.append(node_id)
+            if node_index:
+                canvas_edges.append(
+                    {"from": phase_ids[node_index - 1], "to": node_id}
+                )
+        phase_input_id = f"phase-{phase_index + 1}-input"
+        phase_output_id = f"phase-{phase_index + 1}-output"
+        if phase_ids:
+            canvas_edges.append({"from": phase_input_id, "to": phase_ids[0]})
+            canvas_edges.append({"from": phase_ids[-1], "to": phase_output_id})
+        else:
+            canvas_edges.append({"from": phase_input_id, "to": phase_output_id})
+        for condition_id in condition_ids:
+            canvas_edges.append(
+                {
+                    "from": condition_id,
+                    "to": phase_output_id,
+                    "fromPort": "branch",
+                    "branch": "no",
+                }
+            )
+
+    return canvas_nodes, canvas_edges, frames
 
 
 @app.route("/pipelines/<pid>")
 def pipeline_editor(pid):
     pl = next((p for p in PIPELINES if p["id"] == pid), None)
     is_new = pid == "new" or pl is None
+    is_processing_flow = is_new or bool(pl and pl.get("phases"))
     name = "新建工作流" if is_new else pl["name"]
     stages = [] if is_new else pl["stages"]
 
     # 初始节点 (自由画布: 左→右铺开), 以及顺序连线
-    init_nodes, init_edges = [], []
-    for i, sid in enumerate(stages):
-        op = next((o for o in OPERATORS if o["id"] == sid), None)
-        if not op:
-            continue
-        nid = f"n{i}"
-        init_nodes.append({
-            "id": nid, "name": op["name"].split(" ")[0], "ident": op["ident"],
-            "desc": op["desc"], "enabled": "启用", "creator": op["creator"],
-            "image": "frontdesk-py3.10:latest", "script": "python " + op["script"],
-            "params": op["params"], "returns": op["returns"],
-            "x": 60 + i * 280, "y": 150 + (i % 2) * 50,
-        })
-        if i > 0:
-            init_edges.append({"from": f"n{i-1}", "to": nid})
+    init_nodes, init_edges, phase_frames = [], [], []
+    if is_processing_flow and pl:
+        init_nodes, init_edges, phase_frames = _processing_canvas_payload(pl)
+    elif not is_processing_flow:
+        for i, sid in enumerate(stages):
+            op = next((o for o in OPERATORS if o["id"] == sid), None)
+            if not op:
+                continue
+            nid = f"n{i}"
+            init_nodes.append({
+                "id": nid, "name": op["name"].split(" ")[0], "ident": op["ident"],
+                "desc": op["desc"], "enabled": "启用", "creator": op["creator"],
+                "image": "frontdesk-py3.10:latest", "script": "python " + op["script"],
+                "params": op["params"], "returns": op["returns"],
+                "x": 60 + i * 280, "y": 150 + (i % 2) * 50,
+            })
+            if i > 0:
+                init_edges.append({"from": f"n{i-1}", "to": nid})
     nodes_json = json.dumps(init_nodes, ensure_ascii=False)
     edges_json = json.dumps(init_edges, ensure_ascii=False)
+    frames_json = json.dumps(phase_frames, ensure_ascii=False)
     ops_map = {o["id"]: {"name": o["name"].split(" ")[0], "ident": o["ident"], "desc": o["desc"],
                          "enabled": "启用", "creator": o["creator"], "image": "frontdesk-py3.10:latest",
                          "script": "python " + o["script"], "params": o["params"], "returns": o["returns"]}
                for o in OPERATORS}
     ops_json = json.dumps(ops_map, ensure_ascii=False)
 
-    # 添加算子抽屉: 点击 → JS 加节点
-    op_items = ""
-    for o in OPERATORS:
-        op_items += (f"""<div class="op-pick" onclick="wfAddNode('{o['id']}')">"""
-                     f'<div><b>{o["name"]}</b> <span class="op-script">{o["ident"]}</span></div>'
-                     f'<div class="muted" style="font-size:12px;">{o["cat"]} · {o["creator"]}</div></div>')
+    # 数据处理流程先选择节点类型；旧工作流仍从算子库选择算子。
+    node_label = "节点" if is_processing_flow else "算子"
+    if is_processing_flow:
+        op_items = """
+          <div class="wf-node-type-options">
+            <button type="button" class="wf-node-type-option human" data-node-type="human" onclick="wfAddTypedNode('human')"><i>人</i><span><b>人工节点</b><small>通过工作台由操作员完成处理</small></span></button>
+            <button type="button" class="wf-node-type-option automatic" data-node-type="automatic" onclick="wfAddTypedNode('automatic')"><i>⚙</i><span><b>自动化节点</b><small>绑定算子自动完成数据处理</small></span></button>
+            <button type="button" class="wf-node-type-option condition" data-node-type="condition" onclick="wfAddTypedNode('condition')"><i><span>◇</span></i><span><b>条件节点</b><small>配置条件并从“是 / 否”分支流转</small></span></button>
+          </div>
+        """
+        node_drawer_controls = """
+          <label style="display:block;margin-bottom:14px;"><span class="wf-human-label">所属环节</span><select id="wfNodePhaseSelect" class="wf-edit-field"></select></label>
+        """
+        node_button_handler = "wfOpenNodeDrawer()"
+    else:
+        op_items = ""
+        for o in OPERATORS:
+            op_items += (
+                f"""<div class="op-pick" onclick="wfAddNode('{o['id']}')">"""
+                f'<div><b>{o["name"]}</b> <span class="op-script">{o["ident"]}</span></div>'
+                f'<div class="muted" style="font-size:12px;">{o["cat"]} · {o["creator"]}</div></div>'
+            )
+        node_drawer_controls = (
+            f'<input placeholder="搜索{node_label}..." '
+            'style="width:100%;box-sizing:border-box;height:34px;padding:5px 12px;'
+            'border:1px solid #d9d9d9;border-radius:8px;margin-bottom:12px;outline:none;">'
+        )
+        node_button_handler = (
+            "document.getElementById('addTaskDrawer').classList.add('active')"
+        )
+
+    flow_data_attr = (
+        f'data-processing-flow="{pl["id"] if pl else "new"}"'
+        if is_processing_flow
+        else ""
+    )
+    empty_copy = (
+        "画布为空, 点击「+ 添加节点」开始编排"
+        if is_processing_flow
+        else "画布为空, 点击「+ 添加算子」开始编排"
+    )
+    phase_button = (
+        '<button class="btn" onclick="wfOpenPhaseDrawer()">&plus; 添加环节</button>'
+        if is_processing_flow
+        else ""
+    )
+    canvas_hint = (
+        "环节框用于组织节点 · 拖动节点可移动 · 拖动锚点可连线 · 点击节点查看配置"
+        if is_processing_flow
+        else "拖动节点可移动 · 拖动节点右侧锚点到另一节点左侧锚点可连线 · 点击节点查看配置"
+    )
 
     content = f"""
     <div class="wf-topbar">
@@ -3946,56 +5085,156 @@ def pipeline_editor(pid):
         <button class="btn-primary btn" onclick="document.getElementById('runDrawer').classList.add('active')">&#9654; 执行</button>
       </div>
     </div>
-    <div class="wf-stage">
+    <div class="wf-stage" {flow_data_attr}>
       <div class="wf-canvas" id="wfCanvas">
         <div class="wf-pan" id="wfPan" style="width:4000px;height:3000px;">
+          <div id="wfFrames"></div>
           <svg class="wf-edges" id="wfEdges"></svg>
           <div id="wfNodes"></div>
         </div>
-        <div class="wf-empty" id="wfEmpty"><div style="font-size:32px;">&#9783;</div><div>画布为空, 点击「+ 添加算子」开始编排</div></div>
-        <div class="wf-hint">拖动节点可移动 · 拖动节点右侧锚点到另一节点左侧锚点可连线 · 点击节点查看配置</div>
+        <div class="wf-empty" id="wfEmpty"><div style="font-size:32px;">&#9783;</div><div>{empty_copy}</div></div>
+        <div class="wf-hint">{canvas_hint}</div>
         <div class="wf-toolbar">
           <button class="zbtn" onclick="wfZoom(-0.1)">&minus;</button>
           <span class="zlvl" id="wfZlvl">100%</span>
           <button class="zbtn" onclick="wfZoom(0.1)">&plus;</button>
           <button class="zbtn" onclick="wfFit()" title="适应画布">&#9974;</button>
           <span class="sep"></span>
-          <button class="btn-primary btn" onclick="document.getElementById('addTaskDrawer').classList.add('active')">&plus; 添加算子</button>
+          {phase_button}
+          <button class="btn-primary btn" onclick="{node_button_handler}">&plus; 添加{node_label}</button>
         </div>
       </div>
 
       <div class="wf-config" id="wfConfig">
         <div class="wf-config-head"><b id="wfcName">节点配置</b><button class="drawer-close" onclick="wfCloseConfig()">&times;</button></div>
         <div class="wf-config-body">
-          <div class="wf-cfg-sec">基本信息</div>
-          <div class="wf-cfg-row lft"><span>名称</span><b id="wfcName2">—</b></div>
-          <div class="wf-cfg-row lft"><span>标识</span><span id="wfcIdent" style="font-family:monospace;font-size:12px;">—</span></div>
-          <div class="wf-cfg-row lft"><span>描述</span><span id="wfcDesc" style="line-height:1.5;">—</span></div>
+          <div id="wfHumanConfig" style="display:none;">
+            <div class="wf-cfg-sec">基本信息</div>
+            <div class="wf-human-grid">
+              <label><span class="wf-human-label">节点名称</span><input id="wfhName" class="wf-edit-field" placeholder="请输入节点名称"></label>
+              <label><span class="wf-human-label">标识</span><input id="wfhIdent" class="wf-edit-field" placeholder="英文标识"></label>
+              <label class="full"><span class="wf-human-label">描述</span><textarea id="wfhDesc" class="wf-edit-field" placeholder="请输入节点描述"></textarea></label>
+              <label class="full"><span class="wf-human-label">所属环节</span><select id="wfhPhase" class="wf-edit-field"><option>质检环节</option><option>标注环节</option><option>验收环节</option></select></label>
+            </div>
 
-          <div class="wf-cfg-sec">运行环境</div>
-          <div class="wf-cfg-row lft"><span>运行镜像</span><span id="wfcImage" style="font-size:12px;word-break:break-all;">—</span></div>
-          <div class="wf-cfg-col"><span>入口脚本 / 命令</span><pre id="wfcScript" class="wf-cfg-code">—</pre></div>
+            <div class="wf-cfg-sec">工作台</div>
+            <label><span class="wf-human-label">工作台</span><select id="wfhWorkbench" class="wf-edit-field" onchange="wfWorkbenchChange(this)"><option>质检工作台</option><option>标注工作台</option><option>详情工作台</option></select></label>
+            <div class="wf-human-label" style="margin-top:10px;">工作区部分组件（勾选控制显隐）</div>
+            <div class="wf-component-list" id="wfhComponents"></div>
 
-          <div class="wf-cfg-sec">出入参
-            <a class="wf-sec-link" onclick="document.getElementById('flowParamDrawer').classList.add('active')">流程参数 &#8599;</a></div>
-          <div class="wf-param-sub">入参取值</div>
-          <div id="wfcParamsEdit"></div>
-          <div class="wf-param-sub" style="margin-top:12px;">返回结果</div>
-          <div class="wf-cfg-col"><pre id="wfcReturns" class="wf-cfg-code">—</pre></div>
+            <div class="wf-cfg-sec">驳回设置</div>
+            <label class="wf-reject-enable">
+              <input id="wfhRejectEnabled" type="checkbox" onchange="wfToggleReject(this.checked)">
+              <span>支持驳回</span>
+            </label>
+            <div id="wfhRejectHint" class="wf-reject-hint">仅可选择当前节点的前序所有人工节点。</div>
+            <div id="wfhRejectWrap" class="wf-reject-wrap" style="display:none;">
+              <div class="wf-human-label">支持驳回到的节点</div>
+              <div class="ms-wrap wf-reject-select" id="wfhRejectSelect">
+                <div class="ms-trigger" data-base="请选择前序人工节点" onclick="this.closest('.ms-wrap').classList.toggle('open')">
+                  <span class="ms-label">请选择前序人工节点</span>
+                </div>
+                <div class="ms-panel" id="wfhRejectPanel"></div>
+              </div>
+            </div>
+          </div>
+
+          <div id="wfConditionNodeConfig" style="display:none;">
+            <div class="wf-cfg-sec">基本信息</div>
+            <div class="wf-human-grid">
+              <label><span class="wf-human-label">节点名称</span><input id="wfcndName" class="wf-edit-field" placeholder="请输入节点名称"></label>
+              <label><span class="wf-human-label">标识</span><input id="wfcndIdent" class="wf-edit-field" placeholder="英文标识"></label>
+              <label class="full"><span class="wf-human-label">描述</span><textarea id="wfcndDesc" class="wf-edit-field" placeholder="请输入节点描述"></textarea></label>
+              <label class="full"><span class="wf-human-label">所属环节</span><select id="wfcndPhase" class="wf-edit-field"><option>质检环节</option><option>标注环节</option><option>验收环节</option></select></label>
+            </div>
+
+            <div class="wf-cfg-sec">进入条件</div>
+            <div class="wf-mode-tabs" id="wfhConditionModes">
+              <button type="button" class="wf-mode-tab active" data-mode="config" onclick="wfConditionMode('config')">配置项</button>
+              <button type="button" class="wf-mode-tab" data-mode="expression" onclick="wfConditionMode('expression')">表达式</button>
+            </div>
+            <div id="wfhConditionConfig">
+              <div style="display:grid;grid-template-columns:1.18fr 1fr 24px;gap:6px;margin-bottom:5px;color:rgba(0,0,0,.4);font-size:10px;"><span>字段</span><span>值</span><span></span></div>
+              <div id="wfhConditionRows"></div>
+              <div class="wf-rule-empty" id="wfhConditionEmpty">不限制：所有数据进入“是”分支</div>
+              <button type="button" class="wf-add-link" onclick="wfAddCondition()">&plus; 添加条件</button>
+            </div>
+            <div id="wfhConditionExpression" style="display:none;">
+              <textarea id="wfhExpression" class="wf-edit-field" style="font-family:'SF Mono',Menlo,monospace;" placeholder="留空表示不限制"></textarea>
+            </div>
+
+            <div class="wf-cfg-sec">
+              <span>进入比例</span>
+              <label class="wf-advanced-toggle">
+                <span>高级设置</span>
+                <span class="switch"><input id="wfhRatioAdvancedToggle" type="checkbox" onchange="wfToggleRatioAdvanced(this.checked)"><span class="slider"></span></span>
+              </label>
+            </div>
+            <div id="wfhRatioDirect">
+              <label><span class="wf-human-label">统一比例</span><div style="position:relative;max-width:180px;"><input id="wfhEntryRatio" class="wf-edit-field" type="number" min="1" max="100" value="100" style="padding-right:24px;"><span style="position:absolute;right:9px;top:7px;color:#999;font-size:12px;">%</span></div></label>
+            </div>
+            <div id="wfhRatioAdvancedWrap" style="display:none;">
+              <div class="wf-mode-tabs" id="wfhRatioModes">
+                <button type="button" class="wf-mode-tab active" data-mode="config" onclick="wfRatioMode('config')">配置项</button>
+                <button type="button" class="wf-mode-tab" data-mode="expression" onclick="wfRatioMode('expression')">表达式</button>
+              </div>
+              <div id="wfhRatioConfig">
+                <div style="display:grid;grid-template-columns:1.08fr .92fr 82px 24px;gap:6px;margin-bottom:5px;color:rgba(0,0,0,.4);font-size:10px;"><span>字段</span><span>字段值</span><span>比例</span><span></span></div>
+                <div id="wfhRatioRuleRows"></div>
+                <div class="wf-rule-empty" id="wfhRatioRuleEmpty">暂无高级比例设置</div>
+                <button type="button" class="wf-add-link" onclick="wfAddRatioRule()">&plus; 添加比例规则</button>
+              </div>
+              <div id="wfhRatioExpressionWrap" style="display:none;">
+                <textarea id="wfhRatioExpression" class="wf-edit-field" style="font-family:'SF Mono',Menlo,monospace;" placeholder="请输入返回 0-100 的比例表达式"></textarea>
+              </div>
+            </div>
+          </div>
+
+          <div id="wfGenericConfig">
+            <div class="wf-cfg-sec">基本信息</div>
+            <div class="wf-cfg-row lft"><span>名称</span><b id="wfcName2">—</b></div>
+            <div class="wf-cfg-row lft"><span>标识</span><span id="wfcIdent" style="font-family:monospace;font-size:12px;">—</span></div>
+            <div class="wf-cfg-row lft"><span>描述</span><span id="wfcDesc" style="line-height:1.5;">—</span></div>
+
+            <div class="wf-cfg-sec">运行环境</div>
+            <div class="wf-cfg-row lft"><span>运行镜像</span><span id="wfcImage" style="font-size:12px;word-break:break-all;">—</span></div>
+            <div class="wf-cfg-col"><span>入口脚本 / 命令</span><pre id="wfcScript" class="wf-cfg-code">—</pre></div>
+
+            <div class="wf-cfg-sec">出入参
+              <a class="wf-sec-link" onclick="document.getElementById('flowParamDrawer').classList.add('active')">流程参数 &#8599;</a></div>
+            <div class="wf-param-sub">入参取值</div>
+            <div id="wfcParamsEdit"></div>
+            <div class="wf-param-sub" style="margin-top:12px;">返回结果</div>
+            <div class="wf-cfg-col"><pre id="wfcReturns" class="wf-cfg-code">—</pre></div>
+          </div>
         </div>
         <div class="wf-config-foot">
           <button class="btn" onclick="wfDeleteSel()">删除节点</button>
-          <button class="btn-primary btn" onclick="toast('Demo: 已保存节点配置')">保存</button>
+          <button class="btn-primary btn" onclick="wfSaveConfig()">保存</button>
         </div>
       </div>
     </div>
 
     <div class="drawer-mask" id="addTaskDrawer" onclick="if(event.target===this)this.classList.remove('active')">
       <div class="drawer" style="width:420px;">
-        <div class="drawer-head"><h3>添加算子</h3><button class="drawer-close" onclick="document.getElementById('addTaskDrawer').classList.remove('active')">&times;</button></div>
+        <div class="drawer-head"><h3>添加{node_label}</h3><button class="drawer-close" onclick="document.getElementById('addTaskDrawer').classList.remove('active')">&times;</button></div>
         <div class="drawer-body">
-          <input placeholder="搜索算子..." style="width:100%;box-sizing:border-box;height:34px;padding:5px 12px;border:1px solid #d9d9d9;border-radius:8px;margin-bottom:12px;outline:none;">
+          {node_drawer_controls}
           {op_items}
+        </div>
+      </div>
+    </div>
+
+    <div class="drawer-mask" id="phaseDrawer" onclick="if(event.target===this)this.classList.remove('active')">
+      <div class="drawer" style="width:440px;">
+        <div class="drawer-head"><h3>添加环节</h3><button class="drawer-close" onclick="document.getElementById('phaseDrawer').classList.remove('active')">&times;</button></div>
+        <div class="drawer-body">
+          <div class="muted" style="font-size:12px;margin-bottom:14px;">一个流程中每类数据处理环节只能添加一次，已添加的选项不可重复选择。</div>
+          <div class="wf-phase-options">
+            <button type="button" class="wf-phase-option" data-phase-type="cleaning" onclick="wfAddPhase('cleaning')"><i>1</i><span><b>质检</b><small>质检与复核节点</small></span><span class="state">可添加</span></button>
+            <button type="button" class="wf-phase-option" data-phase-type="annotation" onclick="wfAddPhase('annotation')"><i>2</i><span><b>标注</b><small>标注、复核与抽验节点</small></span><span class="state">可添加</span></button>
+            <button type="button" class="wf-phase-option" data-phase-type="acceptance" onclick="wfAddPhase('acceptance')"><i>3</i><span><b>验收</b><small>最终验收与结果确认节点</small></span><span class="state">可添加</span></button>
+          </div>
         </div>
       </div>
     </div>
@@ -4070,7 +5309,7 @@ def pipeline_editor(pid):
         </div>
       </div>
     </div>
-    <script>{WF_CANVAS_JS.replace("__NODES__", nodes_json).replace("__EDGES__", edges_json).replace("__OPS__", ops_json)}</script>
+    <script>{WF_CANVAS_JS.replace("__NODES__", nodes_json).replace("__EDGES__", edges_json).replace("__FRAMES__", frames_json).replace("__OPS__", ops_json)}</script>
     """
     return render_page(name, content, active="pipelines",
                        breadcrumb=f'自动化任务 / 工作流管理 / <b>{name}</b>', extra_script=None)
@@ -4165,7 +5404,7 @@ def tags():
         else:
             for j, g in enumerate(d["groups"]):
                 gid = f"{did}-{j}"
-                # 类目行 (默认收起 → 三级隐藏)
+                # 类目行 (默认收起 -> 三级隐藏)
                 rows += row(1, gid, did, g["category"], "", "", len(g["items"]), True, False, True)
                 for k, it in enumerate(g["items"]):
                     rows += row(2, f"{gid}-{k}", gid, it, "", "", 0, False, False, False)

@@ -82,7 +82,7 @@
   <!-- Data Pipeline -->
   <rect x="245" y="145" width="1310" height="385" rx="15" class="pipeline"/>
   <text x="275" y="181" class="module-title">数据 Pipeline</text>
-  <text x="275" y="205" class="module-note">负责数据进入、处理、质检、标注、验收和人工作业，输出候选快照、质量结果与资产构建申请</text>
+  <text x="275" y="205" class="module-note">负责采集、导入和处理任务；处理流程按清洗、标注两个环节组织，输出候选快照与资产构建申请</text>
   <rect x="1428" y="162" width="98" height="27" rx="13.5" class="scope-primary"/>
   <text x="1477" y="180" text-anchor="middle" class="scope-text">本期重点建设</text>
 
@@ -105,8 +105,8 @@
   <rect x="755" y="318" width="300" height="132" rx="10" class="node-blue"/>
   <text x="905" y="348" text-anchor="middle" class="node-title">数据处理任务与流程运行</text>
   <text x="905" y="370" text-anchor="middle" class="key">data_processing_task / pipeline_run</text>
-  <text x="905" y="396" text-anchor="middle" class="node-note">质检 · 标注 · 验收 · 自动算子</text>
-  <text x="905" y="417" text-anchor="middle" class="node-note">质量结果驱动继续、复核或返工</text>
+  <text x="905" y="396" text-anchor="middle" class="node-note">清洗环节 · 标注环节</text>
+  <text x="905" y="417" text-anchor="middle" class="node-note">每个环节由多个自动 / 人工节点构成</text>
   <text x="905" y="438" text-anchor="middle" class="node-note">固定流程版本与数据快照</text>
 
   <rect x="1085" y="328" width="190" height="112" rx="10" class="node-blue"/>
