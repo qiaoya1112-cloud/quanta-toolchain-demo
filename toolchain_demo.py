@@ -909,6 +909,17 @@ a { color:#149DAA; text-decoration:none; } a:hover { color:#0F8190; }
 .trend-down { color:#d4504e; font-weight:500; font-family:'SF Mono',Menlo,monospace; }
 .trend-flat { color:#8c8c8c; font-weight:500; font-family:'SF Mono',Menlo,monospace; }
 
+/* 旧的3列网格样式（保留以防其他地方使用） */
+.bi-info-grid { display:grid; grid-template-columns:repeat(3, 1fr); gap:14px; }
+.bi-info-item { background:linear-gradient(135deg, #fafbfc 0%, #f7f9fa 100%); border:1px solid #e5e7eb; border-radius:8px; padding:14px 16px; min-width:0; transition:all 0.2s ease; position:relative; overflow:hidden; }
+.bi-info-item::before { content:""; position:absolute; top:0; left:0; right:0; height:2px; background:linear-gradient(90deg, #149DAA 0%, #0f7d88 100%); opacity:0; transition:opacity 0.2s ease; }
+.bi-info-item:hover { border-color:#d0d5dd; box-shadow:0 2px 8px rgba(0,0,0,0.04); transform:translateY(-1px); }
+.bi-info-item:hover::before { opacity:1; }
+.bi-info-item.bi-info-full { grid-column:1 / -1; }
+.bi-info-label { font-size:12.5px; color:rgba(0,0,0,0.5); margin-bottom:8px; font-weight:500; letter-spacing:0.01em; }
+.bi-info-value { font-size:14px; color:rgba(0,0,0,0.88); line-height:1.6; word-break:break-word; overflow-wrap:break-word; font-weight:400; }
+.bi-info-value.mono { font-family:'SF Mono',Menlo,Consolas,monospace; font-size:13px; color:rgba(0,0,0,0.75); }
+
 /* ── Card ── */
 .card { background:#fff; border-radius:8px; border:1px solid #f0f0f0; padding:20px 24px; margin-bottom:16px; }
 .card h3 { font-size:16px; font-weight:500; margin:0 0 16px; color:rgba(0,0,0,0.85); }
@@ -1233,15 +1244,43 @@ select option:disabled { color:rgba(0,0,0,0.32); }
 .ds-table .ds-confirm { color:#149DAA; cursor:pointer; font-size:13px; }
 .ds-table .ds-confirm:hover { color:#0F8190; }
 
+/* ── Drawer: 更多配置 (可折叠) + 环境变量 key-value 表 ── */
+.more-cfg { border-top:1px solid #f0f0f0; margin-top:4px; padding-top:14px; }
+.more-cfg-head { display:flex; align-items:center; gap:8px; cursor:pointer; user-select:none; }
+.more-cfg-head h4 { margin:0; font-size:14px; font-weight:600; color:rgba(0,0,0,0.85); }
+.more-cfg-head .caret { color:rgba(0,0,0,0.40); font-size:10px; transition:transform 0.15s; }
+.more-cfg.collapsed .more-cfg-head .caret { transform:rotate(-90deg); }
+.more-cfg.collapsed .more-cfg-body { display:none; }
+.more-cfg-body { padding-top:14px; }
+.env-label { font-size:13px; color:rgba(0,0,0,0.7); margin-bottom:8px; }
+.env-row { display:grid; grid-template-columns:220px 1fr 34px 34px; gap:8px; align-items:center; margin-bottom:8px; }
+.env-row input { height:34px; border:1px solid #d9d9d9; border-radius:6px; padding:0 11px; font-size:13px; outline:none; background:#fff; width:100%; box-sizing:border-box; }
+.env-row input:focus { border-color:#149DAA; }
+.env-row .env-ico { width:34px; height:34px; display:flex; align-items:center; justify-content:center; border:1px solid #f0f0f0; border-radius:6px; cursor:pointer; color:rgba(0,0,0,0.45); font-size:15px; background:#fff; }
+.env-row .env-ico:hover { color:#149DAA; border-color:#149DAA; }
+.env-add { color:#149DAA; cursor:pointer; font-size:13px; display:inline-flex; align-items:center; gap:5px; margin-top:2px; }
+.env-add:hover { color:#0F8190; }
+.env-add.disabled { color:rgba(0,0,0,0.25); cursor:not-allowed; }
+/* 更多配置里的可折叠子项 (入口命令) */
+.adv-sub { margin-bottom:18px; }
+.adv-sub:last-child { margin-bottom:0; }
+.adv-sub-head { display:flex; align-items:center; gap:8px; cursor:pointer; user-select:none; }
+.adv-sub-head .caret { color:rgba(0,0,0,0.40); font-size:10px; transition:transform 0.15s; }
+.adv-sub-head label { font-size:13px; font-weight:400; color:rgba(0,0,0,0.65); margin:0; cursor:pointer; }
+.adv-sub.collapsed .adv-sub-head .caret { transform:rotate(-90deg); }
+.adv-sub.collapsed .adv-sub-body { display:none; }
+.adv-sub-body { padding-top:12px; }
+.adv-sub-body textarea.yaml-area { width:100%; min-height:220px; box-sizing:border-box; }
+
 /* ── Drawer: advanced config tabs ── */
-.adv-tabs { display:flex; gap:4px; border-bottom:1px solid #f0f0f0; margin-bottom:10px; align-items:flex-end; }
-.adv-tabs .at { padding:6px 14px 8px; font-size:13px; color:rgba(0,0,0,0.6); border-bottom:2px solid transparent; margin-bottom:-1px; cursor:pointer; }
-.adv-tabs .at:hover { color:rgba(0,0,0,0.85); }
-.adv-tabs .at.active { color:#149DAA; border-bottom-color:#149DAA; font-weight:500; }
-.adv-tabs .at-reset { margin-left:auto; font-size:12px; color:rgba(0,0,0,0.55); padding:4px 10px; border:1px solid #d9d9d9; border-radius:5px; cursor:pointer; background:#fff; }
-.adv-tabs .at-reset:hover { border-color:#149DAA; color:#149DAA; }
-.fg textarea.yaml-area { width:100%; min-height:460px; padding:12px 14px; font-family:'SF Mono',Menlo,Consolas,monospace; font-size:12.5px; line-height:1.65; background:#fafbfc; border:1px solid #e5e7eb; border-radius:8px; resize:vertical; outline:none; color:rgba(0,0,0,0.85); box-sizing:border-box; white-space:pre; overflow:auto; }
-.fg textarea.yaml-area:focus { border-color:#149DAA; box-shadow:0 0 0 2px rgba(20,157,170,0.12); }
+.adv-tabs { display:flex; gap:6px; border-bottom:1px solid #e5e7eb; margin-bottom:12px; align-items:flex-end; }
+.adv-tabs .at { padding:8px 16px 10px; font-size:13.5px; color:rgba(0,0,0,0.6); border-bottom:2px solid transparent; margin-bottom:-1px; cursor:pointer; transition:all 0.2s ease; border-radius:6px 6px 0 0; }
+.adv-tabs .at:hover { color:rgba(0,0,0,0.88); background:rgba(20,157,170,0.04); }
+.adv-tabs .at.active { color:#149DAA; border-bottom-color:#149DAA; font-weight:600; background:rgba(20,157,170,0.06); }
+.adv-tabs .at-reset { margin-left:auto; font-size:12.5px; color:rgba(0,0,0,0.6); padding:5px 12px; border:1px solid #d9d9d9; border-radius:6px; cursor:pointer; background:#fff; transition:all 0.2s ease; }
+.adv-tabs .at-reset:hover { border-color:#149DAA; color:#149DAA; background:rgba(20,157,170,0.04); }
+textarea.yaml-area { width:100%; min-height:460px; padding:12px 14px; font-family:'SF Mono',Menlo,Consolas,monospace; font-size:12.5px; line-height:1.65; background:#fafbfc; border:1px solid #e5e7eb; border-radius:8px; resize:vertical; outline:none; color:rgba(0,0,0,0.85); box-sizing:border-box; white-space:pre; overflow:auto; }
+textarea.yaml-area:focus { border-color:#149DAA; box-shadow:0 0 0 2px rgba(20,157,170,0.12); }
 .entry-command-area { width:100%; min-height:220px; padding:12px 14px; font-family:'SF Mono',Menlo,Consolas,monospace; font-size:12.5px; line-height:1.65; background:#fafbfc; border:1px solid #e5e7eb; border-radius:8px; resize:vertical; outline:none; color:rgba(0,0,0,0.85); box-sizing:border-box; white-space:pre; overflow:auto; }
 .entry-command-area:focus { border-color:#149DAA; box-shadow:0 0 0 2px rgba(20,157,170,0.12); }
 
@@ -1774,18 +1813,90 @@ button.tm-subtab { border:0; background:transparent; font-family:inherit; cursor
 .tl-name { font-size:14px; color:rgba(0,0,0,0.85); margin-bottom:6px; }
 .tl-meta { font-size:12.5px; color:rgba(0,0,0,0.5); display:flex; gap:24px; }
 
-/* ── 基础信息 (详情样式 - 非禁用输入) ── */
-.basic-info { background:#fff; border:1px solid #f0f0f0; border-radius:8px; padding:24px 28px; }
-.bi-section { margin-bottom:22px; }
-.bi-section .bi-label { font-size:13px; color:rgba(0,0,0,0.5); margin-bottom:6px; }
-.bi-section .bi-value { font-size:14px; color:rgba(0,0,0,0.85); word-break:break-all; line-height:1.6; }
-.bi-section .bi-value.code { font-family:'SF Mono',Menlo,monospace; font-size:13px; }
-.bi-row { display:flex; gap:48px; }
-.bi-row > .bi-section { flex:1; margin-bottom:22px; }
-.bi-dstable { border:1px solid #f0f0f0; border-radius:8px; overflow:hidden; }
-.bi-dstable .ds-head, .bi-dstable .ds-row { display:grid; grid-template-columns:1fr 100px; padding:10px 14px; gap:8px; align-items:center; font-size:13px; }
-.bi-dstable .ds-head { background:#fafafa; color:rgba(0,0,0,0.7); border-bottom:1px solid #f0f0f0; font-weight:500; }
-.yaml-readonly { background:#fafbfc; border:1px solid #e5e7eb; border-radius:8px; padding:14px 16px; font-family:'SF Mono',Menlo,monospace; font-size:12.5px; line-height:1.65; color:rgba(0,0,0,0.85); white-space:pre; overflow:auto; max-height:420px; margin:0; }
+/* ── 基础信息 (详情样式 - 新布局结构) ── */
+.basic-info { background:#fafbfc; padding:24px 0; }
+
+/* 顶部关键信息卡片 - 4列网格 */
+.bi-hero-cards { display:grid; grid-template-columns:repeat(auto-fit, minmax(240px, 1fr)); gap:16px; margin-bottom:20px; }
+.bi-hero-card { background:#fff; border:1px solid #e5e7eb; border-radius:12px; padding:20px; display:flex; align-items:flex-start; gap:16px; transition:all 0.2s ease; position:relative; overflow:hidden; }
+.bi-hero-card::before { content:""; position:absolute; top:0; left:0; right:0; height:3px; background:linear-gradient(90deg, #149DAA 0%, #0f7d88 100%); opacity:0; transition:opacity 0.2s; }
+.bi-hero-card:hover { border-color:#149DAA; box-shadow:0 4px 12px rgba(20,157,170,0.08); transform:translateY(-2px); }
+.bi-hero-card:hover::before { opacity:1; }
+.bi-hero-card.bi-hero-primary { background:linear-gradient(135deg, #f0f9fa 0%, #e6f7f8 100%); border-color:#149DAA; }
+.bi-hero-icon { width:40px; height:40px; border-radius:10px; background:rgba(20,157,170,0.1); display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+.bi-hero-icon svg { width:22px; height:22px; color:#149DAA; }
+.bi-hero-content { flex:1; min-width:0; }
+.bi-hero-label { font-size:12px; color:rgba(0,0,0,0.5); margin-bottom:6px; font-weight:500; text-transform:uppercase; letter-spacing:0.05em; }
+.bi-hero-value { font-size:15px; color:rgba(0,0,0,0.88); font-weight:600; word-break:break-word; line-height:1.4; }
+
+/* 任务描述卡片 */
+.bi-desc-card { background:#fff; border:1px solid #e5e7eb; border-radius:12px; padding:20px 24px; margin-bottom:20px; }
+.bi-desc-label { font-size:12px; color:rgba(0,0,0,0.5); margin-bottom:8px; font-weight:500; text-transform:uppercase; letter-spacing:0.05em; }
+.bi-desc-value { font-size:14px; color:rgba(0,0,0,0.75); line-height:1.6; }
+
+/* 分区样式 */
+.bi-sec { background:#fff; border:1px solid #e5e7eb; border-radius:12px; padding:24px; margin-bottom:16px; text-align:left; }
+.bi-sec-title { display:flex; align-items:center; justify-content:flex-start; gap:10px; font-size:15px; font-weight:600; color:rgba(0,0,0,0.9); letter-spacing:0.01em; margin:0 0 20px; text-align:left; }
+.bi-sec-title::before { content:""; width:3px; height:18px; background:linear-gradient(135deg, #149DAA 0%, #0f7d88 100%); border-radius:2px; margin-right:8px; flex-shrink:0; }
+
+/* 可折叠分区 */
+.bi-collapsible .bi-sec-title { cursor:pointer; user-select:none; transition:all 0.2s; }
+.bi-collapsible .bi-sec-title:hover { color:#149DAA; }
+.bi-collapsible.collapsed .bi-sec-title::before { background:#d0d5dd; }
+.bi-chevron { width:20px; height:20px; color:rgba(0,0,0,0.4); transition:transform 0.3s ease; margin-left:auto; }
+.bi-collapsible.collapsed .bi-chevron { transform:rotate(-90deg); }
+.bi-collapse-content { overflow:hidden; transition:max-height 0.3s ease; }
+.bi-collapsible.collapsed .bi-collapse-content { max-height:0 !important; }
+
+/* 字段行布局 */
+.bi-field-row { display:grid; gap:24px; margin-bottom:20px; }
+.bi-field-row-2 { grid-template-columns:repeat(2, minmax(0, 1fr)); }
+.bi-field-row-3 { grid-template-columns:repeat(3, minmax(0, 1fr)); }
+.bi-field-item { display:flex; flex-direction:column; gap:6px; }
+.bi-field-label { font-size:12.5px; color:rgba(0,0,0,0.55); font-weight:500; }
+.bi-field-value { font-size:14px; color:rgba(0,0,0,0.88); line-height:1.5; }
+.bi-field-full { display:flex; flex-direction:column; gap:8px; padding-top:12px; border-top:1px solid #f0f2f5; margin-top:8px; }
+.bi-field-full .bi-field-label { font-size:12.5px; color:rgba(0,0,0,0.55); font-weight:500; }
+.bi-field-full .bi-field-value { font-size:13.5px; color:rgba(0,0,0,0.88); }
+.bi-field-value.mono, .bi-field-full .bi-field-value.mono { font-family:'SF Mono',Menlo,Consolas,monospace; font-size:13px; color:rgba(0,0,0,0.75); word-break:break-all; }
+/* 字段网格: 真正的两列, 短字段自然成对; 长字段/表格用 .span2 占整行 */
+.bi-grid { display:grid; grid-template-columns:1fr 1fr; column-gap:64px; row-gap:2px; }
+.bi-field { display:grid; grid-template-columns:96px 1fr; gap:16px; align-items:baseline; padding:8px 0; }
+.bi-field.span2 { grid-column:1 / -1; }
+.bi-field.top { align-items:start; }
+.bi-field > .k { font-size:13px; color:rgba(0,0,0,0.42); }
+.bi-field > .v { font-size:13.5px; color:rgba(0,0,0,0.86); word-break:break-all; line-height:1.55; }
+.bi-field > .v.mono { font-family:'SF Mono',Menlo,Consolas,monospace; font-size:12.5px; color:rgba(0,0,0,0.72); }
+.tag-inline { display:inline-block; padding:4px 12px; border-radius:6px; font-size:12.5px; background:linear-gradient(135deg, #e6f7f8 0%, #d4f1f4 100%); color:#0f7d88; border:1px solid rgba(20,157,170,0.15); font-weight:500; transition:all 0.2s ease; }
+.tag-inline:hover { background:linear-gradient(135deg, #d4f1f4 0%, #c2ecf0 100%); border-color:rgba(20,157,170,0.25); transform:translateY(-1px); box-shadow:0 2px 6px rgba(20,157,170,0.1); }
+.bi-field > .v .tag-inline, .bi-field-value .tag-inline { display:inline-block; padding:4px 12px; border-radius:6px; font-size:12.5px; background:linear-gradient(135deg, #e6f7f8 0%, #d4f1f4 100%); color:#0f7d88; border:1px solid rgba(20,157,170,0.15); font-weight:500; transition:all 0.2s ease; }
+.bi-field > .v .tag-inline:hover, .bi-field-value .tag-inline:hover { background:linear-gradient(135deg, #d4f1f4 0%, #c2ecf0 100%); border-color:rgba(20,157,170,0.25); transform:translateY(-1px); box-shadow:0 2px 6px rgba(20,157,170,0.1); }
+/* git commit 显示 - 增强可点击视觉 */
+.bi-commit { display:inline-flex; align-items:center; gap:7px; font-family:'SF Mono',Menlo,Consolas,monospace; font-size:13px; color:#149DAA; padding:4px 10px; background:rgba(20,157,170,0.06); border-radius:6px; border:1px solid rgba(20,157,170,0.12); transition:all 0.2s ease; cursor:pointer; }
+.bi-commit:hover { background:rgba(20,157,170,0.1); border-color:rgba(20,157,170,0.2); transform:translateY(-1px); box-shadow:0 2px 6px rgba(20,157,170,0.1); }
+.bi-commit .gi { color:rgba(0,0,0,0.4); font-size:14px; transition:color 0.2s; }
+.bi-commit:hover .gi { color:#149DAA; }
+/* 数据集: 无边框轻量两列, 表头细线分隔 - 增强视觉层次 */
+.bi-dstable { font-size:13px; max-width:560px; background:#fafbfc; border:1px solid #e8eaed; border-radius:8px; padding:8px 12px; }
+.bi-dstable .ds-head, .bi-dstable .ds-row { display:grid; grid-template-columns:1fr 90px; padding:10px 8px; gap:12px; align-items:center; transition:background 0.15s ease; }
+.bi-dstable .ds-head { color:rgba(0,0,0,0.5); border-bottom:1px solid #e5e7eb; font-weight:500; font-size:12.5px; background:transparent; }
+.bi-dstable .ds-row { border-bottom:1px solid #f0f2f5; }
+.bi-dstable .ds-row:last-child { border-bottom:none; }
+.bi-dstable .ds-row:hover { background:rgba(20,157,170,0.03); }
+.bi-dstable .ds-row .mono { font-family:'SF Mono',Menlo,Consolas,monospace; color:rgba(0,0,0,0.8); }
+/* 环境变量: 无边框轻量表 + 密文脱敏 + 眼睛切换 - 增强交互体验 */
+.bi-envtable { font-size:13px; max-width:600px; background:#fafbfc; border:1px solid #e8eaed; border-radius:8px; padding:8px 12px; }
+.bi-envtable .env-head, .bi-envtable .env-line { display:grid; grid-template-columns:230px 1fr 36px; padding:10px 8px; gap:14px; align-items:center; }
+.bi-envtable .env-head { color:rgba(0,0,0,0.5); border-bottom:1px solid #e5e7eb; font-weight:500; font-size:12.5px; }
+.bi-envtable .env-line { border-bottom:1px solid #f0f2f5; transition:background 0.15s ease; }
+.bi-envtable .env-line:last-child { border-bottom:none; }
+.bi-envtable .env-line:hover { background:rgba(20,157,170,0.03); }
+.bi-envtable .env-line .ek { font-family:'SF Mono',Menlo,Consolas,monospace; color:rgba(0,0,0,0.82); font-weight:500; }
+.bi-envtable .env-line .ev { font-family:'SF Mono',Menlo,Consolas,monospace; color:rgba(0,0,0,0.65); word-break:break-all; }
+.bi-envtable .env-line .ev.secret { letter-spacing:1px; color:rgba(0,0,0,0.5); }
+.bi-envtable .env-eye { text-align:center; color:rgba(0,0,0,0.35); cursor:pointer; font-size:15px; user-select:none; transition:all 0.2s ease; border-radius:4px; padding:2px 4px; }
+.bi-envtable .env-eye:hover { color:#149DAA; background:rgba(20,157,170,0.08); }
+.yaml-readonly { background:linear-gradient(135deg, #fafbfc 0%, #f7f9fa 100%); border:1px solid #e5e7eb; border-radius:10px; padding:16px 18px; font-family:'SF Mono',Menlo,monospace; font-size:13px; line-height:1.7; color:rgba(0,0,0,0.88); white-space:pre; overflow:auto; max-height:450px; margin:0; box-shadow:inset 0 1px 3px rgba(0,0,0,0.03); }
 """
 
 # 将 data_platform / quanta_eval_platform 的 BASE_CSS 拼在前面 — 它们的 chrome 规则会被
@@ -2239,6 +2350,9 @@ function openTrainDrawer(){
   // 重置表单联动状态并生成默认配置
   var ov = document.getElementById('yamlOverride');
   if (ov) ov.value = '';
+  var mc = document.getElementById('moreCfg');
+  if (mc) mc.classList.remove('collapsed');
+  initEnvRows();
   regenDefaultConfig();
 }
 function updateNameCount(input){
@@ -2255,10 +2369,55 @@ function currentTrainTemplate(){
   var tpl = (window.TRAIN_YAML_TEMPLATES || {})[model + '|' + robot];
   return tpl || '';
 }
-// 底盘类型: 覆盖 moz1_structure 单行 (wholebody / wholebody_without_base / dualarm)
+// 机器人结构: 覆盖 moz1_structure 单行 (wholebody / wholebody_without_base / dualarm)
+// pi0.5 源文件带引号, spirit1.6 源文件不带引号, 保持风格一致
 function applyBaseStructure(yamlText){
   var base = (document.getElementById('trainBaseSel')||{}).value || 'wholebody';
-  return yamlText.replace(/^(\\s*moz1_structure:).*$/m, '$1 "' + base + '"');
+  var model = (document.getElementById('trainModelSel')||{}).value || 'pi05';
+  var quoted = (model === 'pi05');  // pi05 带引号, spiritv1_6 不带
+  var val = quoted ? ('"' + base + '"') : base;
+  return yamlText.replace(/^(\\s*moz1_structure:).*$/m, '$1 ' + val);
+}
+/* ── 更多配置: 环境变量 key-value 表 ── */
+var ENV_MAX = 20;
+// 疑似密钥的 key (含这些子串) 默认脱敏显示
+function envIsSecret(key){ return /KEY|TOKEN|SECRET|PASSWORD|PWD/i.test(key || ''); }
+function renderEnvCount(){
+  var n = document.querySelectorAll('#envRows .env-row').length;
+  var c = document.getElementById('envCount'); if (c) c.textContent = '(' + n + '/' + ENV_MAX + ')';
+  var btn = document.getElementById('envAddBtn');
+  if (btn){ if (n >= ENV_MAX) btn.classList.add('disabled'); else btn.classList.remove('disabled'); }
+}
+function addEnvRow(key, val){
+  var rows = document.getElementById('envRows'); if (!rows) return;
+  if (rows.querySelectorAll('.env-row').length >= ENV_MAX) return;
+  var secret = envIsSecret(key);
+  var row = document.createElement('div');
+  row.className = 'env-row';
+  var k = document.createElement('input'); k.placeholder = '变量名'; k.value = key || '';
+  var v = document.createElement('input'); v.placeholder = '变量值'; v.value = val || '';
+  v.type = secret ? 'password' : 'text';
+  // 输入 key 时动态判断是否脱敏 (仅当用户未手动切到明文时)
+  k.oninput = function(){ if (!v.dataset.shown) v.type = envIsSecret(k.value) ? 'password' : 'text'; };
+  var eye = document.createElement('span'); eye.className = 'env-ico'; eye.title = '显示/隐藏';
+  eye.innerHTML = '&#128065;';
+  eye.onclick = function(){
+    if (v.type === 'password'){ v.type = 'text'; v.dataset.shown = '1'; }
+    else { v.type = 'password'; delete v.dataset.shown; }
+  };
+  var del = document.createElement('span'); del.className = 'env-ico'; del.title = '删除';
+  del.innerHTML = '&#128465;';
+  del.onclick = function(){ rows.removeChild(row); renderEnvCount(); };
+  row.appendChild(k); row.appendChild(v); row.appendChild(eye); row.appendChild(del);
+  rows.appendChild(row);
+  renderEnvCount();
+}
+// 抽屉打开时初始化默认两行 (demo 示例)
+function initEnvRows(){
+  var rows = document.getElementById('envRows'); if (!rows) return;
+  rows.innerHTML = '';
+  addEnvRow('WANDB_BASE_URL', 'https://api.wandb.ai');
+  addEnvRow('WANDB_API_KEY', '');
 }
 // 把 override 里填写的 key: value 覆盖到 yaml 文本对应行 (顶层 + 缩进 key 均匹配)
 function mergeOverride(baseYaml, overrideText){
@@ -2287,9 +2446,13 @@ function mergeOverride(baseYaml, overrideText){
   return lines.join('\\n');
 }
 // 把 job_name 写入 yaml 文本
+// pi0.5 源文件带引号, spirit1.6 源文件不带引号, 保持风格一致
 function applyJobName(yamlText, name){
   if (name == null) return yamlText;
-  return yamlText.replace(/^(job_name:).*$/m, '$1 "' + name + '"');
+  var model = (document.getElementById('trainModelSel')||{}).value || 'pi05';
+  var quoted = (model === 'pi05');  // pi05 带引号, spiritv1_6 不带
+  var val = quoted ? ('"' + name + '"') : name;
+  return yamlText.replace(/^(job_name:).*$/m, '$1 ' + val);
 }
 // 依据下拉框 + 名称 + 覆盖, 重新生成默认配置
 function regenDefaultConfig(){
@@ -2339,7 +2502,6 @@ function filterTrainCode(input){
   var refs = window.TRAIN_CODE_REFS || [];
   // 目前只支持按 Commit ID 模糊搜索
   var matched = refs.filter(function(r){
-    // return !q || r.ref.toLowerCase().indexOf(q) >= 0 || r.commit.toLowerCase().indexOf(q) >= 0;  // 暂时注释：按分支名搜索
     return !q || r.commit.toLowerCase().indexOf(q) >= 0;
   });
   if (!matched.length){
@@ -2367,6 +2529,7 @@ function hideTrainCodeMenu(){
   var menu = document.getElementById('trainCodeMenu');
   if (menu) setTimeout(function(){ menu.classList.remove('open'); }, 120);
 }
+
 var TRAIN_IMAGE_MODE = 'default';
 var DEFAULT_TRAIN_IMAGE = {
   name: 'mozbrain',
@@ -2426,6 +2589,45 @@ function switchAdvTab(el, tab){
     ov.style.display = showOverride ? '' : 'none';
   }
 }
+/* 详情页「基础信息 · 高级配置」只读双 pre 切换 */
+function switchDetAdv(el, tab){
+  var wrap = el.closest('.bi-sec');
+  if (!wrap) return;
+  wrap.querySelectorAll('.at').forEach(function(t){ t.classList.remove('active'); });
+  el.classList.add('active');
+  wrap.querySelectorAll('.yaml-readonly').forEach(function(p){
+    p.style.display = (p.getAttribute('data-adv') === tab) ? '' : 'none';
+  });
+}
+/* 详情页环境变量密文 显示/隐藏 */
+function toggleEnvSecret(icon){
+  var line = icon.closest('.env-line');
+  if (!line) return;
+  var ev = line.querySelector('.ev');
+  if (!ev) return;
+  if (ev.classList.contains('secret')){
+    ev.textContent = ev.getAttribute('data-real') || ev.textContent;
+    ev.classList.remove('secret');
+  } else {
+    ev.textContent = '••••••••••••••••';
+    ev.classList.add('secret');
+  }
+}
+/* 基础信息分区折叠 */
+function toggleBiSection(titleEl){
+  var section = titleEl.closest('.bi-collapsible');
+  if (!section) return;
+  var content = section.querySelector('.bi-collapse-content');
+  if (!content) return;
+
+  if (section.classList.contains('collapsed')){
+    section.classList.remove('collapsed');
+    content.style.maxHeight = content.scrollHeight + 'px';
+  } else {
+    section.classList.add('collapsed');
+    content.style.maxHeight = '0';
+  }
+}
 /* 训练详情 5 个 tab 切换 */
 function switchDetTab(el, tabId){
   el.parentNode.querySelectorAll('.det-tab').forEach(function(t){ t.classList.remove('active'); });
@@ -2444,6 +2646,14 @@ function switchLogSubtab(el){
   if(target) target.classList.add('active');
 }
 function toggleLogToggle(el){ el.classList.toggle('on'); }
+/* 初始化基础信息页面的折叠分区 */
+document.addEventListener('DOMContentLoaded', function(){
+  document.querySelectorAll('.bi-collapsible').forEach(function(section){
+    section.classList.add('collapsed');
+    var content = section.querySelector('.bi-collapse-content');
+    if(content) content.style.maxHeight = '0';
+  });
+});
 function openDeployCheckpointPicker(el){
   var picker = el.closest('.deploy-checkpoint-picker');
   if(!picker) return;
@@ -4419,7 +4629,8 @@ _YAML_PI05_OLD = """# FSDP training configuration file
 # === Dataset configuration ===
 use_raw_dataset: true
 dataset:
-  num_stats_samples: 10000
+  num_stats_samples: 20000
+  tasks_path: "meta/tasks.jsonl"
   mistake_filter: "drop_error_prefix"
   unknown_filter: true
 
@@ -4432,17 +4643,17 @@ seed: 42
 # === Training parameters ===
 num_workers_per_rank: 8
 batch_size: 32
-steps: 100000
+steps: 30000
 eval_freq: 100000
 log_freq: 100
 
 # === Checkpoint configuration ===
 checkpoint:
   save_checkpoint: true
-  save_freq: 1000
+  save_freq: 2000
   tos:
     keep_local_checkpoint_versions: 0
-    prefix: "default"
+    prefix: "default_tos_ckpt"
     enable: true
 
 # === Policy configuration ===
@@ -4462,7 +4673,7 @@ policy:
     state_mask_config:
       leftarm: [true, true, false, true, true, true]
       rightarm: [true, true, false, true, true, true]
-      torso: [true, true, true, true, true, true]
+      torso: [true, true, false, true, true, true]
     use_stop_signal: true
   tokenizer_path: "/mnt/vepfs01/output/junliang/cache/pi05_base_torch/paligemma_tokenizer.model"
   tokenizer_type: "sentencepiece"
@@ -4482,14 +4693,14 @@ optimizer:
   fused: true
 scheduler:
   type: "cosine_decay_with_warmup"
-  num_decay_steps: 200000
+  num_decay_steps: 30000
   num_warmup_steps: 1000
   peak_lr: 5e-05
   decay_lr: 5e-05
 
 # === WandB configuration ===
 wandb:
-  enable: true
+  enable: false
   project: "lerobot"
 """
 
@@ -4502,7 +4713,7 @@ _YAML_PI05_NEW = """# FSDP training configuration file
 # === Dataset configuration ===
 use_raw_dataset: true
 dataset:
-  num_stats_samples: 5000
+  num_stats_samples: 20000
   mistake_filter: "drop_error_prefix"
   unknown_filter: true
   use_stats_cache: true
@@ -4515,18 +4726,18 @@ seed: 42
 
 # === Training parameters ===
 num_workers_per_rank: 8
-batch_size: 128
-steps: 200000
-eval_freq: 2000
+batch_size: 32
+steps: 30000
+eval_freq: 100000
 log_freq: 100
 
 # === Checkpoint configuration ===
 checkpoint:
   save_checkpoint: true
-  save_freq: 1000
+  save_freq: 2000
   tos:
-    keep_local_checkpoint_versions: 2
-    prefix: "default"
+    keep_local_checkpoint_versions: 0
+    prefix: "default_tos_ckpt"
     enable: true
 
 # === Policy configuration ===
@@ -4537,7 +4748,7 @@ policy:
   use_delta_joint_actions_aloha: true
   freeze_vision_encoder: false
   use_amp: true
-  tokenizer_max_length: 128
+  tokenizer_max_length: 120
   observation_config:
     robot_type: "moz1"
     moz1_structure: "wholebody"
@@ -4568,23 +4779,201 @@ optimizer:
   fused: true
 scheduler:
   type: "cosine_decay_with_warmup"
-  num_decay_steps: 200000
+  num_decay_steps: 30000
   num_warmup_steps: 1000
   peak_lr: 5e-05
   decay_lr: 5e-05
 
 # === WandB configuration ===
 wandb:
-  enable: true
+  enable: false
   project: "lerobot"
+"""
+
+# spiritv1.6 uses its own real posttrain config (structure differs from pi0.5).
+# Raw string keeps literal "\n" in comments / user_prompt_template intact.
+_YAML_SPIRIT16 = r"""# =============================================================================
+# spirit vla pretrain stage2 训练配置
+# =============================================================================
+
+# Quanta 会自动填充dataset相关的内容，不需要填写dataset下的repo_id、root、sample_weights_cfg
+# 请确认是否需要修改checkpoint.tos.prefix，checkpoint上传到tos的路径为tos://{bucket}/{prefix}/{job_name}/checkpoints/
+
+
+seed: 42
+job_name:
+output_dir: outputs/${job_name}
+txt_output_path: ${output_dir}/loss_and_time.txt
+
+# 训练步数与频率
+steps: 200000
+batch_size: 32
+eval_batch_size: 16
+eval_freq: 5000
+save_freq: 5000
+log_freq: 25
+eval_reduced_scale_factor: 1.0 # if eval too long set --eval_reduced_scale_factor=0.1
+enable_mfu: false
+enable_manual_gc: true
+save_checkpoint: true
+# 预训练权重加载，若不想加载可注释此配置以从头训练。
+pretrained_ckpt_path: /mnt/vepfs01/output/carter.fan/model_ckpts/pretrained_model/model.safetensors
+pretrained_load_norm: false
+
+# 恢复训练
+recover: false
+recover_checkpoint_dir: /mnt/vepfs02/output/blair.li/codebase/mozbrain_main_0429_udas/outputs/train_pretrain_stage2_scaling_1w_10w/
+
+# 原始数据集 / FSDP dtype
+use_raw_dataset: true
+fsdp2_param_bf16: true
+deterministic: false
+
+# =============================================================================
+# WandB / Profiler / Checkpoint(TOS)
+# =============================================================================
+wandb:
+  enable: true
+  project: train_insert_pour
+
+profiler:
+  enable: true
+  output_dir: ${output_dir}/profiler
+
+checkpoint:
+  tos:
+    enable: true
+    prefix: default_tos_ckpt
+    keep_local_checkpoint_versions: 2
+
+# =============================================================================
+# 训练数据集 (dataset)
+# =============================================================================
+dataset:
+  use_mozdataset: false
+  multimodal_weights_cfg: null
+  robotic_ratio: 0.8
+  disable_stats: false
+  use_stats_cache: false
+  norm_stats_root: null
+  num_stats_samples: 1000000
+  norm_per_task: true
+  default_norm_root_path: null
+  load_norm_stats_json: null
+  task_annotation_mode: random
+  stats_per_shard_limit: 100
+  shard_global_shuffle: true
+  image_transforms:
+    use_posttrain_transform: true
+
+# =============================================================================
+# 评估数据集 (eval_dataset)
+# =============================================================================
+# eval_dataset:
+#   repo_id: ${job_name}-eval
+#   root: ${dataset.root}
+#   use_mozdataset: false
+#   sample_weights_cfg: null
+#   multimodal_weights_cfg: null
+#   sample_interval: 1
+#   scaling_law: true
+#   fast_eval: true
+#   image_transforms:
+#     use_posttrain_transform: true
+
+# =============================================================================
+# OOD 评估数据集 (ood_eval_dataset) 取消注释下面几行以启用 OOD 评估
+# =============================================================================
+# ood_eval_dataset:
+#   repo_id: train_pretrain_stage2-eval
+#   root: ${dataset.root}
+#   use_mozdataset: true
+#   sample_weights_cfg: /mnt/vepfs01/output/blair.li/cache/sample_weights/posttrain_rb_eval_ood_0314.json
+#   scaling_law: true
+#   fast_eval: true
+#   image_transforms:
+#     use_posttrain_transform: true
+#     image_size: [240, 320]
+
+# =============================================================================
+# Policy (policy.type 决定加载哪种 policy 配置)
+# =============================================================================
+policy:
+  type: spirit_qwen_dit_cotrain
+  backbone: Qwen/Qwen3-VL-4B-Instruct
+  attention_implementation: flash_attention_2
+  action_expert_type: qwen3_gate
+
+  # 损失权重
+  rb_loss_weight: 10.0
+  mm_loss_weight: 1.0
+
+  # state / observation
+  use_state: true
+  observation_config:
+    robot_type: moz1
+    image_size: [360, 480]
+    wrist_image_size: [240, 320]
+    image_resize_mode: resize
+    use_gripper_action: true
+    moz1_structure: wholebody_without_base
+    auto_pad_missing_components: true
+
+  # 优化器 / 学习率
+  optimizer_lr: 2.5e-5
+  optimizer_weight_decay: 1e-2
+  scheduler_decay_lr: 5e-6
+  use_separate_lr: false
+  lr_vlm: 2.5e-06
+  lr_dit: 5e-05
+  lr_others: 5e-05
+
+  # 学习率调度器 (wsd)
+  scheduler_type: wsd
+  scheduler_decay_phase_ratio: 0.1
+  scheduler_warmup_steps: 1000
+  scheduler_decay_steps: 19000  # ${.xxx}=同级引用；${steps}=根级
+
+  # DiT / qwen3 expert
+  dit_cross_attention_dim: 2560
+  qwen3_expert_hidden_size: 1024
+  qwen3_expert_num_layers: 18
+  qwen3_expert_num_heads: 32
+  qwen3_expert_num_kv_heads: 8
+  qwen3_expert_head_dim: 128
+  qwen3_expert_intermediate_size: 4096
+  qwen3_expert_rms_norm_eps: 1e-6
+  qwen3_expert_rope_theta: 5000000.0
+  qwen3_expert_dropout: 0.0
+  qwen3_expert_interleave_self_attention: true
+  qwen3_expert_gating_mode: headwise
+  qwen3_expert_fusion_mode: cross_attention
+  qwen3_expert_num_vlm_last_embd: 1
+
+  # action token / dit 开关
+  enable_action_token: false
+  enable_dit: true
+  action_tokenizer_path: /mnt/vepfs01/output/blair.li/cache/action_tokenizer/fast_action_tokenizer_pretrain_v9_all
+
+  # 其他
+  vlm_use_sac: true
+  vlm_sac_skip_last_n_layers: 4
+  rb_preprocess_mode: dataloader
+  enable_packing: true
+  gripper_droid2our_value: 0.12
+  use_action_clip: true
+  droid2moz_data_process_type: xy_and_orientation
+  # YAML 双引号会把 \n 解析成真正的换行符（0x0A），喂给模型的是真换行。
+  # 若要保持字面反斜杠+n（与原始 .sh 一致），改用单引号即可。
+  user_prompt_template: "{image_placeholders}\nGlobal instruction: {task}"
 """
 
 TRAIN_YAML_TEMPLATES = {
     "pi05|old": _YAML_PI05_OLD,
     "pi05|new": _YAML_PI05_NEW,
-    # spiritv1.6 结构与 pi0.5 类似, 先复制并改 policy.type 占位
-    "spiritv1_6|old": _YAML_PI05_OLD.replace('type: "pi05"', 'type: "spiritv1_6"'),
-    "spiritv1_6|new": _YAML_PI05_NEW.replace('type: "pi05"', 'type: "spiritv1_6"'),
+    # spiritv1.6: single real template; new/old perception share it, only moz1_structure varies by robot type.
+    "spiritv1_6|old": _YAML_SPIRIT16,
+    "spiritv1_6|new": _YAML_SPIRIT16,
 }
 
 # 训练代码: 模糊查询候选 (Demo mock, 分支 + commit)
@@ -4595,7 +4984,6 @@ TRAIN_CODE_REFS = [
     {"ref": "develop", "commit": "e2ef00a", "desc": "Update model and data platform UI"},
     {"ref": "release/v1.0", "commit": "5bf7c91", "desc": "Update Quanta toolchain demo flows"},
 ]
-
 
 @app.route("/model/experiments")
 def experiments():
@@ -4724,6 +5112,16 @@ def experiments():
         </div>
 
         <div class="fg">
+          <label class="fg-req">训练代码</label>
+          <div style="position:relative;">
+            <input type="text" id="trainCodeInput" placeholder="输入 Commit ID 搜索"
+                   oninput="filterTrainCode(this)" onblur="hideTrainCodeMenu()" autocomplete="off"
+                   data-branch="" data-commit="">
+            <div id="trainCodeMenu" class="tc-menu"></div>
+          </div>
+        </div>
+
+        <div class="fg">
           <label class="fg-req">镜像</label>
           <div class="tm-subtabs image-mode-tabs">
             <button type="button" class="tm-subtab active" onclick="switchTrainImageMode(this,'default')">默认镜像</button>
@@ -4765,13 +5163,6 @@ def experiments():
           </div>
         </div>
 
-        <div class="fg" style="position:relative;">
-          <label class="fg-req">训练代码</label>
-          <input id="trainCodeInput" placeholder="搜索 Commit ID" autocomplete="off"
-                 oninput="filterTrainCode(this)" onfocus="filterTrainCode(this)" onblur="hideTrainCodeMenu()">
-          <div id="trainCodeMenu" class="tc-menu"></div>
-        </div>
-
         <div class="fg-row">
           <div class="fg"><label class="fg-req">训练队列</label>
             <select><option>CPU</option><option>GPU-A100</option><option>GPU-H100</option></select>
@@ -4806,7 +5197,7 @@ def experiments():
               <option value="old">否</option>
             </select>
           </div>
-          <div class="fg"><label class="fg-req">底盘类型</label>
+          <div class="fg"><label class="fg-req">机器人结构</label>
             <select id="trainBaseSel" onchange="regenDefaultConfig()">
               <option value="wholebody">wholebody</option>
               <option value="wholebody_without_base">wholebody_without_base</option>
@@ -4815,17 +5206,56 @@ def experiments():
           </div>
         </div>
 
-        <div class="fg">
-          <label class="fg-req">高级配置</label>
-          <div class="adv-tabs">
-            <span class="at active" onclick="switchAdvTab(this,'default')">默认配置</span>
-            <span class="at" onclick="switchAdvTab(this,'override')">参数覆盖</span>
-            <button class="at-reset" onclick="resetTrainConfig()">恢复默认</button>
+        <div class="adv-sub" id="advConfigBox">
+          <div class="adv-sub-head" onclick="document.getElementById('advConfigBox').classList.toggle('collapsed')">
+            <span class="caret">&#9660;</span>
+            <label>高级配置</label>
           </div>
-          <textarea id="yamlEditor" class="yaml-area" spellcheck="false" readonly></textarea>
-          <textarea id="yamlOverride" class="yaml-area" spellcheck="false" style="display:none;"
-                    placeholder="# 只填写需要覆盖的参数, 例如:&#10;batch_size: 64&#10;steps: 300000&#10;&#10;# 这些值会覆盖到左侧「默认配置」中"
-                    oninput="applyOverride()"></textarea>
+          <div class="adv-sub-body">
+            <div class="adv-tabs">
+              <span class="at active" onclick="switchAdvTab(this,'default')">默认配置</span>
+              <span class="at" onclick="switchAdvTab(this,'override')">参数覆盖</span>
+              <button class="at-reset" onclick="resetTrainConfig()">恢复默认</button>
+            </div>
+            <textarea id="yamlEditor" class="yaml-area" spellcheck="false" readonly></textarea>
+            <textarea id="yamlOverride" class="yaml-area" spellcheck="false" style="display:none;"
+                      placeholder="# 只填写需要覆盖的参数, 例如:&#10;batch_size: 64&#10;steps: 300000&#10;&#10;# 这些值会覆盖到左侧「默认配置」中"
+                      oninput="applyOverride()"></textarea>
+          </div>
+        </div>
+
+        <div class="adv-sub" id="entryCmdBox">
+          <div class="adv-sub-head" onclick="document.getElementById('entryCmdBox').classList.toggle('collapsed')">
+            <span class="caret">&#9660;</span>
+            <label>入口命令</label>
+          </div>
+          <div class="adv-sub-body">
+            <textarea id="entryCmdInput" class="entry-command-area" spellcheck="false"># 需要填写个人的WANDB_API_KEY，如export WANDB_API_KEY=aaffxxxx
+# export WANDB_API_KEY=put_your_wandb_api_key_here
+# export WANDB_BASE_URL=https://api.bandw.top
+
+export XDG_CACHE_HOME=${{XDG_CACHE_HOME:-/mnt/vepfs01/output/qhj/cache/}}
+export HF_HOME=${{HF_HOME:-/mnt/vepfs01/output/lmz/cache}}
+export HF_ENDPOINT=https://hf-mirror.com
+export HF_HUB_OFFLINE=1
+
+export ENABLE_REPORT_QUANTA=True
+export QUANTA_SERVICE_URL="https://quanta.i.spirit-ai.com"
+
+# Quanta会自动填充experiment_id为实际的experiment_id，请不要修改yaml文件路径
+bash lerobot/scripts/train_unified.sh /mnt/vepfs01/output/quanta/experiments/configs/{{experiment_id}}/customized.yaml</textarea>
+          </div>
+        </div>
+
+        <div class="adv-sub collapsed" id="envVarsBox" style="display:none;">
+          <div class="adv-sub-head" onclick="document.getElementById('envVarsBox').classList.toggle('collapsed')">
+            <span class="caret">&#9660;</span>
+            <label>环境变量</label>
+          </div>
+          <div class="adv-sub-body">
+            <div id="envRows"></div>
+            <span class="env-add" id="envAddBtn" onclick="addEnvRow()">&#43; 新增环境变量 <span id="envCount">(0/20)</span></span>
+          </div>
         </div>
 
       </div>
@@ -5153,39 +5583,153 @@ dataset:
     ds_name = e["dataset"] if e["dataset"] != "—" else "clean_whiteboard_v4"
     tab_basic = f"""
     <div class="basic-info">
-      <div class="bi-section">
-        <div class="bi-label">训练任务名称</div>
-        <div class="bi-value code">{e['name']}</div>
-      </div>
-      <div class="bi-section">
-        <div class="bi-label">镜像</div>
-        <div class="bi-value code">spirit-train:v1.7-cuda12</div>
-      </div>
-      <div class="bi-row">
-        <div class="bi-section">
-          <div class="bi-label">训练队列</div>
-          <div class="bi-value">GPU-A100</div>
+
+      <!-- 关键信息卡片 -->
+      <div class="bi-hero-cards">
+        <div class="bi-hero-card bi-hero-primary">
+          <div class="bi-hero-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+            </svg>
+          </div>
+          <div class="bi-hero-content">
+            <div class="bi-hero-label">任务名称</div>
+            <div class="bi-hero-value">{e['name']}</div>
+          </div>
         </div>
-        <div class="bi-section">
-          <div class="bi-label">实例规格</div>
-          <div class="bi-value">2 &times; A100 80GB</div>
+        <div class="bi-hero-card">
+          <div class="bi-hero-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="3"/><path d="M12 1v6m0 6v6m8.66-9l-5.2 3m-2.92 0l-5.2-3m12.12 6l-5.2-3m-2.92 0l-5.2 3"/>
+            </svg>
+          </div>
+          <div class="bi-hero-content">
+            <div class="bi-hero-label">训练代码</div>
+            <div class="bi-hero-value"><span class="bi-commit"><span class="gi">&#10697;</span>a5ebbdd</span></div>
+          </div>
+        </div>
+        <div class="bi-hero-card">
+          <div class="bi-hero-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+            </svg>
+          </div>
+          <div class="bi-hero-content">
+            <div class="bi-hero-label">创建人</div>
+            <div class="bi-hero-value">{owner}</div>
+          </div>
+        </div>
+        <div class="bi-hero-card">
+          <div class="bi-hero-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+            </svg>
+          </div>
+          <div class="bi-hero-content">
+            <div class="bi-hero-label">创建时间</div>
+            <div class="bi-hero-value">{e['started']}</div>
+          </div>
         </div>
       </div>
-      <div class="bi-section">
-        <div class="bi-label">数据集</div>
+
+      <!-- 任务描述 -->
+      <div class="bi-desc-card">
+        <div class="bi-desc-label">任务描述</div>
+        <div class="bi-desc-value">HouseHold stop 场景微调，14 维双臂 + 停止信号</div>
+      </div>
+
+      <!-- 训练配置 -->
+      <div class="bi-sec">
+        <h4 class="bi-sec-title">训练配置</h4>
+        <div class="bi-field-row bi-field-row-2">
+          <div class="bi-field-item">
+            <div class="bi-field-label">训练队列</div>
+            <div class="bi-field-value">GPU-A100</div>
+          </div>
+          <div class="bi-field-item">
+            <div class="bi-field-label">实例规格</div>
+            <div class="bi-field-value">2 × A100 80GB</div>
+          </div>
+        </div>
+        <div class="bi-field-row bi-field-row-3">
+          <div class="bi-field-item">
+            <div class="bi-field-label">模型</div>
+            <div class="bi-field-value"><span class="tag-inline">pi0.5</span></div>
+          </div>
+          <div class="bi-field-item">
+            <div class="bi-field-label">是否新感知</div>
+            <div class="bi-field-value">是</div>
+          </div>
+          <div class="bi-field-item">
+            <div class="bi-field-label">机器人结构</div>
+            <div class="bi-field-value">wholebody</div>
+          </div>
+        </div>
+        <div class="bi-field-full">
+          <div class="bi-field-label">镜像</div>
+          <div class="bi-field-value mono">spirit-ai-cn-beijing.cr.volces.com/spirit-ai/mozbrain:thor-v1.0.0</div>
+        </div>
+      </div>
+
+      <!-- 数据集 -->
+      <div class="bi-sec">
+        <h4 class="bi-sec-title">数据集</h4>
         <div class="bi-dstable">
           <div class="ds-head"><span>数据集名称</span><span>权重</span></div>
           <div class="ds-row"><span class="mono">{ds_name}</span><span class="mono">1</span></div>
         </div>
       </div>
-      <div class="bi-section">
-        <div class="bi-label">高级配置</div>
-        <div class="adv-tabs">
-          <span class="at active" onclick="switchAdvTab(this)">Custom configuration</span>
-          <span class="at" onclick="switchAdvTab(this)">Base configuration</span>
+
+      <!-- 高级配置 - 可折叠 -->
+      <div class="bi-sec bi-collapsible">
+        <h4 class="bi-sec-title bi-sec-toggle" onclick="toggleBiSection(this)">
+          <span>高级配置</span>
+          <svg class="bi-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="6 9 12 15 18 9"/>
+          </svg>
+        </h4>
+        <div class="bi-collapse-content">
+          <div class="adv-tabs">
+            <span class="at active" onclick="switchDetAdv(this,'default')">默认配置</span>
+            <span class="at" onclick="switchDetAdv(this,'override')">参数覆盖</span>
+          </div>
+          <pre class="yaml-readonly" data-adv="default">{yaml_text}</pre>
+          <pre class="yaml-readonly" data-adv="override" style="display:none;">batch_size: 64
+steps: 300000</pre>
         </div>
-        <pre class="yaml-readonly">{yaml_text}</pre>
       </div>
+
+      <!-- 入口命令 - 可折叠 -->
+      <div class="bi-sec bi-collapsible">
+        <h4 class="bi-sec-title bi-sec-toggle" onclick="toggleBiSection(this)">
+          <span>入口命令</span>
+          <svg class="bi-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="6 9 12 15 18 9"/>
+          </svg>
+        </h4>
+        <div class="bi-collapse-content">
+          <pre class="yaml-readonly entry-cmd-readonly"># 需要填写个人的WANDB_API_KEY，如export WANDB_API_KEY=aaffxxxx
+# export WANDB_API_KEY=put_your_wandb_api_key_here
+# export WANDB_BASE_URL=https://api.bandw.top
+
+export XDG_CACHE_HOME=${{XDG_CACHE_HOME:-/mnt/vepfs01/output/qhj/cache/}}
+export HF_HOME=${{HF_HOME:-/mnt/vepfs01/output/lmz/cache}}
+export HF_ENDPOINT=https://hf-mirror.com
+export HF_HUB_OFFLINE=1
+
+export ENABLE_REPORT_QUANTA=True
+export QUANTA_SERVICE_URL="https://quanta.i.spirit-ai.com"
+
+# Quanta会自动填充experiment_id为实际的experiment_id，请不要修改yaml文件路径
+bash lerobot/scripts/train_unified.sh /mnt/vepfs01/output/quanta/experiments/configs/{{e["id"]}}/customized.yaml</pre>
+        <div class="bi-sub" style="display:none;">环境变量 <span class="qi" title="以 key=value 形式注入训练容器，例如 wandb 相关配置">&#9432;</span></div>
+        <div class="bi-envtable" style="display:none;">
+          <div class="env-head"><span>变量名</span><span>变量值</span><span></span></div>
+          <div class="env-line"><span class="ek">WANDB_BASE_URL</span><span class="ev">https://api.wandb.ai</span><span></span></div>
+          <div class="env-line"><span class="ek">WANDB_API_KEY</span><span class="ev secret" data-real="wb_a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6">••••••••••••••••</span><span class="env-eye" onclick="toggleEnvSecret(this)">&#128065;</span></div>
+        </div>
+      </div>
+
     </div>
     """
 
