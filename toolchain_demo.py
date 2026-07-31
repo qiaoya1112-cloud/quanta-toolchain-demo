@@ -1813,31 +1813,14 @@ button.tm-subtab { border:0; background:transparent; font-family:inherit; cursor
 .tl-name { font-size:14px; color:rgba(0,0,0,0.85); margin-bottom:6px; }
 .tl-meta { font-size:12.5px; color:rgba(0,0,0,0.5); display:flex; gap:24px; }
 
-/* ── 基础信息 (详情样式 - 新布局结构) ── */
-.basic-info { background:#fafbfc; padding:24px 0; }
+/* ── 基础信息 (表单式布局, 参考火山云控制台) ── */
+.basic-info { padding:8px 0 24px; }
 
-/* 顶部关键信息卡片 - 4列网格 */
-.bi-hero-cards { display:grid; grid-template-columns:repeat(auto-fit, minmax(240px, 1fr)); gap:16px; margin-bottom:20px; }
-.bi-hero-card { background:#fff; border:1px solid #e5e7eb; border-radius:12px; padding:20px; display:flex; align-items:flex-start; gap:16px; transition:all 0.2s ease; position:relative; overflow:hidden; }
-.bi-hero-card::before { content:""; position:absolute; top:0; left:0; right:0; height:3px; background:linear-gradient(90deg, #149DAA 0%, #0f7d88 100%); opacity:0; transition:opacity 0.2s; }
-.bi-hero-card:hover { border-color:#149DAA; box-shadow:0 4px 12px rgba(20,157,170,0.08); transform:translateY(-2px); }
-.bi-hero-card:hover::before { opacity:1; }
-.bi-hero-card.bi-hero-primary { background:linear-gradient(135deg, #f0f9fa 0%, #e6f7f8 100%); border-color:#149DAA; }
-.bi-hero-icon { width:40px; height:40px; border-radius:10px; background:rgba(20,157,170,0.1); display:flex; align-items:center; justify-content:center; flex-shrink:0; }
-.bi-hero-icon svg { width:22px; height:22px; color:#149DAA; }
-.bi-hero-content { flex:1; min-width:0; }
-.bi-hero-label { font-size:12px; color:rgba(0,0,0,0.5); margin-bottom:6px; font-weight:500; text-transform:uppercase; letter-spacing:0.05em; }
-.bi-hero-value { font-size:15px; color:rgba(0,0,0,0.88); font-weight:600; word-break:break-word; line-height:1.4; }
-
-/* 任务描述卡片 */
-.bi-desc-card { background:#fff; border:1px solid #e5e7eb; border-radius:12px; padding:20px 24px; margin-bottom:20px; }
-.bi-desc-label { font-size:12px; color:rgba(0,0,0,0.5); margin-bottom:8px; font-weight:500; text-transform:uppercase; letter-spacing:0.05em; }
-.bi-desc-value { font-size:14px; color:rgba(0,0,0,0.75); line-height:1.6; }
-
-/* 分区样式 */
-.bi-sec { background:#fff; border:1px solid #e5e7eb; border-radius:12px; padding:24px; margin-bottom:16px; text-align:left; }
-.bi-sec-title { display:flex; align-items:center; justify-content:flex-start; gap:10px; font-size:15px; font-weight:600; color:rgba(0,0,0,0.9); letter-spacing:0.01em; margin:0 0 20px; text-align:left; }
-.bi-sec-title::before { content:""; width:3px; height:18px; background:linear-gradient(135deg, #149DAA 0%, #0f7d88 100%); border-radius:2px; margin-right:8px; flex-shrink:0; }
+/* 分区: 无卡片外观, 仅用细分隔线区分 */
+.bi-sec { padding-bottom:24px; margin-bottom:24px; border-bottom:1px solid #f0f0f0; text-align:left; }
+.bi-sec:last-child { border-bottom:none; margin-bottom:0; padding-bottom:0; }
+.bi-sec-title { display:flex; align-items:center; justify-content:flex-start; gap:10px; font-size:14px; font-weight:600; color:rgba(0,0,0,0.9); letter-spacing:0.01em; margin:0 0 18px; text-align:left; }
+.bi-sec-title::before { content:""; width:3px; height:14px; background:#149DAA; border-radius:1px; margin-right:8px; flex-shrink:0; }
 
 /* 可折叠分区 */
 .bi-collapsible .bi-sec-title { cursor:pointer; user-select:none; transition:all 0.2s; }
@@ -1848,36 +1831,29 @@ button.tm-subtab { border:0; background:transparent; font-family:inherit; cursor
 .bi-collapse-content { overflow:hidden; transition:max-height 0.3s ease; }
 .bi-collapsible.collapsed .bi-collapse-content { max-height:0 !important; }
 
-/* 字段行布局 */
-.bi-field-row { display:grid; gap:24px; margin-bottom:20px; }
+/* 字段行布局: label 固定宽度、上下对齐, 参考火山云控制台表单式详情 */
+.bi-field-row { display:grid; gap:16px 32px; margin-bottom:16px; }
 .bi-field-row-2 { grid-template-columns:repeat(2, minmax(0, 1fr)); }
 .bi-field-row-3 { grid-template-columns:repeat(3, minmax(0, 1fr)); }
-.bi-field-item { display:flex; flex-direction:column; gap:6px; }
-.bi-field-label { font-size:12.5px; color:rgba(0,0,0,0.55); font-weight:500; }
-.bi-field-value { font-size:14px; color:rgba(0,0,0,0.88); line-height:1.5; }
-.bi-field-full { display:flex; flex-direction:column; gap:8px; padding-top:12px; border-top:1px solid #f0f2f5; margin-top:8px; }
-.bi-field-full .bi-field-label { font-size:12.5px; color:rgba(0,0,0,0.55); font-weight:500; }
-.bi-field-full .bi-field-value { font-size:13.5px; color:rgba(0,0,0,0.88); }
-.bi-field-value.mono, .bi-field-full .bi-field-value.mono { font-family:'SF Mono',Menlo,Consolas,monospace; font-size:13px; color:rgba(0,0,0,0.75); word-break:break-all; }
-/* 字段网格: 真正的两列, 短字段自然成对; 长字段/表格用 .span2 占整行 */
-.bi-grid { display:grid; grid-template-columns:1fr 1fr; column-gap:64px; row-gap:2px; }
-.bi-field { display:grid; grid-template-columns:96px 1fr; gap:16px; align-items:baseline; padding:8px 0; }
-.bi-field.span2 { grid-column:1 / -1; }
-.bi-field.top { align-items:start; }
-.bi-field > .k { font-size:13px; color:rgba(0,0,0,0.42); }
-.bi-field > .v { font-size:13.5px; color:rgba(0,0,0,0.86); word-break:break-all; line-height:1.55; }
-.bi-field > .v.mono { font-family:'SF Mono',Menlo,Consolas,monospace; font-size:12.5px; color:rgba(0,0,0,0.72); }
-.tag-inline { display:inline-block; padding:4px 12px; border-radius:6px; font-size:12.5px; background:linear-gradient(135deg, #e6f7f8 0%, #d4f1f4 100%); color:#0f7d88; border:1px solid rgba(20,157,170,0.15); font-weight:500; transition:all 0.2s ease; }
-.tag-inline:hover { background:linear-gradient(135deg, #d4f1f4 0%, #c2ecf0 100%); border-color:rgba(20,157,170,0.25); transform:translateY(-1px); box-shadow:0 2px 6px rgba(20,157,170,0.1); }
-.bi-field > .v .tag-inline, .bi-field-value .tag-inline { display:inline-block; padding:4px 12px; border-radius:6px; font-size:12.5px; background:linear-gradient(135deg, #e6f7f8 0%, #d4f1f4 100%); color:#0f7d88; border:1px solid rgba(20,157,170,0.15); font-weight:500; transition:all 0.2s ease; }
-.bi-field > .v .tag-inline:hover, .bi-field-value .tag-inline:hover { background:linear-gradient(135deg, #d4f1f4 0%, #c2ecf0 100%); border-color:rgba(20,157,170,0.25); transform:translateY(-1px); box-shadow:0 2px 6px rgba(20,157,170,0.1); }
-/* git commit 显示 - 增强可点击视觉 */
-.bi-commit { display:inline-flex; align-items:center; gap:7px; font-family:'SF Mono',Menlo,Consolas,monospace; font-size:13px; color:#149DAA; padding:4px 10px; background:rgba(20,157,170,0.06); border-radius:6px; border:1px solid rgba(20,157,170,0.12); transition:all 0.2s ease; cursor:pointer; }
-.bi-commit:hover { background:rgba(20,157,170,0.1); border-color:rgba(20,157,170,0.2); transform:translateY(-1px); box-shadow:0 2px 6px rgba(20,157,170,0.1); }
-.bi-commit .gi { color:rgba(0,0,0,0.4); font-size:14px; transition:color 0.2s; }
-.bi-commit:hover .gi { color:#149DAA; }
-/* 数据集: 无边框轻量两列, 表头细线分隔 - 增强视觉层次 */
-.bi-dstable { font-size:13px; max-width:560px; background:#fafbfc; border:1px solid #e8eaed; border-radius:8px; padding:8px 12px; }
+.bi-field-item { display:grid; grid-template-columns:76px 1fr; column-gap:12px; align-items:center; min-width:0; }
+.bi-field-label { font-size:13px; color:rgba(0,0,0,0.45); }
+.bi-field-value { font-size:13px; color:rgba(0,0,0,0.88); line-height:20px; min-width:0; display:flex; align-items:center; gap:6px; }
+.bi-field-full { display:grid; grid-template-columns:76px 1fr; column-gap:12px; align-items:center; margin-bottom:16px; min-width:0; }
+.bi-field-full .bi-field-label { font-size:13px; color:rgba(0,0,0,0.45); }
+.bi-field-full .bi-field-value { font-size:13px; color:rgba(0,0,0,0.88); min-width:0; display:flex; align-items:center; gap:6px; }
+.bi-field-value.mono, .bi-field-full .bi-field-value.mono { font-family:'SF Mono',Menlo,Consolas,monospace; font-size:12.5px; color:rgba(0,0,0,0.72); }
+/* 超长值单行省略, 完整内容用 title 原生 tooltip 展示 */
+.bi-field-value .bi-ellipsis { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; min-width:0; }
+.tag-inline { display:inline-block; padding:2px 10px; border-radius:4px; font-size:12.5px; background:rgba(20,157,170,0.08); color:#0f7d88; font-weight:500; }
+.bi-field-value .tag-inline { display:inline-block; padding:2px 10px; border-radius:4px; font-size:12.5px; background:rgba(20,157,170,0.08); color:#0f7d88; font-weight:500; }
+/* git commit 显示 */
+.bi-commit { font-family:'SF Mono',Menlo,Consolas,monospace; font-size:12.5px; color:rgba(0,0,0,0.72); }
+/* 复制按钮: 紧跟值后, 点击复制到剪贴板 */
+.bi-copy-btn { flex:0 0 auto; display:inline-flex; cursor:pointer; color:rgba(0,0,0,0.35); padding:2px; border-radius:4px; transition:all 0.15s ease; }
+.bi-copy-btn svg { width:14px; height:14px; }
+.bi-copy-btn:hover { color:#149DAA; background:rgba(20,157,170,0.08); }
+/* 数据集: 平铺满表单宽度的轻量表格 */
+.bi-dstable { font-size:13px; background:#fafbfc; border:1px solid #e8eaed; border-radius:8px; padding:8px 12px; }
 .bi-dstable .ds-head, .bi-dstable .ds-row { display:grid; grid-template-columns:1fr 90px; padding:10px 8px; gap:12px; align-items:center; transition:background 0.15s ease; }
 .bi-dstable .ds-head { color:rgba(0,0,0,0.5); border-bottom:1px solid #e5e7eb; font-weight:500; font-size:12.5px; background:transparent; }
 .bi-dstable .ds-row { border-bottom:1px solid #f0f2f5; }
@@ -2646,6 +2622,17 @@ function switchLogSubtab(el){
   if(target) target.classList.add('active');
 }
 function toggleLogToggle(el){ el.classList.toggle('on'); }
+/* 基础信息「镜像 / 训练代码」值复制到剪贴板 */
+function copyBiField(btn, text){
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).then(function(){ toast('已复制'); });
+  } else {
+    var ta = document.createElement('textarea');
+    ta.value = text; document.body.appendChild(ta); ta.select();
+    document.execCommand('copy'); document.body.removeChild(ta);
+    toast('已复制');
+  }
+}
 /* 初始化基础信息页面的折叠分区 */
 document.addEventListener('DOMContentLoaded', function(){
   document.querySelectorAll('.bi-collapsible').forEach(function(section){
@@ -5584,63 +5571,25 @@ dataset:
     tab_basic = f"""
     <div class="basic-info">
 
-      <!-- 关键信息卡片 -->
-      <div class="bi-hero-cards">
-        <div class="bi-hero-card bi-hero-primary">
-          <div class="bi-hero-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-            </svg>
-          </div>
-          <div class="bi-hero-content">
-            <div class="bi-hero-label">任务名称</div>
-            <div class="bi-hero-value">{e['name']}</div>
-          </div>
-        </div>
-        <div class="bi-hero-card">
-          <div class="bi-hero-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <circle cx="12" cy="12" r="3"/><path d="M12 1v6m0 6v6m8.66-9l-5.2 3m-2.92 0l-5.2-3m12.12 6l-5.2-3m-2.92 0l-5.2 3"/>
-            </svg>
-          </div>
-          <div class="bi-hero-content">
-            <div class="bi-hero-label">训练代码</div>
-            <div class="bi-hero-value"><span class="bi-commit"><span class="gi">&#10697;</span>a5ebbdd</span></div>
-          </div>
-        </div>
-        <div class="bi-hero-card">
-          <div class="bi-hero-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
-            </svg>
-          </div>
-          <div class="bi-hero-content">
-            <div class="bi-hero-label">创建人</div>
-            <div class="bi-hero-value">{owner}</div>
-          </div>
-        </div>
-        <div class="bi-hero-card">
-          <div class="bi-hero-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
-            </svg>
-          </div>
-          <div class="bi-hero-content">
-            <div class="bi-hero-label">创建时间</div>
-            <div class="bi-hero-value">{e['started']}</div>
-          </div>
-        </div>
-      </div>
-
-      <!-- 任务描述 -->
-      <div class="bi-desc-card">
-        <div class="bi-desc-label">任务描述</div>
-        <div class="bi-desc-value">HouseHold stop 场景微调，14 维双臂 + 停止信号</div>
-      </div>
-
-      <!-- 训练配置 -->
+      <!-- 基本信息 (字段顺序对齐「新增训练任务」表单) -->
       <div class="bi-sec">
-        <h4 class="bi-sec-title">训练配置</h4>
+        <h4 class="bi-sec-title">基本信息</h4>
+        <div class="bi-field-row bi-field-row-2">
+          <div class="bi-field-item">
+            <div class="bi-field-label">训练代码</div>
+            <div class="bi-field-value">
+              <span class="bi-commit">a5ebbdd</span>
+              <span class="bi-copy-btn" onclick="copyBiField(this,'a5ebbdd')" title="复制"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 012-2h10"/></svg></span>
+            </div>
+          </div>
+          <div class="bi-field-item">
+            <div class="bi-field-label">镜像</div>
+            <div class="bi-field-value mono">
+              <span class="bi-ellipsis" title="spirit-ai-cn-beijing.cr.volces.com/spirit-ai/mozbrain:thor-v1.0.0">spirit-ai-cn-beijing.cr.volces.com/spirit-ai/mozbrain:thor-v1.0.0</span>
+              <span class="bi-copy-btn" onclick="copyBiField(this,'spirit-ai-cn-beijing.cr.volces.com/spirit-ai/mozbrain:thor-v1.0.0')" title="复制"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 012-2h10"/></svg></span>
+            </div>
+          </div>
+        </div>
         <div class="bi-field-row bi-field-row-2">
           <div class="bi-field-item">
             <div class="bi-field-label">训练队列</div>
@@ -5651,7 +5600,7 @@ dataset:
             <div class="bi-field-value">2 × A100 80GB</div>
           </div>
         </div>
-        <div class="bi-field-row bi-field-row-3">
+        <div class="bi-field-row bi-field-row-2">
           <div class="bi-field-item">
             <div class="bi-field-label">模型</div>
             <div class="bi-field-value"><span class="tag-inline">pi0.5</span></div>
@@ -5660,14 +5609,16 @@ dataset:
             <div class="bi-field-label">是否新感知</div>
             <div class="bi-field-value">是</div>
           </div>
+        </div>
+        <div class="bi-field-row bi-field-row-2">
           <div class="bi-field-item">
             <div class="bi-field-label">机器人结构</div>
             <div class="bi-field-value">wholebody</div>
           </div>
-        </div>
-        <div class="bi-field-full">
-          <div class="bi-field-label">镜像</div>
-          <div class="bi-field-value mono">spirit-ai-cn-beijing.cr.volces.com/spirit-ai/mozbrain:thor-v1.0.0</div>
+          <div class="bi-field-item">
+            <div class="bi-field-label">描述</div>
+            <div class="bi-field-value">HouseHold stop 场景微调，14 维双臂 + 停止信号</div>
+          </div>
         </div>
       </div>
 
