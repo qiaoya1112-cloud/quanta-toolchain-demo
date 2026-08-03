@@ -488,36 +488,56 @@ _review_flows = [
         "business_stage": "标注",
         "input_contract": "quality_conclusion=合格/操作失误",
         "output_contract": "annotation_payload + annotation_version",
-        "desc": "自动切分后依次完成供应商双轮复核与内部复核。",
+        "desc": "自动切分后依次完成供应商抽验、供应商复核、供应商验收与内部验收。",
         "flow_nodes": [
             {"name": "端到端切分", "kind": "automatic", "meta": "生成初始动作片段"},
             {
-                "name": "供应商复核",
+                "name": "供应商抽验",
                 "kind": "human",
-                "meta": "第一轮标注复核",
-                "workbench": "标注工作台 v4.1",
-                "user_groups": ["标注员用户组"],
+                "meta": "供应商抽验",
+                "workbench": "语义标注工作台 v1.0",
+                "user_groups": ["光轮智能", "供应商 A"],
+                "assignee_type": "supplier",
+                "assignee_mode": "task_custom",
                 "allowed_actions": ["提交", "暂离"],
             },
             {
-                "name": "供应商复核 R2",
+                "name": "供应商复核",
                 "kind": "human",
-                "meta": "第二轮标注复核",
-                "workbench": "标注工作台 v4.1",
-                "user_groups": ["标注抽验员用户组"],
+                "meta": "供应商复核",
+                "workbench": "语义标注工作台 v1.0",
+                "user_groups": ["供应商 A"],
+                "assignee_type": "supplier",
+                "assignee_mode": "inherit",
+                "inherit_assignee_node": "供应商抽验",
+                "allowed_actions": ["提交", "驳回", "暂离"],
+                "reject_enabled": True,
+                "reject_targets": ["供应商抽验"],
+            },
+            {
+                "name": "供应商验收",
+                "kind": "human",
+                "meta": "供应商验收",
+                "workbench": "语义标注工作台 v1.0",
+                "user_groups": ["供应商 A", "光轮智能"],
+                "assignee_type": "supplier",
+                "assignee_mode": "task_custom",
                 "allowed_actions": ["提交", "驳回", "暂离"],
                 "reject_enabled": True,
                 "reject_targets": ["供应商复核"],
             },
+            {"name": "全部 50%", "kind": "condition", "meta": "条件 · 比例"},
             {
-                "name": "内部复核",
+                "name": "内部验收",
                 "kind": "human",
-                "meta": "内部确认标注结果",
-                "workbench": "详情工作台 v1.0",
+                "meta": "内部验收",
+                "workbench": "语义标注工作台 v1.0",
                 "user_groups": ["内部验收用户组"],
+                "assignee_type": "user_group",
+                "assignee_mode": "task_custom",
                 "allowed_actions": ["提交", "驳回", "暂离"],
                 "reject_enabled": True,
-                "reject_targets": ["供应商复核", "供应商复核 R2"],
+                "reject_targets": ["供应商抽验", "供应商复核", "供应商验收"],
             },
         ],
     },
@@ -608,7 +628,7 @@ _review_flows = [
     },
 ]
 
-PIPELINES = _review_flows + [
+PIPELINES = sorted(_review_flows, key=lambda pipeline: pipeline["id"] != "pl3a") + [
     pipeline for pipeline in PIPELINES if pipeline["id"] in {"pl1", "pl2"}
 ]
 
@@ -4725,6 +4745,22 @@ WF_CANVAS_JS = r"""
         (itemOnchange?' onchange="'+itemOnchange+'"':'')+'><span>'+esc(item)+'</span></label>';
     }).join('');
   }
+  function wfHumanAssigneeMode(){
+    var checked=document.querySelector('input[name="wfhAssigneeMode"]:checked');
+    return checked?checked.value:'task_custom';
+  }
+  function wfRefreshAssigneeInheritance(){
+    var n=byId(selId); if(!n) return;
+    var mode=wfHumanAssigneeMode();
+    var previous=previousHumanNodes(n);
+    var wrap=document.getElementById('wfhAssigneeInheritWrap');
+    var select=document.getElementById('wfhAssigneeInheritNode');
+    var hint=document.getElementById('wfhAssigneeInheritHint');
+    wrap.style.display=mode==='inherit'?'block':'none';
+    select.innerHTML=previous.length?previous.map(function(item){ return '<option value="'+esc(item.id)+'">'+esc(item.name||item.id)+'</option>'; }).join(''):'<option value="">暂无前序人工节点</option>';
+    select.disabled=!previous.length;
+    hint.textContent=previous.length?'可选择任意前序人工节点。':'当前没有前序人工节点，请选择任务自定义。';
+  }
   function openConfig(n){
     var config=document.getElementById('wfConfig');
     var human=isHumanNode(n);
@@ -4739,15 +4775,10 @@ WF_CANVAS_JS = r"""
       document.getElementById('wfhName').value=n.name||'';
       document.getElementById('wfhIdent').value=n.ident||'';
       document.getElementById('wfhDesc').value=n.desc||'';
-      var workbench=n.workbench||defaultWorkbench(n);
-      document.getElementById('wfhWorkbench').value=workbench;
-      renderHumanChoices(
-        'wfhUserGroups',
-        USER_GROUPS,
-        n.userGroups||[],
-        'wfUserGroupsUpdate(this)'
-      );
-      wfUserGroupsUpdate(document.querySelector('#wfhUserGroups input'));
+      var assigneeMode=n.assigneeMode||'task_custom';
+      document.querySelectorAll('input[name="wfhAssigneeMode"]').forEach(function(input){ input.checked=input.value===assigneeMode; });
+      wfRefreshAssigneeInheritance();
+      document.getElementById('wfhAssigneeInheritNode').value=n.inheritAssigneeNodeId||'';
       var previousNodes=previousHumanNodes(n);
       var selectedActions=n.allowedActions&&n.allowedActions.length?
         n.allowedActions.slice():['提交','暂离'];
@@ -4904,15 +4935,12 @@ WF_CANVAS_JS = r"""
         function(input){return input.value;}
       ):[];
       if(rejectEnabled&&!rejectTargets.length){ toast('请选择至少一个驳回节点'); return; }
+      var assigneeMode=wfHumanAssigneeMode();
+      var inheritNodeId=document.getElementById('wfhAssigneeInheritNode').value;
+      if(assigneeMode==='inherit'&&!inheritNodeId){ toast('请选择前序人工节点'); return; }
       n.name=humanName;
       n.ident=document.getElementById('wfhIdent').value.trim();
       n.desc=document.getElementById('wfhDesc').value.trim();
-      n.workbench=document.getElementById('wfhWorkbench').value;
-      n.userGroups=[].map.call(
-        document.querySelectorAll('#wfhUserGroups input:checked'),
-        function(input){return input.value;}
-      );
-      if(!n.userGroups.length){ toast('请至少选择一个处理人用户组'); return; }
       n.allowedActions=[].map.call(
         document.querySelectorAll('#wfhAllowedActions input:checked'),
         function(input){return input.value;}
@@ -4920,6 +4948,8 @@ WF_CANVAS_JS = r"""
       if(!n.allowedActions.length){ toast('请至少选择一个可用操作'); return; }
       n.rejectEnabled=rejectEnabled;
       n.rejectTargets=rejectTargets;
+      n.assigneeMode=assigneeMode;
+      n.inheritAssigneeNodeId=assigneeMode==='inherit'?inheritNodeId:'';
       delete n.rounds;
       document.getElementById('wfcName').textContent=n.name+' · 配置';
       renderNodes(); toast('已保存人工节点配置'); return;
@@ -5000,6 +5030,7 @@ WF_CANVAS_JS = r"""
       script:kind==='automatic'?'请选择算子':(kind==='condition'?'条件表达式':'人工任务'),
       params:'',returns:'处理结果',kind:kind,
       businessStage:'通用',workbench:'质检工作台',userGroups:[],
+      assigneeType:'supplier',assigneeMode:'task_custom',inheritAssigneeNodeId:'',
       allowedActions:['提交','暂离'],x:x,y:kind==='condition'?180:210
     };
     NODES.push(node);
@@ -5206,6 +5237,12 @@ def _processing_canvas_payload(pl):
             "businessStage": pl.get("business_stage", "通用"),
             "workbench": node.get("workbench"),
             "userGroups": node.get("user_groups", []),
+            "assigneeType": node.get("assignee_type", "supplier"),
+            "assigneeMode": node.get("assignee_mode", "task_custom"),
+            "inheritAssigneeNodeId": node_name_to_id.get(
+                node.get("inherit_assignee_node", ""),
+                node.get("inherit_assignee_node_id", ""),
+            ),
             "allowedActions": node.get("allowed_actions", ["提交", "暂离"]),
             "rejectEnabled": node.get("reject_enabled", False),
             "rejectTargetNames": node.get("reject_targets", []),
@@ -5440,16 +5477,15 @@ def pipeline_editor(pid):
               <label class="full"><span class="wf-human-label">描述</span><textarea id="wfhDesc" class="wf-edit-field" placeholder="请输入节点描述"></textarea></label>
             </div>
 
-            <div class="wf-cfg-sec"><span>工作台</span><a class="wf-sec-link" href="/data/workbench-management" target="_blank" rel="noopener">查看工作台配置 &#8599;</a></div>
-            <select id="wfhWorkbench" class="wf-edit-field"><option value="质检工作台 v2.0">质检工作台</option><option value="标注工作台 v4.1">标注工作台</option><option value="详情工作台 v1.0">详情工作台</option></select>
-
             <div class="wf-cfg-sec">处理人</div>
-            <div class="wf-human-label">用户组（单选）</div>
-            <div class="ms-wrap wf-user-group-select" id="wfhUserGroupSelect">
-              <div class="ms-trigger" data-base="请选择用户组" onclick="this.closest('.ms-wrap').classList.toggle('open')">
-                <span class="ms-label">请选择用户组</span>
-              </div>
-              <div class="ms-panel" id="wfhUserGroups"></div>
+            <div class="wf-human-label">处理人分配</div>
+            <div class="wf-choice-grid" id="wfhAssigneeMode">
+              <label><input type="radio" name="wfhAssigneeMode" value="task_custom" checked onchange="wfRefreshAssigneeInheritance()"><span>任务自定义</span></label>
+              <label><input type="radio" name="wfhAssigneeMode" value="inherit" onchange="wfRefreshAssigneeInheritance()"><span>继承前序节点</span></label>
+            </div>
+            <div id="wfhAssigneeInheritWrap" style="display:none; margin-top:10px;">
+              <label><span class="wf-human-label">继承节点</span><select id="wfhAssigneeInheritNode" class="wf-edit-field"></select></label>
+              <div id="wfhAssigneeInheritHint" class="wf-reject-hint"></div>
             </div>
 
             <div class="wf-cfg-sec">可用操作</div>
