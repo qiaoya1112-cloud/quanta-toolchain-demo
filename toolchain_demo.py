@@ -27,7 +27,7 @@ import json
 import os
 import re
 import sys
-from urllib.parse import quote
+from urllib.parse import quote, urlencode
 from flask import Flask, render_template_string, request, redirect
 
 import data_platform_refactor as data_refactor
@@ -414,7 +414,7 @@ PLATFORMS = {
         "name": "数据平台",
         "short": "数",
         "color": "data",
-        "tagline": "采集任务 · 处理任务 · 数据管理",
+        "tagline": "处理任务 · 工作台 · 工作流",
         "home": "/data",
         "nav": data_refactor.DATA_PLATFORM_NAV,
     },
@@ -1184,8 +1184,9 @@ select option:disabled { color:rgba(0,0,0,0.32); }
 .wb-filter-field input,.wb-filter-field select { width:100%; height:38px; padding:0 11px; border:1px solid #d9dfe2; border-radius:7px; background:#fff; color:rgba(0,0,0,.78); box-sizing:border-box; font-family:inherit; font-size:12.5px; outline:none; }
 .wb-filter-field input:focus,.wb-filter-field select:focus { border-color:#149DAA; box-shadow:0 0 0 2px rgba(20,157,170,.1); }
 .wb-filter-field input::placeholder { color:rgba(0,0,0,.28); }
-.wb-rule-selector { padding:18px 20px 0; }
+.wb-rule-selector { padding:18px 20px 20px; }
 .wb-rule-selector label span { color:#d4504e; }
+.wb-rule-selector + .wb-rule-groups { padding-top:0; }
 .wb-rule-groups.wb-rule-groups-hidden { display:none; }
 .wb-v2-pool-home .wb-filter-config { order:2; }
 .wb-v2-pool-home .wb-rule-config { order:1; }
@@ -1239,7 +1240,7 @@ select option:disabled { color:rgba(0,0,0,0.32); }
 .wb-home-tabs .det-tab { display:flex; align-items:center; gap:7px; }
 .wb-home-tabs .det-tab b { display:inline-flex; min-width:19px; height:19px; align-items:center; justify-content:center; padding:0 5px; border-radius:10px; background:#f0f3f4; color:#718087; box-sizing:border-box; font:600 10px 'SF Mono',Menlo,monospace; }
 .wb-home-tabs .det-tab.active b { background:#e5f6f7; color:#149DAA; }
-.wb-section-head { display:flex; align-items:flex-end; justify-content:space-between; gap:16px; margin:2px 2px 12px; }
+.wb-section-head { display:flex; align-items:center; justify-content:space-between; gap:16px; margin:2px 2px 12px; }
 .wb-section-head h2 { margin:0 0 3px; color:rgba(0,0,0,.84); font-size:16px; }
 .wb-section-head p { margin:0; color:rgba(0,0,0,.42); font-size:11.5px; }
 .wb-my-job-list { display:flex; flex-direction:column; gap:10px; }
@@ -1323,7 +1324,7 @@ select option:disabled { color:rgba(0,0,0,0.32); }
 }
 
 /* ── 任务管理: stage 切换 tab + 新建按钮同一行 ── */
-.tm-bar { display:flex; align-items:flex-end; justify-content:space-between; border-bottom:1px solid #f0f0f0; margin:0 2px 16px; padding:0 4px; gap:24px; }
+.tm-bar { display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid #f0f0f0; margin:0 2px 16px; padding:0 4px; gap:24px; }
 .tm-tabs { display:flex; gap:4px; align-items:flex-end; flex-wrap:wrap; }
 .tm-tab { padding:11px 18px; font-size:14px; color:rgba(0,0,0,0.65); cursor:pointer; border-bottom:2px solid transparent; margin-bottom:-1px; text-decoration:none; transition:color 0.15s; display:inline-flex; align-items:center; gap:7px; user-select:none; }
 .tm-tab:hover { color:#149DAA; }
@@ -1331,7 +1332,7 @@ select option:disabled { color:rgba(0,0,0,0.32); }
 .tm-tab .ct { font-size:11px; padding:1px 8px; border-radius:10px; background:#f0f0f0; color:rgba(0,0,0,0.5); line-height:1.6; font-weight:400; min-width:14px; text-align:center; }
 .tm-tab:hover .ct { background:#EBF8FA; color:#149DAA; }
 .tm-tab.active .ct { background:#DEF6F9; color:#149DAA; }
-.tm-bar > .btn { margin-bottom:8px; flex:none; }
+.tm-bar > .btn { margin-bottom:0; flex:none; }
 .tm-subtabs { display:inline-flex; gap:0; padding:3px; background:#f5f7fa; border-radius:8px; margin:0 2px 14px; }
 .tm-subtab { padding:6px 16px; font-size:13px; color:rgba(0,0,0,0.6); text-decoration:none; border-radius:6px; transition:all 0.15s; display:inline-flex; align-items:center; gap:6px; }
 button.tm-subtab { border:0; background:transparent; font-family:inherit; cursor:pointer; }
@@ -1531,6 +1532,8 @@ button.tm-subtab { border:0; background:transparent; font-family:inherit; cursor
 .lab-tl-pin { position:absolute; top:-3px; transform:translateX(-50%); color:#5D4A8C; font-size:16px; line-height:1; pointer-events:none; }
 .lab-tools { display:flex; align-items:center; justify-content:center; padding-top:10px; margin-top:8px; border-top:1px solid #f5f5f5; gap:14px; position:relative; }
 .lab-tools-left { display:flex; align-items:center; gap:4px; }
+.lab-playback-controls,.lab-annotation-toolbox { display:flex; align-items:center; gap:4px; }
+.lab-annotation-toolbox { padding-left:4px; border-left:1px solid #edf0f1; }
 .lab-tools .lab-tools-right { position:absolute; right:0; top:50%; transform:translateY(-50%); margin-top:5px; }
 .lab-tool { display:inline-flex; align-items:center; justify-content:center; width:30px; height:30px; border-radius:6px; cursor:pointer; color:rgba(0,0,0,0.65); transition:all 0.15s; font-size:13px; user-select:none; }
 .lab-tool:hover { background:#f5f7fa; color:#149DAA; }
@@ -1549,6 +1552,9 @@ button.tm-subtab { border:0; background:transparent; font-family:inherit; cursor
 .lab-tbl select.mock, .lab-tbl input.mock { width:100%; height:32px; padding:0 28px 0 12px; font-size:13px; color:rgba(0,0,0,0.55); border:1px solid #e2e4e8; border-radius:6px; background:#fff; box-sizing:border-box; appearance:none; cursor:pointer; }
 .lab-tbl select.mock { background-image:linear-gradient(45deg, transparent 50%, rgba(0,0,0,0.4) 50%), linear-gradient(135deg, rgba(0,0,0,0.4) 50%, transparent 50%); background-position:calc(100% - 14px) 50%, calc(100% - 9px) 50%; background-size:5px 5px, 5px 5px; background-repeat:no-repeat; }
 .lab-tbl input.mock { padding:0 12px; color:rgba(0,0,0,0.78); cursor:text; }
+.lab-tbl select.mock:disabled, .lab-tbl input.mock:disabled { background-color:#f5f6f7; color:rgba(0,0,0,.48); cursor:not-allowed; }
+.lab-tbl .lab-error-reason { min-width:170px; }
+.lab-act-btn:disabled { opacity:.38; cursor:not-allowed; filter:grayscale(.35); }
 .lab-act-cell { display:flex; align-items:center; justify-content:center; gap:6px; }
 .lab-tbl .nowrap { white-space:nowrap; }
 .lab-semantic-band { display:flex; height:18px; margin-top:5px; overflow:hidden; border-radius:4px; background:#eef1f2; }
@@ -1558,6 +1564,9 @@ button.tm-subtab { border:0; background:transparent; font-family:inherit; cursor
 .lab-semantic-row.child td:first-child { padding-left:34px; }
 .lab-semantic-level { display:inline-flex; align-items:center; justify-content:center; min-width:22px; height:22px; margin-right:8px; border-radius:50%; background:#e5eaed; color:#68787e; font-size:10px; }
 .lab-semantic-row.parent .lab-semantic-level { background:#149DAA; color:#fff; }
+.lab-semantic-editor-cell { display:flex; align-items:center; gap:8px; min-width:0; }
+.lab-semantic-editor-cell .lab-semantic-level { flex:none; margin-right:0; }
+.lab-semantic-editor-cell input.mock { flex:1; width:auto; min-width:0; }
 .lab-act-btn { display:inline-flex; align-items:center; justify-content:center; width:30px; height:30px; border-radius:6px; color:#fff; cursor:pointer; border:none; font-size:14px; }
 .lab-act-btn.blue { background:#149DAA; } .lab-act-btn.blue:hover { background:#0F8190; }
 .lab-act-btn.orange { background:#F39C12; } .lab-act-btn.orange:hover { background:#D88A0B; }
@@ -1588,9 +1597,10 @@ button.tm-subtab { border:0; background:transparent; font-family:inherit; cursor
 .q-layout.portal-mode .wbx-execution { right:40px; left:40px; }
 .wbx-module { display:grid; grid-template-columns:52px minmax(0,1fr); flex:1 1 0; width:auto; max-width:520px; min-width:0; align-items:center; gap:12px; box-sizing:border-box; padding:10px 14px; border:1px solid #dfe5e7; border-radius:9px; background:#fff; box-shadow:0 -3px 12px rgba(20,42,50,.075); }
 .wbx-conclusion-panel { border-color:#cfe3e6; }
-.wbx-operation-panel { box-shadow:0 -2px 8px rgba(20,42,50,.055); }
+.wbx-operation-panel { display:flex; align-items:center; justify-content:center; box-shadow:0 -2px 8px rgba(20,42,50,.055); }
 .wbx-module-title { color:rgba(0,0,0,.48); font-size:12px; font-weight:500; text-align:right; }
 .wbx-conclusions,.wbx-operation-actions { display:flex; min-width:0; align-items:center; gap:8px; flex-wrap:wrap; }
+.wbx-operation-actions { width:100%; justify-content:center; }
 .wbx-conclusion { height:32px; padding:0 13px; border:1px solid #dfe3e6; border-radius:6px; background:#fff; color:rgba(0,0,0,.64); cursor:pointer; font-family:inherit; font-size:12.5px; }
 .wbx-conclusion:hover { border-color:#149DAA; color:#149DAA; }
 .wbx-conclusion.active { border-color:#149DAA; background:#eaf7f8; color:#0f8190; font-weight:600; }
@@ -1599,8 +1609,8 @@ button.tm-subtab { border:0; background:transparent; font-family:inherit; cursor
 .wbx-operation-actions .btn:disabled { border-color:#e3e6e8 !important; background:#f4f5f6 !important; color:rgba(0,0,0,.28) !important; cursor:not-allowed; }
 .wbx-log-list { display:flex; flex-direction:column; gap:0; }
 .wbx-log-item { display:grid; grid-template-columns:128px 82px 1fr; gap:12px; padding:11px 0; border-bottom:1px solid #f0f0f0; color:rgba(0,0,0,.68); font-size:12.5px; }
-.wbx-semantic-log-item { grid-template-columns:150px 120px 100px minmax(0,1fr); }
-.wbx-log-columns { display:grid; grid-template-columns:150px 120px 100px minmax(0,1fr); gap:12px; padding:8px 0; color:rgba(0,0,0,.42); font-size:11px; border-bottom:1px solid #f0f0f0; }
+.wbx-semantic-log-item { grid-template-columns:150px 120px 90px 110px minmax(180px,1fr); }
+.wbx-log-columns { display:grid; grid-template-columns:150px 120px 90px 110px minmax(180px,1fr); gap:12px; padding:8px 0; color:rgba(0,0,0,.42); font-size:11px; border-bottom:1px solid #f0f0f0; }
 .wbx-description-module { display:flex; align-items:flex-start; gap:24px; margin:12px 0; padding:12px 16px; border:1px solid #f2c879; border-left:4px solid #e8a33d; border-radius:8px; background:#fff7e6; }
 .wbx-description-module>b { min-width:44px; color:#30484f; font-size:13px; }
 .wbx-description-module>div { display:flex; align-items:flex-start; gap:12px; min-width:0; }
@@ -2722,13 +2732,13 @@ def home():
 
     # 平台入口卡数据
     cards = [
-        ("data", "数据平台", "采集任务 · 处理任务 · 数据管理", "/data", "数",
+        ("data", "数据平台", "处理任务 · 工作台 · 工作流", "/data", "数",
          [
              ("采集任务", sum(1 for t in data_refactor.BUSINESS_TASKS if t["type"] == "data_collection_task")),
              ("处理任务", sum(1 for t in data_refactor.BUSINESS_TASKS if t["type"] == "data_processing_task")),
              ("数据记录", len(data_refactor.DATA_MANAGEMENT_RECORDS)),
          ],
-         ["采集任务", "处理任务", "数据管理", "工作台", "工作流", "数据集管理"]),
+         ["处理任务", "工作台", "工作流"]),
         ("model", "模型平台", "训练 → 评测 → 部署", "/model", "模",
          [("训练实验", len(EXPERIMENTS)), ("模型版本", n_models), ("已部署", n_deployed)],
          ["训练实验", "评测", "部署", "模型仓库"]),
@@ -2812,7 +2822,7 @@ def home():
 
 @app.route("/data")
 def data_home():
-    return redirect("/data/collection-tasks")
+    return redirect("/data/processing-tasks")
 
 
 @app.route("/data/collect")
@@ -2920,7 +2930,7 @@ def collect():
         {_tm_tab("质检", "质检")}
         {_tm_tab("标注", "标注")}
       </div>
-      <a class="btn btn-primary" onclick="openDrawer('drawerCollect');return false;">+ 新增任务</a>
+      <a class="btn btn-primary" onclick="openDrawer('drawerCollect');return false;">新增采集任务</a>
     </div>
     {subtabs_html}
 
@@ -3752,15 +3762,49 @@ def _render_workbench_pool_home(pool_id, selected_task_id=None, version="v1"):
         if (not is_v2 or show_rule_details) else ""
     )
     priority_cls = task["priority"].lower()
+    pool_title = (
+        f'{task["user_group"]} 任务池'
+        if is_v2 else meta["name"]
+    )
+    pool_subtitle = (
+        ""
+        if is_v2 else
+        f'<p>{html.escape(task["stage"])} · {html.escape(task["user_group"])}，从多个处理任务统一领取数据。</p>'
+    )
+    priority_badge = (
+        ""
+        if is_v2 else
+        f'<span class="wb-priority {priority_cls}">最高 {html.escape(task["priority"])}</span>'
+    )
+    collector_supplier_filters = "" if is_v2 else """
+              <div class="wb-filter-field">
+                <label for="wbCollector">采集员</label>
+                <select id="wbCollector" name="collector">
+                  <option value="">全部采集员</option>
+                  <option>柳少龙</option>
+                  <option>刘素粉</option>
+                  <option>包媛桐</option>
+                </select>
+              </div>
+              <div class="wb-filter-field">
+                <label for="wbSupplier">供应商</label>
+                <select id="wbSupplier" name="supplier">
+                  <option value="">全部供应商</option>
+                  <option>宁德时代自营</option>
+                  <option>千寻智能</option>
+                  <option>灵巧智造</option>
+                </select>
+              </div>
+    """
     content = f"""
     <div class="wb-task-home wb-pool-home{' wb-v2-pool-home' if is_v2 else ''}">
       <div class="wb-task-home-head">
         <div>
           <a href="{workbench_url}">&larr; 返回工作台</a>
-          <h2>{html.escape(meta['name'])}</h2>
-          <p>{html.escape(task['stage'])} · {html.escape(task['user_group'])}，从多个处理任务统一领取数据。</p>
+          <h2>{html.escape(pool_title)}</h2>
+          {pool_subtitle}
         </div>
-        <span class="wb-priority {priority_cls}">最高 {html.escape(task['priority'])}</span>
+        {priority_badge}
       </div>
       <div class="wb-task-brief wb-pool-brief">
         <div><span>环节</span><b>{html.escape(task['stage'])}</b></div>
@@ -3818,24 +3862,7 @@ def _render_workbench_pool_home(pool_id, selected_task_id=None, version="v1"):
                   <input aria-label="采集结束时间" name="collected_to" type="date">
                 </div>
               </div>
-              <div class="wb-filter-field">
-                <label for="wbCollector">采集员</label>
-                <select id="wbCollector" name="collector">
-                  <option value="">全部采集员</option>
-                  <option>柳少龙</option>
-                  <option>刘素粉</option>
-                  <option>包媛桐</option>
-                </select>
-              </div>
-              <div class="wb-filter-field">
-                <label for="wbSupplier">供应商</label>
-                <select id="wbSupplier" name="supplier">
-                  <option value="">全部供应商</option>
-                  <option>宁德时代自营</option>
-                  <option>千寻智能</option>
-                  <option>灵巧智造</option>
-                </select>
-              </div>
+              {collector_supplier_filters}
             </div>
             <div class="wb-filter-tip">不填写时默认处理当前来源下优先级最高的数据</div>
           </form>
@@ -3894,6 +3921,7 @@ def data_workbench_task_home(task_id):
 
 # ── 工作台 · 质检 / 标注 / 详情共用组件 ──
 def _workbench_meta_html(task, status="待处理"):
+    style_preview = request.args.get("style_preview") == "1"
     recording_id = task.get("recording_id", "3298698")
     device = task.get("recording_device", "UDAS-00002-2983")
     collector = task.get("recording_collector", "柳少龙")
@@ -3902,7 +3930,9 @@ def _workbench_meta_html(task, status="待处理"):
         "selected_flow_version",
         flow_versions[0] if flow_versions else "",
     )
-    if flow_versions:
+    if style_preview:
+        version_control = ""
+    elif flow_versions:
         version_options = "".join(
             f'<option value="{html.escape(version)}"'
             f'{" selected" if version == selected_flow_version else ""}>'
@@ -3922,6 +3952,9 @@ def _workbench_meta_html(task, status="待处理"):
           第1版<span class="caret">&#9662;</span>
         </div>
         """
+    status_control = "" if style_preview else f"""
+      <div class="lf"><span class="lbl">状态:</span><span class="status-pass">{html.escape(status)}</span></div>
+    """
     return f"""
     <div class="lab-meta" data-component="basic_info">
       <div class="lf"><span class="lbl">任务ID:</span><span class="val">{html.escape(task['id'])}</span></div>
@@ -3932,7 +3965,7 @@ def _workbench_meta_html(task, status="待处理"):
       <div class="lf"><span class="lbl">采集员:</span><span class="val">{html.escape(collector)}</span></div>
       <div class="lf mono"><span class="lbl">数据ID:</span><span class="val">{html.escape(recording_id)}</span></div>
       {version_control}
-      <div class="lf"><span class="lbl">状态:</span><span class="status-pass">{html.escape(status)}</span></div>
+      {status_control}
     </div>
     """
 
@@ -3968,29 +4001,29 @@ def _workbench_log_panel_html(semantic=False, task=None):
         # 只记录流程中的两类操作。同一节点可能经历多轮提交/驳回，并按当前节点展示对应的流程历史。
         if node == "供应商复核":
             log_items = [
-                ("2026-08-03 10:42", "供应商 A-017", "提交", "供应商抽验"),
-                ("2026-08-03 11:18", "供应商 A-017", "驳回", "供应商复核"),
-                ("2026-08-03 11:32", "供应商 A-017", "提交", "供应商抽验"),
-                ("2026-08-03 11:46", "供应商 A-017", "提交", "供应商复核"),
+                ("2026-08-03 10:42", "供应商 A-017", "提交", "供应商抽验", "完成首次切分标注并提交"),
+                ("2026-08-03 11:18", "供应商 A-017", "驳回", "供应商复核", "动作结束帧提前，需要重新调整"),
+                ("2026-08-03 11:32", "供应商 A-017", "提交", "供应商抽验", "已根据驳回原因完成修改"),
+                ("2026-08-03 11:46", "供应商 A-017", "提交", "供应商复核", "复核通过并提交下一节点"),
             ]
         elif node == "内部验收":
             log_items = [
-                ("2026-08-03 10:42", "供应商 A-017", "提交", "供应商抽验"),
-                ("2026-08-03 11:18", "供应商 A-017", "驳回", "供应商复核"),
-                ("2026-08-03 11:32", "供应商 A-017", "提交", "供应商抽验"),
-                ("2026-08-03 11:46", "供应商 A-017", "提交", "供应商复核"),
-                ("2026-08-03 12:04", "joanna.qiao", "驳回", "内部验收"),
-                ("2026-08-03 12:18", "供应商 A-017", "提交", "供应商复核"),
-                ("2026-08-03 12:31", "joanna.qiao", "提交", "内部验收"),
+                ("2026-08-03 10:42", "供应商 A-017", "提交", "供应商抽验", "完成首次切分标注并提交"),
+                ("2026-08-03 11:18", "供应商 A-017", "驳回", "供应商复核", "描述错误，需要重新确认动作语义"),
+                ("2026-08-03 11:32", "供应商 A-017", "提交", "供应商抽验", "已修正描述并重新提交"),
+                ("2026-08-03 11:46", "供应商 A-017", "提交", "供应商复核", "供应商复核通过"),
+                ("2026-08-03 12:04", "joanna.qiao", "驳回", "内部验收", "漏标下个动作分段"),
+                ("2026-08-03 12:18", "供应商 A-017", "提交", "供应商复核", "已补充遗漏动作分段"),
+                ("2026-08-03 12:31", "joanna.qiao", "提交", "内部验收", "内部验收通过"),
             ]
         else:
             log_items = [
-                ("2026-08-03 10:42", "供应商 A-017", "提交", "供应商抽验"),
-                ("2026-08-03 11:02", "供应商 A-017", "提交", "供应商抽验"),
+                ("2026-08-03 10:42", "供应商 A-017", "提交", "供应商抽验", "完成首次切分标注并提交"),
+                ("2026-08-03 11:02", "供应商 A-017", "提交", "供应商抽验", "补充调整后再次提交"),
             ]
         log_html = "".join(
-            f'<div class="wbx-log-item wbx-semantic-log-item"><time>{time}</time><b>{operator}</b><span>{operation}</span><span>{node_name}</span></div>'
-            for time, operator, operation, node_name in log_items
+            f'<div class="wbx-log-item wbx-semantic-log-item"><time>{time}</time><b>{operator}</b><span>{operation}</span><span>{node_name}</span><span>{html.escape(description)}</span></div>'
+            for time, operator, operation, node_name, description in log_items
         )
     else:
         log_html = "".join(
@@ -3999,7 +4032,7 @@ def _workbench_log_panel_html(semantic=False, task=None):
         )
     return f"""
     <div class="wbx-log-summary"><span>当前数据处理记录</span><span>共 {len(log_items)} 条</span></div>
-    {('<div class="wbx-log-columns"><span>时间</span><span>操作人</span><span>操作</span><span>节点</span></div>' if semantic else '')}
+    {('<div class="wbx-log-columns"><span>时间</span><span>操作人</span><span>操作</span><span>节点</span><span>说明</span></div>' if semantic else '')}
     <div class="wbx-log-list" data-component="workbench_log">{log_html}</div>
     """
 
@@ -4073,6 +4106,8 @@ def _workbench_tabs_script_html():
       tabs.querySelectorAll('.wbx-detail-pane').forEach(function(pane) {
         pane.classList.toggle('active', pane.dataset.detailPane === tabName);
       });
+      var annotationTools = tabs.querySelector('.wbx-annotation-tools');
+      if (annotationTools) annotationTools.style.display = tabName === 'annotation' ? '' : 'none';
     }
     </script>
     """
@@ -4129,6 +4164,46 @@ def _render_embedded_workbench(page_html):
     }
     </style>
     """
+    if request.args.get("style_preview") == "1":
+        embedded_css += """
+        <style id="workbench-style-preview-fit">
+        html,body.workbench-embed{min-width:0}
+        body.workbench-embed .q-content{padding-bottom:18px}
+        body.workbench-embed .lab-vid-grid{min-width:0}
+        body.workbench-embed .lab-tbl{overflow-x:auto}
+        body.workbench-embed .lab-tbl table{min-width:900px}
+        body.workbench-embed .wbx-workbench-header{
+          padding-top:0;background:#fff
+        }
+        body.workbench-embed .wbx-workbench-header .wbx-instruction{
+          margin-top:0;margin-bottom:10px
+        }
+        body.workbench-embed .wbx-workbench-header .lab-vid-grid{
+          margin-bottom:10px
+        }
+        body.workbench-embed .wbx-workbench-header .wbx-detail-tabbar{
+          margin:0;border-top:1px solid #edf0f1
+        }
+        body.workbench-embed .wbx-workbench-header .lab-tools-card{
+          margin-bottom:0;border-radius:0;border-left:0;border-right:0;
+          box-shadow:none
+        }
+        body.workbench-embed .wbx-detail-tabs{
+          overflow:visible;margin-bottom:12px
+        }
+        body.workbench-embed .wbx-detail-tabbar{
+          position:relative;z-index:3;background:#fff
+        }
+        body.workbench-embed .wbx-detail-pane.active{
+          height:calc(100vh - 520px);min-height:240px;max-height:430px;
+          overflow-y:auto;overscroll-behavior:contain;scrollbar-gutter:stable
+        }
+        body.workbench-embed .wbx-execution{
+          position:static;right:auto;bottom:auto;left:auto;
+          padding:0;background:none
+        }
+        </style>
+        """
     embedded_script = f"""
     <script id="workbench-embed-script">
     (function() {{
@@ -4264,8 +4339,18 @@ def _render_embedded_workbench(page_html):
     return page_html.replace("</body>", embedded_script + "</body>", 1)
 
 
-def _workbench_execution_html(semantic=False, allow_reject=True, reject_target=""):
+def _workbench_execution_html(
+    semantic=False,
+    allow_reject=True,
+    reject_target="",
+    submit_reason=False,
+    show_item_navigation=False,
+):
     if semantic:
+        item_navigation = """
+          <button type="button" class="btn wbx-item-navigation" onclick="toast('Demo: 已切换到上一条待办项')">上一条</button>
+          <button type="button" class="btn wbx-item-navigation" onclick="toast('Demo: 已切换到下一条待办项')">下一条</button>
+        """ if show_item_navigation else ""
         reject_button = (
             '<button type="button" class="btn wbx-reject" onclick="wbOpenRejectDialog()">驳回</button>'
             if allow_reject else ""
@@ -4284,17 +4369,29 @@ def _workbench_execution_html(semantic=False, allow_reject=True, reject_target="
     function wbConfirmReject() {{ var input=document.getElementById('wbRejectRemark'); if(!input.value.trim()){{ toast('请填写驳回说明'); input.focus(); return; }} toast('Demo: 已驳回当前数据 · '+input.value.trim()); wbCloseRejectDialog(); }}
     </script>
         """ if allow_reject else ""
+        submit_dialog = """
+    <div class="wbx-reject-mask" id="wbSubmitDialog" style="display:none;">
+      <div class="wbx-reject-dialog"><h3>提交当前数据</h3><label>提交原因<span>*</span></label><textarea id="wbSubmitRemark" placeholder="请输入提交原因"></textarea><div><button type="button" class="btn" onclick="wbCloseSubmitDialog()">取消</button><button type="button" class="btn btn-primary" onclick="wbConfirmSubmit()">确认提交</button></div></div>
+    </div>
+    <script>
+    function wbOpenSubmitDialog() { document.getElementById('wbSubmitDialog').style.display='flex'; document.getElementById('wbSubmitRemark').focus(); }
+    function wbCloseSubmitDialog() { document.getElementById('wbSubmitDialog').style.display='none'; }
+    function wbConfirmSubmit() { var input=document.getElementById('wbSubmitRemark'); if(!input.value.trim()){ toast('请填写提交原因'); input.focus(); return; } toast('Demo: 已提交当前数据 · '+input.value.trim()); wbCloseSubmitDialog(); }
+    </script>
+        """ if submit_reason else ""
+        submit_onclick = "wbOpenSubmitDialog()" if submit_reason else "wbSubmitWorkbench(this)"
         return f"""
     <div class="wbx-execution" data-component="sticky_decision_actions">
       <section class="wbx-module wbx-operation-panel" data-workbench-module="operation">
-        <span class="wbx-module-title">操作</span>
         <div class="wbx-operation-actions">
-          <button type="button" class="btn btn-primary wbx-submit" onclick="wbSubmitWorkbench(this)">提交</button>
+          {item_navigation}
+          <button type="button" class="btn btn-primary wbx-submit" onclick="{submit_onclick}">提交</button>
           {reject_button}
         </div>
       </section>
     </div>
     {reject_dialog}
+    {submit_dialog}
     <script>
     function wbSubmitWorkbench() {{ toast('Demo: 已提交当前数据'); }}
     </script>
@@ -4315,7 +4412,6 @@ def _workbench_execution_html(semantic=False, allow_reject=True, reject_target="
       </section>
       <section class="wbx-module wbx-operation-panel"
         data-workbench-module="operation">
-        <span class="wbx-module-title">操作</span>
         <div class="wbx-operation-actions">
           <button type="button" class="btn btn-primary wbx-submit"
             disabled onclick="wbSubmitWorkbench(this)">提交</button>
@@ -4355,6 +4451,345 @@ def _workbench_execution_html(semantic=False, allow_reject=True, reject_target="
     }}
     </script>
     """
+
+
+def _workbench_style_example_button_html():
+    # 样式示例只从工作台 v2 首页进入，具体处理页不再重复展示入口。
+    return ""
+
+
+# 样式示例复用真实工作台，仅通过 URL 参数切换控件状态。
+WORKBENCH_STYLE_VARIANTS = {
+    "one": {
+        "label": "样式一",
+        "scenario": "供应商抽验－首次提交",
+        "task": "WB-E2E-SUPPLIER-A",
+        "recording_id": "recording_e2e_001",
+        "annotation_editable": True,
+        "reason_mode": "hidden",
+        "submit_reason": False,
+        "allow_reject": False,
+    },
+    "two": {
+        "label": "样式二",
+        "scenario": "供应商抽验－被驳回后处理",
+        "task": "WB-E2E-SUPPLIER-A",
+        "recording_id": "recording_e2e_002",
+        "annotation_editable": True,
+        "reason_mode": "filled-readonly",
+        "submit_reason": True,
+        "allow_reject": False,
+    },
+    "three": {
+        "label": "样式三",
+        "scenario": "供应商复核 / 供应商验收 / 内部验收－首次提交",
+        "task": "WB-E2E-ACCEPTANCE",
+        "recording_id": "recording_e2e_007",
+        "annotation_editable": False,
+        "reason_mode": "empty-editable",
+        "submit_reason": False,
+        "allow_reject": True,
+    },
+    "four": {
+        "label": "样式四",
+        "scenario": "供应商复核 / 供应商验收－驳回重新提交处理",
+        "task": "WB-E2E-REVIEW",
+        "recording_id": "recording_e2e_004",
+        "annotation_editable": False,
+        "reason_mode": "partial-editable",
+        "submit_reason": False,
+        "allow_reject": True,
+    },
+    "five": {
+        "label": "样式五",
+        "scenario": "供应商复核 / 供应商验收 / 内部验收－被驳回后处理",
+        "task": "WB-E2E-ACCEPTANCE",
+        "recording_id": "recording_e2e_007",
+        "annotation_editable": False,
+        "reason_mode": "filled-readonly",
+        "submit_reason": True,
+        "allow_reject": True,
+    },
+}
+
+
+def _workbench_style_example_pane(
+    style_id,
+    scenario,
+    annotation_editable,
+    reason_mode,
+    submit_reason,
+    allow_reject,
+):
+    style_names = {
+        "one": "样式一",
+        "two": "样式二",
+        "three": "样式三",
+        "four": "样式四",
+        "five": "样式五",
+    }
+    reason_labels = {
+        "hidden": "不展示",
+        "empty-editable": "展示 · 无内容 · 可编辑",
+        "partial-editable": "展示 · 部分有内容 · 可编辑",
+        "filled-readonly": "展示 · 有内容 · 不可编辑",
+    }
+    semantic_rows = [
+        ("H", "整理桌面上的血压计、听诊器等医疗物品并完成收纳", "0.00s", "42.80s"),
+        ("1", "抓取并展开蓝色血压计袖带", "0.00s", "9.18s"),
+        ("2", "折叠血压计袖带并移动到收纳区", "9.18s", "22.93s"),
+        ("3", "拿起听诊器并整理剩余医疗物品", "22.93s", "42.80s"),
+    ]
+    reason_values = ["片段边界不准确", "动作描述与画面不一致", "", "存在漏标片段"]
+    rows_html = []
+    for index, (level, description, start, end) in enumerate(semantic_rows):
+        if annotation_editable:
+            semantic_control = (
+                f'<input class="wb-style-semantic-input" value="{html.escape(description, quote=True)}" '
+                f'aria-label="语义标注 {index + 1}">'
+            )
+            semantic_action = '<button type="button" class="wb-style-icon-action" title="编辑">&#9998;</button>'
+        else:
+            semantic_control = f'<span class="wb-style-semantic-readonly">{html.escape(description)}</span>'
+            semantic_action = '<span class="wb-style-readonly-tag">只读</span>'
+        reason_cell = ""
+        if reason_mode != "hidden":
+            if reason_mode == "empty-editable":
+                value = ""
+            elif reason_mode == "partial-editable":
+                value = reason_values[index] if index in {0, 3} else ""
+            else:
+                value = reason_values[index] or "片段层级关系错误"
+            options = "".join(
+                f'<option{" selected" if option == value else ""}>{html.escape(option)}</option>'
+                for option in (
+                    "请选择错误原因",
+                    "片段边界不准确",
+                    "动作描述与画面不一致",
+                    "存在漏标片段",
+                    "片段层级关系错误",
+                )
+            )
+            if not value:
+                options = options.replace("<option>请选择错误原因</option>", "<option selected>请选择错误原因</option>")
+            disabled = " disabled" if reason_mode == "filled-readonly" else ""
+            reason_cell = f'<td><select class="wb-style-reason-select"{disabled}>{options}</select></td>'
+        rows_html.append(
+            f"""
+            <tr>
+              <td><div class="wb-style-semantic-cell"><span class="wb-style-level">{level}</span>{semantic_control}</div></td>
+              {reason_cell}
+              <td>{start}</td><td>{end}</td><td>{float(end[:-1]) - float(start[:-1]):.2f}s</td>
+              <td>{semantic_action}</td>
+            </tr>
+            """
+        )
+    reason_header = "<th>错误原因</th>" if reason_mode != "hidden" else ""
+    submit_reason_html = (
+        """
+        <label class="wb-style-action-reason"><span>提交原因 <b>*</b></span>
+          <textarea placeholder="请输入提交原因"></textarea>
+        </label>
+        """
+        if submit_reason
+        else ""
+    )
+    reject_html = (
+        """
+        <label class="wb-style-action-reason"><span>驳回原因 <b>*</b></span>
+          <textarea placeholder="请输入驳回原因"></textarea>
+        </label>
+        <button type="button" class="btn wb-style-reject" onclick="toast('Demo: 请确认驳回原因')">驳回</button>
+        """
+        if allow_reject
+        else ""
+    )
+    badges = [
+        f"语义标注：{'可编辑' if annotation_editable else '不可编辑'}",
+        f"错误原因：{reason_labels[reason_mode]}",
+        f"提交：{'需填写原因' if submit_reason else '无需原因'}",
+        f"驳回：{'操作＋原因' if allow_reject else '无'}",
+    ]
+    badge_html = "".join(f"<span>{html.escape(item)}</span>" for item in badges)
+    return f"""
+    <section class="wb-style-pane{' active' if style_id == 'one' else ''}"
+      data-style-pane="{style_id}"
+      data-annotation-editable="{'true' if annotation_editable else 'false'}"
+      data-reason-mode="{reason_mode}"
+      data-submit-reason="{'true' if submit_reason else 'false'}"
+      data-reject-action="{'true' if allow_reject else 'false'}">
+      <div class="wb-style-summary">
+        <div><span>{style_names[style_id]}</span><h2>{html.escape(scenario)}</h2></div>
+        <div class="wb-style-badges">{badge_html}</div>
+      </div>
+      <div class="wb-style-workbench">
+        <div class="wb-style-meta">
+          <span>任务ID：<b>WB-E2E-DEMO-{style_id.upper()}</b></span>
+          <span>流程：<b>端到端切分标注流程</b></span>
+          <span>节点：<b>{html.escape(scenario.split('－')[0])}</b></span>
+          <span>数据ID：<b>recording_style_{style_id}</b></span>
+          <span>状态：<i>待处理</i></span>
+        </div>
+        <div class="wb-style-videos">
+          <div><span>左臂视角</span><b>&#9658;</b></div>
+          <div><span>头部视角</span><b>&#9658;</b></div>
+          <div><span>右臂视角</span><b>&#9658;</b></div>
+        </div>
+        <div class="wb-style-timeline">
+          <div class="wb-style-scale"><span>0.00s</span><span>10.00s</span><span>20.00s</span><span>30.00s</span><span>42.80s</span></div>
+          <div class="wb-style-track"><i style="width:22%"></i><i style="width:32%"></i><i style="width:18%"></i><i style="width:28%"></i></div>
+        </div>
+        <div class="wb-style-table-wrap">
+          <table class="wb-style-table">
+            <thead><tr><th>语义标注</th>{reason_header}<th>开始</th><th>结束</th><th>时长</th><th>操作</th></tr></thead>
+            <tbody>{''.join(rows_html)}</tbody>
+          </table>
+        </div>
+        <div class="wb-style-actions">
+          {submit_reason_html}
+          {reject_html}
+          <button type="button" class="btn btn-primary" onclick="toast('Demo: 已提交当前数据')">提交</button>
+        </div>
+      </div>
+    </section>
+    """
+
+
+@app.route("/data/workbench-v2/style-examples")
+def data_workbench_v2_style_examples():
+    variant_urls = {
+        style_id: "/data/workbench-v2/edit?" + urlencode(
+            {
+                "task": config["task"],
+                "recording_id": config["recording_id"],
+                "mode": "annotation",
+                "rule": "端到端切分标注规则",
+                "style": style_id,
+                "style_preview": "1",
+            }
+        )
+        for style_id, config in WORKBENCH_STYLE_VARIANTS.items()
+    }
+    tabs = "".join(
+        f"""
+        <button type="button" class="wb-style-tab{' active' if style_id == 'one' else ''}"
+          data-style-tab="{style_id}"
+          data-style-src="{html.escape(variant_urls[style_id], quote=True)}"
+          data-style-scenario="{html.escape(config['scenario'], quote=True)}"
+          onclick="wbSwitchStyleExample(this)">
+          <b>{html.escape(config['label'])}</b><span>{html.escape(config['scenario'])}</span>
+        </button>
+        """
+        for style_id, config in WORKBENCH_STYLE_VARIANTS.items()
+    )
+    default_config = WORKBENCH_STYLE_VARIANTS["one"]
+    content = f"""
+    <div class="wb-style-page-head">
+      <div><h1>工作台样式示例</h1><p>五种状态均复用当前完整工作台，仅切换标注、错误原因和提交 / 驳回规则。</p></div>
+      <a class="btn" href="/data/workbench-v2">返回工作台</a>
+    </div>
+    <div class="wb-style-tabs" role="tablist">{tabs}</div>
+    <div class="wb-style-preview-head">
+      <span>当前场景</span><b id="wbStyleScenario">{html.escape(default_config['scenario'])}</b>
+    </div>
+    <iframe class="wb-style-frame" id="wbStyleFrame"
+      title="完整工作台样式预览"
+      src="{html.escape(variant_urls['one'], quote=True)}"></iframe>
+    <style>
+    .wb-style-page-head{{display:flex;align-items:flex-start;justify-content:space-between;gap:24px;margin-bottom:16px}}
+    .wb-style-page-head h1{{margin:0;color:#1f3034;font-size:24px}}.wb-style-page-head p{{margin:7px 0 0;color:#718084}}
+    .wb-style-tabs{{display:grid;grid-template-columns:repeat(5,minmax(150px,1fr));gap:8px;margin-bottom:12px}}
+    .wb-style-tab{{min-height:68px;padding:10px 12px;border:1px solid #dbe4e7;border-radius:8px;background:#fff;color:#4d5e63;text-align:left;cursor:pointer}}
+    .wb-style-tab b,.wb-style-tab span{{display:block}}.wb-style-tab b{{margin-bottom:5px;color:#1f3034;font-size:14px}}.wb-style-tab span{{font-size:12px;line-height:1.35}}
+    .wb-style-tab.active{{border-color:#149daa;background:#edf9fa;box-shadow:0 0 0 1px rgba(20,157,170,.12)}}.wb-style-tab.active b{{color:#0f7f89}}
+    .wb-style-preview-head{{display:flex;align-items:center;gap:10px;padding:10px 14px;border:1px solid #dbe4e7;border-bottom:0;border-radius:9px 9px 0 0;background:#fff;color:#718084;font-size:12px}}
+    .wb-style-preview-head b{{color:#253b40;font-size:14px}}
+    .wb-style-frame{{display:block;width:100%;height:max(760px,calc(100vh - 258px));box-sizing:border-box;border:1px solid #dbe4e7;border-radius:0 0 9px 9px;background:#fff}}
+    @media(max-width:1200px){{.wb-style-tabs{{grid-template-columns:repeat(3,1fr)}}}}
+    </style>
+    <script>
+    function wbSwitchStyleExample(button) {{
+      document.querySelectorAll('.wb-style-tab').forEach(function(tab) {{
+        tab.classList.toggle('active', tab === button);
+      }});
+      document.getElementById('wbStyleScenario').textContent = button.dataset.styleScenario;
+      document.getElementById('wbStyleFrame').src = button.dataset.styleSrc;
+    }}
+    </script>
+    """
+    return render_page(
+        "工作台样式示例",
+        content,
+        active="/data/workbench-v2",
+        module="data",
+        breadcrumb="数据平台 / 工作台 / <b>样式示例</b>",
+        mvp_note="MVP 一期",
+    )
+
+    # 旧版简化示例保留在源码中仅用于历史对比，不再渲染。
+    variants = [
+        ("one", "供应商抽验－首次提交", True, "hidden", False, False),
+        ("two", "供应商抽验－被驳回后处理", True, "filled-readonly", True, False),
+        ("three", "供应商复核 / 供应商验收 / 内部验收－首次提交", False, "empty-editable", False, True),
+        ("four", "供应商复核 / 供应商验收－驳回重新提交处理", False, "partial-editable", False, True),
+        ("five", "供应商复核 / 供应商验收 / 内部验收－被驳回后处理", False, "filled-readonly", True, True),
+    ]
+    tabs = "".join(
+        f"""
+        <button type="button" class="wb-style-tab{' active' if style_id == 'one' else ''}"
+          data-style-tab="{style_id}" onclick="wbSwitchStyleExample(this,'{style_id}')">
+          <b>样式{('一', '二', '三', '四', '五')[index]}</b><span>{html.escape(scenario)}</span>
+        </button>
+        """
+        for index, (style_id, scenario, *_rest) in enumerate(variants)
+    )
+    panes = "".join(_workbench_style_example_pane(*variant) for variant in variants)
+    content = f"""
+    <div class="wb-style-page-head">
+      <div><h1>工作台样式示例</h1><p>按节点和数据状态切换五种处理样式，示例中的控件状态与实际工作台规则一致。</p></div>
+      <a class="btn" href="/data/workbench-v2">返回工作台</a>
+    </div>
+    <div class="wb-style-tabs" role="tablist">{tabs}</div>
+    <div class="wb-style-panes">{panes}</div>
+    """ + """
+    <style>
+    .wb-style-page-head{display:flex;align-items:flex-start;justify-content:space-between;gap:24px;margin-bottom:16px}
+    .wb-style-page-head h1{margin:0;color:#1f3034;font-size:24px}.wb-style-page-head p{margin:7px 0 0;color:#718084}
+    .wb-style-tabs{display:grid;grid-template-columns:repeat(5,minmax(150px,1fr));gap:8px;margin-bottom:14px}
+    .wb-style-tab{min-height:68px;padding:10px 12px;border:1px solid #dbe4e7;border-radius:8px;background:#fff;color:#4d5e63;text-align:left;cursor:pointer}
+    .wb-style-tab b,.wb-style-tab span{display:block}.wb-style-tab b{margin-bottom:5px;color:#1f3034;font-size:14px}.wb-style-tab span{font-size:12px;line-height:1.35}
+    .wb-style-tab.active{border-color:#149daa;background:#edf9fa;box-shadow:0 0 0 1px rgba(20,157,170,.12)}.wb-style-tab.active b{color:#0f7f89}
+    .wb-style-pane{display:none}.wb-style-pane.active{display:block}
+    .wb-style-summary{display:flex;align-items:center;justify-content:space-between;gap:20px;padding:14px 16px;border:1px solid #dbe4e7;border-bottom:0;border-radius:10px 10px 0 0;background:#fff}
+    .wb-style-summary>div:first-child{display:flex;align-items:center;gap:12px}.wb-style-summary>div:first-child>span{padding:5px 10px;border-radius:14px;background:#149daa;color:#fff;font-size:12px;font-weight:700}.wb-style-summary h2{margin:0;font-size:17px;color:#283a3e}
+    .wb-style-badges{display:flex;justify-content:flex-end;flex-wrap:wrap;gap:6px}.wb-style-badges span{padding:4px 8px;border-radius:4px;background:#f2f6f7;color:#52666b;font-size:12px}
+    .wb-style-workbench{overflow:hidden;border:1px solid #dbe4e7;border-radius:0 0 10px 10px;background:#fff;box-shadow:0 10px 28px rgba(31,67,75,.07)}
+    .wb-style-meta{display:flex;align-items:center;gap:24px;padding:10px 14px;border-bottom:1px solid #e5ebed;color:#69777b;font-size:12px}.wb-style-meta span:nth-child(2){flex:1}.wb-style-meta b{color:#33464a}.wb-style-meta i{padding:2px 7px;border-radius:3px;background:#eaf7f1;color:#287b58;font-style:normal}
+    .wb-style-videos{display:grid;grid-template-columns:1fr 1.45fr 1fr;gap:2px;height:250px;background:#1d2527}.wb-style-videos>div{position:relative;display:grid;place-items:center;background:linear-gradient(145deg,#2d3b3e,#101718);color:#c1ced1;font-size:36px}.wb-style-videos span{position:absolute;top:8px;left:10px;padding:3px 7px;border-radius:3px;background:rgba(0,0,0,.5);color:#fff;font-size:11px}.wb-style-videos b{font-weight:400;opacity:.65}
+    .wb-style-timeline{padding:12px 14px 14px;border-bottom:1px solid #e5ebed;background:#fafcfc}.wb-style-scale{display:flex;justify-content:space-between;color:#78878b;font-size:11px}.wb-style-track{display:flex;height:14px;margin-top:5px;overflow:hidden;border-radius:2px}.wb-style-track i:nth-child(1){background:#b48ed6}.wb-style-track i:nth-child(2){background:#65c2b8}.wb-style-track i:nth-child(3){background:#f4c978}.wb-style-track i:nth-child(4){background:#ef9aa0}
+    .wb-style-table-wrap{overflow-x:auto}.wb-style-table{width:100%;min-width:920px;border-collapse:collapse}.wb-style-table th,.wb-style-table td{padding:10px 12px;border-right:1px solid #e4e9eb;border-bottom:1px solid #e4e9eb;text-align:left;font-size:12px}.wb-style-table th{background:#f4f7f8;color:#33464a;font-weight:700}.wb-style-table th:first-child{width:46%}.wb-style-semantic-cell{display:flex;align-items:center;gap:8px;min-width:0}.wb-style-level{display:inline-grid;place-items:center;flex:none;width:24px;height:24px;margin-right:0;border-radius:50%;background:#e8f5f6;color:#0f7f89;font-weight:700}.wb-style-semantic-input{flex:1;width:auto;min-width:0;padding:7px 9px;border:1px solid #cfdadd;border-radius:5px;color:#34474b}.wb-style-semantic-readonly{flex:1;min-width:0;color:#4f6064}.wb-style-reason-select{min-width:190px;padding:7px 8px;border:1px solid #cfdadd;border-radius:5px;background:#fff}.wb-style-reason-select:disabled{color:#66767a;background:#f1f3f4}.wb-style-icon-action{width:30px;height:30px;border:0;border-radius:5px;background:#f1a02d;color:#fff;cursor:pointer}.wb-style-readonly-tag{color:#8a989b;font-size:11px}
+    .wb-style-actions{display:flex;align-items:flex-end;justify-content:flex-end;gap:10px;padding:12px 14px;background:#f9fbfb}.wb-style-action-reason{display:flex;align-items:center;gap:7px}.wb-style-action-reason span{font-size:12px;color:#52666b;white-space:nowrap}.wb-style-action-reason b{color:#e45a52}.wb-style-action-reason textarea{width:210px;height:36px;padding:7px 9px;resize:none;border:1px solid #cfdadd;border-radius:5px}.wb-style-reject{border-color:#e36a61;color:#d5554d}
+    @media(max-width:1200px){.wb-style-tabs{grid-template-columns:repeat(3,1fr)}.wb-style-summary{align-items:flex-start;flex-direction:column}.wb-style-videos{height:210px}}
+    </style>
+    <script>
+    function wbSwitchStyleExample(button, styleId) {
+      document.querySelectorAll('.wb-style-tab').forEach(function(tab) {
+        tab.classList.toggle('active', tab === button);
+      });
+      document.querySelectorAll('.wb-style-pane').forEach(function(pane) {
+        pane.classList.toggle('active', pane.dataset.stylePane === styleId);
+      });
+    }
+    </script>
+    """
+    return render_page(
+        "工作台样式示例",
+        content,
+        active="/data/workbench-v2",
+        module="data",
+        breadcrumb="数据平台 / 工作台 / <b>样式示例</b>",
+        mvp_note="MVP 一期",
+    )
 
 
 def _render_quality_workbench(task, management_preview=False):
@@ -4405,7 +4840,8 @@ def _render_quality_workbench(task, management_preview=False):
     </div>
     """
     content = (
-        _workbench_meta_html(task, "待质检")
+        _workbench_style_example_button_html()
+        + _workbench_meta_html(task, "待质检")
         + """
         <div class="wbx-instruction" data-component="instruction_context">
           <b>采集指令</b>
@@ -4472,6 +4908,7 @@ def _render_detail_workbench(task, management_preview=False):
     )
     content = (
         return_bar
+        + _workbench_style_example_button_html()
         + _workbench_meta_html(task, "详情复核")
         + _workbench_video_html()
         + f"""
@@ -4606,18 +5043,20 @@ def data_workbench_edit(preview_mode=None):
     }.get(workbench_task["stage"], "detail")
     management_preview = preview_mode is not None
     v2_workbench_page = request.path.startswith("/data/workbench-v2")
+    style_preview = request.args.get("style_preview") == "1"
+    style_config = WORKBENCH_STYLE_VARIANTS.get(request.args.get("style", ""))
     if workbench_mode == "quality":
         rendered = _render_quality_workbench(workbench_task, management_preview)
         return (
             _render_embedded_workbench(rendered)
-            if management_preview and request.args.get("embed") == "1"
+            if (management_preview and request.args.get("embed") == "1") or style_preview
             else rendered
         )
     if workbench_mode == "detail":
         rendered = _render_detail_workbench(workbench_task, management_preview)
         return (
             _render_embedded_workbench(rendered)
-            if management_preview and request.args.get("embed") == "1"
+            if (management_preview and request.args.get("embed") == "1") or style_preview
             else rendered
         )
 
@@ -4633,6 +5072,7 @@ def data_workbench_edit(preview_mode=None):
         "recording_e2e_004": "复核发现片段边界仍需确认",
         "recording_e2e_005": "Low-level 动作片段存在重叠",
         "recording_e2e_006": "切分结果与规则不一致",
+        "recording_e2e_007": "内部验收发现标注结果需补充确认",
     }
     if recording_id and recording_id in e2e_rejection_remarks:
         workbench_task = dict(workbench_task)
@@ -4684,18 +5124,69 @@ def data_workbench_edit(preview_mode=None):
             ("child", "3", "拿起听诊器并移动到收纳区域", 22.93, 34.60),
             ("child", "4", "整理剩余医疗物品并完成收纳", 34.60, 42.80),
         ]
-        body_rows = "".join(
-            f"""<tr class="lab-semantic-row {kind}">
-              <td><span class="lab-semantic-level">{level}</span><input class="mock" type="text" value="{html.escape(desc, quote=True)}"></td>
-              <td>{start:.2f}s</td><td>{end:.2f}s</td><td>{end-start:.2f}s</td>
-              <td><div class="lab-act-cell"><button class="lab-act-btn blue" title="定位">&#8853;</button><button class="lab-act-btn orange" title="编辑">&#9998;</button><button class="lab-act-btn red" title="删除">&#128465;</button></div></td>
+        annotation_editable = (
+            style_config["annotation_editable"] if style_config else True
+        )
+        reason_mode = style_config["reason_mode"] if style_config else "hidden"
+        error_reason_options = (
+            "物品选择错误",
+            "描述错误",
+            "动作结束帧提前",
+            "动作结束帧滞后",
+            "动作重叠",
+            "漏标下个动作分段",
+            "漏标上个动作分段",
+            "物品框选错误",
+        )
+        filled_reason_values = (
+            "描述错误",
+            "动作结束帧提前",
+            "动作重叠",
+            "漏标下个动作分段",
+            "物品框选错误",
+        )
+        rows_html = []
+        for index, (kind, level, desc, start, end) in enumerate(semantic_rows):
+            input_state = "" if annotation_editable else " disabled"
+            reason_cell = ""
+            if reason_mode != "hidden":
+                if reason_mode == "empty-editable":
+                    selected_reason = ""
+                elif reason_mode == "partial-editable":
+                    selected_reason = filled_reason_values[index] if index in {0, 2, 4} else ""
+                else:
+                    selected_reason = filled_reason_values[index]
+                option_html = (
+                    '<option value=""' + (' selected' if not selected_reason else '')
+                    + '>请选择驳回原因</option>'
+                    + "".join(
+                        f'<option value="{html.escape(option, quote=True)}"'
+                        f'{" selected" if option == selected_reason else ""}>'
+                        f'{html.escape(option)}</option>'
+                        for option in error_reason_options
+                    )
+                )
+                reason_state = " disabled" if reason_mode == "filled-readonly" else ""
+                reason_cell = f"""
+              <td><select class="mock lab-error-reason" aria-label="错误原因"{reason_state}>{option_html}</select></td>"""
+            readonly_actions = "" if annotation_editable else " disabled"
+            rows_html.append(
+                f"""<tr class="lab-semantic-row {kind}">
+              <td><div class="lab-semantic-editor-cell"><span class="lab-semantic-level">{level}</span><input class="mock" type="text" value="{html.escape(desc, quote=True)}"{input_state}></div></td>
+              <td>{start:.2f}s</td><td>{end:.2f}s</td><td>{end-start:.2f}s</td>{reason_cell}
+              <td><div class="lab-act-cell"><button class="lab-act-btn blue" title="定位">&#8853;</button><button class="lab-act-btn orange" title="编辑"{readonly_actions}>&#9998;</button><button class="lab-act-btn red" title="删除"{readonly_actions}>&#128465;</button></div></td>
             </tr>"""
-            for kind, level, desc, start, end in semantic_rows
+            )
+        body_rows = "".join(rows_html)
+        reason_header = (
+            '<th class="nowrap" style="width:190px;">错误原因</th>'
+            if reason_mode != "hidden" else ""
         )
         annotation_table_head = """
           <th>描述</th><th class="nowrap" style="width:90px;">开始</th>
           <th class="nowrap" style="width:90px;">结束</th>
           <th class="nowrap" style="width:90px;">时长</th>
+        """ + reason_header + """
           <th class="nowrap" style="width:140px;text-align:center;">操作</th>
         """
         annotation_type_label = "语义标注 · E/F/G"
@@ -4728,8 +5219,36 @@ def data_workbench_edit(preview_mode=None):
         """
         annotation_type_label = "动作标注 · A/B/C/D/Z"
 
+    instruction_title = "指令" if style_preview else annotation_type_label
+    readonly_style = bool(
+        style_config and not style_config["annotation_editable"]
+    )
+    current_window_bar = (
+        ""
+        if readonly_style
+        else f'<div class="lab-tl-bar"><div class="lab-tl-seg orange" style="left:0;width:{seg1_pct:.2f}%;"></div></div>'
+    )
+    annotation_toolbox_html = "" if readonly_style else """
+          <div class="lab-annotation-toolbox">
+            <span class="lab-tool" title="截帧" onclick="toast('Demo: 截帧')">&#9783;</span>
+            <span class="lab-tool" title="在前插入" onclick="toast('Demo: 在前插入')">&#10133;</span>
+            <span class="lab-tool" title="在后插入" onclick="toast('Demo: 在后插入')">&#10133;</span>
+            <span class="lab-tool" title="跳到末尾" onclick="toast('Demo: 跳到末尾')">&#10142;</span>
+            <span class="lab-tool danger" title="删除选段" onclick="toast('Demo: 删除选段')">&#128465;</span>
+            <span class="lab-tool" title="区间编辑" onclick="toast('Demo: 区间编辑')">&#8596;</span>
+            <span class="lab-tool" title="切分" onclick="toast('Demo: 切分')">&#9986;</span>
+            <span class="lab-tool" title="书签" onclick="toast('Demo: 书签')">&#9873;</span>
+          </div>
+    """
     description_html = ""
-    if semantic_annotation and workbench_task.get("node") in {"供应商抽验", "供应商复核"}:
+    if (
+        semantic_annotation
+        and (
+            workbench_task.get("node") in {"供应商抽验", "供应商复核"}
+            or request.args.get("style") == "five"
+        )
+        and request.args.get("style") != "one"
+    ):
         description_html = f"""
         <section class="wbx-description-module" data-component="description">
           <b>说明</b><div><p>{html.escape(workbench_task.get('rejection_remark', '暂无驳回说明'))}</p></div>
@@ -4756,10 +5275,72 @@ def data_workbench_edit(preview_mode=None):
         {_workbench_quality_result_panel_html()}
       </div>
       """
+    annotation_timeline_html = f"""
+    {description_html}
+    <div class="lab-tools-card" data-component="playback_timeline">
+      <div class="lab-timeline">
+        <div class="lab-tl-ticks">{ticks_html}</div>
+        {current_window_bar}
+        {annotation_timeline_detail}
+      </div>
+      <div class="lab-tools">
+        <div class="lab-tools-left">
+          <div class="lab-playback-controls">
+            <span class="lab-tool" title="上一帧" onclick="toast('Demo: 上一帧')">&laquo;</span>
+            <span class="lab-speed">1x</span>
+            <span class="lab-tool" title="下一帧" onclick="toast('Demo: 下一帧')">&raquo;</span>
+            <span class="lab-tool play" title="播放" onclick="toast('Demo: 播放')">&#9654;</span>
+          </div>
+          {annotation_toolbox_html}
+        </div>
+        <a class="lab-tools-right" href="#" onclick="toast('Demo: 任务描述');return false;">&#10140; 任务描述</a>
+      </div>
+    </div>
+    """
+    execution_html = _workbench_execution_html(
+        semantic_annotation,
+        allow_reject=(
+            style_config["allow_reject"]
+            if style_config else workbench_task.get('node') != '供应商抽验'
+        ),
+        reject_target=('供应商抽验' if workbench_task.get('node') == '供应商复核' else '供应商复核'),
+        submit_reason=bool(style_config and style_config["submit_reason"]),
+        show_item_navigation=(
+            v2_workbench_page
+            and request.args.get("entry") == "todo"
+            and not style_preview
+        ),
+    )
+    if style_preview:
+        detail_tabs_open = '<div class="wbx-detail-tabs" data-component="annotation_workbench_tabs">'
+        sticky_workbench_open = '<div class="wbx-workbench-header">'
+        sticky_workbench_extra = (
+            annotation_tabs
+            + '<div class="wbx-annotation-tools">'
+            + annotation_timeline_html
+            + '</div>'
+        )
+        sticky_workbench_close = "</div>"
+        tabbar_html = ""
+        timeline_in_pane = ""
+        detail_tabs_close = "</div>"
+        trailing_execution_html = execution_html
+    else:
+        detail_tabs_open = '<div class="wbx-detail-tabs" data-component="annotation_workbench_tabs">'
+        sticky_workbench_open = ""
+        sticky_workbench_extra = ""
+        sticky_workbench_close = ""
+        tabbar_html = annotation_tabs
+        timeline_in_pane = annotation_timeline_html
+        detail_tabs_close = "</div>"
+        trailing_execution_html = execution_html
     content = f"""
+    {_workbench_style_example_button_html()}
     {_workbench_meta_html(workbench_task, "待标注")}
+    {detail_tabs_open}
+    {sticky_workbench_open}
     <div class="wbx-instruction" data-component="instruction_context">
-      <b>{annotation_type_label}</b>
+      <b>{instruction_title}</b>
       <span>用抹布擦拭桌下柜子内部，并将地面散落的纸张收纳到柜子里。</span>
     </div>
 
@@ -4781,36 +5362,13 @@ def data_workbench_edit(preview_mode=None):
       </div>
       <div class="lab-fab" onclick="toast('Demo: 录屏')" title="录屏">&#9209;</div>
     </div>
+    {sticky_workbench_extra}
+    {sticky_workbench_close}
 
-    <div class="wbx-detail-tabs" data-component="annotation_workbench_tabs">
-      {annotation_tabs}
+      {tabbar_html}
       {annotation_extra_panes}
       <div class="wbx-detail-pane active" data-detail-pane="annotation" data-component="annotation_segment_editor">
-    {description_html}
-    <div class="lab-tools-card" data-component="playback_timeline">
-      <div class="lab-timeline">
-        <div class="lab-tl-ticks">{ticks_html}</div>
-        <div class="lab-tl-bar"><div class="lab-tl-seg orange" style="left:0;width:{seg1_pct:.2f}%;"></div></div>
-        {annotation_timeline_detail}
-      </div>
-      <div class="lab-tools">
-        <div class="lab-tools-left">
-          <span class="lab-tool" title="上一帧" onclick="toast('Demo: 上一帧')">&laquo;</span>
-          <span class="lab-speed">1x</span>
-          <span class="lab-tool" title="下一帧" onclick="toast('Demo: 下一帧')">&raquo;</span>
-          <span class="lab-tool play" title="播放" onclick="toast('Demo: 播放')">&#9654;</span>
-          <span class="lab-tool" title="截帧" onclick="toast('Demo: 截帧')">&#9783;</span>
-          <span class="lab-tool" title="在前插入" onclick="toast('Demo: 在前插入')">&#10133;</span>
-          <span class="lab-tool" title="在后插入" onclick="toast('Demo: 在后插入')">&#10133;</span>
-          <span class="lab-tool" title="跳到末尾" onclick="toast('Demo: 跳到末尾')">&#10142;</span>
-          <span class="lab-tool danger" title="删除选段" onclick="toast('Demo: 删除选段')">&#128465;</span>
-          <span class="lab-tool" title="区间编辑" onclick="toast('Demo: 区间编辑')">&#8596;</span>
-          <span class="lab-tool" title="切分" onclick="toast('Demo: 切分')">&#9986;</span>
-          <span class="lab-tool" title="书签" onclick="toast('Demo: 书签')">&#9873;</span>
-        </div>
-        <a class="lab-tools-right" href="#" onclick="toast('Demo: 任务描述');return false;">&#10140; 任务描述</a>
-      </div>
-    </div>
+    {timeline_in_pane}
 
     <div class="lab-tbl" data-component="{annotation_editor_component}">
       <table>
@@ -4822,21 +5380,17 @@ def data_workbench_edit(preview_mode=None):
       <div class="wbx-detail-pane" data-detail-pane="log" data-component="workbench_log">
         {_workbench_log_panel_html(semantic_annotation, workbench_task)}
       </div>
-    </div>
+    {detail_tabs_close}
 
     {_workbench_tabs_script_html()}
-    {_workbench_execution_html(
-        semantic_annotation,
-        allow_reject=workbench_task.get('node') != '供应商抽验',
-        reject_target=('供应商抽验' if workbench_task.get('node') == '供应商复核' else '供应商复核'),
-    )}
+    {trailing_execution_html}
     """
     active_path = "/data/workbench-management" if management_preview else ("/data/workbench-v2" if v2_workbench_page else "/data/workbench")
     breadcrumb = (
         "数据平台 / 工作流 / 工作台管理 / <b>标注工作台预览</b>"
         if management_preview
         else (
-            ("数据平台 / 工作台 v2 / " if v2_workbench_page else "数据平台 / 工作台 / ")
+            "数据平台 / 工作台 / "
             + f"<b>{html.escape(workbench_task['node'])}</b>"
         )
     )
@@ -4852,7 +5406,7 @@ def data_workbench_edit(preview_mode=None):
     )
     return (
         _render_embedded_workbench(rendered)
-        if management_preview and request.args.get("embed") == "1"
+        if (management_preview and request.args.get("embed") == "1") or style_preview
         else rendered
     )
 
@@ -5070,14 +5624,6 @@ def data_dashboard():
 
 # ── 规则管理 ──
 RULES = [
-    {"id": "RL-001", "name": "缺帧检测规则",       "stage": "质检", "owner": "joanna.qiao", "created": "2026-05-12", "enabled": True,  "desc": "检测 recording 中是否存在缺失帧, 超过 3% 自动判定不合格"},
-    {"id": "RL-002", "name": "图像模糊度检测",     "stage": "质检", "owner": "Lance Li",   "created": "2026-05-15", "enabled": True,  "desc": "用 Laplacian 算子检测画面模糊度, 阈值 < 100 自动告警"},
-    {"id": "RL-003", "name": "动作分段必备字段",   "stage": "标注", "owner": "joanna.qiao", "created": "2026-05-20", "enabled": True,  "desc": "校验动作分段是否包含起始/结束时间戳, 缺失则不允许提交"},
-    {"id": "RL-004", "name": "关键帧标注完整性",   "stage": "标注", "owner": "Wei Zhang",  "created": "2026-05-22", "enabled": False, "desc": "校验关键帧标注数量 >= 5, 缺失关键帧无法通过验收"},
-    {"id": "RL-005", "name": "Episode 时长阈值",   "stage": "标注", "owner": "Min Chen",   "created": "2026-05-25", "enabled": True,  "desc": "切分后的 episode 时长 [3s, 60s] 区间外自动标红"},
-    {"id": "RL-006", "name": "切分起止动作检测",   "stage": "标注", "owner": "Min Chen",   "created": "2026-05-26", "enabled": True,  "desc": "用动作分类器自动检测 episode 起始/结束姿态"},
-    {"id": "RL-007", "name": "标注一致性校验",     "stage": "验收", "owner": "joanna.qiao", "created": "2026-05-28", "enabled": True,  "desc": "同一 episode 多个标注员结果一致性 < 0.85 则打回"},
-    {"id": "RL-008", "name": "终验抽检比例",       "stage": "验收", "owner": "joanna.qiao", "created": "2026-06-01", "enabled": True,  "desc": "每批次终验抽检 10% (最少 20 条), 不合格则整批退回"},
     {
         "id": "RL-009",
         "name": "端到端切分标注规则",
@@ -5103,25 +5649,27 @@ for _rule in RULES:
 
 @app.route("/data/rules")
 def data_rules():
-    cat = request.args.get("cat", "全部")
-    all_cats = ["全部", "质检", "标注", "验收"]
-    if cat not in all_cats:
-        cat = "全部"
-    counts = {c: sum(1 for r in RULES if c == "全部" or r["stage"] == c) for c in all_cats}
-    counts["全部"] = len(RULES)
-    rules = RULES if cat == "全部" else [r for r in RULES if r["stage"] == cat]
+    rule_name = request.args.get("rule_name", "").strip()
+    stage = request.args.get("stage", "").strip()
+    owner = request.args.get("owner", "").strip()
+    allowed_stages = {"", "质检", "标注", "验收"}
+    if stage not in allowed_stages:
+        stage = ""
+    rules = [
+        rule
+        for rule in RULES
+        if (
+            (not rule_name or rule_name.lower() in rule["name"].lower())
+            and (not stage or rule["stage"] == stage)
+            and (not owner or owner.lower() in rule["owner"].lower())
+        )
+    ]
 
     cat_color = {
         "质检": "blue",
         "标注": "orange",
         "验收": "green",
     }
-
-    def _cat_tab(key):
-        cls = "tm-tab active" if cat == key else "tm-tab"
-        return f'<a class="{cls}" href="/data/rules?cat={key}">{key}<span class="ct">{counts[key]}</span></a>'
-
-    tabs_html = "".join(_cat_tab(c) for c in all_cats)
 
     rows = ""
     for r in rules:
@@ -5155,9 +5703,6 @@ def data_rules():
           <td class="mono">{r['id']}</td>
           <td><span class="wb-badge {color}">{r['stage']}</span></td>
           <td><b>{r['name']}</b></td>
-          <td>{html.escape(r.get('annotation_method', '—'))}</td>
-          <td>{html.escape(r.get('rule_config', '—'))}</td>
-          <td>{html.escape(r.get('workbench', '—'))}</td>
           <td class="muted" style="max-width:380px;font-size:12.5px;line-height:1.55;">{r['desc']}</td>
           <td>{enabled_tag}</td>
           <td>{r['owner']}</td>
@@ -5262,30 +5807,61 @@ def data_rules():
     """
 
     content = f"""
-    <div class="tm-bar">
-      <div class="tm-tabs">{tabs_html}</div>
-      <a class="btn btn-primary" href="#" onclick="openRuleCreate();return false;">+ 新增规则</a>
+    <div class="dpr-intro dpr-intro-inline-action">
+      <div>
+        <div class="dpr-intro-title-row">
+          <h1>规则管理</h1>
+          <div class="dpr-intro-actions"><a class="btn btn-primary" href="#" onclick="openRuleCreate();return false;">新增规则</a></div>
+        </div>
+        <p>维护数据处理与人工执行规则。</p>
+      </div>
     </div>
-
+    <form class="q-filters rule-filter-panel" method="get" action="/data/rules">
+      <div class="q-filter-row">
+        <div class="q-field">
+          <label for="ruleFilterName">规则名称</label>
+          <input id="ruleFilterName" name="rule_name" value="{html.escape(rule_name, quote=True)}" placeholder="请输入规则名称">
+        </div>
+        <div class="q-field">
+          <label for="ruleFilterStage">适用环节</label>
+          <select id="ruleFilterStage" name="stage">
+            <option value="">全部环节</option>
+            <option value="质检"{' selected' if stage == '质检' else ''}>质检</option>
+            <option value="标注"{' selected' if stage == '标注' else ''}>标注</option>
+            <option value="验收"{' selected' if stage == '验收' else ''}>验收</option>
+          </select>
+        </div>
+        <div class="q-field">
+          <label for="ruleFilterOwner">创建人</label>
+          <input id="ruleFilterOwner" name="owner" value="{html.escape(owner, quote=True)}" placeholder="请输入创建人">
+        </div>
+        <div class="q-actions">
+          <a class="btn" href="/data/rules">清空</a>
+          <button class="btn btn-primary" type="submit">查询</button>
+        </div>
+      </div>
+    </form>
     <div class="table-wrap">
       <table class="ant-table">
         <thead><tr>
           <th>规则 ID</th>
           <th>适用环节</th>
           <th>规则名称</th>
-          <th>标注方式</th>
-          <th>规则配置</th>
-          <th>关联工作台</th>
           <th>描述</th>
           <th>状态</th>
           <th>创建人</th>
           <th>创建时间</th>
           <th>操作</th>
         </tr></thead>
-        <tbody>{rows or '<tr><td colspan="11" style="text-align:center;padding:30px;color:rgba(0,0,0,0.25);">暂无数据</td></tr>'}</tbody>
+        <tbody>{rows or '<tr><td colspan="8" style="text-align:center;padding:30px;color:rgba(0,0,0,0.25);">暂无数据</td></tr>'}</tbody>
       </table>
     </div>
     {rule_drawer}
+    <style>
+      .rule-filter-panel{{margin-bottom:12px;padding:16px 18px}}
+      .rule-filter-panel .q-filter-row{{align-items:flex-end}}
+      .rule-filter-panel .q-field input,.rule-filter-panel .q-field select{{min-width:220px}}
+    </style>
     """
     return render_page("规则管理", content, active="/data/rules", module="data",
                        breadcrumb='数据平台 / <b>规则管理</b>', mvp_note="MVP 一期")
@@ -5509,7 +6085,7 @@ def label():
         <button class="btn btn-primary" onclick="queryFilters(this)">查询</button>
       </div>
       <div class="right">
-        <a href="#" class="btn" onclick="toast('Demo: 新建标注任务');return false;">+ 新建</a>
+        <a href="#" class="btn" onclick="toast('Demo: 新增标注任务');return false;">新增标注任务</a>
       </div>
     </div>
     <div class="table-wrap">
@@ -6128,7 +6704,7 @@ def experiments():
 
     <div class="list-summarybar">
       <div class="txt">运行中任务 <b>{running_count}</b> 条，全部任务 <b>{total_count}</b> 条</div>
-      <a class="btn btn-primary" onclick="openTrainDrawer();return false;">+ 新增训练任务</a>
+      <a class="btn btn-primary" onclick="openTrainDrawer();return false;">新增训练任务</a>
     </div>
 
     <div class="table-wrap">
@@ -6892,7 +7468,7 @@ def deploy():
     </div>
     <div class="list-summarybar">
       <div class="txt">进行中任务 <b>{running_count}</b> 条</div>
-      <a href="#" class="btn btn-primary" onclick="openDrawer('drawerDeploy');return false;">新建部署任务</a>
+      <a href="#" class="btn btn-primary" onclick="openDrawer('drawerDeploy');return false;">新增部署任务</a>
     </div>
     <div class="table-wrap deploy-table-wrap">
       <table class="ant-table">
@@ -7383,7 +7959,7 @@ def convert():
         <button class="btn btn-primary" onclick="queryFilters(this)">查询</button>
       </div>
       <div class="right">
-        <a href="#" class="btn" onclick="openDrawer('drawerConvert');return false;">+ 新建转换</a>
+        <a href="#" class="btn" onclick="openDrawer('drawerConvert');return false;">新增模型转换</a>
       </div>
     </div>
     <div class="table-wrap">
@@ -7615,7 +8191,7 @@ def tenant_tenants():
         <button class="btn btn-primary" onclick="queryFilters(this)">查询</button>
       </div>
       <div class="right">
-        <a href="#" class="btn btn-primary" onclick="toast('Demo: 新增租户');return false;">+ 新增租户</a>
+        <a href="#" class="btn btn-primary" onclick="toast('Demo: 新增租户');return false;">新增租户</a>
       </div>
     </div>
     <div class="table-wrap">
@@ -7867,7 +8443,7 @@ def tenant_resources():
 
     content = f"""
     <div class="page-actions">
-      <a href="#" class="btn btn-primary" onclick="openDrawer('drawerResourceGroup');return false;">+ 新增资源组</a>
+      <a href="#" class="btn btn-primary" onclick="openDrawer('drawerResourceGroup');return false;">新增资源组</a>
     </div>
 
     <div class="res-card-grid">{card_html}</div>
@@ -8143,7 +8719,7 @@ def tenant_queues():
     </div>
     <div class="list-summarybar">
       <div class="txt">全部队列 <b>{len(queue_rows)}</b> 条</div>
-      <a href="#" class="btn btn-primary" onclick="openDrawer('drawerQueueCreate');return false;">+ 新建队列</a>
+      <a href="#" class="btn btn-primary" onclick="openDrawer('drawerQueueCreate');return false;">新增队列</a>
     </div>
     <div class="table-wrap">
       <table class="ant-table">

@@ -283,6 +283,21 @@ OPERATORS = [
      "io_in": "LeRobot 数据集 (episodes.jsonl + parquet)", "io_out": "完整性报告"},
 ]
 
+# 算子管理中实际维护、允许数据处理流程绑定的算子。
+MANAGED_OPERATORS = [
+    {
+        "id": "op_e2e_segment_annotation",
+        "name": "端到端切分标注处理算子",
+        "ident": "e2e_segment_annotation",
+        "script": "e2e_segment_annotation.py",
+        "cat": "标注",
+        "creator": "joanna.qiao",
+        "desc": "完成端到端数据切分、动作片段标注与结构化结果输出。",
+        "params": "--recording-id / --flow-version / --annotation-schema",
+        "returns": "切分片段、动作标注与处理结果 JSON",
+    }
+]
+
 PIPELINES = [
     {"id": "pl1", "name": "标准训练数据流水线", "creator": "joanna.qiao", "status": "已保存", "updated": "2026-06-03 18:22",
      "stages": ["op_split", "op_sample", "op_sample_verify", "op_check_evalset", "op_check_chinese"],
@@ -481,7 +496,7 @@ _review_flows = [
         "id": "pl3a",
         "name": "端到端切分标注流程",
         "creator": "joanna.qiao",
-        "status": "已保存",
+        "status": "启用",
         "updated": "2026-07-29 10:16",
         "stages": [],
         "schedules": [],
@@ -490,7 +505,12 @@ _review_flows = [
         "output_contract": "annotation_payload + annotation_version",
         "desc": "自动切分后依次完成供应商抽验、供应商复核、供应商验收与内部验收。",
         "flow_nodes": [
-            {"name": "端到端切分", "kind": "automatic", "meta": "生成初始动作片段"},
+            {
+                "name": "端到端切分",
+                "kind": "automatic",
+                "meta": "生成初始动作片段",
+                "operator_id": "op_e2e_segment_annotation",
+            },
             {
                 "name": "供应商抽验",
                 "kind": "human",
@@ -526,7 +546,31 @@ _review_flows = [
                 "reject_enabled": True,
                 "reject_targets": ["供应商复核"],
             },
-            {"name": "全部 50%", "kind": "condition", "meta": "条件 · 比例"},
+            {
+                "name": "供应商抽样",
+                "kind": "condition",
+                "meta": "供应商 A 抽 50%，供应商 B 抽 30%",
+                "branches": [
+                    {
+                        "name": "供应商抽样",
+                        "logic": "or",
+                        "rules": [
+                            {
+                                "field": "供应商",
+                                "operator": "等于",
+                                "value": "供应商 A",
+                                "percent": 50,
+                            },
+                            {
+                                "field": "供应商",
+                                "operator": "等于",
+                                "value": "供应商 B",
+                                "percent": 30,
+                            },
+                        ],
+                    }
+                ],
+            },
             {
                 "name": "内部验收",
                 "kind": "human",
@@ -902,6 +946,7 @@ select option:disabled { color:rgba(0,0,0,0.32); }
 /* 统一行高 = 两行 */
 .row2 tbody td { vertical-align:middle; }
 .row2 .desc-clamp { display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; line-height:1.5; min-height:42px; }
+.row2 .wf-desc-clamp { display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:380px; }
 .status-head-filter { position:relative; display:inline-flex; align-items:center; height:26px; }
 .status-head-trigger { display:inline-flex; align-items:center; gap:6px; border:0; background:transparent; padding:0; color:rgba(0,0,0,0.85); font:inherit; font-weight:600; cursor:pointer; }
 .status-head-trigger .caret { font-size:15px; line-height:1; transform:translateY(-1px); color:rgba(0,0,0,0.78); }
@@ -1233,8 +1278,6 @@ select option:disabled { color:rgba(0,0,0,0.32); }
 .wf-tab { padding:5px 14px; border-radius:6px; font-size:14px; cursor:pointer; color:rgba(0,0,0,0.65); }
 .wf-tab.active { background:#e6f4f8; color:#1F80A0; font-weight:500; }
 .wf-actions { display:flex; gap:8px; }
-.wf-version-switch { height:30px; min-width:92px; padding:3px 28px 3px 10px; border:1px solid #d9d9d9; border-radius:7px; background:#fff; color:rgba(0,0,0,.68); font-size:12px; outline:none; }
-.wf-version-switch:focus { border-color:#1F80A0; box-shadow:0 0 0 2px rgba(31,128,160,.09); }
 .wf-effective-tag { display:inline-flex; align-items:center; height:22px; padding:0 8px; border-radius:11px; background:#edf8ef; color:#4b9b5f; font-size:11px; font-weight:500; white-space:nowrap; }
 /* ---- 自由画布 (free-form DAG canvas) ---- */
 .wf-stage { display:flex; gap:0; height:calc(100vh - 200px); }
@@ -1242,21 +1285,21 @@ select option:disabled { color:rgba(0,0,0,0.32); }
 .wf-pan { position:absolute; left:0; top:0; transform-origin:0 0; }
 .wf-edges { position:absolute; left:0; top:0; width:4000px; height:3000px; overflow:visible; pointer-events:none; z-index:1; }
 .wf-edges path.edge { pointer-events:stroke; cursor:pointer; }
-.wf-node { position:absolute; width:220px; background:#fff; border:1px solid #e8e8e8; border-radius:10px; box-shadow:0 2px 10px rgba(0,0,0,0.06); z-index:2; user-select:none; }
-.wf-node.sel { border-color:#1F80A0; box-shadow:0 4px 16px rgba(31,128,160,0.22); }
+.wf-node { position:absolute; width:240px; box-sizing:border-box; background:#fff; border:1px solid #e8e8e8; border-radius:10px; box-shadow:0 2px 10px rgba(0,0,0,0.06); z-index:2; user-select:none; }
+.wf-node.sel { box-shadow:0 0 0 2px rgba(31,128,160,.12),0 4px 16px rgba(31,128,160,.18); }
 .wf-node-head { display:flex; align-items:center; gap:8px; padding:11px 13px; font-weight:600; font-size:14px; color:rgba(0,0,0,0.85); border-bottom:1px solid #f5f5f5; cursor:move; }
 .wf-node-del { margin-left:auto; color:rgba(0,0,0,0.25); cursor:pointer; font-size:16px; line-height:1; padding:0 2px; }
 .wf-node-del:hover { color:#ff4d4f; }
-.wf-node-ic { width:22px; height:22px; border-radius:6px; background:#e6f4f8; color:#1F80A0; display:flex; align-items:center; justify-content:center; font-size:12px; flex:none; }
+.wf-node-ic { width:30px; height:30px; border-radius:8px; background:#e6f4f8; color:#1F80A0; display:flex; align-items:center; justify-content:center; font-size:12px; flex:none; }
+.wf-node-ic svg { width:17px; height:17px; fill:none; stroke:currentColor; stroke-width:1.9; stroke-linecap:round; stroke-linejoin:round; }
 .wf-node-row { display:flex; padding:6px 13px; font-size:12px; align-items:center; }
 .wf-node-row .k { color:rgba(0,0,0,0.4); width:40px; flex:none; }
 .wf-node-row .v { color:rgba(0,0,0,0.75); flex:1; text-align:right; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-.wf-port { position:absolute; top:50%; width:13px; height:13px; margin-top:-6.5px; border-radius:50%; background:#fff; border:2px solid #9ec3d6; cursor:crosshair; z-index:3; }
-.wf-port:hover { border-color:#1F80A0; background:#1F80A0; }
+.wf-port { position:absolute; top:50%; width:13px; height:13px; margin-top:-6.5px; border-radius:50%; background:#fff; border:2px solid #36967e; cursor:crosshair; z-index:3; }
+.wf-port:hover { border-color:#247d68; background:#e9f7f2; }
 .wf-port.in { left:-7px; }
 .wf-port.out { right:-7px; }
 .wf-empty { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; color:rgba(0,0,0,0.3); gap:10px; z-index:0; }
-.wf-hint { position:absolute; left:16px; top:14px; font-size:12px; color:rgba(0,0,0,0.38); background:rgba(255,255,255,0.7); padding:4px 10px; border-radius:6px; z-index:4; }
 .wf-toolbar { position:absolute; left:16px; bottom:16px; display:flex; align-items:center; gap:6px; background:#fff; border:1px solid #f0f0f0; border-radius:8px; padding:6px 10px; box-shadow:0 2px 8px rgba(0,0,0,0.08); z-index:4; }
 .wf-toolbar .zbtn { width:26px; height:26px; border:none; background:none; cursor:pointer; color:rgba(0,0,0,0.55); border-radius:5px; font-size:15px; }
 .wf-toolbar .zbtn:hover { background:#f5f5f5; }
@@ -1372,31 +1415,53 @@ textarea.wf-edit-field { min-height:64px; height:auto; resize:vertical; line-hei
 .wf-phase-terminal.input { left:24px; }
 .wf-phase-terminal.output { right:24px; }
 .wf-phase-terminal .wf-port { top:50%; }
-.wf-node.automatic { border-color:#9ec8dc; background:#eef8fc; }
-.wf-node.automatic .wf-node-ic { background:#dceff7; color:#237c9c; }
-.wf-node.human { border-color:#b8d4c1; background:#f3fbf5; }
-.wf-node.human .wf-node-ic { background:#e5f5e9; color:#3f8760; }
-.wf-node.condition { height:86px; border:0; border-radius:0; background:transparent; box-shadow:none; }
-.wf-node.condition::before,
-.wf-node.condition::after { content:''; position:absolute; clip-path:polygon(50% 0,100% 50%,50% 100%,0 50%); }
-.wf-node.condition::before { top:6px; left:39px; width:142px; height:74px; background:#aab5b9; filter:drop-shadow(0 2px 5px rgba(0,0,0,.08)); }
-.wf-node.condition::after { top:8px; left:42px; width:136px; height:70px; background:#fff; }
-.wf-condition-content { position:absolute; z-index:2; top:23px; left:50px; right:50px; text-align:center; }
-.wf-condition-content strong { display:block; color:rgba(0,0,0,.78); font-size:13px; line-height:1.35; }
-.wf-condition-content small { display:block; margin-top:4px; color:rgba(0,0,0,.42); font-size:10.5px; }
-.wf-node.condition .wf-node-del { position:absolute; z-index:3; top:-4px; right:28px; }
-.wf-node.condition .wf-port.in { left:32px; }
-.wf-node.condition .wf-port.out { right:32px; }
-.wf-node.condition .wf-port.out::after { content:'是'; position:absolute; top:-18px; left:3px; color:#7d8d92; font-size:10px; white-space:nowrap; }
-.wf-node.condition .wf-port.branch { top:auto; right:auto; bottom:-7px; left:50%; margin:0 0 0 -6.5px; }
-.wf-node.condition .wf-port.branch::after { content:'否'; position:absolute; top:10px; left:10px; color:#7d8d92; font-size:10px; white-space:nowrap; }
+.wf-node.automatic,.wf-node.human,.wf-node.acceptance,.wf-node.flow-terminal { height:104px; min-height:104px; border:1px solid #d7e1e5; background:#fff; border-radius:10px; box-shadow:0 3px 10px rgba(37,73,87,.10); }
+.wf-node.automatic { border-left:5px solid #19a9d1; }
+.wf-node.automatic .wf-node-ic { background:#e8f7fb; color:#168fb2; }
+.wf-node.human,.wf-node.acceptance { border-left:5px solid #48a86b; }
+.wf-node.human .wf-node-ic,.wf-node.acceptance .wf-node-ic { background:#eaf7ee; color:#348d56; }
+.wf-node-head { min-height:52px; box-sizing:border-box; border-bottom:0; padding:14px 14px 5px; color:#315064; }
+.wf-node-subtitle { padding:0 14px 15px 52px; overflow:hidden; color:#6f818a; font-size:12px; line-height:1.45; text-overflow:ellipsis; white-space:nowrap; }
+.wf-node.condition { min-height:180px; height:auto; border:1px solid #d7e1e5; border-left:5px solid #ee9b32; border-radius:10px; background:#fff; box-shadow:0 3px 10px rgba(37,73,87,.10); overflow:visible; }
+.wf-node.condition.sel { box-shadow:0 0 0 2px rgba(31,128,160,.12),0 4px 14px rgba(19,78,94,.12); }
+.wf-condition-head { display:flex; align-items:center; gap:9px; height:56px; box-sizing:border-box; padding:11px 14px; border-bottom:1px solid #edf1f2; }
+.wf-condition-head i { display:flex; align-items:center; justify-content:center; width:30px; height:30px; border-radius:8px; background:#fff3e4; color:#dc8125; font-style:normal; }
+.wf-condition-head i svg { width:17px; height:17px; fill:none; stroke:currentColor; stroke-width:1.9; stroke-linecap:round; stroke-linejoin:round; }
+.wf-condition-head strong { color:#26363d; font-size:13px; }
+.wf-condition-branch-list { padding:0 14px 10px; }
+.wf-condition-branch { position:relative; display:flex; align-items:center; justify-content:space-between; min-height:38px; border-bottom:1px solid #f1f3f4; color:#66747c; font-size:11px; }
+.wf-condition-branch:last-child { border-bottom:0; }
+.wf-condition-branch b { margin-right:3px; color:#34444c; font-size:11px; }
+.wf-condition-branch .wf-branch-port { position:absolute; right:-22px; top:50%; width:14px; height:14px; margin-top:-7px; border:2px solid #36967e; border-radius:50%; background:#fff; box-shadow:0 0 0 3px #fff; cursor:crosshair; box-sizing:border-box; }
+.wf-node.condition .wf-node-del { position:absolute; top:8px; right:9px; z-index:3; }
+.wf-node.condition .wf-port.in { left:-8px; top:75px; }
+.wf-node.condition .wf-port.out { display:none; }
+.wf-node.condition .wf-port.branch { display:none; }
 .wf-edges path.edge.no-branch { stroke:#8c969a; stroke-dasharray:6 4; }
-.wf-node.acceptance { border-color:#a9ceb5; background:#eef9f1; }
-.wf-node.acceptance .wf-node-ic { background:#dff2e5; color:#397b53; }
+.wf-branch-editor { border:1px solid #e6eaec; border-radius:10px; margin-bottom:12px; background:#fff; overflow:hidden; }
+.wf-branch-editor-head { display:flex; align-items:center; gap:8px; padding:10px 12px; background:#f8fafb; border-bottom:1px solid #edf0f1; }
+.wf-branch-editor-head b { font-size:13px; color:#2f3e46; }
+.wf-branch-editor-head input { flex:1; }
+.wf-branch-editor-head .wf-row-del { margin-left:auto; }
+.wf-branch-rules { padding:10px 12px 4px; }
+.wf-branch-rule-head { display:grid; grid-template-columns:1.05fr 88px 1.12fr 64px 24px; gap:7px; padding:0 0 6px; color:#7a898f; font-size:10.5px; }
+.wf-branch-rule { display:grid; grid-template-columns:1.05fr 88px 1.12fr 64px 24px; gap:7px; align-items:center; }
+.wf-branch-rule .wf-edit-field { min-width:0; }
+.wf-branch-logic { position:relative; display:flex; align-items:center; justify-content:center; height:24px; color:#198da2; font-size:10px; font-weight:600; }
+.wf-branch-logic::before,.wf-branch-logic::after { content:''; height:1px; background:#e3e9eb; flex:1; }
+.wf-branch-logic span { display:inline-flex; align-items:center; justify-content:center; min-width:24px; height:18px; margin:0 8px; border-radius:9px; background:#eaf7f8; color:#178493; }
+.wf-branch-add-condition { margin:0 12px 11px; }
+.wf-fallback-box { margin-top:15px; padding:14px; border-top:1px solid #edf0f1; background:#fafbfc; color:#65747c; font-size:12px; line-height:1.6; }
+.wf-fallback-box b { display:block; margin-bottom:4px; color:#33444c; font-size:14px; }
+.wf-node.acceptance { border-color:#d7e1e5; border-left-color:#48a86b; background:#fff; }
+.wf-node.automatic.sel,.wf-node.human.sel,.wf-node.acceptance.sel { box-shadow:0 0 0 2px rgba(31,128,160,.12),0 4px 14px rgba(19,78,94,.16); }
 .wf-node .wf-node-phase { margin-left:auto; padding:1px 6px; border-radius:4px; background:#f2f5f6; color:rgba(0,0,0,.42); font-size:10px; font-weight:400; }
-.wf-node.flow-terminal { width:76px; min-height:40px; box-sizing:border-box; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; border:1.5px solid #8c989d; border-radius:24px; background:#fff; box-shadow:none; cursor:move; }
-.wf-node.flow-terminal strong { font-size:12px; text-transform:lowercase; }
-.wf-node.flow-terminal small { position:absolute; top:46px; left:50%; width:170px; transform:translateX(-50%); color:rgba(0,0,0,.45); font-size:9px; line-height:1.35; text-align:center; }
+.wf-node.flow-terminal { width:240px; display:block; cursor:move; }
+.wf-node.flow-input { border-left:5px solid #16a39a; }
+.wf-node.flow-input .wf-node-ic { background:#e7f7f5; color:#11877f; }
+.wf-node.flow-output { border-left:5px solid #756fd0; }
+.wf-node.flow-output .wf-node-ic { background:#efedfb; color:#635bc0; }
+.wf-node.flow-terminal .wf-node-head { cursor:move; }
 .wf-choice-grid { display:grid; grid-template-columns:1fr 1fr; gap:7px; margin-top:8px; }
 .wf-choice-grid label { display:flex; align-items:center; gap:7px; min-height:34px; box-sizing:border-box; padding:7px 9px; border:1px solid #e0e6e8; border-radius:7px; background:#fff; color:#40565e; font-size:11px; }
 .wf-choice-grid label:has(input:disabled) { background:#f5f6f7; color:rgba(0,0,0,.28); cursor:not-allowed; }
@@ -4229,28 +4294,29 @@ def dataset_new_panel_v2():
 
 @app.route("/operators")
 def operators():
-    cat_order = ["导出", "切分", "配方", "统计"]
-    cat_color = {"导出": "tag-blue", "切分": "tag-purple", "配方": "tag-orange", "统计": "tag-gray"}
+    displayed_operators = MANAGED_OPERATORS
+    cat_order = ["标注"]
 
     rows = ""
     for cat in cat_order:
-        for op in [o for o in OPERATORS if o["cat"] == cat]:
+        for op in [o for o in displayed_operators if o["cat"] == cat]:
             rows += f"""<tr>
-              <td><a href="#" onclick="openOpDetail('{op['id']}');return false;">{op['name']}</a></td>
+              <td><b>{op['name']}</b></td>
               <td><span class="op-script">{op['ident']}</span></td>
               <td class="muted" style="max-width:460px;"><span class="desc-clamp">{op['desc']}</span></td>
               <td>{op['creator']}</td>
-              <td class="actions-cell"><a href="/pipelines?op={op['id']}">关联工作流</a> · <a href="#" onclick="openOpForm('{op['id']}');return false;">编辑</a></td>
+              <td class="actions-cell"><a href="/pipelines?op={op['id']}">关联工作流</a></td>
             </tr>"""
 
     ops_js = json.dumps({o["id"]: {"name": o["name"], "ident": o["ident"], "script": o["script"],
                                    "cat": o["cat"], "creator": o["creator"], "desc": o["desc"],
-                                   "params": o["params"], "returns": o["returns"]} for o in OPERATORS})
+                                   "params": o["params"], "returns": o["returns"]} for o in displayed_operators})
 
     creator_checks = "".join(
         f'<label><input type="checkbox" value="{c}" onchange="msUpdate(this)">{c}</label>'
-        for c in sorted(set(o["creator"] for o in OPERATORS)))
+        for c in sorted(set(o["creator"] for o in displayed_operators)))
     content = f"""
+    <div class="dpr-intro"><div><h1>算子管理</h1><p>管理工作流可复用的处理算子。</p></div></div>
     <div class="filter-bar">
       <input placeholder="搜索算子名称 / 标识...">
       <div class="ms-wrap">
@@ -4259,7 +4325,6 @@ def operators():
       </div>
       <button class="btn" onclick="resetFilters(this)">重置</button>
       <button class="btn-primary btn" onclick="queryFilters(this)">查询</button>
-      <button class="btn-primary btn" onclick="openOpForm('')" style="margin-left:auto;">+ 新建算子</button>
     </div>
     <div class="muted" style="margin-bottom:12px;">每个算子 = 一个「原子处理能力」的封装, 可被编排到工作流。</div>
     <table class="ant-table row2">
@@ -4350,9 +4415,18 @@ def operators():
 def pipelines():
     keyword = request.args.get("q", "").strip()
     business_stage = request.args.get("stage", "").strip()
+    enabled_pipeline = next(
+        pl for pl in PIPELINES if pl["name"] == "端到端切分标注流程"
+    )
+    draft_pipeline = {
+        **enabled_pipeline,
+        "name": "端到端切分标注流程（草稿）",
+        "status": "草稿",
+        "updated": "2026-08-04 11:30",
+    }
     pls = [
         pl
-        for pl in PIPELINES
+        for pl in (enabled_pipeline, draft_pipeline)
         if (
             not keyword
             or keyword.lower() in pl["name"].lower()
@@ -4365,51 +4439,59 @@ def pipelines():
     ]
     rows = ""
     for pl in pls:
-        scheds = pl.get("schedules", [])
-        n_sch = len(scheds)
-        sch_title = " / ".join(scheds) if scheds else "无周期调度"
-        sch_cell = (f'<span class="sched-badge" title="{sch_title}">{n_sch}</span>'
-                    if n_sch else '<span class="muted">0</span>')
-        flow_nodes = pl.get("flow_nodes", [])
-        automatic_count = sum(
-            node.get("kind") in {"automatic", "operator"} for node in flow_nodes
-        )
-        human_count = sum(
-            node.get("kind") in {"human", "acceptance"} for node in flow_nodes
-        )
-        structure_cell = (
-            f'<span>自动化 <b>{automatic_count}</b></span>'
-            f'<span style="margin-left:12px;">人工 <b>{human_count}</b></span>'
-        )
+        flow_status = pl.get("status", "草稿")
+        if flow_status not in {"草稿", "启用", "停用"}:
+            flow_status = "草稿"
+        status_class = {
+            "草稿": "qa-pend",
+            "启用": "qa-pass",
+            "停用": "qa-fail",
+        }[flow_status]
+        if flow_status == "启用":
+            actions = (
+                '<a href="#" onclick="toast(\'Demo: 流程已停用\');return false;">停用</a> '
+                f'<a href="/pipelines/{pl["id"]}?mode=view">详情</a>'
+            )
+        else:
+            actions = (
+                '<a href="#" onclick="toast(\'Demo: 流程已启用\');return false;">启用</a> '
+                f'<a href="/pipelines/{pl["id"]}">编辑</a> '
+                f'<a href="/pipelines/{pl["id"]}?mode=view">详情</a>'
+            )
         rows += f"""<tr>
           <td><b>{pl['name']}</b></td>
           <td><span class="tag tag-cyan">{pl.get('business_stage', '通用')}</span></td>
-          <td class="muted" style="max-width:380px;"><span class="desc-clamp">{pl['desc']}</span></td>
-          <td class="wf-structure-count">{structure_cell}</td>
-          <td>{sch_cell}</td>
+          <td class="muted" style="max-width:380px;"><span class="wf-desc-clamp">{pl['desc']}</span></td>
           <td>{pl['creator']}</td>
-          <td><label class="switch"><input type="checkbox" checked onchange="toast(this.checked?'已启用工作流':'已停用工作流')"><span class="slider"></span></label></td>
+          <td><span class="qa {status_class}">{flow_status}</span></td>
           <td class="muted">{pl['updated']}</td>
-          <td class="actions-cell"><a href="/pipelines/{pl['id']}?mode=view">查看</a> · <a href="/pipelines/{pl['id']}">编辑</a></td>
+          <td class="actions-cell">{actions}</td>
         </tr>"""
     if not rows:
-        rows = '<tr><td colspan="9" class="muted" style="text-align:center;padding:24px;">无匹配工作流</td></tr>'
+        rows = '<tr><td colspan="7" class="muted" style="text-align:center;padding:24px;">无匹配工作流</td></tr>'
     keyword_value = html.escape(keyword, quote=True)
     stage_options = ['<option value="">全部业务环节</option>']
     for stage in ("质检", "标注", "验收"):
         selected = " selected" if business_stage == stage else ""
         stage_options.append(f'<option value="{stage}"{selected}>{stage}</option>')
     content = f"""
+    <div class="dpr-intro dpr-intro-inline-action">
+      <div>
+        <div class="dpr-intro-title-row">
+          <h1>流程管理</h1>
+          <div class="dpr-intro-actions"><a href="/pipelines/new" class="btn-primary btn">新增流程</a></div>
+        </div>
+        <p>配置并管理数据处理工作流。</p>
+      </div>
+    </div>
     <form class="filter-bar" method="get" action="/pipelines">
       <input name="q" value="{keyword_value}" placeholder="搜索工作流...">
       <select name="stage">{''.join(stage_options)}</select>
       <a class="btn" href="/pipelines">重置</a>
       <button class="btn-primary btn" type="submit">查询</button>
-      <a href="/pipelines/new" class="btn-primary btn" style="margin-left:auto;">+ 新建工作流</a>
     </form>
     <table class="ant-table row2">
-      <thead><tr><th>名称</th><th>业务环节</th><th>描述</th><th>流程结构</th>
-      <th>周期调度数</th><th>创建人</th><th>状态</th>
+      <thead><tr><th>名称</th><th>业务环节</th><th>描述</th><th>创建人</th><th>状态</th>
       <th>更新时间</th><th>操作</th></tr></thead>
       <tbody>{rows}</tbody>
     </table>
@@ -4421,7 +4503,7 @@ WF_CANVAS_JS = r"""
 (function(){
   var NODES = __NODES__, EDGES = __EDGES__, FRAMES = __FRAMES__;
   var seq = NODES.length;
-  var W = 220, DEF_H = 126, CONDITION_H = 86, TERM_W = 76, TERM_H = 40;
+  var W = 240, NODE_H = 104, DEF_H = NODE_H, CONDITION_H = 180, TERM_W = 76, TERM_H = 40;
   var canvas = document.getElementById('wfCanvas');
   var pan = document.getElementById('wfPan');
   var framesLayer = document.getElementById('wfFrames');
@@ -4447,27 +4529,41 @@ WF_CANVAS_JS = r"""
   function toLocal(cx, cy){ var r=canvas.getBoundingClientRect(); return { x:(cx-r.left-panX)/z, y:(cy-r.top-panY)/z }; }
   function nodeH(n){ var el=nodesLayer.querySelector('.wf-node[data-id="'+n.id+'"]'); return (el&&el.offsetHeight)||DEF_H; }
   function ports(n){
-    if(n.kind==='phase-input'||n.kind==='phase-output'||n.kind==='flow-input'||n.kind==='flow-output'){
+    if(n.kind==='phase-input'||n.kind==='phase-output'){
       return {
         inp:{x:n.x, y:n.y+TERM_H/2},
         out:{x:n.x+TERM_W, y:n.y+TERM_H/2}
       };
     }
-    var h=n.kind==='condition'?CONDITION_H:nodeH(n);
-    if(n.kind==='condition'){
-      return {
-        inp:{x:n.x+39, y:n.y+h/2},
-        out:{x:n.x+181, y:n.y+h/2},
-        branch:{x:n.x+W/2, y:n.y+h}
+    if(n.kind==='flow-input'||n.kind==='flow-output'){
+      var terminalPorts={
+        inp:{x:n.x, y:n.y+NODE_H/2},
+        out:{x:n.x+W, y:n.y+NODE_H/2}
       };
+      return terminalPorts;
+    }
+    var h=nodeH(n);
+    if(n.kind==='condition'){
+      var conditionPorts={
+        inp:{x:n.x, y:n.y+76},
+        out:{x:n.x+W, y:n.y+76},
+        branch:{x:n.x+W, y:n.y+h}
+      };
+      var branchCount=(n.branches&&n.branches.length?n.branches.length:1);
+      for(var branchIndex=0;branchIndex<branchCount;branchIndex++){
+        conditionPorts['branch-'+branchIndex]={x:n.x+W,y:n.y+57+19+branchIndex*38};
+      }
+      conditionPorts.branch={x:n.x+W,y:n.y+57+19+branchCount*38};
+      return conditionPorts;
     }
     return {
-      inp:{x:n.x, y:n.y+h/2},
+      inp:{x:n.x, y:n.y+NODE_H/2},
       out:{x:n.x+W, y:n.y+h/2},
       branch:{x:n.x+W/2, y:n.y+h}
     };
   }
   function orthogonalPath(s,t){
+    if(Math.abs(t.y-s.y)<2 && t.x>=s.x) return 'M'+s.x+' '+s.y+' H'+t.x;
     if(t.x>=s.x+56){
       var middle=(s.x+t.x)/2;
       return 'M'+s.x+' '+s.y+' H'+middle+' V'+t.y+' H'+t.x;
@@ -4475,21 +4571,20 @@ WF_CANVAS_JS = r"""
     var lane=Math.min(s.y,t.y)-52;
     return 'M'+s.x+' '+s.y+' H'+(s.x+34)+' V'+lane+' H'+(t.x-34)+' V'+t.y+' H'+t.x;
   }
-  function branchPath(s,t,source,target){
-    var minX=Math.min(s.x,t.x), maxX=Math.max(s.x,t.x);
-    var lane=s.y+48;
-    NODES.forEach(function(node){
-      if((source&&node.id===source.id)||(target&&node.id===target.id)) return;
-      var width=(node.kind==='flow-input'||node.kind==='flow-output')?TERM_W:W;
-      if(node.x+width<minX||node.x>maxX) return;
-      var height=node.kind==='condition'?CONDITION_H:nodeH(node);
-      lane=Math.max(lane,node.y+height+34);
-    });
-    var approach=t.x-34;
-    return 'M'+s.x+' '+s.y+' V'+lane+' H'+approach+' V'+t.y+' H'+t.x;
+  function branchPath(s,t,source,target,fromPort){
+    if(Math.abs(t.y-s.y)<2 && t.x>=s.x) return 'M'+s.x+' '+s.y+' H'+t.x;
+    var branchIndex=fromPort==='branch'?((source.branches&&source.branches.length)||1):parseInt(String(fromPort||'branch-0').replace('branch-',''),10)||0;
+    if(target&&target.kind==='flow-output' && t.x>s.x){
+      var lane=source.y+nodeH(source)+28+branchIndex*30;
+      var leave=s.x+24+branchIndex*12;
+      var approach=t.x-24-branchIndex*12;
+      return 'M'+s.x+' '+s.y+' H'+leave+' V'+lane+' H'+approach+' V'+t.y+' H'+t.x;
+    }
+    var middle=t.x>=s.x?(s.x+t.x)/2:s.x+42;
+    return 'M'+s.x+' '+s.y+' H'+middle+' V'+t.y+' H'+t.x;
   }
   function bezier(s,t){ return orthogonalPath(s,t); }
-  function branchBezier(s,t,source,target){ return branchPath(s,t,source,target); }
+  function branchBezier(s,t,source,target,fromPort){ return branchPath(s,t,source,target,fromPort); }
 
   function renderFrames(){
     if(!framesLayer) return;
@@ -4515,9 +4610,10 @@ WF_CANVAS_JS = r"""
     }
     for(var i=0;i<EDGES.length;i++){
       var a=entityById(EDGES[i].from), b=entityById(EDGES[i].to); if(!a||!b) continue;
-      var fromPort=EDGES[i].fromPort||'out';
-      var s=ports(a)[fromPort]||ports(a).out, t=ports(b).inp;
-      var path=fromPort==='branch'?branchBezier(s,t,a,b):bezier(s,t);
+      var fromPort=EDGES[i].fromPort||'out', toPort=EDGES[i].toPort||'inp';
+      var sourcePorts=ports(a), targetPorts=ports(b);
+      var s=sourcePorts[fromPort]||sourcePorts.out, t=targetPorts[toPort]||targetPorts.inp;
+      var path=fromPort.indexOf('branch')===0?branchBezier(s,t,a,b,fromPort):bezier(s,t);
       var edgeClass='edge'+(EDGES[i].branch==='no'?' no-branch':'');
       p+='<path class="'+edgeClass+'" data-i="'+i+'" d="'+path+'" fill="none" stroke="#9ec3d6" stroke-width="2" marker-end="url(#wfArrow)"/>';
     }
@@ -4527,39 +4623,53 @@ WF_CANVAS_JS = r"""
       '<marker id="wfPhaseArrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="#5f9fac"/></marker>'+
       '</defs>'+p;
   }
+  function nodeIcon(kind){
+    var icons={
+      'flow-input':'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 6.5 17 12l-9 5.5z" fill="currentColor" stroke="none"/></svg>',
+      'flow-output':'<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6.5" y="6.5" width="11" height="11" rx="1.5" fill="currentColor" stroke="none"/></svg>',
+      automatic:'<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3.2"/><path d="M12 3.5v2M12 18.5v2M3.5 12h2M18.5 12h2M6 6l1.5 1.5M16.5 16.5 18 18M18 6l-1.5 1.5M7.5 16.5 6 18"/></svg>',
+      human:'<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.2"/><path d="M5.5 19c.8-4 3-6 6.5-6s5.7 2 6.5 6"/></svg>',
+      acceptance:'<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.2"/><path d="M5.5 19c.8-4 3-6 6.5-6s5.7 2 6.5 6"/></svg>',
+      condition:'<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="7" cy="5" r="2"/><circle cx="17" cy="12" r="2"/><circle cx="17" cy="19" r="2"/><path d="M7 7v7a5 5 0 0 0 5 5h3M7 10a5 5 0 0 0 5 2h3"/></svg>'
+    };
+    return icons[kind]||icons.automatic;
+  }
   function renderNodes(){
     var h='';
     for(var i=0;i<NODES.length;i++){
       var n=NODES[i];
       var kind=n.kind||'operator';
-      var icon=kind==='condition'?'◇':(kind==='human'?'人':(kind==='acceptance'?'✓':'⚙'));
       if(kind==='flow-input'||kind==='flow-output'){
         h+='<div class="wf-node flow-terminal '+kind+'" data-id="'+n.id+
           '" data-node-kind="'+kind+'" style="left:'+n.x+'px;top:'+n.y+'px;">'+
           (kind==='flow-output'?'<div class="wf-port in" data-port="in" data-id="'+n.id+'"></div>':'')+
-          '<strong>'+n.name+'</strong><small>'+n.desc+'</small>'+
+          '<div class="wf-node-head"><span class="wf-node-ic">'+nodeIcon(kind)+'</span>'+n.name+'</div>'+
+          '<div class="wf-node-subtitle">'+(kind==='flow-input'?'Start':'End')+'</div>'+
           (kind==='flow-input'?'<div class="wf-port out" data-port="out" data-id="'+n.id+'"></div>':'')+
         '</div>';
         continue;
       }
       if(kind==='condition'){
+        var branches=(n.branches&&n.branches.length?n.branches:[{name:'CASE 1',rules:[]}]);
+        branches=[branches[0]];
+        var branchRows=branches.map(function(branch,index){
+          return '<div class="wf-condition-branch"><span>'+esc(branch.name||'CASE 1')+'</span><b>IF</b><span class="wf-port wf-branch-port" data-port="branch-0" data-id="'+n.id+'"></span></div>';
+        }).join('')+'<div class="wf-condition-branch"><span>其他</span><b>ELSE</b><span class="wf-port wf-branch-port" data-port="branch" data-id="'+n.id+'"></span></div>';
         h+='<div class="wf-node condition'+(n.id===selId?' sel':'')+'" data-id="'+n.id+'" data-node-kind="condition" style="left:'+n.x+'px;top:'+n.y+'px;">'+
           '<div class="wf-port in" data-port="in" data-id="'+n.id+'"></div>'+
-          '<div class="wf-port out" data-port="out" data-id="'+n.id+'"></div>'+
-          '<div class="wf-port branch" data-port="branch" data-id="'+n.id+'"></div>'+
           '<span class="wf-node-del" data-del="'+n.id+'" title="删除">&times;</span>'+
-          '<div class="wf-condition-content"><strong>'+n.name+'</strong><small>'+n.desc+'</small></div>'+
+          '<div class="wf-condition-head"><i>'+nodeIcon('condition')+'</i><strong>'+n.name+'</strong></div>'+
+          '<div class="wf-condition-branch-list">'+branchRows+'</div>'+
         '</div>';
         continue;
       }
       h+='<div class="wf-node '+kind+(n.id===selId?' sel':'')+'" data-id="'+n.id+'" data-node-kind="'+kind+'" style="left:'+n.x+'px;top:'+n.y+'px;">'+
         '<div class="wf-port in" data-port="in" data-id="'+n.id+'"></div>'+
         '<div class="wf-port out" data-port="out" data-id="'+n.id+'"></div>'+
-        '<div class="wf-node-head"><span class="wf-node-ic">'+icon+'</span>'+n.name+
+        '<div class="wf-node-head"><span class="wf-node-ic">'+nodeIcon(kind)+'</span>'+n.name+
           (n.phase?'<span class="wf-node-phase">'+n.phase+'</span>':'')+
           '<span class="wf-node-del" data-del="'+n.id+'" title="删除">&times;</span></div>'+
-        '<div class="wf-node-row"><span class="k">标识</span><span class="v">'+n.ident+'</span></div>'+
-        '<div class="wf-node-row"><span class="k">描述</span><span class="v">'+n.desc+'</span></div>'+
+        '<div class="wf-node-subtitle">'+esc(n.desc||n.ident||kind)+'</div>'+
       '</div>';
     }
     nodesLayer.innerHTML=h;
@@ -4602,7 +4712,7 @@ WF_CANVAS_JS = r"""
       var a=entityById(conn.from); if(!a) return;
       var s=ports(a)[conn.side]||ports(a).out;
       var m=toLocal(e.clientX,e.clientY);
-      var previewPath=conn.side==='branch'?branchBezier(s,m):bezier(s,m);
+      var previewPath=conn.side.indexOf('branch')===0?branchBezier(s,m,a,null,conn.side):bezier(s,m);
       renderEdges('<path d="'+previewPath+'" fill="none" stroke="#1F80A0" stroke-width="2" stroke-dasharray="5 4"/>');
     } else if(panning){
       panX=panning.ox+(e.clientX-panning.sx); panY=panning.oy+(e.clientY-panning.sy); applyPan();
@@ -4612,7 +4722,7 @@ WF_CANVAS_JS = r"""
     if(conn){
       var port=e.target.closest('.wf-port');
       var portSide=port&&port.getAttribute('data-port');
-      var sourceSide=conn.side==='out'||conn.side==='branch';
+      var sourceSide=conn.side==='out'||conn.side.indexOf('branch')===0;
       var validPair=port&&(
         (sourceSide&&portSide==='in')||
         (!sourceSide&&(portSide==='out'||portSide==='branch'))
@@ -4621,7 +4731,8 @@ WF_CANVAS_JS = r"""
         var other=port.getAttribute('data-id');
         var f=sourceSide?conn.from:other, t=sourceSide?other:conn.from;
         var fromPort=sourceSide?conn.side:portSide;
-        if(f!==t && !EDGES.some(function(x){return x.from===f&&x.to===t&&((x.fromPort||'out')===fromPort);})) EDGES.push({from:f,to:t,fromPort:fromPort});
+        var toPort=sourceSide?portSide:'inp';
+        if(f!==t && !EDGES.some(function(x){return x.from===f&&x.to===t&&((x.fromPort||'out')===fromPort);})) EDGES.push({from:f,to:t,fromPort:fromPort,toPort:toPort});
       }
       conn=null; renderNodes(); return;
     }
@@ -4630,12 +4741,15 @@ WF_CANVAS_JS = r"""
   });
 
   var CONDITION_VALUES={
+    '所属项目':['预训练采集','宁德项目','demo 项目'],
+    '供应商':['供应商 A','供应商 B'],
     '质检结论':['合格','不合格','操作失误'],
     '标注状态':['未标注','已标注'],
     '采集结论':['成功','失败'],
     '上传状态':['未上传','上传中','上传成功','上传失败'],
     '数据来源':['采集','导入']
   };
+  var CONDITION_OPERATORS=['等于','不等于','属于','不属于'];
   var USER_GROUPS=[
     '标注员用户组','标注抽验员用户组','新规实验标注员用户组',
     '质检复核用户组','内部验收用户组'
@@ -4647,6 +4761,18 @@ WF_CANVAS_JS = r"""
   }
   function isHumanNode(n){ return n&&(n.kind==='human'||n.kind==='acceptance'); }
   function isConditionNode(n){ return n&&n.kind==='condition'; }
+  function isAutomaticNode(n){ return n&&(n.kind==='automatic'||n.kind==='operator'||!n.kind); }
+  function renderAutomaticOperatorOptions(selectedId){
+    var select=document.getElementById('wfaOperator');
+    var operatorIds=Object.keys(OPS);
+    select.innerHTML=operatorIds.length?operatorIds.map(function(operatorId){
+      return '<option value="'+esc(operatorId)+'">'+esc(OPS[operatorId].name)+'</option>';
+    }).join(''):'<option value="">暂无可用算子</option>';
+    select.disabled=!operatorIds.length;
+    var resolved=OPS[selectedId]?selectedId:(operatorIds[0]||'');
+    select.value=resolved;
+    return resolved;
+  }
   function defaultWorkbench(n){
     if((n.businessStage||'').indexOf('验收')>=0) return '详情工作台 v1.0';
     if((n.businessStage||'').indexOf('标注')>=0) return '标注工作台 v4.1';
@@ -4729,6 +4855,35 @@ WF_CANVAS_JS = r"""
     }).join('');
     document.getElementById('wfhRatioRuleEmpty').style.display=rows.length?'none':'block';
   }
+  function normalizedBranches(n){
+    if(n.branches&&n.branches.length) return [Object.assign({logic:'or'},n.branches[0])];
+    var legacyRules=(n.ratioRules&&n.ratioRules.length?n.ratioRules:(n.entryConditions||[]).map(function(item){
+      return {field:item.field,operator:item.operator||'等于',value:item.value,percent:n.entryRatio==null?100:n.entryRatio};
+    }));
+    return [{name:'CASE 1',logic:'or',rules:legacyRules.length?legacyRules:[{field:'供应商',operator:'等于',value:'供应商 A',percent:50}]}];
+  }
+  function branchRuleHtml(item,index){
+    var fields=Object.keys(CONDITION_VALUES);
+    var field=CONDITION_VALUES[item.field]?item.field:'供应商';
+    var operator=CONDITION_OPERATORS.indexOf(item.operator)>=0?item.operator:'等于';
+    var value=(CONDITION_VALUES[field].indexOf(item.value)>=0)?item.value:CONDITION_VALUES[field][0];
+    return (index?'<div class="wf-branch-logic"><span>或</span></div>':'')+'<div class="wf-branch-rule">'+
+      '<select class="wf-edit-field wf-branch-field" onchange="wfBranchFieldChange(this)">'+optionList(fields,field)+'</select>'+
+      '<select class="wf-edit-field wf-branch-operator">'+optionList(CONDITION_OPERATORS,operator)+'</select>'+
+      '<select class="wf-edit-field wf-branch-value">'+optionList(CONDITION_VALUES[field],value)+'</select>'+
+      '<div style="position:relative"><input class="wf-edit-field wf-branch-percent" type="number" min="1" max="100" value="'+(item.percent==null?100:item.percent)+'" style="padding-right:19px"><span style="position:absolute;right:7px;top:7px;color:#999;font-size:11px">%</span></div>'+
+      '<button type="button" class="wf-row-del" onclick="wfRemoveBranchRule(this)" title="删除">&times;</button></div>';
+  }
+  function renderConditionBranches(branches){
+    var items=branches&&branches.length?[branches[0]]:[{name:'CASE 1',rules:[]}];
+    document.getElementById('wfConditionBranches').innerHTML=items.map(function(branch,index){
+      var rules=branch.rules&&branch.rules.length?branch.rules:[{field:'供应商',operator:'等于',value:'供应商 A',percent:50}];
+      return '<section class="wf-branch-editor" data-branch-index="'+index+'">'+
+        '<div class="wf-branch-editor-head"><b>IF</b><input class="wf-edit-field wf-branch-name" value="'+esc(branch.name||'CASE 1')+'"></div>'+
+        '<div class="wf-branch-rules"><div class="wf-branch-rule-head"><span>筛选项</span><span>操作符</span><span>值</span><span>比例</span><span></span></div>'+rules.map(branchRuleHtml).join('')+'</div>'+
+        '<button type="button" class="wf-add-link wf-branch-add-condition" onclick="wfAddBranchRule(this)">&plus; 添加条件与比例</button></section>';
+    }).join('');
+  }
   function renderHumanChoices(holderId,items,selected,onchange,disabledItems){
     var selectedItems=selected||[];
     var disabled=disabledItems||[];
@@ -4765,12 +4920,13 @@ WF_CANVAS_JS = r"""
     var config=document.getElementById('wfConfig');
     var human=isHumanNode(n);
     var condition=isConditionNode(n);
+    var automatic=isAutomaticNode(n);
     config.classList.add('open');
-    config.classList.toggle('human-mode',human||condition);
+    config.classList.toggle('human-mode',human||condition||automatic);
     document.getElementById('wfcName').textContent=n.name+' · 配置';
     document.getElementById('wfHumanConfig').style.display=human?'block':'none';
     document.getElementById('wfConditionNodeConfig').style.display=condition?'block':'none';
-    document.getElementById('wfGenericConfig').style.display=(human||condition)?'none':'block';
+    document.getElementById('wfGenericConfig').style.display=automatic?'block':'none';
     if(human){
       document.getElementById('wfhName').value=n.name||'';
       document.getElementById('wfhIdent').value=n.ident||'';
@@ -4813,37 +4969,18 @@ WF_CANVAS_JS = r"""
       document.getElementById('wfcndName').value=n.name||'';
       document.getElementById('wfcndIdent').value=n.ident||'';
       document.getElementById('wfcndDesc').value=n.desc||'';
-      wfConditionMode(n.entryMode||'config');
-      renderConditionRows(n.entryConditions);
-      document.getElementById('wfhExpression').value=n.entryExpression||'';
-      wfRatioMode(n.ratioMode||'config');
-      document.getElementById('wfhRatioAdvancedToggle').checked=!!n.ratioAdvanced;
-      wfToggleRatioAdvanced(!!n.ratioAdvanced);
-      document.getElementById('wfhEntryRatio').value=n.entryRatio==null?100:n.entryRatio;
-      renderRatioRules(n.ratioRules);
-      document.getElementById('wfhRatioExpression').value=n.ratioExpression||'100';
+      renderConditionBranches(normalizedBranches(n));
       return;
     }
-    document.getElementById('wfcName2').textContent=n.name;
-    document.getElementById('wfcIdent').textContent=n.ident||'—';
-    document.getElementById('wfcDesc').textContent=n.desc||'—';
-    document.getElementById('wfcImage').textContent=n.image||'—';
-    document.getElementById('wfcScript').textContent=n.script||'—';
-    document.getElementById('wfcReturns').textContent=(n.returns||'—').split(/ \+ | \/ /).join('\n');
-    // 参数取值: 算子定义出 schema, 节点填值 (默认=算子默认, 可覆盖/可引用流程变量)
-    var items=(n.params||'').split(' / ').filter(Boolean);
-    var html=items.map(function(p){
-      var sp=p.indexOf(' '); var k=sp>0?p.slice(0,sp):p; var v=sp>0?p.slice(sp+1):'';
-      v=v.replace(/"/g,'&quot;');
-      return '<div class="wf-param">'+
-        '<div class="wf-param-top"><span class="wf-param-k">'+k+'</span>'+
-          '<select class="wf-param-src df" onchange="wfSrcChange(this)">'+
-            '<option value="df">算子默认</option><option value="ov">本节点覆盖</option><option value="rf">引用流程变量</option></select>'+
-        '</div>'+
-        '<input class="wf-param-v" value="'+v+'" oninput="wfMarkOv(this)" placeholder="（无默认值 / flag）">'+
-      '</div>';
-    }).join('');
-    document.getElementById('wfcParamsEdit').innerHTML = html || '<div class="muted" style="font-size:12px;padding:4px 0;">该算子无入参</div>';
+    if(automatic){
+      document.getElementById('wfaName').value=n.name||'';
+      document.getElementById('wfaIdent').value=n.ident||'';
+      document.getElementById('wfaDesc').value=n.desc||'';
+      var selectedOperatorId=n.operatorId||Object.keys(OPS).filter(function(operatorId){
+        return OPS[operatorId].ident===n.ident;
+      })[0]||'';
+      renderAutomaticOperatorOptions(selectedOperatorId);
+    }
   }
   window.wfConditionMode=function(mode){
     document.querySelectorAll('#wfhConditionModes .wf-mode-tab').forEach(function(btn){ btn.classList.toggle('active',btn.getAttribute('data-mode')===mode); });
@@ -4894,6 +5031,32 @@ WF_CANVAS_JS = r"""
     btn.closest('.wf-ratio-rule').remove();
     if(!document.querySelector('#wfhRatioRuleRows .wf-ratio-rule')) document.getElementById('wfhRatioRuleEmpty').style.display='block';
   };
+  window.wfBranchFieldChange=function(sel){
+    var valueSelect=sel.closest('.wf-branch-rule').querySelector('.wf-branch-value');
+    valueSelect.innerHTML=optionList(CONDITION_VALUES[sel.value]||[],null);
+  };
+  window.wfAddBranchRule=function(btn){
+    var rules=btn.closest('.wf-branch-editor').querySelector('.wf-branch-rules');
+    var wrap=document.createElement('div');
+    var index=rules.querySelectorAll('.wf-branch-rule').length;
+    wrap.innerHTML=branchRuleHtml({field:'供应商',operator:'等于',value:'供应商 B',percent:30},index);
+    while(wrap.firstChild) rules.appendChild(wrap.firstChild);
+  };
+  window.wfRemoveBranchRule=function(btn){
+    var editor=btn.closest('.wf-branch-editor');
+    var rules=editor.querySelectorAll('.wf-branch-rule');
+    if(rules.length<=1){ toast('每个分支至少保留一组条件与比例'); return; }
+    var row=btn.closest('.wf-branch-rule');
+    var logic=row.previousElementSibling&&row.previousElementSibling.classList.contains('wf-branch-logic')?row.previousElementSibling:null;
+    if(!logic&&row.nextElementSibling&&row.nextElementSibling.classList.contains('wf-branch-logic')) logic=row.nextElementSibling;
+    if(logic) logic.remove();
+    row.remove();
+  };
+  function collectBranchRules(editor){
+    return [].map.call(editor.querySelectorAll('.wf-branch-rule'),function(row){
+      return {field:row.querySelector('.wf-branch-field').value,operator:row.querySelector('.wf-branch-operator').value,value:row.querySelector('.wf-branch-value').value,percent:Number(row.querySelector('.wf-branch-percent').value)||0};
+    });
+  }
   window.wfUserGroupsUpdate=function(cb){
     var wrap=document.getElementById('wfhUserGroupSelect');
     var checked=wrap.querySelectorAll('input:checked');
@@ -4960,23 +5123,29 @@ WF_CANVAS_JS = r"""
       n.name=conditionName;
       n.ident=document.getElementById('wfcndIdent').value.trim();
       n.desc=document.getElementById('wfcndDesc').value.trim();
-      n.entryMode=document.querySelector('#wfhConditionModes .wf-mode-tab.active').getAttribute('data-mode');
-      n.entryConditions=[].map.call(document.querySelectorAll('#wfhConditionRows .wf-condition-row'),function(row){
-        return {field:row.querySelector('.wf-cond-field').value,value:row.querySelector('.wf-cond-value').value};
+      n.branches=[].map.call(document.querySelectorAll('#wfConditionBranches .wf-branch-editor'),function(editor,index){
+        return {name:editor.querySelector('.wf-branch-name').value.trim()||('CASE '+(index+1)),logic:'or',rules:collectBranchRules(editor)};
       });
-      n.entryExpression=document.getElementById('wfhExpression').value.trim();
-      n.ratioAdvanced=document.getElementById('wfhRatioAdvancedToggle').checked;
-      n.ratioMode=document.querySelector('#wfhRatioModes .wf-mode-tab.active').getAttribute('data-mode');
-      n.entryRatio=Number(document.getElementById('wfhEntryRatio').value)||0;
-      n.ratioRules=[].map.call(document.querySelectorAll('#wfhRatioRuleRows .wf-ratio-rule'),function(row){
-        return {field:row.querySelector('.wf-ratio-field').value,value:row.querySelector('.wf-ratio-value').value,percent:Number(row.querySelector('.wf-ratio-percent').value)||0};
-      });
-      n.ratioExpression=document.getElementById('wfhRatioExpression').value.trim();
+      n.entryConditions=n.branches[0]?n.branches[0].rules.map(function(rule){return {field:rule.field,operator:rule.operator,value:rule.value};}):[];
       syncConditionNoBranch(n);
       document.getElementById('wfcName').textContent=n.name+' · 配置';
       renderNodes(); toast('已保存条件节点配置'); return;
     }
-    toast('Demo: 已保存节点配置');
+    if(isAutomaticNode(n)){
+      var automaticName=document.getElementById('wfaName').value.trim();
+      var automaticIdent=document.getElementById('wfaIdent').value.trim();
+      var operatorId=document.getElementById('wfaOperator').value;
+      if(!automaticName){ toast('请填写节点名称'); return; }
+      if(!automaticIdent){ toast('请填写节点 ID'); return; }
+      if(!operatorId||!OPS[operatorId]){ toast('请选择执行算子'); return; }
+      n.name=automaticName;
+      n.ident=automaticIdent;
+      n.desc=document.getElementById('wfaDesc').value.trim();
+      n.operatorId=operatorId;
+      n.operatorName=OPS[operatorId].name;
+      document.getElementById('wfcName').textContent=n.name+' · 配置';
+      renderNodes(); toast('已保存自动化节点配置'); return;
+    }
   };
   window.wfSrcChange=function(sel){
     sel.className='wf-param-src '+sel.value;
@@ -5004,12 +5173,23 @@ WF_CANVAS_JS = r"""
     document.getElementById('addTaskDrawer').classList.add('active');
   };
   function syncConditionNoBranch(n){
-    EDGES=EDGES.filter(function(edge){
-      return !(edge.from===n.id&&(edge.fromPort||'out')==='branch'&&edge.branch==='no');
-    });
-    if(byId('flow-output')){
-      EDGES.push({from:n.id,to:'flow-output',fromPort:'branch',branch:'no'});
+    var branchCount=(n.branches&&n.branches.length?n.branches.length:1);
+    var primary=EDGES.filter(function(edge){
+      return edge.from===n.id&&(edge.fromPort||'out')==='branch-0';
+    })[0];
+    if(!primary){
+      var next=NODES.filter(function(node){return node.id!==n.id&&node.kind!=='flow-input'&&node.x>n.x;})
+        .sort(function(a,b){return a.x-b.x;})[0];
+      if(next) primary={from:n.id,to:next.id,fromPort:'branch-0'};
     }
+    EDGES=EDGES.filter(function(edge){
+      return !(edge.from===n.id&&((edge.fromPort||'out').indexOf('branch')===0));
+    });
+    if(primary) EDGES.push(primary);
+    for(var branchIndex=1;branchIndex<branchCount;branchIndex++){
+      EDGES.push({from:n.id,to:'flow-output',fromPort:'branch-'+branchIndex});
+    }
+    EDGES.push({from:n.id,to:'flow-output',fromPort:'branch',branch:'no'});
   }
   window.wfAddTypedNode=function(kind){
     var defs={
@@ -5022,16 +5202,17 @@ WF_CANVAS_JS = r"""
       return node.kind!=='flow-input'&&node.kind!=='flow-output';
     });
     var slot=processNodes.length;
-    var x=250+slot*280;
+    var x=360+slot*300;
     seq++; var id='n'+seq;
     var node={
       id:id,name:def.name,ident:kind+'_'+seq,desc:def.desc,enabled:'启用',creator:'当前用户',
       image:kind==='automatic'?'frontdesk-py3.10:latest':(kind==='condition'?'规则引擎':'人工工作台'),
       script:kind==='automatic'?'请选择算子':(kind==='condition'?'条件表达式':'人工任务'),
+      operatorId:kind==='automatic'?(Object.keys(OPS)[0]||''):'',
       params:'',returns:'处理结果',kind:kind,
       businessStage:'通用',workbench:'质检工作台',userGroups:[],
       assigneeType:'supplier',assigneeMode:'task_custom',inheritAssigneeNodeId:'',
-      allowedActions:['提交','暂离'],x:x,y:kind==='condition'?180:210
+      allowedActions:['提交','暂离'],x:x,y:kind==='condition'?236:260
     };
     NODES.push(node);
     var incoming=EDGES.filter(function(edge){
@@ -5044,7 +5225,7 @@ WF_CANVAS_JS = r"""
     } else if(byId('flow-input')){
       EDGES.push({from:'flow-input',to:id});
     }
-    if(byId('flow-output')) EDGES.push({from:id,to:'flow-output'});
+    if(byId('flow-output')) EDGES.push({from:id,to:'flow-output',fromPort:kind==='condition'?'branch-0':'out'});
     if(kind==='condition') syncConditionNoBranch(node);
     document.getElementById('addTaskDrawer').classList.remove('active');
     renderNodes(); toast('已添加'+def.name);
@@ -5204,12 +5385,12 @@ def _processing_canvas_payload(pl):
     canvas_nodes = [
         {
             "id": "flow-input",
-            "name": "input",
+            "name": "start",
             "ident": "input",
-            "desc": pl.get("input_contract", "完整 Recording 元数据"),
+            "desc": "Start",
             "kind": "flow-input",
             "x": 60,
-            "y": 210,
+            "y": 260,
         }
     ]
     canvas_edges = []
@@ -5233,6 +5414,7 @@ def _processing_canvas_payload(pl):
             "script": node.get("script", executor[1]),
             "params": node.get("params", node.get("meta", "")),
             "returns": node.get("returns", "处理结果"),
+            "operatorId": node.get("operator_id", ""),
             "kind": kind,
             "businessStage": pl.get("business_stage", "通用"),
             "workbench": node.get("workbench"),
@@ -5246,31 +5428,67 @@ def _processing_canvas_payload(pl):
             "allowedActions": node.get("allowed_actions", ["提交", "暂离"]),
             "rejectEnabled": node.get("reject_enabled", False),
             "rejectTargetNames": node.get("reject_targets", []),
-            "x": 250 + index * 280,
-            "y": 180 if kind == "condition" else 210,
+            "x": 360 + index * 300,
+            "y": 236 if kind == "condition" else 260,
         }
+        if kind == "condition":
+            canvas_node["branches"] = [
+                (node.get("branches") or [
+                    {
+                        "name": "供应商抽样",
+                        "logic": "or",
+                        "rules": [
+                            {
+                                "field": "供应商",
+                                "operator": "等于",
+                                "value": "供应商 A",
+                                "percent": 50,
+                            },
+                            {
+                                "field": "供应商",
+                                "operator": "等于",
+                                "value": "供应商 B",
+                                "percent": 30,
+                            },
+                        ],
+                    }
+                ])[0]
+            ]
         canvas_nodes.append(canvas_node)
         node_name_to_id[node["name"]] = node_id
 
-    output_x = 250 + len(flow_nodes) * 280
+    output_x = 420 + len(flow_nodes) * 300
     canvas_nodes.append(
         {
             "id": "flow-output",
-            "name": "output",
+            "name": "end",
             "ident": "output",
-            "desc": pl.get("output_contract", "处理结果"),
+            "desc": "End",
             "kind": "flow-output",
             "x": output_x,
-            "y": 210,
+            "y": 260,
         }
     )
     sequence_ids = ["flow-input"] + [
         f"n{index + 1}" for index in range(len(flow_nodes))
     ] + ["flow-output"]
+    node_by_id = {node["id"]: node for node in canvas_nodes}
     for source, target in zip(sequence_ids, sequence_ids[1:]):
-        canvas_edges.append({"from": source, "to": target})
+        edge = {"from": source, "to": target}
+        if node_by_id[source].get("kind") == "condition":
+            edge["fromPort"] = "branch-0"
+        canvas_edges.append(edge)
     for node in canvas_nodes:
         if node.get("kind") == "condition":
+            branch_count = len(node.get("branches", [])) or 1
+            for branch_index in range(1, branch_count):
+                canvas_edges.append(
+                    {
+                        "from": node["id"],
+                        "to": "flow-output",
+                        "fromPort": f"branch-{branch_index}",
+                    }
+                )
             canvas_edges.append(
                 {
                     "from": node["id"],
@@ -5341,10 +5559,11 @@ def pipeline_editor(pid):
     nodes_json = json.dumps(init_nodes, ensure_ascii=False)
     edges_json = json.dumps(init_edges, ensure_ascii=False)
     frames_json = json.dumps(phase_frames, ensure_ascii=False)
-    ops_map = {o["id"]: {"name": o["name"].split(" ")[0], "ident": o["ident"], "desc": o["desc"],
+    operator_source = MANAGED_OPERATORS if is_processing_flow else OPERATORS
+    ops_map = {o["id"]: {"name": o["name"] if is_processing_flow else o["name"].split(" ")[0], "ident": o["ident"], "desc": o["desc"],
                          "enabled": "启用", "creator": o["creator"], "image": "frontdesk-py3.10:latest",
                          "script": "python " + o["script"], "params": o["params"], "returns": o["returns"]}
-               for o in OPERATORS}
+               for o in operator_source}
     ops_json = json.dumps(ops_map, ensure_ascii=False)
 
     # 数据处理流程先选择节点类型；旧工作流仍从算子库选择算子。
@@ -5404,7 +5623,7 @@ def pipeline_editor(pid):
         else """
         <button class="btn" onclick="document.getElementById('flowParamDrawer').classList.add('active')">&#123;&#125; 流程参数</button>
         <button class="btn" onclick="toast('Demo: 已保存')">&#128190; 保存</button>
-        <button class="btn-primary btn" onclick="toast('已发布 '+document.getElementById('wfVersionSelect').value+' 版本')">发布</button>
+        <button class="btn-primary btn" onclick="wfConfirmPublish()">发布</button>
         """
     )
     editor_title = "查看工作流" if view_mode else "工作流"
@@ -5416,20 +5635,6 @@ def pipeline_editor(pid):
             'onclick="toast(\'Demo: 重命名\')">&#9998;</span>'
         )
     )
-    selected_version = request.args.get("version", "v3")
-    if selected_version not in {"v1", "v2", "v3"}:
-        selected_version = "v3"
-    version_options = "".join(
-        f'<option value="{version}"{" selected" if version == selected_version else ""}>{version}</option>'
-        for version in ("v3", "v2", "v1")
-    )
-    effective_tag_style = "" if selected_version == "v3" else "display:none;"
-    canvas_hint = (
-        "input / output 是流程契约端点 · 拖动节点可移动 · 拖动锚点可连线 · 点击节点查看配置"
-        if is_processing_flow
-        else "拖动节点可移动 · 拖动节点右侧锚点到另一节点左侧锚点可连线 · 点击节点查看配置"
-    )
-
     content = f"""
     <style>
       .wf-stage.view-only .wf-node-del,
@@ -5439,10 +5644,14 @@ def pipeline_editor(pid):
       .wf-stage.view-only .wf-config-body textarea,
       .wf-stage.view-only .wf-config-body button {{ pointer-events:none; }}
     </style>
+    <script>
+      function wfConfirmPublish() {{
+        if (window.confirm('发布后不可修改，确认发布？')) toast('已发布');
+      }}
+    </script>
     <div class="wf-topbar">
       <div class="wf-title"><a href="/pipelines" class="back">&#8249;</a> {editor_title}: {name}{rename_control}
-        <select id="wfVersionSelect" class="wf-version-switch" onchange="document.getElementById('wfEffectiveTag').style.display=this.value==='v3'?'inline-flex':'none';toast('已切换至 '+this.value+' 版本')">{version_options}</select>
-        <span id="wfEffectiveTag" class="wf-effective-tag" style="{effective_tag_style}">生效中</span>
+        <span id="wfEffectiveTag" class="wf-effective-tag">启用</span>
       </div>
       <div class="wf-actions">{editor_actions}</div>
     </div>
@@ -5454,7 +5663,6 @@ def pipeline_editor(pid):
           <div id="wfNodes"></div>
         </div>
         <div class="wf-empty" id="wfEmpty"><div style="font-size:32px;">&#9783;</div><div>{empty_copy}</div></div>
-        <div class="wf-hint">{canvas_hint}</div>
         <div class="wf-toolbar">
           <button class="zbtn" onclick="wfZoom(-0.1)">&minus;</button>
           <span class="zlvl" id="wfZlvl">100%</span>
@@ -5513,64 +5721,20 @@ def pipeline_editor(pid):
               <label class="full"><span class="wf-human-label">描述</span><textarea id="wfcndDesc" class="wf-edit-field" placeholder="请输入节点描述"></textarea></label>
             </div>
 
-            <div class="wf-cfg-sec">进入条件</div>
-            <div class="wf-mode-tabs" id="wfhConditionModes">
-              <button type="button" class="wf-mode-tab active" data-mode="config" onclick="wfConditionMode('config')">配置项</button>
-              <button type="button" class="wf-mode-tab" data-mode="expression" onclick="wfConditionMode('expression')">表达式</button>
-            </div>
-            <div id="wfhConditionConfig">
-              <div style="display:grid;grid-template-columns:1.18fr 1fr 24px;gap:6px;margin-bottom:5px;color:rgba(0,0,0,.4);font-size:10px;"><span>字段</span><span>值</span><span></span></div>
-              <div id="wfhConditionRows"></div>
-              <div class="wf-rule-empty" id="wfhConditionEmpty">不限制：所有数据进入“是”分支</div>
-              <button type="button" class="wf-add-link" onclick="wfAddCondition()">&plus; 添加条件</button>
-            </div>
-            <div id="wfhConditionExpression" style="display:none;">
-              <textarea id="wfhExpression" class="wf-edit-field" style="font-family:'SF Mono',Menlo,monospace;" placeholder="留空表示不限制"></textarea>
-            </div>
-
-            <div class="wf-cfg-sec">
-              <span>进入比例</span>
-              <label class="wf-advanced-toggle">
-                <span>高级设置</span>
-                <span class="switch"><input id="wfhRatioAdvancedToggle" type="checkbox" onchange="wfToggleRatioAdvanced(this.checked)"><span class="slider"></span></span>
-              </label>
-            </div>
-            <div id="wfhRatioDirect">
-              <label><span class="wf-human-label">统一比例</span><div style="position:relative;max-width:180px;"><input id="wfhEntryRatio" class="wf-edit-field" type="number" min="1" max="100" value="100" style="padding-right:24px;"><span style="position:absolute;right:9px;top:7px;color:#999;font-size:12px;">%</span></div></label>
-            </div>
-            <div id="wfhRatioAdvancedWrap" style="display:none;">
-              <div class="wf-mode-tabs" id="wfhRatioModes">
-                <button type="button" class="wf-mode-tab active" data-mode="config" onclick="wfRatioMode('config')">配置项</button>
-                <button type="button" class="wf-mode-tab" data-mode="expression" onclick="wfRatioMode('expression')">表达式</button>
-              </div>
-              <div id="wfhRatioConfig">
-                <div style="display:grid;grid-template-columns:1.08fr .92fr 82px 24px;gap:6px;margin-bottom:5px;color:rgba(0,0,0,.4);font-size:10px;"><span>字段</span><span>字段值</span><span>比例</span><span></span></div>
-                <div id="wfhRatioRuleRows"></div>
-                <div class="wf-rule-empty" id="wfhRatioRuleEmpty">暂无高级比例设置</div>
-                <button type="button" class="wf-add-link" onclick="wfAddRatioRule()">&plus; 添加比例规则</button>
-              </div>
-              <div id="wfhRatioExpressionWrap" style="display:none;">
-                <textarea id="wfhRatioExpression" class="wf-edit-field" style="font-family:'SF Mono',Menlo,monospace;" placeholder="请输入返回 0-100 的比例表达式"></textarea>
-              </div>
-            </div>
+            <div class="wf-cfg-sec">分支设置</div>
+            <div class="wf-human-label">IF 分支内多组规则为「或（OR）」关系；每条条件由「筛选项 / 操作符 / 值」三元组组成，比例独立生效。</div>
+            <div id="wfConditionBranches"></div>
+            <div class="wf-fallback-box"><b>ELSE · 其他</b>未命中以上任一分支的数据统一进入兜底分支。</div>
           </div>
 
           <div id="wfGenericConfig">
             <div class="wf-cfg-sec">基本信息</div>
-            <div class="wf-cfg-row lft"><span>名称</span><b id="wfcName2">—</b></div>
-            <div class="wf-cfg-row lft"><span>标识</span><span id="wfcIdent" style="font-family:monospace;font-size:12px;">—</span></div>
-            <div class="wf-cfg-row lft"><span>描述</span><span id="wfcDesc" style="line-height:1.5;">—</span></div>
-
-            <div class="wf-cfg-sec">运行环境</div>
-            <div class="wf-cfg-row lft"><span>运行镜像</span><span id="wfcImage" style="font-size:12px;word-break:break-all;">—</span></div>
-            <div class="wf-cfg-col"><span>入口脚本 / 命令</span><pre id="wfcScript" class="wf-cfg-code">—</pre></div>
-
-            <div class="wf-cfg-sec">出入参
-              <a class="wf-sec-link" onclick="document.getElementById('flowParamDrawer').classList.add('active')">流程参数 &#8599;</a></div>
-            <div class="wf-param-sub">入参取值</div>
-            <div id="wfcParamsEdit"></div>
-            <div class="wf-param-sub" style="margin-top:12px;">返回结果</div>
-            <div class="wf-cfg-col"><pre id="wfcReturns" class="wf-cfg-code">—</pre></div>
+            <div class="wf-human-grid">
+              <label><span class="wf-human-label">节点名称</span><input id="wfaName" class="wf-edit-field" placeholder="请输入节点名称"></label>
+              <label><span class="wf-human-label">节点 ID</span><input id="wfaIdent" class="wf-edit-field" placeholder="请输入节点 ID"></label>
+              <label class="full"><span class="wf-human-label">节点描述</span><textarea id="wfaDesc" class="wf-edit-field" placeholder="请输入节点描述"></textarea></label>
+              <label class="full"><span class="wf-human-label">执行算子</span><select id="wfaOperator" class="wf-edit-field"></select></label>
+            </div>
           </div>
         </div>
         <div class="wf-config-foot">
@@ -5603,7 +5767,7 @@ def pipeline_editor(pid):
               <tr><td><input class="fp-key" value="tos_bucket" disabled></td><td><input class="fp-val" value="tos://embodied-datasets" disabled><div class="hint">系统内置, 只读</div></td><td><span style="color:#d9d9d9;cursor:not-allowed;">删</span></td></tr>
             </tbody>
           </table>
-          <button class="btn" style="margin-top:12px;" onclick="wfAddFlowParam()">&plus; 新增变量</button>
+          <button class="btn" style="margin-top:12px;" onclick="wfAddFlowParam()">新增变量</button>
         </div>
         <div class="drawer-foot">
           <button class="btn" onclick="document.getElementById('flowParamDrawer').classList.remove('active')">取消</button>
@@ -5718,7 +5882,7 @@ def tags():
       <div style="display:flex;gap:8px;">
         <button class="btn" onclick="tgAll(true)">全部展开</button>
         <button class="btn" onclick="tgAll(false)">全部收起</button>
-        <button class="btn-primary btn" onclick="toast('Demo: 新增维度')">+ 新增维度</button>
+        <button class="btn-primary btn" onclick="toast('Demo: 新增维度')">新增维度</button>
       </div>
     </div>
     <table class="ant-table tg-table">

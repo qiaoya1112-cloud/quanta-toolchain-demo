@@ -44,30 +44,23 @@ class DataPlatformArchitectureTests(unittest.TestCase):
             (
                 "任务管理",
                 [
-                    "collection_tasks",
                     "processing_tasks",
-                    "allocation_management",
                     "allocation_management_v2",
                 ],
             ),
-            ("数据资产", ["data_management", "dataset_management"]),
-            ("工作台", ["workbench", "workbench_v2", "personal_dashboard"]),
+            ("工作台", ["workbench_v2"]),
             (
                 "工作流",
                 [
                     "workflow_management",
                     "operator_management",
-                    "execution_records",
                 ],
             ),
             (
                 "配置管理",
                 [
-                    "project_management",
                     "rule_management",
                     "workbench_management",
-                    "scene_management",
-                    "tag_management",
                 ],
             ),
             (
@@ -81,17 +74,24 @@ class DataPlatformArchitectureTests(unittest.TestCase):
             ),
         ]
         self.assertEqual(expected_groups, architecture.NAV_GROUPS)
+        workbench_nav_entry = next(
+            entry
+            for group, entries in architecture.DATA_PLATFORM_NAV
+            for entry in entries
+            if entry[0] == "/data/workbench-v2"
+        )
+        self.assertEqual("标注工作台", workbench_nav_entry[1])
 
         nav_keys = [key for _, keys in architecture.NAV_GROUPS for key in keys]
         self.assertEqual(
             {
                 key
                 for key, spec in architecture.PAGE_SPECS.items()
-                if not spec.get("hidden")
+                if not spec.get("hidden") and not spec.get("hide_from_nav")
             },
             set(nav_keys),
         )
-        self.assertEqual(21, len(nav_keys))
+        self.assertEqual(11, len(nav_keys))
         self.assertEqual(len(nav_keys), len(set(nav_keys)))
         paths = [item["path"] for item in architecture.PAGE_SPECS.values()]
         self.assertEqual(len(paths), len(set(paths)))
@@ -101,7 +101,14 @@ class DataPlatformArchitectureTests(unittest.TestCase):
             for entry in entries
             if len(entry) > 3 and entry[3] == "非本期"
         ]
-        self.assertEqual(16, len(non_current_nav_entries))
+        self.assertEqual(0, len(non_current_nav_entries))
+        no_ui_nav_entries = [
+            entry
+            for _, entries in architecture.DATA_PLATFORM_NAV
+            for entry in entries
+            if len(entry) > 3 and entry[3] == "无界面"
+        ]
+        self.assertEqual(5, len(no_ui_nav_entries))
         self.assertFalse(
             any(
                 len(entry) > 3 and entry[3] == "草稿"
@@ -110,12 +117,55 @@ class DataPlatformArchitectureTests(unittest.TestCase):
             )
         )
         sidebar_html = self.client.get("/data/recordings").get_data(as_text=True)
-        self.assertEqual(
-            16,
-            sidebar_html.count('class="sn-tag t-nonphase">非本期</span>'),
-        )
+        self.assertNotIn('class="sn-tag t-nonphase">非本期</span>', sidebar_html)
+        self.assertEqual(5, sidebar_html.count(">无界面</span>"))
+        self.assertNotIn('href="/data/projects"', sidebar_html)
+        self.assertNotIn('href="/data/allocations"', sidebar_html)
+        self.assertIn('href="/data/allocations-v2"', sidebar_html)
+        self.assertIn("分配管理", sidebar_html)
         self.assertNotIn('class="sn-tag t-draft">草稿</span>', sidebar_html)
 
+    def test_allocation_management_filters_tasks(self):
+        html = self.client.get("/data/allocations-v2").get_data(as_text=True)
+        for expected in (
+            "dpr-v2-page-head",
+            '<option value="质检">质检环节</option>',
+            '<option value="标注">标注环节</option>',
+            "DPR_V2_STAGE",
+            "dprV2ResourcesForStage",
+            "dprV2VisibleTasks",
+            "DPR_V2_OTHER_CONTRIBUTIONS",
+            "节点整体进度",
+            "当前处理人",
+            "其他处理人",
+            "未完成",
+            "dpr-v2-contribution-current",
+            "dpr-v2-contribution-other",
+            'id="dprV2FilterStage"',
+            'id="dprV2FilterFlow"',
+            'id="dprV2FilterNode"',
+            'id="dprV2SummaryDateFrom"',
+            'id="dprV2SummaryDateTo"',
+            "dprV2InitSummaryDates",
+            "dprV2SummaryTaskMatches",
+            "dprV2SummaryDateChanged",
+            "统计时间",
+            "dprV2FilterStageChanged",
+            "dprV2FilterFlowChanged",
+            "dprV2ClearFilters",
+            "dprV2Query",
+            '>清空</button>',
+            '>查询</button>',
+            "dprV2TaskMatches",
+            "dprV2RenderResourceSummary",
+            "已处理任务量：",
+            "（含已完成任务）",
+        ):
+            self.assertIn(expected, html)
+        self.assertNotIn('id="dprV2StageSelect"', html)
+        self.assertNotIn("dprV2StageChanged", html)
+        self.assertNotIn('id="dprV2FilterDateFrom"', html)
+        self.assertNotIn('id="dprV2FilterDateTo"', html)
     def test_all_configured_pages_render_in_shared_portal(self):
         for key, spec in architecture.PAGE_SPECS.items():
             with self.subTest(page=key):
@@ -126,11 +176,11 @@ class DataPlatformArchitectureTests(unittest.TestCase):
                 self.assertIn("数据平台", html)
                 self.assertIn('class="q-sider"', html)
 
-    def test_data_root_opens_collection_tasks(self):
+    def test_data_root_opens_processing_tasks(self):
         response = self.client.get("/data", follow_redirects=False)
         self.assertEqual(302, response.status_code)
         self.assertTrue(
-            response.headers["Location"].endswith("/data/collection-tasks")
+            response.headers["Location"].endswith("/data/processing-tasks")
         )
 
     def test_collection_tasks_match_table_definition(self):
@@ -197,7 +247,7 @@ class DataPlatformArchitectureTests(unittest.TestCase):
             self.assertIn(expected, html)
         self.assertNotIn("<th>操作人</th>", html)
         self.assertIn(
-            ".dpr-intro-title-row .dpr-intro-actions{margin:3px 0 0 auto}",
+            ".dpr-intro-title-row .dpr-intro-actions{position:absolute;right:0;top:50%;transform:translateY(-50%);margin:0}",
             html,
         )
         task_table = re.search(
@@ -238,7 +288,7 @@ class DataPlatformArchitectureTests(unittest.TestCase):
             "采集结果统一写入数据湖",
             "处理任务将根据数据来源、来源任务 ID、项目及质量状态等条件持续筛选数据",
             "DPR_COLLECTION_ACTIVE_MODE",
-            "+ 新建导入任务",
+            "taskMode === 'import' ? '新增导入任务' : '新增采集任务'",
             "'新建数据导入任务'",
             "'数据导入任务详情'",
             "'编辑数据导入任务'",
@@ -329,6 +379,7 @@ class DataPlatformArchitectureTests(unittest.TestCase):
             "dprOpenProcessingTaskDrawer('new')",
             'id="drawerProcessingTaskForm"',
             'class="dpr-processing-task-page"',
+            ".dpr-processing-task-page{position:fixed;z-index:260;top:52px;left:220px;",
             'id="processingTaskDrawerTitle">新建处理任务</h2>',
             "'处理任务详情'",
             "'编辑处理任务'",
@@ -336,7 +387,18 @@ class DataPlatformArchitectureTests(unittest.TestCase):
             ">所属项目</span>",
             ">优先级</span>",
             ">任务状态</span>",
-            "持续筛选条件",
+            "预期任务量",
+            "持续任务",
+            "固定条数",
+            "固定时长",
+            "processingTaskExpectedMode",
+            "processingTaskExpectedValue",
+            "任务条数",
+            "任务时长",
+            "dprExpectedTaskModeChange",
+            "dprExpectedTaskValueChange",
+            "dprSyncAllocationFromExpectedTask",
+            "筛选条件",
             "留空表示不限制",
             "+ 添加条件",
             "处理环节",
@@ -345,6 +407,16 @@ class DataPlatformArchitectureTests(unittest.TestCase):
             "人工任务节点",
             "用户组",
             "供应商",
+            "定量分配",
+            "比例分配",
+            "每个人工节点合计 100%",
+            "processingTaskAssignmentHint",
+            "分配时间合计必须等于预期总时长",
+            "流程图",
+            "点击人工任务节点定位下方分配卡片",
+            "节点级",
+            "dprRenderFlowPreview",
+            "dprFocusAssignmentCard",
             "dprRenderFlowChoices",
             "dprRenderNodeAssignments",
             "dprProcessingAssignmentsValid",
@@ -358,6 +430,20 @@ class DataPlatformArchitectureTests(unittest.TestCase):
             "dprAddTaskFilter",
         ):
             self.assertIn(expected, html)
+        self.assertNotIn(".dpr-processing-task-page{left:192px", html)
+        self.assertLess(
+            html.index('id="processingTaskFlowPreview"'),
+            html.index('class="dpr-node-assignment-section"'),
+        )
+        self.assertIn(".dpr-flow-selector { position:sticky", html)
+        self.assertIn("#processingTaskFlowPreview", html)
+        self.assertIn("position:sticky", html)
+        self.assertNotIn("持续筛选条件", html)
+        self.assertNotIn('id="processingTaskAllocationSettings"', html)
+        self.assertNotIn("dprRenderAllocationSettings", html)
+        self.assertNotIn("<b>分配策略</b>", html)
+        self.assertNotIn("当前任务预期总时长", html)
+        self.assertNotIn("<em>任务级</em>", html)
         drawer_start = html.index('id="drawerProcessingTaskForm"')
         drawer_html = html[drawer_start:]
         field_positions = [
@@ -774,7 +860,6 @@ class DataPlatformArchitectureTests(unittest.TestCase):
             ">质检</button>",
             ">标注</button>",
             ">日志</button>",
-            'href="/data/recordings" class="sn-item active"',
         ):
             self.assertIn(expected, html)
 
@@ -972,8 +1057,20 @@ class DataPlatformArchitectureTests(unittest.TestCase):
             "验收-端到端切分标注",
             "供应商 A",
             "光轮智能",
+            'href="/data/workbench-v2/style-examples">样式示例</a>',
+            "wb-v2-pool-foot",
+            "wb-v2-priority-summary",
         ):
             self.assertIn(expected, workbench_v2)
+        self.assertNotIn('class="wb-pool-stage"', workbench_v2)
+        self.assertNotIn('class="wb-pool-priorities"', workbench_v2)
+        self.assertNotIn("端到端切分标注 · 内部验收</span>", workbench_v2)
+        self.assertIn(
+            ".wb-v2-pool-foot{display:flex;align-items:center;"
+            "justify-content:flex-end;gap:7px}",
+            workbench_v2,
+        )
+        self.assertNotIn("grid-template-columns:1fr auto 1fr", workbench_v2)
 
         quality_pool_v2 = self.client.get(
             "/data/workbench-v2/pools/POOL-QUALITY-REVIEW"
@@ -1006,6 +1103,7 @@ class DataPlatformArchitectureTests(unittest.TestCase):
             "标注规则",
             "请选择标注规则",
             "端到端切分标注规则",
+            "<h2>供应商 A 任务池</h2>",
         ):
             self.assertIn(expected, annotation_pool_v2)
         self.assertNotIn("通用动作标注规则", annotation_pool_v2)
@@ -1014,22 +1112,75 @@ class DataPlatformArchitectureTests(unittest.TestCase):
         self.assertNotIn("不合格标准", annotation_pool_v2)
         self.assertNotIn("<th>流程 / 节点</th>", annotation_pool_v2)
         self.assertNotIn("家居动作标注流程 v2", annotation_pool_v2)
+        self.assertNotIn("从多个处理任务统一领取数据", annotation_pool_v2)
+        self.assertNotIn("最高 P0", annotation_pool_v2)
+        self.assertNotIn('id="wbCollector"', annotation_pool_v2)
+        self.assertNotIn('id="wbSupplier"', annotation_pool_v2)
 
         for expected in (
-            "dpr-wb2-two-col",
-            "dpr-wb2-node-pane",
-            "dpr-wb2-task-pane",
-            "dprSelectWorkbenchNode",
+            "dpr-wb2-items-list",
+            "dpr-wb2-items-table",
             "端到端切分标注流程",
             "供应商抽验",
             "供应商复核",
             "内部验收",
+            "供应商验收",
             "recording_id",
-            "备注",
+            "流程 ID",
+            "流程名称",
+            "当前节点",
+            "来源节点",
+            "来源操作",
+            "当前轮次",
+            "说明",
+            "dprWb2FlowFilter",
+            "dprWb2NodeFilter",
+            "dprWb2RecordingFilter",
+            "dprWb2OperationFilter",
+            "dprWb2Sort",
+            "dprWb2SortDirection='asc'",
+            "dpr-wb2-pagination",
+            "10 条/页",
+            "dprWb2PageSize=10",
+            "dprWb2RenderPagination",
+            "dprWb2GoToPage",
+            "dprWb2ChangePage",
+            ">操作</th>",
             ">处理</a>",
-            "/data/workbench-v2/edit?task=WB-E2E-SUPPLIER-A",
+            "WB-E2E-SUPPLIER-A",
+            '"source_operation": "提交"',
+            '"source_operation": "驳回"',
+            '"current_round": "第 2 轮"',
+            "&entry=todo",
         ):
             self.assertIn(expected, workbench_v2)
+        self.assertNotIn("dpr-wb2-two-col", workbench_v2)
+        self.assertNotIn("dprSelectWorkbenchNode", workbench_v2)
+        self.assertNotIn("dprWb2ItemsCount", workbench_v2)
+        self.assertNotIn("9 个待办项", workbench_v2)
+        self.assertNotIn("继续处理", workbench_v2)
+        self.assertNotIn("最近操作人", workbench_v2)
+        self.assertIn("更新时间", workbench_v2)
+        self.assertIn("dprWb2Sort(&quot;updated_at&quot;)", workbench_v2)
+        self.assertIn("dprWb2SortKey='updated_at'", workbench_v2)
+        self.assertNotIn('<div class="dpr-wb2-items-toolbar-head"><b>待办项</b>', workbench_v2)
+        for removed_operation in ("退回修改", "验收驳回", "补充说明"):
+            self.assertNotIn(removed_operation, workbench_v2)
+        node_operation_pairs = set(
+            re.findall(
+                r'"source_node": "([^"]+)", "source_operation": "([^"]+)"',
+                workbench_v2,
+            )
+        )
+        self.assertEqual(
+            {
+                ("供应商复核", "驳回"),
+                ("供应商抽验", "提交"),
+                ("供应商验收", "提交"),
+                ("供应商验收", "驳回"),
+            },
+            node_operation_pairs,
+        )
 
         action_workbench = self.client.get(
             "/data/workbench/edit?task=WB-2026-0922-LB&rule=通用动作标注规则%20v1%EF%BC%88%E5%8A%A8%E4%BD%9C%E6%A0%87%E6%B3%A8%20A%2FB%2FC%2FD%2FZ%EF%BC%89"
@@ -1043,6 +1194,11 @@ class DataPlatformArchitectureTests(unittest.TestCase):
         ).get_data(as_text=True)
         self.assertIn("语义标注 · E/F/G", semantic_workbench)
         self.assertIn("lab-semantic-row", semantic_workbench)
+        self.assertIn("lab-semantic-editor-cell", semantic_workbench)
+        self.assertIn(
+            ".lab-semantic-editor-cell { display:flex; align-items:center;",
+            semantic_workbench,
+        )
         self.assertNotIn("动作元素</th>", semantic_workbench)
 
         filtered_pool = self.client.get(
@@ -1102,19 +1258,14 @@ class DataPlatformArchitectureTests(unittest.TestCase):
         requirements = {
             "/data/pipelines": (
                 "流程管理",
-                "标准训练数据流水线",
-                "多级质检复核流程",
                 "端到端切分标注流程",
-                "数据验收流程",
-                "双轮人工质检流程",
-                "双轮人工标注流程",
                 "业务环节",
-                "流程结构",
-                "自动化",
-                "人工",
-                "查看",
+                "启用",
+                "详情",
                 "编辑",
-                "新建工作流",
+                "启用",
+                "停用",
+                "新增流程",
             ),
             "/data/runs": (
                 "执行记录",
@@ -1133,7 +1284,7 @@ class DataPlatformArchitectureTests(unittest.TestCase):
             "/data/operators": (
                 "算子管理",
                 "算子名称",
-                "采样配比",
+                "端到端切分标注处理算子",
             ),
         }
         for path, expected_values in requirements.items():
@@ -1141,7 +1292,26 @@ class DataPlatformArchitectureTests(unittest.TestCase):
             for expected in expected_values:
                 with self.subTest(path=path, expected=expected):
                     self.assertIn(expected, html)
+        operator_html = self.client.get("/data/operators").get_data(as_text=True)
+        self.assertNotIn("+ 新建算子", operator_html)
+        self.assertNotIn("openOpDetail('op_e2e_segment_annotation')", operator_html)
+        self.assertIn("<b>端到端切分标注处理算子</b>", operator_html)
         pipeline_html = self.client.get("/data/pipelines").get_data(as_text=True)
+        self.assertEqual(
+            2,
+            pipeline_html.count("<td><b>端到端切分标注流程"),
+        )
+        self.assertIn("端到端切分标注流程（草稿）", pipeline_html)
+        self.assertNotIn("<th>流程结构</th>", pipeline_html)
+        self.assertNotIn("<th>周期调度数</th>", pipeline_html)
+        for removed_pipeline in (
+            "标准训练数据流水线",
+            "多级质检复核流程",
+            "数据验收流程",
+            "双轮人工质检流程",
+            "双轮人工标注流程",
+        ):
+            self.assertNotIn(removed_pipeline, pipeline_html)
         self.assertIn('name="stage"', pipeline_html)
         self.assertIn("全部业务环节", pipeline_html)
         self.assertNotIn('data-base="算子"', pipeline_html)
@@ -1191,7 +1361,7 @@ class DataPlatformArchitectureTests(unittest.TestCase):
             "/data/pipelines?stage=标注"
         ).get_data(as_text=True)
         self.assertIn("端到端切分标注流程", annotation_html)
-        self.assertIn("双轮人工标注流程", annotation_html)
+        self.assertNotIn("双轮人工标注流程", annotation_html)
         self.assertNotIn("多级质检复核流程", annotation_html)
 
         view_html = self.client.get(
@@ -1253,7 +1423,8 @@ class DataPlatformArchitectureTests(unittest.TestCase):
             self.assertIn("flow-input", html)
             self.assertIn("flow-output", html)
             self.assertIn('data-port="branch"', html)
-            self.assertIn("wf-condition-content", html)
+            self.assertIn("wf-condition-head", html)
+            self.assertIn("wf-condition-branch-list", html)
             self.assertIn(".wf-node.automatic", html)
             self.assertIn('data-node-type="human"', html)
             self.assertIn('data-node-type="automatic"', html)
@@ -1277,6 +1448,34 @@ class DataPlatformArchitectureTests(unittest.TestCase):
                 self.assertTrue(
                     any(
                         edge["from"] == condition_node["id"]
+                        and edge.get("fromPort") == "branch-0"
+                        for edge in edges
+                    ),
+                    "条件节点的首个分支必须有独立出口",
+                )
+                self.assertTrue(
+                    all(
+                        rule.get("operator")
+                        for branch in condition_node.get("branches", [])
+                        for rule in branch.get("rules", [])
+                    ),
+                    "条件规则必须保存筛选项、操作符和值三元组",
+                )
+                self.assertTrue(
+                    all(branch.get("logic") == "or" for branch in condition_node.get("branches", [])),
+                    "同一 IF 内的规则必须标记为 OR 逻辑",
+                )
+                self.assertFalse(
+                    any(
+                        edge["from"] == condition_node["id"]
+                        and edge.get("toPort", "").startswith("branch-in-")
+                        for edge in edges
+                    ),
+                    "所有分支必须汇入 end 的同一个入口",
+                )
+                self.assertTrue(
+                    any(
+                        edge["from"] == condition_node["id"]
                         and edge["to"] == "flow-output"
                         and edge.get("fromPort") == "branch"
                         and edge.get("branch") == "no"
@@ -1287,17 +1486,16 @@ class DataPlatformArchitectureTests(unittest.TestCase):
 
     def test_automatic_pipelines_follow_business_flows_without_stage_frames(self):
         list_html = self.client.get("/data/pipelines").get_data(as_text=True)
-        expected_order = (
-            "端到端切分标注流程",
+        self.assertIn("端到端切分标注流程", list_html)
+        for hidden_flow in (
             "多级质检复核流程",
             "数据验收流程",
             "双轮人工质检流程",
             "双轮人工标注流程",
             "标准训练数据流水线",
             "DAgger 数据流水线",
-        )
-        positions = [list_html.index(name) for name in expected_order]
-        self.assertEqual(sorted(positions), positions)
+        ):
+            self.assertNotIn(hidden_flow, list_html)
 
         expected_nodes = {"pl1": 5, "pl2": 2}
         for pipeline_id, node_count in expected_nodes.items():
@@ -1333,17 +1531,18 @@ class DataPlatformArchitectureTests(unittest.TestCase):
             "节点名称",
             "标识",
             "描述",
-            "进入条件",
-            "不限制：所有数据进入“是”分支",
-            "配置项",
-            "表达式",
+            "分支设置",
+            "ELSE · 其他",
+            "操作符",
+            "或（OR）",
+            "供应商",
             "质检结论",
-            "添加条件",
-            "进入比例",
-            "统一比例",
-            "高级设置",
-            "字段值",
-            "添加比例规则",
+            "添加条件与比例",
+            "wfConditionBranches",
+            "wfAddBranchRule",
+            "wf-branch-rule-head",
+            "wf-branch-operator",
+            "wf-branch-logic",
             "可用操作",
             "提交",
             "暂离",
@@ -1378,19 +1577,26 @@ class DataPlatformArchitectureTests(unittest.TestCase):
         self.assertNotIn("已选择 '+names.length+' 个用户组", html)
         self.assertIn("names.join('、')", html)
         self.assertIn("(disabled.indexOf(item)>=0?' disabled':'')", html)
-        self.assertIn('id="wfVersionSelect"', html)
-        self.assertIn("wf-version-switch", html)
+        self.assertNotIn('id="wfVersionSelect"', html)
+        self.assertNotIn("wf-version-switch", html)
         self.assertIn('id="wfEffectiveTag"', html)
-        self.assertIn(">生效中</span>", html)
+        self.assertIn(">启用</span>", html)
+        self.assertNotIn("wf-hint", html)
+        self.assertNotIn("input 连接上游", html)
         self.assertIn("(isUserGroup?'radio':'checkbox')", html)
         self.assertIn('name="wfhUserGroup"', html)
         self.assertNotIn("用户组（多选）", html)
         self.assertIn(">发布</button>", html)
+        self.assertIn("发布后不可修改，确认发布？", html)
+        self.assertIn("onclick=\"wfConfirmPublish()\"", html)
         self.assertNotIn('id="scheduleDrawer"', html)
         self.assertNotIn('id="runDrawer"', html)
         self.assertNotIn(">&#9201; 周期调度</button>", html)
         self.assertNotIn(">&#9654; 执行</button>", html)
-        self.assertIn("node.y+height+34", html)
+        # The canvas now routes edges with compact orthogonal paths rather than
+        # the previous long detour below every node.
+        self.assertIn("Math.abs(t.y-s.y)<2", html)
+        self.assertIn("var middle=t.x>=s.x?(s.x+t.x)/2:s.x+42", html)
         self.assertNotIn("wf-cond-percent", html)
         self.assertIn('<div class="wf-cfg-sec">处理人</div>', html)
         self.assertNotIn('name="wfhAssigneeType"', html)
@@ -1410,30 +1616,67 @@ class DataPlatformArchitectureTests(unittest.TestCase):
         human_start = html.index('<div id="wfHumanConfig"')
         condition_start = html.index('<div id="wfConditionNodeConfig"')
         generic_start = html.index('<div id="wfGenericConfig"')
+        generic_end = html.index('<div class="wf-config-foot">', generic_start)
         human_config = html[human_start:condition_start]
         condition_config = html[condition_start:generic_start]
+        automatic_config = html[generic_start:generic_end]
         self.assertNotIn("进入条件", human_config)
         self.assertNotIn("进入比例", human_config)
-        self.assertIn("进入条件", condition_config)
-        self.assertIn("进入比例", condition_config)
+        self.assertIn("分支设置", condition_config)
+        self.assertIn("操作符", condition_config)
+        self.assertIn("或（OR）", condition_config)
+        self.assertIn('id="wfConditionBranches"', condition_config)
+        self.assertNotIn("ELIF", condition_config)
+        self.assertIn("ELSE · 其他", condition_config)
         self.assertNotIn('<span class="wf-sec-tag ro">默认不限制</span>', html)
         self.assertNotIn('<span class="wf-sec-tag ro">默认 100%</span>', html)
-        self.assertIn('id="wfhRatioAdvancedToggle"', html)
-        self.assertIn(
-            'onchange="wfToggleRatioAdvanced(this.checked)"',
-            html,
-        )
+        self.assertNotIn('id="wfhRatioAdvancedToggle"', html)
         self.assertNotIn('id="wfhRatioConfigModes"', html)
         self.assertNotIn("wfRatioConfigMode", html)
-        self.assertGreaterEqual(html.count('data-mode="config"'), 2)
-        self.assertGreaterEqual(html.count('data-mode="expression"'), 2)
+        self.assertNotIn('onclick="wfAddBranch()"', html)
+        self.assertIn("wfAddBranchRule", html)
+        for expected in (
+            'id="wfaName"',
+            'id="wfaIdent"',
+            'id="wfaDesc"',
+            'id="wfaOperator"',
+            "节点名称",
+            "节点 ID",
+            "节点描述",
+            "执行算子",
+        ):
+            self.assertIn(expected, automatic_config)
+        self.assertEqual(1, automatic_config.count('class="wf-cfg-sec"'))
+        for removed in (
+            'id="wfcImage"',
+            'id="wfcScript"',
+            'id="wfcParamsEdit"',
+            'id="wfcReturns"',
+            "运行环境",
+            "出入参",
+        ):
+            self.assertNotIn(removed, automatic_config)
+        self.assertIn("端到端切分标注处理算子", html)
+        self.assertIn(
+            "config.classList.toggle('human-mode',human||condition||automatic)",
+            html,
+        )
+        self.assertIn("n.operatorId=operatorId", html)
 
-    def test_workbench_management_has_workbench_and_component_tabs(self):
+    def test_workbench_management_only_shows_workbench_list(self):
         html = self.client.get("/data/workbench-management").get_data(as_text=True)
         for expected in (
             "工作台管理",
-            ">工作台</span>",
-            ">组件</span>",
+            'id="workbenchFilterName"',
+            ">工作台名称</label>",
+            ">清空</button>",
+            ">查询</button>",
+            'id="dpr-workbench-table"',
+            "工作台 ID",
+            "业务环节",
+            "草稿",
+            "启用",
+            "停用",
             "质检工作台",
             "动作标注工作台",
             "语义标注工作台",
@@ -1449,13 +1692,11 @@ class DataPlatformArchitectureTests(unittest.TestCase):
             "workbench_log",
             "submit_actions",
             "reject_submit_actions",
-            "适用工作台",
             "/data/workbench-management/preview/quality",
             "/data/workbench-management/preview/annotation",
             "/data/workbench-management/preview/detail",
             "新建工作台",
             'id="drawerWorkbenchBuilder"',
-            "工作台版本",
             "保存草稿",
             "发布",
             "dprRenderWorkbenchPreview",
@@ -1466,15 +1707,60 @@ class DataPlatformArchitectureTests(unittest.TestCase):
             "高保真工作台预览",
             "dprFitPreviewFrame",
             "ResizeObserver",
-            'data-workbench-annotation-kind="action"',
-            'data-workbench-annotation-kind="semantic"',
             "通用动作标注规则 v1（动作标注 A/B/C/D/Z）",
             "精细动作标注规则 v2（语义标注 E/F/G）",
         ):
             self.assertIn(expected, html)
+        workbench_table_start = html.index(
+            '<table class="ant-table" id="dpr-workbench-table">'
+        )
+        self.assertIn('<div class="table-wrap">', html)
+        self.assertIn(
+            ".dpr-workbench-filter{margin-bottom:12px;padding:16px 18px}",
+            html,
+        )
+        workbench_table_end = html.index("</table>", workbench_table_start)
+        workbench_table = html[workbench_table_start:workbench_table_end]
+        self.assertEqual(4, workbench_table.count("<th>"))
+        self.assertNotIn("<th>组件数</th>", workbench_table)
+        self.assertNotIn("<th>操作</th>", workbench_table)
+        self.assertNotIn('class="det-tabs', html)
+        self.assertNotIn(">组件</span>", html)
+        self.assertNotIn('id="det-pane-component-config"', html)
+        self.assertNotIn("组件列表", html)
         self.assertNotIn("复用线上工作台样式", html)
         self.assertNotIn("dpr-wb-preview-video", html)
         self.assertNotIn("dpr-wb-preview-workarea", html)
+
+    def test_management_create_buttons_are_in_primary_title_rows(self):
+        cases = (
+            ("/data/pipelines", "流程管理", "新增流程"),
+            ("/data/rules", "规则管理", "新增规则"),
+            ("/data/user-groups", "用户组管理", "新增用户组"),
+            ("/data/personnel", "人员管理", "+ 添加人员"),
+        )
+        for path, title, button_text in cases:
+            html = self.client.get(path).get_data(as_text=True)
+            with self.subTest(path=path):
+                intro_start = html.index(
+                    '<div class="dpr-intro dpr-intro-inline-action">'
+                )
+                title_row_start = html.index(
+                    '<div class="dpr-intro-title-row">', intro_start
+                )
+                subtitle_start = html.index("<p>", title_row_start)
+                title_row = html[title_row_start:subtitle_start]
+                self.assertIn(f"<h1>{title}</h1>", title_row)
+                self.assertIn(button_text, title_row)
+                self.assertEqual(
+                    1,
+                    len(
+                        re.findall(
+                            rf">\s*{re.escape(button_text)}\s*</(?:a|button)>",
+                            title_row,
+                        )
+                    ),
+                )
 
     def test_workbench_management_annotation_previews_use_distinct_layouts(self):
         action_html = self.client.get(
@@ -1617,6 +1903,14 @@ class DataPlatformArchitectureTests(unittest.TestCase):
                 ".wbx-execution { position:fixed;",
             ):
                 self.assertIn(expected, html)
+            self.assertNotIn(
+                '<span class="wbx-module-title">操作</span>',
+                html,
+            )
+            self.assertIn(
+                ".wbx-operation-actions { width:100%; justify-content:center; }",
+                html,
+            )
             self.assertNotIn("submit.textContent", html)
             self.assertNotIn("wbx-action-divider", html)
             self.assertNotIn('data-workbench-module="log"', html)
@@ -1626,8 +1920,7 @@ class DataPlatformArchitectureTests(unittest.TestCase):
         requirements = {
             "/data/rules": (
                 "规则管理",
-                "缺帧检测规则",
-                "图像模糊度检测",
+                "端到端切分标注规则",
                 "适用环节",
             ),
             "/data/scenes": ("场景管理", "场景名称", "新增场景"),
@@ -1639,9 +1932,39 @@ class DataPlatformArchitectureTests(unittest.TestCase):
                 with self.subTest(path=path, expected=expected):
                     self.assertIn(expected, html)
         rules_html = self.client.get("/data/rules").get_data(as_text=True)
+        for expected in (
+            'id="ruleFilterName"',
+            'id="ruleFilterStage"',
+            'id="ruleFilterOwner"',
+            ">规则名称</label>",
+            ">适用环节</label>",
+            ">创建人</label>",
+            ">清空</a>",
+            ">查询</button>",
+        ):
+            self.assertIn(expected, rules_html)
+        self.assertNotIn('class="tm-tabs"', rules_html)
         self.assertNotIn("执行方式", rules_html)
-        for stage in ("质检", "标注", "验收"):
-            self.assertIn(f">{stage}<", rules_html)
+        for removed in (
+            "缺帧检测规则",
+            "图像模糊度检测",
+            "动作分段必备字段",
+            "关键帧标注完整性",
+            "Episode 时长阈值",
+            "切分起止动作检测",
+            "标注一致性校验",
+            "终验抽检比例",
+            "<th>标注方式</th>",
+            "<th>规则配置</th>",
+            "<th>关联工作台</th>",
+        ):
+            self.assertNotIn(removed, rules_html)
+        self.assertEqual(1, rules_html.count('class="mono">RL-009</td>'))
+        self.assertIn(">标注<", rules_html)
+        filtered_rules = self.client.get(
+            "/data/rules?rule_name=不存在的规则"
+        ).get_data(as_text=True)
+        self.assertNotIn("端到端切分标注规则", filtered_rules)
 
     def test_tag_groups_show_required_fields_and_create_drawer(self):
         html = self.client.get("/data/tags").get_data(as_text=True)
@@ -1714,7 +2037,7 @@ class DataPlatformArchitectureTests(unittest.TestCase):
             "tag-level-badge",
             "tag-drag-handle",
             "tag-row-check",
-            "新建一级标签",
+            "新增一级标签",
             "tag-list-pagination",
             "20条/页",
             "查看详情",
@@ -1739,7 +2062,7 @@ class DataPlatformArchitectureTests(unittest.TestCase):
         self.assertIn("请输入驳回说明", review_html)
         self.assertNotIn("请输入驳回备注", review_html)
         self.assertIn(
-            "<span>时间</span><span>操作人</span><span>操作</span><span>节点</span>",
+            "<span>时间</span><span>操作人</span><span>操作</span><span>节点</span><span>说明</span>",
             review_html,
         )
         self.assertIn(">驳回</span><span>供应商复核</span>", review_html)
@@ -1759,12 +2082,140 @@ class DataPlatformArchitectureTests(unittest.TestCase):
         ).get_data(as_text=True)
         self.assertNotIn("wbOpenRejectDialog", supplier_html)
         self.assertNotIn(">驳回</span><span>供应商抽验</span>", supplier_html)
+        self.assertNotIn(">上一条</button>", supplier_html)
+        self.assertNotIn(">下一条</button>", supplier_html)
+
+        todo_html = self.client.get(
+            "/data/workbench-v2/edit?task=WB-E2E-SUPPLIER-A&recording_id=recording_e2e_001&entry=todo"
+        ).get_data(as_text=True)
+        self.assertIn(">上一条</button>", todo_html)
+        self.assertIn(">下一条</button>", todo_html)
+        self.assertIn("wbx-item-navigation", todo_html)
 
         acceptance_html = self.client.get(
             "/data/workbench-v2/edit?task=WB-E2E-ACCEPTANCE&recording_id=recording_e2e_007"
         ).get_data(as_text=True)
         self.assertIn(">驳回</span><span>内部验收</span>", acceptance_html)
         self.assertIn(">提交</span><span>内部验收</span>", acceptance_html)
+
+    def test_v2_workbench_style_examples_cover_five_variants(self):
+        examples_html = self.client.get(
+            "/data/workbench-v2/style-examples"
+        ).get_data(as_text=True)
+        for expected in (
+            "工作台样式示例",
+            "供应商抽验－首次提交",
+            "供应商抽验－被驳回后处理",
+            "供应商复核 / 供应商验收 / 内部验收－首次提交",
+            "供应商复核 / 供应商验收－驳回重新提交处理",
+            "供应商复核 / 供应商验收 / 内部验收－被驳回后处理",
+            "wbSwitchStyleExample",
+            "完整工作台样式预览",
+            "仅切换标注、错误原因和提交 / 驳回规则",
+        ):
+            self.assertIn(expected, examples_html)
+        self.assertEqual(5, examples_html.count('data-style-tab="'))
+        self.assertEqual(5, examples_html.count('data-style-src="'))
+        self.assertIn('id="wbStyleFrame"', examples_html)
+        for style_id in ("one", "two", "three", "four", "five"):
+            self.assertIn(f"style={style_id}", examples_html)
+
+        style_expectations = {
+            "one": (False, False, False),
+            "two": (True, False, True),
+            "three": (True, True, False),
+            "four": (True, True, False),
+            "five": (True, True, True),
+        }
+        for style_id, (has_reason, allow_reject, submit_reason) in style_expectations.items():
+            style_html = self.client.get(
+                "/data/workbench-v2/edit?task=WB-E2E-SUPPLIER-A&mode=annotation"
+                f"&rule=端到端切分标注规则&style={style_id}&style_preview=1"
+            ).get_data(as_text=True)
+            for component in (
+                "lab-meta",
+                "lab-vid-grid",
+                "lab-tools-card",
+                "lab-semantic-row",
+                "lab-semantic-editor-cell",
+                "wbx-execution",
+            ):
+                self.assertIn(component, style_html)
+            self.assertIn("<b>指令</b>", style_html)
+            self.assertNotIn("第1版", style_html)
+            self.assertNotIn('<span class="lbl">状态:</span>', style_html)
+            self.assertIn(
+                "<span>时间</span><span>操作人</span><span>操作</span><span>节点</span><span>说明</span>",
+                style_html,
+            )
+            self.assertIn("overflow-y:auto", style_html)
+            detail_tabs_pos = style_html.index(
+                '<div class="wbx-detail-tabs"'
+            )
+            header_pos = style_html.index(
+                '<div class="wbx-workbench-header">',
+                detail_tabs_pos,
+            )
+            instruction_pos = style_html.index(
+                'class="wbx-instruction"', header_pos
+            )
+            video_pos = style_html.index('class="lab-vid-grid"', instruction_pos)
+            timeline_pos = style_html.index(
+                'class="lab-tools-card"', video_pos
+            )
+            execution_pos = style_html.index(
+                'class="wbx-execution"', timeline_pos
+            )
+            self.assertNotIn("wbx-sticky-workbench-header", style_html)
+            self.assertNotIn("wbx-sticky-annotation-tools", style_html)
+            self.assertLess(detail_tabs_pos, header_pos)
+            self.assertLess(header_pos, instruction_pos)
+            self.assertLess(instruction_pos, video_pos)
+            self.assertLess(video_pos, timeline_pos)
+            self.assertLess(timeline_pos, execution_pos)
+            if has_reason:
+                self.assertLess(style_html.index(">时长</th>"), style_html.index(">错误原因</th>"))
+                self.assertLess(style_html.index(">错误原因</th>"), style_html.index(">操作</th>"))
+            else:
+                self.assertNotIn(">错误原因</th>", style_html)
+            self.assertEqual(allow_reject, "wbOpenRejectDialog" in style_html)
+            self.assertEqual(submit_reason, "wbSubmitDialog" in style_html)
+            readonly_style = style_id in {"three", "four", "five"}
+            self.assertEqual(
+                not readonly_style,
+                '<div class="lab-tl-seg orange"' in style_html,
+            )
+            self.assertEqual(
+                not readonly_style,
+                '<div class="lab-annotation-toolbox">' in style_html,
+            )
+            if style_id == "one":
+                self.assertNotIn(
+                    '<section class="wbx-description-module"',
+                    style_html,
+                )
+            if style_id == "five":
+                self.assertIn(
+                    '<section class="wbx-description-module"',
+                    style_html,
+                )
+
+        style_five_html = self.client.get(
+            "/data/workbench-v2/edit?task=WB-E2E-ACCEPTANCE"
+            "&recording_id=recording_e2e_007&mode=annotation"
+            "&rule=端到端切分标注规则&style=five&style_preview=1"
+        ).get_data(as_text=True)
+        self.assertIn('<section class="wbx-description-module"', style_five_html)
+        self.assertIn("内部验收发现标注结果需补充确认", style_five_html)
+
+        v2_workbench = self.client.get(
+            "/data/workbench-v2/edit?task=WB-E2E-SUPPLIER-A&recording_id=recording_e2e_001"
+        ).get_data(as_text=True)
+        self.assertNotIn("/data/workbench-v2/style-examples", v2_workbench)
+        legacy_workbench = self.client.get(
+            "/data/workbench/edit?task=WB-2026-0922-LB"
+        ).get_data(as_text=True)
+        self.assertNotIn("/data/workbench-v2/style-examples", legacy_workbench)
 
     def test_project_management_is_under_configuration_management(self):
         html = self.client.get("/data/projects").get_data(as_text=True)
@@ -1777,7 +2228,7 @@ class DataPlatformArchitectureTests(unittest.TestCase):
             "预训练采集",
             "demo 项目",
             "宁德项目",
-            "+ 新建项目",
+            "新增项目",
         ):
             self.assertIn(expected, html)
         project_rows = re.findall(r"<tbody>(.*?)</tbody>", html, flags=re.S)
@@ -1944,7 +2395,7 @@ class DataPlatformArchitectureTests(unittest.TestCase):
             "拖拽调整顺序",
             "prompt-add-child-row",
             "stepPromptDifficulty",
-            "新增测试任务",
+            ">新增测试任务</button>",
             "导入 JSON",
             ">保存</button>",
         ):

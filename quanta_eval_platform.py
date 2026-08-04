@@ -2249,7 +2249,7 @@ def tags_page():
       <aside class="tag-group-panel">
         <div class="tag-group-head">
           <span>标签组</span>
-          <button type="button" class="tag-group-create-button" onclick="tagOpenCreateGroup()">+ 新建</button>
+          <button type="button" class="tag-group-create-button" onclick="tagOpenCreateGroup()">新增标签组</button>
         </div>
         <div class="tag-group-search">
           <input class="ant-input" id="tagGroupSearchInput" placeholder="搜索标签组"
@@ -2277,7 +2277,7 @@ def tags_page():
               <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-4-4"></path></svg>
               <input class="ant-input" id="tagSearchInput" placeholder="请输入标签名称" oninput="tagSearchRows(this.value)">
             </div>
-            <button class="ant-btn tag-list-create-action" onclick="toast('Demo: 打开新建一级标签')">新建一级标签</button>
+            <button class="ant-btn tag-list-create-action" onclick="toast('Demo: 打开新增一级标签')">新增一级标签</button>
           </div>
           <div class="tag-list-table-wrap">
             <table class="ant-table" id="tag-tree-tbl">
