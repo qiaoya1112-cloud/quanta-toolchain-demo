@@ -791,6 +791,7 @@ select option:disabled { color:rgba(0,0,0,0.32); }
 .action-menu .disabled { color:rgba(0,0,0,0.28); cursor:not-allowed; }
 .mono { font-family:'SF Mono',Menlo,monospace; font-size:12.5px; color:rgba(0,0,0,0.55); }
 .table-wrap { background:#fff; border:1px solid #f0f0f0; border-radius:8px; overflow:visible; }
+.table-wrap.q-table-scroll { overflow-x:auto; overflow-y:hidden; }
 .table-wrap.deploy-table-wrap { overflow:visible; }
 .ckpt-table { table-layout:fixed; }
 .ckpt-name-cell { display:block; max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:#149DAA; text-decoration:none; }
@@ -3195,7 +3196,7 @@ WB_TASKS = [
         "id": "WB-2026-0718-QC",
         "pool": "POOL-QUALITY-REVIEW",
         "task_name": "厨房采集数据质检任务",
-        "processing_task": "PROC-2026-0718",
+        "processing_task": "20450",
         "project": "宁德项目",
         "user_group": "质检复核用户组",
         "workbench": "质检工作台 v2.0",
@@ -3231,7 +3232,7 @@ WB_TASKS = [
         "id": "WB-2026-0922-AC",
         "pool": "POOL-INTERNAL-ACCEPTANCE",
         "task_name": "家居动作标注验收任务",
-        "processing_task": "PROC-2026-0922-AC",
+        "processing_task": "20449",
         "project": "demo 项目",
         "user_group": "内部验收用户组",
         "workbench": "详情工作台 v1.0",
@@ -3243,7 +3244,7 @@ WB_TASKS = [
         "processing": 8,
         "filters": [
             ("所属项目", "demo 项目"),
-            ("处理任务", "PROC-2026-0922"),
+            ("处理任务", "20453"),
             ("标注状态", "已标注"),
             ("验收状态", "待验收"),
         ],
@@ -3265,7 +3266,7 @@ WB_TASKS = [
         "id": "WB-2026-0922-LB",
         "pool": "POOL-ACTION-ANNOTATION",
         "task_name": "家居动作分段标注任务",
-        "processing_task": "PROC-2026-0922",
+        "processing_task": "20453",
         "project": "宁德项目",
         "user_group": "标注员用户组",
         "workbench": "标注工作台 v4.1",
@@ -3277,7 +3278,7 @@ WB_TASKS = [
         "processing": 27,
         "filters": [
             ("所属项目", "宁德项目"),
-            ("处理任务", "PROC-2026-0922"),
+            ("处理任务", "20453"),
             ("质检结论", "合格"),
             ("标注状态", "未标注"),
         ],
@@ -3299,7 +3300,7 @@ WB_TASKS = [
         "id": "WB-2026-0930-REVIEW",
         "pool": "POOL-QUALITY-REVIEW",
         "task_name": "三方导入数据抽检任务",
-        "processing_task": "PROC-2026-0930",
+        "processing_task": "20451",
         "project": "预训练采集",
         "user_group": "质检复核用户组",
         "workbench": "质检工作台 v2.0",
@@ -3332,7 +3333,7 @@ WB_TASKS = [
         "id": "WB-2026-0888-FINAL",
         "pool": "POOL-INTERNAL-ACCEPTANCE",
         "task_name": "评测集入湖终验任务",
-        "processing_task": "PROC-2026-0888",
+        "processing_task": "20452",
         "project": "demo 项目",
         "user_group": "内部验收用户组",
         "workbench": "详情工作台 v1.0",
@@ -3344,7 +3345,7 @@ WB_TASKS = [
         "processing": 3,
         "filters": [
             ("所属项目", "demo 项目"),
-            ("处理任务", "PROC-2026-0888"),
+            ("处理任务", "20452"),
             ("质检结论", "合格"),
             ("标注状态", "已标注"),
         ],
@@ -3367,7 +3368,7 @@ WB_TASKS = [
         "v2_only": True,
         "pool": "POOL-E2E-ACCEPTANCE",
         "task_name": "端到端切分标注内部验收任务",
-        "processing_task": "PROC-2026-0923",
+        "processing_task": "20455",
         "project": "预训练采集",
         "user_group": "验收-端到端切分标注",
         "workbench": "语义标注工作台 v1.0",
@@ -3377,7 +3378,7 @@ WB_TASKS = [
         "priority": "P0",
         "count": 86,
         "processing": 18,
-        "filters": [("所属项目", "预训练采集"), ("处理任务", "PROC-2026-0923"), ("质检结论", "合格 / 操作失误"), ("标注状态", "已标注")],
+        "filters": [("所属项目", "预训练采集"), ("处理任务", "20455"), ("质检结论", "合格 / 操作失误"), ("标注状态", "已标注")],
         "mistake_rules": ["切分边界与动作语义不一致", "片段备注缺少必要说明"],
         "rejection_rules": ["关键片段缺失", "High-level / Low-level 层级关系错误", "标注结果无法支撑训练目标"],
     },
@@ -3386,7 +3387,7 @@ WB_TASKS = [
         "v2_only": True,
         "pool": "POOL-E2E-SUPPLIER-A",
         "task_name": "端到端切分标注供应商 A 任务",
-        "processing_task": "PROC-2026-0923",
+        "processing_task": "20455",
         "project": "预训练采集",
         "user_group": "供应商 A",
         "workbench": "语义标注工作台 v1.0",
@@ -3396,7 +3397,7 @@ WB_TASKS = [
         "priority": "P0",
         "count": 124,
         "processing": 31,
-        "filters": [("所属项目", "预训练采集"), ("处理任务", "PROC-2026-0923"), ("质检结论", "合格 / 操作失误")],
+        "filters": [("所属项目", "预训练采集"), ("处理任务", "20455"), ("质检结论", "合格 / 操作失误")],
         "mistake_rules": ["切分起点偏移", "连续片段未完成切分"],
         "rejection_rules": ["片段缺少开始或结束时间", "动作描述与片段内容不一致"],
     },
@@ -3405,7 +3406,7 @@ WB_TASKS = [
         "v2_only": True,
         "pool": "POOL-E2E-GUAN",
         "task_name": "端到端切分标注光轮智能任务",
-        "processing_task": "PROC-2026-0923",
+        "processing_task": "20455",
         "project": "预训练采集",
         "user_group": "光轮智能",
         "workbench": "语义标注工作台 v1.0",
@@ -3415,7 +3416,7 @@ WB_TASKS = [
         "priority": "P0",
         "count": 118,
         "processing": 28,
-        "filters": [("所属项目", "预训练采集"), ("处理任务", "PROC-2026-0923"), ("质检结论", "合格 / 操作失误")],
+        "filters": [("所属项目", "预训练采集"), ("处理任务", "20455"), ("质检结论", "合格 / 操作失误")],
         "mistake_rules": ["High-level 片段范围需要调整", "动作片段存在重叠"],
         "rejection_rules": ["切分结果与规则不一致", "关键动作片段漏标"],
     },
@@ -3424,7 +3425,7 @@ WB_TASKS = [
         "v2_only": True,
         "pool": "POOL-E2E-SUPPLIER-A",
         "task_name": "端到端切分标注供应商复核任务",
-        "processing_task": "PROC-2026-0923",
+        "processing_task": "20455",
         "project": "预训练采集",
         "user_group": "供应商 A",
         "workbench": "语义标注工作台 v1.0",
@@ -3434,7 +3435,7 @@ WB_TASKS = [
         "priority": "P0",
         "count": 64,
         "processing": 12,
-        "filters": [("所属项目", "预训练采集"), ("处理任务", "PROC-2026-0923"), ("质检结论", "合格 / 操作失误")],
+        "filters": [("所属项目", "预训练采集"), ("处理任务", "20455"), ("质检结论", "合格 / 操作失误")],
         "mistake_rules": [],
         "rejection_rules": [],
     },
@@ -4168,7 +4169,7 @@ def _render_embedded_workbench(page_html):
         embedded_css += """
         <style id="workbench-style-preview-fit">
         html,body.workbench-embed{min-width:0}
-        body.workbench-embed .q-content{padding-bottom:18px}
+        body.workbench-embed .q-content{padding-bottom:104px}
         body.workbench-embed .lab-vid-grid{min-width:0}
         body.workbench-embed .lab-tbl{overflow-x:auto}
         body.workbench-embed .lab-tbl table{min-width:900px}
@@ -4197,10 +4198,6 @@ def _render_embedded_workbench(page_html):
         body.workbench-embed .wbx-detail-pane.active{
           height:calc(100vh - 520px);min-height:240px;max-height:430px;
           overflow-y:auto;overscroll-behavior:contain;scrollbar-gutter:stable
-        }
-        body.workbench-embed .wbx-execution{
-          position:static;right:auto;bottom:auto;left:auto;
-          padding:0;background:none
         }
         </style>
         """
@@ -4685,7 +4682,7 @@ def data_workbench_v2_style_examples():
     default_config = WORKBENCH_STYLE_VARIANTS["one"]
     content = f"""
     <div class="wb-style-page-head">
-      <div><h1>工作台样式示例</h1><p>五种状态均复用当前完整工作台，仅切换标注、错误原因和提交 / 驳回规则。</p></div>
+      <div><h1>工作台样式示例</h1></div>
       <a class="btn" href="/data/workbench-v2">返回工作台</a>
     </div>
     <div class="wb-style-tabs" role="tablist">{tabs}</div>
@@ -4694,6 +4691,7 @@ def data_workbench_v2_style_examples():
     </div>
     <iframe class="wb-style-frame" id="wbStyleFrame"
       title="完整工作台样式预览"
+      onload="wbStyleFrameReady(this)"
       src="{html.escape(variant_urls['one'], quote=True)}"></iframe>
     <style>
     .wb-style-page-head{{display:flex;align-items:flex-start;justify-content:space-between;gap:24px;margin-bottom:16px}}
@@ -4704,10 +4702,27 @@ def data_workbench_v2_style_examples():
     .wb-style-tab.active{{border-color:#149daa;background:#edf9fa;box-shadow:0 0 0 1px rgba(20,157,170,.12)}}.wb-style-tab.active b{{color:#0f7f89}}
     .wb-style-preview-head{{display:flex;align-items:center;gap:10px;padding:10px 14px;border:1px solid #dbe4e7;border-bottom:0;border-radius:9px 9px 0 0;background:#fff;color:#718084;font-size:12px}}
     .wb-style-preview-head b{{color:#253b40;font-size:14px}}
-    .wb-style-frame{{display:block;width:100%;height:max(760px,calc(100vh - 258px));box-sizing:border-box;border:1px solid #dbe4e7;border-radius:0 0 9px 9px;background:#fff}}
+    .wb-style-frame{{position:sticky;top:52px;display:block;width:100%;height:calc(100vh - 52px);box-sizing:border-box;border:1px solid #dbe4e7;border-radius:0 0 9px 9px;background:#fff}}
     @media(max-width:1200px){{.wb-style-tabs{{grid-template-columns:repeat(3,1fr)}}}}
     </style>
     <script>
+    function wbStyleFrameReady(frame) {{
+      var frameWindow=frame.contentWindow;
+      if(!frameWindow||frameWindow.__wbStyleParentScrollBound) return;
+      frameWindow.__wbStyleParentScrollBound=true;
+      frameWindow.addEventListener('wheel',function(event) {{
+        var frameTop=frame.getBoundingClientRect().top;
+        if(event.deltaY>0&&frameTop>52) {{
+          event.preventDefault();
+          window.scrollBy(0,Math.min(event.deltaY,frameTop-52));
+          return;
+        }}
+        if(event.deltaY<0&&frameWindow.scrollY<=0&&window.scrollY>0) {{
+          event.preventDefault();
+          window.scrollBy(0,event.deltaY);
+        }}
+      }},{{passive:false}});
+    }}
     function wbSwitchStyleExample(button) {{
       document.querySelectorAll('.wb-style-tab').forEach(function(tab) {{
         tab.classList.toggle('active', tab === button);
@@ -4746,7 +4761,7 @@ def data_workbench_v2_style_examples():
     panes = "".join(_workbench_style_example_pane(*variant) for variant in variants)
     content = f"""
     <div class="wb-style-page-head">
-      <div><h1>工作台样式示例</h1><p>按节点和数据状态切换五种处理样式，示例中的控件状态与实际工作台规则一致。</p></div>
+      <div><h1>工作台样式示例</h1></div>
       <a class="btn" href="/data/workbench-v2">返回工作台</a>
     </div>
     <div class="wb-style-tabs" role="tablist">{tabs}</div>
@@ -5714,13 +5729,16 @@ def data_rules():
 
     rule_drawer = """
     <style>
-      #drawerRuleCreate{left:192px;right:0;width:auto}.rule-create-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}.rule-methods{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}.rule-method-card{position:relative;display:flex;min-height:116px;flex-direction:column;padding:12px;border:1px solid #dfe6e8;border-radius:8px;background:#fff;cursor:pointer}.rule-method-card:hover{border-color:#8acbd1}.rule-method-card.active{border-color:#149DAA;background:#eef9fa;box-shadow:0 0 0 1px #149DAA}.rule-method-card input{position:absolute;opacity:0;pointer-events:none}.rule-method-head{display:flex;align-items:center;gap:7px;color:#30474f;font-size:13px;font-weight:650}.rule-method-head:before{content:"";width:14px;height:14px;border:1px solid #cbd5d8;border-radius:50%;background:#fff;box-sizing:border-box}.rule-method-card.active .rule-method-head:before{border:4px solid #149DAA}.rule-method-code{margin-left:auto;padding:2px 6px;border:1px solid #dfe5e7;border-radius:4px;background:#fff;color:#8a969b;font:10px 'SF Mono',Menlo,monospace}.rule-method-card p{margin:15px 0 0;color:#718087;font-size:11.5px;line-height:1.6}.rule-config-block{margin-top:18px;padding-top:18px;border-top:1px solid #edf1f2}.rule-config-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:9px}.rule-config-head b{color:#30474f;font-size:13px}.rule-config-table{width:100%;border-collapse:collapse;border:1px solid #e2e8ea}.rule-config-table th,.rule-config-table td{padding:8px 10px;border-bottom:1px solid #e8edef;text-align:left;font-size:12px}.rule-config-table th{background:#f5f7f8;color:#6c7d83;font-weight:500}.rule-config-table input{width:100%;height:32px;padding:0 8px;border:1px solid #d8e0e3;border-radius:5px;box-sizing:border-box}.rule-config-empty{padding:38px 20px;border:1px dashed #d9e1e3;border-radius:8px;background:#fafcfc;color:#9aa5a9;text-align:center;font-size:13px}.rule-section-label{display:block;margin:0 0 9px;color:#52666d;font-size:13px}.rule-section-label.required:before{content:"*";margin-right:4px;color:#d4504e}@media(max-width:900px){#drawerRuleCreate{left:0;right:0;width:auto}.rule-methods{grid-template-columns:repeat(2,minmax(0,1fr))}}
+      #drawerRuleCreate{left:auto;right:0;width:min(1120px,calc(100vw - 24px));max-width:none}
+      #drawerRuleCreate .fg{width:100%;max-width:none}
+      #drawerRuleCreate .fg input,#drawerRuleCreate .fg select,#drawerRuleCreate .fg textarea{width:100%;box-sizing:border-box}
+      .rule-create-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}.rule-methods{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}.rule-method-card{position:relative;display:flex;min-height:116px;flex-direction:column;padding:12px;border:1px solid #dfe6e8;border-radius:8px;background:#fff;cursor:pointer}.rule-method-card:hover{border-color:#8acbd1}.rule-method-card.active{border-color:#149DAA;background:#eef9fa;box-shadow:0 0 0 1px #149DAA}.rule-method-card input{position:absolute;opacity:0;pointer-events:none}.rule-method-head{display:flex;align-items:center;gap:7px;color:#30474f;font-size:13px;font-weight:650}.rule-method-head:before{content:"";width:14px;height:14px;border:1px solid #cbd5d8;border-radius:50%;background:#fff;box-sizing:border-box}.rule-method-card.active .rule-method-head:before{border:4px solid #149DAA}.rule-method-code{margin-left:auto;padding:2px 6px;border:1px solid #dfe5e7;border-radius:4px;background:#fff;color:#8a969b;font:10px 'SF Mono',Menlo,monospace}.rule-method-card p{margin:15px 0 0;color:#718087;font-size:11.5px;line-height:1.6}.rule-config-block{margin-top:18px;padding-top:18px;border-top:1px solid #edf1f2}.rule-config-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:9px}.rule-config-head b{color:#30474f;font-size:13px}.rule-config-table{width:100%;border-collapse:collapse;border:1px solid #e2e8ea}.rule-config-table th,.rule-config-table td{padding:8px 10px;border-bottom:1px solid #e8edef;text-align:left;font-size:12px}.rule-config-table th{background:#f5f7f8;color:#6c7d83;font-weight:500}.rule-config-table input{width:100%;height:32px;padding:0 8px;border:1px solid #d8e0e3;border-radius:5px;box-sizing:border-box}.rule-config-empty{padding:38px 20px;border:1px dashed #d9e1e3;border-radius:8px;background:#fafcfc;color:#9aa5a9;text-align:center;font-size:13px}.rule-section-label{display:block;margin:0 0 9px;color:#52666d;font-size:13px}.rule-section-label.required:before{content:"*";margin-right:4px;color:#d4504e}@media(max-width:1100px){.rule-methods{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:700px){#drawerRuleCreate{left:auto;right:0;width:calc(100vw - 24px)}.rule-methods{grid-template-columns:1fr}}
     </style>
     <div class="drawer" id="drawerRuleCreate">
       <div class="drawer-head"><h3>新增规则</h3><span class="dismiss" onclick="closeDrawer()">&times;</span></div>
       <div class="drawer-body">
-        <div class="fg" style="max-width:420px;"><label>规则名称</label><input id="ruleCreateName" placeholder="请输入规则名称"></div>
-        <div class="fg" style="max-width:420px;"><label>业务环节</label><select id="ruleCreateStage" onchange="ruleCreateStageChanged(this.value)"><option value="质检">质检</option><option value="标注">标注</option></select></div>
+        <div class="fg"><label>规则名称</label><input id="ruleCreateName" placeholder="请输入规则名称"></div>
+        <div class="fg"><label>业务环节</label><select id="ruleCreateStage" onchange="ruleCreateStageChanged(this.value)"><option value="质检">质检</option><option value="标注">标注</option></select></div>
         <section id="ruleAnnotationMethod" style="display:none;">
           <span class="rule-section-label required">标注方式</span>
           <div class="rule-methods">
@@ -5744,7 +5762,7 @@ def data_rules():
           </div>
           <div class="rule-config-empty" id="ruleSimpleConfig">略</div>
         </section>
-        <div class="fg" style="margin-top:18px;max-width:420px;"><label>关联工作台</label><select id="ruleCreateWorkbench"><option data-stage="质检">质检工作台 v2.0</option><option data-stage="标注" data-annotation-kind="action">动作标注工作台 v4.1</option><option data-stage="标注" data-annotation-kind="semantic">语义标注工作台 v1.0</option></select></div>
+        <div class="fg" style="margin-top:18px;"><label>关联工作台</label><select id="ruleCreateWorkbench"><option data-stage="质检">质检工作台 v2.0</option><option data-stage="标注" data-annotation-kind="action">动作标注工作台 v4.1</option><option data-stage="标注" data-annotation-kind="semantic">语义标注工作台 v1.0</option></select></div>
       </div>
       <div class="drawer-foot"><button class="btn" type="button" onclick="closeDrawer()">取消</button><button class="btn btn-primary" type="button" onclick="toast('Demo: 规则已创建');closeDrawer()">创建</button></div>
     </div>
@@ -5813,7 +5831,6 @@ def data_rules():
           <h1>规则管理</h1>
           <div class="dpr-intro-actions"><a class="btn btn-primary" href="#" onclick="openRuleCreate();return false;">新增规则</a></div>
         </div>
-        <p>维护数据处理与人工执行规则。</p>
       </div>
     </div>
     <form class="q-filters rule-filter-panel" method="get" action="/data/rules">

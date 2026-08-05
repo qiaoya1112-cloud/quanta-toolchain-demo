@@ -494,6 +494,7 @@ _review_flows = [
     },
     {
         "id": "pl3a",
+        "ident": "e2e-split-annotation",
         "name": "端到端切分标注流程",
         "creator": "joanna.qiao",
         "status": "启用",
@@ -825,6 +826,10 @@ select option:disabled { color:rgba(0,0,0,0.32); }
 .q-range input[type=date] { min-width:140px; }
 .q-range-sep { color:rgba(0,0,0,0.35); }
 .q-actions { display:flex; gap:8px; margin-left:auto; align-items:flex-end; }
+.rule-filter-panel { margin-bottom:12px; padding:16px 18px; }
+.rule-filter-panel .q-filter-row { align-items:flex-end; }
+.rule-filter-panel .q-field input, .rule-filter-panel .q-field select { min-width:220px; }
+.rule-filter-panel .q-field .ms-trigger { min-width:220px; }
 .q-field.grow { flex:1 1 240px; min-width:220px; }
 .q-field.grow > input, .q-field.grow .ms-wrap, .q-field.grow .ms-wrap .ms-trigger { width:100%; }
 /* 高级筛选行: 各项撑满整行 */
@@ -1384,12 +1389,13 @@ textarea.wf-edit-field { min-height:64px; height:auto; resize:vertical; line-hei
 .wf-reject-hint { margin-top:7px; color:rgba(0,0,0,.4); font-size:11px; line-height:1.5; }
 .wf-reject-wrap { margin-top:12px; }
 .wf-operation-reject { margin-top:10px; padding-top:10px; border-top:1px dashed #edf0f1; }
-.wf-reject-select .ms-trigger { width:100%; box-sizing:border-box; min-height:34px; height:auto; }
-.wf-reject-select .ms-panel { left:0; right:0; min-width:100%; max-height:220px; }
-.wf-reject-select .ms-panel label { align-items:flex-start; }
-.wf-reject-select .ms-panel label span { display:block; min-width:0; }
-.wf-reject-select .ms-panel label b { display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:rgba(0,0,0,.72); font-size:12px; font-weight:500; }
-.wf-reject-select .ms-panel label small { display:block; margin-top:2px; color:rgba(0,0,0,.4); font-size:10px; }
+.wf-reject-target-list { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; margin-top:7px; }
+.wf-reject-target-list label { display:flex; align-items:flex-start; gap:7px; min-width:0; padding:9px 10px; border:1px solid #e1e7e9; border-radius:7px; background:#fff; cursor:pointer; }
+.wf-reject-target-list label:has(input:checked) { border-color:#8cc8d0; background:#f1fafb; }
+.wf-reject-target-list label input { flex:none; margin:2px 0 0; accent-color:#1F80A0; }
+.wf-reject-target-list label span { display:block; min-width:0; }
+.wf-reject-target-list label b { display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:rgba(0,0,0,.72); font-size:12px; font-weight:500; }
+.wf-reject-target-list label small { display:block; margin-top:2px; color:rgba(0,0,0,.4); font-size:10px; }
 .wf-reject-empty { padding:12px; color:rgba(0,0,0,.38); font-size:12px; text-align:center; }
 .wf-phase-options { display:grid; gap:10px; }
 .wf-phase-option { display:flex; align-items:center; gap:12px; width:100%; padding:14px; border:1px solid #e6eaec; border-radius:9px; background:#fff; color:rgba(0,0,0,.78); text-align:left; cursor:pointer; }
@@ -4316,21 +4322,33 @@ def operators():
         f'<label><input type="checkbox" value="{c}" onchange="msUpdate(this)">{c}</label>'
         for c in sorted(set(o["creator"] for o in displayed_operators)))
     content = f"""
-    <div class="dpr-intro"><div><h1>算子管理</h1><p>管理工作流可复用的处理算子。</p></div></div>
-    <div class="filter-bar">
-      <input placeholder="搜索算子名称 / 标识...">
-      <div class="ms-wrap">
-        <div class="ms-trigger" onclick="this.closest('.ms-wrap').classList.toggle('open')"><span class="ms-label">创建人</span></div>
-        <div class="ms-panel">{creator_checks}</div>
+    <div class="dpr-intro"><div><h1>算子管理</h1></div></div>
+    <div class="q-filters rule-filter-panel">
+      <div class="q-filter-row">
+        <div class="q-field">
+          <label>算子名称</label>
+          <input placeholder="请输入算子名称 / 标识">
+        </div>
+        <div class="q-field">
+          <label>创建人</label>
+          <div class="ms-wrap">
+            <div class="ms-trigger" onclick="this.closest('.ms-wrap').classList.toggle('open')"><span class="ms-label">全部创建人</span></div>
+            <div class="ms-panel">{creator_checks}</div>
+          </div>
+        </div>
+        <div class="q-actions">
+          <button type="button" class="btn" onclick="resetFilters(this)">清空</button>
+          <button type="button" class="btn btn-primary" onclick="queryFilters(this)">查询</button>
+        </div>
       </div>
-      <button class="btn" onclick="resetFilters(this)">重置</button>
-      <button class="btn-primary btn" onclick="queryFilters(this)">查询</button>
     </div>
     <div class="muted" style="margin-bottom:12px;">每个算子 = 一个「原子处理能力」的封装, 可被编排到工作流。</div>
-    <table class="ant-table row2">
-      <thead><tr><th>名称</th><th>标识</th><th>描述</th><th>创建人</th><th>操作</th></tr></thead>
-      <tbody>{rows}</tbody>
-    </table>
+    <div class="table-wrap">
+      <table class="ant-table">
+        <thead><tr><th>名称</th><th>标识</th><th>描述</th><th>创建人</th><th>操作</th></tr></thead>
+        <tbody>{rows}</tbody>
+      </table>
+    </div>
 
     <!-- 新建 / 编辑 算子 抽屉 -->
     <div class="drawer-mask" id="opFormDrawer" onclick="if(event.target===this)this.classList.remove('active')">
@@ -4455,10 +4473,11 @@ def pipelines():
         else:
             actions = (
                 '<a href="#" onclick="toast(\'Demo: 流程已启用\');return false;">启用</a> '
-                f'<a href="/pipelines/{pl["id"]}">编辑</a> '
-                f'<a href="/pipelines/{pl["id"]}?mode=view">详情</a>'
+                f'<a href="/pipelines/{pl["id"]}?version=draft">编辑</a> '
+                f'<a href="/pipelines/{pl["id"]}?mode=view&amp;version=draft">详情</a>'
             )
         rows += f"""<tr>
+          <td><code>{html.escape(pl.get('ident', pl['id']))}</code></td>
           <td><b>{pl['name']}</b></td>
           <td><span class="tag tag-cyan">{pl.get('business_stage', '通用')}</span></td>
           <td class="muted" style="max-width:380px;"><span class="wf-desc-clamp">{pl['desc']}</span></td>
@@ -4468,7 +4487,7 @@ def pipelines():
           <td class="actions-cell">{actions}</td>
         </tr>"""
     if not rows:
-        rows = '<tr><td colspan="7" class="muted" style="text-align:center;padding:24px;">无匹配工作流</td></tr>'
+        rows = '<tr><td colspan="8" class="muted" style="text-align:center;padding:24px;">无匹配工作流</td></tr>'
     keyword_value = html.escape(keyword, quote=True)
     stage_options = ['<option value="">全部业务环节</option>']
     for stage in ("质检", "标注", "验收"):
@@ -4479,22 +4498,63 @@ def pipelines():
       <div>
         <div class="dpr-intro-title-row">
           <h1>流程管理</h1>
-          <div class="dpr-intro-actions"><a href="/pipelines/new" class="btn-primary btn">新增流程</a></div>
+          <div class="dpr-intro-actions"><button type="button" class="btn-primary btn" onclick="openPipelineCreateDrawer()">新增流程</button></div>
         </div>
-        <p>配置并管理数据处理工作流。</p>
       </div>
     </div>
-    <form class="filter-bar" method="get" action="/pipelines">
-      <input name="q" value="{keyword_value}" placeholder="搜索工作流...">
-      <select name="stage">{''.join(stage_options)}</select>
-      <a class="btn" href="/pipelines">重置</a>
-      <button class="btn-primary btn" type="submit">查询</button>
+    <form class="q-filters rule-filter-panel" method="get" action="/pipelines">
+      <div class="q-filter-row">
+        <div class="q-field">
+          <label for="pipelineFilterName">流程名称</label>
+          <input id="pipelineFilterName" name="q" value="{keyword_value}" placeholder="请输入流程名称">
+        </div>
+        <div class="q-field">
+          <label for="pipelineFilterStage">业务环节</label>
+          <select id="pipelineFilterStage" name="stage">{''.join(stage_options)}</select>
+        </div>
+        <div class="q-actions">
+          <a class="btn" href="/pipelines">清空</a>
+          <button class="btn btn-primary" type="submit">查询</button>
+        </div>
+      </div>
     </form>
-    <table class="ant-table row2">
-      <thead><tr><th>名称</th><th>业务环节</th><th>描述</th><th>创建人</th><th>状态</th>
-      <th>更新时间</th><th>操作</th></tr></thead>
-      <tbody>{rows}</tbody>
-    </table>
+    <div class="table-wrap">
+      <table class="ant-table">
+        <thead><tr><th>流程标识</th><th>名称</th><th>业务环节</th><th>描述</th><th>创建人</th><th>状态</th>
+        <th>更新时间</th><th>操作</th></tr></thead>
+        <tbody>{rows}</tbody>
+      </table>
+    </div>
+    <div class="drawer-mask" id="pipelineCreateDrawer" onclick="if(event.target===this)closePipelineCreateDrawer()">
+      <div class="drawer pipeline-create-drawer">
+        <div class="drawer-head"><h3>新增流程</h3><button type="button" class="drawer-close" onclick="closePipelineCreateDrawer()">&times;</button></div>
+        <div class="drawer-body">
+          <div class="fg"><label><span class="req">*</span>流程标识</label><input id="pipelineCreateIdent" placeholder="请输入英文流程标识，如 e2e-split-annotation"></div>
+          <div class="fg"><label><span class="req">*</span>流程名称</label><input id="pipelineCreateName" placeholder="请输入流程名称"></div>
+          <div class="fg"><label><span class="req">*</span>业务环节</label><select id="pipelineCreateStage"><option value="质检">质检</option><option value="标注">标注</option><option value="验收">验收</option></select></div>
+          <div class="fg"><label>描述</label><textarea id="pipelineCreateDesc" rows="4" placeholder="请输入流程描述"></textarea></div>
+        </div>
+        <div class="drawer-foot"><button type="button" class="btn" onclick="closePipelineCreateDrawer()">取消</button><button type="button" class="btn btn-primary" onclick="submitPipelineCreate()">创建并进入画布</button></div>
+      </div>
+    </div>
+    <style>.pipeline-create-drawer{{width:560px;max-width:calc(100vw - 24px)}}.pipeline-create-drawer .fg{{margin-bottom:18px}}.pipeline-create-drawer .fg input,.pipeline-create-drawer .fg select{{height:38px;box-sizing:border-box}}</style>
+    <script>
+    function openPipelineCreateDrawer(){{
+      document.getElementById('pipelineCreateDrawer').classList.add('active');
+      document.getElementById('pipelineCreateIdent').focus();
+    }}
+    function closePipelineCreateDrawer(){{ document.getElementById('pipelineCreateDrawer').classList.remove('active'); }}
+    function submitPipelineCreate(){{
+      var ident=document.getElementById('pipelineCreateIdent').value.trim();
+      var name=document.getElementById('pipelineCreateName').value.trim();
+      var stage=document.getElementById('pipelineCreateStage').value;
+      var desc=document.getElementById('pipelineCreateDesc').value.trim();
+      if(!ident){{toast('请输入流程标识');return;}}
+      if(!/^[a-z][a-z0-9._-]*$/.test(ident)){{toast('流程标识需以小写字母开头，仅支持小写字母、数字、点、下划线和短横线');return;}}
+      if(!name){{toast('请输入流程名称');return;}}
+      location.href='/pipelines/new?flow_ident='+encodeURIComponent(ident)+'&flow_name='+encodeURIComponent(name)+'&business_stage='+encodeURIComponent(stage)+'&desc='+encodeURIComponent(desc);
+    }}
+    </script>
     """
     return render_page("工作流管理", content, active="pipelines", breadcrumb="自动化任务 / <b>工作流管理</b>")
 
@@ -4754,7 +4814,7 @@ WF_CANVAS_JS = r"""
     '标注员用户组','标注抽验员用户组','新规实验标注员用户组',
     '质检复核用户组','内部验收用户组'
   ];
-  var HUMAN_ACTIONS=['提交','驳回','暂离'];
+  var HUMAN_ACTIONS=['驳回'];
   function esc(v){ return String(v==null?'':v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;'); }
   function optionList(items,selected){
     return items.map(function(item){ return '<option'+(item===selected?' selected':'')+'>'+esc(item)+'</option>'; }).join('');
@@ -4916,6 +4976,17 @@ WF_CANVAS_JS = r"""
     select.disabled=!previous.length;
     hint.textContent=previous.length?'可选择任意前序人工节点。':'当前没有前序人工节点，请选择任务自定义。';
   }
+  function lockViewOnlyConfig(){
+    if(!viewOnly) return;
+    var config=document.getElementById('wfConfig');
+    config.querySelectorAll('.wf-config-body input, .wf-config-body select, .wf-config-body textarea, .wf-config-body button').forEach(function(control){
+      control.disabled=true;
+    });
+    config.querySelectorAll('.wf-config-body .ms-trigger').forEach(function(trigger){
+      trigger.setAttribute('aria-disabled','true');
+      trigger.classList.add('disabled');
+    });
+  }
   function openConfig(n){
     var config=document.getElementById('wfConfig');
     var human=isHumanNode(n);
@@ -4936,20 +5007,15 @@ WF_CANVAS_JS = r"""
       wfRefreshAssigneeInheritance();
       document.getElementById('wfhAssigneeInheritNode').value=n.inheritAssigneeNodeId||'';
       var previousNodes=previousHumanNodes(n);
-      var selectedActions=n.allowedActions&&n.allowedActions.length?
-        n.allowedActions.slice():['提交','暂离'];
-      if(!previousNodes.length){
-        selectedActions=selectedActions.filter(function(action){return action!=='驳回';});
-      }
+      var inferredReject=/支持驳回|可驳回/.test(n.desc||'')&&!/不支持驳回/.test(n.desc||'');
+      var rejectEnabled=n.rejectEnabled==null?inferredReject:!!n.rejectEnabled;
       renderHumanChoices(
         'wfhAllowedActions',
         HUMAN_ACTIONS,
-        selectedActions,
+        rejectEnabled?['驳回']:[],
         null,
         previousNodes.length?[]:['驳回']
       );
-      var inferredReject=/支持驳回|可驳回/.test(n.desc||'')&&!/不支持驳回/.test(n.desc||'');
-      var rejectEnabled=n.rejectEnabled==null?inferredReject:!!n.rejectEnabled;
       var rejectToggle=document.getElementById('wfhRejectEnabled');
       rejectToggle.disabled=!previousNodes.length;
       rejectToggle.checked=!!previousNodes.length&&rejectEnabled;
@@ -4963,6 +5029,7 @@ WF_CANVAS_JS = r"""
           (rejectToggle.checked?previousNodes.map(function(item){return item.id;}):[])
       );
       wfToggleReject(rejectToggle.checked);
+      lockViewOnlyConfig();
       return;
     }
     if(condition){
@@ -4970,6 +5037,7 @@ WF_CANVAS_JS = r"""
       document.getElementById('wfcndIdent').value=n.ident||'';
       document.getElementById('wfcndDesc').value=n.desc||'';
       renderConditionBranches(normalizedBranches(n));
+      lockViewOnlyConfig();
       return;
     }
     if(automatic){
@@ -4981,6 +5049,7 @@ WF_CANVAS_JS = r"""
       })[0]||'';
       renderAutomaticOperatorOptions(selectedOperatorId);
     }
+    lockViewOnlyConfig();
   }
   window.wfConditionMode=function(mode){
     document.querySelectorAll('#wfhConditionModes .wf-mode-tab').forEach(function(btn){ btn.classList.toggle('active',btn.getAttribute('data-mode')===mode); });
@@ -5070,23 +5139,8 @@ WF_CANVAS_JS = r"""
   window.wfToggleReject=function(enabled){
     var wrap=document.getElementById('wfhRejectWrap');
     wrap.style.display=enabled?'block':'none';
-    if(!enabled) document.getElementById('wfhRejectSelect').classList.remove('open');
   };
-  window.wfRejectTargetsUpdate=function(cb){
-    var wrap=document.getElementById('wfhRejectSelect');
-    var checked=wrap.querySelectorAll('input:checked');
-    var trigger=wrap.querySelector('.ms-trigger');
-    var label=wrap.querySelector('.ms-label');
-    var names=[];
-    checked.forEach(function(input){
-      var name=input.parentNode.querySelector('b');
-      if(name) names.push(name.textContent);
-    });
-    trigger.classList.toggle('has-value',checked.length>0);
-    label.textContent=names.length?
-      (names.length<=2?names.join('、'):'已选择 '+names.length+' 个节点'):
-      '请选择前序人工节点';
-  };
+  window.wfRejectTargetsUpdate=function(){};
   window.wfSaveConfig=function(){
     var n=byId(selId); if(!n) return;
     if(isHumanNode(n)){
@@ -5104,11 +5158,7 @@ WF_CANVAS_JS = r"""
       n.name=humanName;
       n.ident=document.getElementById('wfhIdent').value.trim();
       n.desc=document.getElementById('wfhDesc').value.trim();
-      n.allowedActions=[].map.call(
-        document.querySelectorAll('#wfhAllowedActions input:checked'),
-        function(input){return input.value;}
-      );
-      if(!n.allowedActions.length){ toast('请至少选择一个可用操作'); return; }
+      n.allowedActions=rejectEnabled?['驳回']:[];
       n.rejectEnabled=rejectEnabled;
       n.rejectTargets=rejectTargets;
       n.assigneeMode=assigneeMode;
@@ -5509,10 +5559,36 @@ def _processing_canvas_payload(pl):
 @app.route("/pipelines/<pid>")
 def pipeline_editor(pid):
     pl = next((p for p in PIPELINES if p["id"] == pid), None)
+    is_draft_version = request.args.get("version") == "draft" and pl is not None
+    if is_draft_version:
+        pl = {**pl, "name": f'{pl["name"]}（草稿）', "status": "草稿"}
     is_new = pid == "new" or pl is None
     view_mode = request.args.get("mode") == "view" and not is_new
     is_processing_flow = is_new or bool(pl and pl.get("flow_nodes"))
-    name = "新建工作流" if is_new else pl["name"]
+    flow_ident = (
+        request.args.get("flow_ident", "").strip()
+        if is_new
+        else pl.get("ident", pl["id"])
+    ) or "new-flow"
+    name = (
+        request.args.get("flow_name", "").strip() or "新建流程"
+        if is_new
+        else pl["name"]
+    )
+    flow_business_stage = (
+        request.args.get("business_stage", "").strip() or "质检"
+        if is_new
+        else pl.get("business_stage", "通用")
+    )
+    flow_desc = (
+        request.args.get("desc", "").strip()
+        if is_new
+        else pl.get("desc", "")
+    )
+    flow_status = "草稿" if is_new else pl.get("status", "草稿")
+    if flow_status not in {"草稿", "启用", "停用"}:
+        flow_status = "草稿"
+    can_edit_flow_name = flow_status == "草稿"
     stages = [] if is_new else pl["stages"]
 
     # 初始节点 (自由画布: 左→右铺开), 以及顺序连线
@@ -5599,10 +5675,19 @@ def pipeline_editor(pid):
             "document.getElementById('addTaskDrawer').classList.add('active')"
         )
 
-    flow_data_attr = (
-        f'data-processing-flow="{pl["id"] if pl else "new"}"'
-        if is_processing_flow
-        else ""
+    flow_data_attr = " ".join(
+        item
+        for item in (
+            (
+                f'data-processing-flow="{html.escape(pl["id"] if pl else "new", quote=True)}"'
+                if is_processing_flow
+                else ""
+            ),
+            f'data-flow-ident="{html.escape(flow_ident, quote=True)}"',
+            f'data-business-stage="{html.escape(flow_business_stage, quote=True)}"',
+            f'data-flow-description="{html.escape(flow_desc, quote=True)}"',
+        )
+        if item
     )
     empty_copy = (
         "画布为空, 点击「+ 添加节点」开始编排"
@@ -5618,7 +5703,7 @@ def pipeline_editor(pid):
         f'&plus; 添加{node_label}</button>'
     )
     editor_actions = (
-        f'<a class="btn-primary btn" href="/pipelines/{pl["id"]}">编辑</a>'
+        ""
         if view_mode
         else """
         <button class="btn" onclick="document.getElementById('flowParamDrawer').classList.add('active')">&#123;&#125; 流程参数</button>
@@ -5628,12 +5713,22 @@ def pipeline_editor(pid):
     )
     editor_title = "查看工作流" if view_mode else "工作流"
     rename_control = (
-        ""
-        if view_mode
-        else (
-            ' <span style="color:#bfbfbf;font-size:14px;cursor:pointer;" '
-            'onclick="toast(\'Demo: 重命名\')">&#9998;</span>'
-        )
+        '<button type="button" class="wf-title-edit" title="编辑流程信息" '
+        'aria-label="编辑流程信息" onclick="openFlowEditModal()">'
+        '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 16.5V20h3.5L18.8 8.7l-3.5-3.5L4 16.5Z"/>'
+        '<path d="m13.8 6.7 3.5 3.5"/></svg></button>'
+    )
+    flow_ident_value = html.escape(flow_ident, quote=True)
+    flow_name_value = html.escape(name, quote=True)
+    flow_stage_options = "".join(
+        f'<option value="{stage}"{" selected" if flow_business_stage == stage else ""}>{stage}</option>'
+        for stage in ("质检", "标注", "验收")
+    )
+    flow_name_disabled = "" if can_edit_flow_name else " disabled"
+    flow_edit_save = (
+        '<button type="button" class="btn btn-primary" onclick="saveFlowEditModal()">保存</button>'
+        if can_edit_flow_name
+        else ""
     )
     content = f"""
     <style>
@@ -5643,17 +5738,47 @@ def pipeline_editor(pid):
       .wf-stage.view-only .wf-config-body select,
       .wf-stage.view-only .wf-config-body textarea,
       .wf-stage.view-only .wf-config-body button {{ pointer-events:none; }}
+      .wf-stage.view-only .wf-config-body input:disabled,
+      .wf-stage.view-only .wf-config-body select:disabled,
+      .wf-stage.view-only .wf-config-body textarea:disabled {{background:#f5f6f7;color:rgba(0,0,0,.38);border-color:#e3e7e9;cursor:not-allowed}}
+      .wf-stage.view-only .wf-config-body button:disabled {{opacity:.45;cursor:not-allowed}}
+      .wf-stage.view-only .wf-config-body .ms-trigger.disabled {{pointer-events:none;background:#f5f6f7;color:rgba(0,0,0,.38);border-color:#e3e7e9;cursor:not-allowed}}
+      .wf-title-edit{{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;padding:0;border:1px solid #b9dfe2;border-radius:7px;background:#f2fbfb;color:#147a83;cursor:pointer;transition:.15s}}
+      .wf-title-edit:hover{{border-color:#149daa;background:#e5f6f7;color:#0f6971;box-shadow:0 0 0 2px rgba(20,157,170,.1)}}
+      .wf-title-edit svg{{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}}
+      .wf-effective-tag.draft{{background:#fff4dc;color:#a86808}}.wf-effective-tag.disabled{{background:#f1f3f4;color:#728188}}
+      .wf-flow-edit-modal{{width:480px;max-width:calc(100vw - 24px)}}.wf-flow-edit-modal .fg{{margin-bottom:18px}}.wf-flow-edit-modal .fg input,.wf-flow-edit-modal .fg select{{height:38px;box-sizing:border-box}}.wf-flow-edit-modal .fg input:disabled,.wf-flow-edit-modal .fg select:disabled{{background:#f5f6f7;color:#7c898e;cursor:not-allowed}}
     </style>
     <script>
       function wfConfirmPublish() {{
         if (window.confirm('发布后不可修改，确认发布？')) toast('已发布');
       }}
+      function openFlowEditModal() {{ document.getElementById('flowEditModal').classList.add('active'); }}
+      function closeFlowEditModal() {{ document.getElementById('flowEditModal').classList.remove('active'); }}
+      function saveFlowEditModal() {{
+        var nameInput=document.getElementById('flowEditName');
+        if(!nameInput.value.trim()){{toast('请输入流程名称');return;}}
+        document.getElementById('wfFlowTitleName').textContent=nameInput.value.trim();
+        toast('Demo: 已保存流程信息');
+        closeFlowEditModal();
+      }}
     </script>
     <div class="wf-topbar">
-      <div class="wf-title"><a href="/pipelines" class="back">&#8249;</a> {editor_title}: {name}{rename_control}
-        <span id="wfEffectiveTag" class="wf-effective-tag">启用</span>
+      <div class="wf-title"><a href="/pipelines" class="back">&#8249;</a> {editor_title}: <span id="wfFlowTitleName">{flow_name_value}</span>{rename_control}
+        <span id="wfEffectiveTag" class="wf-effective-tag{' draft' if flow_status == '草稿' else (' disabled' if flow_status == '停用' else '')}">{flow_status}</span>
       </div>
       <div class="wf-actions">{editor_actions}</div>
+    </div>
+    <div class="modal-mask" id="flowEditModal" onclick="if(event.target===this)closeFlowEditModal()">
+      <div class="modal-box wf-flow-edit-modal">
+        <div class="drawer-head"><h3>编辑流程信息</h3><button type="button" class="drawer-close" onclick="closeFlowEditModal()">&times;</button></div>
+        <div class="drawer-body">
+          <div class="fg"><label>流程标识</label><input id="flowEditIdent" value="{flow_ident_value}" disabled></div>
+          <div class="fg"><label>流程名称</label><input id="flowEditName" value="{flow_name_value}"{flow_name_disabled}></div>
+          <div class="fg"><label>业务环节</label><select id="flowEditStage" disabled>{flow_stage_options}</select></div>
+        </div>
+        <div class="drawer-foot"><button type="button" class="btn" onclick="closeFlowEditModal()">关闭</button>{flow_edit_save}</div>
+      </div>
     </div>
     <div class="{stage_class}" {flow_data_attr}>
       <div class="wf-canvas" id="wfCanvas">
@@ -5703,12 +5828,7 @@ def pipeline_editor(pid):
               <div id="wfhRejectHint" class="wf-reject-hint">仅可选择当前节点的前序所有人工节点。</div>
               <div id="wfhRejectWrap" class="wf-reject-wrap" style="display:none;">
                 <div class="wf-human-label">支持驳回到的节点</div>
-                <div class="ms-wrap wf-reject-select" id="wfhRejectSelect">
-                  <div class="ms-trigger" data-base="请选择前序人工节点" onclick="this.closest('.ms-wrap').classList.toggle('open')">
-                    <span class="ms-label">请选择前序人工节点</span>
-                  </div>
-                  <div class="ms-panel" id="wfhRejectPanel"></div>
-                </div>
+                <div class="wf-reject-target-list" id="wfhRejectPanel"></div>
               </div>
             </div>
           </div>
