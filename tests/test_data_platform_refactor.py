@@ -405,7 +405,7 @@ class DataPlatformArchitectureTests(unittest.TestCase):
             "<label>所属项目</label>",
             "<label>处理流程</label>",
             "<label>状态</label>",
-            "<label>是否正式</label>",
+            "<label>任务性质</label>",
             "<label>创建人</label>",
             "<th>任务 ID</th>",
             "<th>名称</th>",
@@ -413,7 +413,7 @@ class DataPlatformArchitectureTests(unittest.TestCase):
             "<th>处理流程</th>",
             "<th>状态</th>",
             "<th>优先级</th>",
-            "<th>是否正式</th>",
+            "<th>任务性质</th>",
             "<th>创建人</th>",
             "<th>创建时间</th>",
             "多级质检复核流程",
@@ -489,7 +489,7 @@ class DataPlatformArchitectureTests(unittest.TestCase):
             "'编辑处理任务'",
             ">任务名称</span>",
             ">所属项目</span>",
-            ">是否正式</span>",
+            ">任务性质</span>",
             ">优先级</span>",
             ">任务状态</span>",
             "预期任务量",
@@ -554,7 +554,7 @@ class DataPlatformArchitectureTests(unittest.TestCase):
         self.assertNotIn("当前任务预期总时长", html)
         self.assertNotIn("<em>任务级</em>", html)
         self.assertIn('data-task-category="formal"', html)
-        self.assertIn('<option>非正式（测试、培训等）</option>', html)
+        self.assertIn('<option>非正式</option>', html)
         self.assertIn('id="processingTaskEnabledField"', html)
         self.assertIn(
             "document.getElementById('processingTaskEnabledField').hidden = mode === 'new'",

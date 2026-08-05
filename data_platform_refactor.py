@@ -3155,7 +3155,7 @@ def render_processing_tasks():
                 f'<div class="dpr-flow-binding-list">{flow_bindings}</div>',
                 status_control,
                 _priority_tag(item["priority"]),
-                "非正式（测试、培训等）" if item.get("task_category") == "informal" else "正式",
+                "非正式" if item.get("task_category") == "informal" else "正式",
                 _e(item["creator"]),
                 _e(item["created"]),
                 (
@@ -3181,7 +3181,7 @@ def render_processing_tasks():
                 ["全部流程", *[flow["name"] for flow in PROCESSING_FLOWS]],
             ),
             ("状态", "select", ["全部状态", "开启", "关闭"]),
-            ("是否正式", "select", ["全部", "正式", "非正式（测试、培训等）"]),
+            ("任务性质", "select", ["全部", "正式", "非正式"]),
             ("创建人", "input", []),
         ]
     )
@@ -3193,7 +3193,7 @@ def render_processing_tasks():
             "处理流程",
             "状态",
             "优先级",
-            "是否正式",
+            "任务性质",
             "创建人",
             "创建时间",
             "操作",
@@ -3291,7 +3291,7 @@ def render_processing_tasks():
             <div class="dpr-processing-basic-grid">
               <label class="fg"><span class="fg-req">任务名称</span><input id="processingTaskName" name="task_name" placeholder="请输入处理任务名称"></label>
               <label class="fg"><span class="fg-req">所属项目</span><select id="processingTaskProject" name="project"><option>预训练采集</option><option>demo 项目</option><option>宁德项目</option></select></label>
-              <label class="fg"><span class="fg-req">是否正式</span><select id="processingTaskCategory" name="task_category"><option value="formal">正式</option><option value="informal">非正式（测试、培训等）</option></select></label>
+              <label class="fg"><span class="fg-req">任务性质</span><select id="processingTaskCategory" name="task_category"><option value="formal">正式</option><option value="informal">非正式（测试、培训等）</option></select></label>
               <label class="fg"><span class="fg-req">优先级</span><select id="processingTaskPriority" name="priority"><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option selected>6</option><option>7</option><option>8</option><option>9</option></select><small>数字越大越先处理：1–3 低，4–6 中，7–9 高</small></label>
               <label class="fg"><span class="fg-req">预期任务量</span><select id="processingTaskExpectedMode" name="expected_task_mode" onchange="dprExpectedTaskModeChange(this)"><option value="continuous">持续任务</option><option value="count">固定条数</option><option value="duration">固定时长</option></select></label>
               <label class="fg dpr-expected-task-value" id="processingTaskExpectedValueField" hidden><span class="fg-req" id="processingTaskExpectedValueLabel">任务条数</span><div class="dpr-expected-task-input"><input id="processingTaskExpectedValue" name="expected_task_value" type="number" min="0" step="1" placeholder="请输入任务条数" oninput="dprExpectedTaskValueChange(this)"><i id="processingTaskExpectedValueUnit">条</i></div></label>
