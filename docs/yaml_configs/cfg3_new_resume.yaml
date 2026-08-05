@@ -1,0 +1,104 @@
+# FSDP training configuration file
+# Directly corresponds to TrainPipelineConfig in lerobot/configs/train.py
+# This configuration replaces hardcoded parameters in the original bash script
+
+# === Dataset configuration ===
+use_raw_dataset: true
+dataset:
+  repo_id: "202607116_HouseHold_stop_0613_360_1v1_b300_cotrain"
+  root: "/mnt/vepfs01/datasets/post-training/new_perception"
+  num_stats_samples: 5000
+  sample_weights_cfg: "/mnt/vepfs01/datasets/post-training/new_perception/configs/202607116_HouseHold_stop_0613_360_1v1_b300_cotrain_curated.json"  # Optional
+  mistake_filter: "drop_error_prefix"
+  unknown_filter: true
+  use_stats_cache: true
+
+# eval_dataset:
+#   repo_id: "lerobot/OrganizePencilCase"
+#   root: "/mnt/vepfs01/output/multi_task/datasets/lerobot/OrganizePencilCase/"
+#   sample_weights_cfg: "/mnt/vepfs01/output/multi_task/datasets/lerobot/OrganizePencilCase/20250902_OrganizePencilCase_PutItemsInCase_Moz1.json"  # Optional
+
+# === Basic configuration ===
+device: "cuda"
+job_name: "202607116_HouseHold_stop_0613_360_1v1_b300_cotrain"
+output_dir: "outputs/${job_name}"  # Will automatically add job_name and timestamp
+
+seed: 42
+
+# === Training parameters ===
+num_workers_per_rank: 8 # Corresponds to NUM_WORKERS=($NPROC_PER_NODE * 8) in original bash
+batch_size: 128   # Corresponds to BATCH_SIZE_PER_GPU in original bash
+# eval_batch_size: 32
+# eval_steps: 200
+# eval_select_action: true
+steps: 200000     # Corresponds to OFFLINE_STEPS in original bash
+eval_freq: 2000
+log_freq: 100
+
+# === Checkpoint configuration ===
+checkpoint:
+  save_checkpoint: true
+  save_freq: 500
+  tos:
+    keep_local_checkpoint_versions: 2
+    prefix: "liqinghai"
+    enable: true
+
+# === Policy configuration ===
+policy:
+  type: "pi05"  # Corresponds to POLICY in original bash
+  # path: "lerobot/pi0"  # Corresponds to POLICY in original bash
+  # PI0 policy specific parameters
+  chunk_size: 60
+  n_action_steps: 60
+  use_delta_joint_actions_aloha: true
+  freeze_vision_encoder: false
+  use_amp: true
+  tokenizer_max_length: 128
+  observation_config:
+    robot_type: "moz1"
+    moz1_structure: "wholebody"
+    use_gripper_action: true
+    auto_pad_missing_components: true
+    use_stop_signal: true
+    camera_rois:
+      cam_high: [50, 130, 380, 380]  # 380x380 正方形居中，上下边距50，左右边距130
+      cam_left_wrist: [50, 130, 380, 380]
+      cam_right_wrist: [50, 130, 380, 380]
+  # tokenizer configuration
+  tokenizer_path: "/mnt/vepfs01/output/maple.liu/cache/pi05_base_torch/paligemma_tokenizer.model"
+  tokenizer_type: "sentencepiece"
+
+  enable_training_time_rtc: false
+  max_delay: 12
+
+
+
+# === Optimizer and scheduler configuration ===
+use_policy_training_preset: false  # Use custom optimizer configuration
+auto_resume: true
+# pretrained_ckpt_path: "/mnt/vepfs01/output/maple.liu/cache/pi05_base_torch/model.safetensors"
+checkpoint_path: "/mnt/vepfs01/output/lance.li/mozbrain_household_crop/outputs/20260710_HouseHold_stop_0613_380/checkpoints/040000"
+load_optimizer: false  # Skip loading optimizer state due to model structure mismatch
+
+
+optimizer:
+  type: "adamw"
+  lr: 5e-5
+  weight_decay: 1e-10
+  betas: [0.9, 0.95]
+  eps: 1e-8
+  grad_clip_norm: 1.0
+  fused: true
+
+scheduler:
+  type: "cosine_decay_with_warmup"
+  num_decay_steps: 200000  # Automatically uses the value of steps
+  num_warmup_steps: 1000
+  peak_lr: 5e-05
+  decay_lr: 5e-05
+
+# === WandB configuration ===
+wandb:
+  enable: true  # Corresponds to ENABLE_WANDB in original bash
+  project: "lerobot"

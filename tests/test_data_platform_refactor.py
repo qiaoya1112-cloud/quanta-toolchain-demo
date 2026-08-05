@@ -402,14 +402,18 @@ class DataPlatformArchitectureTests(unittest.TestCase):
             "<label>任务 ID</label>",
             'placeholder="请输入任务 ID，多个英文逗号隔开"',
             "<label>名称</label>",
-            "<label>任务状态</label>",
-            "<label>创建人</label>",
+            "<label>所属项目</label>",
             "<label>处理流程</label>",
+            "<label>状态</label>",
+            "<label>是否正式</label>",
+            "<label>创建人</label>",
             "<th>任务 ID</th>",
             "<th>名称</th>",
-            "<th>状态</th>",
+            "<th>所属项目</th>",
             "<th>处理流程</th>",
+            "<th>状态</th>",
             "<th>优先级</th>",
+            "<th>是否正式</th>",
             "<th>创建人</th>",
             "<th>创建时间</th>",
             "多级质检复核流程",
@@ -485,7 +489,7 @@ class DataPlatformArchitectureTests(unittest.TestCase):
             "'编辑处理任务'",
             ">任务名称</span>",
             ">所属项目</span>",
-            ">任务类型</span>",
+            ">是否正式</span>",
             ">优先级</span>",
             ">任务状态</span>",
             "预期任务量",
@@ -523,8 +527,8 @@ class DataPlatformArchitectureTests(unittest.TestCase):
             "<option>demo 项目</option>",
             "<option>宁德项目</option>",
             'name="task_category"',
-            '<option value="formal">正式任务</option>',
-            '<option value="informal">非正式任务（测试、培训等）</option>',
+            '<option value="formal">正式</option>',
+            '<option value="informal">非正式（测试、培训等）</option>',
             "<option>1</option><option>2</option><option>3</option>",
             "多级质检复核流程",
             "端到端切分标注流程",
@@ -549,6 +553,8 @@ class DataPlatformArchitectureTests(unittest.TestCase):
         self.assertNotIn("<b>分配策略</b>", html)
         self.assertNotIn("当前任务预期总时长", html)
         self.assertNotIn("<em>任务级</em>", html)
+        self.assertIn('data-task-category="formal"', html)
+        self.assertIn('<option>非正式（测试、培训等）</option>', html)
         self.assertIn('id="processingTaskEnabledField"', html)
         self.assertIn(
             "document.getElementById('processingTaskEnabledField').hidden = mode === 'new'",
