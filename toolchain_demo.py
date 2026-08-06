@@ -6886,6 +6886,7 @@ def embodied_eval_prompts():
     }}
 
     function addPromptRow() {{
+      if (document.querySelector('.edit-row')) return;
       const tbody = document.getElementById('prompt-table-body');
       const newRow = document.createElement('tr');
       newRow.className = 'edit-row';
@@ -8830,7 +8831,9 @@ def embodied_eval_segment_detail(segment_id):
 
     # Tab 1: 基本信息
     task_link = f'<a href="/model/embodied-eval/tasks/{seg["task_id"]}">{html.escape(seg.get("task_name", "—"))}</a>'
-    eval_set_link = f'<a href="/model/embodied-eval/sets/{seg["eval_set_id"]}/edit">评测集 {html.escape(seg["eval_set_id"])}</a>'
+    _es = next((s for s in EMBODIED_EVAL_SETS if s["id"] == seg["eval_set_id"]), None)
+    _es_label = _es["name"] if _es else f'评测集 {seg["eval_set_id"]}'
+    eval_set_link = f'<a href="/model/embodied-eval/sets/{seg["eval_set_id"]}/edit">{html.escape(_es_label)}</a>'
 
     # Mock data doesn't have start/end times, so execution time is not available
     exec_time = "—"
