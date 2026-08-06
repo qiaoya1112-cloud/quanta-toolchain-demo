@@ -6701,6 +6701,138 @@ def inference():
                        breadcrumb='设备管理平台 / <b>模型推理监测</b>', mvp_note="MVP 一期")
 
 
+# ════════════════════════════════════════════════════════════════
+# Section 7.4: 具身评测模块 (/model/embodied-eval/*)
+# ════════════════════════════════════════════════════════════════
+
+@app.route("/model/embodied-eval/prompts")
+def embodied_eval_prompts():
+    """提示词库 - 列表展示与筛选"""
+    # Get filter parameters
+    scene_filter = request.args.get("scene", "")
+    task_filter = request.args.get("task", "")
+    search_query = request.args.get("q", "").lower()
+
+    # Filter prompts
+    filtered = EMBODIED_PROMPTS
+    if scene_filter:
+        filtered = [p for p in filtered if p["scene"] == scene_filter]
+    if task_filter:
+        filtered = [p for p in filtered if p["task"] == task_filter]
+    if search_query:
+        filtered = [p for p in filtered if search_query in p["prompt"].lower() or search_query in p["task"].lower()]
+
+    # Get unique scenes and tasks for dropdowns
+    all_scenes = sorted(set(p["scene"] for p in EMBODIED_PROMPTS))
+    all_tasks = sorted(set(p["task"] for p in EMBODIED_PROMPTS))
+
+    # Build scene options
+    scene_options = '<option value="">全部场景</option>'
+    for sc in all_scenes:
+        selected = 'selected' if sc == scene_filter else ''
+        scene_options += f'<option value="{sc}" {selected}>{sc}</option>'
+
+    # Build task options
+    task_options = '<option value="">全部任务</option>'
+    for tk in all_tasks:
+        selected = 'selected' if tk == task_filter else ''
+        task_options += f'<option value="{tk}" {selected}>{tk}</option>'
+
+    # Group by scene for rowspan rendering
+    grouped = {}
+    for p in filtered:
+        scene_key = p["scene"]
+        if scene_key not in grouped:
+            grouped[scene_key] = []
+        grouped[scene_key].append(p)
+
+    # Build table rows with rowspan for scene column
+    table_rows = ""
+    if grouped:
+        for scene, prompts in grouped.items():
+            scene_rowspan = len(prompts)
+            for idx, p in enumerate(prompts):
+                tags_html = " ".join(f'<span class="tag-inline">{t}</span>' for t in p["tags"])
+
+                # Build row
+                row = "<tr>"
+                # Only render scene cell in first row
+                if idx == 0:
+                    row += f'<td rowspan="{scene_rowspan}" style="vertical-align:middle;font-weight:500;">{scene}</td>'
+                row += f'''
+                    <td>{p["task"]}</td>
+                    <td style="max-width:300px;">{html.escape(p["prompt"])}</td>
+                    <td>{tags_html}</td>
+                    <td>{p["creator"]}</td>
+                    <td class="actions-cell">
+                        <a href="javascript:void(0)" onclick="alert('复制功能：将复制 Prompt ID {p["id"]} 的数据（待实现）')">复制</a>
+                        <a href="javascript:void(0)" onclick="if(confirm('确定删除该 Prompt？')) alert('调用 DELETE /api/embodied-eval/prompts/{p["id"]}（下个 Task 实现）')">删除</a>
+                    </td>
+                </tr>
+                '''
+                table_rows += row
+    else:
+        table_rows = '<tr><td colspan="6" style="text-align:center;padding:48px;color:rgba(0,0,0,0.45);">暂无数据</td></tr>'
+
+    content = f"""
+    <div class="filter-bar">
+      <select id="sceneSelect" onchange="applyFilters()">
+        {scene_options}
+      </select>
+      <select id="taskSelect" onchange="applyFilters()">
+        {task_options}
+      </select>
+      <input id="searchInput" class="grow" type="text" placeholder="🔍 搜索提示词内容..." value="{html.escape(search_query)}" onkeypress="if(event.key==='Enter') applyFilters()">
+      <div class="filter-actions">
+        <button class="btn btn-tertiary" onclick="location.reload()">🔄 刷新</button>
+        <button class="btn btn-secondary" onclick="alert('导入功能：弹窗上传 JSON 文件（下个 Task 实现）')">导入JSON</button>
+        <button class="btn btn-primary" onclick="alert('新增功能：在表格底部展开编辑行（下个 Task 实现）')">+ 新增提示词</button>
+      </div>
+    </div>
+
+    <div class="card" style="padding:0;overflow:hidden;">
+      <div class="table-wrap">
+        <table class="ant-table">
+          <thead>
+            <tr>
+              <th style="width:100px;">场景</th>
+              <th style="width:140px;">任务名称</th>
+              <th>Prompt文本</th>
+              <th style="width:180px;">标签</th>
+              <th style="width:100px;">创建人</th>
+              <th style="width:120px;">操作</th>
+            </tr>
+          </thead>
+          <tbody>
+            {table_rows}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <script>
+    function applyFilters() {{
+      const scene = document.getElementById('sceneSelect').value;
+      const task = document.getElementById('taskSelect').value;
+      const q = document.getElementById('searchInput').value;
+      const params = new URLSearchParams();
+      if (scene) params.set('scene', scene);
+      if (task) params.set('task', task);
+      if (q) params.set('q', q);
+      window.location.href = '/model/embodied-eval/prompts' + (params.toString() ? '?' + params.toString() : '');
+    }}
+    </script>
+    """
+
+    return render_page(
+        title="提示词库 - 具身评测",
+        content=content,
+        active="/model/embodied-eval/prompts",
+        module="model",
+        breadcrumb='模型平台 / 具身评测 / <b>提示词库</b>'
+    )
+
+
 # ── 评测 · Benchmark ──
 # ════════════════════════════════════════════════════════════════
 # Section 7.5: 应用编排平台 (/app/*) — 占位
