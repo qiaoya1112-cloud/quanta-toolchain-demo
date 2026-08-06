@@ -7948,6 +7948,602 @@ def api_embodied_sets_delete(set_id):
     return jsonify({"ok": True})
 
 
+# ── 评测 · 评测任务 ──
+
+@app.route("/model/embodied-eval/tasks")
+def embodied_eval_tasks():
+    """评测任务列表"""
+    search_query = request.args.get("q", "").lower()
+
+    filtered = EMBODIED_EVAL_TASKS
+    if search_query:
+        filtered = [t for t in filtered if search_query in t["name"].lower()]
+
+    rows = ""
+    if filtered:
+        for t in filtered:
+            eval_set = next((s for s in EMBODIED_EVAL_SETS if s["id"] == t["eval_set_id"]), None)
+            eval_set_name = eval_set["name"] if eval_set else "—"
+            model_count = len(t.get("models", []))
+
+            # Status badge with color
+            status = t.get("status", "pending")
+            status_colors = {
+                "pending": "qa-pend",
+                "running": "qa-warn",
+                "completed": "qa-pass",
+                "failed": "qa-fail"
+            }
+            status_labels = {
+                "pending": "待执行",
+                "running": "执行中",
+                "completed": "已完成",
+                "failed": "失败"
+            }
+            status_class = status_colors.get(status, "qa-pend")
+            status_label = status_labels.get(status, status)
+            status_html = f'<span class="qa {status_class}">{status_label}</span>'
+
+            # Actions based on status
+            actions_html = f'<a onclick="window.location.href=\'/model/embodied-eval/tasks/{t["id"]}\'">查看详情</a>'
+            if status == "pending":
+                actions_html += f' <a onclick="startTask(\'{t["id"]}\')">启动</a>'
+            actions_html += f' <a class="danger" onclick="deleteTask(\'{t["id"]}\')">删除</a>'
+
+            rows += f"""<tr>
+              <td><b>{html.escape(t["name"])}</b></td>
+              <td>{html.escape(eval_set_name)}</td>
+              <td class="mono">{model_count}</td>
+              <td>{status_html}</td>
+              <td class="muted mono">{t.get("created_at", "")}</td>
+              <td class="actions-cell">{actions_html}</td>
+            </tr>"""
+    else:
+        rows = '<tr><td colspan="6" style="text-align:center;padding:48px;color:rgba(0,0,0,0.45);">暂无数据</td></tr>'
+
+    content = f"""
+    <div class="filter-bar">
+      <input id="searchInput" class="grow" type="text" placeholder="🔍 搜索任务名称..." value="{html.escape(search_query)}" onkeypress="if(event.key==='Enter') applyFilters()">
+      <div class="filter-actions">
+        <button class="btn btn-tertiary" onclick="location.reload()">🔄 刷新</button>
+        <button class="btn btn-primary" onclick="window.location.href='/model/embodied-eval/tasks/create'">+ 新建评测任务</button>
+      </div>
+    </div>
+
+    <div class="card" style="padding:0;overflow:hidden;">
+      <div class="table-wrap">
+        <table class="ant-table">
+          <thead>
+            <tr>
+              <th>任务名称</th>
+              <th style="width:200px;">评测集</th>
+              <th style="width:100px;">被测模型数</th>
+              <th style="width:120px;">状态</th>
+              <th style="width:140px;">创建时间</th>
+              <th style="width:180px;">操作</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <script>
+    function applyFilters() {{
+      const q = document.getElementById('searchInput').value;
+      const params = new URLSearchParams();
+      if (q) params.set('q', q);
+      window.location.href = '/model/embodied-eval/tasks' + (params.toString() ? '?' + params.toString() : '');
+    }}
+
+    function startTask(id) {{
+      if (confirm('确定启动该评测任务？')) {{
+        fetch('/api/embodied-eval/tasks/' + id + '/start', {{ method: 'POST' }})
+          .then(res => res.json())
+          .then(res => {{
+            if (res.ok) {{
+              window.location.reload();
+            }} else {{
+              alert(res.error || '启动失败');
+            }}
+          }});
+      }}
+    }}
+
+    function deleteTask(id) {{
+      if (confirm('确定删除该评测任务？')) {{
+        fetch('/api/embodied-eval/tasks/' + id, {{ method: 'DELETE' }})
+          .then(() => window.location.reload());
+      }}
+    }}
+    </script>
+    """
+
+    return render_page(
+        title="评测任务 - 具身评测",
+        content=content,
+        active="/model/embodied-eval/tasks",
+        module="model",
+        breadcrumb='模型平台 / 具身评测 / <b>评测任务</b>'
+    )
+
+
+@app.route("/model/embodied-eval/tasks/create")
+def embodied_eval_tasks_create():
+    """创建评测任务向导"""
+    eval_set_options = '<option value="">请选择评测集</option>'
+    for es in EMBODIED_EVAL_SETS:
+        eval_set_options += f'<option value="{es["id"]}">{html.escape(es["name"])} ({es.get("version", "v1.0")})</option>'
+
+    content = f"""
+    <div class="form-section">
+      <div class="form-section-title">基本信息</div>
+      <div class="fg">
+        <label class="fg-req">任务名称</label>
+        <input type="text" id="taskName" placeholder="请输入评测任务名称">
+      </div>
+    </div>
+
+    <div class="form-section">
+      <div class="form-section-title">选择评测集</div>
+      <div class="fg">
+        <label class="fg-req">评测集</label>
+        <select id="evalSetSelect" onchange="onEvalSetChange()">
+          {eval_set_options}
+        </select>
+      </div>
+      <div id="evalSetPreview" style="display:none;margin-top:12px;background:#fafbfc;border:1px solid #f0f0f0;border-radius:8px;padding:14px;">
+        <div class="bi-info-grid" style="grid-template-columns:repeat(4,1fr);">
+          <div class="bi-info-item">
+            <div class="bi-info-label">版本</div>
+            <div class="bi-info-value" id="previewVersion">-</div>
+          </div>
+          <div class="bi-info-item">
+            <div class="bi-info-label">场景标签</div>
+            <div class="bi-info-value" id="previewSceneTags">-</div>
+          </div>
+          <div class="bi-info-item">
+            <div class="bi-info-label">Prompt 数量</div>
+            <div class="bi-info-value" id="previewPromptCount">-</div>
+          </div>
+          <div class="bi-info-item">
+            <div class="bi-info-label">Metric 字段</div>
+            <div class="bi-info-value" id="previewMetricCount">-</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-section">
+      <div class="form-section-title">配置被测模型</div>
+      <div id="modelsContainer"></div>
+      <div style="margin-top:10px;">
+        <button type="button" class="btn btn-tertiary" onclick="addModel()">+ 添加被测模型</button>
+      </div>
+    </div>
+
+    <div class="form-section">
+      <div class="form-section-title">执行参数</div>
+      <div class="fg-row">
+        <div class="fg">
+          <label>重复次数 (repeat_count)</label>
+          <input type="number" id="repeatCount" value="3" min="1" placeholder="默认 3">
+        </div>
+        <div class="fg">
+          <label>超时时间 (timeout_sec)</label>
+          <input type="number" id="timeoutSec" value="300" min="1" placeholder="默认 300 秒">
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:10px;">
+      <button type="button" class="btn btn-primary" onclick="createTask()">创建任务</button>
+      <button type="button" class="btn" onclick="window.location.href='/model/embodied-eval/tasks'">取消</button>
+    </div>
+
+    <script>
+    var EVAL_SETS = {json.dumps(EMBODIED_EVAL_SETS, ensure_ascii=False)};
+    var METRIC_TEMPLATES = {json.dumps(EMBODIED_METRIC_TEMPLATES, ensure_ascii=False)};
+    var modelIndex = 0;
+
+    function escapeHtml(str) {{
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }}
+
+    function onEvalSetChange() {{
+      var setId = document.getElementById('evalSetSelect').value;
+      var preview = document.getElementById('evalSetPreview');
+      if (!setId) {{
+        preview.style.display = 'none';
+        return;
+      }}
+      var evalSet = EVAL_SETS.find(function(s) {{ return s.id === setId; }});
+      if (!evalSet) {{
+        preview.style.display = 'none';
+        return;
+      }}
+
+      // Calculate prompt count
+      var promptCount = evalSet.prompts.reduce(function(sum, group) {{
+        return sum + (group.items ? group.items.length : 0);
+      }}, 0);
+
+      // Get metric info
+      var metricInfo = "-";
+      if (evalSet.metric_template_id) {{
+        var tpl = METRIC_TEMPLATES.find(function(t) {{ return t.id === evalSet.metric_template_id; }});
+        if (tpl) {{
+          metricInfo = tpl.name + " (" + tpl.fields.length + " 项)";
+        }}
+      }} else if (evalSet.custom_metrics && evalSet.custom_metrics.length > 0) {{
+        metricInfo = "自定义 (" + evalSet.custom_metrics.length + " 项)";
+      }}
+
+      document.getElementById('previewVersion').textContent = evalSet.version || 'v1.0';
+      document.getElementById('previewSceneTags').textContent = evalSet.scene_tags.join(', ') || '-';
+      document.getElementById('previewPromptCount').textContent = promptCount;
+      document.getElementById('previewMetricCount').textContent = metricInfo;
+      preview.style.display = 'block';
+    }}
+
+    function addModel() {{
+      var container = document.getElementById('modelsContainer');
+      var idx = modelIndex++;
+      var card = document.createElement('div');
+      card.className = 'model-card';
+      card.style.cssText = 'border:1px solid #f0f0f0;border-radius:8px;padding:14px;margin-bottom:10px;background:#fafbfc;position:relative;';
+      card.innerHTML = `
+        <div style="position:absolute;top:10px;right:10px;">
+          <button type="button" class="btn-icon" onclick="removeModel(this)" title="删除" style="color:#d4504e;cursor:pointer;border:0;background:transparent;font-size:18px;">&times;</button>
+        </div>
+        <div class="fg-row">
+          <div class="fg">
+            <label class="fg-req">模型名称</label>
+            <input type="text" class="model-name" placeholder="如: Spirit_v1.6" data-idx="` + idx + `">
+          </div>
+          <div class="fg">
+            <label class="fg-req">版本</label>
+            <input type="text" class="model-version" placeholder="如: ckpt_40k" data-idx="` + idx + `">
+          </div>
+        </div>
+        <div class="fg-row">
+          <div class="fg">
+            <label class="fg-req">Checkpoint 路径</label>
+            <input type="text" class="model-ckpt" placeholder="如: /models/spirit/ckpt40k" data-idx="` + idx + `">
+          </div>
+          <div class="fg">
+            <label>代码分支</label>
+            <input type="text" class="model-branch" placeholder="如: release/1.0" data-idx="` + idx + `">
+          </div>
+        </div>
+      `;
+      container.appendChild(card);
+    }}
+
+    function removeModel(btn) {{
+      btn.closest('.model-card').remove();
+    }}
+
+    function createTask() {{
+      var name = document.getElementById('taskName').value.trim();
+      var evalSetId = document.getElementById('evalSetSelect').value;
+      var repeatCount = parseInt(document.getElementById('repeatCount').value) || 3;
+      var timeoutSec = parseInt(document.getElementById('timeoutSec').value) || 300;
+
+      if (!name) {{
+        alert('任务名称为必填项');
+        return;
+      }}
+      if (!evalSetId) {{
+        alert('请选择评测集');
+        return;
+      }}
+
+      var modelCards = document.querySelectorAll('.model-card');
+      if (modelCards.length === 0) {{
+        alert('请至少添加一个被测模型');
+        return;
+      }}
+
+      var models = [];
+      var valid = true;
+      modelCards.forEach(function(card) {{
+        var nameInput = card.querySelector('.model-name');
+        var versionInput = card.querySelector('.model-version');
+        var ckptInput = card.querySelector('.model-ckpt');
+        var branchInput = card.querySelector('.model-branch');
+
+        var modelName = nameInput.value.trim();
+        var modelVersion = versionInput.value.trim();
+        var ckptPath = ckptInput.value.trim();
+        var codeBranch = branchInput.value.trim();
+
+        if (!modelName || !modelVersion || !ckptPath) {{
+          valid = false;
+        }}
+
+        models.push({{
+          name: modelName,
+          version: modelVersion,
+          ckpt_path: ckptPath,
+          code_branch: codeBranch
+        }});
+      }});
+
+      if (!valid) {{
+        alert('请填写所有被测模型的必填项（模型名称、版本、Checkpoint 路径）');
+        return;
+      }}
+
+      var payload = {{
+        name: name,
+        eval_set_id: evalSetId,
+        models: models,
+        exec_params: {{
+          repeat_count: repeatCount,
+          timeout: timeoutSec
+        }}
+      }};
+
+      fetch('/api/embodied-eval/tasks', {{
+        method: 'POST',
+        headers: {{'Content-Type': 'application/json'}},
+        body: JSON.stringify(payload)
+      }}).then(res => res.json())
+        .then(res => {{
+          if (res.ok) {{
+            window.location.href = '/model/embodied-eval/tasks';
+          }} else {{
+            alert(res.error || '创建失败');
+          }}
+        }});
+    }}
+
+    // Add first model card on load
+    addModel();
+    </script>
+    """
+
+    return render_page(
+        title="新建评测任务 - 具身评测",
+        content=content,
+        active="/model/embodied-eval/tasks",
+        module="model",
+        breadcrumb='模型平台 / 具身评测 / 评测任务 / <b>新建任务</b>'
+    )
+
+
+@app.route("/model/embodied-eval/tasks/<task_id>")
+def embodied_eval_task_detail(task_id):
+    """评测任务详情页"""
+    task = next((t for t in EMBODIED_EVAL_TASKS if t["id"] == task_id), None)
+    if task is None:
+        return redirect("/model/embodied-eval/tasks")
+
+    eval_set = next((s for s in EMBODIED_EVAL_SETS if s["id"] == task["eval_set_id"]), None)
+    eval_set_name = eval_set["name"] if eval_set else "—"
+
+    # Status badge
+    status = task.get("status", "pending")
+    status_colors = {
+        "pending": "qa-pend",
+        "running": "qa-warn",
+        "completed": "qa-pass",
+        "failed": "qa-fail"
+    }
+    status_labels = {
+        "pending": "待执行",
+        "running": "执行中",
+        "completed": "已完成",
+        "failed": "失败"
+    }
+    status_class = status_colors.get(status, "qa-pend")
+    status_label = status_labels.get(status, status)
+    status_html = f'<span class="qa {status_class}">{status_label}</span>'
+
+    # Models table
+    models_rows = ""
+    for m in task.get("models", []):
+        models_rows += f"""<tr>
+          <td><b>{html.escape(m["name"])}</b></td>
+          <td class="mono">{html.escape(m["version"])}</td>
+          <td class="mono" style="font-size:12px;">{html.escape(m["ckpt_path"])}</td>
+          <td class="mono">{html.escape(m.get("code_branch", "—"))}</td>
+        </tr>"""
+
+    if not models_rows:
+        models_rows = '<tr><td colspan="4" style="text-align:center;padding:24px;color:rgba(0,0,0,0.45);">无被测模型</td></tr>'
+
+    # Eval set info
+    eval_set_info = ""
+    if eval_set:
+        prompt_count = sum(len(group.get("items", [])) for group in eval_set.get("prompts", []))
+        scene_tags_html = " ".join(f'<span class="tag-inline">{html.escape(t)}</span>' for t in eval_set.get("scene_tags", []))
+        eval_set_info = f"""
+        <div class="bi-info-grid" style="grid-template-columns:repeat(4,1fr);">
+          <div class="bi-info-item">
+            <div class="bi-info-label">评测集版本</div>
+            <div class="bi-info-value">{html.escape(eval_set.get("version", "v1.0"))}</div>
+          </div>
+          <div class="bi-info-item">
+            <div class="bi-info-label">场景标签</div>
+            <div class="bi-info-value">{scene_tags_html if scene_tags_html else "-"}</div>
+          </div>
+          <div class="bi-info-item">
+            <div class="bi-info-label">Prompt 数量</div>
+            <div class="bi-info-value">{prompt_count}</div>
+          </div>
+          <div class="bi-info-item">
+            <div class="bi-info-label">是否 Benchmark</div>
+            <div class="bi-info-value">{"是" if eval_set.get("is_benchmark") else "否"}</div>
+          </div>
+        </div>
+        """
+
+    # Exec params
+    exec_params = task.get("exec_params", {})
+    repeat_count = exec_params.get("repeat_count", 3)
+    timeout = exec_params.get("timeout", 300)
+
+    # Actions based on status
+    action_buttons = f'<a class="btn" href="/model/embodied-eval/tasks">返回列表</a>'
+    if status == "pending":
+        action_buttons += f' <button class="btn btn-primary" onclick="startTask(\'{task_id}\')">启动任务</button>'
+    if status == "completed":
+        action_buttons += f' <a class="btn btn-primary" href="/model/embodied-eval/segments?task_id={task_id}">查看评测记录</a>'
+
+    content = f"""
+    <div style="margin-bottom:16px;">
+      <h2 style="margin:0 0 8px;font-size:20px;color:rgba(0,0,0,0.88);">{html.escape(task["name"])}</h2>
+      <div style="display:flex;gap:16px;align-items:center;color:rgba(0,0,0,0.45);font-size:13px;">
+        <span>任务 ID: <span class="mono">{task["id"]}</span></span>
+        <span>创建时间: {task.get("created_at", "—")}</span>
+        {f'<span>开始时间: {task.get("started_at", "—")}</span>' if task.get("started_at") else ''}
+        {f'<span>结束时间: {task.get("ended_at", "—")}</span>' if task.get("ended_at") else ''}
+      </div>
+    </div>
+
+    <div style="display:flex;gap:10px;margin-bottom:16px;">
+      {action_buttons}
+    </div>
+
+    <div class="card">
+      <h3 style="margin-top:0;">基本信息</h3>
+      <div class="bi-info-grid">
+        <div class="bi-info-item">
+          <div class="bi-info-label">任务状态</div>
+          <div class="bi-info-value">{status_html}</div>
+        </div>
+        <div class="bi-info-item">
+          <div class="bi-info-label">评测集</div>
+          <div class="bi-info-value"><a href="/model/embodied-eval/sets/{task["eval_set_id"]}/edit">{html.escape(eval_set_name)}</a></div>
+        </div>
+        <div class="bi-info-item">
+          <div class="bi-info-label">被测模型数</div>
+          <div class="bi-info-value">{len(task.get("models", []))}</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3 style="margin-top:0;">评测集信息</h3>
+      {eval_set_info if eval_set_info else '<p style="color:rgba(0,0,0,0.45);">未找到关联的评测集</p>'}
+    </div>
+
+    <div class="card">
+      <h3 style="margin-top:0;">被测模型</h3>
+      <div class="table-wrap">
+        <table class="ant-table">
+          <thead>
+            <tr>
+              <th>模型名称</th>
+              <th style="width:140px;">版本</th>
+              <th style="width:280px;">Checkpoint 路径</th>
+              <th style="width:160px;">代码分支</th>
+            </tr>
+          </thead>
+          <tbody>
+            {models_rows}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3 style="margin-top:0;">执行参数</h3>
+      <div class="bi-info-grid" style="grid-template-columns:repeat(2,1fr);">
+        <div class="bi-info-item">
+          <div class="bi-info-label">重复次数 (repeat_count)</div>
+          <div class="bi-info-value mono">{repeat_count}</div>
+        </div>
+        <div class="bi-info-item">
+          <div class="bi-info-label">超时时间 (timeout)</div>
+          <div class="bi-info-value mono">{timeout} 秒</div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+    function startTask(id) {{
+      if (confirm('确定启动该评测任务？')) {{
+        fetch('/api/embodied-eval/tasks/' + id + '/start', {{ method: 'POST' }})
+          .then(res => res.json())
+          .then(res => {{
+            if (res.ok) {{
+              window.location.reload();
+            }} else {{
+              alert(res.error || '启动失败');
+            }}
+          }});
+      }}
+    }}
+    </script>
+    """
+
+    return render_page(
+        title=f"{task['name']} - 具身评测",
+        content=content,
+        active="/model/embodied-eval/tasks",
+        module="model",
+        breadcrumb=f'模型平台 / 具身评测 / 评测任务 / <b>{task["id"]}</b>'
+    )
+
+
+@app.route("/api/embodied-eval/tasks", methods=["POST"])
+def api_embodied_tasks_create():
+    """创建评测任务"""
+    data = request.json
+    if not data.get("name") or not data.get("eval_set_id"):
+        return jsonify({"ok": False, "error": "任务名称和评测集为必填项"}), 400
+
+    if not data.get("models") or len(data.get("models", [])) == 0:
+        return jsonify({"ok": False, "error": "请至少配置一个被测模型"}), 400
+
+    existing_ids = [int(t["id"][3:]) for t in EMBODIED_EVAL_TASKS if t["id"].startswith("eet")]
+    new_id = f"eet{max(existing_ids, default=0) + 1:03d}"
+
+    new_task = {
+        "id": new_id,
+        "name": data["name"],
+        "eval_set_id": data["eval_set_id"],
+        "models": data.get("models", []),
+        "exec_params": data.get("exec_params", {"repeat_count": 3}),
+        "status": "pending",
+        "created_at": "2026-08-06",
+        "started_at": None,
+        "ended_at": None
+    }
+    EMBODIED_EVAL_TASKS.append(new_task)
+    return jsonify({"ok": True, "id": new_id})
+
+
+@app.route("/api/embodied-eval/tasks/<task_id>/start", methods=["POST"])
+def api_embodied_tasks_start(task_id):
+    """启动评测任务"""
+    for t in EMBODIED_EVAL_TASKS:
+        if t["id"] == task_id:
+            if t["status"] != "pending":
+                return jsonify({"ok": False, "error": "只能启动状态为待执行的任务"}), 400
+            t["status"] = "running"
+            t["started_at"] = "2026-08-06 10:00"
+            return jsonify({"ok": True})
+    return jsonify({"ok": False, "error": "任务不存在"}), 404
+
+
+@app.route("/api/embodied-eval/tasks/<task_id>", methods=["DELETE"])
+def api_embodied_tasks_delete(task_id):
+    """删除评测任务"""
+    global EMBODIED_EVAL_TASKS
+    EMBODIED_EVAL_TASKS = [t for t in EMBODIED_EVAL_TASKS if t["id"] != task_id]
+    return jsonify({"ok": True})
+
+
 # ── 评测 · Benchmark ──
 # ════════════════════════════════════════════════════════════════
 # Section 7.5: 应用编排平台 (/app/*) — 占位
