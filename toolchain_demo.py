@@ -6889,7 +6889,14 @@ def embodied_eval_prompts():
 def api_embodied_prompts_create():
     """创建新Prompt"""
     data = request.json
-    new_id = f"ep{len(EMBODIED_PROMPTS) + 1:03d}"
+
+    # Validate required fields
+    if not data.get("scene") or not data.get("task") or not data.get("prompt"):
+        return jsonify({"ok": False, "error": "场景、任务、Prompt 为必填项"}), 400
+
+    # Generate new ID based on max existing ID
+    existing_ids = [int(p["id"][2:]) for p in EMBODIED_PROMPTS if p["id"].startswith("ep")]
+    new_id = f"ep{max(existing_ids, default=0) + 1:03d}"
     new_prompt = {
         "id": new_id,
         "scene": data.get("scene", ""),
