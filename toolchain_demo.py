@@ -2056,6 +2056,31 @@ button.tm-subtab { border:0; background:transparent; font-family:inherit; cursor
 .es-radio-group { display:flex; gap:20px; }
 .es-radio-group label { display:flex; align-items:center; gap:6px; font-size:14px; color:rgba(0,0,0,0.85); cursor:pointer; }
 .es-tpl-preview { border:1px solid #f0f0f0; border-radius:8px; padding:12px; margin-top:10px; background:#fafafa; }
+/* 评测集: Prompt 三层树 */
+.es-prompt-tree-toolbar { margin-bottom:12px; }
+.es-tree-scene { border:1px solid #f0f0f0; border-radius:8px; margin-bottom:10px; overflow:hidden; }
+.es-tree-scene-header { display:flex; align-items:center; gap:8px; padding:10px 14px; background:#fafafa; font-weight:600; font-size:14px; color:#262626; }
+.es-tree-arrow { cursor:pointer; width:16px; display:inline-block; color:rgba(0,0,0,0.45); user-select:none; }
+.es-tree-scene-name { flex:1; }
+.es-tree-del { font-size:12.5px; color:#d4504e; cursor:pointer; }
+.es-tree-tasks { padding:10px 14px 12px 20px; }
+.es-tree-task { margin-bottom:12px; }
+.es-tree-task-header { display:flex; align-items:center; gap:8px; padding:4px 0; font-weight:500; font-size:13.5px; color:#262626; }
+.es-tree-task-name { flex:1; }
+.es-tree-items { padding-left:20px; }
+.es-tree-item { display:flex; align-items:center; gap:6px; padding:4px 0; font-size:13.5px; color:rgba(0,0,0,0.75); }
+.es-tree-item-bullet { color:rgba(0,0,0,0.3); }
+.es-tree-item-text { flex:1; }
+.es-tree-item-actions a { font-size:12.5px; color:#149DAA; cursor:pointer; margin-left:8px; }
+.es-tree-item-actions a.danger { color:#d4504e; }
+.es-edited-badge { background:#fff7e6; color:#d48806; font-size:11px; padding:1px 6px; border-radius:3px; margin-left:6px; }
+.es-tree-task-actions { margin-top:4px; padding-left:20px; display:flex; gap:8px; }
+.es-tree-empty { color:rgba(0,0,0,0.45); font-size:13px; padding:8px 0; }
+.es-lib-filter-bar { display:flex; gap:8px; margin-bottom:12px; }
+.es-lib-list { border:1px solid #f0f0f0; border-radius:6px; max-height:320px; overflow-y:auto; }
+.es-lib-item { display:flex; align-items:center; gap:8px; padding:8px 12px; border-bottom:1px solid #f5f5f5; font-size:13.5px; }
+.es-lib-item:last-child { border-bottom:none; }
+.es-lib-item-meta { color:rgba(0,0,0,0.45); font-size:12px; margin-left:auto; }
 """
 
 # 将 data_platform / quanta_eval_platform 的 BASE_CSS 拼在前面 — 它们的 chrome 规则会被
@@ -7418,14 +7443,56 @@ def _embodied_eval_set_form_page(eval_set=None):
 
     <div class="form-section">
       <div class="form-section-title">Prompt 配置</div>
-      <div id="promptTreeContainer">
-        <p style="color:#8c8c8c;">Prompt 三层树将在此配置（Task 6 实现）</p>
+      <div class="es-prompt-tree-toolbar">
+        <button type="button" class="btn btn-tertiary" onclick="addScene()">+ 添加场景</button>
       </div>
+      <div id="promptTreeContainer"></div>
     </div>
 
     <div style="display:flex;gap:10px;">
       <button type="button" class="btn btn-primary" onclick="saveSet()">保存评测集</button>
       <button type="button" class="btn" onclick="window.location.href='/model/embodied-eval/sets'">取消</button>
+    </div>
+
+    <div class="modal-mask" id="esLibModalMask" onclick="closeLibModal(event)">
+      <div class="modal" style="width:640px;" onclick="event.stopPropagation()">
+        <div class="modal-head">
+          <h3>从提示词库选择</h3>
+          <span class="dismiss" onclick="closeLibModal()">&times;</span>
+        </div>
+        <div class="modal-body">
+          <div class="es-lib-filter-bar">
+            <select id="esLibSceneFilter" onchange="renderLibList()">
+              <option value="">全部场景</option>
+            </select>
+            <input id="esLibSearch" class="grow" type="text" placeholder="🔍 搜索 Prompt 文本..." oninput="renderLibList()">
+          </div>
+          <div class="es-lib-list" id="esLibList"></div>
+        </div>
+        <div class="modal-foot">
+          <button class="btn btn-tertiary" onclick="closeLibModal()">取消</button>
+          <button class="btn btn-primary" onclick="confirmLibSelection()">添加所选</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-mask" id="esManualModalMask" onclick="closeManualModal(event)">
+      <div class="modal" onclick="event.stopPropagation()">
+        <div class="modal-head">
+          <h3 id="esManualModalTitle">手动输入 Prompt</h3>
+          <span class="dismiss" onclick="closeManualModal()">&times;</span>
+        </div>
+        <div class="modal-body">
+          <div class="fg">
+            <label>Prompt 文本</label>
+            <textarea id="esManualText" rows="3" placeholder="请输入 Prompt 文本..."></textarea>
+          </div>
+        </div>
+        <div class="modal-foot">
+          <button class="btn btn-tertiary" onclick="closeManualModal()">取消</button>
+          <button class="btn btn-primary" onclick="confirmManualInput()">确定</button>
+        </div>
+      </div>
     </div>
 
     <script>
@@ -7434,6 +7501,222 @@ def _embodied_eval_set_form_page(eval_set=None):
     var ES_PROMPTS = {json.dumps(prompts_value, ensure_ascii=False)};
     var ES_METRIC_TEMPLATES = {json.dumps(EMBODIED_METRIC_TEMPLATES, ensure_ascii=False)};
     var EM_TYPE_LABELS = {json.dumps(EMBODIED_METRIC_TYPE_LABELS, ensure_ascii=False)};
+    var ES_PROMPT_LIB = {json.dumps(EMBODIED_PROMPTS, ensure_ascii=False)};
+
+    // Prompt 三层树: 单一数据源, 内部结构 [{{scene, tasks:[{{task, items:[{{prompt_id, text, edited}}]}}]}}]
+    // ES_PROMPTS (来自后端) 是扁平结构 [{{scene, task, items}}], 需转换为分组结构渲染, 保存时再转回扁平结构
+    function flatPromptsToTree(flat) {{
+      var tree = [];
+      flat.forEach(function(entry) {{
+        var sceneNode = tree.find(function(s) {{ return s.scene === entry.scene; }});
+        if (!sceneNode) {{
+          sceneNode = {{scene: entry.scene, tasks: []}};
+          tree.push(sceneNode);
+        }}
+        sceneNode.tasks.push({{task: entry.task, items: JSON.parse(JSON.stringify(entry.items || []))}});
+      }});
+      return tree;
+    }}
+
+    function treeToFlatPrompts(tree) {{
+      var flat = [];
+      tree.forEach(function(sceneNode) {{
+        (sceneNode.tasks || []).forEach(function(taskNode) {{
+          flat.push({{scene: sceneNode.scene, task: taskNode.task, items: taskNode.items}});
+        }});
+      }});
+      return flat;
+    }}
+
+    var promptTree = flatPromptsToTree(ES_PROMPTS);
+    var esLibTargetIdx = null; // 当前弹窗操作的目标 scene/task 索引
+    var esManualTargetIdx = null;
+
+    function esEscapeHtml(str) {{
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }}
+
+    function renderPromptTree() {{
+      var container = document.getElementById('promptTreeContainer');
+      if (promptTree.length === 0) {{
+        container.innerHTML = '<div class="es-tree-empty">暂无场景，点击上方"添加场景"开始配置</div>';
+        return;
+      }}
+      var html = '';
+      promptTree.forEach(function(sceneNode, sIdx) {{
+        html += '<div class="es-tree-scene">';
+        html += '<div class="es-tree-scene-header">';
+        html += '<span class="es-tree-arrow">&#9660;</span>';
+        html += '<span class="es-tree-scene-name">' + esEscapeHtml(sceneNode.scene) + '</span>';
+        html += '<span class="es-tree-del" onclick="removeScene(' + sIdx + ')">&#10005; 删除</span>';
+        html += '</div>';
+        html += '<div class="es-tree-tasks">';
+        (sceneNode.tasks || []).forEach(function(taskNode, tIdx) {{
+          html += '<div class="es-tree-task">';
+          html += '<div class="es-tree-task-header">';
+          html += '<span class="es-tree-arrow">&#9660;</span>';
+          html += '<span class="es-tree-task-name">' + esEscapeHtml(taskNode.task) + '</span>';
+          html += '<span class="es-tree-del" onclick="removeTask(' + sIdx + ',' + tIdx + ')">&#10005; 删除</span>';
+          html += '</div>';
+          html += '<div class="es-tree-items">';
+          if (!taskNode.items || taskNode.items.length === 0) {{
+            html += '<div class="es-tree-empty">暂无 Prompt</div>';
+          }} else {{
+            taskNode.items.forEach(function(item, iIdx) {{
+              html += '<div class="es-tree-item">';
+              html += '<span class="es-tree-item-bullet">&bull;</span>';
+              html += '<span class="es-tree-item-text">' + esEscapeHtml(item.text) + '</span>';
+              if (item.edited) {{
+                html += '<span class="es-edited-badge">&#9998;已编辑</span>';
+              }}
+              html += '<span class="es-tree-item-actions">';
+              html += '<a onclick="editItem(' + sIdx + ',' + tIdx + ',' + iIdx + ')">编辑</a>';
+              html += '<a class="danger" onclick="removeItem(' + sIdx + ',' + tIdx + ',' + iIdx + ')">&#10005;</a>';
+              html += '</span>';
+              html += '</div>';
+            }});
+          }}
+          html += '</div>';
+          html += '<div class="es-tree-task-actions">';
+          html += '<button type="button" class="btn btn-tertiary btn-sm" onclick="openLibModal(' + sIdx + ',' + tIdx + ')">+ 从库选择</button>';
+          html += '<button type="button" class="btn btn-tertiary btn-sm" onclick="openManualModal(' + sIdx + ',' + tIdx + ')">+ 手动输入</button>';
+          html += '</div>';
+          html += '</div>';
+        }});
+        html += '<button type="button" class="btn btn-tertiary btn-sm" onclick="addTask(' + sIdx + ')">+ 添加任务</button>';
+        html += '</div>';
+        html += '</div>';
+      }});
+      container.innerHTML = html;
+    }}
+
+    function addScene() {{
+      var name = prompt('请输入场景名称');
+      if (!name) return;
+      promptTree.push({{scene: name, tasks: []}});
+      renderPromptTree();
+    }}
+
+    function removeScene(sIdx) {{
+      if (!confirm('确定删除该场景及其下所有任务和 Prompt？')) return;
+      promptTree.splice(sIdx, 1);
+      renderPromptTree();
+    }}
+
+    function addTask(sIdx) {{
+      var name = prompt('请输入任务名称');
+      if (!name) return;
+      promptTree[sIdx].tasks.push({{task: name, items: []}});
+      renderPromptTree();
+    }}
+
+    function removeTask(sIdx, tIdx) {{
+      if (!confirm('确定删除该任务及其下所有 Prompt？')) return;
+      promptTree[sIdx].tasks.splice(tIdx, 1);
+      renderPromptTree();
+    }}
+
+    function removeItem(sIdx, tIdx, iIdx) {{
+      promptTree[sIdx].tasks[tIdx].items.splice(iIdx, 1);
+      renderPromptTree();
+    }}
+
+    function editItem(sIdx, tIdx, iIdx) {{
+      var item = promptTree[sIdx].tasks[tIdx].items[iIdx];
+      var newText = prompt('编辑 Prompt 文本', item.text);
+      if (newText === null) return;
+      newText = newText.trim();
+      if (!newText) return;
+      item.text = newText;
+      if (item.prompt_id) {{
+        var origin = ES_PROMPT_LIB.find(function(p) {{ return p.id === item.prompt_id; }});
+        item.edited = !!(origin && origin.prompt !== newText);
+      }}
+      renderPromptTree();
+    }}
+
+    function openLibModal(sIdx, tIdx) {{
+      esLibTargetIdx = {{sIdx: sIdx, tIdx: tIdx}};
+      var sceneSelect = document.getElementById('esLibSceneFilter');
+      var scenes = Array.from(new Set(ES_PROMPT_LIB.map(function(p) {{ return p.scene; }})));
+      sceneSelect.innerHTML = '<option value="">全部场景</option>' + scenes.map(function(s) {{
+        return '<option value="' + esEscapeHtml(s) + '">' + esEscapeHtml(s) + '</option>';
+      }}).join('');
+      sceneSelect.value = '';
+      document.getElementById('esLibSearch').value = '';
+      renderLibList();
+      document.getElementById('esLibModalMask').classList.add('active');
+    }}
+
+    function closeLibModal(ev) {{
+      if (ev && ev.target !== ev.currentTarget) return;
+      document.getElementById('esLibModalMask').classList.remove('active');
+    }}
+
+    function renderLibList() {{
+      var sceneFilter = document.getElementById('esLibSceneFilter').value;
+      var q = document.getElementById('esLibSearch').value.trim().toLowerCase();
+      var list = ES_PROMPT_LIB.filter(function(p) {{
+        if (sceneFilter && p.scene !== sceneFilter) return false;
+        if (q && p.prompt.toLowerCase().indexOf(q) === -1) return false;
+        return true;
+      }});
+      var container = document.getElementById('esLibList');
+      if (list.length === 0) {{
+        container.innerHTML = '<div class="es-tree-empty">无匹配的 Prompt</div>';
+        return;
+      }}
+      container.innerHTML = list.map(function(p) {{
+        return '<label class="es-lib-item">' +
+          '<input type="checkbox" class="es-lib-checkbox" value="' + p.id + '">' +
+          '<span>' + esEscapeHtml(p.prompt) + '</span>' +
+          '<span class="es-lib-item-meta">' + esEscapeHtml(p.scene) + ' / ' + esEscapeHtml(p.task) + '</span>' +
+          '</label>';
+      }}).join('');
+    }}
+
+    function confirmLibSelection() {{
+      var checked = document.querySelectorAll('#esLibList .es-lib-checkbox:checked');
+      if (checked.length === 0) {{
+        closeLibModal();
+        return;
+      }}
+      var task = promptTree[esLibTargetIdx.sIdx].tasks[esLibTargetIdx.tIdx];
+      checked.forEach(function(cb) {{
+        var p = ES_PROMPT_LIB.find(function(x) {{ return x.id === cb.value; }});
+        if (!p) return;
+        task.items.push({{prompt_id: p.id, text: p.prompt, edited: false}});
+      }});
+      closeLibModal();
+      renderPromptTree();
+    }}
+
+    function openManualModal(sIdx, tIdx) {{
+      esManualTargetIdx = {{sIdx: sIdx, tIdx: tIdx}};
+      document.getElementById('esManualText').value = '';
+      document.getElementById('esManualModalMask').classList.add('active');
+    }}
+
+    function closeManualModal(ev) {{
+      if (ev && ev.target !== ev.currentTarget) return;
+      document.getElementById('esManualModalMask').classList.remove('active');
+    }}
+
+    function confirmManualInput() {{
+      var text = document.getElementById('esManualText').value.trim();
+      if (!text) {{
+        alert('请输入 Prompt 文本');
+        return;
+      }}
+      var task = promptTree[esManualTargetIdx.sIdx].tasks[esManualTargetIdx.tIdx];
+      task.items.push({{prompt_id: null, text: text, edited: false}});
+      closeManualModal();
+      renderPromptTree();
+    }}
 
     function onMetricSourceChange() {{
       var source = document.querySelector('input[name="esMetricSource"]:checked').value;
@@ -7521,7 +7804,7 @@ def _embodied_eval_set_form_page(eval_set=None):
         description: description,
         scene_tags: sceneTags,
         is_benchmark: isBenchmark,
-        prompts: ES_PROMPTS
+        prompts: treeToFlatPrompts(promptTree)
       }};
 
       if (metricSource === 'template') {{
@@ -7568,6 +7851,8 @@ def _embodied_eval_set_form_page(eval_set=None):
     if (document.querySelector('input[name="esMetricSource"][value="template"]').checked && document.getElementById('esTplSelect').value) {{
       onTplSelectChange();
     }}
+
+    renderPromptTree();
     </script>
     """
 
