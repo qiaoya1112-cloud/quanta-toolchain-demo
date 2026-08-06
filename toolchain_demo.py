@@ -2022,6 +2022,33 @@ button.tm-subtab { border:0; background:transparent; font-family:inherit; cursor
 .bi-envtable .env-eye { text-align:center; color:rgba(0,0,0,0.35); cursor:pointer; font-size:15px; user-select:none; transition:all 0.2s ease; border-radius:4px; padding:2px 4px; }
 .bi-envtable .env-eye:hover { color:#149DAA; background:rgba(20,157,170,0.08); }
 .yaml-readonly { background:linear-gradient(135deg, #fafbfc 0%, #f7f9fa 100%); border:1px solid #e5e7eb; border-radius:10px; padding:16px 18px; font-family:'SF Mono',Menlo,monospace; font-size:13px; line-height:1.7; color:rgba(0,0,0,0.88); white-space:pre; overflow:auto; max-height:450px; margin:0; box-shadow:inset 0 1px 3px rgba(0,0,0,0.03); }
+/* Metric 模板: 卡片网格 + 字段编辑器 */
+.em-card-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(320px, 1fr)); gap:16px; }
+.em-card { background:#fff; border:1px solid #f0f0f0; border-radius:8px; padding:16px; }
+.em-card-title { font-size:15px; font-weight:500; color:rgba(0,0,0,0.85); margin-bottom:10px; display:flex; align-items:center; gap:8px; }
+.em-card-fields { list-style:none; margin:0 0 12px; padding:0; }
+.em-card-fields li { font-size:13px; color:rgba(0,0,0,0.65); padding:3px 0; display:flex; justify-content:space-between; }
+.em-card-fields li .em-field-type { color:rgba(0,0,0,0.4); font-size:12px; }
+.em-card-more { font-size:12.5px; color:rgba(0,0,0,0.4); margin:4px 0 12px; }
+.em-card-meta { font-size:12px; color:rgba(0,0,0,0.4); margin-bottom:12px; }
+.em-card-actions { display:flex; gap:14px; border-top:1px solid #f5f5f5; padding-top:10px; }
+.em-card-actions a { color:#149DAA; font-size:13px; cursor:pointer; text-decoration:none; }
+.em-card-actions a:hover { color:#0F8190; }
+.em-card-actions a.danger { color:#d4504e; }
+.em-card-actions a.danger:hover { color:#b8433f; }
+.em-field-editor { border:1px solid #f0f0f0; border-radius:8px; padding:14px; }
+.em-field-row { display:flex; gap:10px; align-items:center; margin-bottom:8px; }
+.em-field-row .em-field-name { flex:3; }
+.em-field-row .em-field-type-select { flex:2; }
+.em-field-row .em-field-remove { flex:0 0 auto; width:32px; height:32px; border-radius:8px; border:1px solid #d9d9d9; background:#fff; color:rgba(0,0,0,0.45); cursor:pointer; }
+.em-field-row .em-field-remove:hover { border-color:#d4504e; color:#d4504e; }
+.em-enum-box { background:#e6f7f9; border:1px dashed #149DAA; border-radius:4px; padding:12px; margin:-2px 0 10px 0; display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
+.em-enum-box .em-enum-label { font-size:12.5px; color:rgba(0,0,0,0.5); margin-right:4px; }
+.em-enum-box .tag { background:#fff; border:1px solid #d9d9d9; border-radius:12px; padding:2px 10px; font-size:12.5px; display:inline-flex; align-items:center; gap:6px; }
+.em-enum-box .tag .em-enum-remove { cursor:pointer; color:rgba(0,0,0,0.35); font-size:12px; }
+.em-enum-box .tag .em-enum-remove:hover { color:#d4504e; }
+.em-enum-box .btn-add-option { border:1px dashed #149DAA; background:#fff; color:#149DAA; border-radius:12px; padding:2px 10px; font-size:12.5px; cursor:pointer; }
+.em-enum-box .btn-add-option:hover { background:#DEF6F9; }
 """
 
 # 将 data_platform / quanta_eval_platform 的 BASE_CSS 拼在前面 — 它们的 chrome 规则会被
@@ -6915,6 +6942,305 @@ def api_embodied_prompts_delete(prompt_id):
     """删除Prompt"""
     global EMBODIED_PROMPTS
     EMBODIED_PROMPTS = [p for p in EMBODIED_PROMPTS if p["id"] != prompt_id]
+    return jsonify({"ok": True})
+
+
+# ── 评测 · Metric 模板 ──
+
+EMBODIED_METRIC_TYPE_LABELS = {
+    "integer": "整数",
+    "float": "浮点",
+    "percentage": "百分比",
+    "boolean": "布尔",
+    "enum": "枚举",
+}
+
+
+def _embodied_metric_type_options(selected):
+    opts = ""
+    for val, label in EMBODIED_METRIC_TYPE_LABELS.items():
+        sel = " selected" if val == selected else ""
+        opts += f'<option value="{val}"{sel}>{label}</option>'
+    return opts
+
+
+def _embodied_metric_field_block_html(field=None):
+    """渲染单个字段编辑行(含可选的枚举展开区), field=None 时渲染空行"""
+    name = html.escape(field["name"]) if field else ""
+    ftype = field.get("type", "integer") if field else "integer"
+    options = field.get("options", []) if field else []
+    is_enum = ftype == "enum"
+    tags_html = "".join(
+        f'<span class="tag">{html.escape(opt)}<span class="em-enum-remove" onclick="removeEnumOption(this)">&times;</span></span>'
+        for opt in options
+    )
+    return f"""
+    <div class="em-field-block">
+      <div class="em-field-row">
+        <input type="text" class="em-field-name" placeholder="字段名" value="{name}">
+        <select class="em-field-type-select" onchange="onFieldTypeChange(this)">
+          {_embodied_metric_type_options(ftype)}
+        </select>
+        <button type="button" class="em-field-remove" onclick="removeField(this)" title="删除字段">&times;</button>
+      </div>
+      <div class="em-enum-box" style="display:{'flex' if is_enum else 'none'};">
+        <span class="em-enum-label">枚举选项:</span>
+        {tags_html}
+        <button type="button" class="btn-add-option" onclick="addEnumOption(this)">+ 选项</button>
+      </div>
+    </div>
+    """
+
+
+def _embodied_metric_form_page(tpl=None):
+    """创建/编辑 Metric 模板表单页, tpl=None 为创建模式"""
+    is_edit = tpl is not None
+    tpl_id = tpl["id"] if is_edit else ""
+    name_value = html.escape(tpl["name"]) if is_edit else ""
+    fields = tpl["fields"] if is_edit else []
+    fields_html = "".join(_embodied_metric_field_block_html(f) for f in fields)
+    title = "编辑 Metric 模板" if is_edit else "新建 Metric 模板"
+
+    content = f"""
+    <div class="card" style="max-width:760px;">
+      <h3>{title}</h3>
+      <div class="fg">
+        <label class="fg-req">模板名称</label>
+        <input type="text" id="emTplName" placeholder="请输入模板名称" value="{name_value}">
+      </div>
+
+      <div class="fg">
+        <label class="fg-req">Metric 字段配置</label>
+        <div class="em-field-editor" id="emFieldEditor">
+          {fields_html}
+        </div>
+        <div style="margin-top:10px;">
+          <button type="button" class="btn btn-tertiary" onclick="addField()">+ 添加字段</button>
+        </div>
+      </div>
+
+      <div style="margin-top:20px;display:flex;gap:10px;">
+        <button type="button" class="btn btn-primary" onclick="saveTemplate()">保存模板</button>
+        <button type="button" class="btn" onclick="window.location.href='/model/embodied-eval/metrics'">取消</button>
+      </div>
+    </div>
+
+    <script>
+    var EM_TPL_ID = {json.dumps(tpl_id)};
+    var EM_IS_EDIT = {json.dumps(is_edit)};
+
+    function onFieldTypeChange(select) {{
+      var block = select.closest('.em-field-block');
+      var enumBox = block.querySelector('.em-enum-box');
+      enumBox.style.display = (select.value === 'enum') ? 'flex' : 'none';
+    }}
+
+    function addField() {{
+      var editor = document.getElementById('emFieldEditor');
+      var wrapper = document.createElement('div');
+      wrapper.innerHTML = {json.dumps(_embodied_metric_field_block_html())};
+      editor.appendChild(wrapper.firstElementChild);
+    }}
+
+    function removeField(btn) {{
+      var block = btn.closest('.em-field-block');
+      block.remove();
+    }}
+
+    function addEnumOption(btn) {{
+      var opt = prompt('请输入枚举选项');
+      if (!opt) return;
+      var enumBox = btn.closest('.em-enum-box');
+      var tag = document.createElement('span');
+      tag.className = 'tag';
+      tag.innerHTML = opt.replace(/</g, '&lt;').replace(/>/g, '&gt;') + '<span class="em-enum-remove" onclick="removeEnumOption(this)">&times;</span>';
+      enumBox.insertBefore(tag, btn);
+    }}
+
+    function removeEnumOption(el) {{
+      el.closest('.tag').remove();
+    }}
+
+    function saveTemplate() {{
+      var name = document.getElementById('emTplName').value.trim();
+      var blocks = document.querySelectorAll('#emFieldEditor .em-field-block');
+      var fields = [];
+      for (var i = 0; i < blocks.length; i++) {{
+        var block = blocks[i];
+        var fname = block.querySelector('.em-field-name').value.trim();
+        var ftype = block.querySelector('.em-field-type-select').value;
+        if (!fname) continue;
+        var field = {{name: fname, type: ftype}};
+        if (ftype === 'enum') {{
+          var tags = block.querySelectorAll('.em-enum-box .tag');
+          var options = [];
+          tags.forEach(function(t) {{ options.push(t.textContent.replace(/×$/, '').trim()); }});
+          field.options = options;
+        }}
+        fields.push(field);
+      }}
+
+      if (!name || fields.length === 0) {{
+        alert('模板名称和字段为必填项');
+        return;
+      }}
+
+      var url = EM_IS_EDIT ? ('/api/embodied-eval/metrics/' + EM_TPL_ID) : '/api/embodied-eval/metrics';
+      var method = EM_IS_EDIT ? 'PUT' : 'POST';
+      fetch(url, {{
+        method: method,
+        headers: {{'Content-Type': 'application/json'}},
+        body: JSON.stringify({{name: name, fields: fields}})
+      }}).then(res => res.json())
+        .then(res => {{
+          if (res.ok) {{
+            window.location.href = '/model/embodied-eval/metrics';
+          }} else {{
+            alert(res.error || '保存失败');
+          }}
+        }});
+    }}
+    </script>
+    """
+
+    return render_page(
+        title=title + " - 具身评测",
+        content=content,
+        active="/model/embodied-eval/metrics",
+        module="model",
+        breadcrumb=f'模型平台 / 具身评测 / Metric 模板 / <b>{title}</b>'
+    )
+
+
+@app.route("/model/embodied-eval/metrics")
+def embodied_eval_metrics():
+    """Metric 模板列表 - 卡片式布局"""
+    search_query = request.args.get("q", "").lower()
+
+    filtered = EMBODIED_METRIC_TEMPLATES
+    if search_query:
+        filtered = [t for t in filtered if search_query in t["name"].lower()]
+
+    cards_html = ""
+    if filtered:
+        for tpl in filtered:
+            fields = tpl["fields"]
+            preview_fields = fields[:5]
+            field_items = "".join(
+                f'<li><span>{html.escape(f["name"])}</span><span class="em-field-type">{EMBODIED_METRIC_TYPE_LABELS.get(f["type"], f["type"])}</span></li>'
+                for f in preview_fields
+            )
+            more_html = f'<div class="em-card-more">...共 {len(fields)} 项</div>' if len(fields) > 5 else ""
+            cards_html += f"""
+            <div class="em-card">
+              <div class="em-card-title">&#128202; {html.escape(tpl["name"])}</div>
+              <ul class="em-card-fields">{field_items}</ul>
+              {more_html}
+              <div class="em-card-meta">创建时间: {tpl["created_at"]}</div>
+              <div class="em-card-actions">
+                <a onclick="alert('跳转到评测集创建页面并预填此模板（后续实现）')">应用到评测集</a>
+                <a onclick="window.location.href='/model/embodied-eval/metrics/{tpl["id"]}/edit'">编辑</a>
+                <a class="danger" onclick="deleteMetricTpl('{tpl["id"]}')">删除</a>
+              </div>
+            </div>
+            """
+    else:
+        cards_html = '<div class="card" style="text-align:center;padding:48px;color:rgba(0,0,0,0.45);">暂无数据</div>'
+
+    content = f"""
+    <div class="filter-bar">
+      <input id="searchInput" class="grow" type="text" placeholder="🔍 搜索模板名称..." value="{html.escape(search_query)}" onkeypress="if(event.key==='Enter') applyFilters()">
+      <div class="filter-actions">
+        <button class="btn btn-tertiary" onclick="location.reload()">🔄 刷新</button>
+        <button class="btn btn-primary" onclick="window.location.href='/model/embodied-eval/metrics/create'">+ 新建 Metric 模板</button>
+      </div>
+    </div>
+
+    <div class="em-card-grid">
+      {cards_html}
+    </div>
+
+    <script>
+    function applyFilters() {{
+      const q = document.getElementById('searchInput').value;
+      const params = new URLSearchParams();
+      if (q) params.set('q', q);
+      window.location.href = '/model/embodied-eval/metrics' + (params.toString() ? '?' + params.toString() : '');
+    }}
+
+    function deleteMetricTpl(id) {{
+      if (confirm('确定删除该 Metric 模板？')) {{
+        fetch('/api/embodied-eval/metrics/' + id, {{ method: 'DELETE' }})
+          .then(() => window.location.reload());
+      }}
+    }}
+    </script>
+    """
+
+    return render_page(
+        title="Metric 模板 - 具身评测",
+        content=content,
+        active="/model/embodied-eval/metrics",
+        module="model",
+        breadcrumb='模型平台 / 具身评测 / <b>Metric 模板</b>'
+    )
+
+
+@app.route("/model/embodied-eval/metrics/create")
+def embodied_eval_metrics_create():
+    """新建 Metric 模板"""
+    return _embodied_metric_form_page(tpl=None)
+
+
+@app.route("/model/embodied-eval/metrics/<tpl_id>/edit")
+def embodied_eval_metrics_edit(tpl_id):
+    """编辑 Metric 模板"""
+    tpl = next((t for t in EMBODIED_METRIC_TEMPLATES if t["id"] == tpl_id), None)
+    if tpl is None:
+        return redirect("/model/embodied-eval/metrics")
+    return _embodied_metric_form_page(tpl=tpl)
+
+
+@app.route("/api/embodied-eval/metrics", methods=["POST"])
+def api_embodied_metrics_create():
+    """创建 Metric 模板"""
+    data = request.json
+    if not data.get("name") or not data.get("fields"):
+        return jsonify({"ok": False, "error": "模板名称和字段为必填项"}), 400
+
+    existing_ids = [int(t["id"][3:]) for t in EMBODIED_METRIC_TEMPLATES if t["id"].startswith("emt")]
+    new_id = f"emt{max(existing_ids, default=0) + 1:03d}"
+
+    new_template = {
+        "id": new_id,
+        "name": data["name"],
+        "fields": data["fields"],
+        "created_at": "2026-08-06"
+    }
+    EMBODIED_METRIC_TEMPLATES.append(new_template)
+    return jsonify({"ok": True, "id": new_id})
+
+
+@app.route("/api/embodied-eval/metrics/<tpl_id>", methods=["PUT"])
+def api_embodied_metrics_update(tpl_id):
+    """更新 Metric 模板"""
+    data = request.json
+    if not data.get("name") or not data.get("fields"):
+        return jsonify({"ok": False, "error": "模板名称和字段为必填项"}), 400
+
+    for tpl in EMBODIED_METRIC_TEMPLATES:
+        if tpl["id"] == tpl_id:
+            tpl["name"] = data["name"]
+            tpl["fields"] = data["fields"]
+            break
+    return jsonify({"ok": True})
+
+
+@app.route("/api/embodied-eval/metrics/<tpl_id>", methods=["DELETE"])
+def api_embodied_metrics_delete(tpl_id):
+    """删除 Metric 模板"""
+    global EMBODIED_METRIC_TEMPLATES
+    EMBODIED_METRIC_TEMPLATES = [t for t in EMBODIED_METRIC_TEMPLATES if t["id"] != tpl_id]
     return jsonify({"ok": True})
 
 
