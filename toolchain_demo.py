@@ -7531,6 +7531,7 @@ def _embodied_eval_set_form_page(eval_set=None):
     var promptTree = flatPromptsToTree(ES_PROMPTS);
     var esLibTargetIdx = null; // 当前弹窗操作的目标 scene/task 索引
     var esManualTargetIdx = null;
+    var esLibSelectedIds = new Set(); // 从库选择弹窗中已勾选的 prompt id, 跨筛选/搜索重渲染保留
 
     function esEscapeHtml(str) {{
       return String(str)
@@ -7641,6 +7642,7 @@ def _embodied_eval_set_form_page(eval_set=None):
 
     function openLibModal(sIdx, tIdx) {{
       esLibTargetIdx = {{sIdx: sIdx, tIdx: tIdx}};
+      esLibSelectedIds = new Set();
       var sceneSelect = document.getElementById('esLibSceneFilter');
       var scenes = Array.from(new Set(ES_PROMPT_LIB.map(function(p) {{ return p.scene; }})));
       sceneSelect.innerHTML = '<option value="">全部场景</option>' + scenes.map(function(s) {{
@@ -7671,23 +7673,31 @@ def _embodied_eval_set_form_page(eval_set=None):
         return;
       }}
       container.innerHTML = list.map(function(p) {{
+        var checkedAttr = esLibSelectedIds.has(p.id) ? ' checked' : '';
         return '<label class="es-lib-item">' +
-          '<input type="checkbox" class="es-lib-checkbox" value="' + p.id + '">' +
+          '<input type="checkbox" class="es-lib-checkbox" value="' + p.id + '"' + checkedAttr + ' onchange="onLibCheckboxChange(this)">' +
           '<span>' + esEscapeHtml(p.prompt) + '</span>' +
           '<span class="es-lib-item-meta">' + esEscapeHtml(p.scene) + ' / ' + esEscapeHtml(p.task) + '</span>' +
           '</label>';
       }}).join('');
     }}
 
+    function onLibCheckboxChange(cb) {{
+      if (cb.checked) {{
+        esLibSelectedIds.add(cb.value);
+      }} else {{
+        esLibSelectedIds.delete(cb.value);
+      }}
+    }}
+
     function confirmLibSelection() {{
-      var checked = document.querySelectorAll('#esLibList .es-lib-checkbox:checked');
-      if (checked.length === 0) {{
+      if (esLibSelectedIds.size === 0) {{
         closeLibModal();
         return;
       }}
       var task = promptTree[esLibTargetIdx.sIdx].tasks[esLibTargetIdx.tIdx];
-      checked.forEach(function(cb) {{
-        var p = ES_PROMPT_LIB.find(function(x) {{ return x.id === cb.value; }});
+      esLibSelectedIds.forEach(function(id) {{
+        var p = ES_PROMPT_LIB.find(function(x) {{ return x.id === id; }});
         if (!p) return;
         task.items.push({{prompt_id: p.id, text: p.prompt, edited: false}});
       }});
@@ -7796,6 +7806,16 @@ def _embodied_eval_set_form_page(eval_set=None):
       if (!name) {{
         alert('评测集名称为必填项');
         return;
+      }}
+
+      var hasEmptyNode = promptTree.some(function(sceneNode) {{
+        if (!sceneNode.tasks || sceneNode.tasks.length === 0) return true;
+        return sceneNode.tasks.some(function(taskNode) {{ return !taskNode.items || taskNode.items.length === 0; }});
+      }});
+      if (hasEmptyNode) {{
+        if (!confirm('存在空的场景/任务，保存后将被忽略，是否继续？')) {{
+          return;
+        }}
       }}
 
       var payload = {{
