@@ -6752,6 +6752,7 @@ def embodied_eval_prompts():
         for scene, prompts in grouped.items():
             scene_rowspan = len(prompts)
             for idx, p in enumerate(prompts):
+                prompt_id = p["id"]
                 tags_html = " ".join(f'<span class="tag-inline">{t}</span>' for t in p["tags"])
 
                 # Build row
@@ -6765,8 +6766,8 @@ def embodied_eval_prompts():
                     <td>{tags_html}</td>
                     <td>{p["creator"]}</td>
                     <td class="actions-cell">
-                        <a href="javascript:void(0)" onclick="alert('复制功能：将复制 Prompt ID {p["id"]} 的数据（待实现）')">复制</a>
-                        <a href="javascript:void(0)" onclick="if(confirm('确定删除该 Prompt？')) alert('调用 DELETE /api/embodied-eval/prompts/{p["id"]}（下个 Task 实现）')">删除</a>
+                        <a href="javascript:void(0)" onclick="alert('复制功能：将复制 Prompt ID {prompt_id} 的数据（待实现）')">复制</a>
+                        <a href="javascript:void(0)" onclick="if(confirm('确定删除该 Prompt？')) alert('调用 DELETE /api/embodied-eval/prompts/{prompt_id}（下个 Task 实现）')">删除</a>
                     </td>
                 </tr>
                 '''
