@@ -7373,7 +7373,7 @@ def _embodied_eval_set_form_page(eval_set=None):
         <input type="text" id="esName" placeholder="请输入评测集名称" value="{name_value}">
       </div>
       <div class="fg-row">
-        <div class="fg"><label class="fg-req">版本</label>
+        <div class="fg"><label>版本</label>
           <input type="text" id="esVersion" placeholder="如 v1.0" value="{version_value}">
         </div>
         <div class="fg"><label>场景标签</label>
@@ -7562,6 +7562,11 @@ def _embodied_eval_set_form_page(eval_set=None):
             alert(res.error || '保存失败');
           }}
         }});
+    }}
+
+    // 页面加载时，若为模板模式且已选中模板，主动渲染预览区
+    if (document.querySelector('input[name="esMetricSource"][value="template"]').checked && document.getElementById('esTplSelect').value) {{
+      onTplSelectChange();
     }}
     </script>
     """
