@@ -6767,7 +6767,7 @@ def embodied_eval_prompts():
                     <td>{p["creator"]}</td>
                     <td class="actions-cell">
                         <a href="javascript:void(0)" onclick="alert('复制功能：将复制 Prompt ID {prompt_id} 的数据（待实现）')">复制</a>
-                        <a href="javascript:void(0)" onclick="if(confirm('确定删除该 Prompt？')) alert('调用 DELETE /api/embodied-eval/prompts/{prompt_id}（下个 Task 实现）')">删除</a>
+                        <a href="javascript:void(0)" onclick="deletePrompt('{prompt_id}')">删除</a>
                     </td>
                 </tr>
                 '''
@@ -6787,7 +6787,7 @@ def embodied_eval_prompts():
       <div class="filter-actions">
         <button class="btn btn-tertiary" onclick="location.reload()">🔄 刷新</button>
         <button class="btn btn-secondary" onclick="alert('导入功能：弹窗上传 JSON 文件（下个 Task 实现）')">导入JSON</button>
-        <button class="btn btn-primary" onclick="alert('新增功能：在表格底部展开编辑行（下个 Task 实现）')">+ 新增提示词</button>
+        <button class="btn btn-primary" onclick="addPromptRow()">+ 新增提示词</button>
       </div>
     </div>
 
@@ -6804,7 +6804,7 @@ def embodied_eval_prompts():
               <th style="width:120px;">操作</th>
             </tr>
           </thead>
-          <tbody>
+          <tbody id="prompt-table-body">
             {table_rows}
           </tbody>
         </table>
@@ -6822,6 +6822,57 @@ def embodied_eval_prompts():
       if (q) params.set('q', q);
       window.location.href = '/model/embodied-eval/prompts' + (params.toString() ? '?' + params.toString() : '');
     }}
+
+    function addPromptRow() {{
+      const tbody = document.getElementById('prompt-table-body');
+      const newRow = document.createElement('tr');
+      newRow.className = 'edit-row';
+      newRow.innerHTML = `
+        <td><input type="text" id="new-scene" placeholder="场景" style="width:100%"></td>
+        <td><input type="text" id="new-task" placeholder="任务" style="width:100%"></td>
+        <td><input type="text" id="new-prompt" placeholder="Prompt文本" style="width:100%"></td>
+        <td><input type="text" id="new-tags" placeholder="标签(逗号分隔)" style="width:100%"></td>
+        <td>-</td>
+        <td>
+          <button class="btn-icon" onclick="saveNewPrompt()" title="保存">✓</button>
+          <button class="btn-icon" onclick="cancelNewPrompt()" title="取消">✕</button>
+        </td>
+      `;
+      tbody.appendChild(newRow);
+    }}
+
+    function saveNewPrompt() {{
+      const scene = document.getElementById('new-scene').value;
+      const task = document.getElementById('new-task').value;
+      const prompt = document.getElementById('new-prompt').value;
+      const tagsStr = document.getElementById('new-tags').value;
+
+      if (!scene || !task || !prompt) {{
+        alert('场景、任务、Prompt 为必填项');
+        return;
+      }}
+
+      const tags = tagsStr.split(',').map(t => t.trim()).filter(t => t);
+
+      fetch('/api/embodied-eval/prompts', {{
+        method: 'POST',
+        headers: {{'Content-Type': 'application/json'}},
+        body: JSON.stringify({{scene, task, prompt, tags}})
+      }}).then(res => res.json())
+        .then(() => window.location.reload());
+    }}
+
+    function cancelNewPrompt() {{
+      const editRow = document.querySelector('.edit-row');
+      if (editRow) editRow.remove();
+    }}
+
+    function deletePrompt(id) {{
+      if (confirm('确定删除该 Prompt？')) {{
+        fetch('/api/embodied-eval/prompts/' + id, {{ method: 'DELETE' }})
+          .then(() => window.location.reload());
+      }}
+    }}
     </script>
     """
 
@@ -6832,6 +6883,32 @@ def embodied_eval_prompts():
         module="model",
         breadcrumb='模型平台 / 具身评测 / <b>提示词库</b>'
     )
+
+
+@app.route("/api/embodied-eval/prompts", methods=["POST"])
+def api_embodied_prompts_create():
+    """创建新Prompt"""
+    data = request.json
+    new_id = f"ep{len(EMBODIED_PROMPTS) + 1:03d}"
+    new_prompt = {
+        "id": new_id,
+        "scene": data.get("scene", ""),
+        "task": data.get("task", ""),
+        "prompt": data.get("prompt", ""),
+        "tags": data.get("tags", []),
+        "creator": "Current User",
+        "created_at": "2026-08-06"
+    }
+    EMBODIED_PROMPTS.append(new_prompt)
+    return jsonify({"ok": True, "id": new_id})
+
+
+@app.route("/api/embodied-eval/prompts/<prompt_id>", methods=["DELETE"])
+def api_embodied_prompts_delete(prompt_id):
+    """删除Prompt"""
+    global EMBODIED_PROMPTS
+    EMBODIED_PROMPTS = [p for p in EMBODIED_PROMPTS if p["id"] != prompt_id]
+    return jsonify({"ok": True})
 
 
 # ── 评测 · Benchmark ──
