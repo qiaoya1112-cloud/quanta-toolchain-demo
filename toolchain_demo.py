@@ -785,11 +785,11 @@ PLATFORMS = {
                 ("/model/eval/evaluate2",    "工作台",   "&#9878;", "待定"),
             ]),
             ("具身评测", [
-                ("/model/embodied-eval/prompts",     "提示词库",      "&#128221;", "新增"),
-                ("/model/embodied-eval/metrics",     "Metric 模板",   "&#128202;", "新增"),
-                ("/model/embodied-eval/sets",        "评测集",        "&#128203;", "新增"),
+                ("/model/embodied-eval/prompts",     "提示词库",      "&#9889;", "新增"),
+                ("/model/embodied-eval/metrics",     "Metric 模板",   "&#9673;", "新增"),
+                ("/model/embodied-eval/sets",        "评测集",        "&#9830;", "新增"),
                 ("/model/embodied-eval/tasks",       "评测任务",      "&#9881;",  "新增"),
-                ("/model/embodied-eval/segments",    "评测记录",      "&#128196;", "新增"),
+                ("/model/embodied-eval/segments",    "评测记录",      "&#9744;", "新增"),
             ]),
             ("公共配置", [
                 ("/model/eval/benchmarks",   "Benchmark 管理", "&#9776;", "优化"),
