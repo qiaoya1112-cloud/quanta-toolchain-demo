@@ -575,6 +575,148 @@ BOOKINGS = [
      "start": "2026-06-17 10:00", "end": "2026-06-17 16:00", "status": "approved"},
 ]
 
+# ── 具身评测模块 Mock 数据 ──
+
+# 提示词库
+EMBODIED_PROMPTS = [
+    {"id": "ep001", "scene": "冰箱", "task": "冰柜任务", "prompt": "打开冰柜门",
+     "tags": ["开门动作"], "creator": "Lance Li", "created_at": "2026-06-10"},
+    {"id": "ep002", "scene": "冰箱", "task": "冰柜任务", "prompt": "放置可乐到第二层",
+     "tags": ["放置"], "creator": "Lance Li", "created_at": "2026-06-10"},
+    {"id": "ep003", "scene": "冰箱", "task": "冰柜任务", "prompt": "关闭冰柜门",
+     "tags": ["开门动作"], "creator": "Lance Li", "created_at": "2026-06-10"},
+    {"id": "ep004", "scene": "洗碗机", "task": "洗碗任务", "prompt": "拉开洗碗机门",
+     "tags": ["开门动作"], "creator": "Rick Guo", "created_at": "2026-06-12"},
+    {"id": "ep005", "scene": "洗碗机", "task": "洗碗任务", "prompt": "放置碗碟",
+     "tags": ["放置"], "creator": "Rick Guo", "created_at": "2026-06-12"},
+    {"id": "ep006", "scene": "桌面", "task": "整理任务", "prompt": "整齐摆放书籍",
+     "tags": ["整理"], "creator": "Lance Li", "created_at": "2026-06-15"},
+]
+
+# Metric 模板
+EMBODIED_METRIC_TEMPLATES = [
+    {
+        "id": "emt001",
+        "name": "基础能力评测 5 项",
+        "fields": [
+            {"name": "碰撞次数", "type": "integer"},
+            {"name": "执行状态", "type": "enum", "options": ["success", "timeout", "error"]},
+            {"name": "耗时", "type": "float"},
+            {"name": "成功率", "type": "percentage"},
+            {"name": "是否重试", "type": "boolean"},
+        ],
+        "created_at": "2026-06-01",
+    },
+    {
+        "id": "emt002",
+        "name": "稳定性测试 3 项",
+        "fields": [
+            {"name": "执行次数", "type": "integer"},
+            {"name": "方差", "type": "float"},
+            {"name": "稳定性等级", "type": "enum", "options": ["高", "中", "低"]},
+        ],
+        "created_at": "2026-06-05",
+    },
+]
+
+# 评测集
+EMBODIED_EVAL_SETS = [
+    {
+        "id": "ees001",
+        "name": "厨房基础能力 v1.0",
+        "version": "v1.0",
+        "is_benchmark": True,
+        "scene_tags": ["冰箱", "洗碗机"],
+        "description": "厨房场景基础动作能力评测",
+        "metric_template_id": "emt001",
+        "custom_metrics": [],
+        "prompts": [
+            {
+                "scene": "冰箱",
+                "task": "冰柜任务",
+                "items": [
+                    {"prompt_id": "ep001", "text": "打开冰柜门", "edited": False},
+                    {"prompt_id": "ep002", "text": "放置可乐到第二层（已编辑版本）", "edited": True},
+                    {"prompt_id": None, "text": "关闭冰柜门", "edited": False},
+                ],
+            },
+            {
+                "scene": "洗碗机",
+                "task": "洗碗任务",
+                "items": [
+                    {"prompt_id": "ep004", "text": "拉开洗碗机门", "edited": False},
+                    {"prompt_id": "ep005", "text": "放置碗碟", "edited": False},
+                ],
+            },
+        ],
+        "created_at": "2026-06-10",
+    },
+]
+
+# 评测任务
+EMBODIED_EVAL_TASKS = [
+    {
+        "id": "eet001",
+        "name": "Spirit v1.6 基础能力测试",
+        "eval_set_id": "ees001",
+        "models": [
+            {"name": "Spirit_v1.6", "version": "ckpt_40k", "ckpt_path": "/models/spirit/ckpt40k", "code_branch": "release/1.0"},
+            {"name": "Spirit_v1.6_ctrl", "version": "ckpt_45k", "ckpt_path": "/models/spirit/ckpt45k", "code_branch": "feature/control"},
+        ],
+        "exec_params": {"repeat_count": 3, "timeout": 300},
+        "status": "completed",
+        "created_at": "2026-06-12",
+        "started_at": "2026-06-12 10:00",
+        "ended_at": "2026-06-12 15:30",
+    },
+]
+
+# Segment 记录
+EMBODIED_SEGMENTS = [
+    {
+        "segment_id": "eseg001",
+        "task_id": "eet001",
+        "task_name": "Spirit v1.6 基础能力测试",
+        "eval_set_id": "ees001",
+        "prompt_id": "ep001",
+        "prompt_text": "打开冰柜门",
+        "scene": "冰箱",
+        "task_group": "冰柜任务",
+        "policy_name": "Spirit_v1.6",
+        "policy_version": "ckpt_40k",
+        "repeat_index": 1,
+        "repeat_total": 3,
+        "metrics": {"碰撞次数": 0, "执行状态": "success", "耗时": 12.5, "成功率": 100.0, "是否重试": False},
+        "status": "completed",
+        "is_badcase": False,
+        "video_url": "/mock/video_eseg001.mp4",
+        "robot_state_file": "/mock/robot_eseg001.parquet",
+        "moz_trace_file": "/mock/moztrace_eseg001.json",
+        "created_at": "2026-06-12 10:15:23",
+    },
+    {
+        "segment_id": "eseg002",
+        "task_id": "eet001",
+        "task_name": "Spirit v1.6 基础能力测试",
+        "eval_set_id": "ees001",
+        "prompt_id": "ep001",
+        "prompt_text": "打开冰柜门",
+        "scene": "冰箱",
+        "task_group": "冰柜任务",
+        "policy_name": "Spirit_v1.6",
+        "policy_version": "ckpt_40k",
+        "repeat_index": 2,
+        "repeat_total": 3,
+        "metrics": {"碰撞次数": 1, "执行状态": "timeout", "耗时": 300.0, "成功率": 0.0, "是否重试": True},
+        "status": "timeout",
+        "is_badcase": True,
+        "video_url": "/mock/video_eseg002.mp4",
+        "robot_state_file": "/mock/robot_eseg002.parquet",
+        "moz_trace_file": "/mock/moztrace_eseg002.json",
+        "created_at": "2026-06-12 10:20:45",
+    },
+]
+
 
 # ════════════════════════════════════════════════════════════════
 # Section 2: Platform Config (定义 4 个平台的元信息 + 左侧栏)
@@ -641,6 +783,13 @@ PLATFORMS = {
                 ("/model/eval/tasks",        "评测任务", "&#9881;", "待定"),
                 ("/model/eval/eval-records", "评测结果", "&#9776;", "待定"),
                 ("/model/eval/evaluate2",    "工作台",   "&#9878;", "待定"),
+            ]),
+            ("具身评测", [
+                ("/model/embodied-eval/prompts",     "提示词库",      "&#128221;", "新增"),
+                ("/model/embodied-eval/metrics",     "Metric 模板",   "&#128202;", "新增"),
+                ("/model/embodied-eval/sets",        "评测集",        "&#128203;", "新增"),
+                ("/model/embodied-eval/tasks",       "评测任务",      "&#9881;",  "新增"),
+                ("/model/embodied-eval/segments",    "评测记录",      "&#128196;", "新增"),
             ]),
             ("公共配置", [
                 ("/model/eval/benchmarks",   "Benchmark 管理", "&#9776;", "优化"),
