@@ -8832,10 +8832,8 @@ def embodied_eval_segment_detail(segment_id):
     task_link = f'<a href="/model/embodied-eval/tasks/{seg["task_id"]}">{html.escape(seg.get("task_name", "—"))}</a>'
     eval_set_link = f'<a href="/model/embodied-eval/sets/{seg["eval_set_id"]}/edit">评测集 {html.escape(seg["eval_set_id"])}</a>'
 
-    # Calculate execution time if available
+    # Mock data doesn't have start/end times, so execution time is not available
     exec_time = "—"
-    if seg.get("created_at"):
-        exec_time = "—"  # Mock data doesn't have start/end times
 
     tab1_content = f"""
     <div class="bi-info-grid" style="grid-template-columns:repeat(4,1fr);">
