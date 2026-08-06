@@ -28,7 +28,7 @@ import re
 import sys
 import json
 from urllib.parse import quote
-from flask import Flask, render_template_string, request, redirect, jsonify
+from flask import Flask, render_template_string, request, redirect, jsonify, make_response
 
 app = Flask(__name__)
 app.secret_key = "embodied-toolchain-mvp-demo"
@@ -1183,6 +1183,9 @@ select option:disabled { color:rgba(0,0,0,0.32); }
 .qa-warn { color:#d48806; } .qa-warn::before { background:#faad14; }
 .qa-fail { color:#cf1322; } .qa-fail::before { background:#ff4d4f; }
 .qa-pend { color:#8c8c8c; } .qa-pend::before { background:#bfbfbf; }
+
+/* ── BadCase Badge ── */
+.badcase-badge { display:inline-block; background:#fff1f0; color:#ff4d4f; border:1px solid #ffa39e; padding:2px 8px; border-radius:4px; font-size:12px; font-weight:500; }
 
 /* ── Progress ── */
 .bar { display:flex; align-items:center; gap:10px; min-width:140px; }
@@ -8542,6 +8545,259 @@ def api_embodied_tasks_delete(task_id):
     global EMBODIED_EVAL_TASKS
     EMBODIED_EVAL_TASKS = [t for t in EMBODIED_EVAL_TASKS if t["id"] != task_id]
     return jsonify({"ok": True})
+
+
+# ── 评测 · Segment 记录 ──
+
+@app.route("/model/embodied-eval/segments")
+def embodied_eval_segments():
+    """评测记录（Segment）列表"""
+    task_id = request.args.get("task_id", "")
+    status = request.args.get("status", "")
+    badcase_only = request.args.get("badcase", "") == "1"
+    search_query = request.args.get("q", "").lower()
+
+    # Filter segments
+    filtered = EMBODIED_SEGMENTS
+    if task_id:
+        filtered = [s for s in filtered if s["task_id"] == task_id]
+    if status:
+        filtered = [s for s in filtered if s["status"] == status]
+    if badcase_only:
+        filtered = [s for s in filtered if s.get("is_badcase", False)]
+    if search_query:
+        filtered = [s for s in filtered if search_query in s.get("prompt_text", "").lower()]
+
+    # Build task options for filter
+    task_options = '<option value="">全部任务</option>'
+    for t in EMBODIED_EVAL_TASKS:
+        selected = 'selected' if t["id"] == task_id else ''
+        task_options += f'<option value="{t["id"]}" {selected}>{html.escape(t["name"])}</option>'
+
+    # Build status options
+    status_options = '<option value="">全部状态</option>'
+    status_list = [
+        ("completed", "成功"),
+        ("timeout", "超时"),
+        ("error", "错误"),
+        ("aborted", "中止")
+    ]
+    for st_val, st_label in status_list:
+        selected = 'selected' if st_val == status else ''
+        status_options += f'<option value="{st_val}" {selected}>{st_label}</option>'
+
+    # Badcase checkbox
+    badcase_checked = 'checked' if badcase_only else ''
+
+    # Build table rows
+    rows = ""
+    if filtered:
+        for seg in filtered:
+            # Status badge
+            seg_status = seg.get("status", "completed")
+            status_colors = {
+                "completed": "qa-pass",
+                "timeout": "qa-warn",
+                "error": "qa-fail",
+                "aborted": "qa-pend"
+            }
+            status_labels = {
+                "completed": "成功",
+                "timeout": "超时",
+                "error": "错误",
+                "aborted": "中止"
+            }
+            status_class = status_colors.get(seg_status, "qa-pend")
+            status_label = status_labels.get(seg_status, seg_status)
+            status_html = f'<span class="qa {status_class}">{status_label}</span>'
+
+            # BadCase badge
+            is_badcase = seg.get("is_badcase", False)
+            if is_badcase:
+                badcase_html = f'<span class="badcase-badge" onclick="toggleBadCase(\'{seg["segment_id"]}\', event)" style="cursor:pointer;">⚠ BadCase</span>'
+            else:
+                badcase_html = f'<span style="color:rgba(0,0,0,0.25);cursor:pointer;" onclick="toggleBadCase(\'{seg["segment_id"]}\', event)">—</span>'
+
+            # Truncate prompt
+            prompt_text = seg.get("prompt_text", "")
+            prompt_display = html.escape(prompt_text[:40] + "..." if len(prompt_text) > 40 else prompt_text)
+
+            # Policy version
+            policy_str = f'{seg.get("policy_name", "—")} {seg.get("policy_version", "")}'
+
+            # Repeat
+            repeat_str = f'{seg.get("repeat_index", "—")}/{seg.get("repeat_total", "—")}'
+
+            rows += f"""<tr>
+              <td class="mono">{html.escape(seg["segment_id"])}</td>
+              <td>{html.escape(seg.get("task_name", "—"))}</td>
+              <td title="{html.escape(prompt_text)}">{prompt_display}</td>
+              <td class="mono">{html.escape(policy_str)}</td>
+              <td class="mono">{repeat_str}</td>
+              <td>{status_html}</td>
+              <td>{badcase_html}</td>
+              <td class="muted mono">{seg.get("created_at", "")}</td>
+              <td class="actions-cell"><a onclick="alert('详情页待实现(Task 9)')">查看详情</a></td>
+            </tr>"""
+    else:
+        rows = '<tr><td colspan="9" style="text-align:center;padding:48px;color:rgba(0,0,0,0.45);">暂无数据</td></tr>'
+
+    content = f"""
+    <div class="filter-bar">
+      <select id="taskSelect" onchange="applyFilters()">
+        {task_options}
+      </select>
+      <select id="statusSelect" onchange="applyFilters()">
+        {status_options}
+      </select>
+      <label style="display:flex;align-items:center;gap:6px;font-size:13px;white-space:nowrap;">
+        <input type="checkbox" id="badcaseCheck" onchange="applyFilters()" {badcase_checked}>
+        仅显示 BadCase
+      </label>
+      <input id="searchInput" class="grow" type="text" placeholder="🔍 搜索 Prompt 文本..." value="{html.escape(search_query)}" onkeypress="if(event.key==='Enter') applyFilters()">
+      <div class="filter-actions">
+        <button class="btn btn-tertiary" onclick="location.reload()">🔄 刷新</button>
+        <button class="btn btn-primary" onclick="exportCSV()">导出 CSV</button>
+      </div>
+    </div>
+
+    <div class="card" style="padding:0;overflow:hidden;">
+      <div class="table-wrap">
+        <table class="ant-table">
+          <thead>
+            <tr>
+              <th style="width:100px;">Segment ID</th>
+              <th style="width:180px;">评测任务</th>
+              <th>Prompt</th>
+              <th style="width:140px;">策略版本</th>
+              <th style="width:80px;">重复次</th>
+              <th style="width:90px;">状态</th>
+              <th style="width:100px;">BadCase</th>
+              <th style="width:140px;">创建时间</th>
+              <th style="width:120px;">操作</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <script>
+    function applyFilters() {{
+      var taskId = document.getElementById('taskSelect').value;
+      var status = document.getElementById('statusSelect').value;
+      var badcase = document.getElementById('badcaseCheck').checked ? '1' : '';
+      var q = document.getElementById('searchInput').value;
+      var params = new URLSearchParams();
+      if (taskId) params.set('task_id', taskId);
+      if (status) params.set('status', status);
+      if (badcase) params.set('badcase', badcase);
+      if (q) params.set('q', q);
+      window.location.href = '/model/embodied-eval/segments?' + params.toString();
+    }}
+
+    function exportCSV() {{
+      var taskId = document.getElementById('taskSelect').value;
+      var status = document.getElementById('statusSelect').value;
+      var badcase = document.getElementById('badcaseCheck').checked ? '1' : '';
+      var q = document.getElementById('searchInput').value;
+      var params = new URLSearchParams();
+      if (taskId) params.set('task_id', taskId);
+      if (status) params.set('status', status);
+      if (badcase) params.set('badcase', badcase);
+      if (q) params.set('q', q);
+      window.location.href = '/api/embodied-eval/segments/export?' + params.toString();
+    }}
+
+    function toggleBadCase(segmentId, event) {{
+      event.stopPropagation();
+      fetch('/api/embodied-eval/segments/' + segmentId + '/badcase', {{
+        method: 'POST'
+      }})
+      .then(function(res) {{ return res.json(); }})
+      .then(function(data) {{
+        if (data.ok) {{
+          location.reload();
+        }} else {{
+          alert('操作失败: ' + (data.error || '未知错误'));
+        }}
+      }})
+      .catch(function(err) {{
+        alert('操作失败: ' + err.message);
+      }});
+    }}
+    </script>
+    """
+
+    return render_page(
+        title="评测记录 - 具身评测",
+        content=content,
+        active="/model/embodied-eval/segments",
+        module="model",
+        breadcrumb='模型平台 / 具身评测 / <b>评测记录</b>'
+    )
+
+
+@app.route("/api/embodied-eval/segments/export")
+def api_embodied_segments_export():
+    """导出 Segment 记录为 CSV"""
+    import csv
+    from io import StringIO
+
+    task_id = request.args.get("task_id", "")
+    status = request.args.get("status", "")
+    badcase_only = request.args.get("badcase", "") == "1"
+    search_query = request.args.get("q", "").lower()
+
+    # Filter segments (same logic as list page)
+    filtered = EMBODIED_SEGMENTS
+    if task_id:
+        filtered = [s for s in filtered if s["task_id"] == task_id]
+    if status:
+        filtered = [s for s in filtered if s["status"] == status]
+    if badcase_only:
+        filtered = [s for s in filtered if s.get("is_badcase", False)]
+    if search_query:
+        filtered = [s for s in filtered if search_query in s.get("prompt_text", "").lower()]
+
+    # Generate CSV
+    output = StringIO()
+    fieldnames = ["segment_id", "task_id", "task_name", "prompt", "policy", "repeat_index",
+                  "status", "is_badcase", "metrics", "created_at"]
+    writer = csv.DictWriter(output, fieldnames=fieldnames)
+    writer.writeheader()
+
+    for seg in filtered:
+        policy_str = f'{seg.get("policy_name", "")} {seg.get("policy_version", "")}'
+        writer.writerow({
+            "segment_id": seg.get("segment_id", ""),
+            "task_id": seg.get("task_id", ""),
+            "task_name": seg.get("task_name", ""),
+            "prompt": seg.get("prompt_text", ""),
+            "policy": policy_str,
+            "repeat_index": f'{seg.get("repeat_index", "")}/{seg.get("repeat_total", "")}',
+            "status": seg.get("status", ""),
+            "is_badcase": seg.get("is_badcase", False),
+            "metrics": str(seg.get("metrics", {})),
+            "created_at": seg.get("created_at", "")
+        })
+
+    response = make_response(output.getvalue())
+    response.headers["Content-Disposition"] = "attachment; filename=segments_export.csv"
+    response.headers["Content-Type"] = "text/csv; charset=utf-8"
+    return response
+
+
+@app.route("/api/embodied-eval/segments/<segment_id>/badcase", methods=["POST"])
+def api_embodied_segments_toggle_badcase(segment_id):
+    """切换 Segment 的 BadCase 标记"""
+    for seg in EMBODIED_SEGMENTS:
+        if seg["segment_id"] == segment_id:
+            seg["is_badcase"] = not seg.get("is_badcase", False)
+            return jsonify({"ok": True, "is_badcase": seg["is_badcase"]})
+    return jsonify({"ok": False, "error": "Segment not found"}), 404
 
 
 # ── 评测 · Benchmark ──
