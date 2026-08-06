@@ -8637,7 +8637,7 @@ def embodied_eval_segments():
               <td>{status_html}</td>
               <td>{badcase_html}</td>
               <td class="muted mono">{seg.get("created_at", "")}</td>
-              <td class="actions-cell"><a onclick="alert('详情页待实现(Task 9)')">查看详情</a></td>
+              <td class="actions-cell"><a href="/model/embodied-eval/segments/{seg['segment_id']}">查看详情</a></td>
             </tr>"""
     else:
         rows = '<tr><td colspan="9" style="text-align:center;padding:48px;color:rgba(0,0,0,0.45);">暂无数据</td></tr>'
@@ -8798,6 +8798,373 @@ def api_embodied_segments_toggle_badcase(segment_id):
             seg["is_badcase"] = not seg.get("is_badcase", False)
             return jsonify({"ok": True, "is_badcase": seg["is_badcase"]})
     return jsonify({"ok": False, "error": "Segment not found"}), 404
+
+
+@app.route("/model/embodied-eval/segments/<segment_id>")
+def embodied_eval_segment_detail(segment_id):
+    """Segment 详情页"""
+    seg = next((s for s in EMBODIED_SEGMENTS if s["segment_id"] == segment_id), None)
+    if seg is None:
+        return redirect("/model/embodied-eval/segments")
+
+    # Status badge
+    seg_status = seg.get("status", "completed")
+    status_colors = {
+        "completed": "qa-pass",
+        "timeout": "qa-warn",
+        "error": "qa-fail",
+        "aborted": "qa-pend"
+    }
+    status_labels = {
+        "completed": "成功",
+        "timeout": "超时",
+        "error": "错误",
+        "aborted": "中止"
+    }
+    status_class = status_colors.get(seg_status, "qa-pend")
+    status_label = status_labels.get(seg_status, seg_status)
+    status_html = f'<span class="qa {status_class}">{status_label}</span>'
+
+    # BadCase checkbox
+    badcase_checked = 'checked' if seg.get("is_badcase", False) else ''
+
+    # Tab 1: 基本信息
+    task_link = f'<a href="/model/embodied-eval/tasks/{seg["task_id"]}">{html.escape(seg.get("task_name", "—"))}</a>'
+    eval_set_link = f'<a href="/model/embodied-eval/sets/{seg["eval_set_id"]}/edit">评测集 {html.escape(seg["eval_set_id"])}</a>'
+
+    # Calculate execution time if available
+    exec_time = "—"
+    if seg.get("created_at"):
+        exec_time = "—"  # Mock data doesn't have start/end times
+
+    tab1_content = f"""
+    <div class="bi-info-grid" style="grid-template-columns:repeat(4,1fr);">
+      <div class="bi-info-item">
+        <div class="bi-info-label">Segment ID</div>
+        <div class="bi-info-value mono">{html.escape(seg["segment_id"])}</div>
+      </div>
+      <div class="bi-info-item">
+        <div class="bi-info-label">所属评测任务</div>
+        <div class="bi-info-value">{task_link}</div>
+      </div>
+      <div class="bi-info-item">
+        <div class="bi-info-label">所属评测集</div>
+        <div class="bi-info-value">{eval_set_link}</div>
+      </div>
+      <div class="bi-info-item">
+        <div class="bi-info-label">状态</div>
+        <div class="bi-info-value">{status_html}</div>
+      </div>
+    </div>
+
+    <div class="bi-info-grid" style="grid-template-columns:repeat(4,1fr);margin-top:14px;">
+      <div class="bi-info-item">
+        <div class="bi-info-label">BadCase 标记</div>
+        <div class="bi-info-value">{"是" if seg.get("is_badcase", False) else "否"}</div>
+      </div>
+      <div class="bi-info-item">
+        <div class="bi-info-label">策略名称</div>
+        <div class="bi-info-value">{html.escape(seg.get("policy_name", "—"))}</div>
+      </div>
+      <div class="bi-info-item">
+        <div class="bi-info-label">策略版本</div>
+        <div class="bi-info-value mono">{html.escape(seg.get("policy_version", "—"))}</div>
+      </div>
+      <div class="bi-info-item">
+        <div class="bi-info-label">重复次数</div>
+        <div class="bi-info-value">{seg.get("repeat_index", "—")}/{seg.get("repeat_total", "—")}</div>
+      </div>
+    </div>
+
+    <div class="bi-info-grid" style="grid-template-columns:repeat(3,1fr);margin-top:14px;">
+      <div class="bi-info-item">
+        <div class="bi-info-label">创建时间</div>
+        <div class="bi-info-value mono">{seg.get("created_at", "—")}</div>
+      </div>
+      <div class="bi-info-item">
+        <div class="bi-info-label">执行时长</div>
+        <div class="bi-info-value">{exec_time}</div>
+      </div>
+      <div class="bi-info-item">
+        <div class="bi-info-label">场景</div>
+        <div class="bi-info-value">{html.escape(seg.get("scene", "—"))}</div>
+      </div>
+    </div>
+    """
+
+    # Tab 2: 视频与轨迹
+    video_url = seg.get("video_url", "")
+    video_html = ""
+    if video_url:
+        video_html = f"""
+        <video controls style="width:100%; max-width:800px; border-radius:8px; border:1px solid #f0f0f0;">
+          <source src="{html.escape(video_url)}" type="video/mp4">
+          您的浏览器不支持视频播放
+        </video>
+        """
+    else:
+        video_html = '<p style="color:rgba(0,0,0,0.45);padding:48px;text-align:center;">无视频数据</p>'
+
+    robot_state_file = seg.get("robot_state_file", "")
+    moz_trace_file = seg.get("moz_trace_file", "")
+
+    tab2_content = f"""
+    <div style="margin-bottom:24px;">
+      <h4 style="margin:0 0 12px;">视频回放</h4>
+      {video_html}
+    </div>
+
+    <div style="margin-top:24px;">
+      <h4 style="margin:0 0 12px;">轨迹数据</h4>
+      <div class="bi-info-grid" style="grid-template-columns:1fr;">
+        <div class="bi-info-item">
+          <div class="bi-info-label">机器人状态文件</div>
+          <div class="bi-info-value mono" style="font-size:12px;">{html.escape(robot_state_file) if robot_state_file else "—"}</div>
+        </div>
+        <div class="bi-info-item">
+          <div class="bi-info-label">Moz Trace 文件</div>
+          <div class="bi-info-value mono" style="font-size:12px;">{html.escape(moz_trace_file) if moz_trace_file else "—"}</div>
+        </div>
+      </div>
+      <p style="margin-top:12px;color:rgba(0,0,0,0.45);font-size:13px;">轨迹可视化功能待实现</p>
+    </div>
+    """
+
+    # Tab 3: Metric 详情
+    metrics = seg.get("metrics", {})
+    metrics_rows = ""
+    if metrics:
+        for metric_name, metric_value in metrics.items():
+            # Format value
+            if isinstance(metric_value, bool):
+                display_value = "是" if metric_value else "否"
+            elif isinstance(metric_value, float):
+                display_value = f"{metric_value:.2f}"
+            else:
+                display_value = str(metric_value)
+
+            metrics_rows += f"""<tr>
+              <td style="font-weight:500;">{html.escape(metric_name)}</td>
+              <td class="mono">{html.escape(display_value)}</td>
+            </tr>"""
+    else:
+        metrics_rows = '<tr><td colspan="2" style="text-align:center;padding:48px;color:rgba(0,0,0,0.45);">无 Metric 数据</td></tr>'
+
+    tab3_content = f"""
+    <div class="table-wrap">
+      <table class="ant-table">
+        <thead>
+          <tr>
+            <th style="width:40%;">Metric 名称</th>
+            <th>值</th>
+          </tr>
+        </thead>
+        <tbody>
+          {metrics_rows}
+        </tbody>
+      </table>
+    </div>
+    """
+
+    # Tab 4: Prompt 与配置
+    prompt_id = seg.get("prompt_id")
+    prompt_info = next((p for p in EMBODIED_PROMPTS if p["id"] == prompt_id), None) if prompt_id else None
+
+    prompt_section = ""
+    if prompt_info:
+        prompt_section = f"""
+        <div class="bi-info-grid" style="grid-template-columns:repeat(3,1fr);">
+          <div class="bi-info-item">
+            <div class="bi-info-label">场景</div>
+            <div class="bi-info-value">{html.escape(prompt_info.get("scene", "—"))}</div>
+          </div>
+          <div class="bi-info-item">
+            <div class="bi-info-label">任务分组</div>
+            <div class="bi-info-value">{html.escape(prompt_info.get("task", "—"))}</div>
+          </div>
+          <div class="bi-info-item">
+            <div class="bi-info-label">Prompt ID</div>
+            <div class="bi-info-value mono">{html.escape(prompt_id)}</div>
+          </div>
+        </div>
+        <div style="margin-top:14px;">
+          <div style="font-size:12.5px;color:rgba(0,0,0,0.5);margin-bottom:8px;font-weight:500;">Prompt 文本</div>
+          <pre style="background:#f5f5f5;border:1px solid #e5e7eb;border-radius:8px;padding:12px;font-size:13px;line-height:1.6;margin:0;overflow-x:auto;">{html.escape(seg.get("prompt_text", ""))}</pre>
+        </div>
+        """
+    else:
+        prompt_section = f"""
+        <div style="margin-top:14px;">
+          <div style="font-size:12.5px;color:rgba(0,0,0,0.5);margin-bottom:8px;font-weight:500;">Prompt 文本</div>
+          <pre style="background:#f5f5f5;border:1px solid #e5e7eb;border-radius:8px;padding:12px;font-size:13px;line-height:1.6;margin:0;overflow-x:auto;">{html.escape(seg.get("prompt_text", ""))}</pre>
+        </div>
+        """
+
+    # Eval set info
+    eval_set = next((s for s in EMBODIED_EVAL_SETS if s["id"] == seg["eval_set_id"]), None)
+    eval_set_section = ""
+    if eval_set:
+        metric_template_id = eval_set.get("metric_template_id", "—")
+        metric_template = next((t for t in EMBODIED_METRIC_TEMPLATES if t["id"] == metric_template_id), None) if metric_template_id != "—" else None
+        metric_template_name = metric_template["name"] if metric_template else "—"
+
+        eval_set_section = f"""
+        <div style="margin-top:24px;">
+          <h4 style="margin:0 0 12px;">评测集配置</h4>
+          <div class="bi-info-grid" style="grid-template-columns:repeat(3,1fr);">
+            <div class="bi-info-item">
+              <div class="bi-info-label">评测集名称</div>
+              <div class="bi-info-value">{html.escape(eval_set.get("name", "—"))}</div>
+            </div>
+            <div class="bi-info-item">
+              <div class="bi-info-label">版本</div>
+              <div class="bi-info-value mono">{html.escape(eval_set.get("version", "—"))}</div>
+            </div>
+            <div class="bi-info-item">
+              <div class="bi-info-label">Metric 模板</div>
+              <div class="bi-info-value">{html.escape(metric_template_name)}</div>
+            </div>
+          </div>
+        </div>
+        """
+
+    tab4_content = f"""
+    <h4 style="margin:0 0 12px;">Prompt 信息</h4>
+    {prompt_section}
+    {eval_set_section}
+    """
+
+    # Build page content with tabs
+    content = f"""
+    <div style="margin-bottom:16px;">
+      <h2 style="margin:0 0 8px;font-size:20px;color:rgba(0,0,0,0.88);">Segment 详情</h2>
+      <div style="display:flex;gap:16px;align-items:center;color:rgba(0,0,0,0.45);font-size:13px;">
+        <span>Segment ID: <span class="mono">{html.escape(seg["segment_id"])}</span></span>
+        <span>状态: {status_html}</span>
+      </div>
+    </div>
+
+    <div style="margin-bottom:16px;">
+      <label style="display:inline-flex;align-items:center;gap:8px;cursor:pointer;user-select:none;">
+        <input type="checkbox" id="badcaseCheckbox" {badcase_checked} onchange="toggleBadCase()" style="cursor:pointer;">
+        <span style="font-size:14px;color:rgba(0,0,0,0.85);">标记为 BadCase</span>
+      </label>
+    </div>
+
+    <div class="card" style="padding:0;overflow:hidden;">
+      <div class="tabs-container">
+        <div class="tabs-header">
+          <button class="tab-btn active" onclick="switchSegmentTab(0)">基本信息</button>
+          <button class="tab-btn" onclick="switchSegmentTab(1)">视频与轨迹</button>
+          <button class="tab-btn" onclick="switchSegmentTab(2)">Metric详情</button>
+          <button class="tab-btn" onclick="switchSegmentTab(3)">Prompt与配置</button>
+        </div>
+        <div class="tabs-body">
+          <div class="tab-pane active" id="tab0">
+            {tab1_content}
+          </div>
+          <div class="tab-pane" id="tab1">
+            {tab2_content}
+          </div>
+          <div class="tab-pane" id="tab2">
+            {tab3_content}
+          </div>
+          <div class="tab-pane" id="tab3">
+            {tab4_content}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-top:16px;">
+      <a class="btn" href="/model/embodied-eval/segments?task_id={seg['task_id']}">返回列表</a>
+    </div>
+
+    <style>
+    .tabs-container {{
+      background: #fff;
+    }}
+    .tabs-header {{
+      display: flex;
+      border-bottom: 1px solid #f0f0f0;
+      background: #fafafa;
+    }}
+    .tab-btn {{
+      background: transparent;
+      border: none;
+      padding: 14px 24px;
+      font-size: 14px;
+      color: rgba(0,0,0,0.65);
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      transition: all 0.2s;
+      font-weight: 400;
+    }}
+    .tab-btn:hover {{
+      color: #149DAA;
+    }}
+    .tab-btn.active {{
+      color: #149DAA;
+      font-weight: 500;
+      border-bottom-color: #149DAA;
+      background: #fff;
+    }}
+    .tabs-body {{
+      padding: 24px;
+    }}
+    .tab-pane {{
+      display: none;
+    }}
+    .tab-pane.active {{
+      display: block;
+    }}
+    </style>
+
+    <script>
+    function switchSegmentTab(index) {{
+      document.querySelectorAll('.tab-btn').forEach(function(btn, i) {{
+        if (i === index) {{
+          btn.classList.add('active');
+        }} else {{
+          btn.classList.remove('active');
+        }}
+      }});
+      document.querySelectorAll('.tab-pane').forEach(function(pane, i) {{
+        if (i === index) {{
+          pane.classList.add('active');
+        }} else {{
+          pane.classList.remove('active');
+        }}
+      }});
+    }}
+
+    function toggleBadCase() {{
+      var checked = document.getElementById('badcaseCheckbox').checked;
+      fetch('/api/embodied-eval/segments/{seg["segment_id"]}/badcase', {{
+        method: 'POST'
+      }})
+      .then(function(res) {{ return res.json(); }})
+      .then(function(data) {{
+        if (data.ok) {{
+          window.location.reload();
+        }} else {{
+          alert('操作失败: ' + (data.error || '未知错误'));
+        }}
+      }})
+      .catch(function(err) {{
+        alert('操作失败: ' + err.message);
+      }});
+    }}
+    </script>
+    """
+
+    return render_page(
+        title=f"Segment {seg['segment_id']} - 具身评测",
+        content=content,
+        active="/model/embodied-eval/segments",
+        module="model",
+        breadcrumb=f'模型平台 / 具身评测 / 评测记录 / <b>{seg["segment_id"]}</b>'
+    )
 
 
 # ── 评测 · Benchmark ──
