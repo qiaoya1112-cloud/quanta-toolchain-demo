@@ -2049,6 +2049,13 @@ button.tm-subtab { border:0; background:transparent; font-family:inherit; cursor
 .em-enum-box .tag .em-enum-remove:hover { color:#d4504e; }
 .em-enum-box .btn-add-option { border:1px dashed #149DAA; background:#fff; color:#149DAA; border-radius:12px; padding:2px 10px; font-size:12.5px; cursor:pointer; }
 .em-enum-box .btn-add-option:hover { background:#DEF6F9; }
+/* 评测集: 分区表单 + Benchmark 徽章 */
+.form-section { background:#fff; border:1px solid #f0f0f0; border-radius:8px; padding:20px; margin-bottom:16px; }
+.form-section-title { font-size:15px; font-weight:600; color:#262626; margin-bottom:16px; padding-bottom:8px; border-bottom:1px solid #f0f0f0; }
+.em-benchmark-badge { display:inline-block; background:#fff7e6; color:#d48806; border:1px solid #ffd591; border-radius:4px; padding:2px 8px; font-size:12.5px; font-weight:500; }
+.es-radio-group { display:flex; gap:20px; }
+.es-radio-group label { display:flex; align-items:center; gap:6px; font-size:14px; color:rgba(0,0,0,0.85); cursor:pointer; }
+.es-tpl-preview { border:1px solid #f0f0f0; border-radius:8px; padding:12px; margin-top:10px; background:#fafafa; }
 """
 
 # 将 data_platform / quanta_eval_platform 的 BASE_CSS 拼在前面 — 它们的 chrome 规则会被
@@ -7241,6 +7248,393 @@ def api_embodied_metrics_delete(tpl_id):
     """删除 Metric 模板"""
     global EMBODIED_METRIC_TEMPLATES
     EMBODIED_METRIC_TEMPLATES = [t for t in EMBODIED_METRIC_TEMPLATES if t["id"] != tpl_id]
+    return jsonify({"ok": True})
+
+
+# ── 评测 · 评测集 ──
+
+def _embodied_eval_set_prompt_count(eval_set):
+    return sum(len(group.get("items", [])) for group in eval_set.get("prompts", []))
+
+
+@app.route("/model/embodied-eval/sets")
+def embodied_eval_sets():
+    """评测集列表"""
+    search_query = request.args.get("q", "").lower()
+
+    filtered = EMBODIED_EVAL_SETS
+    if search_query:
+        filtered = [s for s in filtered if search_query in s["name"].lower()]
+
+    rows = ""
+    if filtered:
+        for s in filtered:
+            bm_html = '<span class="em-benchmark-badge">&#11088; Benchmark</span>' if s.get("is_benchmark") else "-"
+            tags_html = " ".join(f'<span class="tag-inline">{html.escape(t)}</span>' for t in s.get("scene_tags", []))
+            prompt_count = _embodied_eval_set_prompt_count(s)
+            rows += f"""<tr>
+              <td><b>{html.escape(s["name"])}</b></td>
+              <td class="mono">{html.escape(s.get("version", ""))}</td>
+              <td>{bm_html}</td>
+              <td>{tags_html}</td>
+              <td class="mono">{prompt_count}</td>
+              <td class="muted mono">{s.get("created_at", "")}</td>
+              <td class="actions-cell">
+                <a onclick="window.location.href='/model/embodied-eval/sets/{s["id"]}/edit'">编辑</a>
+                <a class="danger" onclick="deleteEvalSet('{s["id"]}')">删除</a>
+              </td>
+            </tr>"""
+    else:
+        rows = '<tr><td colspan="7" style="text-align:center;padding:48px;color:rgba(0,0,0,0.45);">暂无数据</td></tr>'
+
+    content = f"""
+    <div class="filter-bar">
+      <input id="searchInput" class="grow" type="text" placeholder="🔍 搜索评测集名称..." value="{html.escape(search_query)}" onkeypress="if(event.key==='Enter') applyFilters()">
+      <div class="filter-actions">
+        <button class="btn btn-tertiary" onclick="location.reload()">🔄 刷新</button>
+        <button class="btn btn-primary" onclick="window.location.href='/model/embodied-eval/sets/create'">+ 新建评测集</button>
+      </div>
+    </div>
+
+    <div class="card" style="padding:0;overflow:hidden;">
+      <div class="table-wrap">
+        <table class="ant-table">
+          <thead>
+            <tr>
+              <th>名称</th>
+              <th style="width:90px;">版本</th>
+              <th style="width:140px;">Benchmark</th>
+              <th style="width:180px;">场景标签</th>
+              <th style="width:100px;">Prompt数量</th>
+              <th style="width:120px;">创建时间</th>
+              <th style="width:120px;">操作</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <script>
+    function applyFilters() {{
+      const q = document.getElementById('searchInput').value;
+      const params = new URLSearchParams();
+      if (q) params.set('q', q);
+      window.location.href = '/model/embodied-eval/sets' + (params.toString() ? '?' + params.toString() : '');
+    }}
+
+    function deleteEvalSet(id) {{
+      if (confirm('确定删除该评测集？')) {{
+        fetch('/api/embodied-eval/sets/' + id, {{ method: 'DELETE' }})
+          .then(() => window.location.reload());
+      }}
+    }}
+    </script>
+    """
+
+    return render_page(
+        title="评测集 - 具身评测",
+        content=content,
+        active="/model/embodied-eval/sets",
+        module="model",
+        breadcrumb='模型平台 / 具身评测 / <b>评测集</b>'
+    )
+
+
+def _embodied_eval_set_form_page(eval_set=None):
+    """创建/编辑评测集表单页, eval_set=None 为创建模式"""
+    is_edit = eval_set is not None
+    set_id = eval_set["id"] if is_edit else ""
+    name_value = html.escape(eval_set["name"]) if is_edit else ""
+    version_value = html.escape(eval_set.get("version", "v1.0")) if is_edit else "v1.0"
+    description_value = html.escape(eval_set.get("description", "")) if is_edit else ""
+    scene_tags_value = ", ".join(eval_set.get("scene_tags", [])) if is_edit else ""
+    is_benchmark_checked = "checked" if (is_edit and eval_set.get("is_benchmark")) else ""
+    metric_template_id = eval_set.get("metric_template_id") if is_edit else None
+    custom_metrics = eval_set.get("custom_metrics", []) if is_edit else []
+    metric_source = "custom" if (is_edit and custom_metrics) else "template"
+    prompts_value = eval_set.get("prompts", []) if is_edit else []
+    title = "编辑评测集" if is_edit else "新建评测集"
+
+    tpl_options = '<option value="">请选择 Metric 模板</option>'
+    for tpl in EMBODIED_METRIC_TEMPLATES:
+        selected = " selected" if tpl["id"] == metric_template_id else ""
+        tpl_options += f'<option value="{tpl["id"]}"{selected}>{html.escape(tpl["name"])}</option>'
+
+    custom_fields_html = "".join(_embodied_metric_field_block_html(f) for f in custom_metrics)
+
+    content = f"""
+    <div class="form-section">
+      <div class="form-section-title">基本信息</div>
+      <div class="fg">
+        <label class="fg-req">名称</label>
+        <input type="text" id="esName" placeholder="请输入评测集名称" value="{name_value}">
+      </div>
+      <div class="fg-row">
+        <div class="fg"><label class="fg-req">版本</label>
+          <input type="text" id="esVersion" placeholder="如 v1.0" value="{version_value}">
+        </div>
+        <div class="fg"><label>场景标签</label>
+          <input type="text" id="esSceneTags" placeholder="逗号分隔, 如: 冰箱, 洗碗机" value="{html.escape(scene_tags_value)}">
+        </div>
+      </div>
+      <div class="fg">
+        <label>描述</label>
+        <textarea id="esDescription" rows="3" placeholder="评测集用途说明...">{description_value}</textarea>
+      </div>
+      <div class="fg">
+        <label><input type="checkbox" id="esIsBenchmark" {is_benchmark_checked}> 标记为 Benchmark</label>
+      </div>
+    </div>
+
+    <div class="form-section">
+      <div class="form-section-title">Metric 配置</div>
+      <div class="es-radio-group">
+        <label><input type="radio" name="esMetricSource" value="template" {"checked" if metric_source == "template" else ""} onchange="onMetricSourceChange()"> 从模板选择</label>
+        <label><input type="radio" name="esMetricSource" value="custom" {"checked" if metric_source == "custom" else ""} onchange="onMetricSourceChange()"> 自定义</label>
+      </div>
+
+      <div id="esTplSection" class="fg" style="margin-top:14px;display:{'none' if metric_source == 'custom' else 'block'};">
+        <label>Metric 模板</label>
+        <select id="esTplSelect" onchange="onTplSelectChange()">
+          {tpl_options}
+        </select>
+        <div id="esTplPreview" class="es-tpl-preview" style="display:none;">
+          <ul class="em-card-fields" id="esTplPreviewList"></ul>
+        </div>
+      </div>
+
+      <div id="esCustomSection" style="margin-top:14px;display:{'block' if metric_source == 'custom' else 'none'};">
+        <div class="em-field-editor" id="esFieldEditor">
+          {custom_fields_html}
+        </div>
+        <div style="margin-top:10px;">
+          <button type="button" class="btn btn-tertiary" onclick="addField()">+ 添加字段</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-section">
+      <div class="form-section-title">Prompt 配置</div>
+      <div id="promptTreeContainer">
+        <p style="color:#8c8c8c;">Prompt 三层树将在此配置（Task 6 实现）</p>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:10px;">
+      <button type="button" class="btn btn-primary" onclick="saveSet()">保存评测集</button>
+      <button type="button" class="btn" onclick="window.location.href='/model/embodied-eval/sets'">取消</button>
+    </div>
+
+    <script>
+    var ES_SET_ID = {json.dumps(set_id)};
+    var ES_IS_EDIT = {json.dumps(is_edit)};
+    var ES_PROMPTS = {json.dumps(prompts_value, ensure_ascii=False)};
+    var ES_METRIC_TEMPLATES = {json.dumps(EMBODIED_METRIC_TEMPLATES, ensure_ascii=False)};
+    var EM_TYPE_LABELS = {json.dumps(EMBODIED_METRIC_TYPE_LABELS, ensure_ascii=False)};
+
+    function onMetricSourceChange() {{
+      var source = document.querySelector('input[name="esMetricSource"]:checked').value;
+      document.getElementById('esTplSection').style.display = (source === 'template') ? 'block' : 'none';
+      document.getElementById('esCustomSection').style.display = (source === 'custom') ? 'block' : 'none';
+    }}
+
+    function onTplSelectChange() {{
+      var tplId = document.getElementById('esTplSelect').value;
+      var preview = document.getElementById('esTplPreview');
+      var list = document.getElementById('esTplPreviewList');
+      if (!tplId) {{
+        preview.style.display = 'none';
+        return;
+      }}
+      var tpl = ES_METRIC_TEMPLATES.find(function(t) {{ return t.id === tplId; }});
+      if (!tpl) {{
+        preview.style.display = 'none';
+        return;
+      }}
+      list.innerHTML = '';
+      tpl.fields.forEach(function(f) {{
+        var li = document.createElement('li');
+        var nameSpan = document.createElement('span');
+        nameSpan.textContent = f.name;
+        var typeSpan = document.createElement('span');
+        typeSpan.className = 'em-field-type';
+        typeSpan.textContent = EM_TYPE_LABELS[f.type] || f.type;
+        li.appendChild(nameSpan);
+        li.appendChild(typeSpan);
+        list.appendChild(li);
+      }});
+      preview.style.display = 'block';
+    }}
+
+    function addField() {{
+      var editor = document.getElementById('esFieldEditor');
+      var wrapper = document.createElement('div');
+      wrapper.innerHTML = {json.dumps(_embodied_metric_field_block_html())};
+      editor.appendChild(wrapper.firstElementChild);
+    }}
+
+    function removeField(btn) {{
+      var block = btn.closest('.em-field-block');
+      block.remove();
+    }}
+
+    function addEnumOption(btn) {{
+      var opt = prompt('请输入枚举选项');
+      if (!opt) return;
+      var enumBox = btn.closest('.em-enum-box');
+      var tag = document.createElement('span');
+      tag.className = 'tag';
+      tag.innerHTML = opt.replace(/</g, '&lt;').replace(/>/g, '&gt;') + '<span class="em-enum-remove" onclick="removeEnumOption(this)">&times;</span>';
+      enumBox.insertBefore(tag, btn);
+    }}
+
+    function removeEnumOption(el) {{
+      el.closest('.tag').remove();
+    }}
+
+    function onFieldTypeChange(select) {{
+      var block = select.closest('.em-field-block');
+      var enumBox = block.querySelector('.em-enum-box');
+      enumBox.style.display = (select.value === 'enum') ? 'flex' : 'none';
+    }}
+
+    function saveSet() {{
+      var name = document.getElementById('esName').value.trim();
+      var version = document.getElementById('esVersion').value.trim();
+      var description = document.getElementById('esDescription').value.trim();
+      var sceneTagsStr = document.getElementById('esSceneTags').value.trim();
+      var sceneTags = sceneTagsStr ? sceneTagsStr.split(',').map(function(t) {{ return t.trim(); }}).filter(function(t) {{ return t; }}) : [];
+      var isBenchmark = document.getElementById('esIsBenchmark').checked;
+      var metricSource = document.querySelector('input[name="esMetricSource"]:checked').value;
+
+      if (!name) {{
+        alert('评测集名称为必填项');
+        return;
+      }}
+
+      var payload = {{
+        name: name,
+        version: version,
+        description: description,
+        scene_tags: sceneTags,
+        is_benchmark: isBenchmark,
+        prompts: ES_PROMPTS
+      }};
+
+      if (metricSource === 'template') {{
+        payload.metric_template_id = document.getElementById('esTplSelect').value || null;
+        payload.custom_metrics = [];
+      }} else {{
+        var blocks = document.querySelectorAll('#esFieldEditor .em-field-block');
+        var fields = [];
+        for (var i = 0; i < blocks.length; i++) {{
+          var block = blocks[i];
+          var fname = block.querySelector('.em-field-name').value.trim();
+          var ftype = block.querySelector('.em-field-type-select').value;
+          if (!fname) continue;
+          var field = {{name: fname, type: ftype}};
+          if (ftype === 'enum') {{
+            var tags = block.querySelectorAll('.em-enum-box .tag');
+            var options = [];
+            tags.forEach(function(t) {{ options.push(t.textContent.replace(/×$/, '').trim()); }});
+            field.options = options;
+          }}
+          fields.push(field);
+        }}
+        payload.metric_template_id = null;
+        payload.custom_metrics = fields;
+      }}
+
+      var url = ES_IS_EDIT ? ('/api/embodied-eval/sets/' + ES_SET_ID) : '/api/embodied-eval/sets';
+      var method = ES_IS_EDIT ? 'PUT' : 'POST';
+      fetch(url, {{
+        method: method,
+        headers: {{'Content-Type': 'application/json'}},
+        body: JSON.stringify(payload)
+      }}).then(res => res.json())
+        .then(res => {{
+          if (res.ok) {{
+            window.location.href = '/model/embodied-eval/sets';
+          }} else {{
+            alert(res.error || '保存失败');
+          }}
+        }});
+    }}
+    </script>
+    """
+
+    return render_page(
+        title=title + " - 具身评测",
+        content=content,
+        active="/model/embodied-eval/sets",
+        module="model",
+        breadcrumb=f'模型平台 / 具身评测 / 评测集 / <b>{title}</b>'
+    )
+
+
+@app.route("/model/embodied-eval/sets/create")
+def embodied_eval_sets_create():
+    """新建评测集"""
+    return _embodied_eval_set_form_page(eval_set=None)
+
+
+@app.route("/model/embodied-eval/sets/<set_id>/edit")
+def embodied_eval_sets_edit(set_id):
+    """编辑评测集"""
+    eval_set = next((s for s in EMBODIED_EVAL_SETS if s["id"] == set_id), None)
+    if eval_set is None:
+        return redirect("/model/embodied-eval/sets")
+    return _embodied_eval_set_form_page(eval_set=eval_set)
+
+
+@app.route("/api/embodied-eval/sets", methods=["POST"])
+def api_embodied_sets_create():
+    """创建评测集"""
+    data = request.json
+    if not data.get("name"):
+        return jsonify({"ok": False, "error": "评测集名称为必填项"}), 400
+
+    existing_ids = [int(s["id"][3:]) for s in EMBODIED_EVAL_SETS if s["id"].startswith("ees")]
+    new_id = f"ees{max(existing_ids, default=0) + 1:03d}"
+
+    new_set = {
+        "id": new_id,
+        "name": data["name"],
+        "version": data.get("version", "v1.0"),
+        "is_benchmark": data.get("is_benchmark", False),
+        "scene_tags": data.get("scene_tags", []),
+        "description": data.get("description", ""),
+        "metric_template_id": data.get("metric_template_id"),
+        "custom_metrics": data.get("custom_metrics", []),
+        "prompts": data.get("prompts", []),
+        "created_at": "2026-08-06"
+    }
+    EMBODIED_EVAL_SETS.append(new_set)
+    return jsonify({"ok": True, "id": new_id})
+
+
+@app.route("/api/embodied-eval/sets/<set_id>", methods=["PUT"])
+def api_embodied_sets_update(set_id):
+    """更新评测集"""
+    data = request.json
+    if not data.get("name"):
+        return jsonify({"ok": False, "error": "评测集名称为必填项"}), 400
+
+    for s in EMBODIED_EVAL_SETS:
+        if s["id"] == set_id:
+            s.update({k: data[k] for k in ["name", "version", "is_benchmark", "scene_tags", "description", "metric_template_id", "custom_metrics", "prompts"] if k in data})
+            break
+    return jsonify({"ok": True})
+
+
+@app.route("/api/embodied-eval/sets/<set_id>", methods=["DELETE"])
+def api_embodied_sets_delete(set_id):
+    """删除评测集"""
+    global EMBODIED_EVAL_SETS
+    EMBODIED_EVAL_SETS = [s for s in EMBODIED_EVAL_SETS if s["id"] != set_id]
     return jsonify({"ok": True})
 
 
