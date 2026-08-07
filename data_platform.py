@@ -1286,12 +1286,14 @@ select option:disabled { color:rgba(0,0,0,0.32); }
 .wf-effective-tag { display:inline-flex; align-items:center; height:22px; padding:0 8px; border-radius:11px; background:#edf8ef; color:#4b9b5f; font-size:11px; font-weight:500; white-space:nowrap; }
 /* ---- 自由画布 (free-form DAG canvas) ---- */
 .wf-stage { display:flex; gap:0; height:calc(100vh - 200px); }
-.wf-canvas { position:relative; flex:1; background:#fafbfc; background-image:radial-gradient(#e1e4e8 1px, transparent 1px); background-size:18px 18px; border:1px solid #f0f0f0; border-radius:8px; overflow:hidden; }
+.wf-canvas { position:relative; flex:1; background:#fafbfc; background-image:radial-gradient(#e1e4e8 1px, transparent 1px); background-size:18px 18px; border:1px solid #f0f0f0; border-radius:8px; overflow:hidden; outline:none; }
 .wf-pan { position:absolute; left:0; top:0; transform-origin:0 0; }
 .wf-edges { position:absolute; left:0; top:0; width:4000px; height:3000px; overflow:visible; pointer-events:none; z-index:1; }
 .wf-edges path.edge { pointer-events:stroke; cursor:pointer; }
 .wf-node { position:absolute; width:240px; box-sizing:border-box; background:#fff; border:1px solid #e8e8e8; border-radius:10px; box-shadow:0 2px 10px rgba(0,0,0,0.06); z-index:2; user-select:none; }
 .wf-node.sel { box-shadow:0 0 0 2px rgba(31,128,160,.12),0 4px 16px rgba(31,128,160,.18); }
+.wf-selection-box { display:none; position:absolute; z-index:6; box-sizing:border-box; border:1px solid #1F80A0; background:rgba(31,128,160,.10); pointer-events:none; }
+.wf-selection-box.active { display:block; }
 .wf-node-head { display:flex; align-items:center; gap:8px; padding:11px 13px; font-weight:600; font-size:14px; color:rgba(0,0,0,0.85); border-bottom:1px solid #f5f5f5; cursor:move; }
 .wf-node-del { margin-left:auto; color:rgba(0,0,0,0.25); cursor:pointer; font-size:16px; line-height:1; padding:0 2px; }
 .wf-node-del:hover { color:#ff4d4f; }
@@ -1387,15 +1389,15 @@ textarea.wf-edit-field { min-height:64px; height:auto; resize:vertical; line-hei
 .wf-reject-enable input { margin:0; accent-color:#1F80A0; }
 .wf-reject-enable:has(input:disabled) { color:rgba(0,0,0,.3); cursor:not-allowed; }
 .wf-reject-hint { margin-top:7px; color:rgba(0,0,0,.4); font-size:11px; line-height:1.5; }
-.wf-reject-wrap { margin-top:12px; }
-.wf-operation-reject { margin-top:10px; padding-top:10px; border-top:1px dashed #edf0f1; }
-.wf-reject-target-list { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; margin-top:7px; }
-.wf-reject-target-list label { display:flex; align-items:flex-start; gap:7px; min-width:0; padding:9px 10px; border:1px solid #e1e7e9; border-radius:7px; background:#fff; cursor:pointer; }
-.wf-reject-target-list label:has(input:checked) { border-color:#8cc8d0; background:#f1fafb; }
-.wf-reject-target-list label input { flex:none; margin:2px 0 0; accent-color:#1F80A0; }
-.wf-reject-target-list label span { display:block; min-width:0; }
-.wf-reject-target-list label b { display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:rgba(0,0,0,.72); font-size:12px; font-weight:500; }
-.wf-reject-target-list label small { display:block; margin-top:2px; color:rgba(0,0,0,.4); font-size:10px; }
+.wf-reject-wrap { margin-top:5px; }
+.wf-operation-reject { margin-top:4px; padding-top:4px; border-top:1px dashed #edf0f1; }
+.wf-reject-target-list { position:relative; margin-top:7px; }
+.wf-reject-target-list .ms-trigger { width:100%; min-width:0; box-sizing:border-box; }
+.wf-reject-target-list .ms-panel { left:0; right:0; width:100%; max-height:220px; box-sizing:border-box; }
+.wf-reject-target-list .ms-panel label { display:flex; align-items:center; gap:8px; min-width:0; padding:7px 12px; border:0; border-radius:0; background:#fff; cursor:pointer; }
+.wf-reject-target-list .ms-panel label:hover { background:#f7f9fa; }
+.wf-reject-target-list .ms-panel label input { flex:none; margin:0; accent-color:#1F80A0; }
+.wf-reject-target-list .ms-panel label span { overflow:hidden; color:rgba(0,0,0,.72); font-size:12px; text-overflow:ellipsis; white-space:nowrap; }
 .wf-reject-empty { padding:12px; color:rgba(0,0,0,.38); font-size:12px; text-align:center; }
 .wf-phase-options { display:grid; gap:10px; }
 .wf-phase-option { display:flex; align-items:center; gap:12px; width:100%; padding:14px; border:1px solid #e6eaec; border-radius:9px; background:#fff; color:rgba(0,0,0,.78); text-align:left; cursor:pointer; }
@@ -1476,15 +1478,42 @@ textarea.wf-edit-field { min-height:64px; height:auto; resize:vertical; line-hei
 .wf-user-group-select .ms-label { overflow:visible; text-overflow:clip; white-space:normal; line-height:20px; padding:2px 0; }
 .wf-user-group-select .ms-panel { left:0; right:0; width:100%; max-height:220px; box-sizing:border-box; }
 .wf-node-type-options { display:grid; gap:10px; }
-.wf-node-type-option { display:flex; align-items:center; gap:12px; width:100%; padding:14px; border:1px solid #e6eaec; border-radius:9px; background:#fff; color:rgba(0,0,0,.78); text-align:left; cursor:pointer; }
-.wf-node-type-option:hover { border-color:#1F80A0; background:#f5fbfc; }
-.wf-node-type-option i { display:flex; align-items:center; justify-content:center; width:32px; height:32px; border-radius:8px; font-style:normal; font-weight:700; }
-.wf-node-type-option.human i { background:#e5f5e9; color:#3f8760; }
-.wf-node-type-option.automatic i { background:#dceff7; color:#237c9c; }
-.wf-node-type-option.condition i { border:1px solid #aab5b9; border-radius:4px; background:#fff; color:#7d8d92; transform:rotate(45deg); }
-.wf-node-type-option.condition i span { transform:rotate(-45deg); }
+.wf-node-type-option { display:flex; align-items:center; gap:12px; width:100%; padding:14px; border:1px solid #d7e1e5; border-left-width:5px; border-radius:10px; background:#fff; color:rgba(0,0,0,.78); text-align:left; cursor:pointer; }
+.wf-node-type-option:hover { border-color:#9bcbd3; background:#f7fbfb; }
+.wf-node-type-option .wf-node-ic { width:30px; height:30px; border-radius:8px; display:flex; align-items:center; justify-content:center; flex:none; }
+.wf-node-type-option .wf-node-ic svg { width:17px; height:17px; fill:none; stroke:currentColor; stroke-width:1.9; stroke-linecap:round; stroke-linejoin:round; }
+.wf-node-type-option.human { border-left-color:#48a86b; }
+.wf-node-type-option.human .wf-node-ic { background:#eaf7ee; color:#348d56; }
+.wf-node-type-option.automatic { border-left-color:#19a9d1; }
+.wf-node-type-option.automatic .wf-node-ic { background:#e8f7fb; color:#168fb2; }
+.wf-node-type-option.condition { border-left-color:#ee9b32; }
+.wf-node-type-option.condition .wf-node-ic { background:#fff3e4; color:#dc8125; }
+.wf-node-type-option.human:hover { border-left-color:#48a86b; }
+.wf-node-type-option.automatic:hover { border-left-color:#19a9d1; }
+.wf-node-type-option.condition:hover { border-left-color:#ee9b32; }
 .wf-node-type-option b { display:block; font-size:14px; }
 .wf-node-type-option small { display:block; margin-top:3px; color:rgba(0,0,0,.42); font-size:11px; }
+.wf-add-node-popover { display:none; position:fixed; left:16px; top:16px; z-index:320; width:min(420px,calc(100vw - 32px)); max-height:calc(100vh - 112px); box-sizing:border-box; overflow:hidden; background:#fff; border:1px solid #dfe7e9; border-radius:10px; box-shadow:0 10px 28px rgba(37,73,87,.16); }
+.wf-add-node-popover.active { display:flex; flex-direction:column; }
+.wf-add-node-popover-head { display:flex; align-items:center; justify-content:space-between; flex:none; padding:12px 14px; border-bottom:1px solid #edf1f2; color:#26363d; }
+.wf-add-node-popover-head b { font-size:14px; }
+.wf-add-node-popover-body { overflow:auto; padding:14px; }
+.wf-add-node-popover-body .wf-node-type-options { margin:0; }
+.wf-add-node-popover-body .wf-node-type-option,
+.wf-add-node-popover-body .wf-node-type-option.human,
+.wf-add-node-popover-body .wf-node-type-option.automatic,
+.wf-add-node-popover-body .wf-node-type-option.condition { height:auto; min-height:0; padding:11px 10px; border:0; border-left:0; border-radius:6px; box-shadow:none; background:transparent; }
+.wf-add-node-popover-body .wf-node-type-option:hover,
+.wf-add-node-popover-body .wf-node-type-option.human:hover,
+.wf-add-node-popover-body .wf-node-type-option.automatic:hover,
+.wf-add-node-popover-body .wf-node-type-option.condition:hover { border:0; border-left:0; box-shadow:none; background:#f5fbfc; }
+.wf-add-node-popover-body .op-pick { margin-bottom:2px; padding:10px 6px; border:0; border-radius:6px; background:transparent; }
+.wf-add-node-popover-body .op-pick:hover { border-color:transparent; background:#f5fbfc; }
+.wf-context-menu { display:none; position:absolute; z-index:20; min-width:120px; padding:4px; box-sizing:border-box; border:1px solid #dfe7e9; border-radius:8px; background:#fff; box-shadow:0 8px 22px rgba(37,73,87,.16); }
+.wf-context-menu.active { display:block; }
+.wf-context-menu button { display:flex; align-items:center; width:100%; height:34px; padding:0 10px; border:0; border-radius:5px; background:#fff; color:#35484f; font-size:13px; text-align:left; cursor:pointer; }
+.wf-context-menu button:hover { background:#f2f8f9; color:#1F80A0; }
+.wf-context-menu button.danger:hover { background:#fff3f2; color:#d4504e; }
 .wf-structure-count { white-space:nowrap; }
 
 /* ── 标签管理 树表 ── */
@@ -4431,8 +4460,11 @@ def operators():
 
 @app.route("/pipelines")
 def pipelines():
+    flow_ident = request.args.get("ident", "").strip()
     keyword = request.args.get("q", "").strip()
+    creator = request.args.get("creator", "").strip()
     business_stage = request.args.get("stage", "").strip()
+    status_filter = request.args.get("status", "").strip()
     enabled_pipeline = next(
         pl for pl in PIPELINES if pl["name"] == "端到端切分标注流程"
     )
@@ -4442,24 +4474,38 @@ def pipelines():
         "status": "草稿",
         "updated": "2026-08-04 11:30",
     }
+    def pipeline_status(pl):
+        status = pl.get("status", "草稿")
+        return status if status in {"草稿", "启用", "停用"} else "草稿"
+
     pls = [
         pl
         for pl in (enabled_pipeline, draft_pipeline)
         if (
+            not flow_ident
+            or flow_ident.lower() in pl.get("ident", pl["id"]).lower()
+        )
+        and (
             not keyword
             or keyword.lower() in pl["name"].lower()
             or keyword.lower() in pl["desc"].lower()
         )
         and (
+            not creator
+            or creator.lower() in pl["creator"].lower()
+        )
+        and (
             not business_stage
             or pl.get("business_stage", "通用") == business_stage
+        )
+        and (
+            not status_filter
+            or pipeline_status(pl) == status_filter
         )
     ]
     rows = ""
     for pl in pls:
-        flow_status = pl.get("status", "草稿")
-        if flow_status not in {"草稿", "启用", "停用"}:
-            flow_status = "草稿"
+        flow_status = pipeline_status(pl)
         status_class = {
             "草稿": "qa-pend",
             "启用": "qa-pass",
@@ -4468,19 +4514,21 @@ def pipelines():
         if flow_status == "启用":
             actions = (
                 '<a href="#" onclick="toast(\'Demo: 流程已停用\');return false;">停用</a> '
-                f'<a href="/pipelines/{pl["id"]}?mode=view">详情</a>'
+                f'<a href="/pipelines/{pl["id"]}?mode=view">详情</a> '
+                '<a href="#" onclick="toast(\'Demo: 已复制流程\');return false;">复制</a>'
             )
         else:
             actions = (
                 '<a href="#" onclick="toast(\'Demo: 流程已启用\');return false;">启用</a> '
                 f'<a href="/pipelines/{pl["id"]}?version=draft">编辑</a> '
-                f'<a href="/pipelines/{pl["id"]}?mode=view&amp;version=draft">详情</a>'
+                f'<a href="/pipelines/{pl["id"]}?mode=view&amp;version=draft">详情</a> '
+                '<a href="#" onclick="toast(\'Demo: 已复制流程\');return false;">复制</a>'
             )
         rows += f"""<tr>
           <td><code>{html.escape(pl.get('ident', pl['id']))}</code></td>
           <td><b>{pl['name']}</b></td>
           <td><span class="tag tag-cyan">{pl.get('business_stage', '通用')}</span></td>
-          <td class="muted" style="max-width:380px;"><span class="wf-desc-clamp">{pl['desc']}</span></td>
+          <td class="muted pipeline-desc-cell" style="max-width:380px;"><span class="wf-desc-clamp" title="{html.escape(pl['desc'], quote=True)}">{pl['desc']}</span></td>
           <td>{pl['creator']}</td>
           <td><span class="qa {status_class}">{flow_status}</span></td>
           <td class="muted">{pl['updated']}</td>
@@ -4488,11 +4536,30 @@ def pipelines():
         </tr>"""
     if not rows:
         rows = '<tr><td colspan="8" class="muted" style="text-align:center;padding:24px;">无匹配工作流</td></tr>'
+    ident_value = html.escape(flow_ident, quote=True)
     keyword_value = html.escape(keyword, quote=True)
-    stage_options = ['<option value="">全部业务环节</option>']
-    for stage in ("质检", "标注", "验收"):
-        selected = " selected" if business_stage == stage else ""
-        stage_options.append(f'<option value="{stage}"{selected}>{stage}</option>')
+    creator_value = html.escape(creator, quote=True)
+    def pipeline_header_options(filter_name, current, options):
+        option_rows = []
+        for value, label in options:
+            selected = " selected" if current == value else ""
+            value_attr = html.escape(value, quote=True)
+            option_rows.append(
+                f'<button type="button" class="pipeline-th-filter-option{selected}" '
+                f'data-filter-name="{filter_name}" data-filter-value="{value_attr}" '
+                f'onclick="pipelineApplyHeaderFilter(this)">{html.escape(label)}</button>'
+            )
+        return "".join(option_rows)
+    stage_header_options = pipeline_header_options(
+        "stage",
+        business_stage,
+        [("", "全部"), ("质检", "质检"), ("标注", "标注"), ("验收", "验收")],
+    )
+    status_header_options = pipeline_header_options(
+        "status",
+        status_filter,
+        [("", "全部"), ("启用", "启用"), ("草稿", "草稿"), ("停用", "停用")],
+    )
     content = f"""
     <div class="dpr-intro dpr-intro-inline-action">
       <div>
@@ -4502,15 +4569,21 @@ def pipelines():
         </div>
       </div>
     </div>
-    <form class="q-filters rule-filter-panel" method="get" action="/pipelines">
+    <form id="pipelineFilterForm" class="q-filters rule-filter-panel" method="get" action="/pipelines">
       <div class="q-filter-row">
+        <input type="hidden" name="stage" id="pipelineStageFilterValue" value="{html.escape(business_stage, quote=True)}">
+        <input type="hidden" name="status" id="pipelineStatusFilterValue" value="{html.escape(status_filter, quote=True)}">
+        <div class="q-field">
+          <label for="pipelineFilterIdent">流程标识</label>
+          <input id="pipelineFilterIdent" name="ident" value="{ident_value}" placeholder="请输入流程标识">
+        </div>
         <div class="q-field">
           <label for="pipelineFilterName">流程名称</label>
           <input id="pipelineFilterName" name="q" value="{keyword_value}" placeholder="请输入流程名称">
         </div>
         <div class="q-field">
-          <label for="pipelineFilterStage">业务环节</label>
-          <select id="pipelineFilterStage" name="stage">{''.join(stage_options)}</select>
+          <label for="pipelineFilterCreator">创建人</label>
+          <input id="pipelineFilterCreator" name="creator" value="{creator_value}" placeholder="请输入创建人">
         </div>
         <div class="q-actions">
           <a class="btn" href="/pipelines">清空</a>
@@ -4520,8 +4593,19 @@ def pipelines():
     </form>
     <div class="table-wrap">
       <table class="ant-table">
-        <thead><tr><th>流程标识</th><th>名称</th><th>业务环节</th><th>描述</th><th>创建人</th><th>状态</th>
-        <th>更新时间</th><th>操作</th></tr></thead>
+        <thead><tr>
+          <th>流程标识</th><th>名称</th>
+          <th><div class="pipeline-th-filter" data-filter-menu="stage">
+            <button type="button" class="pipeline-th-filter-trigger" aria-expanded="false" onclick="pipelineToggleHeaderFilter(this)">业务环节<span class="pipeline-th-filter-chevron"></span></button>
+            <div class="pipeline-th-filter-menu" role="listbox" aria-label="按业务环节筛选" title="全部业务环节">{stage_header_options}</div>
+          </div></th>
+          <th>描述</th><th>创建人</th>
+          <th><div class="pipeline-th-filter" data-filter-menu="status">
+            <button type="button" class="pipeline-th-filter-trigger" aria-expanded="false" onclick="pipelineToggleHeaderFilter(this)">状态<span class="pipeline-th-filter-chevron"></span></button>
+            <div class="pipeline-th-filter-menu" role="listbox" aria-label="按状态筛选">{status_header_options}</div>
+          </div></th>
+          <th>更新时间</th><th>操作</th>
+        </tr></thead>
         <tbody>{rows}</tbody>
       </table>
     </div>
@@ -4537,7 +4621,7 @@ def pipelines():
         <div class="drawer-foot"><button type="button" class="btn" onclick="closePipelineCreateDrawer()">取消</button><button type="button" class="btn btn-primary" onclick="submitPipelineCreate()">创建并进入画布</button></div>
       </div>
     </div>
-    <style>.pipeline-create-drawer{{width:560px;max-width:calc(100vw - 24px)}}.pipeline-create-drawer .fg{{margin-bottom:18px}}.pipeline-create-drawer .fg input,.pipeline-create-drawer .fg select{{height:38px;box-sizing:border-box}}</style>
+    <style>.pipeline-create-drawer{{width:560px;max-width:calc(100vw - 24px)}}.pipeline-create-drawer .fg{{margin-bottom:18px}}.pipeline-create-drawer .fg input,.pipeline-create-drawer .fg select{{height:38px;box-sizing:border-box}}.pipeline-desc-cell .wf-desc-clamp{{display:block;max-width:380px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}}.pipeline-th-filter{{position:relative;display:inline-flex;align-items:center}}.pipeline-th-filter-trigger{{display:inline-flex;align-items:center;gap:9px;padding:0;border:0;background:transparent;color:inherit;font:inherit;font-weight:600;cursor:pointer;white-space:nowrap}}.pipeline-th-filter-trigger:hover{{color:#1f80a0}}.pipeline-th-filter-chevron{{width:8px;height:8px;margin-top:-4px;border-right:1.5px solid currentColor;border-bottom:1.5px solid currentColor;transform:rotate(45deg);transition:transform .15s}}.pipeline-th-filter.open .pipeline-th-filter-chevron{{margin-top:4px;transform:rotate(225deg)}}.pipeline-th-filter-menu{{display:none;position:absolute;top:calc(100% + 10px);left:-10px;z-index:30;min-width:160px;padding:6px 0;border:1px solid #e9edf1;border-radius:3px;background:#fff;box-shadow:0 8px 22px rgba(31,52,68,.14);font-weight:400}}.pipeline-th-filter.open .pipeline-th-filter-menu{{display:block}}.pipeline-th-filter-option{{display:block;width:100%;padding:11px 16px;border:0;background:#fff;color:#26343b;font-size:14px;line-height:1.4;text-align:left;cursor:pointer}}.pipeline-th-filter-option:hover{{background:#f2f7f9;color:#1f80a0}}.pipeline-th-filter-option.selected{{background:#2b87a4;color:#fff}}.pipeline-th-filter-option.selected:hover{{background:#247a95;color:#fff}}</style>
     <script>
     function openPipelineCreateDrawer(){{
       document.getElementById('pipelineCreateDrawer').classList.add('active');
@@ -4554,6 +4638,35 @@ def pipelines():
       if(!name){{toast('请输入流程名称');return;}}
       location.href='/pipelines/new?flow_ident='+encodeURIComponent(ident)+'&flow_name='+encodeURIComponent(name)+'&business_stage='+encodeURIComponent(stage)+'&desc='+encodeURIComponent(desc);
     }}
+    function pipelineToggleHeaderFilter(trigger){{
+      var wrap=trigger.closest('.pipeline-th-filter');
+      var wasOpen=wrap.classList.contains('open');
+      document.querySelectorAll('.pipeline-th-filter.open').forEach(function(item){{
+        item.classList.remove('open');
+        var button=item.querySelector('.pipeline-th-filter-trigger');
+        if(button) button.setAttribute('aria-expanded','false');
+      }});
+      if(!wasOpen){{
+        wrap.classList.add('open');
+        trigger.setAttribute('aria-expanded','true');
+      }}
+    }}
+    function pipelineApplyHeaderFilter(option){{
+      var form=document.getElementById('pipelineFilterForm');
+      var name=option.dataset.filterName;
+      var input=document.getElementById(name==='stage'?'pipelineStageFilterValue':'pipelineStatusFilterValue');
+      if(input) input.value=option.dataset.filterValue||'';
+      if(form) form.submit();
+    }}
+    document.addEventListener('click',function(event){{
+      if(!event.target.closest('.pipeline-th-filter')){{
+        document.querySelectorAll('.pipeline-th-filter.open').forEach(function(item){{
+          item.classList.remove('open');
+          var button=item.querySelector('.pipeline-th-filter-trigger');
+          if(button) button.setAttribute('aria-expanded','false');
+        }});
+      }}
+    }});
     </script>
     """
     return render_page("工作流管理", content, active="pipelines", breadcrumb="自动化任务 / <b>工作流管理</b>")
@@ -4570,11 +4683,38 @@ WF_CANVAS_JS = r"""
   var nodesLayer = document.getElementById('wfNodes');
   var edgesSvg = document.getElementById('wfEdges');
   var emptyEl = document.getElementById('wfEmpty');
+  var selectionBoxEl = document.getElementById('wfSelectionBox');
   var viewOnly = !!canvas.closest('.wf-stage.view-only');
   var z = 1, panX = 0, panY = 0;
-  var selId = null, drag = null, conn = null, panning = null;
+  var selId = null, selectedIds = [], drag = null, conn = null, panning = null, selectionMarquee = null;
+
+  function wfPadTime(value){ return value<10?'0'+value:String(value); }
+  function wfFormatSaveTime(date){
+    return date.getFullYear()+'-'+wfPadTime(date.getMonth()+1)+'-'+wfPadTime(date.getDate())+' '+
+      wfPadTime(date.getHours())+':'+wfPadTime(date.getMinutes());
+  }
+  window.wfSaveDraft=function(showToast){
+    if(viewOnly) return;
+    var saved=document.getElementById('wfLastSaved');
+    if(saved) saved.textContent='保存时间：'+wfFormatSaveTime(new Date());
+    if(showToast) toast('已保存');
+  };
+  if(!viewOnly) setInterval(function(){ window.wfSaveDraft(false); },300000);
 
   function byId(id){ for(var i=0;i<NODES.length;i++) if(NODES[i].id===id) return NODES[i]; return null; }
+  function isNodeSelected(id){ return selectedIds.indexOf(id)>=0; }
+  function selectedNodeIds(){
+    var ids=selectedIds.filter(function(id){ return !!byId(id); });
+    if(!ids.length&&selId&&byId(selId)) ids=[selId];
+    return ids;
+  }
+  function setSelectedNodes(ids){
+    selectedIds=ids.filter(function(id,index){
+      var node=byId(id);
+      return node&&node.kind!=='flow-input'&&node.kind!=='flow-output'&&ids.indexOf(id)===index;
+    });
+    selId=selectedIds.length===1?selectedIds[0]:null;
+  }
   function frameById(id){ for(var i=0;i<FRAMES.length;i++) if(FRAMES[i].id===id) return FRAMES[i]; return null; }
   function frameTerminalById(id){
     for(var i=0;i<FRAMES.length;i++){
@@ -4588,6 +4728,74 @@ WF_CANVAS_JS = r"""
   function applyPan(){ pan.style.transform = 'translate('+panX+'px,'+panY+'px) scale('+z+')'; }
   function toLocal(cx, cy){ var r=canvas.getBoundingClientRect(); return { x:(cx-r.left-panX)/z, y:(cy-r.top-panY)/z }; }
   function nodeH(n){ var el=nodesLayer.querySelector('.wf-node[data-id="'+n.id+'"]'); return (el&&el.offsetHeight)||DEF_H; }
+  function nodeRectOverlaps(x,y,w,h,other,margin){
+    var oh=nodeH(other);
+    return x < other.x+w+margin && x+w+margin > other.x &&
+      y < other.y+oh+margin && y+h+margin > other.y;
+  }
+  function pickNodePosition(h){
+    var r=canvas.getBoundingClientRect();
+    var center=toLocal(r.left+r.width/2,r.top+r.height/2);
+    var startX=center.x-W/2, startY=center.y-h/2;
+    var visibleTopLeft=toLocal(r.left+28,r.top+28);
+    var visibleBottomRight=toLocal(r.right-28,r.bottom-72);
+    var minVisibleX=Math.max(32,visibleTopLeft.x);
+    var maxVisibleX=Math.min(4000-W-32,visibleBottomRight.x-W);
+    var minVisibleY=Math.max(32,visibleTopLeft.y);
+    var maxVisibleY=Math.min(3000-h-32,visibleBottomRight.y-h);
+    var candidates=[];
+    for(var ring=0;ring<=6;ring++){
+      for(var row=-ring;row<=ring;row++){
+        for(var col=-ring;col<=ring;col++){
+          if(Math.max(Math.abs(row),Math.abs(col))!==ring) continue;
+          candidates.push({x:startX+col*280,y:startY+row*150});
+        }
+      }
+    }
+    for(var i=0;i<candidates.length;i++){
+      var x=Math.max(minVisibleX,Math.min(maxVisibleX,candidates[i].x));
+      var y=Math.max(minVisibleY,Math.min(maxVisibleY,candidates[i].y));
+      var blocked=false;
+      for(var j=0;j<NODES.length;j++){
+        if(nodeRectOverlaps(x,y,W,h,NODES[j],22)){ blocked=true; break; }
+      }
+      if(!blocked) return {x:x,y:y};
+    }
+    return {x:Math.max(minVisibleX,Math.min(maxVisibleX,startX)),y:Math.max(minVisibleY,Math.min(maxVisibleY,startY))};
+  }
+  function updateSelectionMarquee(clientX,clientY){
+    if(!selectionMarquee||!selectionBoxEl) return;
+    var r=canvas.getBoundingClientRect();
+    var x=Math.max(0,Math.min(r.width,clientX-r.left));
+    var y=Math.max(0,Math.min(r.height,clientY-r.top));
+    selectionMarquee.ex=x; selectionMarquee.ey=y;
+    selectionBoxEl.style.left=Math.min(selectionMarquee.sx,x)+'px';
+    selectionBoxEl.style.top=Math.min(selectionMarquee.sy,y)+'px';
+    selectionBoxEl.style.width=Math.abs(x-selectionMarquee.sx)+'px';
+    selectionBoxEl.style.height=Math.abs(y-selectionMarquee.sy)+'px';
+    selectionBoxEl.classList.add('active');
+  }
+  function finishSelectionMarquee(){
+    if(!selectionMarquee) return;
+    var r=canvas.getBoundingClientRect();
+    var left=r.left+Math.min(selectionMarquee.sx,selectionMarquee.ex);
+    var right=r.left+Math.max(selectionMarquee.sx,selectionMarquee.ex);
+    var top=r.top+Math.min(selectionMarquee.sy,selectionMarquee.ey);
+    var bottom=r.top+Math.max(selectionMarquee.sy,selectionMarquee.ey);
+    var ids=[];
+    NODES.forEach(function(node){
+      if(node.kind==='flow-input'||node.kind==='flow-output') return;
+      var el=nodesLayer.querySelector('.wf-node[data-id="'+node.id+'"]');
+      if(!el) return;
+      var nr=el.getBoundingClientRect();
+      if(nr.right>=left&&nr.left<=right&&nr.bottom>=top&&nr.top<=bottom) ids.push(node.id);
+    });
+    setSelectedNodes(ids);
+    selectionMarquee=null;
+    selectionBoxEl.classList.remove('active');
+    document.getElementById('wfConfig').classList.remove('open','human-mode');
+    renderNodes();
+  }
   function ports(n){
     if(n.kind==='phase-input'||n.kind==='phase-output'){
       return {
@@ -4715,7 +4923,7 @@ WF_CANVAS_JS = r"""
         var branchRows=branches.map(function(branch,index){
           return '<div class="wf-condition-branch"><span>'+esc(branch.name||'CASE 1')+'</span><b>IF</b><span class="wf-port wf-branch-port" data-port="branch-0" data-id="'+n.id+'"></span></div>';
         }).join('')+'<div class="wf-condition-branch"><span>其他</span><b>ELSE</b><span class="wf-port wf-branch-port" data-port="branch" data-id="'+n.id+'"></span></div>';
-        h+='<div class="wf-node condition'+(n.id===selId?' sel':'')+'" data-id="'+n.id+'" data-node-kind="condition" style="left:'+n.x+'px;top:'+n.y+'px;">'+
+        h+='<div class="wf-node condition'+(isNodeSelected(n.id)?' sel':'')+'" data-id="'+n.id+'" data-node-kind="condition" style="left:'+n.x+'px;top:'+n.y+'px;">'+
           '<div class="wf-port in" data-port="in" data-id="'+n.id+'"></div>'+
           '<span class="wf-node-del" data-del="'+n.id+'" title="删除">&times;</span>'+
           '<div class="wf-condition-head"><i>'+nodeIcon('condition')+'</i><strong>'+n.name+'</strong></div>'+
@@ -4723,7 +4931,7 @@ WF_CANVAS_JS = r"""
         '</div>';
         continue;
       }
-      h+='<div class="wf-node '+kind+(n.id===selId?' sel':'')+'" data-id="'+n.id+'" data-node-kind="'+kind+'" style="left:'+n.x+'px;top:'+n.y+'px;">'+
+      h+='<div class="wf-node '+kind+(isNodeSelected(n.id)?' sel':'')+'" data-id="'+n.id+'" data-node-kind="'+kind+'" style="left:'+n.x+'px;top:'+n.y+'px;">'+
         '<div class="wf-port in" data-port="in" data-id="'+n.id+'"></div>'+
         '<div class="wf-port out" data-port="out" data-id="'+n.id+'"></div>'+
         '<div class="wf-node-head"><span class="wf-node-ic">'+nodeIcon(kind)+'</span>'+n.name+
@@ -4737,13 +4945,34 @@ WF_CANVAS_JS = r"""
     renderEdges();
   }
 
+  canvas.addEventListener('contextmenu', function(e){ e.preventDefault(); });
+  canvas.addEventListener('click', function(e){
+    var action=e.target.closest('#wfNodeContextMenu button');
+    if(!action) return;
+    var actionType=action.getAttribute('data-action');
+    e.preventDefault(); e.stopPropagation();
+    var menu=document.getElementById('wfNodeContextMenu');
+    if(menu&&menu.getAttribute('data-node-id')) setSelectedNodes([menu.getAttribute('data-node-id')]);
+    if(actionType==='copy') wfAddTypedNode('copy');
+    if(actionType==='delete') wfDeleteSel();
+  });
   canvas.addEventListener('mousedown', function(e){
+    if(e.target.closest('#wfNodeContextMenu')||e.target.closest('#addTaskDrawer')||e.target.closest('.wf-toolbar')) return;
+    canvas.focus({preventScroll:true});
+    if(e.button===2){
+      e.preventDefault();
+      var rightNodeEl=e.target.closest('.wf-node');
+      var rightNode=rightNodeEl&&byId(rightNodeEl.getAttribute('data-id'));
+      if(rightNode) wfOpenNodeContextMenu(rightNode,e); else wfHideNodeContextMenu();
+      return;
+    }
+    wfHideNodeContextMenu();
     if(viewOnly){
       var viewNodeEl=e.target.closest('.wf-node');
       if(viewNodeEl){
         var viewNode=byId(viewNodeEl.getAttribute('data-id'));
         if(viewNode&&viewNode.kind!=='flow-input'&&viewNode.kind!=='flow-output'){
-          selId=viewNode.id; openConfig(viewNode); renderNodes();
+          setSelectedNodes([viewNode.id]); openConfig(viewNode); renderNodes();
         }
         e.preventDefault();
         return;
@@ -4752,22 +4981,47 @@ WF_CANVAS_JS = r"""
       return;
     }
     var del=e.target.getAttribute('data-del');
-    if(del){ EDGES=EDGES.filter(function(x){return x.from!==del&&x.to!==del;}); NODES=NODES.filter(function(x){return x.id!==del;}); if(selId===del) wfCloseConfig(); renderNodes(); return; }
+    if(del){ setSelectedNodes([del]); wfDeleteSel(); return; }
     var port=e.target.closest('.wf-port');
     if(port){ conn={from:port.getAttribute('data-id'), side:port.getAttribute('data-port')}; e.preventDefault(); return; }
     var ep=e.target.closest('path.edge');
     if(ep){ var idx=+ep.getAttribute('data-i'); EDGES.splice(idx,1); renderNodes(); return; }
     var nodeEl=e.target.closest('.wf-node');
-    if(nodeEl){ var n=byId(nodeEl.getAttribute('data-id')); drag={id:n.id, sx:e.clientX, sy:e.clientY, ox:n.x, oy:n.y, moved:false}; e.preventDefault(); return; }
+    if(e.shiftKey&&!nodeEl){
+      var canvasRect=canvas.getBoundingClientRect();
+      selectionMarquee={sx:e.clientX-canvasRect.left,sy:e.clientY-canvasRect.top,ex:e.clientX-canvasRect.left,ey:e.clientY-canvasRect.top};
+      updateSelectionMarquee(e.clientX,e.clientY);
+      e.preventDefault(); return;
+    }
+    if(nodeEl){
+      var n=byId(nodeEl.getAttribute('data-id'));
+      if(n.kind==='flow-input'||n.kind==='flow-output'){
+        drag={id:n.id,ids:[n.id],starts:[{id:n.id,x:n.x,y:n.y}],sx:e.clientX,sy:e.clientY,moved:false,terminal:true};
+      }else{
+        var dragIds=isNodeSelected(n.id)?selectedNodeIds():[n.id];
+        if(!e.shiftKey&&!isNodeSelected(n.id)){ setSelectedNodes([n.id]); renderNodes(); }
+        drag={id:n.id,ids:dragIds,starts:dragIds.map(function(id){var item=byId(id);return {id:id,x:item.x,y:item.y};}),sx:e.clientX,sy:e.clientY,moved:false,toggleOnly:e.shiftKey};
+      }
+      e.preventDefault(); return;
+    }
+    setSelectedNodes([]);
+    document.getElementById('wfConfig').classList.remove('open','human-mode');
+    renderNodes();
     panning={sx:e.clientX, sy:e.clientY, ox:panX, oy:panY};
   });
   document.addEventListener('mousemove', function(e){
     if(drag){
       var dx=(e.clientX-drag.sx)/z, dy=(e.clientY-drag.sy)/z;
       if(Math.abs(e.clientX-drag.sx)+Math.abs(e.clientY-drag.sy)>3) drag.moved=true;
-      var n=byId(drag.id); n.x=drag.ox+dx; n.y=drag.oy+dy;
-      var el=nodesLayer.querySelector('.wf-node[data-id="'+drag.id+'"]'); if(el){ el.style.left=n.x+'px'; el.style.top=n.y+'px'; }
+      drag.starts.forEach(function(start){
+        var n=byId(start.id); if(!n) return;
+        n.x=start.x+dx; n.y=start.y+dy;
+        var el=nodesLayer.querySelector('.wf-node[data-id="'+start.id+'"]');
+        if(el){ el.style.left=n.x+'px'; el.style.top=n.y+'px'; }
+      });
       renderEdges();
+    } else if(selectionMarquee){
+      updateSelectionMarquee(e.clientX,e.clientY);
     } else if(conn){
       var a=entityById(conn.from); if(!a) return;
       var s=ports(a)[conn.side]||ports(a).out;
@@ -4779,6 +5033,7 @@ WF_CANVAS_JS = r"""
     }
   });
   document.addEventListener('mouseup', function(e){
+    if(selectionMarquee){ finishSelectionMarquee(); return; }
     if(conn){
       var port=e.target.closest('.wf-port');
       var portSide=port&&port.getAttribute('data-port');
@@ -4796,7 +5051,23 @@ WF_CANVAS_JS = r"""
       }
       conn=null; renderNodes(); return;
     }
-    if(drag){ if(!drag.moved){ var selectedNode=byId(drag.id); if(selectedNode.kind!=='flow-input'&&selectedNode.kind!=='flow-output'){ selId=drag.id; openConfig(selectedNode); renderNodes(); } } drag=null; return; }
+    if(drag){
+      if(!drag.moved&&!drag.terminal){
+        var selectedNode=byId(drag.id);
+        if(drag.toggleOnly){
+          var nextIds=selectedNodeIds().slice();
+          var selectedIndex=nextIds.indexOf(drag.id);
+          if(selectedIndex>=0) nextIds.splice(selectedIndex,1); else nextIds.push(drag.id);
+          setSelectedNodes(nextIds);
+          document.getElementById('wfConfig').classList.remove('open','human-mode');
+          renderNodes();
+        }else{
+          setSelectedNodes([drag.id]);
+          openConfig(selectedNode); renderNodes();
+        }
+      }
+      drag=null; return;
+    }
     panning=null;
   });
 
@@ -4877,12 +5148,11 @@ WF_CANVAS_JS = r"""
       return candidates.some(function(item){return item.id===id;});
     });
     var panel=document.getElementById('wfhRejectPanel');
-    panel.innerHTML=candidates.length?candidates.map(function(item){
+    panel.innerHTML=candidates.length?'<div class="ms-trigger" data-base="请选择驳回节点" onclick="this.closest(\'.ms-wrap\').classList.toggle(\'open\')"><span class="ms-label">请选择驳回节点</span></div><div class="ms-panel">'+candidates.map(function(item){
       return '<label><input type="checkbox" value="'+esc(item.id)+'"'+
         (selected.indexOf(item.id)>=0?' checked':'')+
-        ' onchange="wfRejectTargetsUpdate(this)"><span><b>'+esc(item.name)+
-        '</b><small>前序人工节点</small></span></label>';
-    }).join(''):'<div class="wf-reject-empty">当前节点没有前序人工节点</div>';
+        ' onchange="wfRejectTargetsUpdate(this)"><span>'+esc(item.name)+'</span></label>';
+    }).join('')+'</div>':'<div class="wf-reject-empty">当前节点没有前序人工节点</div>';
     wfRejectTargetsUpdate(panel.querySelector('input'));
     return candidates;
   }
@@ -4965,17 +5235,21 @@ WF_CANVAS_JS = r"""
     return checked?checked.value:'task_custom';
   }
   function wfRefreshAssigneeInheritance(){
-    var n=byId(selId); if(!n) return;
+    var n=byId(selId);
     var mode=wfHumanAssigneeMode();
     var previous=previousHumanNodes(n);
     var wrap=document.getElementById('wfhAssigneeInheritWrap');
     var select=document.getElementById('wfhAssigneeInheritNode');
     var hint=document.getElementById('wfhAssigneeInheritHint');
+    if(!wrap||!select||!hint) return;
     wrap.style.display=mode==='inherit'?'block':'none';
     select.innerHTML=previous.length?previous.map(function(item){ return '<option value="'+esc(item.id)+'">'+esc(item.name||item.id)+'</option>'; }).join(''):'<option value="">暂无前序人工节点</option>';
-    select.disabled=!previous.length;
-    hint.textContent=previous.length?'可选择任意前序人工节点。':'当前没有前序人工节点，请选择任务自定义。';
+    select.disabled=mode!=='inherit'||!previous.length;
+    select.required=mode==='inherit'&&!!previous.length;
+    if(mode==='inherit'&&previous.length&&!select.value) select.value=previous[0].id;
+    hint.textContent=previous.length?'可选择任意前序人工节点':'当前没有前序人工节点，请选择任务自定义';
   }
+  window.wfRefreshAssigneeInheritance=wfRefreshAssigneeInheritance;
   function lockViewOnlyConfig(){
     if(!viewOnly) return;
     var config=document.getElementById('wfConfig');
@@ -4994,7 +5268,7 @@ WF_CANVAS_JS = r"""
     var automatic=isAutomaticNode(n);
     config.classList.add('open');
     config.classList.toggle('human-mode',human||condition||automatic);
-    document.getElementById('wfcName').textContent=n.name+' · 配置';
+    document.getElementById('wfcName').textContent=n.name;
     document.getElementById('wfHumanConfig').style.display=human?'block':'none';
     document.getElementById('wfConditionNodeConfig').style.display=condition?'block':'none';
     document.getElementById('wfGenericConfig').style.display=automatic?'block':'none';
@@ -5020,8 +5294,8 @@ WF_CANVAS_JS = r"""
       rejectToggle.disabled=!previousNodes.length;
       rejectToggle.checked=!!previousNodes.length&&rejectEnabled;
       document.getElementById('wfhRejectHint').textContent=previousNodes.length?
-        '仅可选择当前节点的前序所有人工节点。':
-        '当前节点没有前序人工节点，暂不可开启驳回。';
+        '支持驳回到的节点（仅可选择当前节点的前序所有人工节点）':
+        '支持驳回到的节点（当前节点没有前序人工节点，暂不可开启驳回）';
       renderRejectTargets(
         n,
         n.rejectTargets&&n.rejectTargets.length?
@@ -5140,7 +5414,16 @@ WF_CANVAS_JS = r"""
     var wrap=document.getElementById('wfhRejectWrap');
     wrap.style.display=enabled?'block':'none';
   };
-  window.wfRejectTargetsUpdate=function(){};
+  window.wfRejectTargetsUpdate=function(){
+    var wrap=document.getElementById('wfhRejectPanel');
+    var trigger=wrap.querySelector('.ms-trigger');
+    if(!trigger) return;
+    var checked=wrap.querySelectorAll('input:checked');
+    var label=trigger.querySelector('.ms-label');
+    var names=[].map.call(checked,function(input){return input.parentNode.textContent.trim();});
+    trigger.classList.toggle('has-value',checked.length>0);
+    label.textContent=names.length?names.join('、'):'请选择驳回节点';
+  };
   window.wfSaveConfig=function(){
     var n=byId(selId); if(!n) return;
     if(isHumanNode(n)){
@@ -5164,7 +5447,7 @@ WF_CANVAS_JS = r"""
       n.assigneeMode=assigneeMode;
       n.inheritAssigneeNodeId=assigneeMode==='inherit'?inheritNodeId:'';
       delete n.rounds;
-      document.getElementById('wfcName').textContent=n.name+' · 配置';
+      document.getElementById('wfcName').textContent=n.name;
       renderNodes(); toast('已保存人工节点配置'); return;
     }
     if(isConditionNode(n)){
@@ -5178,7 +5461,7 @@ WF_CANVAS_JS = r"""
       });
       n.entryConditions=n.branches[0]?n.branches[0].rules.map(function(rule){return {field:rule.field,operator:rule.operator,value:rule.value};}):[];
       syncConditionNoBranch(n);
-      document.getElementById('wfcName').textContent=n.name+' · 配置';
+      document.getElementById('wfcName').textContent=n.name;
       renderNodes(); toast('已保存条件节点配置'); return;
     }
     if(isAutomaticNode(n)){
@@ -5193,7 +5476,7 @@ WF_CANVAS_JS = r"""
       n.desc=document.getElementById('wfaDesc').value.trim();
       n.operatorId=operatorId;
       n.operatorName=OPS[operatorId].name;
-      document.getElementById('wfcName').textContent=n.name+' · 配置';
+      document.getElementById('wfcName').textContent=n.name;
       renderNodes(); toast('已保存自动化节点配置'); return;
     }
   };
@@ -5216,12 +5499,75 @@ WF_CANVAS_JS = r"""
     tr.querySelector('.fp-key').focus();
   };
   window.wfDelFlowParam=function(a){ var tr=a.closest('tr'); if(tr) tr.remove(); };
-  window.wfCloseConfig=function(){ document.getElementById('wfConfig').classList.remove('open'); selId=null; renderNodes(); };
-  window.wfDeleteSel=function(){ if(!selId) return; var id=selId; EDGES=EDGES.filter(function(x){return x.from!==id&&x.to!==id;}); NODES=NODES.filter(function(x){return x.id!==id;}); wfCloseConfig(); toast('已删除节点'); };
+  window.wfCloseConfig=function(){ document.getElementById('wfConfig').classList.remove('open','human-mode'); setSelectedNodes([]); renderNodes(); };
+  window.wfDeleteSel=function(){
+    wfHideNodeContextMenu();
+    var ids=selectedNodeIds(); if(!ids.length) return;
+    EDGES=EDGES.filter(function(edge){return ids.indexOf(edge.from)<0&&ids.indexOf(edge.to)<0;});
+    NODES=NODES.filter(function(node){return ids.indexOf(node.id)<0;});
+    document.getElementById('wfConfig').classList.remove('open','human-mode');
+    setSelectedNodes([]); renderNodes();
+    toast(ids.length>1?'已删除 '+ids.length+' 个节点':'已删除节点');
+  };
   var OPS = __OPS__;
   window.wfOpenNodeDrawer=function(){
-    document.getElementById('addTaskDrawer').classList.add('active');
+    var panel=document.getElementById('addTaskDrawer');
+    if(!panel) return;
+    panel.classList.add('active');
+    var canvasRect=canvas.getBoundingClientRect();
+    var panelHeight=panel.getBoundingClientRect().height||360;
+    panel.style.left=(canvasRect.left+16)+'px';
+    panel.style.top=Math.max(canvasRect.top+16,canvasRect.bottom-64-panelHeight)+'px';
+    var search=panel.querySelector('input[placeholder^="搜索"]');
+    if(search) setTimeout(function(){ search.focus(); },0);
   };
+  window.wfCloseNodeDrawer=function(){
+    var panel=document.getElementById('addTaskDrawer');
+    if(panel) panel.classList.remove('active');
+  };
+  function wfHideNodeContextMenu(){
+    var menu=document.getElementById('wfNodeContextMenu');
+    if(menu) menu.classList.remove('active');
+  }
+  function wfOpenNodeContextMenu(node,event){
+    if(viewOnly||!node||node.kind==='flow-input'||node.kind==='flow-output') return;
+    var menu=document.getElementById('wfNodeContextMenu');
+    if(!menu) return;
+    setSelectedNodes([node.id]);
+    menu.setAttribute('data-node-id',node.id);
+    renderNodes();
+    var r=canvas.getBoundingClientRect();
+    menu.classList.add('active');
+    var menuWidth=menu.offsetWidth||120, menuHeight=menu.offsetHeight||76;
+    var left=Math.max(8,Math.min(r.width-menuWidth-8,event.clientX-r.left));
+    var top=Math.max(8,Math.min(r.height-menuHeight-8,event.clientY-r.top));
+    menu.style.left=left+'px';
+    menu.style.top=top+'px';
+  }
+  document.addEventListener('click',function(event){
+    var panel=document.getElementById('addTaskDrawer');
+    if(panel&&panel.classList.contains('active')&&!event.target.closest('#addTaskDrawer')) wfCloseNodeDrawer();
+    var menu=document.getElementById('wfNodeContextMenu');
+    if(menu&&menu.classList.contains('active')&&!event.target.closest('#wfNodeContextMenu')) wfHideNodeContextMenu();
+  });
+  document.addEventListener('keydown',function(event){
+    if(viewOnly) return;
+    var target=event.target;
+    if(target&&(target.matches('input,textarea,select')||target.isContentEditable)) return;
+    var ids=selectedNodeIds();
+    var shortcutKey=String(event.key).toLowerCase();
+    if((event.metaKey||event.ctrlKey)&&(shortcutKey==='c'||shortcutKey==='d')&&ids.length){
+      event.preventDefault(); wfCopySelection(); return;
+    }
+    if((event.key==='Delete'||event.key==='Backspace')&&ids.length){
+      event.preventDefault(); wfDeleteSel(); return;
+    }
+    if(event.key==='Escape'){
+      wfHideNodeContextMenu(); setSelectedNodes([]);
+      document.getElementById('wfConfig').classList.remove('open','human-mode');
+      renderNodes();
+    }
+  });
   function syncConditionNoBranch(n){
     var branchCount=(n.branches&&n.branches.length?n.branches.length:1);
     var primary=EDGES.filter(function(edge){
@@ -5241,18 +5587,36 @@ WF_CANVAS_JS = r"""
     }
     EDGES.push({from:n.id,to:'flow-output',fromPort:'branch',branch:'no'});
   }
+  function wfCopySelection(){
+    var sourceIds=selectedNodeIds(); if(!sourceIds.length) return;
+    var copiedIds=[];
+    sourceIds.forEach(function(sourceId){
+      var original=byId(sourceId); if(!original) return;
+      var clone=JSON.parse(JSON.stringify(original));
+      seq++; clone.id='n'+seq;
+      clone.name=(original.name||'节点')+'（副本）';
+      clone.ident=(original.ident||original.kind||'node')+'_copy_'+seq;
+      var position=pickNodePosition(original.kind==='condition'?CONDITION_H:NODE_H);
+      clone.x=position.x; clone.y=position.y;
+      NODES.push(clone); copiedIds.push(clone.id);
+    });
+    if(!copiedIds.length) return;
+    setSelectedNodes(copiedIds);
+    document.getElementById('wfConfig').classList.remove('open','human-mode');
+    wfHideNodeContextMenu(); renderNodes();
+    toast(copiedIds.length>1?'已复制 '+copiedIds.length+' 个节点':'已复制节点');
+  }
   window.wfAddTypedNode=function(kind){
+    if(kind==='copy'){
+      wfCopySelection(); return;
+    }
     var defs={
       human:{name:'人工节点',desc:'使用工作台进行人工处理',icon:'人'},
       automatic:{name:'自动化节点',desc:'通过算子自动处理数据',icon:'⚙'},
       condition:{name:'条件节点',desc:'按条件判断结果进行分流',icon:'◇'}
     };
     var def=defs[kind]; if(!def) return;
-    var processNodes=NODES.filter(function(node){
-      return node.kind!=='flow-input'&&node.kind!=='flow-output';
-    });
-    var slot=processNodes.length;
-    var x=360+slot*300;
+    var nodePosition=pickNodePosition(kind==='condition'?CONDITION_H:NODE_H);
     seq++; var id='n'+seq;
     var node={
       id:id,name:def.name,ident:kind+'_'+seq,desc:def.desc,enabled:'启用',creator:'当前用户',
@@ -5262,32 +5626,22 @@ WF_CANVAS_JS = r"""
       params:'',returns:'处理结果',kind:kind,
       businessStage:'通用',workbench:'质检工作台',userGroups:[],
       assigneeType:'supplier',assigneeMode:'task_custom',inheritAssigneeNodeId:'',
-      allowedActions:['提交','暂离'],x:x,y:kind==='condition'?236:260
+      allowedActions:['提交','暂离'],x:nodePosition.x,y:nodePosition.y
     };
     NODES.push(node);
-    var incoming=EDGES.filter(function(edge){
-      return edge.to==='flow-output'&&(edge.fromPort||'out')!=='branch';
-    });
-    if(incoming.length){
-      var previous=incoming[incoming.length-1];
-      EDGES=EDGES.filter(function(edge){return edge!==previous;});
-      EDGES.push({from:previous.from,to:id});
-    } else if(byId('flow-input')){
-      EDGES.push({from:'flow-input',to:id});
-    }
-    if(byId('flow-output')) EDGES.push({from:id,to:'flow-output',fromPort:kind==='condition'?'branch-0':'out'});
-    if(kind==='condition') syncConditionNoBranch(node);
-    document.getElementById('addTaskDrawer').classList.remove('active');
+    setSelectedNodes([id]);
+    wfCloseNodeDrawer();
     renderNodes(); toast('已添加'+def.name);
   };
   window.wfAddNode=function(opId){
     var o=OPS[opId]; if(!o) return;
     seq++; var id='n'+seq;
-    var base=toLocal(canvas.getBoundingClientRect().left+160, canvas.getBoundingClientRect().top+140);
+    var nodePosition=pickNodePosition(NODE_H);
     NODES.push({id:id, name:o.name, ident:o.ident, desc:o.desc, enabled:o.enabled, creator:o.creator,
                 image:o.image, script:o.script, params:o.params, returns:o.returns,
-                x:base.x+(NODES.length%4)*30, y:base.y+(NODES.length%3)*40});
-    document.getElementById('addTaskDrawer').classList.remove('active');
+                x:nodePosition.x, y:nodePosition.y});
+    setSelectedNodes([id]);
+    wfCloseNodeDrawer();
     renderNodes(); toast('已添加算子: '+o.name);
   };
   window.wfZoom=function(d){ z=Math.min(1.6, Math.max(0.25, Math.round((z+d)*10)/10)); document.getElementById('wfZlvl').textContent=Math.round(z*100)+'%'; applyPan(); };
@@ -5647,17 +6001,13 @@ def pipeline_editor(pid):
     if is_processing_flow:
         op_items = """
           <div class="wf-node-type-options">
-            <button type="button" class="wf-node-type-option human" data-node-type="human" onclick="wfAddTypedNode('human')"><i>人</i><span><b>人工节点</b><small>通过工作台由操作员完成处理</small></span></button>
-            <button type="button" class="wf-node-type-option automatic" data-node-type="automatic" onclick="wfAddTypedNode('automatic')"><i>⚙</i><span><b>自动化节点</b><small>绑定算子自动完成数据处理</small></span></button>
-            <button type="button" class="wf-node-type-option condition" data-node-type="condition" onclick="wfAddTypedNode('condition')"><i><span>◇</span></i><span><b>条件节点</b><small>配置条件并从“是 / 否”分支流转</small></span></button>
+            <button type="button" class="wf-node-type-option human" data-node-type="human" onclick="wfAddTypedNode('human')"><span class="wf-node-ic"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.2"/><path d="M5.5 19c.8-4 3-6 6.5-6s5.7 2 6.5 6"/></svg></span><span><b>人工节点</b><small>通过工作台由操作员完成处理</small></span></button>
+            <button type="button" class="wf-node-type-option automatic" data-node-type="automatic" onclick="wfAddTypedNode('automatic')"><span class="wf-node-ic"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3.2"/><path d="M12 3.5v2M12 18.5v2M3.5 12h2M18.5 12h2M6 6l1.5 1.5M16.5 16.5 18 18M18 6l-1.5 1.5M7.5 16.5 6 18"/></svg></span><span><b>自动化节点</b><small>绑定算子自动完成数据处理</small></span></button>
+            <button type="button" class="wf-node-type-option condition" data-node-type="condition" onclick="wfAddTypedNode('condition')"><span class="wf-node-ic"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="7" cy="5" r="2"/><circle cx="17" cy="12" r="2"/><circle cx="17" cy="19" r="2"/><path d="M7 7v7a5 5 0 0 0 5 5h3M7 10a5 5 0 0 0 5 2h3"/></svg></span><span><b>条件节点</b><small>配置条件并从“是 / 否”分支流转</small></span></button>
           </div>
         """
-        node_drawer_controls = """
-          <div class="muted" style="font-size:12px;margin-bottom:14px;line-height:1.6;">
-            节点直接加入当前流程图。质检、标注、验收是流程目录中的业务环节，不是画布容器。
-          </div>
-        """
-        node_button_handler = "wfOpenNodeDrawer()"
+        node_drawer_controls = ""
+        node_button_handler = "wfOpenNodeDrawer();event.stopPropagation()"
     else:
         op_items = ""
         for o in OPERATORS:
@@ -5671,10 +6021,9 @@ def pipeline_editor(pid):
             'style="width:100%;box-sizing:border-box;height:34px;padding:5px 12px;'
             'border:1px solid #d9d9d9;border-radius:8px;margin-bottom:12px;outline:none;">'
         )
-        node_button_handler = (
-            "document.getElementById('addTaskDrawer').classList.add('active')"
-        )
+        node_button_handler = "wfOpenNodeDrawer();event.stopPropagation()"
 
+    initial_saved_at = (pl.get("updated") if pl else "") or "未保存"
     flow_data_attr = " ".join(
         item
         for item in (
@@ -5686,6 +6035,7 @@ def pipeline_editor(pid):
             f'data-flow-ident="{html.escape(flow_ident, quote=True)}"',
             f'data-business-stage="{html.escape(flow_business_stage, quote=True)}"',
             f'data-flow-description="{html.escape(flow_desc, quote=True)}"',
+            f'data-last-saved="{html.escape(initial_saved_at, quote=True)}"',
         )
         if item
     )
@@ -5707,11 +6057,10 @@ def pipeline_editor(pid):
         if view_mode
         else """
         <button class="btn" onclick="document.getElementById('flowParamDrawer').classList.add('active')">&#123;&#125; 流程参数</button>
-        <button class="btn" onclick="toast('Demo: 已保存')">&#128190; 保存</button>
+        <button class="btn" onclick="wfSaveDraft(true)">&#128190; 保存</button>
         <button class="btn-primary btn" onclick="wfConfirmPublish()">发布</button>
         """
     )
-    editor_title = "查看工作流" if view_mode else "工作流"
     rename_control = (
         '<button type="button" class="wf-title-edit" title="编辑流程信息" '
         'aria-label="编辑流程信息" onclick="openFlowEditModal()">'
@@ -5746,12 +6095,20 @@ def pipeline_editor(pid):
       .wf-title-edit{{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;padding:0;border:1px solid #b9dfe2;border-radius:7px;background:#f2fbfb;color:#147a83;cursor:pointer;transition:.15s}}
       .wf-title-edit:hover{{border-color:#149daa;background:#e5f6f7;color:#0f6971;box-shadow:0 0 0 2px rgba(20,157,170,.1)}}
       .wf-title-edit svg{{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}}
+      .wf-save-time{{color:rgba(0,0,0,.45);font-size:12px;font-weight:400;white-space:nowrap}}
       .wf-effective-tag.draft{{background:#fff4dc;color:#a86808}}.wf-effective-tag.disabled{{background:#f1f3f4;color:#728188}}
       .wf-flow-edit-modal{{width:480px;max-width:calc(100vw - 24px)}}.wf-flow-edit-modal .fg{{margin-bottom:18px}}.wf-flow-edit-modal .fg input,.wf-flow-edit-modal .fg select{{height:38px;box-sizing:border-box}}.wf-flow-edit-modal .fg input:disabled,.wf-flow-edit-modal .fg select:disabled{{background:#f5f6f7;color:#7c898e;cursor:not-allowed}}
     </style>
     <script>
       function wfConfirmPublish() {{
-        if (window.confirm('发布后不可修改，确认发布？')) toast('已发布');
+        document.getElementById('wfPublishConfirmModal').classList.add('active');
+      }}
+      function closeWfPublishConfirm() {{
+        document.getElementById('wfPublishConfirmModal').classList.remove('active');
+      }}
+      function confirmWfPublish() {{
+        closeWfPublishConfirm();
+        toast('已发布');
       }}
       function openFlowEditModal() {{ document.getElementById('flowEditModal').classList.add('active'); }}
       function closeFlowEditModal() {{ document.getElementById('flowEditModal').classList.remove('active'); }}
@@ -5764,8 +6121,9 @@ def pipeline_editor(pid):
       }}
     </script>
     <div class="wf-topbar">
-      <div class="wf-title"><a href="/pipelines" class="back">&#8249;</a> {editor_title}: <span id="wfFlowTitleName">{flow_name_value}</span>{rename_control}
+      <div class="wf-title"><a href="/pipelines" class="back">&#8249;</a> <span id="wfFlowTitleName">{flow_name_value}</span>{rename_control}
         <span id="wfEffectiveTag" class="wf-effective-tag{' draft' if flow_status == '草稿' else (' disabled' if flow_status == '停用' else '')}">{flow_status}</span>
+        <span id="wfLastSaved" class="wf-save-time">保存时间：{html.escape(initial_saved_at)}</span>
       </div>
       <div class="wf-actions">{editor_actions}</div>
     </div>
@@ -5780,13 +6138,21 @@ def pipeline_editor(pid):
         <div class="drawer-foot"><button type="button" class="btn" onclick="closeFlowEditModal()">关闭</button>{flow_edit_save}</div>
       </div>
     </div>
+    <div class="modal-mask" id="wfPublishConfirmModal" onclick="if(event.target===this)closeWfPublishConfirm()">
+      <div class="modal-box wf-flow-edit-modal" role="dialog" aria-modal="true" aria-labelledby="wfPublishConfirmTitle">
+        <div class="drawer-head"><h3 id="wfPublishConfirmTitle">发布流程</h3><button type="button" class="drawer-close" onclick="closeWfPublishConfirm()" aria-label="关闭">&times;</button></div>
+        <div class="drawer-body"><p style="margin:0;color:#263238;font-size:14px;line-height:1.7;">发布后不可修改，确认发布？</p></div>
+        <div class="drawer-foot"><button type="button" class="btn" onclick="closeWfPublishConfirm()">取消</button><button type="button" class="btn btn-primary" onclick="confirmWfPublish()">确认发布</button></div>
+      </div>
+    </div>
     <div class="{stage_class}" {flow_data_attr}>
-      <div class="wf-canvas" id="wfCanvas">
+      <div class="wf-canvas" id="wfCanvas" tabindex="0" aria-label="流程画布">
         <div class="wf-pan" id="wfPan" style="width:4000px;height:3000px;">
           <div id="wfFrames"></div>
           <svg class="wf-edges" id="wfEdges"></svg>
           <div id="wfNodes"></div>
         </div>
+        <div class="wf-selection-box" id="wfSelectionBox"></div>
         <div class="wf-empty" id="wfEmpty"><div style="font-size:32px;">&#9783;</div><div>{empty_copy}</div></div>
         <div class="wf-toolbar">
           <button class="zbtn" onclick="wfZoom(-0.1)">&minus;</button>
@@ -5797,13 +6163,24 @@ def pipeline_editor(pid):
           {phase_button}
           {node_action_button}
         </div>
+        <div class="wf-add-node-popover" id="addTaskDrawer" onclick="event.stopPropagation()">
+          <div class="wf-add-node-popover-head"><b>添加{node_label}</b><button type="button" class="drawer-close" aria-label="关闭" onclick="wfCloseNodeDrawer();event.stopPropagation()">&times;</button></div>
+          <div class="wf-add-node-popover-body">
+            {node_drawer_controls}
+            {op_items}
+          </div>
+        </div>
+        <div class="wf-context-menu" id="wfNodeContextMenu">
+          <button type="button" data-action="copy">复制</button>
+          <button type="button" class="danger" data-action="delete">删除</button>
+        </div>
       </div>
 
       <div class="wf-config" id="wfConfig">
-        <div class="wf-config-head"><b id="wfcName">节点配置</b><button class="drawer-close" onclick="wfCloseConfig()">&times;</button></div>
+        <div class="wf-config-head"><b id="wfcName">节点</b><button class="drawer-close" onclick="wfCloseConfig()">&times;</button></div>
         <div class="wf-config-body">
           <div id="wfHumanConfig" style="display:none;">
-            <div class="wf-cfg-sec">基本信息</div>
+            <div class="wf-cfg-sec">基础信息</div>
             <div class="wf-human-grid">
               <label><span class="wf-human-label">节点名称</span><input id="wfhName" class="wf-edit-field" placeholder="请输入节点名称"></label>
               <label><span class="wf-human-label">标识</span><input id="wfhIdent" class="wf-edit-field" placeholder="英文标识"></label>
@@ -5825,16 +6202,15 @@ def pipeline_editor(pid):
             <div class="wf-choice-grid actions" id="wfhAllowedActions"></div>
 
             <div class="wf-operation-reject">
-              <div id="wfhRejectHint" class="wf-reject-hint">仅可选择当前节点的前序所有人工节点。</div>
+              <div id="wfhRejectHint" class="wf-human-label">支持驳回到的节点（仅可选择当前节点的前序所有人工节点）</div>
               <div id="wfhRejectWrap" class="wf-reject-wrap" style="display:none;">
-                <div class="wf-human-label">支持驳回到的节点</div>
-                <div class="wf-reject-target-list" id="wfhRejectPanel"></div>
+                <div class="ms-wrap wf-reject-target-list" id="wfhRejectPanel"></div>
               </div>
             </div>
           </div>
 
           <div id="wfConditionNodeConfig" style="display:none;">
-            <div class="wf-cfg-sec">基本信息</div>
+            <div class="wf-cfg-sec">基础信息</div>
             <div class="wf-human-grid">
               <label><span class="wf-human-label">节点名称</span><input id="wfcndName" class="wf-edit-field" placeholder="请输入节点名称"></label>
               <label><span class="wf-human-label">标识</span><input id="wfcndIdent" class="wf-edit-field" placeholder="英文标识"></label>
@@ -5848,7 +6224,7 @@ def pipeline_editor(pid):
           </div>
 
           <div id="wfGenericConfig">
-            <div class="wf-cfg-sec">基本信息</div>
+            <div class="wf-cfg-sec">基础信息</div>
             <div class="wf-human-grid">
               <label><span class="wf-human-label">节点名称</span><input id="wfaName" class="wf-edit-field" placeholder="请输入节点名称"></label>
               <label><span class="wf-human-label">节点 ID</span><input id="wfaIdent" class="wf-edit-field" placeholder="请输入节点 ID"></label>
@@ -5860,16 +6236,6 @@ def pipeline_editor(pid):
         <div class="wf-config-foot">
           <button class="btn" onclick="wfDeleteSel()">删除节点</button>
           <button class="btn-primary btn" onclick="wfSaveConfig()">保存</button>
-        </div>
-      </div>
-    </div>
-
-    <div class="drawer-mask" id="addTaskDrawer" onclick="if(event.target===this)this.classList.remove('active')">
-      <div class="drawer" style="width:420px;">
-        <div class="drawer-head"><h3>添加{node_label}</h3><button class="drawer-close" onclick="document.getElementById('addTaskDrawer').classList.remove('active')">&times;</button></div>
-        <div class="drawer-body">
-          {node_drawer_controls}
-          {op_items}
         </div>
       </div>
     </div>

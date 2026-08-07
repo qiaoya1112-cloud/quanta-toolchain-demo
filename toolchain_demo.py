@@ -4453,13 +4453,13 @@ def _render_workbench_pool_home(pool_id, selected_task_id=None, version="v1"):
         </div>
         {priority_badge}
       </div>
-      <div class="wb-task-brief wb-pool-brief">
+      {'' if is_v2 else f'''<div class="wb-task-brief wb-pool-brief">
         <div><span>环节</span><b>{html.escape(task['stage'])}</b></div>
         <div><span>用户组</span><b>{html.escape(task['user_group'])}</b></div>
         <div><span>待领取</span><b>{total_waiting:,} 条</b></div>
         <div><span>处理中</span><b>{total_processing:,} 条</b></div>
         <div><span>最长滞留</span><b>{html.escape(meta['oldest_wait'])}</b></div>
-      </div>
+      </div>'''}
       {'' if is_v2 else f'''<section class="wb-task-config wb-source-section">
         <div class="wb-task-config-title wb-source-title">
           <div>
@@ -4487,8 +4487,11 @@ def _render_workbench_pool_home(pool_id, selected_task_id=None, version="v1"):
         当前来源：<b>{html.escape(task['task_name'])}</b>
         <code>{html.escape(task['processing_task'])}</code>
       </div>'''}
+      {f'''<form id="wbFilterForm" action="{workbench_url}/edit" method="get" style="display:none" aria-hidden="true">
+        <input type="hidden" name="task" value="{html.escape(task['id'])}">
+      </form>''' if is_v2 else ''}
       <div class="wb-task-config-grid">
-        <section class="wb-task-config wb-filter-config">
+        {'' if is_v2 else f'''<section class="wb-task-config wb-filter-config">
           <div class="wb-task-config-title">
             <h3>筛选条件</h3><span>设置本次进入工作台的数据范围</span>
           </div>
@@ -4513,7 +4516,7 @@ def _render_workbench_pool_home(pool_id, selected_task_id=None, version="v1"):
             </div>
             <div class="wb-filter-tip">不填写时默认处理当前来源下优先级最高的数据</div>
           </form>
-        </section>
+        </section>'''}
         <section class="wb-task-config wb-rule-config">
           <div class="wb-task-config-title">
             <h3>处理规则</h3><span>{html.escape(task['task_name'])}</span>
@@ -4527,7 +4530,7 @@ def _render_workbench_pool_home(pool_id, selected_task_id=None, version="v1"):
         <button class="btn" form="wbFilterForm" type="reset"
           onclick="{reset_rule_details}">重置</button>
         <button class="btn btn-primary" form="wbFilterForm"
-          type="submit">按筛选条件开始处理</button>
+          type="submit">{'开始处理' if is_v2 else '按筛选条件开始处理'}</button>
       </div>
     </div>
     """
