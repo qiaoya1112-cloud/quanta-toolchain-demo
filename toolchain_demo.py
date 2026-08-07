@@ -1124,6 +1124,11 @@ select option:disabled { color:rgba(0,0,0,0.32); }
 .btn-primary { background:#149DAA; border-color:#149DAA; color:#fff; }
 .btn-primary:hover { background:#0F8190; border-color:#0F8190; color:#fff; }
 .btn-sm { height:28px; padding:0 12px; font-size:13px; }
+/* Square icon-only button: 28px hit area, inherits .btn interaction states */
+.btn-icon { display:inline-flex; align-items:center; justify-content:center; width:28px; height:28px; padding:0; border:1px solid #d9d9d9; border-radius:8px; background:#fff; color:rgba(0,0,0,0.65); font-size:14px; line-height:1; cursor:pointer; box-sizing:border-box; transition:border-color 0.15s ease, color 0.15s ease; }
+.btn-icon:hover { border-color:#149DAA; color:#149DAA; }
+.btn-icon:focus-visible { outline:2px solid #149DAA; outline-offset:2px; }
+.btn-icon.danger:hover { border-color:#d4504e; color:#d4504e; }
 
 /* ── Table ── */
 .ant-table { width:100%; border-collapse:collapse; font-size:14px; background:#fff; }
@@ -1151,6 +1156,9 @@ select option:disabled { color:rgba(0,0,0,0.32); }
 .mono { font-family:'SF Mono',Menlo,monospace; font-size:12.5px; color:rgba(0,0,0,0.55); }
 .table-wrap { background:#fff; border:1px solid #f0f0f0; border-radius:8px; overflow:visible; }
 .table-wrap.deploy-table-wrap { overflow:visible; }
+/* Empty state: shared token for "no rows" cells and empty card bodies */
+.table-empty { text-align:center; padding:36px 24px; color:rgba(0,0,0,0.25); font-size:13px; line-height:1.7; }
+.table-empty .te-hint { display:block; margin-top:2px; color:rgba(0,0,0,0.25); font-size:12.5px; }
 .ckpt-table { table-layout:fixed; }
 .ckpt-name-cell { display:block; max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:#149DAA; text-decoration:none; }
 .ckpt-name-cell:hover { color:#0F8190; }
@@ -6835,7 +6843,7 @@ def embodied_eval_prompts():
                 '''
                 table_rows += row
     else:
-        table_rows = '<tr><td colspan="6" style="text-align:center;padding:48px;color:rgba(0,0,0,0.45);">暂无数据</td></tr>'
+        table_rows = '<tr><td colspan="6" class="table-empty">还没有提示词<span class="te-hint">点击右上角「新增提示词」或「导入 JSON」开始构建提示词库</span></td></tr>'
 
     content = f"""
     <div class="filter-bar">
@@ -7181,7 +7189,7 @@ def embodied_eval_metrics():
             </div>
             """
     else:
-        cards_html = '<div class="card" style="text-align:center;padding:48px;color:rgba(0,0,0,0.45);">暂无数据</div>'
+        cards_html = '<div class="card table-empty">还没有 Metric 模板<span class="te-hint">点击右上角「新建 Metric 模板」定义可复用的评测字段组</span></div>'
 
     content = f"""
     <div class="filter-bar">
@@ -7314,7 +7322,7 @@ def embodied_eval_sets():
               </td>
             </tr>"""
     else:
-        rows = '<tr><td colspan="7" style="text-align:center;padding:48px;color:rgba(0,0,0,0.45);">暂无数据</td></tr>'
+        rows = '<tr><td colspan="7" class="table-empty">还没有评测集<span class="te-hint">点击右上角「新建评测集」组合提示词与 Metric，形成一份评测卷子</span></td></tr>'
 
     content = f"""
     <div class="filter-bar">
@@ -8003,7 +8011,7 @@ def embodied_eval_tasks():
               <td class="actions-cell">{actions_html}</td>
             </tr>"""
     else:
-        rows = '<tr><td colspan="6" style="text-align:center;padding:48px;color:rgba(0,0,0,0.45);">暂无数据</td></tr>'
+        rows = '<tr><td colspan="6" class="table-empty">还没有评测任务<span class="te-hint">点击右上角「新建评测任务」选择评测集与被测模型后发起评测</span></td></tr>'
 
     content = f"""
     <div class="filter-bar">
@@ -8204,7 +8212,7 @@ def embodied_eval_tasks_create():
       card.style.cssText = 'border:1px solid #f0f0f0;border-radius:8px;padding:14px;margin-bottom:10px;background:#fafbfc;position:relative;';
       card.innerHTML = `
         <div style="position:absolute;top:10px;right:10px;">
-          <button type="button" class="btn-icon" onclick="removeModel(this)" title="删除" style="color:#d4504e;cursor:pointer;border:0;background:transparent;font-size:18px;">&times;</button>
+          <button type="button" class="btn-icon danger" onclick="removeModel(this)" title="删除此模型">&times;</button>
         </div>
         <div class="fg-row">
           <div class="fg">
@@ -8362,7 +8370,7 @@ def embodied_eval_task_detail(task_id):
         </tr>"""
 
     if not models_rows:
-        models_rows = '<tr><td colspan="4" style="text-align:center;padding:24px;color:rgba(0,0,0,0.45);">无被测模型</td></tr>'
+        models_rows = '<tr><td colspan="4" class="table-empty">无被测模型</td></tr>'
 
     # Eval set info
     eval_set_info = ""
@@ -8641,7 +8649,10 @@ def embodied_eval_segments():
               <td class="actions-cell"><a href="/model/embodied-eval/segments/{seg['segment_id']}">查看详情</a></td>
             </tr>"""
     else:
-        rows = '<tr><td colspan="9" style="text-align:center;padding:48px;color:rgba(0,0,0,0.45);">暂无数据</td></tr>'
+        _seg_empty = ('没有符合条件的记录<span class="te-hint">尝试调整上方筛选条件或清除搜索关键词</span>'
+                      if (task_id or status or badcase_only or search_query)
+                      else '还没有评测记录<span class="te-hint">评测任务执行后，采集端上传的 Segment 会在这里汇总</span>')
+        rows = f'<tr><td colspan="9" class="table-empty">{_seg_empty}</td></tr>'
 
     content = f"""
     <div class="filter-bar">
@@ -8839,6 +8850,7 @@ def embodied_eval_segment_detail(segment_id):
     exec_time = "—"
 
     tab1_content = f"""
+    <div class="card">
     <div class="bi-info-grid" style="grid-template-columns:repeat(4,1fr);">
       <div class="bi-info-item">
         <div class="bi-info-label">Segment ID</div>
@@ -8891,6 +8903,7 @@ def embodied_eval_segment_detail(segment_id):
         <div class="bi-info-value">{html.escape(seg.get("scene", "—"))}</div>
       </div>
     </div>
+    </div>
     """
 
     # Tab 2: 视频与轨迹
@@ -8910,12 +8923,12 @@ def embodied_eval_segment_detail(segment_id):
     moz_trace_file = seg.get("moz_trace_file", "")
 
     tab2_content = f"""
-    <div style="margin-bottom:24px;">
+    <div class="card">
       <h4 style="margin:0 0 12px;">视频回放</h4>
       {video_html}
     </div>
 
-    <div style="margin-top:24px;">
+    <div class="card">
       <h4 style="margin:0 0 12px;">轨迹数据</h4>
       <div class="bi-info-grid" style="grid-template-columns:1fr;">
         <div class="bi-info-item">
@@ -8949,7 +8962,7 @@ def embodied_eval_segment_detail(segment_id):
               <td class="mono">{html.escape(display_value)}</td>
             </tr>"""
     else:
-        metrics_rows = '<tr><td colspan="2" style="text-align:center;padding:48px;color:rgba(0,0,0,0.45);">无 Metric 数据</td></tr>'
+        metrics_rows = '<tr><td colspan="2" class="table-empty">无 Metric 数据</td></tr>'
 
     tab3_content = f"""
     <div class="table-wrap">
@@ -9010,7 +9023,7 @@ def embodied_eval_segment_detail(segment_id):
         metric_template_name = metric_template["name"] if metric_template else "—"
 
         eval_set_section = f"""
-        <div style="margin-top:24px;">
+        <div class="card">
           <h4 style="margin:0 0 12px;">评测集配置</h4>
           <div class="bi-info-grid" style="grid-template-columns:repeat(3,1fr);">
             <div class="bi-info-item">
@@ -9030,8 +9043,10 @@ def embodied_eval_segment_detail(segment_id):
         """
 
     tab4_content = f"""
-    <h4 style="margin:0 0 12px;">Prompt 信息</h4>
-    {prompt_section}
+    <div class="card">
+      <h4 style="margin:0 0 12px;">Prompt 信息</h4>
+      {prompt_section}
+    </div>
     {eval_set_section}
     """
 
@@ -9052,93 +9067,22 @@ def embodied_eval_segment_detail(segment_id):
       </label>
     </div>
 
-    <div class="card" style="padding:0;overflow:hidden;">
-      <div class="tabs-container">
-        <div class="tabs-header">
-          <button class="tab-btn active" onclick="switchSegmentTab(0)">基本信息</button>
-          <button class="tab-btn" onclick="switchSegmentTab(1)">视频与轨迹</button>
-          <button class="tab-btn" onclick="switchSegmentTab(2)">Metric详情</button>
-          <button class="tab-btn" onclick="switchSegmentTab(3)">Prompt与配置</button>
-        </div>
-        <div class="tabs-body">
-          <div class="tab-pane active" id="tab0">
-            {tab1_content}
-          </div>
-          <div class="tab-pane" id="tab1">
-            {tab2_content}
-          </div>
-          <div class="tab-pane" id="tab2">
-            {tab3_content}
-          </div>
-          <div class="tab-pane" id="tab3">
-            {tab4_content}
-          </div>
-        </div>
-      </div>
+    <div class="det-tabs">
+      <span class="det-tab active" onclick="switchDetTab(this,'seg-basic')">基本信息</span>
+      <span class="det-tab" onclick="switchDetTab(this,'seg-media')">视频与轨迹</span>
+      <span class="det-tab" onclick="switchDetTab(this,'seg-metrics')">Metric 详情</span>
+      <span class="det-tab" onclick="switchDetTab(this,'seg-prompt')">Prompt 与配置</span>
     </div>
+    <div id="det-pane-seg-basic"   class="det-pane active">{tab1_content}</div>
+    <div id="det-pane-seg-media"   class="det-pane">{tab2_content}</div>
+    <div id="det-pane-seg-metrics" class="det-pane">{tab3_content}</div>
+    <div id="det-pane-seg-prompt"  class="det-pane">{tab4_content}</div>
 
     <div style="margin-top:16px;">
       <a class="btn" href="/model/embodied-eval/segments?task_id={seg['task_id']}">返回列表</a>
     </div>
 
-    <style>
-    .tabs-container {{
-      background: #fff;
-    }}
-    .tabs-header {{
-      display: flex;
-      border-bottom: 1px solid #f0f0f0;
-      background: #fafafa;
-    }}
-    .tab-btn {{
-      background: transparent;
-      border: none;
-      padding: 14px 24px;
-      font-size: 14px;
-      color: rgba(0,0,0,0.65);
-      cursor: pointer;
-      border-bottom: 2px solid transparent;
-      transition: all 0.2s;
-      font-weight: 400;
-    }}
-    .tab-btn:hover {{
-      color: #149DAA;
-    }}
-    .tab-btn.active {{
-      color: #149DAA;
-      font-weight: 500;
-      border-bottom-color: #149DAA;
-      background: #fff;
-    }}
-    .tabs-body {{
-      padding: 24px;
-    }}
-    .tab-pane {{
-      display: none;
-    }}
-    .tab-pane.active {{
-      display: block;
-    }}
-    </style>
-
     <script>
-    function switchSegmentTab(index) {{
-      document.querySelectorAll('.tab-btn').forEach(function(btn, i) {{
-        if (i === index) {{
-          btn.classList.add('active');
-        }} else {{
-          btn.classList.remove('active');
-        }}
-      }});
-      document.querySelectorAll('.tab-pane').forEach(function(pane, i) {{
-        if (i === index) {{
-          pane.classList.add('active');
-        }} else {{
-          pane.classList.remove('active');
-        }}
-      }});
-    }}
-
     function toggleBadCase() {{
       var checked = document.getElementById('badcaseCheckbox').checked;
       fetch('/api/embodied-eval/segments/{seg["segment_id"]}/badcase', {{
