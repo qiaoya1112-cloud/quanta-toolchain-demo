@@ -5517,7 +5517,7 @@ def task_statistics(tid):
       <div class="stat-summary">
         <div><span>评测集</span><b title="{html.escape(benchmark.get("name", "--"), quote=True)}">{html.escape(benchmark.get("name", "--"))}</b></div>
         <div class="stat-summary-ckpt"><span>ckpt</span>{checkpoint_control}</div>
-        <div><span>Prompt 总数</span><b>{len(prompt_rows)}</b></div>
+        <div><span>Prompt 总数</span><b>{lowlevel_total}</b></div>
         <div><span>执行次数</span><b>{total_runs}</b></div>
       </div>
       <div class="stat-table-wrap"><table class="stat-matrix"><thead><tr><th class="stat-prompt-head">prompt</th>{headers}<th class="stat-secondary-head"><div class="stat-secondary-head-inner"><span>结果统计</span><a href="javascript:;" id="stat-detail-toggle" class="stat-detail-toggle" onclick="toggleStatDetails()">展开详情</a></div></th></tr></thead><tbody>{rows}</tbody></table></div>
