@@ -5460,11 +5460,14 @@ def task_statistics(tid):
     if not secondary_values:
         secondary_values = ["直接成功", "动作失败"]
     lowlevel_total = sum(max(len(low_levels), 1) for _, low_levels in prompt_rows)
-    total_runs = max(lowlevel_total * 10, 1)
 
-    def make_statuses(seed_index):
+    def make_statuses(seed_index, include_unexecuted=False):
         pattern = []
         for trial in range(10):
+            # Low Level Prompt 可能在某个轮次未实际执行，该轮结果保持为空。
+            if include_unexecuted and (seed_index * 5 + trial * 3 + selected_checkpoint_index) % 17 == 0:
+                pattern.append(None)
+                continue
             value_index = (seed_index * 3 + trial + selected_checkpoint_index) % len(secondary_values)
             value = secondary_values[value_index]
             parent = next((parent for parent, child in definitions if child == value), "成功" if value_index == 0 else "失败")
@@ -5474,19 +5477,25 @@ def task_statistics(tid):
     def render_result_cells(statuses):
         result_counts = {}
         status_cells = []
-        for parent, value in statuses:
+        for status in statuses:
+            if status is None:
+                status_cells.append('<td class="stat-result-empty"></td>')
+                continue
+            parent, value = status
             result_counts[value] = result_counts.get(value, 0) + 1
             css_class = "ok" if parent == "成功" else "fail"
             status_cells.append(f'<td><span class="stat-result {css_class}">{html.escape(value)}</span></td>')
+        executed_count = sum(result_counts.values())
         detail_html = "".join(
-            f'<div class="stat-secondary-item"><span class="stat-result {"ok" if next((p for p, v in definitions if v == value), "失败") == "成功" else "fail"}">{html.escape(value)}</span><b>{count} 次</b><em>{count / len(statuses) * 100:.1f}%</em></div>'
+            f'<div class="stat-secondary-item"><span class="stat-result {"ok" if next((p for p, v in definitions if v == value), "失败") == "成功" else "fail"}">{html.escape(value)}</span><b>{count} 次</b><em>{count / executed_count * 100:.1f}%</em></div>'
             for value, count in result_counts.items()
         )
-        summary_html = f'共 {sum(result_counts.values())} 次'
+        summary_html = f'共 {executed_count} 次'
         secondary_html = f'<div class="stat-secondary-content"><div class="stat-secondary-summary">{summary_html}</div><div class="stat-secondary-details" hidden>{detail_html}</div></div>'
         return "".join(status_cells), secondary_html
 
     matrix_rows = []
+    total_runs = 0
     for row_index, (prompt, low_levels) in enumerate(prompt_rows):
         prompt_text = prompt.get("high_level") or prompt.get("high_level_en") or "--"
         prompt_en = prompt.get("high_level_en", "")
@@ -5502,7 +5511,8 @@ def task_statistics(tid):
         for low_index, low in enumerate(low_levels):
             low_text = low.get("zh") or low.get("en") or "--"
             low_en = low.get("en", "")
-            child_statuses = make_statuses(row_index * 7 + low_index + 1)
+            child_statuses = make_statuses(row_index * 7 + low_index + 1, include_unexecuted=True)
+            total_runs += sum(status is not None for status in child_statuses)
             child_cells, child_secondary = render_result_cells(child_statuses)
             child_html = f'<div class="stat-tree-row stat-tree-child-row"><span class="stat-tree-branch" aria-hidden="true"></span><span><b>{html.escape(low_text)}</b>{("<em>" + html.escape(low_en) + "</em>") if low_en and low_text != low_en else ""}</span></div>'
             matrix_rows.append(
