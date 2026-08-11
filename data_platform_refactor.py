@@ -27,6 +27,7 @@ PAGE_SPECS = {
         "title": "处理任务",
         "subtitle": "用筛选条件接收数据，并编排多个独立处理流程",
         "icon": "&#9776;",
+        "nav_badge": "S025",
     },
     "allocation_management": {
         "path": "/data/allocations",
@@ -40,6 +41,7 @@ PAGE_SPECS = {
         "title": "分配管理",
         "subtitle": "按供应商与用户组统筹进行中的人工处理任务",
         "icon": "&#8646;",
+        "nav_badge": "S025",
     },
     "allocation_management_old": {
         "path": "/data/allocations-legacy",
@@ -69,6 +71,7 @@ PAGE_SPECS = {
         "nav_title": "标注工作台",
         "subtitle": "领取用户组或供应商任务，并处理被驳回的数据",
         "icon": "&#9881;",
+        "nav_badge": "S025",
     },
     "personal_dashboard": {
         "path": "/data/dashboard",
@@ -91,6 +94,7 @@ PAGE_SPECS = {
         "title": "用户组管理",
         "subtitle": "管理人工节点的领取范围与共享任务池",
         "icon": "&#9786;",
+        "nav_badge": "S025",
     },
     "execution_records": {
         "path": "/data/runs",
@@ -106,7 +110,6 @@ PAGE_SPECS = {
         "title": "算子管理",
         "subtitle": "管理工作流可复用处理算子",
         "icon": "&#9881;",
-        "nav_badge": "无界面",
         "badge": "草稿",
         "legacy": True,
     },
@@ -115,14 +118,12 @@ PAGE_SPECS = {
         "title": "工作台管理",
         "subtitle": "管理工作台 Schema 与可复用组件",
         "icon": "&#9634;",
-        "nav_badge": "无界面",
     },
     "project_management": {
         "path": "/data/projects",
         "title": "项目管理",
         "subtitle": "维护任务所属项目及负责人",
         "icon": "&#9635;",
-        "nav_badge": "无界面",
         "hide_from_nav": True,
     },
     "rule_management": {
@@ -177,7 +178,6 @@ PAGE_SPECS = {
         "title": "权限管理",
         "subtitle": "管理角色、资源权限与授权关系",
         "icon": "&#9634;",
-        "nav_badge": "无界面",
         "badge": "草稿",
     },
 }
