@@ -612,9 +612,6 @@ PLATFORMS = {
                 ("/model/experiments", "训练任务", "&#9881;", ""),
                 ("/model/checkpoints", "Checkpoint", "&#9783;", ""),
             ]),
-            ("部署", [
-                ("/model/deploy", "部署任务", "&#9654;", ""),
-            ]),
             ("评测", [
                 ("/model/eval/tasks",        "评测任务", "&#9881;", ""),
                 ("/model/eval/benchmarks",   "评测集",   "&#9776;", ""),
@@ -7991,6 +7988,29 @@ RESOURCE_TAB_LABELS = {
     "kingsoft": "金山云",
 }
 
+EXPERIMENT_DESCRIPTIONS = {
+    "DEMO_EXP_9001": "擦白板场景 PI0.5 主线微调，验证 v5 数据集收敛效果",
+    "DEMO_EXP_9003": "桌面整理 A/B 数据联合训练，提升跨场景泛化能力",
+    "DEMO_EXP_9005": "擦白板 v6 增量数据训练，验证新增样本带来的收益",
+    "exp_7757": "药丸分拣新观测输入微调，启用中心裁剪与双机械臂控制",
+    "exp_7539": "窄桌场景 Manual DAgger 二阶段训练，适配 Moz1 全身控制",
+    "exp_7374": "Pico 机械臂瓶体抓取专项训练，优化抓取稳定性",
+    "exp_7285": "笔类物体抓取一小时数据快速微调，验证小样本收敛",
+    "exp_6869": "水果串签场景新数据回归训练，检查动作连续性与成功率",
+}
+
+
+def _experiment_description(exp):
+    if exp.get("description"):
+        return exp["description"]
+    if exp.get("id") in EXPERIMENT_DESCRIPTIONS:
+        return EXPERIMENT_DESCRIPTIONS[exp["id"]]
+    dataset_name = str(exp.get("dataset") or "").strip()
+    model_type = str(exp.get("model_type") or "模型").strip()
+    if dataset_name and dataset_name != "—":
+        return f"基于 {dataset_name} 数据集进行 {model_type} 微调与效果验证"
+    return f"{model_type} 场景专项微调与训练效果验证"
+
 
 def _normalized_resource_key(value, fallback_index=0):
     raw = str(value or "").strip().lower()
@@ -8079,7 +8099,8 @@ def experiments():
             f'</span>'
             f'</span>'
         )
-        description_cell = f'<td class="muted">{e.get("description") or "训练任务"}</td>' if show_description else ""
+        description = _experiment_description(e)
+        description_cell = f'<td class="muted">{html.escape(description)}</td>' if show_description else ""
         actions_cell = f"""
           <td class="actions-cell">
             {stop_action}
@@ -8494,6 +8515,8 @@ def experiment_detail(exp_id):
         return redirect("/model/experiments")
 
     owner = e["owner"] if e["owner"] != "—" else "tao.wang"
+    resource_key = _experiment_resource_key(e)
+    show_experiment_dashboard = resource_key != "kingsoft"
 
     # ──── Tab 1: Checkpoint ────
     ckpts = _task_ckpts(e)
@@ -8755,12 +8778,43 @@ bash lerobot/scripts/train_unified.sh /mnt/vepfs01/output/quanta/experiments/con
     </div>
     """
 
+    experiment_dashboard_tab = '<span class="det-tab" onclick="switchDetTab(this,\'data\')">实验看板</span>' if show_experiment_dashboard else ""
+    experiment_dashboard_pane = f'<div id="det-pane-data" class="det-pane">{tab_data}</div>' if show_experiment_dashboard else ""
+    detail_action = (
+        '<a class="btn" href="#" onclick="toast(\'Demo: 已打开金山云训练任务\');return false;">前往金山云查看</a>'
+        if resource_key == "kingsoft"
+        else f'<a class="btn" href="/model/lineage/train/{e["id"]}">查看血缘</a>'
+    )
+    detail_tabs_extra = ""
+    detail_panes_extra = ""
+    if resource_key != "kingsoft":
+        detail_tabs_extra = (
+            '<span class="det-tab" onclick="switchDetTab(this,\'logs\')">日志</span>'
+            '<span class="det-tab" onclick="switchDetTab(this,\'timeline\')">时间线</span>'
+            + experiment_dashboard_tab
+            + '<span class="det-tab" onclick="switchDetTab(this,\'basic\')">基础信息</span>'
+        )
+        detail_panes_extra = (
+            f'<div id="det-pane-logs" class="det-pane">{tab_logs}</div>'
+            f'<div id="det-pane-timeline" class="det-pane">{tab_timeline}</div>'
+            f'{experiment_dashboard_pane}'
+            f'<div id="det-pane-basic" class="det-pane">{tab_basic}</div>'
+        )
+    detail_tabs = f'''
+    <div class="det-tabs">
+      <span class="det-tab active" onclick="switchDetTab(this,'ckpt')">Checkpoint</span>
+      {detail_tabs_extra}
+    </div>'''
+    detail_panes = f'''
+    <div id="det-pane-ckpt" class="det-pane active">{tab_ckpt}</div>
+    {detail_panes_extra}'''
+
     # 顶层结构: 训练任务信息 + 扁平化的 5 个详情 tab
     content = f"""
     <div class="tdh">
       <div class="tdh-name">{e['name']}</div>
       <div class="tdh-actions">
-        <a class="btn" href="/model/lineage/train/{e['id']}">查看血缘</a>
+        {detail_action}
       </div>
       <div class="tdh-meta">
         <div><span class="lbl">创建人:</span><span class="val">{owner}</span></div>
@@ -8768,19 +8822,8 @@ bash lerobot/scripts/train_unified.sh /mnt/vepfs01/output/quanta/experiments/con
       </div>
     </div>
 
-    <div class="det-tabs">
-      <span class="det-tab active" onclick="switchDetTab(this,'ckpt')">Checkpoint</span>
-      <span class="det-tab" onclick="switchDetTab(this,'logs')">日志</span>
-      <span class="det-tab" onclick="switchDetTab(this,'timeline')">时间线</span>
-      <span class="det-tab" onclick="switchDetTab(this,'data')">实验看板</span>
-      <span class="det-tab" onclick="switchDetTab(this,'basic')">基础信息</span>
-    </div>
-
-    <div id="det-pane-ckpt"    class="det-pane active">{tab_ckpt}</div>
-    <div id="det-pane-logs"    class="det-pane">{tab_logs}</div>
-    <div id="det-pane-timeline" class="det-pane">{tab_timeline}</div>
-    <div id="det-pane-data"    class="det-pane">{tab_data}</div>
-    <div id="det-pane-basic"   class="det-pane">{tab_basic}</div>
+    {detail_tabs}
+    {detail_panes}
 
     <div class="modal-mask" id="cacheModalMask" onclick="closeCacheModal()">
       <div class="modal" id="cacheModalBox" onclick="event.stopPropagation()">
