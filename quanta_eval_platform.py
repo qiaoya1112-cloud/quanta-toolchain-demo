@@ -1707,9 +1707,9 @@ def prompts_page():
 
         rows += f'<tr class="row-parent prompt-parent-row" data-id="{pid}">'
         rows += f'<td class="prompt-tree-cell"><button class="expand-btn" data-target="sub-{pid}">&#9654;</button></td>'
-        rows += '<td class="prompt-seq prompt-seq-parent prompt-seq-col">—</td>'
         rows += td_tip(p["high_level"], 'style="font-weight:600;"')
         rows += td_tip(p["high_level_en"])
+        rows += '<td class="prompt-seq prompt-seq-parent prompt-seq-col">—</td>'
         rows += f'<td>{difficulty_html(p.get("difficulty", 3))}</td>'
         rows += td_tip(labels_html, tip_text=labels_tip)
         rows += f'<td><span class="prompt-status {"is-enabled" if enabled else "is-disabled"}">{"已发布" if enabled else "未发布"}</span></td>'
@@ -1729,9 +1729,9 @@ def prompts_page():
                 f'data-parent="{pid}" data-child-id="{ll["id"]}" draggable="true">'
             )
             rows += '<td class="prompt-drag-cell"><span class="prompt-drag-handle" title="拖拽调整顺序">&#8942;&#8942;</span></td>'
-            rows += f'<td class="prompt-seq prompt-seq-col">{index}</td>'
             rows += td_tip(ll["zh"])
             rows += td_tip(ll["en"])
+            rows += f'<td class="prompt-seq prompt-seq-col">{index}</td>'
             rows += f'<td>{difficulty_html(ll.get("difficulty", 3))}</td>'
             rows += td_tip(render_tags_html(ll.get("labels", [])), tip_text=_build_tip_text(ll.get("labels", [])))
             # 已发布/未发布只在 highlevel 父级生效，lowlevel 不展示状态。
@@ -1745,9 +1745,9 @@ def prompts_page():
         rows += f'''
         <tr class="row-child row-inline-child prompt-add-child-row" id="add-child-{pid}" data-parent="{pid}" style="display:none;">
           <td class="prompt-drag-cell"><span class="prompt-drag-placeholder"></span></td>
-          <td class="prompt-seq prompt-seq-col">{len(p["low_levels"]) + 1}</td>
           <td><input type="text" form="form-child-{pid}" name="zh" placeholder="输入 Low level" {INLINE_INPUT}></td>
           <td><input type="text" form="form-child-{pid}" name="en" placeholder="输入 Task-Prompt" {INLINE_INPUT}></td>
+          <td class="prompt-seq prompt-seq-col">{len(p["low_levels"]) + 1}</td>
           <td>
             <div class="prompt-difficulty-stepper">
               <button type="button" onclick="stepPromptDifficulty(this,-1)">−</button>
@@ -1795,9 +1795,9 @@ def prompts_page():
       <table class="ant-table" id="prompt-table">
         <thead><tr>
           <th></th>
-          <th class="prompt-seq-col">序号</th>
           <th>任务提示词</th>
           <th>Task-Prompt</th>
+          <th class="prompt-seq-col">序号</th>
           <th>难度</th>
           <th>标签</th>
           <th>状态</th>
@@ -1809,9 +1809,9 @@ def prompts_page():
           {rows}
           <tr class="row-new-parent" id="new-parent-row" style="display:none;">
             <td></td>
-            <td class="prompt-seq prompt-seq-col">—</td>
             <td><input type="text" form="inline-add" name="high_level" placeholder="输入任务提示词" {INLINE_INPUT}></td>
             <td><input type="text" form="inline-add" name="high_level_en" placeholder="输入 Task-Prompt" {INLINE_INPUT}></td>
+            <td class="prompt-seq prompt-seq-col">—</td>
             <td>
               <div class="prompt-difficulty-stepper">
                 <button type="button" onclick="stepPromptDifficulty(this,-1)">−</button>
@@ -1857,11 +1857,11 @@ def prompts_page():
       .prompt-filter-bar .ff .prompt-filter-select {{ width:100%; min-width:0; }}
       #prompt-table {{ table-layout:fixed; }}
       #prompt-table th:nth-child(1) {{ width:42px; }}
-      #prompt-table th:nth-child(2), #prompt-table td:nth-child(2) {{ display:none; }}
-      #prompt-table th:nth-child(3) {{ width:18%; }}
-      #prompt-table th:nth-child(4) {{ width:24%; }}
+      #prompt-table th:nth-child(2) {{ width:17%; }}
+      #prompt-table th:nth-child(3) {{ width:23%; }}
+      #prompt-table th:nth-child(4), #prompt-table td:nth-child(4) {{ width:56px; }}
       #prompt-table th:nth-child(5) {{ width:112px; }}
-      #prompt-table th:nth-child(6) {{ width:26%; }}
+      #prompt-table th:nth-child(6) {{ width:24%; }}
       #prompt-table th:nth-child(7) {{ width:86px; }}
       #prompt-table th:nth-child(8) {{ width:108px; }}
       #prompt-table th:nth-child(9) {{ width:145px; }}
@@ -1942,9 +1942,9 @@ def prompts_page():
       tr.className = 'row-new-child';
       tr.innerHTML = `
         <td class="prompt-drag-cell"><span class="prompt-drag-placeholder"></span></td>
-        <td class="prompt-seq prompt-seq-col">${{idx + 1}}</td>
         <td><input type="text" form="inline-add" name="child_zh_${{idx}}" placeholder="输入任务提示词" {INLINE_INPUT}></td>
         <td><input type="text" form="inline-add" name="child_en_${{idx}}" placeholder="输入 Task-Prompt" {INLINE_INPUT}></td>
+        <td class="prompt-seq prompt-seq-col">${{idx + 1}}</td>
         <td><div class="prompt-difficulty-stepper"><button type="button" onclick="stepPromptDifficulty(this,-1)">−</button><input type="number" form="inline-add" name="child_difficulty_${{idx}}" min="1" max="5" value="3" readonly><button type="button" onclick="stepPromptDifficulty(this,1)">＋</button></div></td>
         <td>
           <div class="ts-wrap" id="${{tsId}}">
