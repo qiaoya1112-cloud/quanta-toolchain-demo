@@ -603,31 +603,30 @@ PLATFORMS = {
         "tagline": "数据 → 训练 → 部署 → 评测",
         "home": "/model",
         "nav": [
-            ("概览", [
-                ("/model", "快速入门", "&#9728;", "新增"),
-            ]),
             ("数据", [
-                ("/model/data/query", "数据查询", "&#9906;", "优化"),
-                ("/model/data/datasets", "数据集", "&#9776;", "优化"),
-                ("/model/data/raw", "原始数据", "&#9783;", "新增"),
+                ("/model/data/query", "数据查询", "&#9906;", ""),
+                ("/model/data/datasets", "数据集", "&#9776;", ""),
+                ("/model/data/raw", "原始数据", "&#9783;", ""),
             ]),
             ("训练", [
-                ("/model/experiments", "训练任务", "&#9881;", "优化"),
+                ("/model/experiments", "训练任务", "&#9881;", ""),
+                ("/model/checkpoints", "Checkpoint", "&#9783;", ""),
             ]),
             ("部署", [
-                ("/model/checkpoints", "Checkpoint", "&#9783;", "优化"),
-                ("/model/deploy", "部署任务", "&#9654;", "新增"),
+                ("/model/deploy", "部署任务", "&#9654;", ""),
             ]),
             ("评测", [
-                ("/model/eval/tasks",        "评测任务", "&#9881;", "待定"),
-                ("/model/eval/eval-records", "评测结果", "&#9776;", "待定"),
-                ("/model/eval/evaluate2",    "工作台",   "&#9878;", "待定"),
+                ("/model/eval/tasks",        "评测任务", "&#9881;", ""),
+                ("/model/eval/benchmarks",   "评测集",   "&#9776;", ""),
+                ("/model/eval/criteria",     "评价标准", "&#9745;", ""),
+                ("/model/eval/evaluate2",    "端侧示意",   "&#9878;", ""),
             ]),
-            ("公共配置", [
-                ("/model/eval/benchmarks",   "Benchmark 管理", "&#9776;", "优化"),
-                ("/model/eval/scenes",       "场景管理",     "&#9711;", "新增"),
-                ("/model/eval/prompts",      "提示词管理",   "&#9998;", "优化"),
-                ("/model/eval/tags",         "标签管理",     "&#9873;", "优化"),
+            ("配置", [
+                ("/model/eval/prompts",      "任务提示词",   "&#9998;", ""),
+                ("/model/eval/tags",         "标签管理",     "&#9873;", ""),
+            ]),
+            ("管理", [
+                ("/model/queues",             "队列管理",     "&#9783;", ""),
             ]),
         ],
     },
@@ -876,6 +875,9 @@ a { color:#149DAA; text-decoration:none; } a:hover { color:#0F8190; }
 
 /* ── Page title (inside module page) ── */
 .page-title { font-size:20px; font-weight:600; color:rgba(0,0,0,0.85); margin:0 0 4px; }
+.model-list-title { display:flex; align-items:center; justify-content:space-between; min-height:40px; margin:0 0 16px; }
+.model-list-title h1 { margin:0; font-size:20px; line-height:32px; font-weight:600; color:rgba(0,0,0,0.85); }
+.model-list-actions { display:flex; align-items:center; gap:8px; }
 .page-sub { font-size:13px; color:rgba(0,0,0,0.55); margin-bottom:20px; }
 .page-sub .deferred { color:rgba(0,0,0,0.35); }
 .welcome-card { background:#fff; border:1px solid #f0f0f0; border-radius:10px; padding:24px 28px; margin-bottom:20px; }
@@ -987,7 +989,27 @@ select option:disabled { color:rgba(0,0,0,0.32); }
 .table-wrap { background:#fff; border:1px solid #f0f0f0; border-radius:8px; overflow:visible; }
 .table-wrap.q-table-scroll { overflow-x:auto; overflow-y:hidden; }
 .table-wrap.deploy-table-wrap { overflow:visible; }
-.ckpt-table { table-layout:fixed; }
+.model-queue-members { display:flex; flex-wrap:wrap; align-items:center; gap:6px; }
+.model-queue-member { display:inline-flex; align-items:center; padding:3px 9px; border:1px solid #e5e7eb; border-radius:5px; background:#f7f8fa; color:rgba(0,0,0,0.68); font-size:12px; line-height:18px; }
+.model-queue-member-picker { position:relative; border:1px solid #d9d9d9; border-radius:8px; background:#fff; min-height:38px; padding:5px 34px 5px 8px; display:flex; align-items:center; gap:6px; flex-wrap:wrap; box-sizing:border-box; cursor:text; }
+.model-queue-member-picker::after { content:'⌄'; position:absolute; right:12px; top:50%; transform:translateY(-56%); color:rgba(0,0,0,0.45); font-size:15px; pointer-events:none; }
+.model-queue-member-picker:focus-within, .model-queue-member-picker.open { border-color:#149DAA; box-shadow:0 0 0 2px rgba(20,157,170,0.12); }
+.model-queue-member-picker.is-disabled { background:#f5f5f5; cursor:not-allowed; box-shadow:none; }
+.model-queue-member-picker.is-disabled::after { color:rgba(0,0,0,0.25); }
+.model-queue-member-picker .model-queue-select-chip { display:inline-flex; align-items:center; gap:6px; max-width:100%; height:26px; padding:0 8px; border:1px solid #dfe3e8; border-radius:5px; background:#f7f8fa; color:rgba(0,0,0,0.70); font-size:12.5px; }
+.model-queue-select-chip span { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.model-queue-select-chip button { border:0; padding:0; background:none; color:rgba(0,0,0,0.35); cursor:pointer; font-size:14px; line-height:1; }
+.model-queue-select-chip button:hover { color:#149DAA; }
+.model-queue-member-search, .model-queue-member-search:focus { flex:1; min-width:130px; height:26px; border:none !important; outline:none !important; box-shadow:none !important; padding:0 4px; font-size:13px; font-family:inherit; background:transparent; }
+.model-queue-member-menu { display:none; position:absolute; left:0; right:0; top:calc(100% + 6px); z-index:180; max-height:220px; overflow-y:auto; padding:6px; border:1px solid #e5e7eb; border-radius:8px; background:#fff; box-shadow:0 8px 24px rgba(0,0,0,0.12); }
+.model-queue-member-picker.open .model-queue-member-menu { display:block; }
+.model-queue-member-picker.is-disabled .model-queue-member-menu { display:none; }
+.model-queue-member-option { width:100%; display:flex; align-items:center; justify-content:space-between; gap:12px; padding:8px 10px; border:0; border-radius:6px; background:transparent; color:rgba(0,0,0,0.72); cursor:pointer; text-align:left; font:inherit; }
+.model-queue-member-option:hover, .model-queue-member-option.selected { background:#EBF8FA; color:#149DAA; }
+.model-queue-member-option .check { visibility:hidden; font-size:13px; }
+.model-queue-member-option.selected .check { visibility:visible; }
+.ckpt-table { table-layout:fixed; min-width:1270px; }
+.ckpt-table-wrap { overflow-x:auto; overflow-y:hidden; }
 .ckpt-name-cell { display:block; max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:#149DAA; text-decoration:none; }
 .ckpt-name-cell:hover { color:#0F8190; }
 .ckpt-status-filter { position:relative; display:inline-flex; align-items:center; height:26px; }
@@ -2173,6 +2195,35 @@ button.tm-subtab { border:0; background:transparent; font-family:inherit; cursor
 .bi-envtable .env-eye { text-align:center; color:rgba(0,0,0,0.35); cursor:pointer; font-size:15px; user-select:none; transition:all 0.2s ease; border-radius:4px; padding:2px 4px; }
 .bi-envtable .env-eye:hover { color:#149DAA; background:rgba(20,157,170,0.08); }
 .yaml-readonly { background:linear-gradient(135deg, #fafbfc 0%, #f7f9fa 100%); border:1px solid #e5e7eb; border-radius:10px; padding:16px 18px; font-family:'SF Mono',Menlo,monospace; font-size:13px; line-height:1.7; color:rgba(0,0,0,0.88); white-space:pre; overflow:auto; max-height:450px; margin:0; box-shadow:inset 0 1px 3px rgba(0,0,0,0.03); }
+
+/* 基础信息新版：以分组卡片和只读字段强调信息层级，避免整页成为一张松散的表单。 */
+.basic-info { padding:2px 0 24px; }
+.basic-info .bi-sec { background:#fff; border:1px solid #e7edef; border-radius:10px; padding:20px 22px; margin:0 0 14px; box-shadow:0 2px 8px rgba(25,55,65,0.03); }
+.basic-info .bi-sec:last-child { margin-bottom:0; }
+.basic-info .bi-sec-title { margin:0 0 8px; padding:0 0 13px; border-bottom:1px solid #eef2f3; font-size:14px; color:#263b42; }
+.basic-info .bi-sec-title::before { width:4px; height:16px; margin-right:7px; background:#149DAA; }
+.basic-info .bi-field-row { gap:0 42px; margin:0; }
+.basic-info .bi-field-item { grid-template-columns:92px minmax(0,1fr); column-gap:14px; min-height:46px; padding:8px 0; border-bottom:1px solid #f1f4f5; }
+.basic-info .bi-field-row:last-child .bi-field-item { border-bottom:none; }
+.basic-info .bi-field-label { color:#74858b; font-size:12.5px; }
+.basic-info .bi-field-value { min-height:30px; padding:5px 10px; border:1px solid #edf1f2; border-radius:6px; background:#f8fafb; color:#30474f; line-height:18px; box-sizing:border-box; }
+.basic-info .bi-field-value.mono { color:#42565d; }
+.basic-info .bi-field-value .tag-inline { background:#e8f7f8; border:1px solid #c8ebed; color:#0f7d88; }
+.basic-info .bi-copy-btn { margin-left:2px; color:#9aa9ad; }
+.basic-info .bi-copy-btn:hover { color:#149DAA; background:#e8f7f8; }
+.basic-info .bi-dstable { margin-top:8px; padding:6px 10px; background:#f8fafb; border-color:#e7edef; }
+.basic-info .bi-dstable .ds-head { color:#829197; background:#f1f5f6; border-bottom-color:#e4eaec; }
+.basic-info .bi-dstable .ds-row { min-height:38px; border-bottom-color:#e9eef0; }
+.basic-info .bi-collapsible { padding:0; overflow:hidden; }
+.basic-info .bi-collapsible .bi-sec-title { margin:0; padding:16px 22px; border-bottom:0; cursor:pointer; }
+.basic-info .bi-collapsible:not(.collapsed) .bi-sec-title { border-bottom:1px solid #eef2f3; }
+.basic-info .bi-collapsible .bi-collapse-content { padding:0 22px; }
+.basic-info .bi-collapsible:not(.collapsed) .bi-collapse-content { padding:16px 22px 20px; }
+.basic-info .bi-collapsible .yaml-readonly { border-radius:7px; background:#f7f9fa; box-shadow:none; }
+@media (max-width:760px) {
+  .basic-info .bi-field-row-2 { grid-template-columns:1fr; }
+  .basic-info .bi-field-item { grid-template-columns:84px minmax(0,1fr); }
+}
 """
 
 # 将 data_platform / quanta_eval_platform 的 BASE_CSS 拼在前面 — 它们的 chrome 规则会被
@@ -2298,6 +2349,16 @@ BASE_TEMPLATE = """<!DOCTYPE html>
 </div>
 <div class="q-toast" id="toast"></div>
 <div class="drawer-mask" id="drawerMask" onclick="closeDrawer()"></div>
+<!-- Shared media viewer used by data and evaluation video thumbnails. -->
+<div class="ant-drawer-mask" id="q-media-viewer">
+  <div class="ant-drawer-content" style="width:720px;max-width:90vw;">
+    <div class="ant-drawer-header">
+      <h3 id="q-media-title">预览</h3>
+      <button class="ant-drawer-close" onclick="closeModal('q-media-viewer')">&times;</button>
+    </div>
+    <div class="ant-drawer-body" id="q-media-body" style="display:flex;align-items:center;justify-content:center;min-height:320px;background:#fafafa;"></div>
+  </div>
+</div>
 <div class="modal-mask" id="taskCapabilityModalMask" onclick="closeTaskCapabilityModal()">
   <div class="modal" onclick="event.stopPropagation()">
     <div class="modal-head">
@@ -3080,23 +3141,11 @@ document.addEventListener('click', function(e){
     document.querySelectorAll('.devs-pop.open').forEach(function(p){ p.classList.remove('open'); p.previousElementSibling.classList.remove('open'); });
   }
 });
-/* 运行记录 trial 列表 + Checkpoint/日志/时间线 子 tab */
-function selectTrial(el){
-  el.parentNode.querySelectorAll('.tlp-item').forEach(function(t){ t.classList.remove('active'); });
-  el.classList.add('active');
-}
 function bkTab(el, name){
   el.parentNode.querySelectorAll('.bk-tab').forEach(function(t){ t.classList.remove('active'); });
   el.classList.add('active');
   document.querySelectorAll('.bk-pane').forEach(function(p){ p.classList.remove('active'); });
   var pane = document.getElementById('bk-pane-'+name); if (pane) pane.classList.add('active');
-}
-function switchTrialTab(el, tabId){
-  el.parentNode.querySelectorAll('.ts-tab').forEach(function(t){ t.classList.remove('active'); });
-  el.classList.add('active');
-  document.querySelectorAll('.ts-pane').forEach(function(p){ p.classList.remove('active'); });
-  var pane = document.getElementById('ts-pane-' + tabId);
-  if (pane) pane.classList.add('active');
 }
 /* 侧栏滚动位置保留 (按模块前缀, 避免跨模块串位置) */
 (function(){
@@ -3150,6 +3199,42 @@ def render_page(title, content, active="", breadcrumb=None, extra_script=None,
             active="", breadcrumb=breadcrumb, extra_script=extra_script, mvp_note=mvp_note,
             device_models=None,
         )
+    # 统一查询筛选器文案；保留 resetFilters 等行为函数及业务表单动作。
+    _list_paths = ("/model/experiments", "/model/checkpoints", "/model/deploy", "/model/queues",
+                   "/model/eval/tasks", "/model/eval/eval-records",
+                   "/model/eval/benchmarks", "/model/eval/scenes", "/model/eval/prompts",
+                   "/model/eval/criteria")
+    if request.path in _list_paths:
+        # 把列表页的新增/新建动作提升到一级标题行，保证标题和操作按钮同一基线。
+        if request.path.endswith('/prompts'):
+            prompt_actions = re.findall(
+                r'<button\b[^>]*class="[^"]*\bant-btn(?:\s|\")[^"]*"[^>]*>\s*(?:导入 JSON|\+ 新增任务提示词)\s*</button>',
+                content,
+            )
+            title_action = ''.join(prompt_actions)
+            for action in prompt_actions:
+                content = content.replace(action, '', 1)
+        elif request.path == '/model/checkpoints':
+            ckpt_actions = re.findall(
+                r'<a\b[^>]*class="[^"]*\bckpt-(?:cache|deploy)-action\b[^"]*"[^>]*>\s*[^<]+\s*</a>',
+                content,
+            )
+            title_action = ''.join(ckpt_actions)
+            for action in ckpt_actions:
+                content = content.replace(action, '', 1)
+        else:
+            action_candidates = re.findall(r'<(?:a|button)\b[^>]*class="[^"]*\bbtn(?:\s|\")[^"]*"[^>]*>\s*(?:\+\s*)?(?:新增|新建|创建)[^<]*</(?:a|button)>', content)
+            action_match = next((re.search(r'.*', item) for item in action_candidates if '评价标准' in item), None) if request.path.endswith('/criteria') else (re.search(r'.*', action_candidates[0]) if action_candidates else None)
+            title_action = action_match.group(0) if action_match else ''
+            if action_match:
+                content = content.replace(action_match.group(0), '', 1)
+        content = f'<div class="model-list-title"><h1>{html.escape(title)}</h1><div class="model-list-actions">{title_action}</div></div>' + content
+    if module == "model":
+        content = content.replace('>+ 新增', '>新增').replace('>&#43; 新增', '>新增')
+    content = content.replace('class="btn btn-tertiary" onclick="resetFilters(this)">重置</button>',
+                              'class="btn btn-tertiary" onclick="resetFilters(this)">清空</button>')
+    content = content.replace('class="btn btn-tertiary" onclick="resetDeployFilters()">重置</button>',
+                              'class="btn btn-tertiary" onclick="resetDeployFilters()">清空</button>')
     pf = PLATFORMS[module]
     dev_models = DEVICE_MODELS if module == "device" else None
     return render_template_string(
@@ -6812,10 +6897,193 @@ def data_runs():
 
 @app.route("/model")
 def model_home():
-    desc = "模型平台承载数据 → 训练 → 部署 → 评测的端到端流水线。挂载数据集、用 GPU 资源池训练、离线 Benchmark 评测后下发到设备平台。"
-    content = welcome_card("模型平台", "数据 → 训练 → 部署 → 评测", desc)
-    return render_page("模型平台 · 快速入门", content, active="/model", module="model",
-                       breadcrumb='<b>模型平台</b> / 快速入门', mvp_note="MVP 一期")
+    # 模型平台进入后直接落到最常用的数据查询工作区。
+    return redirect("/model/data/query")
+
+
+# 模型平台 · 队列管理
+@app.route("/model/queues")
+def model_queues():
+    current_user = "Joanna Qiao"
+    queues = [
+        {
+            "name": "默认评测队列",
+            "admins": ["Joanna Qiao", "Lance Li"],
+            "members": ["Joanna Qiao", "Lance Li", "Rick Guo"],
+        },
+        {
+            "name": "回归测试队列",
+            "admins": ["Lance Li", "Tao Wang"],
+            "members": ["Lance Li", "Tao Wang", "Hannah Wang"],
+        },
+        {
+            "name": "端侧专项队列",
+            "admins": ["Rick Guo"],
+            "members": ["Rick Guo", "Hannah Wang", "Tao Wang"],
+        },
+    ]
+    people = ["Joanna Qiao", "Lance Li", "Rick Guo", "Tao Wang", "Hannah Wang", "Min Chen"]
+    rows = ""
+    drawers = ""
+    for index, queue in enumerate(queues):
+        drawer_id = f"model-queue-drawer-{index}"
+        picker_id = f"model-queue-member-picker-{index}"
+        admin_chips = "".join(
+            f'<span class="model-queue-member">{html.escape(admin)}</span>'
+            for admin in queue["admins"]
+        )
+        member_chips = "".join(
+            f'<span class="model-queue-member">{html.escape(member)}</span>'
+            for member in queue["members"]
+        )
+        admin_value = ", ".join(queue["admins"])
+        selected_members = set(queue["members"])
+        member_chips_edit = "".join(
+            f'<span class="model-queue-select-chip" data-value="{html.escape(member, quote=True)}">'
+            f'<span>{html.escape(member)}</span>'
+            '<button type="button" class="model-queue-chip-remove" onclick="modelQueueMemberRemove(this,event)">&times;</button></span>'
+            for member in queue["members"]
+        )
+        member_options = "".join(
+            f'<button type="button" class="model-queue-member-option{" selected" if person in selected_members else ""}" data-value="{html.escape(person, quote=True)}" data-search="{html.escape(person.lower(), quote=True)}" onclick="modelQueueMemberToggle(this,event)">'
+            f'<span>{html.escape(person)}</span><span class="check">&#10003;</span></button>'
+            for person in people
+        )
+        can_edit = current_user in queue["admins"]
+        edit_action = (
+            f'<a href="#" onclick="openModelQueueDrawer(\'{drawer_id}\', true);return false;">编辑</a>'
+            if can_edit else
+            '<span class="action-link action-disabled" title="仅队列管理员可编辑" aria-disabled="true">编辑</span>'
+        )
+        rows += f'''<tr>
+          <td style="font-weight:500;">{html.escape(queue["name"])}</td>
+          <td><div class="model-queue-members">{admin_chips}</div></td>
+          <td><div class="model-queue-members">{member_chips}</div></td>
+          <td class="actions-cell">
+            <a href="#" onclick="openModelQueueDrawer(\'{drawer_id}\', false);return false;">详情</a>{edit_action}
+          </td>
+        </tr>'''
+        drawers += f'''
+        <div class="drawer drawer-wide model-queue-drawer" id="{drawer_id}">
+          <div class="drawer-head"><h3>队列详情</h3><span class="dismiss" onclick="closeDrawer()">&times;</span></div>
+          <div class="drawer-body">
+            <div class="fg"><label>队列名称</label><input class="queue-input model-queue-admin-field" value="{html.escape(queue["name"])}" disabled readonly></div>
+            <div class="fg"><label>管理员</label><input class="queue-input model-queue-admin-field" value="{html.escape(admin_value)}" disabled readonly></div>
+            <div class="fg"><label>成员</label>
+              <div id="{picker_id}" class="model-queue-member-picker" onclick="modelQueueMemberPickerToggle(this,event)">
+                {member_chips_edit}
+                <input class="model-queue-member-search" type="text" placeholder="搜索并选择人员" onclick="event.stopPropagation()" oninput="modelQueueMemberSearch(this)">
+                <div class="model-queue-member-menu">{member_options}</div>
+              </div>
+            </div>
+          </div>
+          <div class="drawer-foot">
+            <button class="btn" type="button" onclick="closeDrawer()">关闭</button>
+            <button class="btn btn-primary model-queue-save" type="button" onclick="toast('Demo: 队列已保存');closeDrawer()">保存</button>
+          </div>
+        </div>'''
+    content = f'''
+    <div class="table-wrap">
+      <table class="ant-table">
+        <thead><tr><th>队列名称</th><th>管理员</th><th>成员</th><th>操作</th></tr></thead>
+        <tbody>{rows}</tbody>
+      </table>
+    </div>
+    {drawers}
+    <script>
+    function modelQueueMemberPickerToggle(picker, event) {{
+      if (event) event.stopPropagation();
+      if (picker.classList.contains('is-disabled')) return;
+      document.querySelectorAll('.model-queue-member-picker.open').forEach(function (other) {{
+        if (other !== picker) other.classList.remove('open');
+      }});
+      picker.classList.toggle('open');
+      if (picker.classList.contains('open')) {{
+        var search = picker.querySelector('.model-queue-member-search');
+        if (search) search.focus();
+      }}
+    }}
+    function modelQueueMemberSearch(input) {{
+      var picker = input.closest('.model-queue-member-picker');
+      if (!picker) return;
+      picker.classList.add('open');
+      var query = (input.value || '').trim().toLowerCase();
+      picker.querySelectorAll('.model-queue-member-option').forEach(function (option) {{
+        option.style.display = !query || (option.dataset.search || '').indexOf(query) >= 0 ? '' : 'none';
+      }});
+    }}
+    function modelQueueMemberToggle(option, event) {{
+      if (event) event.stopPropagation();
+      var picker = option.closest('.model-queue-member-picker');
+      if (!picker || picker.classList.contains('is-disabled')) return;
+      var value = option.dataset.value || '';
+      if (option.classList.contains('selected')) {{
+        option.classList.remove('selected');
+        picker.querySelectorAll('.model-queue-select-chip').forEach(function (chip) {{
+          if (chip.dataset.value === value) chip.remove();
+        }});
+      }} else {{
+        option.classList.add('selected');
+        var chip = document.createElement('span');
+        chip.className = 'model-queue-select-chip';
+        chip.dataset.value = value;
+        var label = document.createElement('span');
+        label.textContent = option.querySelector('span').textContent;
+        var remove = document.createElement('button');
+        remove.type = 'button';
+        remove.className = 'model-queue-chip-remove';
+        remove.innerHTML = '&times;';
+        remove.onclick = function (ev) {{ modelQueueMemberRemove(remove, ev); }};
+        chip.appendChild(label); chip.appendChild(remove);
+        var search = picker.querySelector('.model-queue-member-search');
+        picker.insertBefore(chip, search);
+      }}
+      var search = picker.querySelector('.model-queue-member-search');
+      if (search) {{ search.value = ''; modelQueueMemberSearch(search); }}
+    }}
+    function modelQueueMemberRemove(button, event) {{
+      if (event) event.stopPropagation();
+      var picker = button.closest('.model-queue-member-picker');
+      if (!picker || picker.classList.contains('is-disabled')) return;
+      var chip = button.closest('.model-queue-select-chip');
+      if (!chip) return;
+      var value = chip.dataset.value || '';
+      chip.remove();
+      picker.querySelectorAll('.model-queue-member-option').forEach(function (option) {{
+        if (option.dataset.value === value) option.classList.remove('selected');
+      }});
+    }}
+    document.addEventListener('click', function (event) {{
+      if (!event.target.closest('.model-queue-member-picker')) {{
+        document.querySelectorAll('.model-queue-member-picker.open').forEach(function (picker) {{ picker.classList.remove('open'); }});
+      }}
+    }});
+    function openModelQueueDrawer(id, editable) {{
+      var drawer = document.getElementById(id);
+      if (!drawer) return;
+      var title = drawer.querySelector('.drawer-head h3');
+      if (title) title.textContent = editable ? '编辑队列' : '队列详情';
+      drawer.querySelectorAll('[data-model-queue-edit]').forEach(function (field) {{
+        field.disabled = !editable;
+        field.readOnly = !editable;
+      }});
+      var picker = drawer.querySelector('.model-queue-member-picker');
+      if (picker) {{
+        picker.classList.toggle('is-disabled', !editable);
+        picker.classList.remove('open');
+        var search = picker.querySelector('.model-queue-member-search');
+        if (search) search.style.display = editable ? '' : 'none';
+        picker.querySelectorAll('.model-queue-member-option').forEach(function (option) {{ option.disabled = !editable; }});
+        picker.querySelectorAll('.model-queue-chip-remove').forEach(function (remove) {{ remove.style.display = editable ? '' : 'none'; }});
+      }}
+      var save = drawer.querySelector('.model-queue-save');
+      if (save) save.style.display = editable ? '' : 'none';
+      openDrawer(id);
+    }}
+    </script>
+    '''
+    return render_page("队列管理", content, active="/model/queues", module="model",
+                       breadcrumb='模型平台 / <b>队列管理</b>')
 
 
 # ════════════════════════════════════════════════════════════════
@@ -7241,23 +7509,6 @@ def _eval_task_collections_html(tid):
     """
 
 
-# 评测结果 = 结果数据 + 排行榜 (2 tab 合并)
-# 排行榜内部的 "模型排行榜" 大标题在 tab 下已经冗余 -> 用正则去掉
-_EP_LEADERBOARD_TITLE_RE = re.compile(
-    r'<span\s+style="font-size:20px;font-weight:600;[^"]*">\s*模型排行榜\s*</span>\s*',
-    re.IGNORECASE,
-)
-
-# 结果数据页内嵌的 "评测任务视角 / Checkpoint 视角" 二级 tab 用了 ep 的旧蓝色 #1F80A0
-# + 简陋 inline 样式. 整段替换成 Quanta 主题色 tab.
-_EP_RECORDS_TABBAR_RE = re.compile(
-    r'<!--\s*Tab bar\s*-->\s*<div[^>]*display:flex;gap:0;border-bottom[^>]*>\s*'
-    r'<a[^>]*view=task[^>]*>.*?</a>\s*'
-    r'<a[^>]*view=ckpt[^>]*>.*?</a>\s*</div>',
-    re.DOTALL,
-)
-
-
 def _ep_capture_html(handler):
     """调用一个 ep handler, 返回 (title, rewritten_content)."""
     _eval_capture.clear()
@@ -7267,45 +7518,16 @@ def _ep_capture_html(handler):
     return title, content
 
 
-def _quanta_records_subtabs(view):
-    """生成 Quanta 风格的 评测任务视角 / Checkpoint 视角 二级 tab."""
-    a_cls = "er-subtab active" if view == "task" else "er-subtab"
-    b_cls = "er-subtab active" if view == "ckpt" else "er-subtab"
-    return f'''<div class="er-subtabs">
-      <a href="/model/eval/eval-records?view=task" class="{a_cls}">评测任务视角</a>
-      <a href="/model/eval/eval-records?view=ckpt" class="{b_cls}">Checkpoint 视角</a>
-    </div>'''
-
-
 @app.route("/model/eval/eval-records", endpoint="eval_records_page")
 def _eval_results_with_tabs():
     if not EP_AVAILABLE:
         return redirect("/model/eval/tasks")
     _, records_content = _ep_capture_html(ep.eval_records_page)
-    _, leaderboard_content = _ep_capture_html(ep.leaderboard_page)
-    # 去掉 ep 内嵌的「模型排行榜」标题 (跟 tab 名重复)
-    leaderboard_content = _EP_LEADERBOARD_TITLE_RE.sub("", leaderboard_content)
-    # 替换结果数据页内的二级 tab 为 Quanta 风格
-    view = request.args.get("view", "task")
-    if view not in ("task", "ckpt"):
-        view = "task"
-    records_content = _EP_RECORDS_TABBAR_RE.sub(_quanta_records_subtabs(view), records_content, count=1)
-    content = f"""
-    <div class="er-wrap">
-      <div class="det-tabs er-tabs">
-        <span class="det-tab active" onclick="switchDetTab(this,'records')">结果数据</span>
-        <span class="det-tab" onclick="switchDetTab(this,'leaderboard')">排行榜</span>
-      </div>
-      <div id="det-pane-records"     class="det-pane active">{records_content}</div>
-      <div id="det-pane-leaderboard" class="det-pane">{leaderboard_content}</div>
-    </div>
-    """
-    return render_page("评测结果", content,
+    return render_page("评测数据", records_content,
                        active="/model/eval/eval-records", module="model")
 
 
-# 保留 /model/eval/leaderboard 给 ep 内部 url_for("leaderboard_page") 仍能解析,
-# 直接重定向到合并页 (默认结果数据 tab; 用户可手动切换到排行榜).
+# 保留 /model/eval/leaderboard 给旧链接解析，统一回到评测结果列表。
 @app.route("/model/eval/leaderboard", endpoint="leaderboard_page")
 def _eval_leaderboard_redirect():
     return redirect("/model/eval/eval-records")
@@ -7707,12 +7929,65 @@ TRAIN_CODE_REFS = [
     {"ref": "release/v1.0", "commit": "5bf7c91", "desc": "Update Quanta toolchain demo flows"},
 ]
 
+RESOURCE_TAB_LABELS = {
+    "volcano": "火山云",
+    "kingsoft": "金山云",
+}
+
+
+def _normalized_resource_key(value, fallback_index=0):
+    raw = str(value or "").strip().lower()
+    if "火山" in raw or "volc" in raw:
+        return "volcano"
+    if "金山" in raw or "kingsoft" in raw:
+        return "kingsoft"
+    return "volcano" if fallback_index % 2 == 0 else "kingsoft"
+
+
+def _experiment_resource_key(exp):
+    idx = next((i for i, item in enumerate(EXPERIMENTS) if item["id"] == exp.get("id")), 0)
+    return _normalized_resource_key(exp.get("source"), idx)
+
+
+def _checkpoint_resource_key(ckpt):
+    explicit_source = ckpt.get("source")
+    if explicit_source:
+        return _normalized_resource_key(explicit_source)
+    exp = next((item for item in EXPERIMENTS if item["id"] == ckpt.get("exp_id")), None)
+    if exp:
+        return _experiment_resource_key(exp)
+    fallback_id = int(re.sub(r"\D", "", str(ckpt.get("id", "0"))) or 0)
+    return _normalized_resource_key(None, fallback_id)
+
+
+def _resource_tabs(base_path, selected):
+    return '<div class="tm-subtabs resource-tabs">' + ''.join(
+        f'<a class="tm-subtab{" active" if key == selected else ""}" href="{base_path}?resource={key}">{label}</a>'
+        for key, label in RESOURCE_TAB_LABELS.items()
+    ) + '</div>'
+
 @app.route("/model/experiments")
 def experiments():
+    selected_resource = request.args.get("resource", "volcano")
+    if selected_resource not in RESOURCE_TAB_LABELS:
+        selected_resource = "volcano"
+    filter_name = request.args.get("name", "").strip()
+    filter_tag = request.args.get("tag", "").strip()
+    filter_dataset = request.args.get("dataset", "").strip()
+    visible_experiments = [
+        e for e in EXPERIMENTS
+        if _experiment_resource_key(e) == selected_resource
+        and (not filter_name or filter_name.lower() in e.get("name", "").lower())
+        and (selected_resource != "volcano" or not filter_tag or filter_tag.lower() in e.get("tag", "").lower())
+        and (selected_resource != "volcano" or not filter_dataset or filter_dataset.lower() in e.get("dataset", "").lower())
+    ]
+    show_description = selected_resource == "volcano"
+    show_actions = selected_resource == "volcano"
     rows = ""
     owner_fallbacks = ["tao.wang", "hannah.wang", "joanna.qiao", "Maple Liu", "Min Chen"]
     priority_fallbacks = ["高", "中", "低"]
-    for idx, e in enumerate(EXPERIMENTS):
+    for e in visible_experiments:
+        idx = next((i for i, item in enumerate(EXPERIMENTS) if item["id"] == e["id"]), 0)
         # 训练任务名称作为可点击链接 (跳到任务详情 → checkpoint 列表)
         status_html = {
             "running": '<span class="tag tag-orange">运行中</span>',
@@ -7747,22 +8022,26 @@ def experiments():
             f'</span>'
             f'</span>'
         )
+        description_cell = f'<td class="muted">{e.get("description") or "训练任务"}</td>' if show_description else ""
+        actions_cell = f"""
+          <td class="actions-cell">
+            {stop_action}
+            <a href="#" onclick="toast('Demo: 已复制配置');return false;">复制</a>
+            {more_menu}
+          </td>""" if show_actions else ""
         rows += f"""<tr>
           <td><a href="/model/experiments/{e['id']}" style="color:#149DAA">{e['name']}</a></td>
+          {description_cell}
           <td>{status_html}</td>
           <td>{priority_html}</td>
           <td>{owner}</td>
           <td class="muted mono">{e['started']}</td>
           <td class="muted">{e['dur']}</td>
-          <td class="actions-cell">
-            {stop_action}
-            <a href="#" onclick="toast('Demo: 已复制配置');return false;">复制</a>
-            {more_menu}
-          </td>
+          {actions_cell}
         </tr>"""
 
-    running_count = sum(1 for e in EXPERIMENTS if e["status"] == "running")
-    total_count = len(EXPERIMENTS)
+    running_count = sum(1 for e in visible_experiments if e["status"] == "running")
+    total_count = len(visible_experiments)
     train_yaml_json = json.dumps(TRAIN_YAML_TEMPLATES, ensure_ascii=False)
     train_code_json = json.dumps(TRAIN_CODE_REFS, ensure_ascii=False)
     content = page_header(
@@ -7770,11 +8049,10 @@ def experiments():
         "数据集挂载 · 实验管理 · 超参 · Checkpoint",
         "分布式训练 · 训练监控 (loss 曲线)",
     ) + f"""
+    {_resource_tabs('/model/experiments', selected_resource)}
     <div class="fb-labeled">
-      <div class="ff"><label>名称</label><input placeholder="请输入名称"></div>
-      <div class="ff"><label>描述</label><input placeholder="请输入描述"></div>
-      <div class="ff"><label>标签</label><select><option>请选择标签</option><option>robotwin</option><option>HouseHold</option><option>pi05</option></select></div>
-      <div class="ff"><label>数据集</label><select><option>请选择数据集</option><option>clean_whiteboard_v4</option><option>tidy_desk_v2</option></select></div>
+      <div class="ff"><label>名称</label><input id="filterExperimentName" value="{html.escape(filter_name, quote=True)}" placeholder="请输入名称"></div>
+      {f'<div class="ff"><label>标签</label><select id="filterExperimentTag"><option>请选择标签</option><option>robotwin</option><option>HouseHold</option><option>pi05</option></select></div><div class="ff"><label>数据集</label><select id="filterExperimentDataset"><option>请选择数据集</option><option>clean_whiteboard_v4</option><option>tidy_desk_v2</option></select></div>' if show_description else ''}
       <div class="filter-actions">
         <button class="btn btn-tertiary" onclick="resetFilters(this)">重置</button>
         <button class="btn btn-primary" onclick="queryFilters(this)">查询</button>
@@ -7790,12 +8068,13 @@ def experiments():
       <table class="ant-table">
         <thead><tr>
           <th>名称</th>
+          {"<th>描述</th>" if show_description else ""}
           <th>状态 &#9662;</th>
           <th>优先级</th>
           <th>创建人</th>
           <th>创建时间 &#x21F5;</th>
           <th>运行时长</th>
-          <th>操作</th>
+          {"<th>操作</th>" if show_actions else ""}
         </tr></thead>
         <tbody>{rows}</tbody>
       </table>
@@ -7988,7 +8267,7 @@ bash lerobot/scripts/train_unified.sh /mnt/vepfs01/output/quanta/experiments/con
     </div>
     """
     return render_page("训练任务", content, active="/model/experiments", module="model",
-                       breadcrumb='模型平台 / <b>训练任务</b>', mvp_note="MVP 一期")
+                       breadcrumb='模型平台 / <b>训练任务</b>', mvp_note=None)
 
 
 # ── 训练任务详情 (Checkpoint 列表) ──
@@ -8419,37 +8698,7 @@ bash lerobot/scripts/train_unified.sh /mnt/vepfs01/output/quanta/experiments/con
     </div>
     """
 
-    # 运行记录 (trials) 列表
-    trials = _task_trials(e)
-    trial_items = ""
-    for i, t in enumerate(trials):
-        cls = " active" if i == 0 else ""
-        trial_items += f"""
-        <a class="tlp-item{cls}" href="#" onclick="selectTrial(this);return false;">
-          <span class="ti-ic">&#9783;</span>
-          <span>{t['name']}</span>
-        </a>"""
-
-    pane_trials = f"""
-    <div class="tdsplit">
-      <div class="tlp">
-        <span class="tlp-collapse" onclick="toast('Demo: 收起左侧')" title="收起">&lsaquo;</span>
-        {trial_items}
-      </div>
-      <div class="tdm">
-        <div class="ts-tabs">
-          <span class="ts-tab active" onclick="switchTrialTab(this,'ckpt')">Checkpoint</span>
-          <span class="ts-tab" onclick="switchTrialTab(this,'logs')">日志</span>
-          <span class="ts-tab" onclick="switchTrialTab(this,'timeline')">时间线</span>
-        </div>
-        <div id="ts-pane-ckpt"     class="ts-pane active">{tab_ckpt}</div>
-        <div id="ts-pane-logs"     class="ts-pane">{tab_logs}</div>
-        <div id="ts-pane-timeline" class="ts-pane">{tab_timeline}</div>
-      </div>
-    </div>
-    """
-
-    # 顶层结构: 头卡片 + 3 顶 tab + 3 pane
+    # 顶层结构: 训练任务信息 + 扁平化的 5 个详情 tab
     content = f"""
     <div class="tdh">
       <div class="tdh-name">{e['name']}</div>
@@ -8463,12 +8712,16 @@ bash lerobot/scripts/train_unified.sh /mnt/vepfs01/output/quanta/experiments/con
     </div>
 
     <div class="det-tabs">
-      <span class="det-tab active" onclick="switchDetTab(this,'trials')">运行记录</span>
+      <span class="det-tab active" onclick="switchDetTab(this,'ckpt')">Checkpoint</span>
+      <span class="det-tab" onclick="switchDetTab(this,'logs')">日志</span>
+      <span class="det-tab" onclick="switchDetTab(this,'timeline')">时间线</span>
       <span class="det-tab" onclick="switchDetTab(this,'data')">实验看板</span>
       <span class="det-tab" onclick="switchDetTab(this,'basic')">基础信息</span>
     </div>
 
-    <div id="det-pane-trials"  class="det-pane active">{pane_trials}</div>
+    <div id="det-pane-ckpt"    class="det-pane active">{tab_ckpt}</div>
+    <div id="det-pane-logs"    class="det-pane">{tab_logs}</div>
+    <div id="det-pane-timeline" class="det-pane">{tab_timeline}</div>
     <div id="det-pane-data"    class="det-pane">{tab_data}</div>
     <div id="det-pane-basic"   class="det-pane">{tab_basic}</div>
 
@@ -8716,7 +8969,7 @@ def deploy():
         </script>
         """
     return render_page("部署", content, active="/model/deploy", module="model",
-                       breadcrumb='模型平台 / <b>部署</b>', mvp_note="MVP 一期",
+                       breadcrumb='模型平台 / <b>部署</b>', mvp_note=None,
                        extra_script=extra_script)
 
 
@@ -8780,6 +9033,8 @@ CKPT_DESC_FALLBACKS = [
     "HouseHold stop 32 任务 40k step 合并失败待处理",
 ]
 
+CKPT_CACHE_OPERATOR_FALLBACKS = ["tao.wang", "Hannah Wang", "joanna.qiao", "Min Chen"]
+
 
 def _ckpt_desc(ckpt):
     if ckpt.get("description"):
@@ -8791,6 +9046,20 @@ def _ckpt_desc(ckpt):
 def _ckpt_train_step(ckpt):
     m = re.search(r"_(\d{4,7})$", ckpt["name"])
     return m.group(1) if m else "—"
+
+
+def _ckpt_cache_operator(ckpt):
+    operator = ckpt.get("cached_by") or ckpt.get("cache_owner")
+    if operator:
+        return operator
+    if ckpt.get("owner") and ckpt["owner"] != "—":
+        return ckpt["owner"]
+    fallback_id = int(re.sub(r"\D", "", str(ckpt.get("id", "0"))) or 0)
+    return CKPT_CACHE_OPERATOR_FALLBACKS[fallback_id % len(CKPT_CACHE_OPERATOR_FALLBACKS)]
+
+
+def _ckpt_cache_time(ckpt):
+    return ckpt.get("cached_at") or ckpt.get("cache_time") or ckpt.get("created", "—")
 
 
 def _ckpt_status_log(ckpt):
@@ -8860,16 +9129,14 @@ def _ckpt_detail_drawers(items):
 
 def _ckpt_rows_html(items, show_actions=True, show_status=True, status_logs=False):
     rows = ""
-    for idx, c in enumerate(items):
+    for c in items:
         desc = _ckpt_desc(c)
         status_cell = f"<td>{_ckpt_status_cell_html(c, status_logs)}</td>" if show_status else ""
         actions_cell = ""
         if show_actions:
-            deploy_href = f"/model/deploy?open=deploy&deploy_checkpoint={quote(c['name'], safe='')}"
             actions_cell = f"""<td class="actions-cell">
             <a href="#" onclick="openTaskCapabilityModal();return false;">TEST</a>
             <a href="#" onclick="openTaskCapabilityModal();return false;">DAgger</a>
-            <a href="{deploy_href}">部署</a>
             <a href="/model/lineage/checkpoint/{c['id']}">血缘</a>
           </td>"""
         rows += f"""<tr data-status="{c['status']}">
@@ -8879,6 +9146,8 @@ def _ckpt_rows_html(items, show_actions=True, show_status=True, status_logs=Fals
           {status_cell}
           <td>{c['owner']}</td>
           <td class="muted mono">{c['created']}</td>
+          <td>{_ckpt_cache_operator(c)}</td>
+          <td class="muted mono">{_ckpt_cache_time(c)}</td>
           {actions_cell}
         </tr>"""
     return rows
@@ -8904,18 +9173,20 @@ def _ckpt_table_html(items, show_actions=True, show_status=True, status_filter=F
           </th>"""
     else:
         status_head = "<th>状态 &#9662;</th>" if show_status else ""
-    actions_col = '<col style="width:230px;">' if show_actions else ""
+    actions_col = '<col style="width:200px;">' if show_actions else ""
     actions_head = "<th>操作</th>" if show_actions else ""
     return f"""
-    <div class="table-wrap">
+    <div class="table-wrap ckpt-table-wrap">
       <table class="ant-table ckpt-table">
         <colgroup>
           <col style="width:82px;">
-          <col style="width:260px;">
+          <col style="width:220px;">
           <col>
           {status_col}
-          <col style="width:120px;">
-          <col style="width:180px;">
+          <col style="width:100px;">
+          <col style="width:160px;">
+          <col style="width:100px;">
+          <col style="width:160px;">
           {actions_col}
         </colgroup>
         <thead><tr>
@@ -8925,6 +9196,8 @@ def _ckpt_table_html(items, show_actions=True, show_status=True, status_filter=F
           {status_head}
           <th>创建人</th>
           <th>创建时间 &#x21F5;</th>
+          <th>缓存人</th>
+          <th>缓存时间</th>
           {actions_head}
         </tr></thead>
         <tbody>{_ckpt_rows_html(items, show_actions, show_status, status_logs)}</tbody>
@@ -9011,29 +9284,30 @@ def checkpoints():
     # 获取 URL 参数
     filter_name = request.args.get("name", "")
     filter_owner = request.args.get("owner", "")
+    filter_cache_owner = request.args.get("cache_owner", "")
+    selected_resource = request.args.get("resource", "volcano")
+    if selected_resource not in RESOURCE_TAB_LABELS:
+        selected_resource = "volcano"
 
-    visible_checkpoints = [c for c in CHECKPOINTS if c["status"] == "cached"]
-    cached_count = sum(1 for c in CHECKPOINTS if c["status"] == "cached")
-    all_count = len(CHECKPOINTS)
-
-    content = page_header(
-        "Checkpoint",
-        "仅展示已缓存 checkpoint · 续训 / 评测 / 部署",
-        "自动保留策略 · 远程同步 · 自动分支评测",
-    ) + f"""
+    visible_checkpoints = [
+        c for c in CHECKPOINTS
+        if c["status"] == "cached"
+        and _checkpoint_resource_key(c) == selected_resource
+        and (not filter_name or filter_name.lower() in c.get("name", "").lower())
+        and (not filter_owner or filter_owner.lower() in c.get("owner", "").lower())
+        and (not filter_cache_owner or filter_cache_owner.lower() in _ckpt_cache_operator(c).lower())
+    ]
+    content = f"""
+    <a href="/model/checkpoints/cache-records?resource={selected_resource}" class="btn btn-secondary ckpt-cache-action">查看缓存记录</a>
+    <a href="/model/deploy?open=deploy" class="btn btn-primary ckpt-deploy-action">去部署</a>
+    {_resource_tabs('/model/checkpoints', selected_resource)}
     <div class="fb-labeled">
       <div class="ff"><label>checkpoint</label><input id="filterCheckpointName" value="{filter_name}" placeholder="请输入 checkpoint"></div>
       <div class="ff"><label>创建人</label><input id="filterCheckpointOwner" value="{filter_owner}" placeholder="请输入创建人"></div>
+      <div class="ff"><label>缓存人</label><input id="filterCheckpointCacheOwner" value="{filter_cache_owner}" placeholder="请输入缓存人"></div>
       <div class="filter-actions">
         <button class="btn btn-tertiary" onclick="resetFilters(this)">重置</button>
         <button class="btn btn-primary" onclick="queryFilters(this)">查询</button>
-      </div>
-    </div>
-
-    <div class="ckpt-listbar">
-      <div class="ckpt-listnote">已缓存 {cached_count} 个，缓存记录共 {all_count} 条</div>
-      <div class="ckpt-actions">
-        <a href="/model/checkpoints/cache-records" class="btn btn-secondary">查看缓存记录</a>
       </div>
     </div>
 
@@ -9043,34 +9317,53 @@ def checkpoints():
 
     """
     return render_page("Checkpoint", content, active="/model/checkpoints", module="model",
-                       breadcrumb='模型平台 / 部署 / <b>Checkpoint</b>', mvp_note="MVP 一期")
+                       breadcrumb='模型平台 / 训练 / <b>Checkpoint</b>', mvp_note=None)
 
 
 @app.route("/model/checkpoints/cache-records")
 def checkpoint_cache_records():
-    cache_items = [
+    selected_resource = request.args.get("resource", "volcano")
+    if selected_resource not in RESOURCE_TAB_LABELS:
+        selected_resource = "volcano"
+    filter_name = request.args.get("name", "").strip()
+    filter_owner = request.args.get("owner", "").strip()
+    filter_cache_owner = request.args.get("cache_owner", "").strip()
+    all_cache_items = [
         {"id": "8032", "name": "20260701_opd_taskC_raw_shards",
          "description": "训练产物已登记, 尚未触发 checkpoint 合并。",
-         "status": "unmerged", "owner": "joanna.qiao", "created": "2026-07-01 10:30:00"},
+         "status": "unmerged", "source": "火山", "owner": "joanna.qiao", "created": "2026-07-01 10:30:00",
+         "cached_by": "joanna.qiao", "cached_at": "2026-07-01 10:30:00"},
         {"id": "8028", "name": "20260630_HouseHold_stop_48_merging",
          "description": "checkpoint 分片合并中, 完成后进入缓存流程。",
-         "status": "merging", "owner": "Min Chen", "created": "2026-06-30 22:18:44"},
+         "status": "merging", "source": "金山", "owner": "Min Chen", "created": "2026-06-30 22:18:44",
+         "cached_by": "Min Chen", "cached_at": "2026-06-30 22:18:44"},
         {"id": "7916", "name": "robotwin_pi05_datamil_stack_blocks_two_top10pct_cotrain_50000",
          "description": "训练任务详情手动发起缓存, 用于后续评测与部署前确认。",
-         "status": "caching", "owner": "tao.wang", "created": "2026-07-02 14:20:00"},
+         "status": "caching", "source": "金山", "owner": "tao.wang", "created": "2026-07-02 14:20:00",
+         "cached_by": "tao.wang", "cached_at": "2026-07-02 14:20:00"},
         {"id": "7757", "name": "20260604_opd_exp1_sft_taskA_gpu8_50000_cache",
          "description": "缓存任务拉取源文件失败, 待确认 TOS 路径与权限后重试。",
-         "status": "cache_failed", "owner": "Hannah Wang", "created": "2026-06-15 16:12:09"},
+         "status": "cache_failed", "source": "火山", "owner": "Hannah Wang", "created": "2026-06-15 16:12:09",
+         "cached_by": "Hannah Wang", "cached_at": "2026-06-15 16:12:09"},
     ] + CHECKPOINTS
+    cache_items = [
+        c for c in all_cache_items
+        if _checkpoint_resource_key(c) == selected_resource
+        and (not filter_name or filter_name.lower() in c.get("name", "").lower())
+        and (not filter_owner or filter_owner.lower() in c.get("owner", "").lower())
+        and (not filter_cache_owner or filter_cache_owner.lower() in _ckpt_cache_operator(c).lower())
+    ]
     content = f"""
     <div class="cache-page-head">
-      <a class="btn" href="/model/checkpoints">&#8249; 返回</a>
+      <a class="btn" href="/model/checkpoints?resource={selected_resource}">&#8249; 返回</a>
       <div class="cache-page-title">checkpoint 缓存记录</div>
     </div>
 
+    {_resource_tabs('/model/checkpoints/cache-records', selected_resource)}
     <div class="fb-labeled">
-      <div class="ff"><label>checkpoint</label><input placeholder="请输入 checkpoint"></div>
-      <div class="ff"><label>创建人</label><input placeholder="请输入创建人"></div>
+      <div class="ff"><label>checkpoint</label><input id="filterCheckpointName" value="{html.escape(filter_name, quote=True)}" placeholder="请输入 checkpoint"></div>
+      <div class="ff"><label>创建人</label><input id="filterCheckpointOwner" value="{html.escape(filter_owner, quote=True)}" placeholder="请输入创建人"></div>
+      <div class="ff"><label>缓存人</label><input id="filterCheckpointCacheOwner" value="{html.escape(filter_cache_owner, quote=True)}" placeholder="请输入缓存人"></div>
       <div class="filter-actions">
         <button class="btn btn-tertiary" onclick="resetFilters(this)">重置</button>
         <button class="btn btn-primary" onclick="queryFilters(this)">查询</button>
@@ -9095,21 +9388,24 @@ def checkpoint_cache_records():
     document.addEventListener('DOMContentLoaded', function() {{
       var filterName = document.getElementById('filterCheckpointName').value;
       var filterOwner = document.getElementById('filterCheckpointOwner').value;
+      var filterCacheOwner = document.getElementById('filterCheckpointCacheOwner').value;
 
-      if (filterName || filterOwner) {{
+      if (filterName || filterOwner || filterCacheOwner) {{
         // 筛选表格行
-        var rows = document.querySelectorAll('.data-table tbody tr');
+        var rows = document.querySelectorAll('.ckpt-table tbody tr');
         rows.forEach(function(row) {{
           var cells = row.querySelectorAll('td');
           if (cells.length === 0) return;
 
           var nameCell = cells[1]; // checkpoint 名称列
-          var ownerCell = cells[2]; // 创建人列
+          var ownerCell = cells[4]; // 创建人列
+          var cacheOwnerCell = cells[6]; // 缓存人列
 
           var nameMatch = !filterName || (nameCell && nameCell.textContent.toLowerCase().includes(filterName.toLowerCase()));
           var ownerMatch = !filterOwner || (ownerCell && ownerCell.textContent.toLowerCase().includes(filterOwner.toLowerCase()));
+          var cacheOwnerMatch = !filterCacheOwner || (cacheOwnerCell && cacheOwnerCell.textContent.toLowerCase().includes(filterCacheOwner.toLowerCase()));
 
-          if (nameMatch && ownerMatch) {{
+          if (nameMatch && ownerMatch && cacheOwnerMatch) {{
             row.style.display = '';
             // 高亮匹配的行
             if (filterName && nameCell && nameCell.textContent.toLowerCase().includes(filterName.toLowerCase())) {{
@@ -9121,7 +9417,7 @@ def checkpoint_cache_records():
         }});
 
         // 滚动到第一个匹配的行
-        var firstVisible = document.querySelector('.data-table tbody tr[style=""]');
+        var firstVisible = document.querySelector('.ckpt-table tbody tr[style=""]');
         if (firstVisible) {{
           firstVisible.scrollIntoView({{ behavior: 'smooth', block: 'center' }});
         }}
@@ -9130,7 +9426,7 @@ def checkpoint_cache_records():
     </script>
     """
     return render_page("checkpoint 缓存记录", content, active="/model/checkpoints", module="model",
-                       breadcrumb='模型平台 / 部署 / Checkpoint / <b>checkpoint 缓存记录</b>', mvp_note="MVP 一期")
+                       breadcrumb='模型平台 / 训练 / Checkpoint / <b>checkpoint 缓存记录</b>', mvp_note="MVP 一期")
 
 
 @app.route("/model/checkpoints/<ckpt_id>")

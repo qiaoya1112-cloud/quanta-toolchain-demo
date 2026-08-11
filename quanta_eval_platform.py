@@ -22,6 +22,7 @@ import math
 import re
 import uuid
 import random
+import html
 from datetime import datetime, timedelta
 from flask import Flask, render_template_string, request, redirect, url_for, jsonify, flash
 
@@ -360,27 +361,34 @@ BENCHMARKS = [
         "id": "b1", "name": "\u57fa\u7840\u64cd\u4f5c\u80fd\u529b\u8bc4\u6d4b",
         "description": "\u8bc4\u6d4b\u6a21\u578b\u5728\u57fa\u7840\u6293\u53d6\u3001\u653e\u7f6e\u3001\u63a8\u62c9\u7b49\u64cd\u4f5c\u4e0a\u7684\u80fd\u529b",
         "scene_id": "s1", "prompt_ids": ["p1", "p2", "p3"], "criteria_id": "c1",
+        "tags": ["act_pick_place", "cap_precision_manipulation"],
         "creator": "Lance Li", "created_at": "2026-04-01",
     },
     {
         "id": "b2", "name": "\u5de5\u5177\u4f7f\u7528\u8bc4\u6d4b",
         "description": "\u8bc4\u6d4b\u6a21\u578b\u4f7f\u7528\u5de5\u5177\u5b8c\u6210\u4efb\u52a1\u7684\u80fd\u529b\uff0c\u5982\u6d47\u82b1\u3001\u64e6\u684c\u5b50\u7b49",
         "scene_id": "s2", "prompt_ids": ["p4", "p5"], "criteria_id": "c1",
+        "tags": ["act_processing", "obj_tool"],
         "creator": "Lance Li", "created_at": "2026-04-03",
     },
     {
         "id": "b3", "name": "\u62bd\u5c49\u67dc\u4f53\u64cd\u4f5c\u8bc4\u6d4b",
         "description": "\u8bc4\u6d4b\u6a21\u578b\u5728\u5f00\u5173\u62bd\u5c49\u3001\u7269\u54c1\u642c\u79fb\u7b49\u590d\u6742\u64cd\u4f5c\u94fe\u4e0a\u7684\u80fd\u529b",
         "scene_id": "s3", "prompt_ids": ["p6"], "criteria_id": "c4",
+        "tags": ["act_open_close", "cap_long_horizon"],
         "creator": "Rick Guo", "created_at": "2026-04-05",
     },
     {
         "id": "b4", "name": "\u7efc\u5408\u80fd\u529b\u8bc4\u6d4b v1",
         "description": "\u8986\u76d6\u6240\u6709\u573a\u666f\u7c7b\u578b\u7684\u7efc\u5408\u8bc4\u6d4b\u57fa\u51c6\uff0c\u7528\u4e8e RoboArena \u5bf9\u6807",
         "scene_id": "s1", "prompt_ids": ["p1", "p2", "p3", "p4", "p5", "p6"], "criteria_id": "c1",
+        "tags": ["cap_reasoning", "cap_long_horizon"],
         "creator": "Lance Li", "created_at": "2026-04-08",
     },
 ]
+
+for _benchmark in BENCHMARKS:
+    _benchmark["publish_status"] = "已发布" if _benchmark.get("publish_status") in ("发布", "已发布") or (_benchmark.get("publish_status") is None and _benchmark.get("id") != "b4") else "未发布"
 
 CRITERIA_TYPES = {
     "pass_fail": {"label": "\u6210\u529f\u5931\u8d25", "label_en": "Pass / Fail", "color": "",
@@ -473,6 +481,13 @@ CRITERIA = [
         },
     },
 ]
+
+for _criterion in CRITERIA:
+    _criterion["publish_status"] = "已发布" if _criterion.get("publish_status") in ("发布", "已发布") or (_criterion.get("publish_status") is None and _criterion.get("id") != "c4") else "未发布"
+    _criterion.setdefault("result_definitions", {
+        "成功": ["直接成功", "重试后成功"],
+        "失败": ["执行超时", "动作失败", "环境异常"],
+    })
 
 SCENES = [
     {
@@ -642,8 +657,13 @@ EVAL_TASKS = [
 ]
 # Backward compat: add completed_sessions alias
 for _t in EVAL_TASKS:
+    _t["publish_status"] = "已发布" if _t.get("publish_status") in ("发布", "已发布") or (_t.get("publish_status") is None and _t.get("id") != "t4") else "未发布"
     _t.setdefault("collect_done", 0)
     _t.setdefault("eval_done", 0)
+    _benchmark = next((b for b in BENCHMARKS if b["id"] == _t.get("benchmark_id")), {})
+    _t.setdefault("scene_id", _benchmark.get("scene_id", "s1"))
+    _t.setdefault("criteria_id", _benchmark.get("criteria_id", "c2"))
+    _t.setdefault("selected_prompt_ids", list(_benchmark.get("prompt_ids", [])))
     _t["completed_sessions"] = _t["eval_done"]
 
 
@@ -907,6 +927,23 @@ a:hover { color: #176a88; }
 .form-group input[type="date"]::-webkit-calendar-picker-indicator:hover { opacity: 1; }
 .form-group input:focus, .form-group select:focus, .form-group textarea:focus,
 .filter-bar input:focus, .filter-bar select:focus { border-color: #1F80A0; box-shadow: 0 0 0 2px rgba(31,128,160,0.12); }
+.task-filter-bar .ff { flex:1 1 170px; min-width:170px; }
+.task-filter-bar .ff input, .task-filter-bar .ff select { width:100%; min-width:0; }
+.task-resource-label { display:flex !important; align-items:center; justify-content:space-between; gap:12px; width:100%; text-align:left; }
+.task-resource-title { flex:1; min-width:0; text-align:left; }
+.task-resource-actions { display:inline-flex; align-items:center; gap:16px; font-size:12px; font-weight:400; white-space:nowrap; }
+.task-resource-link { display:inline-flex; align-items:center; gap:4px; color:#1F80A0; text-decoration:none; line-height:24px; }
+.task-resource-link:hover { color:#176a88; text-decoration:underline; }
+.task-resource-link.is-disabled { color:rgba(0,0,0,0.25); cursor:not-allowed; pointer-events:none; text-decoration:none; }
+.task-resource-icon { font-size:13px; line-height:1; }
+.er-dd-trigger.is-disabled { background:#f5f5f5; color:rgba(0,0,0,0.45); cursor:not-allowed; }
+.task-view-mode .er-chip-x { pointer-events:none; opacity:0.45; }
+.er-record-video-strip { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; min-width:0; }
+.er-record-video { position:relative; min-width:0; height:86px; border:0; border-radius:7px; overflow:hidden; background:linear-gradient(145deg,#243447 0%,#101820 55%,#304352 100%); color:#fff; cursor:pointer; padding:0; display:flex; align-items:center; justify-content:center; }
+.er-record-video::before { content:''; position:absolute; inset:18px 12px 10px; border:1px solid rgba(255,255,255,.22); border-radius:4px; background:linear-gradient(135deg,rgba(255,255,255,.10),transparent 50%),linear-gradient(25deg,transparent 50%,rgba(100,190,180,.24) 51%,rgba(100,190,180,.03) 78%); }
+.er-record-video-play { position:relative; z-index:1; width:27px; height:27px; border-radius:50%; background:rgba(0,0,0,.48); display:flex; align-items:center; justify-content:center; font-size:11px; padding-left:2px; }
+.er-record-video-label { position:absolute; left:7px; bottom:5px; z-index:1; font-size:10px; color:rgba(255,255,255,.82); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:calc(100% - 14px); }
+.er-record-video:hover { box-shadow:0 0 0 2px rgba(31,128,160,.30); }
 .filter-bar select, .form-group select { color: rgba(0,0,0,0.25); }
 .filter-bar select.has-value, .form-group select.has-value { color: rgba(0,0,0,0.85); }
 .filter-bar select option, .form-group select option { color: rgba(0,0,0,0.85); }
@@ -924,6 +961,10 @@ a:hover { color: #176a88; }
 .ant-table tbody tr:hover td { background: #fafafa; }
 .actions-cell { white-space: nowrap; }
 .actions-cell a, .actions-cell button { vertical-align: middle; margin-right: 4px; }
+.action-more-wrap { position: relative; display: inline-block; }
+.action-more-menu { display: none; position: absolute; right: 0; top: calc(100% + 4px); z-index: 50; min-width: 76px; padding: 4px; border: 1px solid #e5e7eb; border-radius: 6px; background: #fff; box-shadow: 0 6px 18px rgba(0,0,0,.12); }
+.action-more-wrap:hover .action-more-menu, .action-more-wrap:focus-within .action-more-menu { display: block; }
+.action-more-menu .action-link { display: block; margin: 0; padding: 4px 8px; line-height: 22px; }
 
 /* ── Progress bar (custom) ── */
 .progress-bar { height: 6px; background: #f5f5f5; border-radius: 100px; overflow: hidden; }
@@ -1018,13 +1059,18 @@ a:hover { color: #176a88; }
 .ant-drawer-mask { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.45); z-index: 200; }
 .ant-drawer-mask.active { display: block; }
 .ant-drawer-content { background: #fff; position: fixed; top: 0; right: 0; bottom: 0; width: calc(100vw - 220px); height: 100vh; transform: translateX(100%); transition: transform 0.3s cubic-bezier(0.23, 1, 0.32, 1); box-shadow: -6px 0 16px rgba(0,0,0,0.08); display: flex; flex-direction: column; }
+.benchmark-drawer-content { width:1000px; max-width:calc(100vw - 32px); }
+.task-drawer-content { width:1000px; max-width:calc(100vw - 32px); }
+.ant-drawer-content > form { display:flex; flex:1; flex-direction:column; min-height:0; }
+.ant-drawer-content > form > .ant-drawer-body { flex:1; min-height:0; overflow-y:auto; }
+.ant-drawer-content > form > .ant-drawer-footer { flex-shrink:0; }
 .ant-drawer-mask.active .ant-drawer-content { transform: translateX(0); }
 .ant-drawer-header { padding: 16px 24px; border-bottom: 1px solid #f0f0f0; display: flex; justify-content: space-between; align-items: center; }
 .ant-drawer-header h3 { font-size: 16px; font-weight: 500; color: rgba(0,0,0,0.85); margin: 0; }
 .ant-drawer-close { background: none; border: none; font-size: 16px; cursor: pointer; color: rgba(0,0,0,0.45); padding: 4px 8px; }
 .ant-drawer-close:hover { color: rgba(0,0,0,0.85); }
 .ant-drawer-body { padding: 24px; flex: 1; overflow-y: auto; }
-.ant-drawer-footer { padding: 10px 24px; border-top: 1px solid #f0f0f0; display: flex; justify-content: flex-end; gap: 8px; }
+.ant-drawer-footer { padding: 10px 24px; border-top: 1px solid #f0f0f0; display: flex; justify-content: flex-end; gap: 8px; flex-shrink:0; background:#fff; }
 
 /* ── Action icons (bare, no border) ── */
 .act-icon { display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; cursor: pointer; transition: all 0.2s; text-decoration: none; background: none; border: none; padding: 0; }
@@ -1115,9 +1161,26 @@ a:hover { color: #176a88; }
 .er-chip-x:hover { color:rgba(0,0,0,0.65); background:rgba(0,0,0,0.04); }
 .er-dd-panel { display:none; position:absolute; top:calc(100% + 4px); left:0; min-width:320px; background:#fff; border:1px solid #f0f0f0; border-radius:8px; box-shadow:0 6px 16px rgba(0,0,0,0.08); z-index:100; }
 .er-dd-panel.open { display:block; }
+.benchmark-drawer-content .er-dd-panel { top:auto; bottom:calc(100% + 4px); z-index:1200; }
 .er-opt { display:flex; align-items:center; gap:8px; padding:6px 14px; font-size:13px; cursor:pointer; color:rgba(0,0,0,0.85); }
 .er-opt:hover { background:#fafafa; }
 .er-opt input { accent-color:#1F80A0; }
+.bm-prompt-execution-tree { margin-top:10px; border:1px solid #e5eaed; border-radius:8px; background:#fff; overflow:hidden; }
+.bm-prompt-execution-head { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:9px 12px; border-bottom:1px solid #edf0f2; background:#f8fafb; }
+.bm-prompt-execution-title { color:rgba(0,0,0,.72); font-size:13px; font-weight:500; }
+.bm-prompt-execution-count { color:rgba(0,0,0,.42); font-size:12px; }
+.bm-prompt-execution-actions { display:flex; align-items:center; gap:12px; margin-left:auto; }
+.bm-prompt-execution-actions a { color:#1F80A0; font-size:12px; text-decoration:none; cursor:pointer; }
+.bm-prompt-execution-actions a:hover { text-decoration:underline; }
+.bm-prompt-execution-body { max-height:230px; overflow-y:auto; }
+.bm-prompt-execution-group { border-bottom:1px solid #f3f4f5; }
+.bm-prompt-execution-group:last-child { border-bottom:0; }
+.bm-prompt-execution-group-head { display:flex; align-items:center; gap:8px; padding:9px 12px; color:rgba(0,0,0,.82); font-size:13px; font-weight:500; }
+.bm-prompt-execution-group-head input, .bm-prompt-execution-child input { accent-color:#1F80A0; flex-shrink:0; }
+.bm-prompt-execution-steps { padding:0 12px 8px 34px; border-top:1px solid #f7f7f7; }
+.bm-prompt-execution-child { display:flex; align-items:flex-start; gap:8px; padding:7px 0; color:rgba(0,0,0,.68); font-size:12px; line-height:1.5; }
+.bm-prompt-execution-child .bm-prompt-execution-en { display:block; color:rgba(0,0,0,.38); margin-top:1px; }
+.bm-prompt-execution-empty { padding:18px 12px; color:rgba(0,0,0,.38); font-size:12px; text-align:center; }
 .er-pg-btn { min-width:28px; height:28px; padding:0 8px; border:1px solid #d9d9d9; border-radius:6px; background:#fff; font-size:13px; cursor:pointer; color:rgba(0,0,0,0.65); transition:all 0.2s; }
 .er-pg-btn:hover:not(:disabled) { border-color:#1F80A0; color:#1F80A0; }
 .er-pg-btn.active { background:#1F80A0; border-color:#1F80A0; color:#fff; }
@@ -1138,6 +1201,11 @@ a:hover { color: #176a88; }
 .status-active::before { background: #52c41a; }
 .status-pending::before { background: #faad14; }
 .status-done::before { background: #d9d9d9; }
+
+/* ── End-side iPad simulation frame ── */
+.eval2-ipad-shell { width:min(1400px, 100%); height:820px; margin:0 auto; border:1px solid #dfe5e9; border-radius:18px; background:#f7f8fa; box-shadow:0 10px 30px rgba(28,45,56,.08); overflow:hidden; box-sizing:border-box; }
+.eval2-ipad-screen { width:100%; height:100%; overflow:auto; box-sizing:border-box; }
+@media (max-height:900px) { .eval2-ipad-shell { height:calc(100vh - 96px); min-height:620px; } }
 """
 
 BASE_TEMPLATE = """<!DOCTYPE html>
@@ -1161,10 +1229,9 @@ BASE_TEMPLATE = """<!DOCTYPE html>
     <div class="nav-label">\u8bc4\u6d4b\u7ba1\u7406</div>
     <a href="/tasks" class="nav-item {{ 'active' if active=='tasks' }}"><span class="icon">&#9881;</span> \u8bc4\u6d4b\u4efb\u52a1\u7ba1\u7406</a>
     <a href="/collections" class="nav-item {{ 'active' if active=='collections' }}"><span class="icon">&#9783;</span> \u8bc4\u6d4b\u91c7\u96c6\u7ba1\u7406</a>
-    <a href="/eval-records" class="nav-item {{ 'active' if active=='eval_records' }}"><span class="icon">&#9776;</span> \u8bc4\u6d4b\u7ed3\u679c\u8bb0\u5f55</a>
     <div class="nav-label">\u8bc4\u6d4b\u6267\u884c</div>
     <a href="/collect" class="nav-item {{ 'active' if active=='collect' }}"><span class="icon">&#9783;</span> \u8bc4\u6d4b\u6570\u636e\u91c7\u96c6</a>
-    <a href="/evaluate2" class="nav-item {{ 'active' if active=='evaluate2' }}"><span class="icon">&#9878;</span> \u8bc4\u6d4b\u5de5\u4f5c\u53f0</a>
+    <a href="/evaluate2" class="nav-item {{ 'active' if active=='evaluate2' }}"><span class="icon">&#9878;</span> \u7aef\u4fa7\u793a\u610f</a>
     <div class="nav-label">\u6570\u636e\u770b\u677f</div>
     <a href="/leaderboard" class="nav-item {{ 'active' if active=='leaderboard' }}"><span class="icon">&#9733;</span> \u6392\u884c\u699c</a>
     <a href="/analysis" class="nav-item {{ 'active' if active=='analysis' }}"><span class="icon">&#9636;</span> \u591a\u7ef4\u5206\u6790</a>
@@ -1308,6 +1375,8 @@ document.addEventListener('DOMContentLoaded', function() {
 //   <input type="hidden" id="XXX-hidden" name="...">
 window.mselToggle = function(id, evt) {
   if (evt) evt.stopPropagation();
+  var trigger = document.getElementById(id + '-btn');
+  if (trigger && trigger.classList.contains('is-disabled')) return;
   document.getElementById(id + '-panel').classList.toggle('open');
 };
 window.mselToggleAll = function(id, checked) {
@@ -1346,6 +1415,8 @@ window.mselSync = function(id) {
     });
   }
   if (hidden) hidden.value = checked.map(function(cb) { return cb.value; }).join(',');
+  if (id === 'ms-ckpt' && typeof window.updateTaskResourceLinks === 'function') window.updateTaskResourceLinks();
+  if (id === 'ms-bm-prompts' && typeof window.renderBenchmarkPromptExecutionTree === 'function') window.renderBenchmarkPromptExecutionTree();
 };
 // Close dropdowns when clicking outside, and initialize chip display on load
 document.addEventListener('click', function(e) {
@@ -1518,6 +1589,62 @@ def get_scene(sid):
 def get_criterion(cid):
     return next((c for c in CRITERIA if c["id"] == cid), None)
 
+
+def normalize_result_definitions(definitions):
+    """Normalize legacy result arrays and the current typed result structure."""
+    normalized = {"成功": [], "失败": []}
+    if not isinstance(definitions, dict):
+        definitions = {}
+    for parent in ("成功", "失败"):
+        values = definitions.get(parent, []) or []
+        if isinstance(values, (str, int, float)):
+            values = [values]
+        for index, value in enumerate(values, 1):
+            if isinstance(value, dict):
+                description = value.get("description") or value.get("name") or "--"
+                degree = value.get("degree", index)
+            else:
+                description = str(value)
+                degree = index
+            description = str(description)
+            try:
+                degree = int(degree)
+            except (TypeError, ValueError):
+                degree = index
+            normalized[parent].append({"description": description, "degree": degree})
+        normalized[parent].sort(key=lambda item: item["degree"], reverse=True)
+    # Completion is a single ranking shared by success and failure definitions.
+    # Keep the current order for equal legacy degrees, then assign a global
+    # descending sequence so a larger value always means higher completion.
+    ordered = [item for parent in ("成功", "失败") for item in normalized[parent]]
+    ordered.sort(key=lambda item: item["degree"], reverse=True)
+    total = len(ordered)
+    for index, item in enumerate(ordered):
+        item["degree"] = total - index
+    return normalized
+
+
+def get_criterion_metrics(criterion):
+    """Return the current metric form rows, with a legacy form fallback."""
+    metrics = criterion.get("metrics", []) or []
+    if metrics:
+        return metrics
+    form = criterion.get("form", {}) or {}
+    legacy_items = list(form.get("scale_module", {}).get("items", []) or [])
+    for item in form.get("type_module", {}).get("items", []) or []:
+        if item.get("metric_name"):
+            legacy_items.append(item)
+    return [
+        {
+            "name": item.get("metric_name") or item.get("prompt") or "",
+            "type": "数字" if item.get("score_range") else "文本",
+            "options": item.get("options", []) or [],
+            "default_value": item.get("value") if item.get("value") is not None else "",
+        }
+        for item in legacy_items
+        if item.get("metric_name") or item.get("prompt")
+    ]
+
 def difficulty_stars(n):
     return '<span class="difficulty">' + ("&#9733;" * n) + ("&#9734;" * (5 - n)) + '</span>'
 
@@ -1548,53 +1675,69 @@ def prompts_page():
         value = max(1, min(5, int(value or 3)))
         return f'<span class="prompt-difficulty">{value}（{difficulty_names[value]}）</span>'
 
+    def prompt_action(href, label, style=""):
+        style_class = f" {style}" if style else ""
+        return f'<a class="prompt-action-link{style_class}" href="{href}" title="{label}" data-tip="{label}">{label}</a>'
+
     rows = ""
-    for p in PROMPTS:
+    for prompt_index, p in enumerate(PROMPTS):
         pid = p["id"]
         enabled = p.get("enabled", True)
+        created_at = p.get("created_at", f"2026-07-{prompt_index + 1:02d} 10:00")
         agg_labels = prompt_aggregated_labels(p)
         labels_html = render_tags_html(agg_labels)
         labels_tip = _build_tip_text(agg_labels)
-        toggle_icon = ICON_DISABLE if enabled else ICON_ENABLE
-        toggle_title = "停用" if enabled else "启用"
-        actions_html = (
-            f'<a class="act-icon act-primary" href="javascript:;" onclick="showAddChild(\'{pid}\')" '
-            f'title="增加下级" data-tip="增加下级">{ICON_ADD_CHILD}</a>'
-            + icon_btn(f'/prompts/{pid}/toggle', toggle_icon, toggle_title, "default")
-            + icon_btn(f'/prompts/{pid}/copy', ICON_COPY, "复制", "default")
-        )
-        if not enabled:
-            actions_html += icon_btn(f'/prompts/{pid}/delete', ICON_DELETE, "删除", "danger")
+        if enabled:
+            actions_html = prompt_action(f'/prompts/{pid}/copy', "复制", "prompt-action-muted")
+        else:
+            more_menu = (
+                '<span class="prompt-more-wrap">'
+                '<a class="prompt-action-link prompt-action-muted" href="javascript:;">更多</a>'
+                '<span class="prompt-more-menu">'
+                + prompt_action(f'/prompts/{pid}/copy', "复制", "prompt-action-muted")
+                + prompt_action(f'/prompts/{pid}/delete', "删除", "prompt-action-danger")
+                + '</span></span>'
+            )
+            actions_html = (
+                f'<a class="prompt-action-link prompt-action-primary" href="javascript:;" onclick="showAddChild(\'{pid}\')" '
+                f'title="增加下级" data-tip="增加下级">增加下级</a>'
+                + prompt_action(f'/prompts/{pid}/toggle', "发布", "prompt-action-muted")
+                + more_menu
+            )
 
         rows += f'<tr class="row-parent prompt-parent-row" data-id="{pid}">'
         rows += f'<td class="prompt-tree-cell"><button class="expand-btn" data-target="sub-{pid}">&#9654;</button></td>'
-        rows += td_tip(labels_html, tip_text=labels_tip)
-        rows += '<td class="prompt-seq prompt-seq-parent">—</td>'
+        rows += '<td class="prompt-seq prompt-seq-parent prompt-seq-col">—</td>'
         rows += td_tip(p["high_level"], 'style="font-weight:600;"')
         rows += td_tip(p["high_level_en"])
         rows += f'<td>{difficulty_html(p.get("difficulty", 3))}</td>'
+        rows += td_tip(labels_html, tip_text=labels_tip)
+        rows += f'<td><span class="prompt-status {"is-enabled" if enabled else "is-disabled"}">{"已发布" if enabled else "未发布"}</span></td>'
         rows += f'<td>{p["creator"]}</td>'
-        rows += f'<td class="actions-cell">{actions_html}</td>'
+        rows += f'<td>{created_at}</td>'
+        rows += f'<td class="actions-cell"><span class="prompt-action-group">{actions_html}</span></td>'
         rows += '</tr>'
 
         for index, ll in enumerate(p["low_levels"], start=1):
-            child_actions = icon_btn(
+            child_actions = prompt_action(
                 f'/prompts/{pid}/del-child/{ll["id"]}',
-                ICON_DELETE,
                 "删除",
-                "danger",
+                "prompt-action-danger",
             )
             rows += (
                 f'<tr class="sub-row sub-{pid} row-child prompt-child-row" '
                 f'data-parent="{pid}" data-child-id="{ll["id"]}" draggable="true">'
             )
             rows += '<td class="prompt-drag-cell"><span class="prompt-drag-handle" title="拖拽调整顺序">&#8942;&#8942;</span></td>'
-            rows += '<td></td>'
-            rows += f'<td class="prompt-seq">{index}</td>'
+            rows += f'<td class="prompt-seq prompt-seq-col">{index}</td>'
             rows += td_tip(ll["zh"])
             rows += td_tip(ll["en"])
             rows += f'<td>{difficulty_html(ll.get("difficulty", 3))}</td>'
+            rows += td_tip(render_tags_html(ll.get("labels", [])), tip_text=_build_tip_text(ll.get("labels", [])))
+            # 已发布/未发布只在 highlevel 父级生效，lowlevel 不展示状态。
             rows += '<td></td>'
+            rows += f'<td>{p["creator"]}</td>'
+            rows += f'<td>{created_at}</td>'
             rows += f'<td class="actions-cell">{child_actions}</td>'
             rows += '</tr>'
 
@@ -1602,8 +1745,7 @@ def prompts_page():
         rows += f'''
         <tr class="row-child row-inline-child prompt-add-child-row" id="add-child-{pid}" data-parent="{pid}" style="display:none;">
           <td class="prompt-drag-cell"><span class="prompt-drag-placeholder"></span></td>
-          <td></td>
-          <td class="prompt-seq">{len(p["low_levels"]) + 1}</td>
+          <td class="prompt-seq prompt-seq-col">{len(p["low_levels"]) + 1}</td>
           <td><input type="text" form="form-child-{pid}" name="zh" placeholder="输入 Low level" {INLINE_INPUT}></td>
           <td><input type="text" form="form-child-{pid}" name="en" placeholder="输入 Task-Prompt" {INLINE_INPUT}></td>
           <td>
@@ -1614,6 +1756,9 @@ def prompts_page():
             </div>
           </td>
           <td></td>
+          <td></td>
+          <td>{p["creator"]}</td>
+          <td>{created_at}</td>
           <td class="actions-cell prompt-save-actions">
             <button type="submit" form="form-child-{pid}" class="ant-btn ant-btn-sm ant-btn-primary">保存</button>
             <button type="button" class="ant-btn ant-btn-sm" onclick="hideAddChild('{pid}')">取消</button>
@@ -1625,57 +1770,47 @@ def prompts_page():
 
     content = f'''
     <form id="inline-add" method="POST" action="/prompts/create" style="display:none;"></form>
-    <div class="prompt-page-heading">
-      <strong>任务提示词</strong>
-      <div class="prompt-heading-actions">
-        <input id="prompt-json-file" type="file" accept="application/json,.json" hidden onchange="promptImportJson(this)">
-        <button class="ant-btn" type="button" onclick="document.getElementById('prompt-json-file').click()">导入 JSON</button>
-        <button class="ant-btn ant-btn-primary" type="button" onclick="showNewParent()">新增测试任务</button>
-      </div>
-    </div>
-
-    <div class="filter-bar prompt-filter-bar">
-      <div class="prompt-filter-item prompt-filter-labels">
-        <label>Labels</label>
-        <div class="ts-wrap" id="ts-filter">
-          <div class="ts-trigger" onclick="tsToggle('ts-filter')"><span class="ts-placeholder">Select label</span></div>
+    <div class="filter-bar fb-labeled prompt-filter-bar">
+      <div class="ff"><label>任务提示词</label><input type="text" placeholder="搜索任务提示词"></div>
+      <div class="ff"><label>Task-Prompt</label><input type="text" placeholder="搜索 Task-Prompt"></div>
+      <div class="ff"><label>标签</label>
+        <div class="ts-wrap prompt-filter-select" id="ts-filter">
+          <div class="ts-trigger" onclick="tsToggle('ts-filter')"><span class="ts-placeholder">选择标签</span></div>
           <div class="ts-panel">{filter_tree}</div>
           <input type="hidden" name="filter_tags" value="">
         </div>
       </div>
-      <div class="prompt-filter-item"><label>High level</label><input type="text" placeholder="Enter task"></div>
-      <div class="prompt-filter-item"><label>Low level</label><input type="text" placeholder="Enter prompt"></div>
-      <div class="prompt-filter-item"><label>Creator</label><select><option value="">请选择创建人</option>{creator_options}</select></div>
-      <button class="ant-btn prompt-reset-btn" type="button" onclick="clearFilters()" title="重置筛选">&#8635;</button>
+      <div class="ff"><label>创建人</label><select><option value="">请选择创建人</option>{creator_options}</select></div>
+      <div class="filter-actions">
+        <button class="ant-btn" type="button" onclick="clearFilters()">清空</button>
+        <button class="ant-btn ant-btn-primary" type="button" onclick="doSearch()">搜索</button>
+      </div>
       <div style="flex:1;"></div>
-      <button class="ant-btn prompt-high-level-btn" type="button" onclick="showNewParent()">+ High Level</button>
+      <input id="prompt-json-file" type="file" accept="application/json,.json" hidden onchange="promptImportJson(this)">
+      <button class="ant-btn" type="button" onclick="document.getElementById('prompt-json-file').click()">导入 JSON</button>
+      <button class="ant-btn ant-btn-primary" type="button" onclick="showNewParent()">+ 新增任务提示词</button>
     </div>
 
     <div class="ant-card ant-card-bordered prompt-table-card">
       <table class="ant-table" id="prompt-table">
         <thead><tr>
           <th></th>
-          <th>Labels</th>
-          <th>序号</th>
+          <th class="prompt-seq-col">序号</th>
           <th>任务提示词</th>
           <th>Task-Prompt</th>
-          <th>Difficulty</th>
-          <th>Creator</th>
-          <th>Actions</th>
+          <th>难度</th>
+          <th>标签</th>
+          <th>状态</th>
+          <th>创建人</th>
+          <th>创建时间</th>
+          <th>操作</th>
         </tr></thead>
         <tbody>
           {rows}
           <tr class="row-new-parent" id="new-parent-row" style="display:none;">
             <td></td>
-            <td>
-              <div class="ts-wrap" id="ts-new-parent">
-                <div class="ts-trigger" onclick="tsToggle('ts-new-parent')"><span class="ts-placeholder">选择标签</span></div>
-                <div class="ts-panel">{tree_html}</div>
-                <input type="hidden" form="inline-add" name="parent_labels" value="">
-              </div>
-            </td>
-            <td class="prompt-seq">—</td>
-            <td><input type="text" form="inline-add" name="high_level" placeholder="输入 High level" {INLINE_INPUT}></td>
+            <td class="prompt-seq prompt-seq-col">—</td>
+            <td><input type="text" form="inline-add" name="high_level" placeholder="输入任务提示词" {INLINE_INPUT}></td>
             <td><input type="text" form="inline-add" name="high_level_en" placeholder="输入 Task-Prompt" {INLINE_INPUT}></td>
             <td>
               <div class="prompt-difficulty-stepper">
@@ -1684,7 +1819,16 @@ def prompts_page():
                 <button type="button" onclick="stepPromptDifficulty(this,1)">＋</button>
               </div>
             </td>
+            <td>
+              <div class="ts-wrap" id="ts-new-parent">
+                <div class="ts-trigger" onclick="tsToggle('ts-new-parent')"><span class="ts-placeholder">选择标签</span></div>
+                <div class="ts-panel">{tree_html}</div>
+                <input type="hidden" form="inline-add" name="parent_labels" value="">
+              </div>
+            </td>
+            <td></td>
             <td class="prompt-muted">Joanna Qiao</td>
+            <td class="prompt-muted">—</td>
             <td class="actions-cell prompt-save-actions">
               <a class="act-icon act-primary" href="javascript:;" onclick="addNewChildRow()" title="增加下级">{ICON_ADD_CHILD}</a>
               <button type="submit" form="inline-add" class="ant-btn ant-btn-sm ant-btn-primary">保存</button>
@@ -1704,26 +1848,24 @@ def prompts_page():
     </div>
 
     <style>
-      .prompt-page-heading {{ height:52px; margin:-24px -24px 14px; padding:0 24px; display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid #f0f0f0; background:#fff; }}
-      .prompt-page-heading strong {{ font-size:16px; font-weight:600; }}
-      .prompt-heading-actions {{ display:flex; gap:10px; }}
-      .prompt-filter-bar {{ align-items:flex-end; background:#fff; border:0; padding:0 0 12px; gap:8px; margin-bottom:0; }}
-      .prompt-filter-item {{ width:168px; min-width:0; }}
-      .prompt-filter-labels {{ width:168px; }}
-      .prompt-filter-item label {{ display:block; color:rgba(0,0,0,.55); font-size:12px; margin:0 0 5px; }}
-      .prompt-filter-item input, .prompt-filter-item select {{ width:100%; }}
-      .prompt-reset-btn {{ width:36px; padding:0; font-size:18px; }}
-      .prompt-high-level-btn {{ color:#1F80A0; border-color:#1F80A0; }}
-      .prompt-table-card {{ border-radius:0; overflow:visible; }}
+      .prompt-table-card {{ position:relative; z-index:1; border-radius:0; overflow:visible; }}
+      .prompt-filter-bar {{ position:relative; z-index:30; overflow:visible; }}
+      .prompt-filter-bar .ff, .prompt-filter-bar .ts-wrap {{ overflow:visible; }}
+      .prompt-filter-bar .ts-panel {{ z-index:1200; }}
+      .prompt-filter-bar .ff {{ flex:1 1 180px; min-width:180px; }}
+      .prompt-filter-bar .ff input, .prompt-filter-bar .ff select {{ width:100%; min-width:0; }}
+      .prompt-filter-bar .ff .prompt-filter-select {{ width:100%; min-width:0; }}
       #prompt-table {{ table-layout:fixed; }}
       #prompt-table th:nth-child(1) {{ width:42px; }}
-      #prompt-table th:nth-child(2) {{ width:14%; }}
-      #prompt-table th:nth-child(3) {{ width:62px; }}
-      #prompt-table th:nth-child(4) {{ width:25%; }}
-      #prompt-table th:nth-child(5) {{ width:25%; }}
-      #prompt-table th:nth-child(6) {{ width:100px; }}
-      #prompt-table th:nth-child(7) {{ width:100px; }}
-      #prompt-table th:nth-child(8) {{ width:172px; }}
+      #prompt-table th:nth-child(2), #prompt-table td:nth-child(2) {{ display:none; }}
+      #prompt-table th:nth-child(3) {{ width:18%; }}
+      #prompt-table th:nth-child(4) {{ width:24%; }}
+      #prompt-table th:nth-child(5) {{ width:112px; }}
+      #prompt-table th:nth-child(6) {{ width:26%; }}
+      #prompt-table th:nth-child(7) {{ width:86px; }}
+      #prompt-table th:nth-child(8) {{ width:108px; }}
+      #prompt-table th:nth-child(9) {{ width:145px; }}
+      #prompt-table th:nth-child(10) {{ width:190px; }}
       #prompt-table td {{ text-overflow:ellipsis; white-space:nowrap; max-width:0; overflow:hidden; }}
       #prompt-table .actions-cell {{ overflow:visible; white-space:nowrap; }}
       .prompt-parent-row td {{ font-weight:500; background:#fff; }}
@@ -1737,13 +1879,30 @@ def prompts_page():
       .prompt-seq {{ text-align:center; color:rgba(0,0,0,.65); font-variant-numeric:tabular-nums; }}
       .prompt-seq-parent {{ color:rgba(0,0,0,.2); }}
       .prompt-difficulty {{ color:#ad8b00; white-space:nowrap; }}
+      .prompt-status {{ display:inline-block; padding:2px 8px; border-radius:10px; font-size:12px; line-height:1.5; white-space:nowrap; }}
+      .prompt-status.is-enabled {{ color:#18794e; background:#e8f7ef; }}
+      .prompt-status.is-disabled {{ color:#8a5a00; background:#fff4d6; }}
       .prompt-difficulty-stepper {{ height:34px; display:inline-flex; align-items:center; border:1px solid #d9d9d9; border-radius:6px; overflow:hidden; background:#fff; }}
       .prompt-difficulty-stepper button {{ width:28px; height:32px; border:0; background:#fafafa; cursor:pointer; color:rgba(0,0,0,.55); }}
       .prompt-difficulty-stepper input {{ width:36px; height:32px; border:0; border-left:1px solid #f0f0f0; border-right:1px solid #f0f0f0; text-align:center; outline:0; appearance:textfield; }}
       .prompt-save-actions {{ display:table-cell; }}
+      .prompt-action-group {{ display:inline-flex; align-items:center; gap:12px; white-space:nowrap; }}
+      .prompt-action-link {{ display:inline-block; margin:0; color:#1f80a0; font-size:12px; line-height:24px; text-decoration:none; white-space:nowrap; cursor:pointer; }}
+      .prompt-action-link:hover {{ color:#0b637b; text-decoration:underline; }}
+      .prompt-action-primary {{ color:#1677ff; }}
+      .prompt-action-muted {{ color:rgba(0,0,0,.62); }}
+      .prompt-action-danger {{ color:#d4380d; }}
+      .prompt-more-wrap {{ position:relative; display:inline-block; margin:0; }}
+      .prompt-more-wrap > .prompt-action-link {{ margin-left:0; }}
+      .prompt-more-menu {{ display:none; position:absolute; right:0; top:calc(100% + 4px); z-index:30; min-width:72px; padding:4px; border:1px solid #e5e7eb; border-radius:6px; background:#fff; box-shadow:0 6px 18px rgba(0,0,0,.12); }}
+      .prompt-more-wrap:hover .prompt-more-menu {{ display:block; }}
+      .prompt-more-menu .prompt-action-link {{ display:block; margin:0; padding:4px 8px; line-height:22px; }}
       .prompt-save-actions .ant-btn {{ margin-left:6px; }}
       .prompt-muted {{ color:rgba(0,0,0,.45); font-size:13px; }}
       .row-new-parent td, .row-new-child td, .prompt-add-child-row td {{ vertical-align:middle; white-space:normal !important; overflow:visible !important; }}
+      .row-new-parent, .row-new-child, .prompt-add-child-row {{ position:relative; z-index:10; }}
+      .row-new-parent .ts-wrap.open, .row-new-child .ts-wrap.open {{ z-index:1200; }}
+      .row-new-parent .ts-panel, .row-new-child .ts-panel {{ z-index:1200; }}
       .row-new-parent td {{ border-top:2px solid #1F80A0; background:#f8fcfd; }}
       .row-new-child td:first-child, .prompt-add-child-row td:first-child {{ border-left:2px solid #1F80A0; }}
       .prompt-pagination {{ display:flex; justify-content:flex-end; align-items:center; gap:6px; margin-top:14px; }}
@@ -1783,6 +1942,10 @@ def prompts_page():
       tr.className = 'row-new-child';
       tr.innerHTML = `
         <td class="prompt-drag-cell"><span class="prompt-drag-placeholder"></span></td>
+        <td class="prompt-seq prompt-seq-col">${{idx + 1}}</td>
+        <td><input type="text" form="inline-add" name="child_zh_${{idx}}" placeholder="输入任务提示词" {INLINE_INPUT}></td>
+        <td><input type="text" form="inline-add" name="child_en_${{idx}}" placeholder="输入 Task-Prompt" {INLINE_INPUT}></td>
+        <td><div class="prompt-difficulty-stepper"><button type="button" onclick="stepPromptDifficulty(this,-1)">−</button><input type="number" form="inline-add" name="child_difficulty_${{idx}}" min="1" max="5" value="3" readonly><button type="button" onclick="stepPromptDifficulty(this,1)">＋</button></div></td>
         <td>
           <div class="ts-wrap" id="${{tsId}}">
             <div class="ts-trigger" onclick="tsToggle('${{tsId}}')"><span class="ts-placeholder">选择标签</span></div>
@@ -1790,11 +1953,9 @@ def prompts_page():
             <input type="hidden" form="inline-add" name="child_labels_${{idx}}" value="">
           </div>
         </td>
-        <td class="prompt-seq">${{idx + 1}}</td>
-        <td><input type="text" form="inline-add" name="child_zh_${{idx}}" placeholder="输入 Low level" {INLINE_INPUT}></td>
-        <td><input type="text" form="inline-add" name="child_en_${{idx}}" placeholder="输入 Task-Prompt" {INLINE_INPUT}></td>
-        <td><div class="prompt-difficulty-stepper"><button type="button" onclick="stepPromptDifficulty(this,-1)">−</button><input type="number" form="inline-add" name="child_difficulty_${{idx}}" min="1" max="5" value="3" readonly><button type="button" onclick="stepPromptDifficulty(this,1)">＋</button></div></td>
         <td></td>
+        <td class="prompt-muted">Joanna Qiao</td>
+        <td class="prompt-muted">—</td>
         <td class="actions-cell"><button type="button" class="ant-btn ant-btn-sm" onclick="this.closest('tr').remove()">删除</button></td>`;
       anchor.parentNode.insertBefore(tr, anchor);
       tsInit(document.getElementById(tsId));
@@ -1921,7 +2082,7 @@ def prompts_page():
     initPromptDrag();
     </script>
     '''
-    return render_page("提示词管理", content, active="prompts")
+    return render_page("任务提示词", content, active="prompts")
 
 
 @app.route("/prompts/create", methods=["POST"])
@@ -2012,7 +2173,7 @@ def prompt_toggle(pid):
     p = next((p for p in PROMPTS if p["id"] == pid), None)
     if p:
         p["enabled"] = not p.get("enabled", False)
-        state = "\u542f\u7528" if p["enabled"] else "\u53d6\u6d88\u542f\u7528"
+        state = "发布" if p["enabled"] else "取消发布"
         flash(f"\u300c{p['high_level']}\u300d\u5df2{state}", "success")
     return redirect(url_for("prompts_page"))
 
@@ -2041,7 +2202,7 @@ def prompt_delete(pid):
     p = next((p for p in PROMPTS if p["id"] == pid), None)
     if p:
         if p.get("enabled"):
-            flash("\u5df2\u542f\u7528\u7684\u63d0\u793a\u8bcd\u4e0d\u53ef\u5220\u9664", "error")
+            flash("已发布的提示词不可删除", "error")
         else:
             PROMPTS = [x for x in PROMPTS if x["id"] != pid]
             flash(f"\u300c{p['high_level']}\u300d\u5df2\u5220\u9664", "success")
@@ -2053,7 +2214,7 @@ def prompt_del_child(pid, cid):
     p = next((p for p in PROMPTS if p["id"] == pid), None)
     if p:
         if p.get("enabled"):
-            flash("\u5df2\u542f\u7528\u72b6\u6001\u4e0d\u53ef\u5220\u9664\u5b50\u7ea7", "error")
+            flash("发布状态不可删除子级", "error")
         else:
             p["low_levels"] = [ll for ll in p["low_levels"] if ll.get("id") != cid]
             flash("\u5b50\u7ea7\u63d0\u793a\u8bcd\u5df2\u5220\u9664", "success")
@@ -2218,10 +2379,10 @@ def tags_page():
             )
             created_at = f'2026-07-{18 + (row_index % 9):02d} {9 + (row_index % 8):02d}:{(row_index * 7) % 60:02d}'
             creator_id = group.get("owners", [current_user])[0]
-            edit_btn = icon_btn("#", ICON_EDIT, "\u7f16\u8f91", "primary")
-            add_btn = icon_btn("#", ICON_ADD_CHILD, "\u65b0\u589e\u5b50\u6807\u7b7e", "default")
-            detail_btn = icon_btn("#", ICON_VIEW, "\u67e5\u770b\u8be6\u60c5", "primary")
-            del_btn = icon_btn("#", ICON_DELETE, "\u5220\u9664", "danger")
+            edit_btn = ''
+            add_btn = '<a href="#" class="action-link">新增子标签</a>'
+            detail_btn = ''
+            del_btn = ''
             display_style = "" if is_active else "display:none;"
 
             group_rows_html += (
@@ -2312,6 +2473,7 @@ def tags_page():
           <button type="button" class="tag-group-create-button" onclick="tagOpenCreateGroup()">新增标签组</button>
         </div>
         <div class="tag-group-search">
+          <label for="tagGroupSearchInput">标签组名称</label>
           <input class="ant-input" id="tagGroupSearchInput" placeholder="搜索标签组"
             oninput="tagFilterGroups(this.value)">
         </div>
@@ -2333,9 +2495,12 @@ def tags_page():
 
         <div class="ant-card ant-card-bordered tag-list-card">
           <div class="tag-list-toolbar">
-            <div class="tag-list-search">
-              <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-4-4"></path></svg>
-              <input class="ant-input" id="tagSearchInput" placeholder="请输入标签名称" oninput="tagSearchRows(this.value)">
+            <div class="tag-list-filter">
+              <label for="tagSearchInput">标签名称</label>
+              <div class="tag-list-search">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-4-4"></path></svg>
+                <input class="ant-input" id="tagSearchInput" placeholder="请输入标签名称" oninput="tagSearchRows(this.value)">
+              </div>
             </div>
             <button class="ant-btn tag-list-create-action" onclick="toast('Demo: 打开新增一级标签')">新增一级标签</button>
           </div>
@@ -2408,7 +2573,8 @@ def tags_page():
       .tag-group-head {{ display:flex; align-items:center; justify-content:space-between; gap:8px; padding:14px 16px; border-bottom:1px solid #dfecef; background:#f8fcfd; font-size:13px; font-weight:600; color:rgba(0,0,0,0.78); }}
       .tag-group-create-button {{ appearance:none; border:0; outline:0; padding:4px 0; background:transparent; color:#1F80A0; font:inherit; font-weight:500; cursor:pointer; }}
       .tag-group-create-button:hover {{ color:#176a88; }}
-      .tag-group-search {{ padding:12px 12px 0; }}
+      .tag-group-search {{ padding:12px; display:flex; flex-direction:column; gap:6px; border-bottom:1px solid #f0f0f0; }}
+      .tag-group-search label, .tag-list-filter > label {{ font-size:13px; color:rgba(0,0,0,.72); }}
       .tag-group-search .ant-input {{ width:100%; box-sizing:border-box; background:#fff; }}
       .tag-group-list {{ display:flex; flex-direction:column; gap:10px; padding:12px; }}
       .tag-group-card {{ position:relative; width:100%; padding:14px; border:1px solid transparent; border-radius:8px; background:rgba(255,255,255,0.58); text-align:left; cursor:pointer; transition:all .15s; box-sizing:border-box; }}
@@ -2453,7 +2619,8 @@ def tags_page():
       .tag-publish-button:hover {{ border-color:#1F80A0; background:#fff; color:#1F80A0; }}
       .tag-group-description {{ max-width:760px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:13px; color:rgba(0,0,0,0.45); }}
       .tag-list-card {{ overflow:hidden; background:#fff; }}
-      .tag-list-toolbar {{ min-height:56px; display:flex; align-items:center; justify-content:space-between; gap:16px; padding:10px 14px; border-bottom:1px solid #f0f0f0; box-sizing:border-box; }}
+      .tag-list-toolbar {{ min-height:76px; display:flex; align-items:flex-end; justify-content:space-between; gap:16px; padding:12px 14px; border-bottom:1px solid #f0f0f0; box-sizing:border-box; }}
+      .tag-list-filter {{ display:flex; flex-direction:column; gap:6px; }}
       .tag-list-search {{ position:relative; width:240px; }}
       .tag-list-search svg {{ position:absolute; left:11px; top:50%; width:15px; height:15px; transform:translateY(-50%); fill:none; stroke:#a6adb4; stroke-width:1.8; pointer-events:none; z-index:1; }}
       .tag-list-search .ant-input {{ width:100%; padding-left:34px; box-sizing:border-box; }}
@@ -2833,6 +3000,9 @@ def tags_page():
 def criteria_page():
     rows = ""
     for c in CRITERIA:
+        status_label = c.get("publish_status", "已发布")
+        is_unpublished = status_label == "未发布"
+        status_class = "tag-gray" if is_unpublished else "tag-green"
         ct = CRITERIA_TYPES.get(c["type"], {})
         type_tag = f'<span class="ant-tag ant-tag-{ct.get("color","")}">{ct.get("label","")}</span>'
         form = c.get("form", {})
@@ -2847,48 +3017,77 @@ def criteria_page():
         if form.get("note"):
             modules.append("\u5907\u6ce8")
         modules_html = " + ".join(modules) if modules else "--"
-
-        edit_btn = icon_btn(f"/criteria/{c['id']}", ICON_VIEW, "\u67e5\u770b", "default")
-        copy_btn = icon_btn("#", ICON_COPY, "\u590d\u5236", "default")
-        del_btn = icon_btn("#", ICON_DELETE, "\u5220\u9664", "danger")
+        view_btn = f'<a href="javascript:void(0)" class="action-link" onclick="openCriteriaView(\'{c["id"]}\')">查看</a>'
+        edit_btn = f'<a href="javascript:void(0)" class="action-link" onclick="openCriteriaEdit(\'{c["id"]}\')">编辑</a>' if is_unpublished else ''
+        publish_btn = f'<a href="/criteria/{c["id"]}/publish" class="action-link" onclick="return confirm(\'发布后将不能编辑或删除，确认发布吗？\')">发布</a>' if is_unpublished else ''
+        copy_btn = '<a href="#" class="action-link" onclick="toast(\'已复制评价标准\');return false;">复制</a>'
+        del_btn = f'<a href="/criteria/{c["id"]}/delete" class="action-link danger" onclick="return confirm(\'确认删除该评价标准吗？\')">删除</a>' if is_unpublished else ''
+        more_btn = f'<span class="action-more-wrap"><a href="javascript:void(0)" class="action-link">更多</a><span class="action-more-menu">{edit_btn}{del_btn}</span></span>' if is_unpublished else ''
+        actions_html = view_btn + copy_btn + publish_btn + more_btn
 
         rows += f'''<tr>
             <td style="font-weight:500;">{c["name"]}</td>
-            <td>{type_tag}</td>
             <td title="{c['description']}">{c["description"][:40]}...</td>
-            <td>{modules_html}</td>
+            <td><span class="tag {status_class}">{status_label}</span></td>
             <td>{c["creator"]}</td>
             <td>{c["created_at"]}</td>
-            <td class="actions-cell">{edit_btn}{copy_btn}{del_btn}</td>
+            <td class="actions-cell">{actions_html}</td>
         </tr>'''
 
+    criteria_view_data = json.dumps({
+        c["id"]: {
+            "name": c.get("name", ""),
+            "description": c.get("description", ""),
+            "publish_status": c.get("publish_status", "已发布"),
+            "result_definitions": normalize_result_definitions(c.get("result_definitions", {})),
+            "metrics": get_criterion_metrics(c),
+        }
+        for c in CRITERIA
+    }, ensure_ascii=False)
+
     content = f'''
-    <div class="stat-grid">
+    <div style="display:none" class="stat-grid">
       <div class="stat-card"><div class="stat-label">\u6807\u51c6\u603b\u6570</div><div class="stat-value">{len(CRITERIA)}</div></div>
       <div class="stat-card"><div class="stat-label">\u504f\u597d\u9009\u62e9</div><div class="stat-value">{sum(1 for c in CRITERIA if c["type"]=="preference")}</div></div>
       <div class="stat-card"><div class="stat-label">\u6210\u529f\u5931\u8d25</div><div class="stat-value">{sum(1 for c in CRITERIA if c["type"]=="pass_fail")}</div></div>
       <div class="stat-card"><div class="stat-label">\u91cf\u8868\u8bc4\u5206</div><div class="stat-value">{sum(1 for c in CRITERIA if c["type"]=="scale")}</div></div>
     </div>
 
-    <div class="filter-bar">
-      <input type="text" placeholder="\u641c\u7d22\u6807\u51c6\u540d\u79f0" style="min-width:180px;">
-      <select style="min-width:130px;">
-        <option value="">\u5168\u90e8\u7c7b\u578b</option>
-        {"".join(f'<option value="{k}">{v["label"]}</option>' for k,v in CRITERIA_TYPES.items())}
-      </select>
-      <button class="ant-btn" onclick="clearFilters()">\u6e05\u7a7a</button>
-      <button class="ant-btn ant-btn-primary" onclick="doSearch()">\u641c\u7d22</button>
+    <div style="display:none">
+    <div class="ant-card ant-card-bordered" style="margin-bottom:16px;">
+      <div class="ant-card-head"><div class="ant-card-head-title">评测结果</div></div>
+      <div class="ant-card-body"><div class="muted" style="margin-bottom:12px;">选择评测任务允许使用的结果状态，成功和失败为系统必选项。</div>
+        <div style="display:flex;gap:24px;flex-wrap:wrap;">
+          <label><input type="checkbox" checked disabled> 成功 <span class="muted">（必选）</span></label>
+          <label><input type="checkbox" checked disabled> 失败 <span class="muted">（必选）</span></label>
+          <label><input type="checkbox" checked> 重试1次成功</label><label><input type="checkbox"> 重试2次成功</label><label><input type="checkbox"> 重试3次成功</label>
+        </div>
+      </div>
+    </div>
+    <div class="ant-card ant-card-bordered" style="margin-bottom:16px;">
+      <div class="ant-card-head"><div class="ant-card-head-title">评测指标</div><button class="ant-btn ant-btn-primary" type="button" onclick="criteriaAddMetric()">+ 新增指标</button></div>
+      <div class="ant-card-body" style="padding:0;"><table class="ant-table" id="criteria-metrics-table"><thead><tr><th>指标名称</th><th>字段类型</th><th>字段值</th><th>操作</th></tr></thead><tbody><tr><td>任务完成度</td><td>数值</td><td>0-100</td><td><button class="ant-btn" type="button" onclick="criteriaRemoveMetric(this)">删除</button></td></tr></tbody></table></div>
+    </div>
+
+    </div>
+    <div class="filter-bar fb-labeled">
+      <div class="ff"><label>\u6807\u51c6\u540d\u79f0</label><input type="text" placeholder="\u641c\u7d22\u6807\u51c6\u540d\u79f0"></div>
+      <div class="ff"><label>\u521b\u5efa\u4eba</label><select><option value="">\u5168\u90e8\u521b\u5efa\u4eba</option>{"".join(f'<option>{c["creator"]}</option>' for c in CRITERIA)}</select></div>
+      <div class="ff"><label>状态</label><select name="publish_status"><option value="">全部状态</option><option>未发布</option><option>已发布</option></select></div>
+      <div class="filter-actions">
+        <button class="ant-btn" onclick="clearFilters()">\u6e05\u7a7a</button>
+        <button class="ant-btn ant-btn-primary" onclick="doSearch()">\u641c\u7d22</button>
+      </div>
       <div style="flex:1;"></div>
-      <button class="ant-btn ant-btn-primary" onclick="openModal(\'create-criteria-drawer\')">+ \u65b0\u589e\u8bc4\u4ef7\u6807\u51c6</button>
+      <button class="ant-btn ant-btn-primary" onclick="openCriteriaCreate()">\u65b0\u589e\u8bc4\u4ef7\u6807\u51c6</button>
     </div>
 
     <div class="ant-card ant-card-bordered">
       <table class="ant-table">
         <thead><tr>
           <th>\u6807\u51c6\u540d\u79f0</th>
-          <th>\u7c7b\u578b</th>
           <th>\u63cf\u8ff0</th>
-          <th>\u8868\u5355\u7ec4\u6210</th>
+          <th>\u72b6\u6001</th>
           <th>\u521b\u5efa\u4eba</th>
           <th>\u521b\u5efa\u65f6\u95f4</th>
           <th>\u64cd\u4f5c</th>
@@ -2899,32 +3098,28 @@ def criteria_page():
 
     <!-- Create Criteria Drawer -->
     <div class="ant-drawer-mask" id="create-criteria-drawer">
-      <div class="ant-drawer-content">
+      <div class="ant-drawer-content criteria-drawer-content">
         <div class="ant-drawer-header">
           <h3>\u65b0\u589e\u8bc4\u4ef7\u6807\u51c6</h3>
           <button class="ant-drawer-close" onclick="closeModal('create-criteria-drawer')">&times;</button>
         </div>
         <form method="POST" action="/criteria/create">
+        <input type="hidden" name="edit_id" value="">
         <div class="ant-drawer-body">
-          <div class="form-row">
-            <div class="form-group"><label>\u6807\u51c6\u540d\u79f0</label><input type="text" name="name" required></div>
-            <div class="form-group"><label>\u7c7b\u578b</label>
-              <select name="type">
-                {"".join(f'<option value="{k}">{v["label"]} ({v["label_en"]})</option>' for k,v in CRITERIA_TYPES.items())}
-              </select>
-            </div>
-            <div class="form-group"></div>
-          </div>
+          <div class="form-group"><label>\u6807\u51c6\u540d\u79f0</label><input type="text" name="name" required placeholder="请输入评价标准名称"></div>
           <div class="form-group"><label>\u63cf\u8ff0</label><textarea name="description" rows="3"></textarea></div>
+          <div class="form-group" id="criteria-publish-status-field" style="display:none;"><label>状态</label><select name="publish_status"><option value="未发布">未发布</option><option value="已发布">已发布</option></select></div>
           <hr style="border:none;border-top:1px solid #f0f0f0;margin:20px 0;">
-          <h4 style="font-size:15px;font-weight:500;margin-bottom:12px;">\u8868\u5355\u914d\u7f6e</h4>
-          <div class="form-group"><label>\u7c7b\u578b\u6a21\u5757 - \u63d0\u793a\u8bcd</label><input type="text" name="type_prompt" placeholder="\u4f8b\u5982\uff1a\u54ea\u65b9\u66f4\u4f18\uff1f / \u4efb\u52a1\u662f\u5426\u5b8c\u6210\uff1f"></div>
-          <div class="form-row">
-            <div class="form-group"><label>\u91cf\u8868\u6307\u6807\u540d (\u53ef\u9009)</label><input type="text" name="scale_name" placeholder="\u4f8b\u5982\uff1aprogress_score"></div>
-            <div class="form-group"><label>\u91cf\u8868\u8303\u56f4</label><input type="text" name="scale_range" placeholder="0.0-1.0"></div>
-            <div class="form-group"><label>\u91cf\u8868\u63cf\u8ff0</label><input type="text" name="scale_desc" placeholder="\u4efb\u52a1\u5b8c\u6210\u8fdb\u5ea6"></div>
+          <div class="form-group"><label>评测结果</label>
+            <table class="ant-table criteria-result-table" id="criteria-result-table">
+              <thead><tr><th>结果类型</th><th>结果描述</th><th style="width:110px;">完成度 <span class="criteria-completion-tip" data-tip="数值越高完成度越高" tabindex="0">i</span></th><th style="width:64px;">操作</th></tr></thead>
+              <tbody></tbody>
+            </table>
+            <div class="criteria-result-add-actions"><a href="javascript:void(0)" class="action-link criteria-add-result" onclick="criteriaAddResultRow()">新增评测结果</a></div>
           </div>
-          <div class="form-group"><label>\u5907\u6ce8 (\u53ef\u9009)</label><textarea name="note" rows="2" placeholder="\u8df8\u6a21\u578b\u586b\u5199\u4e00\u4efd\u7684\u6587\u5b57\u8bf4\u660e"></textarea></div>
+          <div class="form-group"><label>评测指标</label>
+          <table class="ant-table criteria-metrics-table" id="criteria-metrics-table"><thead><tr><th>指标名称</th><th>字段类型</th><th>选项（单选/多选）</th><th>默认值</th><th>操作</th></tr></thead><tbody><tr class="criteria-metric-row"><td><input class="ant-input" name="metric_name" placeholder="请输入指标名称"></td><td><select class="ant-input metric-type" name="metric_type" onchange="criteriaMetricTypeChange(this)"><option>文本</option><option>单选</option><option>多选</option><option>数字</option></select></td><td><input class="ant-input metric-options" name="metric_options" placeholder="逗号分隔选项" disabled oninput="criteriaMetricOptionsChange(this)"></td><td class="metric-default-cell"><input class="ant-input" name="metric_default" placeholder="请输入默认值"></td><td><a href="javascript:void(0)" class="action-link" onclick="criteriaRemoveMetric(this)">删除</a></td></tr></tbody></table>
+          <a href="javascript:void(0)" class="action-link criteria-add-metric" onclick="criteriaAddMetric()">新增指标</a></div>
         </div>
         <div class="ant-drawer-footer">
           <button type="button" class="ant-btn" onclick="closeModal('create-criteria-drawer')">\u53d6\u6d88</button>
@@ -2933,20 +3128,257 @@ def criteria_page():
         </form>
       </div>
     </div>
+    <style>
+      .criteria-drawer-content {{ width: 1000px; max-width: calc(100vw - 32px); }}
+      .criteria-drawer-content .ant-drawer-body {{ padding: 20px 24px; }}
+      .criteria-metrics-table {{ table-layout: fixed; font-size: 12px; }}
+      .criteria-metrics-table th, .criteria-metrics-table td {{ padding: 8px 6px; }}
+      .criteria-metrics-table th:nth-child(1) {{ width: 23%; }} .criteria-metrics-table th:nth-child(2) {{ width: 17%; }}
+      .criteria-metrics-table th:nth-child(3) {{ width: 25%; }} .criteria-metrics-table th:nth-child(4) {{ width: 22%; }} .criteria-metrics-table th:nth-child(5) {{ width: 13%; }}
+      .criteria-metrics-table .ant-input {{ width: 100%; min-width: 0; box-sizing: border-box; }}
+      .criteria-metrics-table select.metric-type {{ padding-right: 30px; -webkit-appearance: none; appearance: none; }}
+      .criteria-metrics-table select.metric-default-select[multiple] {{ height: 34px; overflow: hidden; }}
+      .criteria-result-options {{ display:flex; align-items:center; gap:24px; min-height:32px; flex-wrap:wrap; }}
+      .criteria-result-options label {{ margin:0; font-weight:400; }}
+      .criteria-result-summary {{ display:flex;flex-direction:column;gap:4px;font-size:12px;color:rgba(0,0,0,.55);line-height:1.5; }}
+      .criteria-result-summary b {{ color:rgba(0,0,0,.75);font-weight:600; }}
+      .criteria-result-table {{ table-layout:fixed;font-size:12px;margin-top:8px; }}
+      .criteria-result-table th,.criteria-result-table td {{ padding:8px 10px;vertical-align:middle; }}
+      .criteria-result-table th:nth-child(1) {{ width:150px; }} .criteria-result-table th:nth-child(3) {{ width:110px; }} .criteria-result-table th:nth-child(4) {{ width:64px; }}
+      .criteria-result-table .ant-input {{ width:100%;box-sizing:border-box; }} .criteria-result-table select {{ appearance:none;-webkit-appearance:none;padding-right:28px; }}
+      .criteria-result-table tbody tr {{ cursor:grab; }} .criteria-result-table tbody tr:active {{ cursor:grabbing; }} .criteria-result-table tbody tr.criteria-dragging {{ opacity:.45; }} .criteria-result-table tbody tr.criteria-drag-over {{ box-shadow:inset 0 2px 0 #1F80A0; }}
+      .criteria-result-table tbody tr:hover {{ background:#fafcff; }} .criteria-result-empty td {{ text-align:center;color:rgba(0,0,0,.35);padding:22px 10px; }}
+      .criteria-result-group {{ display:inline-flex;padding:3px 10px;border-radius:4px;font-weight:600; }}
+      .criteria-result-group.result-success {{ color:#237b3b;background:#f0f9f1;border:1px solid #b7e1bd; }}
+      .criteria-result-group.result-failure {{ color:#c9362b;background:#fff1f0;border:1px solid #ffccc7; }}
+      .criteria-drag-handle {{ display:inline-block;margin-right:7px;color:rgba(0,0,0,.28);font-size:13px;letter-spacing:-2px;cursor:grab; }}
+      .criteria-result-table .result-degree:disabled {{ background:#f5f5f5;color:rgba(0,0,0,.45);border-color:#d9d9d9;cursor:not-allowed;opacity:1;pointer-events:none;user-select:none; }}
+      .criteria-result-type {{ width:auto !important; min-width:72px; height:28px !important; padding:2px 24px 2px 9px !important; border-radius:4px; font-size:12px !important; font-weight:600; cursor:pointer; background-image:none !important; }}
+      .criteria-result-type.result-success {{ color:#237b3b; background:#f0f9f1; border-color:#b7e1bd; }}
+      .criteria-result-type.result-failure {{ color:#c9362b; background:#fff1f0; border-color:#ffccc7; }}
+      .criteria-result-type:disabled {{ cursor:not-allowed; opacity:1; }}
+      .criteria-completion-tip {{ display:inline-flex;align-items:center;justify-content:center;width:15px;height:15px;border:1px solid #a9cbd4;border-radius:50%;color:#1F80A0;font-size:10px;font-weight:500;cursor:help; }}
+      .criteria-result-add-actions {{ display:flex;gap:18px;margin-top:10px; }}
+      .criteria-add-result {{ display:inline-block; }}
+      .criteria-add-metric {{ display:inline-block; margin-top:10px; }}
+    </style>
+    <script>
+    var criteriaViewData = {criteria_view_data};
+    function criteriaMetricRow(metric) {{
+      metric = metric || {{}};
+      var tr = document.createElement('tr');
+      tr.className = 'criteria-metric-row';
+      tr.innerHTML = '<td><input class="ant-input" name="metric_name" placeholder="请输入指标名称"></td><td><select class="ant-input metric-type" name="metric_type" onchange="criteriaMetricTypeChange(this)"><option>文本</option><option>单选</option><option>多选</option><option>数字</option></select></td><td><input class="ant-input metric-options" name="metric_options" placeholder="逗号分隔选项" disabled oninput="criteriaMetricOptionsChange(this)"></td><td class="metric-default-cell"><input class="ant-input" name="metric_default" placeholder="请输入默认值"></td><td><a href="javascript:void(0)" class="action-link" onclick="criteriaRemoveMetric(this)">删除</a></td>';
+      document.querySelector('.criteria-drawer-content #criteria-metrics-table tbody').appendChild(tr);
+      tr.querySelector('[name="metric_name"]').value = metric.name || metric.metric_name || '';
+      tr.querySelector('[name="metric_type"]').value = metric.type || metric.metric_type || '文本';
+      tr.querySelector('[name="metric_options"]').value = Array.isArray(metric.options) ? metric.options.join(',') : (metric.options || '');
+      criteriaMetricTypeChange(tr.querySelector('[name="metric_type"]'));
+      var defaultControl = tr.querySelector('[name="metric_default"]');
+      if (defaultControl) {{
+        var defaultValue = Array.isArray(metric.default_value) ? metric.default_value : (metric.default_value || metric.default || '');
+        if (defaultControl.multiple) {{
+          var selectedDefaults = Array.isArray(defaultValue) ? defaultValue : String(defaultValue).split(',').map(function(v) {{ return v.trim(); }}).filter(Boolean);
+          Array.from(defaultControl.options).forEach(function(option) {{ option.selected = selectedDefaults.indexOf(option.value) >= 0; }});
+        }} else defaultControl.value = Array.isArray(defaultValue) ? defaultValue[0] || '' : defaultValue;
+      }}
+      return tr;
+    }}
+    function criteriaAddMetric() {{ criteriaMetricRow({{}}); }}
+    function criteriaMetricTypeChange(select) {{
+      var options = select.closest('tr').querySelector('.metric-options');
+      var needsOptions = select.value === '单选' || select.value === '多选';
+      options.disabled = !needsOptions;
+      if (!needsOptions) options.value = '';
+      criteriaRenderMetricDefault(select.closest('tr'));
+    }}
+    function criteriaMetricOptionsChange(input) {{ criteriaRenderMetricDefault(input.closest('tr')); }}
+    function criteriaRenderMetricDefault(row) {{
+      var type = row.querySelector('.metric-type').value;
+      var cell = row.querySelector('.metric-default-cell');
+      if (type === '单选' || type === '多选') {{
+        var values = row.querySelector('.metric-options').value.split(',').map(function(v) {{ return v.trim(); }}).filter(Boolean);
+        var multiAttr = type === '多选' ? ' multiple size="1"' : '';
+        cell.innerHTML = '<select class="ant-input metric-default-select" name="metric_default"' + multiAttr + '><option value="">请选择默认值</option>' + values.map(function(v) {{ return '<option value="' + v.replace(/"/g, '&quot;') + '">' + v + '</option>'; }}).join('') + '</select>';
+      }} else {{
+        var inputType = type === '数字' ? 'number' : 'text';
+        cell.innerHTML = '<input class="ant-input" type="' + inputType + '" name="metric_default" placeholder="请输入默认值">';
+      }}
+    }}
+    function criteriaRemoveMetric(btn) {{ var row = btn.closest('tr'); if (row) row.remove(); }}
+    var criteriaDraggingRow = null;
+    function criteriaBindResultDrag(tr) {{
+      tr.draggable = true;
+      tr.addEventListener('dragstart', function(event) {{
+        criteriaDraggingRow = tr;
+        tr.classList.add('criteria-dragging');
+        event.dataTransfer.effectAllowed = 'move';
+        event.dataTransfer.setData('text/plain', 'criteria-result');
+      }});
+      tr.addEventListener('dragover', function(event) {{
+        event.preventDefault();
+        if (!criteriaDraggingRow || criteriaDraggingRow === tr) return;
+        var body = tr.parentElement;
+        var rect = tr.getBoundingClientRect();
+        tr.classList.toggle('criteria-drag-over', true);
+        if (event.clientY < rect.top + rect.height / 2) body.insertBefore(criteriaDraggingRow, tr);
+        else body.insertBefore(criteriaDraggingRow, tr.nextSibling);
+        criteriaRenumberResults();
+      }});
+      tr.addEventListener('dragleave', function() {{ tr.classList.remove('criteria-drag-over'); }});
+      tr.addEventListener('drop', function(event) {{ event.preventDefault(); tr.classList.remove('criteria-drag-over'); criteriaRenumberResults(); }});
+      tr.addEventListener('dragend', function() {{ tr.classList.remove('criteria-dragging'); document.querySelectorAll('.criteria-drag-over').forEach(function(row) {{ row.classList.remove('criteria-drag-over'); }}); criteriaDraggingRow = null; criteriaRenumberResults(); }});
+    }}
+    function criteriaResultTypeChange(select) {{
+      select.classList.toggle('result-success', select.value === '成功');
+      select.classList.toggle('result-failure', select.value === '失败');
+      select.closest('tr').dataset.resultParent = select.value;
+    }}
+    function criteriaResultRow(parent, item) {{
+      item = item || {{}};
+      var tr = document.createElement('tr'); tr.className = 'criteria-result-row';
+      tr.dataset.resultParent = parent;
+      var degree = item.degree || 1;
+      var desc = item.description || '';
+      tr.innerHTML = '<td><span class="criteria-drag-handle" aria-hidden="true">⋮⋮</span><select class="criteria-result-type ' + (parent === '成功' ? 'result-success' : 'result-failure') + '" name="result_parent" onchange="criteriaResultTypeChange(this)" aria-label="结果类型"><option value="成功"' + (parent === '成功' ? ' selected' : '') + '>成功</option><option value="失败"' + (parent === '失败' ? ' selected' : '') + '>失败</option></select></td><td><input class="ant-input" name="result_desc" placeholder="请输入结果描述" value="' + criteriaEscape(desc) + '"></td><td><input class="ant-input result-degree" type="number" value="' + degree + '" disabled readonly tabindex="-1" aria-readonly="true" aria-label="完成度"><input type="hidden" class="result-degree-value" name="result_degree" value="' + degree + '"></td><td><a href="javascript:void(0)" class="action-link danger" onclick="criteriaRemoveResultRow(this)">删除</a></td>';
+      document.querySelector('#criteria-result-table tbody').appendChild(tr);
+      criteriaBindResultDrag(tr);
+      return tr;
+    }}
+    function criteriaEscape(value) {{ return String(value || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }}
+    function criteriaRenumberResults() {{
+      var rows = Array.from(document.querySelectorAll('#criteria-result-table tbody tr[data-result-parent]'));
+      rows.forEach(function(row, index) {{ var value = rows.length - index; var degree = row.querySelector('.result-degree'); var hidden = row.querySelector('.result-degree-value'); if (degree) degree.value = value; if (hidden) hidden.value = value; }});
+    }}
+    function criteriaSortResults() {{
+      var body = document.querySelector('#criteria-result-table tbody'); if (!body) return;
+      Array.from(body.querySelectorAll('tr[data-result-parent]')).sort(function(a, b) {{
+        return Number(b.querySelector('.result-degree').value || 0) - Number(a.querySelector('.result-degree').value || 0);
+      }}).forEach(function(row) {{ body.appendChild(row); }});
+    }}
+    function criteriaAddResultRow(parent) {{
+      var body = document.querySelector('#criteria-result-table tbody');
+      if (!parent) parent = '成功';
+      var tr = criteriaResultRow(parent, {{degree: 1, description: ''}});
+      criteriaRenumberResults();
+      criteriaSortResults();
+      tr.querySelector('[name="result_desc"]').focus();
+    }}
+    function criteriaRemoveResultRow(btn) {{ var row = btn.closest('tr'); if (row) row.remove(); criteriaRenumberResults(); criteriaSortResults(); }}
+    function criteriaResetRows(definitions) {{
+      var body = document.querySelector('#criteria-result-table tbody'); if (!body) return;
+      body.innerHTML = '';
+      definitions = definitions || {{}};
+      var items = [];
+      ['成功', '失败'].forEach(function(parent) {{
+        (definitions[parent] || []).forEach(function(item) {{ items.push({{ parent: parent, item: item }}); }});
+      }});
+      if (!items.length) items = [{{parent:'成功', item:{{description:'成功', degree:1}}}}, {{parent:'失败', item:{{description:'失败', degree:1}}}}];
+      items.sort(function(a, b) {{ return Number(b.item.degree || 0) - Number(a.item.degree || 0); }});
+      items.forEach(function(entry) {{ criteriaResultRow(entry.parent, entry.item); }});
+      criteriaRenumberResults();
+      criteriaSortResults();
+    }}
+    function criteriaResetMetrics(metrics) {{
+      var body = document.querySelector('.criteria-drawer-content #criteria-metrics-table tbody'); if (!body) return;
+      body.innerHTML = '';
+      (metrics && metrics.length ? metrics : [{{}}]).forEach(function(metric) {{ criteriaMetricRow(metric); }});
+    }}
+    function setCriteriaDrawerReadonly(readonly) {{
+      var drawer = document.getElementById('create-criteria-drawer');
+      drawer.querySelector('h3').textContent = readonly ? '查看评价标准' : '新增评价标准';
+      drawer.querySelectorAll('input, textarea, select').forEach(function(el) {{
+        // 完成度由系统按结果顺序自动生成，任何模式下都不可编辑；隐藏值仍需保持可提交。
+        if (el.classList.contains('result-degree')) {{
+          el.disabled = true;
+          el.readOnly = true;
+          el.tabIndex = -1;
+          el.setAttribute('aria-readonly', 'true');
+        }} else {{
+          el.disabled = readonly;
+        }}
+      }});
+      drawer.querySelectorAll('.criteria-add-result, .criteria-add-metric').forEach(function(el) {{ el.style.display = readonly ? 'none' : ''; }});
+      drawer.querySelectorAll('.criteria-result-row .action-link, .criteria-metric-row .action-link').forEach(function(el) {{ el.style.display = readonly ? 'none' : ''; }});
+      var submit = drawer.querySelector('button[type="submit"]'); if (submit) submit.style.display = readonly ? 'none' : '';
+      var cancel = drawer.querySelector('.ant-drawer-footer button[type="button"]'); if (cancel) cancel.textContent = '关闭';
+    }}
+    function openCriteriaCreate() {{
+      var drawer = document.getElementById('create-criteria-drawer');
+      drawer.querySelector('form').reset();
+      criteriaResetRows({{}}); criteriaResetMetrics([]); setCriteriaDrawerReadonly(false);
+      document.getElementById('criteria-publish-status-field').style.display = 'none';
+      drawer.querySelector('h3').textContent = '新增评价标准';
+      drawer.querySelector('button[type="submit"]').textContent = '创建';
+      openModal('create-criteria-drawer');
+    }}
+    function openCriteriaView(id) {{
+      var data = criteriaViewData[id]; if (!data) return;
+      var drawer = document.getElementById('create-criteria-drawer');
+      drawer.querySelector('form').reset();
+      drawer.querySelector('[name="name"]').value = data.name || '';
+      drawer.querySelector('[name="description"]').value = data.description || '';
+      drawer.querySelector('[name="publish_status"]').value = data.publish_status || '未发布';
+      document.getElementById('criteria-publish-status-field').style.display = '';
+      criteriaResetRows(data.result_definitions || {{}}); criteriaResetMetrics(data.metrics || []); setCriteriaDrawerReadonly(true); openModal('create-criteria-drawer');
+    }}
+    function openCriteriaEdit(id) {{
+      openCriteriaView(id);
+      var drawer = document.getElementById('create-criteria-drawer');
+      setCriteriaDrawerReadonly(false);
+      drawer.querySelector('[name="edit_id"]').value = id;
+      drawer.querySelector('h3').textContent = '编辑评价标准';
+      drawer.querySelector('button[type="submit"]').textContent = '保存';
+    }}
+    document.addEventListener('DOMContentLoaded', function() {{ criteriaResetRows({{}}); criteriaResetMetrics([]); }});
+    </script>
     '''
-    return render_page("\u8bc4\u4ef7\u6807\u51c6\u7ba1\u7406", NOTICE_MVP + content, active="criteria")
+    return render_page("\u8bc4\u4ef7\u6807\u51c6\u7ba1\u7406", content, active="criteria")
 
 
 @app.route("/criteria/create", methods=["POST"])
 def criteria_create():
     name = request.form.get("name", "").strip()
-    ctype = request.form.get("type", "preference")
+    edit_id = request.form.get("edit_id", "").strip()
+    edit_target = next((item for item in CRITERIA if item["id"] == edit_id), None) if edit_id else None
+    ctype = edit_target.get("type", "preference") if edit_target else request.form.get("type", "preference")
     desc = request.form.get("description", "")
     type_prompt = request.form.get("type_prompt", "")
     scale_name = request.form.get("scale_name", "")
     scale_range = request.form.get("scale_range", "")
     scale_desc = request.form.get("scale_desc", "")
     note = request.form.get("note", "").strip() or None
+    result_types = request.form.getlist("result_parent") or request.form.getlist("result_type")
+    result_degrees = request.form.getlist("result_degree")
+    result_descs = request.form.getlist("result_desc")
+    result_definitions = {"成功": [], "失败": []}
+    for index, (result_type, result_desc) in enumerate(zip(result_types, result_descs)):
+        result_type = result_type.strip()
+        result_desc = result_desc.strip()
+        if result_type in result_definitions and result_desc:
+            degree = result_degrees[index] if index < len(result_degrees) else len(result_definitions[result_type]) + 1
+            result_definitions[result_type].append({"description": result_desc, "degree": degree})
+    # Backward-compatible fallback for callers that still submit the old comma-separated fields.
+    if not any(result_definitions.values()):
+        result_definitions = {
+            "成功": [{"description": x.strip(), "degree": i + 1} for i, x in enumerate(request.form.get("success_definitions", "").replace("，", ",").split(",")) if x.strip()],
+            "失败": [{"description": x.strip(), "degree": i + 1} for i, x in enumerate(request.form.get("failure_definitions", "").replace("，", ",").split(",")) if x.strip()],
+        }
+    result_definitions = normalize_result_definitions(result_definitions)
+
+    metric_names = request.form.getlist("metric_name")
+    metric_types = request.form.getlist("metric_type")
+    metric_options = request.form.getlist("metric_options")
+    metric_defaults = request.form.getlist("metric_default")
+    metrics = []
+    for index, metric_name in enumerate(metric_names):
+        metric_name = metric_name.strip()
+        if not metric_name:
+            continue
+        metric_type = metric_types[index] if index < len(metric_types) else "文本"
+        options = [x.strip() for x in (metric_options[index] if index < len(metric_options) else "").replace("，", ",").split(",") if x.strip()]
+        default_value = metric_defaults[index] if index < len(metric_defaults) else ""
+        metrics.append({"name": metric_name, "type": metric_type, "options": options, "default_value": default_value})
     if not name:
         flash("\u6807\u51c6\u540d\u79f0\u4e0d\u80fd\u4e3a\u7a7a", "error")
         return redirect(url_for("criteria_page"))
@@ -2969,17 +3401,52 @@ def criteria_create():
         except (ValueError, IndexError):
             sr = {"min": 0, "max": 5}
         scale_items.append({"prompt": scale_desc or scale_name, "metric_name": scale_name, "metric_description": scale_desc, "score_range": sr, "value": None})
-    new_id = f"c{len(CRITERIA)+1}"
-    CRITERIA.append({
-        "id": new_id, "name": name, "type": ctype, "description": desc,
-        "creator": "Joanna Qiao", "created_at": datetime.now().strftime("%Y-%m-%d"),
+    criterion_payload = {
+        "name": name, "type": ctype, "description": desc,
+        "publish_status": request.form.get("publish_status", "未发布") if request.form.get("publish_status") in ("未发布", "已发布") else "未发布",
+        "result_definitions": result_definitions,
+        "metrics": metrics,
         "form": {
             "type_module": {"items": [type_item]},
             "scale_module": {"items": scale_items},
             "note": note,
         },
-    })
-    flash(f"\u8bc4\u4ef7\u6807\u51c6\u300c{name}\u300d\u521b\u5efa\u6210\u529f", "success")
+    }
+    if edit_target and edit_target.get("publish_status") == "未发布":
+        edit_target.update(criterion_payload)
+        flash(f"评价标准「{name}」保存成功", "success")
+    elif edit_id:
+        flash("仅未发布状态的评价标准支持编辑", "error")
+    else:
+        new_id = f"c{len(CRITERIA)+1}"
+        CRITERIA.append({
+            "id": new_id,
+            "creator": "Joanna Qiao",
+            "created_at": datetime.now().strftime("%Y-%m-%d"),
+            "publish_status": "未发布",
+            **criterion_payload,
+        })
+        flash(f"\u8bc4\u4ef7\u6807\u51c6\u300c{name}\u300d\u521b\u5efa\u6210\u529f", "success")
+    return redirect(url_for("criteria_page"))
+
+
+@app.route("/criteria/<cid>/publish")
+def criteria_publish(cid):
+    criterion = next((item for item in CRITERIA if item["id"] == cid), None)
+    if criterion and criterion.get("publish_status") == "未发布":
+        criterion["publish_status"] = "已发布"
+        flash(f"评价标准「{criterion['name']}」已发布", "success")
+    return redirect(url_for("criteria_page"))
+
+
+@app.route("/criteria/<cid>/delete")
+def criteria_delete(cid):
+    criterion = next((item for item in CRITERIA if item["id"] == cid), None)
+    if criterion and criterion.get("publish_status") == "未发布":
+        CRITERIA.remove(criterion)
+        flash(f"评价标准「{criterion['name']}」已删除", "success")
+    elif criterion:
+        flash("已发布状态的评价标准不支持删除", "error")
     return redirect(url_for("criteria_page"))
 
 
@@ -3067,37 +3534,52 @@ def criteria_detail(cid):
     note_card = ""
     if form.get("note"):
         note_card = f'<div class="ant-card ant-card-bordered"><div class="ant-card-head" style="padding:12px 20px;"><h3>\u5907\u6ce8\u6a21\u5757</h3></div><div class="ant-card-body">{note_section}</div></div>'
+    definitions = normalize_result_definitions(c.get("result_definitions", {}))
+    result_definition_rows = "".join(
+        f'<tr><td><span class="criteria-readonly-result {"is-success" if parent == "成功" else "is-failure"}">{parent}</span></td><td>{item["degree"]}</td><td>{html.escape(item["description"])}</td></tr>'
+        for parent in ("成功", "失败")
+        for item in definitions.get(parent, [])
+    ) or '<tr><td colspan="3" class="criteria-readonly-empty">暂无评测结果</td></tr>'
+    metric_data = get_criterion_metrics(c) or [
+        {"name": item.get("metric_name", "--"), "type": "数字", "options": [], "default_value": f'{item.get("score_range", {}).get("min", 0)} ~ {item.get("score_range", {}).get("max", 5)}'}
+        for item in scale_items
+    ]
+    metric_rows = "".join(
+        f'<tr><td>{html.escape(str(item.get("name", item.get("metric_name", "--"))))}</td><td>{html.escape(str(item.get("type", "文本")))}</td><td>{html.escape(", ".join(item.get("options", [])) if isinstance(item.get("options", []), list) else str(item.get("options", "--")))}</td><td>{html.escape(str(item.get("default_value", item.get("default", ""))) or "--")}</td></tr>'
+        for item in metric_data
+    ) or '<tr><td colspan="4" class="criteria-readonly-empty">暂无评测指标</td></tr>'
 
     content = f'''
-    <div style="margin-bottom:16px;"><a href="/criteria" class="ant-btn">&larr; \u8fd4\u56de\u5217\u8868</a></div>
-
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
-      <!-- Left: basic info -->
-      <div class="ant-card ant-card-bordered">
-        <div class="ant-card-head" style="padding:12px 20px;"><h3>\u57fa\u672c\u4fe1\u606f</h3></div>
-        <div class="ant-card-body">
-          <div style="display:grid;grid-template-columns:80px 1fr;gap:8px 16px;font-size:14px;">
-            <span style="color:rgba(0,0,0,0.45);">\u6807\u8bc6</span><span>{c["id"]}</span>
-            <span style="color:rgba(0,0,0,0.45);">\u540d\u79f0</span><span style="font-weight:500;">{c["name"]}</span>
-            <span style="color:rgba(0,0,0,0.45);">\u7c7b\u578b</span><span><span class="ant-tag ant-tag-{ct.get("color","")}">{ct.get("label","")}</span> {ct.get("desc","")}</span>
-            <span style="color:rgba(0,0,0,0.45);">\u63cf\u8ff0</span><span>{c["description"]}</span>
-            <span style="color:rgba(0,0,0,0.45);">\u521b\u5efa\u4eba</span><span>{c["creator"]}</span>
-            <span style="color:rgba(0,0,0,0.45);">\u65f6\u95f4</span><span>{c["created_at"]}</span>
-          </div>
+    <div class="criteria-readonly-page">
+      <div class="criteria-readonly-top"><a href="/criteria" class="action-link">&larr; 返回评价标准</a><span>查看评价标准</span></div>
+      <div class="criteria-readonly-drawer">
+        <div class="ant-drawer-header"><h3>查看评价标准</h3></div>
+        <div class="criteria-readonly-body">
+          <div class="form-group"><label>标准名称</label><input class="ant-input" value="{html.escape(c.get("name", ""), quote=True)}" disabled></div>
+          <div class="form-group"><label>描述</label><textarea class="ant-input" rows="3" disabled>{html.escape(c.get("description", ""))}</textarea></div>
+          <hr style="border:none;border-top:1px solid #f0f0f0;margin:20px 0;">
+          <div class="form-group"><label>评测结果</label><table class="ant-table criteria-result-table criteria-readonly-table"><thead><tr><th>结果类型</th><th>程度</th><th>结果描述</th></tr></thead><tbody>{result_definition_rows}</tbody></table></div>
+          <div class="form-group"><label>评测指标</label><table class="ant-table criteria-metrics-table criteria-readonly-table"><thead><tr><th>指标名称</th><th>字段类型</th><th>字段值</th><th>默认值</th></tr></thead><tbody>{metric_rows}</tbody></table></div>
+          {('<div class="form-group"><label>备注</label><textarea class="ant-input" rows="2" disabled>' + html.escape(form.get("note", "")) + '</textarea></div>') if form.get("note") else ''}
         </div>
-      </div>
-
-      <!-- Right: form preview -->
-      <div>
-        <div class="ant-card ant-card-bordered" style="margin-bottom:16px;">
-          <div class="ant-card-head" style="padding:12px 20px;"><h3>\u7c7b\u578b\u6a21\u5757 \u2014 {ct.get("label","")}</h3></div>
-          <div class="ant-card-body">{type_section if type_section else "--"}</div>
-        </div>
-        {scale_card}
-        {note_card}
+        <div class="ant-drawer-footer"><a href="/criteria" class="ant-btn">关闭</a></div>
       </div>
     </div>
     '''
+    content += '''<style>
+      .criteria-readonly-page { max-width:1000px; margin:0 auto; }
+      .criteria-readonly-top { display:flex; align-items:center; gap:12px; margin-bottom:14px; color:rgba(0,0,0,.55); font-size:13px; }
+      .criteria-readonly-drawer { background:#fff; border:1px solid #e6ebef; border-radius:8px; box-shadow:0 2px 8px rgba(0,0,0,.04); }
+      .criteria-readonly-body { padding:20px 24px; }
+      .criteria-readonly-body .form-group { margin-bottom:16px; }
+      .criteria-readonly-body .ant-input[disabled] { color:rgba(0,0,0,.72); background:#fafafa; cursor:default; }
+      .criteria-readonly-table { margin-top:8px; }
+      .criteria-readonly-table th,.criteria-readonly-table td { padding:9px 10px; }
+      .criteria-readonly-result { display:inline-flex; padding:3px 9px; border-radius:4px; font-size:12px; }
+      .criteria-readonly-result.is-success { color:#237b3b; background:#f0f9f1; }
+      .criteria-readonly-result.is-failure { color:#c9362b; background:#fff1f0; }
+      .criteria-readonly-empty { text-align:center; color:rgba(0,0,0,.35); padding:20px !important; }
+    </style>'''
     return render_page(f"\u8bc4\u4ef7\u6807\u51c6 - {c['name']}", NOTICE_MVP + content, active="criteria")
 
 
@@ -3125,9 +3607,9 @@ def scenes_page():
         img_count = len(refs.get("images", []))
         vid_count = len(refs.get("capture_videos", [])) + len(refs.get("demo_videos", []))
 
-        view_btn = icon_btn(f"/scenes/{sc['id']}", ICON_VIEW, "\u67e5\u770b", "default")
-        copy_btn = icon_btn("#", ICON_COPY, "\u590d\u5236", "default")
-        del_btn = icon_btn("#", ICON_DELETE, "\u5220\u9664", "danger")
+        view_btn = f'<a href="/scenes/{sc["id"]}" class="action-link">查看</a>'
+        copy_btn = '<a href="#" class="action-link">复制</a>'
+        del_btn = '<a href="#" class="action-link danger">删除</a>'
 
         rows += (
             "<tr>"
@@ -3141,10 +3623,12 @@ def scenes_page():
         )
 
     content = f'''
-    <div class="filter-bar">
-      <input type="text" placeholder="\u641c\u7d22\u573a\u666f\u540d\u79f0" style="min-width:180px;">
-      <button class="ant-btn" onclick="clearFilters()">\u6e05\u7a7a</button>
-      <button class="ant-btn ant-btn-primary" onclick="doSearch()">\u641c\u7d22</button>
+    <div class="filter-bar fb-labeled">
+      <div class="ff"><label>\u573a\u666f\u540d\u79f0</label><input type="text" placeholder="\u641c\u7d22\u573a\u666f\u540d\u79f0"></div>
+      <div class="filter-actions">
+        <button class="ant-btn" onclick="clearFilters()">\u6e05\u7a7a</button>
+        <button class="ant-btn ant-btn-primary" onclick="doSearch()">\u641c\u7d22</button>
+      </div>
       <div style="flex:1;"></div>
       <button class="ant-btn ant-btn-primary" onclick="openModal('create-scene-drawer')">+ \u65b0\u589e\u573a\u666f</button>
     </div>
@@ -3315,11 +3799,11 @@ def scene_detail(sid):
 # ── Benchmark Management ──
 @app.route("/benchmarks")
 def benchmarks_page():
+    benchmark_filter = request.args.get("name", "").strip()
     rows = ""
     for b in BENCHMARKS:
-        cr = get_criterion(b.get("criteria_id", ""))
-        cr_name = cr["name"] if cr else "--"
-        cr_type = CRITERIA_TYPES.get(cr["type"], {}) if cr else {}
+        if benchmark_filter and benchmark_filter.lower() not in b.get("name", "").lower():
+            continue
         prompt_count = len(b.get("prompt_ids", []))
         prompt_tags = ""
         for pid in b.get("prompt_ids", [])[:3]:
@@ -3329,49 +3813,73 @@ def benchmarks_page():
         if prompt_count > 3:
             prompt_tags += f'<span class="ant-tag">+{prompt_count-3}</span>'
 
-        view_btn = icon_btn(f"/benchmarks/{b['id']}", ICON_VIEW, "\u67e5\u770b", "default")
-        copy_btn = icon_btn("#", ICON_COPY, "\u590d\u5236", "default")
-        del_btn = icon_btn("#", ICON_DELETE, "\u5220\u9664", "danger")
+        publish_status = b.get("publish_status", "已发布")
+        is_unpublished = publish_status == "未发布"
+        status_class = "tag-gray" if is_unpublished else "tag-green"
+        view_btn = f'<a href="javascript:void(0)" class="action-link" onclick="openBenchmarkView(\'{b["id"]}\')">查看</a>'
+        edit_btn = f'<a href="javascript:void(0)" class="action-link" onclick="openBenchmarkEdit(\'{b["id"]}\')">编辑</a>' if is_unpublished else ''
+        publish_btn = f'<a href="/benchmarks/{b["id"]}/publish" class="action-link" onclick="return confirm(\'发布后将不能编辑或删除，确认发布吗？\')">发布</a>' if is_unpublished else ''
+        copy_btn = '<a href="#" class="action-link" onclick="toast(\'已复制评测集\');return false;">复制</a>'
+        del_btn = f'<a href="/benchmarks/{b["id"]}/delete" class="action-link danger" onclick="return confirm(\'确认删除该评测集吗？\')">删除</a>' if is_unpublished else ''
+        more_btn = f'<span class="action-more-wrap"><a href="javascript:void(0)" class="action-link">更多</a><span class="action-more-menu">{edit_btn}{del_btn}</span></span>' if is_unpublished else ''
+        actions_html = view_btn + copy_btn + publish_btn + more_btn
 
         rows += (
             "<tr>"
             f'<td style="font-weight:500;">{b["name"]}</td>'
             f"<td>{prompt_tags}</td>"
-            f'<td><span class="ant-tag ant-tag-{cr_type.get("color","")}">{cr_name}</span></td>'
+            f'<td><span class="tag {status_class}">{publish_status}</span></td>'
             f"<td>{b['creator']}</td>"
             f"<td>{b['created_at']}</td>"
-            f'<td class="actions-cell">{view_btn}{copy_btn}{del_btn}</td>'
+            f'<td class="actions-cell">{actions_html}</td>'
             "</tr>"
         )
 
-    # Build select options
-    scene_opts = "".join(f'<option value="{s["id"]}">{s["name"]}</option>' for s in SCENES)
-    criteria_opts = "".join(f'<option value="{c["id"]}">{c["name"]} ({CRITERIA_TYPES.get(c["type"],{}).get("label","")})</option>' for c in CRITERIA)
-    prompt_opts = "".join(f'<option value="{p["id"]}">{p["high_level"]}</option>' for p in PROMPTS)
-    # Mselsync pattern for benchmarks create
+    benchmark_tag_tree = build_tree_selector_html("benchmark-tags")
     bm_create_prompt_ms_opts = "".join(
         f'<label class="er-opt"><input type="checkbox" value="{p["id"]}" data-name="{p["high_level"]}" onchange="mselSync(\'ms-bm-prompts\')"> <span>{p["high_level"]} &middot; {len(p.get("low_levels", []))} \u6b65</span></label>'
         for p in PROMPTS
     )
-    bm_create_criteria_single_opts = "".join(
-        f'<option value="{c["id"]}"{" selected" if c["id"] == "c1" else ""}>{c["name"]} ({CRITERIA_TYPES.get(c["type"],{}).get("label","")})</option>'
-        for c in CRITERIA
-    )
-
+    import json as _json
+    bm_prompt_tree_data = _json.dumps([
+        {
+            "id": p["id"],
+            "name": p["high_level"],
+            "children": [
+                {"id": ll["id"], "zh": ll.get("zh", ""), "en": ll.get("en", "")}
+                for ll in p.get("low_levels", [])
+            ] or [{"id": p["id"], "zh": p["high_level"], "en": p.get("high_level_en", "")}],
+        }
+        for p in PROMPTS
+    ], ensure_ascii=False)
+    benchmark_view_data = _json.dumps({
+        b["id"]: {
+            "name": b.get("name", ""),
+            "description": b.get("description", ""),
+            "tags": b.get("tags", []),
+            "prompt_ids": b.get("prompt_ids", []),
+            "execution_prompt_ids": b.get("execution_prompt_ids", []),
+            "publish_status": b.get("publish_status", "已发布"),
+        }
+        for b in BENCHMARKS
+    }, ensure_ascii=False)
     content = f'''
-    <div class="filter-bar">
-      <input type="text" placeholder="\u641c\u7d22 Benchmark" style="min-width:180px;">
-      <input type="text" placeholder="\u641c\u7d22\u63d0\u793a\u8bcd\uff08\u6a21\u7cca\u5339\u914d\uff09" style="min-width:200px;">
-      <button class="ant-btn" onclick="clearFilters()">\u6e05\u7a7a</button>
-      <button class="ant-btn ant-btn-primary" onclick="doSearch()">\u641c\u7d22</button>
+    <div class="filter-bar fb-labeled">
+      <div class="ff"><label>评测集</label><input type="text" value="{html.escape(benchmark_filter, quote=True)}" placeholder="\u641c\u7d22评测集"></div>
+      <div class="ff"><label>\u63d0\u793a\u8bcd</label><input type="text" placeholder="\u641c\u7d22\u63d0\u793a\u8bcd\uff08\u6a21\u7cca\u5339\u914d\uff09"></div>
+      <div class="ff"><label>状态</label><select name="publish_status"><option value="">全部状态</option><option>未发布</option><option>已发布</option></select></div>
+      <div class="filter-actions">
+        <button class="ant-btn" onclick="clearFilters()">\u6e05\u7a7a</button>
+        <button class="ant-btn ant-btn-primary" onclick="doSearch()">\u641c\u7d22</button>
+      </div>
       <div style="flex:1;"></div>
-      <button class="ant-btn ant-btn-primary" onclick="openModal('create-bm-drawer')">+ \u65b0\u589e Benchmark</button>
+      <button class="ant-btn ant-btn-primary" onclick="openBenchmarkCreate()">\u65b0\u589e评测集</button>
     </div>
 
     <div class="ant-card ant-card-bordered">
       <table class="ant-table">
         <thead><tr>
-          <th>\u540d\u79f0</th><th>\u63d0\u793a\u8bcd</th><th>\u8bc4\u4ef7\u6807\u51c6</th><th>\u521b\u5efa\u4eba</th><th>\u521b\u5efa\u65f6\u95f4</th><th>\u64cd\u4f5c</th>
+          <th>\u540d\u79f0</th><th>\u63d0\u793a\u8bcd</th><th>状态</th><th>\u521b\u5efa\u4eba</th><th>\u521b\u5efa\u65f6\u95f4</th><th>\u64cd\u4f5c</th>
         </tr></thead>
         <tbody>{rows}</tbody>
       </table>
@@ -3379,54 +3887,28 @@ def benchmarks_page():
 
     <!-- Create Benchmark Drawer -->
     <div class="ant-drawer-mask" id="create-bm-drawer">
-      <div class="ant-drawer-content">
-        <div class="ant-drawer-header"><h3>\u65b0\u589e Benchmark</h3><button class="ant-drawer-close" onclick="closeModal('create-bm-drawer')">&times;</button></div>
+      <div class="ant-drawer-content benchmark-drawer-content">
+        <div class="ant-drawer-header"><h3>\u65b0\u589e评测集</h3><button class="ant-drawer-close" onclick="closeModal('create-bm-drawer')">&times;</button></div>
         <form method="POST" action="/benchmarks/create">
+        <input type="hidden" name="edit_id" value="">
         <div class="ant-drawer-body">
           <!-- Section 1: Basic Info -->
           <h4 style="font-size:14px;font-weight:500;margin-bottom:12px;color:rgba(0,0,0,0.85);">\u57fa\u672c\u4fe1\u606f</h4>
           <div class="form-group"><label>\u540d\u79f0</label><input type="text" name="name" required></div>
           <div class="form-group"><label>\u63cf\u8ff0</label><textarea name="description" rows="2"></textarea></div>
-
-          <hr style="border:none;border-top:1px solid #f0f0f0;margin:20px 0;">
-
-          <!-- Section 2: Scene Config -->
-          <h4 style="font-size:14px;font-weight:500;margin-bottom:12px;color:rgba(0,0,0,0.85);">\u573a\u666f\u914d\u7f6e</h4>
-          <div class="form-group" style="margin-bottom:16px;">
-            <label>\u573a\u666f\u63cf\u8ff0</label>
-            <textarea name="scene_description" rows="3" placeholder="\u63cf\u8ff0\u573a\u666f\u73af\u5883\u3001\u5149\u7167\u6761\u4ef6\u3001\u684c\u9762\u7269\u4f53\u5e03\u7f6e\u7b49\u5173\u952e\u4fe1\u606f"></textarea>
-          </div>
-          <div class="form-group" style="margin-bottom:16px;">
-            <label>\u4efb\u52a1\u9053\u5177</label>
-            <input type="text" name="props" placeholder="\u7528\u9017\u53f7\u5206\u9694\uff0c\u5982\uff1a\u7ea2\u8272\u7cd6\u679c\u3001\u84dd\u8272\u6876\u3001\u6728\u52fa">
-          </div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;">
-            <div>
-              <label style="display:block;font-size:14px;color:rgba(0,0,0,0.85);margin-bottom:8px;">\u573a\u666f\u56fe\u7247</label>
-              <div class="upload-zone" onclick="this.querySelector('input').click()">
-                <input type="file" name="scene_images" multiple accept="image/*" style="display:none;" onchange="window.showFileNames(this)">
-                <div class="upload-icon"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#bfbfbf" stroke-width="1.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></div>
-                <div class="upload-text">\u70b9\u51fb\u6216\u62d6\u62fd\u4e0a\u4f20</div>
-                <div class="upload-hint">JPG / PNG\uff0c\u652f\u6301\u591a\u5f20</div>
-                <div class="upload-files"></div>
-              </div>
-            </div>
-            <div>
-              <label style="display:block;font-size:14px;color:rgba(0,0,0,0.85);margin-bottom:8px;">\u573a\u666f\u89c6\u9891</label>
-              <div class="upload-zone" onclick="this.querySelector('input').click()">
-                <input type="file" name="scene_videos" multiple accept="video/*" style="display:none;" onchange="window.showFileNames(this)">
-                <div class="upload-icon"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#bfbfbf" stroke-width="1.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></div>
-                <div class="upload-text">\u70b9\u51fb\u6216\u62d6\u62fd\u4e0a\u4f20</div>
-                <div class="upload-hint">MP4\uff0c\u73b0\u573a\u73af\u5883\u5b9e\u62cd</div>
-                <div class="upload-files"></div>
-              </div>
+          <div class="form-group" id="benchmark-publish-status-field" style="display:none;"><label>状态</label><select name="publish_status"><option value="未发布">未发布</option><option value="已发布">已发布</option></select></div>
+          <div class="form-group">
+            <label>\u6807\u7b7e</label>
+            <div class="ts-wrap benchmark-tag-select" id="ts-benchmark-tags">
+              <div class="ts-trigger" onclick="benchmarkTagsToggle(event)"><span class="ts-placeholder">请选择标签</span></div>
+              <div class="ts-panel">{benchmark_tag_tree}</div>
+              <input type="hidden" name="tags" id="benchmark-tags-hidden" value="">
             </div>
           </div>
 
           <hr style="border:none;border-top:1px solid #f0f0f0;margin:20px 0;">
 
-          <!-- Section 3: Related Config -->
-          <h4 style="font-size:14px;font-weight:500;margin-bottom:12px;color:rgba(0,0,0,0.85);">\u5173\u8054\u914d\u7f6e</h4>
+          <h4 style="font-size:14px;font-weight:500;margin-bottom:12px;color:rgba(0,0,0,0.85);">\u63d0\u793a\u8bcd\u914d\u7f6e</h4>
           <div class="form-group" style="margin-bottom:16px;">
             <label>\u63d0\u793a\u8bcd</label>
             <div style="position:relative;">
@@ -3446,10 +3928,10 @@ def benchmarks_page():
               <input type="hidden" name="prompt_ids" id="ms-bm-prompts-hidden" value="">
             </div>
           </div>
-          <div class="form-group">
-            <label>\u8bc4\u4ef7\u6807\u51c6</label>
-            <select name="criteria_id" class="has-value">{bm_create_criteria_single_opts}</select>
+          <div id="bm-prompt-execution-tree" class="bm-prompt-execution-tree">
+            <div class="bm-prompt-execution-empty">选择提示词组后配置实际执行内容</div>
           </div>
+          <input type="hidden" name="execution_prompt_ids" id="bm-execution-prompt-ids" value="">
         </div>
         <div class="ant-drawer-footer">
           <button type="button" class="ant-btn" onclick="closeModal('create-bm-drawer')">\u53d6\u6d88</button>
@@ -3458,8 +3940,179 @@ def benchmarks_page():
         </form>
       </div>
     </div>
+    <script>
+    var benchmarkPromptData = {bm_prompt_tree_data};
+    var benchmarkViewData = {benchmark_view_data};
+    var benchmarkExecutionSelections = new Set();
+    var benchmarkInitializedGroups = new Set();
+    document.addEventListener('DOMContentLoaded', function() {{
+      if (new URLSearchParams(window.location.search).get('open') === 'create' && typeof openModal === 'function') openModal('create-bm-drawer');
+      benchmarkTagsInit();
+      window.renderBenchmarkPromptExecutionTree();
+    }});
+    function setBenchmarkDrawerReadonly(readonly) {{
+      var drawer = document.getElementById('create-bm-drawer');
+      drawer.querySelector('h3').textContent = readonly ? '查看评测集' : '新增评测集';
+      drawer.querySelectorAll('input, textarea, select').forEach(function(el) {{ el.disabled = readonly; }});
+      drawer.querySelectorAll('.er-dd-trigger, .ts-trigger').forEach(function(el) {{ el.style.pointerEvents = readonly ? 'none' : ''; el.style.background = readonly ? '#fafafa' : ''; }});
+      var submit = drawer.querySelector('button[type="submit"]'); if (submit) submit.style.display = readonly ? 'none' : '';
+      var cancel = drawer.querySelector('.ant-drawer-footer button[type="button"]'); if (cancel) cancel.textContent = '关闭';
+    }}
+    function resetBenchmarkDrawer() {{
+      var drawer = document.getElementById('create-bm-drawer');
+      drawer.querySelector('form').reset();
+      drawer.querySelectorAll('#ms-bm-prompts-panel input[type=checkbox]').forEach(function(cb) {{ cb.checked = false; }});
+      benchmarkExecutionSelections.clear();
+      var hidden = document.getElementById('bm-execution-prompt-ids'); if (hidden) hidden.value = '';
+      var tagWrap = document.getElementById('ts-benchmark-tags');
+      if (tagWrap) {{ tagWrap.querySelectorAll('.ts-row.selected').forEach(function(row) {{ row.classList.remove('selected'); }}); benchmarkTagsSync(); }}
+      window.mselSync('ms-bm-prompts');
+      window.renderBenchmarkPromptExecutionTree();
+    }}
+    function openBenchmarkCreate() {{
+      resetBenchmarkDrawer(); setBenchmarkDrawerReadonly(false);
+      var drawer = document.getElementById('create-bm-drawer');
+      drawer.querySelector('h3').textContent = '新增评测集';
+      drawer.querySelector('button[type="submit"]').textContent = '创建';
+      document.getElementById('benchmark-publish-status-field').style.display = 'none';
+      openModal('create-bm-drawer');
+    }}
+    function openBenchmarkView(id) {{
+      var data = benchmarkViewData[id]; if (!data) return;
+      resetBenchmarkDrawer();
+      var drawer = document.getElementById('create-bm-drawer');
+      drawer.querySelector('[name="name"]').value = data.name || '';
+      drawer.querySelector('[name="description"]').value = data.description || '';
+      drawer.querySelector('[name="publish_status"]').value = data.publish_status || '未发布';
+      document.getElementById('benchmark-publish-status-field').style.display = '';
+      var promptSet = new Set(data.prompt_ids || []);
+      drawer.querySelectorAll('#ms-bm-prompts-panel input[type=checkbox]').forEach(function(cb) {{ cb.checked = promptSet.has(cb.value); }});
+      var tagSet = new Set(data.tags || []);
+      var tagWrap = document.getElementById('ts-benchmark-tags');
+      if (tagWrap) {{ tagWrap.querySelectorAll('.ts-row[data-id]').forEach(function(row) {{ if (tagSet.has(row.dataset.id) || tagSet.has(row.dataset.path)) row.classList.add('selected'); }}); benchmarkTagsSync(); }}
+      window.mselSync('ms-bm-prompts');
+      setBenchmarkDrawerReadonly(true);
+      openModal('create-bm-drawer');
+    }}
+    function openBenchmarkEdit(id) {{
+      openBenchmarkView(id);
+      var drawer = document.getElementById('create-bm-drawer');
+      setBenchmarkDrawerReadonly(false);
+      drawer.querySelector('[name="edit_id"]').value = id;
+      drawer.querySelector('h3').textContent = '编辑评测集';
+      drawer.querySelector('button[type="submit"]').textContent = '保存';
+    }}
+    function benchmarkPromptEscape(value) {{
+      return String(value || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }}
+    window.renderBenchmarkPromptExecutionTree = function() {{
+      var tree = document.getElementById('bm-prompt-execution-tree');
+      var groupPanel = document.getElementById('ms-bm-prompts-panel');
+      if (!tree || !groupPanel) return;
+      var selectedGroups = Array.from(groupPanel.querySelectorAll('input[type=checkbox]:checked')).map(function(cb) {{ return cb.value; }});
+      var selectedSet = new Set(selectedGroups);
+      var activeChildren = new Set();
+      var html = '';
+      benchmarkPromptData.forEach(function(group) {{
+        if (!selectedSet.has(group.id)) return;
+        var children = group.children || [];
+        children.forEach(function(child) {{
+          activeChildren.add(child.id);
+          benchmarkExecutionSelections.add(child.id);
+        }});
+        benchmarkInitializedGroups.add(group.id);
+        html += '<div class="bm-prompt-execution-group" data-group-id="' + benchmarkPromptEscape(group.id) + '">';
+        html += '<div class="bm-prompt-execution-group-head"><span>' + benchmarkPromptEscape(group.name) + '</span></div>';
+        html += '<div class="bm-prompt-execution-steps">';
+        children.forEach(function(child, index) {{
+          html += '<div class="bm-prompt-execution-child"><span>' + (index + 1) + '. ' + benchmarkPromptEscape(child.zh) + '<span class="bm-prompt-execution-en">' + benchmarkPromptEscape(child.en) + '</span></span></div>';
+        }});
+        html += '</div></div>';
+      }});
+      benchmarkInitializedGroups.forEach(function(id) {{ if (!selectedSet.has(id)) benchmarkInitializedGroups.delete(id); }});
+      benchmarkExecutionSelections.forEach(function(id) {{ if (!activeChildren.has(id)) benchmarkExecutionSelections.delete(id); }});
+      if (!html) {{
+        tree.innerHTML = '<div class="bm-prompt-execution-empty">选择提示词后在这里查看内容</div>';
+      }} else {{
+        tree.innerHTML = '<div class="bm-prompt-execution-head"><span class="bm-prompt-execution-title">提示词</span><span class="bm-prompt-execution-count" id="bm-prompt-execution-count"></span></div><div class="bm-prompt-execution-body">' + html + '</div>';
+      }}
+      document.getElementById('bm-execution-prompt-ids').value = Array.from(benchmarkExecutionSelections).join(',');
+      var count = document.getElementById('bm-prompt-execution-count');
+      if (count) count.textContent = benchmarkExecutionSelections.size + ' 项';
+    }};
+    function benchmarkSyncPromptGroupToggle(groupCheckbox) {{
+      var group = groupCheckbox.getAttribute('data-group-toggle');
+      var children = Array.from(document.querySelectorAll('#bm-prompt-execution-tree .bm-prompt-execution-child input[data-group-id="' + group + '"]'));
+      var checked = children.filter(function(cb) {{ return cb.checked; }}).length;
+      groupCheckbox.checked = children.length > 0 && checked === children.length;
+      groupCheckbox.indeterminate = checked > 0 && checked < children.length;
+    }}
+    function benchmarkTogglePromptGroup(groupCheckbox) {{
+      var group = groupCheckbox.getAttribute('data-group-toggle');
+      document.querySelectorAll('#bm-prompt-execution-tree .bm-prompt-execution-child input[data-group-id="' + group + '"]').forEach(function(cb) {{
+        cb.checked = groupCheckbox.checked;
+        if (groupCheckbox.checked) benchmarkExecutionSelections.add(cb.value); else benchmarkExecutionSelections.delete(cb.value);
+      }});
+      window.renderBenchmarkPromptExecutionTree();
+    }}
+    function benchmarkTogglePromptChild(childCheckbox) {{
+      if (childCheckbox.checked) benchmarkExecutionSelections.add(childCheckbox.value); else benchmarkExecutionSelections.delete(childCheckbox.value);
+      window.renderBenchmarkPromptExecutionTree();
+    }}
+    function benchmarkPromptBatch(checked) {{
+      document.querySelectorAll('#ms-bm-prompts-panel input[type=checkbox]:checked').forEach(function(groupCheckbox) {{
+        var group = benchmarkPromptData.find(function(item) {{ return item.id === groupCheckbox.value; }});
+        (group ? group.children : []).forEach(function(child) {{ if (checked) benchmarkExecutionSelections.add(child.id); else benchmarkExecutionSelections.delete(child.id); }});
+      }});
+      window.renderBenchmarkPromptExecutionTree();
+    }}
+    function benchmarkTagsToggle(event) {{
+      event.stopPropagation();
+      document.getElementById('ts-benchmark-tags').classList.toggle('open');
+    }}
+    function benchmarkTagsInit() {{
+      var wrap = document.getElementById('ts-benchmark-tags');
+      if (!wrap || wrap.dataset.initialized) return;
+      wrap.dataset.initialized = '1';
+      wrap.querySelectorAll('.ts-arrow:not(.empty)').forEach(function(arrow) {{
+        arrow.addEventListener('click', function(event) {{
+          event.stopPropagation();
+          this.classList.toggle('expanded');
+          var children = this.closest('.ts-node').querySelector('.ts-children');
+          if (children) children.classList.toggle('expanded');
+        }});
+      }});
+      wrap.querySelectorAll('.ts-row[data-id]').forEach(function(row) {{
+        row.addEventListener('click', function(event) {{
+          if (event.target.classList.contains('ts-arrow')) return;
+          this.classList.toggle('selected');
+          benchmarkTagsSync();
+        }});
+      }});
+      document.addEventListener('click', function(event) {{
+        if (!wrap.contains(event.target)) wrap.classList.remove('open');
+      }});
+    }}
+    function benchmarkTagsSync() {{
+      var wrap = document.getElementById('ts-benchmark-tags');
+      var rows = wrap.querySelectorAll('.ts-row.selected');
+      var ids = []; var chips = '';
+      rows.forEach(function(row) {{
+        ids.push(row.dataset.id);
+        chips += '<span class="ts-chip"><span class="ts-chip-text">' + row.dataset.path + '</span><span class="ts-chip-close" data-id="' + row.dataset.id + '" onclick="event.stopPropagation();benchmarkTagRemove(this)">&times;</span></span>';
+      }});
+      wrap.querySelector('.ts-trigger').innerHTML = chips || '<span class="ts-placeholder">请选择标签</span>';
+      document.getElementById('benchmark-tags-hidden').value = ids.join(',');
+    }}
+    function benchmarkTagRemove(button) {{
+      var wrap = document.getElementById('ts-benchmark-tags');
+      var row = wrap.querySelector('.ts-row[data-id="' + button.dataset.id + '"]');
+      if (row) row.classList.remove('selected');
+      benchmarkTagsSync();
+    }}
+    </script>
     '''
-    return render_page("Benchmark \u7ba1\u7406", content, active="benchmarks")
+    return render_page("评测集", content, active="benchmarks")
 
 
 @app.route("/benchmarks/create", methods=["POST"])
@@ -3468,18 +4121,50 @@ def benchmarks_create():
     if not name:
         flash("Benchmark \u540d\u79f0\u4e0d\u80fd\u4e3a\u7a7a", "error")
         return redirect(url_for("benchmarks_page"))
-    BENCHMARKS.append({
-        "id": f"b{len(BENCHMARKS)+1}",
+    edit_id = request.form.get("edit_id", "").strip()
+    edit_target = next((item for item in BENCHMARKS if item["id"] == edit_id), None) if edit_id else None
+    benchmark_payload = {
         "name": name,
         "description": request.form.get("description", ""),
-        "scene_description": request.form.get("scene_description", ""),
-        "props": request.form.get("props", ""),
+        "publish_status": request.form.get("publish_status", "未发布") if request.form.get("publish_status") in ("未发布", "已发布") else "未发布",
+        "tags": [x.strip() for x in request.form.get("tags", "").split(",") if x.strip()],
         "prompt_ids": [x.strip() for x in request.form.get("prompt_ids", "").split(",") if x.strip()],
-        "criteria_id": request.form.get("criteria_id", "c1"),
-        "creator": "Joanna Qiao",
-        "created_at": datetime.now().strftime("%Y-%m-%d"),
-    })
-    flash(f"Benchmark\u300c{name}\u300d\u521b\u5efa\u6210\u529f", "success")
+        "execution_prompt_ids": [x.strip() for x in request.form.get("execution_prompt_ids", "").split(",") if x.strip()],
+    }
+    if edit_target and edit_target.get("publish_status") == "未发布":
+        edit_target.update(benchmark_payload)
+        flash(f"评测集「{name}」保存成功", "success")
+    elif edit_id:
+        flash("仅未发布状态的评测集支持编辑", "error")
+    else:
+        BENCHMARKS.append({
+            "id": f"b{len(BENCHMARKS)+1}",
+            "creator": "Joanna Qiao",
+            "created_at": datetime.now().strftime("%Y-%m-%d"),
+            "publish_status": "未发布",
+            **benchmark_payload,
+        })
+        flash(f"Benchmark\u300c{name}\u300d\u521b\u5efa\u6210\u529f", "success")
+    return redirect(url_for("benchmarks_page"))
+
+
+@app.route("/benchmarks/<bid>/publish")
+def benchmark_publish(bid):
+    benchmark = next((item for item in BENCHMARKS if item["id"] == bid), None)
+    if benchmark and benchmark.get("publish_status") == "未发布":
+        benchmark["publish_status"] = "已发布"
+        flash(f"评测集「{benchmark['name']}」已发布", "success")
+    return redirect(url_for("benchmarks_page"))
+
+
+@app.route("/benchmarks/<bid>/delete")
+def benchmark_delete(bid):
+    benchmark = next((item for item in BENCHMARKS if item["id"] == bid), None)
+    if benchmark and benchmark.get("publish_status") == "未发布":
+        BENCHMARKS.remove(benchmark)
+        flash(f"评测集「{benchmark['name']}」已删除", "success")
+    elif benchmark:
+        flash("已发布状态的评测集不支持删除", "error")
     return redirect(url_for("benchmarks_page"))
 
 
@@ -3527,7 +4212,7 @@ def benchmark_detail(bid):
         tag_html = " ".join(render_tag(t) for t in agg[:3])
         if len(agg) > 3:
             tag_html += f' <span class="ant-tag">+{len(agg)-3}</span>'
-        enabled_tag = '<span class="ant-tag ant-tag-green">\u5df2\u542f\u7528</span>' if p.get("enabled") else '<span class="ant-tag">\u672a\u542f\u7528</span>'
+        enabled_tag = '<span class="ant-tag ant-tag-green">已发布</span>' if p.get("enabled") else '<span class="ant-tag">未发布</span>'
         uid = f"bm-prompt-{pi}"
         # Parent row
         prompt_rows += (
@@ -3617,6 +4302,7 @@ def benchmark_detail(bid):
     else:
         criteria_html = '<span style="color:rgba(0,0,0,0.25);">\u2014</span>'
     description_html = b["description"] if b.get("description") else "\u2014"
+    benchmark_tags_html = render_tags_html(b.get("tags", []))
 
     content = f'''
     <div style="margin-bottom:16px;"><a href="/benchmarks" class="ant-btn">&larr; \u8fd4\u56de\u5217\u8868</a></div>
@@ -3628,6 +4314,7 @@ def benchmark_detail(bid):
         <div style="display:grid;grid-template-columns:110px 1fr;gap:10px 16px;font-size:14px;">
           <span style="color:rgba(0,0,0,0.45);">\u540d\u79f0</span><span style="font-weight:500;font-size:15px;">{b["name"]}</span>
           <span style="color:rgba(0,0,0,0.45);">\u63cf\u8ff0</span><span>{description_html}</span>
+          <span style="color:rgba(0,0,0,0.45);">\u6807\u7b7e</span><span>{benchmark_tags_html}</span>
           <span style="color:rgba(0,0,0,0.45);">\u521b\u5efa</span><span>{b["creator"]} \u00b7 {b["created_at"]}</span>
         </div>
       </div>
@@ -3674,12 +4361,35 @@ def benchmark_detail(bid):
       </div>
     </div>
     '''
+    content = f'''
+    <div style="margin-bottom:16px;"><a href="/benchmarks" class="ant-btn">&larr; 返回列表</a></div>
+    <div class="ant-card ant-card-bordered" style="margin-bottom:20px;">
+      <div class="ant-card-head" style="padding:12px 20px;"><h3>基本信息</h3></div>
+      <div class="ant-card-body"><div style="display:grid;grid-template-columns:110px 1fr;gap:10px 16px;font-size:14px;">
+        <span style="color:rgba(0,0,0,.45);">名称</span><span style="font-weight:500;">{b["name"]}</span>
+        <span style="color:rgba(0,0,0,.45);">描述</span><span>{description_html}</span>
+        <span style="color:rgba(0,0,0,.45);">标签</span><span>{benchmark_tags_html}</span>
+        <span style="color:rgba(0,0,0,.45);">创建</span><span>{b["creator"]} · {b["created_at"]}</span>
+      </div></div>
+    </div>
+    <div class="ant-card ant-card-bordered">
+      <div class="ant-card-head" style="padding:12px 20px;"><h3>提示词（{len(b.get("prompt_ids", []))} 组）</h3></div>
+      <div class="ant-card-body" style="padding:0;"><table class="ant-table">
+        <thead><tr><th>任务提示词</th><th>Task-Prompt</th><th>子步骤</th><th>标签</th><th>状态</th></tr></thead>
+        <tbody>{prompt_rows}</tbody>
+      </table></div>
+    </div>'''
     return render_page(bm_title, content, active="benchmarks")
 
 
 # ── Evaluation Task Management ──
 @app.route("/tasks")
 def tasks_page():
+    def task_action(href, label, danger=False):
+        cls = "action-link danger" if danger else "action-link"
+        return f'<a href="{href}" class="{cls}" title="{label}">{label}</a>'
+
+    active_tasks = [t for t in EVAL_TASKS if t.get("status") in ("\u91c7\u96c6\u4e2d", "\u8bc4\u6d4b\u4e2d")]
     rows = ""
     for t in EVAL_TASKS:
         bm = get_benchmark(t["benchmark_id"])
@@ -3697,46 +4407,43 @@ def tasks_page():
         pri = PRIORITY_MAP.get(t.get("priority", "\u4e2d"), {})
         pri_tag = f'<span class="ant-tag ant-tag-{pri.get("color","")}">{pri.get("label","")}</span>' if pri.get("color") else f'<span class="ant-tag">{pri.get("label",t["priority"])}</span>'
 
-        # Dual progress bars: collect + eval
+        # Unified progress across collection and evaluation stages.
         total = max(t.get("total_sessions", 1), 1)
         c_done = t.get("collect_done", 0)
         e_done = t.get("eval_done", 0)
-        c_pct = round(c_done / total * 100)
-        e_pct = round(e_done / total * 100)
+        progress_done = min(total, round((c_done + e_done) / 2))
+        progress_pct = round(progress_done / total * 100)
         progress_html = (
             f'<div style="font-size:12px;line-height:1.8;">'
             f'<div style="display:flex;align-items:center;gap:6px;">'
-            f'<span style="color:rgba(0,0,0,0.45);min-width:24px;">\u91c7\u96c6</span>'
             f'<div style="flex:1;height:14px;background:#f0f0f0;border-radius:7px;overflow:hidden;position:relative;">'
-            f'<div style="width:{c_pct}%;height:100%;background:#1F80A0;border-radius:7px;"></div>'
-            f'<span class="pb-text" style="--pct:{c_pct}%;">{c_done}/{total}</span>'
-            f'</div></div>'
-            f'<div style="display:flex;align-items:center;gap:6px;">'
-            f'<span style="color:rgba(0,0,0,0.45);min-width:24px;">\u8bc4\u6d4b</span>'
-            f'<div style="flex:1;height:14px;background:#f0f0f0;border-radius:7px;overflow:hidden;position:relative;">'
-            f'<div style="width:{e_pct}%;height:100%;background:#1F80A0;border-radius:7px;"></div>'
-            f'<span class="pb-text" style="--pct:{e_pct}%;">{e_done}/{total}</span>'
-            f'</div></div>'
-            f'</div>'
+            f'<div style="width:{progress_pct}%;height:100%;background:#1F80A0;border-radius:7px;"></div>'
+            f'<span class="pb-text" style="--pct:{progress_pct}%;">{progress_done}/{total}</span>'
+            f'</div></div></div>'
         )
 
+        publish_status = t.get("publish_status", "已发布")
+        is_unpublished = publish_status == "未发布"
+        publish_status_class = "tag-gray" if is_unpublished else "tag-green"
+
         # Actions per status
-        view_btn = icon_btn(f'/tasks/{t["id"]}', ICON_VIEW, "\u67e5\u770b", "default")
-        data_btn = icon_btn(f'/eval-records?view=task&task={t["id"]}', ICON_DATA, "\u67e5\u770b\u6570\u636e", "default")
+        view_btn = f'<a href="javascript:;" class="action-link" title="查看" onclick="openTaskView(\'{t["id"]}\')">查看</a>'
+        data_btn = task_action(f'/tasks/{t["id"]}/data', "\u6570\u636e")
         st = t["status"]
-        action_btns = view_btn + data_btn
-        if st == "\u672a\u5f00\u59cb":
-            action_btns += icon_btn(f'/tasks/{t["id"]}/delete', ICON_DELETE, "\u5220\u9664", "danger")
-        elif st in ("\u91c7\u96c6\u4e2d", "\u8bc4\u6d4b\u4e2d"):
-            action_btns += icon_btn(f'/tasks/{t["id"]}/pause', ICON_DISABLE, "\u6682\u505c", "default")
-        elif st == "\u8bc4\u6d4b\u5b8c\u6210":
-            action_btns += icon_btn(f'/tasks/{t["id"]}/analyze', ICON_ANALYZE, "\u5206\u6790", "primary")
-        elif st == "\u5df2\u6682\u505c":
-            action_btns += icon_btn(f'/tasks/{t["id"]}/delete', ICON_DELETE, "\u5220\u9664", "danger")
+        stats_btn = task_action(f'/tasks/{t["id"]}/statistics', "统计")
+        if is_unpublished:
+            action_btns = view_btn
+            action_btns += f'<a href="javascript:;" class="action-link" title="编辑" onclick="openTaskEdit(\'{t["id"]}\')">编辑</a>'
+            action_btns += f'<a href="/tasks/{t["id"]}/publish" class="action-link" title="发布" onclick="return confirm(\'发布后将不能编辑或删除，确认发布吗？\')">发布</a>'
+            action_btns += f'<a href="/tasks/{t["id"]}/delete" class="action-link danger" title="删除" onclick="return confirm(\'确认删除该评测任务吗？\')">删除</a>'
+        else:
+            action_btns = view_btn + data_btn + stats_btn
 
         # Enable switch: ON for started tasks, clickable only when 未开始
         is_enabled = st != "\u672a\u5f00\u59cb"
-        if st == "\u672a\u5f00\u59cb":
+        if is_unpublished:
+            switch_html = '<label class="capsule" style="opacity:0.3;cursor:not-allowed;" title="发布后可开启评测"><span class="capsule-dot"></span></label>'
+        elif st == "\u672a\u5f00\u59cb":
             switch_html = f'<a href="/tasks/{t["id"]}/start" title="\u70b9\u51fb\u5f00\u542f" style="text-decoration:none;"><label class="capsule" style="cursor:pointer;"><span class="capsule-dot"></span></label></a>'
         elif st == "\u5df2\u5e9f\u5f03":
             switch_html = '<label class="capsule" style="opacity:0.3;cursor:not-allowed;"><span class="capsule-dot"></span></label>'
@@ -3750,8 +4457,8 @@ def tasks_page():
             f'<td style="font-weight:500;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="{t["name"]}">{t["name"]}</td>'
             f"<td>{bm_name}</td>"
             f'<td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="{model_text}">{model_text}</td>'
+            f'<td><span class="tag {publish_status_class}">{publish_status}</span></td>'
             f"<td style='text-align:center;'>{switch_html}</td>"
-            f"<td>{status_tag}</td>"
             f"<td style='min-width:160px;'>{progress_html}</td>"
             f"<td>{pri_tag}</td>"
             f"<td>{t['created_by']}</td>"
@@ -3760,8 +4467,10 @@ def tasks_page():
         )
 
     # Pre-build select options
-    bm_opts = '<option value="">\u8bf7\u9009\u62e9 Benchmark</option>' + "".join(f'<option value="{b["id"]}">{b["name"]}</option>' for b in BENCHMARKS)
+    bm_opts = '<option value="">\u8bf7\u9009\u62e9\u8bc4\u6d4b\u96c6</option>' + "".join(f'<option value="{b["id"]}">{b["name"]}</option>' for b in BENCHMARKS)
     model_opts = "".join(f'<option value="{m["id"]}">{m["name"]} ({m["version"]})</option>' for m in MODELS)
+    scene_opts = '<option value="">\u8bf7\u9009\u62e9\u573a\u666f</option>' + "".join(f'<option value="{s["id"]}">{s["name"]}</option>' for s in SCENES)
+    task_criteria_opts = '<option value="">\u8bf7\u9009\u62e9\u8bc4\u4ef7\u6807\u51c6</option>' + "".join(f'<option value="{c["id"]}">{c["name"]}</option>' for c in CRITERIA)
     type_opts = "".join(f'<option value="{k}">{v["label"]}</option>' for k, v in CRITERIA_TYPES.items())
     # For inline benchmark section: prompts / criteria / tag-tree
     bm_prompt_ms_opts = "".join(
@@ -3780,9 +4489,10 @@ def tasks_page():
             p = get_prompt(pid)
             if p:
                 prompts_info.append({
+                    "id": p["id"],
                     "name": p["high_level"],
                     "steps": len(p.get("low_levels", [])),
-                    "low_levels": [{"zh": ll.get("zh", ""), "en": ll.get("en", "")} for ll in p.get("low_levels", [])],
+                    "low_levels": [{"id": ll.get("id", f'{p["id"]}-ll-{index + 1}'), "zh": ll.get("zh", ""), "en": ll.get("en", "")} for index, ll in enumerate(p.get("low_levels", []))],
                 })
         cr = get_criterion(b.get("criteria_id", ""))
         cr_info = ""
@@ -3820,8 +4530,42 @@ def tasks_page():
         }
     bm_preview_json = _json.dumps(bm_preview, ensure_ascii=False)
 
-    # Tag tree selector for task labels
-    task_tag_tree = build_tree_selector_html("task-tags")
+    # Data used by the shared create/view task drawer.
+    task_view_data = {}
+    for _task in EVAL_TASKS:
+        _bm = get_benchmark(_task.get("benchmark_id", ""))
+        _scene = get_scene(_task.get("scene_id", "")) or {}
+        _scene_env = _scene.get("environment", {}) or {}
+        _scene_refs = _scene.get("references", {}) or {}
+        _selected_prompt_ids = list(_task.get("selected_prompt_ids", []))
+        _selected_lowlevel_ids = list(_task.get("selected_lowlevel_ids", []))
+        if not _selected_lowlevel_ids:
+            for _prompt_id in _selected_prompt_ids:
+                _prompt = get_prompt(_prompt_id)
+                if _prompt:
+                    _selected_lowlevel_ids.extend(ll.get("id", "") for ll in _prompt.get("low_levels", []) if ll.get("id"))
+        task_view_data[_task["id"]] = {
+            "id": _task["id"],
+            "name": _task.get("name", ""),
+            "project": _task.get("project", ""),
+            "task_mode": _task.get("task_mode", "Evaluaton"),
+            "priority": _task.get("priority", ""),
+            "due_date": _task.get("due_date", ""),
+            "description": _task.get("description", ""),
+            "total_sessions": _task.get("total_sessions", 0),
+            "model_ids": list(_task.get("model_ids", [])),
+            "model_names": [get_model_name(mid) for mid in _task.get("model_ids", [])],
+            "benchmark_id": _task.get("benchmark_id", ""),
+            "benchmark_name": _bm.get("name", "") if _bm else "",
+            "scene_description": _task.get("scene_description", "") or _scene.get("description", ""),
+            "scene_images": list(_task.get("scene_images", [])) or [item.get("description", "场景图片") for item in _scene_refs.get("images", [])],
+            "scene_videos": list(_task.get("scene_videos", [])) or [item.get("description", "场景视频") for item in (_scene_refs.get("capture_videos", []) + _scene_refs.get("demo_videos", []))],
+            "criteria_id": _task.get("criteria_id", ""),
+            "selected_prompt_ids": _selected_prompt_ids,
+            "selected_lowlevel_ids": _selected_lowlevel_ids,
+            "publish_status": _task.get("publish_status", "已发布"),
+        }
+    task_view_data_json = _json.dumps(task_view_data, ensure_ascii=False)
 
     # Checkpoint options (mselSync pattern)
     ckpt_ms_opts = "".join(
@@ -3832,34 +4576,31 @@ def tasks_page():
     bm_filter_opts = "".join(f'<option>{b["name"]}</option>' for b in BENCHMARKS)
     model_filter_opts = "".join(f'<option>{m["name"]}</option>' for m in MODELS)
 
-    cnt_collecting = sum(1 for t in EVAL_TASKS if t["status"] == "\u91c7\u96c6\u4e2d")
-    cnt_evaluating = sum(1 for t in EVAL_TASKS if t["status"] == "\u8bc4\u6d4b\u4e2d")
-    cnt_done = sum(1 for t in EVAL_TASKS if t["status"] in ("\u8bc4\u6d4b\u5b8c\u6210", "\u5206\u6790\u5b8c\u6210"))
-
     content = f'''
-    <div class="stat-grid">
-      <div class="stat-card"><div class="stat-label">\u603b\u4efb\u52a1\u6570</div><div class="stat-value">{len(EVAL_TASKS)}</div></div>
-      <div class="stat-card"><div class="stat-label">\u91c7\u96c6\u4e2d</div><div class="stat-value" style="color:#1F80A0;">{cnt_collecting}</div></div>
-      <div class="stat-card"><div class="stat-label">\u8bc4\u6d4b\u4e2d</div><div class="stat-value" style="color:#1F80A0;">{cnt_evaluating}</div></div>
-      <div class="stat-card"><div class="stat-label">\u5df2\u5b8c\u6210</div><div class="stat-value" style="color:#1F80A0;">{cnt_done}</div></div>
+    <div style="display:none" class="eval2-flow" id="eval2-flow">
+      <div class="eval2-flow-head"><div><h2>模式选择</h2><p>选择评测模式后开始端侧自检</p></div><span class="eval2-device" id="eval2-device">设备：未知设备</span></div>
+      <div class="eval2-mode-grid"><button type="button" class="eval2-mode selected" onclick="eval2SelectMode(this)"><span class="eval2-mode-icon">▣</span><b>Normal</b></button><button type="button" class="eval2-mode" onclick="eval2SelectMode(this)"><span class="eval2-mode-icon">⌁</span><b>DAgger</b></button><button type="button" class="eval2-mode" onclick="eval2SelectMode(this)"><span class="eval2-mode-icon">☑</span><b>Test</b></button><button type="button" class="eval2-mode" onclick="eval2SelectMode(this)"><span class="eval2-mode-icon">▤</span><b>Evaluation</b></button></div>
+      <button type="button" class="eval2-primary" id="eval2-self-check" onclick="eval2SelfCheck()">开始自检</button><div class="eval2-check-note">自检将检查机器人、相机、控制器与网络连接</div>
+      <div class="eval2-setup" id="eval2-setup" hidden><div class="eval2-section-title">项目与任务 <span class="eval2-ok">● 设备自检通过</span></div><div class="eval2-select-row"><label>项目<select><option>eval</option><option>预训练</option><option>回归验证</option></select></label><label>任务<select id="eval2-task"><option value="">请选择任务</option>{"".join(f'<option value="{t["id"]}">{t["task_no"]}：{t.get("name", "评测任务")}</option>' for t in active_tasks)}</select></label></div><div class="eval2-section-title">场景和提示词</div><div class="eval2-context"><div><b>场景</b><p>选择任务后展示关联场景和参考素材</p></div><div><b>提示词</b><p>选择任务后展示待执行提示词组</p></div></div><button type="button" class="eval2-primary" onclick="eval2EnterTask()">确认进入任务</button></div>
     </div>
-
-    <div class="filter-bar">
-      <input type="text" placeholder="\u641c\u7d22\u4efb\u52a1" style="min-width:140px;">
-      <select style="min-width:120px;"><option value="">Benchmark</option>{bm_filter_opts}</select>
-      <select style="min-width:110px;"><option value="">Checkpoint</option>{model_filter_opts}</select>
-      <select style="min-width:100px;"><option value="">\u5168\u90e8\u72b6\u6001</option><option>\u672a\u5f00\u59cb</option><option>\u91c7\u96c6\u4e2d</option><option>\u8bc4\u6d4b\u4e2d</option><option>\u8bc4\u6d4b\u5b8c\u6210</option><option>\u5206\u6790\u5b8c\u6210</option><option>\u5df2\u6682\u505c</option><option>\u5df2\u5e9f\u5f03</option></select>
-      <select style="min-width:80px;"><option value="">\u4f18\u5148\u7ea7</option><option>\u9ad8</option><option>\u4e2d</option><option>\u4f4e</option></select>
-      <button class="ant-btn" onclick="clearFilters()">\u6e05\u7a7a</button>
-      <button class="ant-btn ant-btn-primary" onclick="doSearch()">\u641c\u7d22</button>
+    <div class="filter-bar fb-labeled task-filter-bar">
+      <div class="ff"><label>\u4efb\u52a1</label><input type="text" placeholder="\u641c\u7d22\u4efb\u52a1"></div>
+      <div class="ff"><label>\u8bc4\u6d4b\u96c6</label><select name="benchmark"><option value="">\u8bc4\u6d4b\u96c6</option>{bm_filter_opts}</select></div>
+      <div class="ff"><label>Checkpoint</label><select name="checkpoint"><option value="">Checkpoint</option>{model_filter_opts}</select></div>
+      <div class="ff"><label>\u72b6\u6001</label><select name="publish_status"><option value="">\u5168\u90e8\u72b6\u6001</option><option>未发布</option><option>已发布</option></select></div>
+      <div class="ff"><label>\u4f18\u5148\u7ea7</label><select name="priority"><option value="">\u4f18\u5148\u7ea7</option><option>\u9ad8</option><option>\u4e2d</option><option>\u4f4e</option></select></div>
+      <div class="filter-actions">
+        <button class="ant-btn" onclick="clearFilters()">\u6e05\u7a7a</button>
+        <button class="ant-btn ant-btn-primary" onclick="doSearch()">\u641c\u7d22</button>
+      </div>
       <div style="flex:1;"></div>
-      <button class="ant-btn ant-btn-primary" onclick="openModal('create-task-drawer')">+ \u65b0\u589e\u8bc4\u6d4b\u4efb\u52a1</button>
+      <button class="ant-btn ant-btn-primary" onclick="openTaskCreate()">+ \u65b0\u589e\u8bc4\u6d4b\u4efb\u52a1</button>
     </div>
 
     <div class="ant-card ant-card-bordered">
       <table class="ant-table">
         <thead><tr>
-          <th style="width:50px;">ID</th><th>\u4efb\u52a1\u540d\u79f0</th><th>Benchmark</th><th>Checkpoint</th><th>\u542f\u7528</th><th>\u72b6\u6001</th><th>\u8fdb\u5ea6</th><th>\u4f18\u5148\u7ea7</th><th>\u521b\u5efa\u4eba</th><th>\u64cd\u4f5c</th>
+          <th style="width:50px;">ID</th><th>\u4efb\u52a1\u540d\u79f0</th><th>\u8bc4\u6d4b\u96c6</th><th>Checkpoint</th><th>状态</th><th>评测状态</th><th>\u8fdb\u5ea6</th><th>\u4f18\u5148\u7ea7</th><th>\u521b\u5efa\u4eba</th><th>\u64cd\u4f5c</th>
         </tr></thead>
         <tbody>{rows}</tbody>
       </table>
@@ -3867,44 +4608,42 @@ def tasks_page():
 
     <!-- Create Task Drawer -->
     <div class="ant-drawer-mask" id="create-task-drawer">
-      <div class="ant-drawer-content">
-        <div class="ant-drawer-header"><h3>\u65b0\u589e\u8bc4\u6d4b\u4efb\u52a1</h3><button class="ant-drawer-close" onclick="closeModal('create-task-drawer')">&times;</button></div>
-        <form method="POST" action="/tasks/create" onsubmit="return validateTaskForm()">
+      <div class="ant-drawer-content task-drawer-content">
+        <div class="ant-drawer-header"><h3 id="task-drawer-title">\u65b0\u589e\u8bc4\u6d4b\u4efb\u52a1</h3><button class="ant-drawer-close" onclick="closeModal('create-task-drawer')">&times;</button></div>
+        <form id="task-drawer-form" method="POST" action="/tasks/create" enctype="multipart/form-data" onsubmit="return validateTaskForm()">
+        <input type="hidden" name="edit_id" value="">
         <div class="ant-drawer-body">
           <!-- Section 1: Basic Info -->
           <h4 style="font-size:14px;font-weight:500;margin-bottom:12px;color:rgba(0,0,0,0.85);">\u57fa\u7840\u4fe1\u606f</h4>
           <div class="form-row">
             <div class="form-group"><label class="req">\u4efb\u52a1\u540d\u79f0</label><div class="input-clear-wrap"><input type="text" name="name" required><span class="input-clear" onclick="this.previousElementSibling.value=''">&times;</span></div></div>
-            <div class="form-group"><label class="req">\u5411\u8bc4\u6d4b\u5458\u5c55\u793a\u540d\u79f0</label><div class="input-clear-wrap"><input type="text" name="display_name" required placeholder="\u5efa\u8bae\u4e0d\u8981\u5305\u542b\u6a21\u578b\u4fe1\u606f"><span class="input-clear" onclick="this.previousElementSibling.value=''">&times;</span></div></div>
             <div class="form-group"><label class="req">\u6240\u5c5e\u9879\u76ee</label><select name="project" required><option value="">\u8bf7\u9009\u62e9</option><option>\u57fa\u7840\u7814\u7a76</option><option>\u5b81\u5fb7\u5e94\u7528</option><option>moz1</option><option>spirit</option><option>demo\u91c7\u96c6</option><option>\u9884\u8bad\u7ec3\u91c7\u96c6</option><option>\u591a\u4efb\u52a1</option></select></div>
+            <div class="form-group"><label>\u4efb\u52a1\u6a21\u5f0f</label><input type="text" value="Evaluaton" disabled style="background:#f5f5f5;color:rgba(0,0,0,0.45);"><input type="hidden" name="task_mode" value="Evaluaton"></div>
           </div>
           <div class="form-row">
-            <div class="form-group"><label class="req">\u91c7\u96c6\u7c7b\u578b</label><input type="text" value="test" disabled style="background:#f5f5f5;color:rgba(0,0,0,0.45);"></div>
             <div class="form-group"><label class="req">\u4f18\u5148\u7ea7</label><select name="priority" required><option value="">\u8bf7\u9009\u62e9</option><option value="\u9ad8">\u9ad8</option><option value="\u4e2d" selected>\u4e2d</option><option value="\u4f4e">\u4f4e</option></select></div>
             <div class="form-group"><label class="req">\u9884\u671f\u4ea4\u4ed8\u65e5\u671f</label><div class="input-clear-wrap"><input type="date" name="due_date" required style="width:100%;"><span class="input-clear" onclick="this.previousElementSibling.value=''">&times;</span></div></div>
-          </div>
-          <div class="form-group">
-            <label class="req">\u4efb\u52a1\u6807\u7b7e (\u591a\u9009)</label>
-            <div class="ts-wrap" id="ts-task-tags" style="max-width:100%;">
-              <div class="ts-trigger" onclick="tsToggle('ts-task-tags')" style="min-height:36px;"><span class="ts-placeholder">\u9009\u62e9\u6807\u7b7e</span></div>
-              <div class="ts-panel" style="max-height:280px;">{task_tag_tree}</div>
-              <input type="hidden" name="task_tags" id="task-tags-hidden" value="">
-            </div>
+            <div class="form-group" id="task-publish-status-field" style="display:none;"><label>状态</label><select name="publish_status"><option value="未发布">未发布</option><option value="已发布">已发布</option></select></div>
           </div>
           <div class="form-group"><label>\u4efb\u52a1\u63cf\u8ff0</label><textarea name="description" rows="2" placeholder="\u7b80\u8981\u63cf\u8ff0\u8be5\u4efb\u52a1\u7684\u76ee\u7684\u3001\u5173\u6ce8\u70b9\u7b49"></textarea></div>
 
           <hr style="border:none;border-top:1px solid #f0f0f0;margin:20px 0;">
 
-          <!-- Section 2: Eval Config -->
+          <!-- Section 2: Scene Description -->
+          <h4 style="font-size:14px;font-weight:500;margin-bottom:12px;color:rgba(0,0,0,0.85);">\u573a\u666f\u63cf\u8ff0</h4>
+          <div class="form-group"><label class="req">\u63cf\u8ff0</label><textarea name="scene_description" rows="3" required placeholder="描述场景环境、物体布局和执行约束"></textarea></div>
+          <div class="task-scene-upload-grid">
+            <div><label>\u56fe\u7247</label><div class="upload-zone" onclick="this.querySelector('input').click()"><input type="file" name="scene_images" multiple accept="image/*" style="display:none;" onchange="window.showFileNames(this)"><div class="upload-icon">▧</div><div class="upload-text">点击或拖拽上传图片</div><div class="upload-hint">JPG / PNG，支持多张</div><div class="upload-files" id="task-scene-images-files"></div></div></div>
+            <div><label>\u89c6\u9891</label><div class="upload-zone" onclick="this.querySelector('input').click()"><input type="file" name="scene_videos" multiple accept="video/*" style="display:none;" onchange="window.showFileNames(this)"><div class="upload-icon">▶</div><div class="upload-text">点击或拖拽上传视频</div><div class="upload-hint">MP4，支持多个</div><div class="upload-files" id="task-scene-videos-files"></div></div></div>
+          </div>
+
+          <hr style="border:none;border-top:1px solid #f0f0f0;margin:20px 0;">
+
+          <!-- Section 3: Eval Config -->
           <h4 style="font-size:14px;font-weight:500;margin-bottom:12px;color:rgba(0,0,0,0.85);">\u8bc4\u6d4b\u914d\u7f6e</h4>
           <div class="form-row">
-            <div class="form-group"><label class="req">\u8bc4\u6d4b\u672c\u4f53</label><select name="device" id="task-device" required onchange="syncDeployMode(this.value)"><option value="">\u8bf7\u9009\u62e9</option><option value="moz">moz</option><option value="Franka">Franka</option></select></div>
-            <div class="form-group"><label class="req">\u90e8\u7f72\u65b9\u5f0f</label><input type="text" id="task-deploy-mode-text" value="--" disabled style="background:#f5f5f5;color:rgba(0,0,0,0.45);"><input type="hidden" name="deploy_mode" id="task-deploy-mode"></div>
-            <div class="form-group"><label class="req">\u8bc4\u6d4b\u6b21\u6570</label><div class="input-clear-wrap"><input type="number" name="total_sessions" required value="30" min="1"><span class="input-clear" onclick="this.previousElementSibling.value=''">&times;</span></div></div>
-          </div>
-          <div class="form-row">
             <div class="form-group" style="grid-column:1/4;">
-              <label class="req">Checkpoint (\u591a\u9009\uff0c\u81f3\u5c11\u9009\u62e9\u4e24\u4e2a)</label>
+              <label class="req task-resource-label"><span class="task-resource-title">Checkpoint</span><span class="task-resource-actions"><a id="task-ckpt-view" class="task-resource-link" href="/model/checkpoints"><span class="task-resource-icon" aria-hidden="true">↗</span>\u53bb\u67e5\u770b</a><a class="task-resource-link task-resource-create" href="/model/checkpoints?open=create"><span class="task-resource-icon" aria-hidden="true">＋</span>\u53bb\u521b\u5efa</a></span></label>
               <div style="position:relative;">
                 <div class="er-dd-trigger" id="ms-ckpt-btn" onclick="mselToggle('ms-ckpt', event)">
                   <div id="ms-ckpt-chips" class="er-chips"></div>
@@ -3924,29 +4663,31 @@ def tasks_page():
             </div>
           </div>
 
-          <!-- Benchmark (merged into Eval Config) -->
+          <div class="form-row task-eval-config-row" style="margin-top:16px;">
+            <div class="form-group"><label class="req">\u8bc4\u6d4b\u6b21\u6570</label><div class="input-clear-wrap"><input type="number" name="total_sessions" required value="30" min="1"><span class="input-clear" onclick="this.previousElementSibling.value=''">&times;</span></div></div>
+            <div class="form-group"><label class="req">\u8bc4\u4ef7\u6807\u51c6</label><select name="criteria_id" required>{task_criteria_opts}</select></div>
+          </div>
+
+          <!-- Evaluation set (merged into Eval Config) -->
           <div class="form-group" style="margin-top:4px;">
-            <label class="req">Benchmark</label>
+            <label class="req task-resource-label"><span class="task-resource-title">\u8bc4\u6d4b\u96c6</span><span class="task-resource-actions"><a id="task-bm-view" class="task-resource-link" href="/model/eval/benchmarks"><span class="task-resource-icon" aria-hidden="true">↗</span>\u53bb\u67e5\u770b</a><a class="task-resource-link task-resource-create" href="/model/eval/benchmarks?open=create"><span class="task-resource-icon" aria-hidden="true">＋</span>\u53bb\u521b\u5efa</a></span></label>
             <select name="benchmark_id" id="bm-select" required onchange="previewBm(this.value)" class="has-value">{bm_opts}</select>
           </div>
-          <!-- Benchmark preview: 3 rows -->
-          <div id="bm-preview" style="margin-top:8px;padding:14px 16px;background:#fafafa;border-radius:8px;border:1px solid #f0f0f0;display:none;position:relative;">
-            <div style="display:grid;grid-template-columns:90px 1fr;gap:8px 12px;font-size:13px;align-items:start;">
-              <span style="color:rgba(0,0,0,0.45);">\u573a\u666f\u63cf\u8ff0</span>
-              <span id="bm-pv-scene" style="line-height:1.7;"></span>
-              <span style="color:rgba(0,0,0,0.45);">\u8bc4\u4ef7\u6807\u51c6</span>
-              <span id="bm-pv-criteria" style="font-weight:500;"></span>
-              <span style="color:rgba(0,0,0,0.45);">\u63d0\u793a\u8bcd\u7ec4</span>
-              <span id="bm-pv-prompts" style="display:flex;flex-wrap:wrap;gap:4px;"></span>
+          <div id="bm-preview" class="task-prompt-tree" style="display:none;">
+            <div class="task-prompt-tree-head">
+              <label><input id="task-prompt-all" type="checkbox" onchange="taskPromptToggleAll(this.checked)"> <b>\u672c\u6b21\u8bc4\u6d4b\u63d0\u793a\u8bcd</b></label>
+              <span id="task-prompt-count">0 / 0 \u5df2\u9009</span>
             </div>
-            <a href="javascript:;" onclick="openBmDetail()" style="position:absolute;top:14px;right:16px;font-size:13px;color:#1F80A0;text-decoration:none;">\u67e5\u770b\u8be6\u60c5 &rarr;</a>
+            <div id="bm-pv-prompts" class="task-prompt-tree-body"></div>
+            <input type="hidden" name="selected_prompt_ids" id="selected-prompt-ids" value="">
+            <input type="hidden" name="selected_lowlevel_ids" id="selected-lowlevel-ids" value="">
           </div>
         </div>
         <!-- Benchmark detail modal (inline drawer) -->
         <div class="ant-drawer-mask" id="bm-detail-modal" style="z-index:300;background:rgba(0,0,0,0.65);">
           <div class="ant-drawer-content" style="width:720px;max-width:90vw;">
             <div class="ant-drawer-header">
-              <h3 id="bm-detail-title">Benchmark \u8be6\u60c5</h3>
+              <h3 id="bm-detail-title">\u8bc4\u6d4b\u96c6\u8be6\u60c5</h3>
               <button class="ant-drawer-close" onclick="closeBmDetail()">&times;</button>
             </div>
             <div class="ant-drawer-body">
@@ -3955,27 +4696,210 @@ def tasks_page():
           </div>
         </div>
         <div class="ant-drawer-footer">
-          <button type="button" class="ant-btn" onclick="closeModal('create-task-drawer')">\u53d6\u6d88</button>
-          <button type="submit" class="ant-btn ant-btn-primary">\u521b\u5efa\u4efb\u52a1</button>
+          <button type="button" id="task-drawer-close-btn" class="ant-btn" onclick="closeModal('create-task-drawer')">\u53d6\u6d88</button>
+          <button type="submit" id="task-drawer-submit" class="ant-btn ant-btn-primary">\u521b\u5efa\u4efb\u52a1</button>
         </div>
         </form>
       </div>
     </div>
 
+    <style>
+      .task-scene-upload-grid {{ display:grid;grid-template-columns:1fr 1fr;gap:16px; }} .task-scene-upload-grid>div>label {{ display:block;margin-bottom:7px;color:rgba(0,0,0,.85);font-size:14px; }} .task-scene-upload-grid .upload-zone {{ padding:16px; }} .task-scene-upload-grid .upload-icon {{ color:#1F80A0;font-size:22px; }}
+      .task-prompt-tree {{ margin-top:10px;border:1px solid #e3e8ec;border-radius:6px;background:#fff;overflow:hidden; }}
+      .task-prompt-tree-head {{ display:flex;align-items:center;justify-content:space-between;padding:11px 14px;background:#f7f9fa;border-bottom:1px solid #e8ecef;font-size:13px; }}
+      .task-prompt-tree-head label {{ display:flex;align-items:center;gap:7px;margin:0; }}
+      .task-prompt-tree-head span {{ color:rgba(0,0,0,.45);font-size:12px; }}
+      .task-prompt-tree-body {{ max-height:310px;overflow:auto;padding:6px 0; }}
+      .task-prompt-node + .task-prompt-node {{ border-top:1px solid #f0f2f4; }}
+      .task-prompt-parent {{ display:flex;align-items:flex-start;gap:4px;padding:10px 14px; }}
+      .task-prompt-parent label {{ display:flex;align-items:flex-start;gap:8px;margin:0;cursor:pointer; }}
+      .task-prompt-parent label > span {{ display:flex;flex-direction:column;gap:2px; }}
+      .task-prompt-parent small {{ color:rgba(0,0,0,.42);font-size:11px; }}
+      .task-prompt-parent-copy {{ display:flex;flex-direction:column;gap:2px; }}
+      .task-prompt-expand {{ width:20px;height:20px;padding:0;border:0;background:transparent;color:rgba(0,0,0,.35);cursor:pointer;font-size:10px; }}
+      .task-prompt-children {{ margin:0 14px 8px 46px;border-left:1px solid #dfe6ea; }}
+      .task-prompt-child {{ display:grid;grid-template-columns:16px 24px minmax(180px,1fr) minmax(220px,1.2fr);align-items:start;gap:8px;padding:7px 10px;margin:0;color:rgba(0,0,0,.65);font-size:12px;cursor:pointer; }}
+      .task-prompt-child>input {{ margin-top:2px;accent-color:#1F80A0; }} .task-prompt-child span:nth-child(2),.task-prompt-child small {{ color:rgba(0,0,0,.4); }}
+      .task-eval-config-row {{ grid-template-columns:repeat(2,minmax(0,1fr)); }}
+      .task-view-mode .form-group input:disabled,
+      .task-view-mode .form-group select:disabled,
+      .task-view-mode .form-group textarea:disabled {{ background-color:#f5f5f5 !important; border-color:#d9d9d9 !important; color:rgba(0,0,0,.38) !important; -webkit-text-fill-color:rgba(0,0,0,.38); box-shadow:none !important; cursor:not-allowed; opacity:1; }}
+      .task-view-mode .form-group select:disabled {{ background-image:none !important; padding-right:12px; }}
+      .task-view-mode .input-clear {{ display:none; }}
+      .task-view-mode .upload-zone {{ pointer-events:none; cursor:not-allowed; border-style:solid; border-color:#d9d9d9; background:#f5f5f5; color:rgba(0,0,0,.3); }}
+      .task-view-mode .upload-icon,
+      .task-view-mode .upload-text,
+      .task-view-mode .upload-hint,
+      .task-view-mode .upload-files {{ color:rgba(0,0,0,.3) !important; }}
+      .task-view-mode .er-dd-trigger.is-disabled {{ background:#f5f5f5 !important; border-color:#d9d9d9; color:rgba(0,0,0,.38); box-shadow:none; }}
+      .task-view-mode .er-chip {{ background:#ededed; border-color:#dedede; color:rgba(0,0,0,.38); }}
+      .task-view-mode .task-prompt-tree {{ border-color:#d9d9d9; background:#f5f5f5; }}
+      .task-view-mode .task-prompt-tree-head {{ background:#ededed; color:rgba(0,0,0,.38); }}
+      .task-view-mode .task-prompt-child,
+      .task-view-mode .task-prompt-parent-copy {{ color:rgba(0,0,0,.38); cursor:not-allowed; }}
+      .task-view-mode .task-prompt-child small,
+      .task-view-mode .task-prompt-parent small {{ color:rgba(0,0,0,.28); }}
+      .task-view-mode input[type="checkbox"]:disabled {{ filter:grayscale(1); opacity:.55; cursor:not-allowed; }}
+      @media (max-width:760px) {{ .task-scene-upload-grid {{ grid-template-columns:1fr; }} }}
+    </style>
     <script>
     var bmData = {bm_preview_json};
+    var taskViewData = {task_view_data_json};
     var bmCurrentId = null;
-    function previewBm(bid) {{
+    function setTaskDrawerReadonly(readonly) {{
+      var drawer = document.getElementById('create-task-drawer');
+      if (!drawer) return;
+      drawer.classList.toggle('task-view-mode', readonly);
+      drawer.querySelectorAll('#task-drawer-form input, #task-drawer-form select, #task-drawer-form textarea').forEach(function(el) {{
+        if (el.type !== 'hidden') el.disabled = readonly;
+      }});
+      var trigger = document.getElementById('ms-ckpt-btn');
+      if (trigger) {{
+        trigger.classList.toggle('is-disabled', readonly);
+        trigger.setAttribute('aria-disabled', readonly ? 'true' : 'false');
+      }}
+      document.querySelectorAll('#ms-ckpt-panel input').forEach(function(cb) {{ cb.disabled = readonly; }});
+      document.querySelectorAll('#ms-ckpt-panel a').forEach(function(a) {{ a.style.pointerEvents = readonly ? 'none' : ''; a.style.opacity = readonly ? '0.45' : ''; }});
+      document.querySelectorAll('#bm-pv-prompts input, #task-prompt-all').forEach(function(cb) {{ cb.disabled = readonly; }});
+      document.querySelectorAll('#bm-pv-prompts .task-prompt-expand').forEach(function(btn) {{ btn.disabled = readonly; btn.style.cursor = readonly ? 'default' : ''; }});
+      document.querySelectorAll('#create-task-drawer .task-resource-create').forEach(function(a) {{ a.style.display = readonly ? 'none' : ''; }});
+      document.getElementById('task-drawer-title').textContent = readonly ? '\u67e5\u770b\u8bc4\u6d4b\u4efb\u52a1' : '\u65b0\u589e\u8bc4\u6d4b\u4efb\u52a1';
+      document.getElementById('task-drawer-submit').style.display = readonly ? 'none' : '';
+      document.getElementById('task-drawer-close-btn').textContent = readonly ? '\u5173\u95ed' : '\u53d6\u6d88';
+    }}
+    function resetTaskDrawerForm() {{
+      var form = document.getElementById('task-drawer-form');
+      if (!form) return;
+      form.reset();
+      document.querySelectorAll('#ms-ckpt-panel input[type="checkbox"]').forEach(function(cb) {{ cb.checked = false; }});
+      window.mselSync('ms-ckpt');
+      var bmSelect = document.getElementById('bm-select');
+      if (bmSelect) {{ bmSelect.value = ''; bmSelect.classList.remove('has-value'); }}
+      document.getElementById('task-scene-images-files').innerHTML = '';
+      document.getElementById('task-scene-videos-files').innerHTML = '';
+      var promptHidden = document.getElementById('selected-prompt-ids');
+      if (promptHidden) promptHidden.value = '';
+      var lowlevelHidden = document.getElementById('selected-lowlevel-ids');
+      if (lowlevelHidden) lowlevelHidden.value = '';
+      bmCurrentId = null;
+      var pv = document.getElementById('bm-preview');
+      if (pv) pv.style.display = 'none';
+      window.updateTaskResourceLinks();
+    }}
+    function openTaskCreate() {{
+      resetTaskDrawerForm();
+      setTaskDrawerReadonly(false);
+      document.getElementById('task-publish-status-field').style.display = 'none';
+      document.getElementById('task-drawer-title').textContent = '新增评测任务';
+      document.getElementById('task-drawer-submit').textContent = '创建任务';
+      openModal('create-task-drawer');
+    }}
+    function openTaskView(tid) {{
+      var d = taskViewData[tid];
+      if (!d) return;
+      var form = document.getElementById('task-drawer-form');
+      if (!form) return;
+      resetTaskDrawerForm();
+      form.querySelector('input[name="name"]').value = d.name || '';
+      form.querySelector('select[name="project"]').value = d.project || '';
+      form.querySelector('select[name="priority"]').value = d.priority || '';
+      form.querySelector('input[name="due_date"]').value = d.due_date || '';
+      form.querySelector('textarea[name="description"]').value = d.description || '';
+      form.querySelector('input[name="total_sessions"]').value = d.total_sessions || '';
+      form.querySelector('select[name="publish_status"]').value = d.publish_status || '未发布';
+      document.getElementById('task-publish-status-field').style.display = '';
+      var bmSelect = document.getElementById('bm-select');
+      if (bmSelect) {{ bmSelect.value = d.benchmark_id || ''; bmSelect.classList.toggle('has-value', !!d.benchmark_id); }}
+      form.querySelector('textarea[name="scene_description"]').value = d.scene_description || '';
+      document.getElementById('task-scene-images-files').innerHTML = (d.scene_images || []).map(function(name) {{ return '<div class="upload-file-item"><span class="file-icon">▧</span>' + name + '</div>'; }}).join('');
+      document.getElementById('task-scene-videos-files').innerHTML = (d.scene_videos || []).map(function(name) {{ return '<div class="upload-file-item"><span class="file-icon">▶</span>' + name + '</div>'; }}).join('');
+      form.querySelector('select[name="criteria_id"]').value = d.criteria_id || '';
+      document.querySelectorAll('#ms-ckpt-panel input[type="checkbox"]').forEach(function(cb) {{ cb.checked = d.model_ids.indexOf(cb.value) >= 0; }});
+      window.mselSync('ms-ckpt');
+      previewBm(d.benchmark_id || '', d.selected_lowlevel_ids || []);
+      setTaskDrawerReadonly(true);
+      openModal('create-task-drawer');
+    }}
+    function openTaskEdit(tid) {{
+      openTaskView(tid);
+      var form = document.getElementById('task-drawer-form');
+      setTaskDrawerReadonly(false);
+      form.querySelector('[name="edit_id"]').value = tid;
+      document.getElementById('task-drawer-title').textContent = '编辑评测任务';
+      document.getElementById('task-drawer-submit').textContent = '保存';
+    }}
+    window.updateTaskResourceLinks = function() {{
+      var ckptLink = document.getElementById('task-ckpt-view');
+      if (ckptLink) {{
+        var selected = document.querySelector('#ms-ckpt-panel input[type="checkbox"]:checked');
+        var ckptName = selected ? (selected.getAttribute('data-name') || '') : '';
+        if (ckptName) {{
+          ckptLink.href = '/model/checkpoints?name=' + encodeURIComponent(ckptName);
+          ckptLink.classList.remove('is-disabled');
+          ckptLink.removeAttribute('aria-disabled');
+          ckptLink.removeAttribute('tabindex');
+        }} else {{
+          ckptLink.removeAttribute('href');
+          ckptLink.classList.add('is-disabled');
+          ckptLink.setAttribute('aria-disabled', 'true');
+          ckptLink.setAttribute('tabindex', '-1');
+        }}
+      }}
+      var bmLink = document.getElementById('task-bm-view');
+      var bmSelect = document.getElementById('bm-select');
+      if (bmLink && bmSelect) {{
+        var bm = bmData[bmSelect.value];
+        var bmName = bm ? bm.name : '';
+        if (bmName) {{
+          bmLink.href = '/model/eval/benchmarks?name=' + encodeURIComponent(bmName);
+          bmLink.classList.remove('is-disabled');
+          bmLink.removeAttribute('aria-disabled');
+          bmLink.removeAttribute('tabindex');
+        }} else {{
+          bmLink.removeAttribute('href');
+          bmLink.classList.add('is-disabled');
+          bmLink.setAttribute('aria-disabled', 'true');
+          bmLink.setAttribute('tabindex', '-1');
+        }}
+      }}
+    }};
+    function taskPromptSync() {{
+      var boxes = Array.from(document.querySelectorAll('#bm-pv-prompts .task-prompt-checkbox'));
+      var selected = boxes.filter(function(cb) {{ return cb.checked; }});
+      document.getElementById('selected-lowlevel-ids').value = selected.map(function(cb) {{ return cb.value; }}).join(',');
+      document.getElementById('selected-prompt-ids').value = Array.from(new Set(selected.map(function(cb) {{ return cb.dataset.promptId; }}))).join(',');
+      document.getElementById('task-prompt-count').textContent = selected.length + ' / ' + boxes.length + ' \u5df2\u9009';
+      var all = document.getElementById('task-prompt-all');
+      all.checked = boxes.length > 0 && selected.length === boxes.length;
+      all.indeterminate = selected.length > 0 && selected.length < boxes.length;
+    }}
+    function taskPromptToggleAll(checked) {{
+      document.querySelectorAll('#bm-pv-prompts .task-prompt-checkbox').forEach(function(cb) {{ if (!cb.disabled) cb.checked = checked; }});
+      taskPromptSync();
+    }}
+    function taskPromptToggleNode(button) {{
+      var children = button.closest('.task-prompt-node').querySelector('.task-prompt-children');
+      children.hidden = !children.hidden;
+      button.textContent = children.hidden ? '\u25b6' : '\u25bc';
+    }}
+    function previewBm(bid, selectedIds) {{
       bmCurrentId = bid;
+      window.updateTaskResourceLinks();
       var pv = document.getElementById('bm-preview');
       var d = bmData[bid];
       if (!d) {{ pv.style.display='none'; return; }}
       pv.style.display='';
-      document.getElementById('bm-pv-scene').textContent = d.scene_description || '\u2014';
-      document.getElementById('bm-pv-criteria').textContent = d.criteria || '--';
+      selectedIds = Array.isArray(selectedIds) ? selectedIds : d.prompts.reduce(function(ids, p) {{ return ids.concat((p.low_levels || []).map(function(ll) {{ return ll.id; }})); }}, []);
       var ph = '';
-      d.prompts.forEach(function(p) {{ ph += '<span class="ant-tag">'+p.name+' ('+p.steps+'\u6b65)</span>'; }});
+      d.prompts.forEach(function(p) {{
+        var lowLevels = (p.low_levels || []).map(function(ll, index) {{
+          var checked = selectedIds.indexOf(ll.id) >= 0 ? ' checked' : '';
+          return '<label class="task-prompt-child"><input class="task-prompt-checkbox" type="checkbox" value="' + ll.id + '" data-prompt-id="' + p.id + '"' + checked + ' onchange="taskPromptSync()"><span>' + (index + 1) + '</span><span>' + ll.zh + '</span><small>' + ll.en + '</small></label>';
+        }}).join('');
+        ph += '<div class="task-prompt-node"><div class="task-prompt-parent"><button type="button" class="task-prompt-expand" onclick="taskPromptToggleNode(this)">\u25bc</button><span class="task-prompt-parent-copy"><b>' + p.name + '</b><small>' + p.steps + ' \u4e2a Task-Prompt</small></span></div><div class="task-prompt-children">' + lowLevels + '</div></div>';
+      }});
       document.getElementById('bm-pv-prompts').innerHTML = ph;
+      taskPromptSync();
     }}
     function closeBmDetail() {{
       closeModal('bm-detail-modal');
@@ -3992,7 +4916,7 @@ def tasks_page():
       if (!bmCurrentId) return;
       var d = bmData[bmCurrentId];
       if (!d) return;
-      document.getElementById('bm-detail-title').textContent = 'Benchmark \u8be6\u60c5 - ' + d.name;
+      document.getElementById('bm-detail-title').textContent = '\u8bc4\u6d4b\u96c6\u8be6\u60c5 - ' + d.name;
       function esc(s) {{ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }}
       function escAttr(s) {{ return esc(s).replace(/'/g, '&#39;'); }}
       // Expandable prompt list
@@ -4122,7 +5046,6 @@ def tasks_page():
       if (row) row.classList.remove('selected');
       tagTreeSync(btn.dataset.wrap, btn.dataset.hidden, btn.dataset.placeholder);
     }}
-    tagTreeInit('ts-task-tags', 'task-tags-hidden', '\u9009\u62e9\u6807\u7b7e');
     function tsToggle(id) {{ document.getElementById(id).classList.toggle('open'); }}
     // Form validation: all fields required except \u4efb\u52a1\u63cf\u8ff0
     function validateTaskForm() {{
@@ -4142,26 +5065,12 @@ def tasks_page():
       // Sequential required-field checks
       var nameEl = form.querySelector('input[name="name"]');
       if (!nameEl.value.trim()) return fail('\u8bf7\u586b\u5199\u4efb\u52a1\u540d\u79f0', nameEl);
-      var disp = form.querySelector('input[name="display_name"]');
-      if (!disp.value.trim()) return fail('\u8bf7\u586b\u5199\u5411\u8bc4\u6d4b\u5458\u5c55\u793a\u540d\u79f0', disp);
       var proj = form.querySelector('select[name="project"]');
       if (!proj.value) return fail('\u8bf7\u9009\u62e9\u6240\u5c5e\u9879\u76ee', proj);
       var pri = form.querySelector('select[name="priority"]');
       if (!pri.value) return fail('\u8bf7\u9009\u62e9\u4f18\u5148\u7ea7', pri);
       var due = form.querySelector('input[name="due_date"]');
       if (!due.value) return fail('\u8bf7\u9009\u62e9\u9884\u671f\u4ea4\u4ed8\u65e5\u671f', due);
-      var tagHidden = document.getElementById('task-tags-hidden');
-      if (!tagHidden.value) {{
-        if (window.showToast) window.showToast('\u8bf7\u9009\u62e9\u4efb\u52a1\u6807\u7b7e', 'warning');
-        var tagTrig = document.querySelector('#ts-task-tags .ts-trigger');
-        if (tagTrig) {{
-          tagTrig.style.borderColor = '#ff4d4f';
-          setTimeout(function() {{ tagTrig.style.borderColor = ''; }}, 2500);
-        }}
-        return false;
-      }}
-      var dev = form.querySelector('select[name="device"]');
-      if (!dev.value) return fail('\u8bf7\u9009\u62e9\u8bc4\u6d4b\u672c\u4f53', dev);
       var sessions = form.querySelector('input[name="total_sessions"]');
       if (!sessions.value || parseInt(sessions.value) < 1) return fail('\u8bf7\u586b\u5199\u8bc4\u6d4b\u6b21\u6570', sessions);
       var hidden = document.getElementById('ms-ckpt-hidden');
@@ -4176,19 +5085,16 @@ def tasks_page():
         return false;
       }}
       var bm = form.querySelector('select[name="benchmark_id"]');
-      if (!bm.value) return fail('\u8bf7\u9009\u62e9 Benchmark', bm);
+      if (!bm.value) return fail('\u8bf7\u9009\u62e9\u8bc4\u6d4b\u96c6', bm);
+      var sceneDescription = form.querySelector('textarea[name="scene_description"]');
+      if (!sceneDescription.value.trim()) return fail('请填写场景描述', sceneDescription);
+      var criteria = form.querySelector('select[name="criteria_id"]');
+      if (!criteria.value) return fail('\u8bf7\u9009\u62e9\u8bc4\u4ef7\u6807\u51c6', criteria);
+      var selectedLowlevels = (document.getElementById('selected-lowlevel-ids').value || '').split(',').filter(Boolean);
+      if (!selectedLowlevels.length) return fail('请至少勾选一个本次需要评测的 lowlevel Prompt', document.getElementById('bm-preview'));
       return true;
     }}
-    // Deploy mode auto-populated from device
-    function syncDeployMode(device) {{
-      var text = document.getElementById('task-deploy-mode-text');
-      var hidden = document.getElementById('task-deploy-mode');
-      var mode = '';
-      if (device === 'moz') mode = '\u672c\u5730\u90e8\u7f72';
-      else if (device === 'Franka') mode = '\u4e91\u7aef\u90e8\u7f72';
-      text.value = mode || '--';
-      hidden.value = mode;
-    }}
+    window.updateTaskResourceLinks();
     document.addEventListener('click', function(e) {{
       document.querySelectorAll('.ts-wrap.open').forEach(function(w) {{
         if (!w.contains(e.target)) w.classList.remove('open');
@@ -4197,7 +5103,7 @@ def tasks_page():
 
     </script>
     '''
-    return render_page("\u8bc4\u6d4b\u4efb\u52a1\u7ba1\u7406", content, active="tasks")
+    return render_page("\u8bc4\u6d4b\u4efb\u52a1", content, active="tasks")
 
 
 @app.route("/tasks/create", methods=["POST"])
@@ -4209,28 +5115,58 @@ def tasks_create():
     # Parse model_ids from hidden field (comma-separated) or form list
     model_raw = request.form.get("model_ids", "")
     model_ids = [m.strip() for m in model_raw.split(",") if m.strip()] if model_raw else request.form.getlist("model_ids")
-    new_no = 1000 + len(EVAL_TASKS) + 1
-    EVAL_TASKS.append({
-        "id": f"t{len(EVAL_TASKS)+1}",
-        "task_no": new_no,
+    selected_prompt_ids = [p.strip() for p in request.form.get("selected_prompt_ids", "").split(",") if p.strip()]
+    selected_lowlevel_ids = [p.strip() for p in request.form.get("selected_lowlevel_ids", "").split(",") if p.strip()]
+    edit_id = request.form.get("edit_id", "").strip()
+    edit_target = next((item for item in EVAL_TASKS if item["id"] == edit_id), None) if edit_id else None
+    scene_image_names = [item.filename for item in request.files.getlist("scene_images") if item and item.filename]
+    scene_video_names = [item.filename for item in request.files.getlist("scene_videos") if item and item.filename]
+    task_payload = {
         "name": name,
-        "display_name": request.form.get("display_name", "").strip() or name,
+        "display_name": name,
+        "publish_status": request.form.get("publish_status", "未发布") if request.form.get("publish_status") in ("未发布", "已发布") else "未发布",
         "project": request.form.get("project", "").strip(),
+        "task_mode": request.form.get("task_mode", "Evaluaton").strip() or "Evaluaton",
         "collect_type": "test",
         "due_date": request.form.get("due_date", "").strip(),
-        "task_tags": [t.strip() for t in request.form.get("task_tags", "").split(",") if t.strip()],
+        "task_tags": [],
         "description": request.form.get("description", "").strip(),
         "device": request.form.get("device", "").strip(),
         "deploy_mode": request.form.get("deploy_mode", "").strip(),
         "benchmark_id": request.form.get("benchmark_id", ""),
+        "scene_id": "",
+        "scene_description": request.form.get("scene_description", "").strip(),
+        "criteria_id": request.form.get("criteria_id", ""),
+        "selected_prompt_ids": selected_prompt_ids,
+        "selected_lowlevel_ids": selected_lowlevel_ids,
         "eval_type": request.form.get("eval_type", "preference"),
         "model_ids": model_ids,
-        "status": "\u672a\u5f00\u59cb",
         "priority": request.form.get("priority", "\u4e2d"),
         "total_sessions": int(request.form.get("total_sessions", 30)),
+    }
+    if edit_target and edit_target.get("publish_status") == "未发布":
+        if scene_image_names:
+            task_payload["scene_images"] = scene_image_names
+        if scene_video_names:
+            task_payload["scene_videos"] = scene_video_names
+        edit_target.update(task_payload)
+        flash(f"评测任务「{name}」保存成功", "success")
+        return redirect(url_for("tasks_page"))
+    if edit_id:
+        flash("仅未发布状态的评测任务支持编辑", "error")
+        return redirect(url_for("tasks_page"))
+    new_no = 1000 + len(EVAL_TASKS) + 1
+    EVAL_TASKS.append({
+        "id": f"t{len(EVAL_TASKS)+1}",
+        "task_no": new_no,
+        "scene_images": scene_image_names,
+        "scene_videos": scene_video_names,
+        "status": "\u672a\u5f00\u59cb",
+        "publish_status": "未发布",
         "collect_done": 0, "eval_done": 0, "completed_sessions": 0,
         "created_by": "Joanna Qiao",
         "created_at": datetime.now().strftime("%Y-%m-%d"),
+        **task_payload,
     })
     flash(f"\u8bc4\u6d4b\u4efb\u52a1\u300c{name}\u300d\u521b\u5efa\u6210\u529f", "success")
     return redirect(url_for("tasks_page"))
@@ -4434,10 +5370,19 @@ def collection_data(tid, mid):
 def task_start(tid):
     t = next((x for x in EVAL_TASKS if x["id"] == tid), None)
     msg = ""
-    if t and t["status"] == "\u672a\u5f00\u59cb":
+    if t and t.get("publish_status") == "已发布" and t["status"] == "\u672a\u5f00\u59cb":
         t["status"] = "\u91c7\u96c6\u4e2d"
         msg = f"\u4efb\u52a1\u300c{t['name']}\u300d\u5df2\u5f00\u542f"
     return redirect(f"/tasks?toast={msg}" if msg else "/tasks")
+
+
+@app.route("/tasks/<tid>/publish")
+def task_publish(tid):
+    task = next((item for item in EVAL_TASKS if item["id"] == tid), None)
+    if task and task.get("publish_status") == "未发布":
+        task["publish_status"] = "已发布"
+        flash(f"评测任务「{task['name']}」已发布", "success")
+    return redirect(url_for("tasks_page"))
 
 
 @app.route("/tasks/<tid>/pause")
@@ -4452,9 +5397,11 @@ def task_pause(tid):
 @app.route("/tasks/<tid>/delete")
 def task_delete(tid):
     t = next((x for x in EVAL_TASKS if x["id"] == tid), None)
-    if t and t["status"] in ("\u672a\u5f00\u59cb", "\u5df2\u6682\u505c"):
-        t["status"] = "\u5df2\u5e9f\u5f03"
-        flash(f"\u4efb\u52a1\u300c{t['name']}\u300d\u5df2\u5e9f\u5f03", "success")
+    if t and t.get("publish_status") == "未发布":
+        EVAL_TASKS.remove(t)
+        flash(f"评测任务「{t['name']}」已删除", "success")
+    elif t:
+        flash("已发布状态的评测任务不支持删除", "error")
     return redirect(url_for("tasks_page"))
 
 
@@ -4465,6 +5412,248 @@ def task_analyze(tid):
         t["status"] = "\u5206\u6790\u5b8c\u6210"
         flash(f"\u4efb\u52a1\u300c{t['name']}\u300d\u5206\u6790\u5b8c\u6210", "success")
     return redirect(url_for("tasks_page"))
+
+
+@app.route("/tasks/<tid>/statistics")
+def task_statistics(tid):
+    task = next((x for x in EVAL_TASKS if x["id"] == tid), None)
+    if not task:
+        return redirect(url_for("tasks_page"))
+    benchmark = get_benchmark(task.get("benchmark_id", "")) or {}
+    checkpoint_ids = list(task.get("model_ids", []))
+    if not checkpoint_ids and task.get("ckpt_id"):
+        checkpoint_ids = [str(task["ckpt_id"])]
+    selected_checkpoint = request.args.get("ckpt", "")
+    if selected_checkpoint not in checkpoint_ids:
+        selected_checkpoint = checkpoint_ids[0] if checkpoint_ids else ""
+    selected_checkpoint_index = checkpoint_ids.index(selected_checkpoint) if selected_checkpoint in checkpoint_ids else 0
+    checkpoint_options = "".join(
+        f'<option value="{html.escape(checkpoint_id, quote=True)}"{" selected" if checkpoint_id == selected_checkpoint else ""}>{html.escape(get_model_name(checkpoint_id))}</option>'
+        for checkpoint_id in checkpoint_ids
+    )
+    checkpoint_disabled = " disabled" if len(checkpoint_ids) <= 1 else ""
+    checkpoint_control = (
+        f'<select class="stat-ckpt-select" aria-label="切换 ckpt" title="{html.escape(get_model_name(selected_checkpoint), quote=True)}" onchange="switchStatCheckpoint(this.value)"{checkpoint_disabled}>{checkpoint_options}</select>'
+        if checkpoint_options else '<b>--</b>'
+    )
+    selected_prompt_ids = task.get("selected_prompt_ids", []) or benchmark.get("prompt_ids", [])
+    criterion = get_criterion(task.get("criteria_id", "")) or {}
+    result_definitions = normalize_result_definitions(criterion.get("result_definitions", {}))
+    definitions = [
+        (parent, item["description"])
+        for parent in ("成功", "失败")
+        for item in result_definitions.get(parent, [])
+    ] or [("成功", "直接成功"), ("失败", "动作失败")]
+    prompt_rows = []
+    selected_lowlevel_ids = set(task.get("selected_lowlevel_ids", []))
+    for prompt_id in selected_prompt_ids:
+        prompt = get_prompt(prompt_id)
+        if not prompt:
+            continue
+        low_levels = [low for low in prompt.get("low_levels", []) if not selected_lowlevel_ids or low.get("id") in selected_lowlevel_ids]
+        if not low_levels:
+            continue
+        prompt_rows.append((prompt, low_levels))
+    if not prompt_rows:
+        prompt_rows = [(PROMPTS[0], PROMPTS[0].get("low_levels", []) or [{"zh": "--", "en": ""}])]
+    secondary_values = [value for _, value in definitions]
+    if not secondary_values:
+        secondary_values = ["直接成功", "动作失败"]
+    lowlevel_total = sum(max(len(low_levels), 1) for _, low_levels in prompt_rows)
+    total_runs = max(lowlevel_total * 10, 1)
+
+    def make_statuses(seed_index):
+        pattern = []
+        for trial in range(10):
+            value_index = (seed_index * 3 + trial + selected_checkpoint_index) % len(secondary_values)
+            value = secondary_values[value_index]
+            parent = next((parent for parent, child in definitions if child == value), "成功" if value_index == 0 else "失败")
+            pattern.append((parent, value))
+        return pattern
+
+    def render_result_cells(statuses):
+        result_counts = {}
+        status_cells = []
+        for parent, value in statuses:
+            result_counts[value] = result_counts.get(value, 0) + 1
+            css_class = "ok" if parent == "成功" else "fail"
+            status_cells.append(f'<td><span class="stat-result {css_class}">{html.escape(value)}</span></td>')
+        detail_html = "".join(
+            f'<div class="stat-secondary-item"><span class="stat-result {"ok" if next((p for p, v in definitions if v == value), "失败") == "成功" else "fail"}">{html.escape(value)}</span><b>{count} 次</b><em>{count / len(statuses) * 100:.1f}%</em></div>'
+            for value, count in result_counts.items()
+        )
+        summary_html = f'共 {sum(result_counts.values())} 次'
+        secondary_html = f'<div class="stat-secondary-content"><div class="stat-secondary-summary">{summary_html}</div><div class="stat-secondary-details" hidden>{detail_html}</div></div>'
+        return "".join(status_cells), secondary_html
+
+    matrix_rows = []
+    for row_index, (prompt, low_levels) in enumerate(prompt_rows):
+        prompt_text = prompt.get("high_level") or prompt.get("high_level_en") or "--"
+        prompt_en = prompt.get("high_level_en", "")
+        statuses = make_statuses(row_index)
+        status_cells, secondary_html = render_result_cells(statuses)
+        group_id = f'stat-group-{row_index}'
+        prompt_tree_html = f'<div class="stat-tree-row stat-tree-parent-row"><button type="button" class="stat-tree-toggle" aria-label="展开 Prompt" aria-expanded="false" onclick="toggleStatPrompt(\'{group_id}\', this)">›</button><span><b>{html.escape(prompt_text)}</b>{("<em>" + html.escape(prompt_en) + "</em>") if prompt_en else ""}</span></div>'
+        matrix_rows.append(
+            f'<tr class="stat-highlevel-row"><td class="stat-prompt-tree-cell">{prompt_tree_html}</td>'
+            + "".join(status_cells)
+            + f'<td class="stat-secondary-cell">{secondary_html}</td></tr>'
+        )
+        for low_index, low in enumerate(low_levels):
+            low_text = low.get("zh") or low.get("en") or "--"
+            low_en = low.get("en", "")
+            child_statuses = make_statuses(row_index * 7 + low_index + 1)
+            child_cells, child_secondary = render_result_cells(child_statuses)
+            child_html = f'<div class="stat-tree-row stat-tree-child-row"><span class="stat-tree-branch" aria-hidden="true"></span><span><b>{html.escape(low_text)}</b>{("<em>" + html.escape(low_en) + "</em>") if low_en and low_text != low_en else ""}</span></div>'
+            matrix_rows.append(
+                f'<tr class="stat-lowlevel-row" data-stat-group="{group_id}" style="display:none;"><td class="stat-prompt-tree-cell">{child_html}</td>'
+                + child_cells
+                + f'<td class="stat-secondary-cell">{child_secondary}</td></tr>'
+            )
+    rows = "".join(matrix_rows)
+    headers = "".join(f"<th>T{i}</th>" for i in range(1, 11))
+    content = f'''<div class="stat-page">
+      <div class="stat-head"><h1>评测统计</h1></div>
+      <div class="stat-summary">
+        <div><span>评测集</span><b title="{html.escape(benchmark.get("name", "--"), quote=True)}">{html.escape(benchmark.get("name", "--"))}</b></div>
+        <div class="stat-summary-ckpt"><span>ckpt</span>{checkpoint_control}</div>
+        <div><span>Prompt 总数</span><b>{len(prompt_rows)}</b></div>
+        <div><span>执行次数</span><b>{total_runs}</b></div>
+      </div>
+      <div class="stat-table-wrap"><table class="stat-matrix"><thead><tr><th class="stat-prompt-head">prompt</th>{headers}<th class="stat-secondary-head"><div class="stat-secondary-head-inner"><span>结果统计</span><a href="javascript:;" id="stat-detail-toggle" class="stat-detail-toggle" onclick="toggleStatDetails()">展开详情</a></div></th></tr></thead><tbody>{rows}</tbody></table></div>
+    </div>
+    <script>
+      function switchStatCheckpoint(checkpointId) {{ var url=new URL(window.location.href);url.searchParams.set('ckpt',checkpointId);window.location.href=url.toString(); }}
+      function toggleStatPrompt(groupId, button) {{
+        var rows = document.querySelectorAll('[data-stat-group="' + groupId + '"]');
+        var open = button.getAttribute('aria-expanded') !== 'true';
+        rows.forEach(function(row) {{ row.style.display = open ? '' : 'none'; }});
+        button.setAttribute('aria-expanded', open ? 'true' : 'false');
+        button.textContent = open ? '⌄' : '›';
+      }}
+      function setStatDetails(show) {{
+        document.querySelectorAll('.stat-secondary-details').forEach(function(details) {{ details.hidden = !show; }});
+        document.querySelectorAll('.stat-secondary-summary').forEach(function(summary) {{ summary.hidden = show; }});
+        var toggle = document.getElementById('stat-detail-toggle');
+        if (toggle) toggle.textContent = show ? '收起详情' : '展开详情';
+      }}
+      function toggleStatDetails() {{
+        var toggle = document.getElementById('stat-detail-toggle');
+        setStatDetails(toggle && toggle.textContent === '展开详情');
+      }}
+    </script>
+    <style>
+      .stat-page {{ background:#fff;border:1px solid #e6ebef;border-radius:8px;padding:22px 24px 24px; }}
+      .stat-head h1 {{ margin:0 0 20px;font-size:20px; }}
+      .stat-summary {{ display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:20px;padding:14px 16px;background:#f8fafb;border:1px solid #edf0f2;border-radius:8px; }}
+      .stat-summary>div {{ display:flex;flex-direction:column;gap:6px;min-width:0;padding-right:16px;border-right:1px solid #e7ebef; }} .stat-summary>div:last-child {{ border-right:0; }}
+      .stat-summary span {{ color:rgba(0,0,0,.45);font-size:12px; }} .stat-summary b {{ overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:15px; }}
+      .stat-ckpt-select {{ width:100%;height:30px;border:1px solid #d9dfe4;border-radius:6px;padding:0 30px 0 9px;background:#fff;color:rgba(0,0,0,.82); }}
+      .stat-table-wrap {{ overflow:auto;border:1px solid #dfe5e9;border-radius:8px;background:#fff; }}
+      .stat-matrix {{ border-collapse:separate;border-spacing:0;min-width:1650px;width:100%;font-size:12px;color:rgba(0,0,0,.72); }}
+      .stat-matrix th,.stat-matrix td {{ border-right:1px solid #edf0f2;border-bottom:1px solid #edf0f2;padding:12px;white-space:nowrap;text-align:center;height:56px;box-sizing:border-box; }}
+      .stat-matrix th {{ height:44px;background:#f5f7f9;color:rgba(0,0,0,.55);font-weight:600;position:sticky;top:0;z-index:3; }} .stat-matrix tr:last-child td {{ border-bottom:0; }} .stat-matrix th:last-child,.stat-matrix td:last-child {{ border-right:0; }} .stat-matrix tbody tr:hover td {{ background:#f8fbfc; }}
+      .stat-matrix th:first-child,.stat-matrix td:first-child {{ text-align:left;position:sticky;left:0;z-index:2; }} .stat-matrix th:first-child {{ background:#f5f7f9;z-index:4; }} .stat-matrix td:first-child {{ background:#fff; }}
+      .stat-prompt-head {{ min-width:420px; }} .stat-prompt-tree-cell {{ min-width:420px;max-width:520px;text-align:left !important;white-space:normal !important;vertical-align:top; }}
+      .stat-tree-row {{ position:relative;display:flex;align-items:flex-start;gap:8px;min-height:42px;padding:3px 0 3px 2px;color:rgba(0,0,0,.72);font-size:12px;line-height:1.5; }} .stat-tree-row b {{ font-weight:500; }} .stat-tree-row em {{ display:block;color:rgba(0,0,0,.42);font-size:11px;font-style:normal;line-height:1.4;margin-top:2px; }} .stat-tree-parent-row {{ padding-bottom:7px;margin-bottom:3px;border-bottom:1px solid #edf0f2; }} .stat-tree-parent-row b {{ font-weight:600;color:rgba(0,0,0,.84); }} .stat-tree-child-row {{ margin-left:24px;padding-left:14px;border-left:1px solid #d9e5e8; }} .stat-tree-toggle {{ display:inline-flex;align-items:center;justify-content:center;width:18px;height:20px;padding:0;border:0;background:transparent;color:#1F80A0;font-size:16px;line-height:1;cursor:pointer;flex:none; }} .stat-tree-branch {{ position:absolute;left:-1px;top:20px;width:10px;border-top:1px solid #d9e5e8; }}
+      .stat-result {{ display:inline-flex;align-items:center;justify-content:center;min-width:54px;border:1px solid transparent;border-radius:4px;padding:4px 8px;font-size:11px;line-height:1.2; }} .stat-result.ok {{ color:#237b3b;background:#f0f9f1;border-color:#b7e1bd; }} .stat-result.fail {{ color:#c9362b;background:#fff1f0;border-color:#ffccc7; }}
+      .stat-secondary-head-inner {{ display:flex;align-items:center;justify-content:space-between;gap:10px; }} .stat-detail-toggle {{ color:#1F80A0;text-decoration:none;font-size:11px;font-weight:400;white-space:nowrap; }} .stat-detail-toggle:hover {{ text-decoration:underline; }}
+      .stat-secondary-cell {{ min-width:200px;text-align:left !important;white-space:normal !important; }} .stat-secondary-content {{ min-height:22px; }} .stat-secondary-summary {{ color:rgba(0,0,0,.65);font-size:11px;line-height:1.5; }} .stat-secondary-item {{ display:flex;align-items:center;gap:6px;margin:3px 0; }} .stat-secondary-item .stat-result {{ min-width:68px; }} .stat-secondary-item b {{ color:rgba(0,0,0,.65);font-size:11px;font-weight:500; }} .stat-secondary-item em {{ color:rgba(0,0,0,.45);font-size:11px;font-style:normal;margin-left:auto; }}
+    </style>'''
+    return render_page("评测统计", content, active="tasks")
+    prompt_rows = []
+    for pid in benchmark.get("prompt_ids", []):
+        prompt = get_prompt(pid)
+        if not prompt:
+            continue
+        for low in prompt.get("low_levels", []):
+            prompt_rows.append((low.get("en") or low.get("zh", "--"), low.get("zh", "--")))
+    if not prompt_rows:
+        prompt_rows = [("Pick up the cell phone", "拾取手机"), ("Pick up the big tape", "拾取胶带")]
+    checkpoint_result_profiles = [
+        ["成功", "失败", "成功", "成功", "失败", "成功", "重试1次成功", "成功", "失败", "成功"],
+        ["成功", "成功", "重试1次成功", "成功", "失败", "成功", "成功", "重试2次成功", "失败", "成功"],
+        ["失败", "成功", "失败", "成功", "重试1次成功", "失败", "成功", "成功", "失败", "成功"],
+        ["成功", "成功", "成功", "重试1次成功", "成功", "成功", "失败", "成功", "重试2次成功", "成功"],
+    ]
+    status_values = checkpoint_result_profiles[selected_checkpoint_index % len(checkpoint_result_profiles)]
+    status_html = lambda value: f'<span class="stat-result {"fail" if value == "失败" else "retry" if value.startswith("重试") else "ok"}">{value}</span>'
+    table_rows = []
+    row_totals = []
+    for index, (en, zh) in enumerate(prompt_rows):
+        trial_results = [status_values[(index + trial) % len(status_values)] for trial in range(10)]
+        trial_scores = [0 if result == "失败" else 3 for result in trial_results]
+        row_total = sum(trial_scores)
+        row_totals.append(row_total)
+        table_rows.append(
+            f'<tr><td class="stat-text"><div class="stat-prompt-cell"><span class="stat-prompt-zh">{html.escape(zh)}</span><span class="stat-prompt-en">{html.escape(en)}</span></div></td>'
+            + "".join(f'<td>{status_html(result)}</td>' for result in trial_results)
+            + f'<td class="stat-score">{",".join(str(score) for score in trial_scores)}</td><td class="stat-total">{row_total}</td></tr>'
+        )
+    rows = "".join(table_rows)
+    average_score = sum(row_totals) / len(row_totals) if row_totals else 0
+    headers = "".join(f"<th>T{i}</th>" for i in range(1, 11))
+    content = f'''<div class="stat-page">
+      <div class="stat-head">
+        <h1>评测统计</h1>
+      </div>
+      <div class="stat-summary">
+        <div><span>评测集</span><b title="{html.escape(benchmark.get("name", "--"), quote=True)}">{html.escape(benchmark.get("name", "--"))}</b></div>
+        <div class="stat-summary-ckpt"><span>ckpt</span>{checkpoint_control}</div>
+        <div><span>Prompt 总数</span><b>{len(prompt_rows)}</b></div>
+        <div><span>执行次数</span><b>{len(prompt_rows) * 10}</b></div>
+        <div><span>平均分</span><b>{average_score:.1f}</b></div>
+      </div>
+      <div class="stat-table-wrap">
+        <table class="stat-matrix"><thead><tr><th class="stat-prompt-head">prompt</th>{headers}<th>分数列表</th><th class="stat-total-head">总分</th></tr></thead><tbody>{rows}</tbody></table>
+      </div>
+    </div>'''
+    content += '''<script>
+      function switchStatCheckpoint(checkpointId) {
+        var url = new URL(window.location.href);
+        url.searchParams.set('ckpt', checkpointId);
+        window.location.href = url.toString();
+      }
+    </script>'''
+    content += '''<style>
+      .stat-page { background:#fff; border:1px solid #e6ebef; border-radius:8px; padding:22px 24px 24px; box-sizing:border-box; box-shadow:0 1px 2px rgba(16,24,40,.03); }
+      .stat-head { margin-bottom:20px; }
+      .stat-head h1 { margin:0; color:rgba(0,0,0,.85); font-size:20px; line-height:1.4; font-weight:600; }
+      .stat-summary { display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:12px; margin-bottom:20px; padding:14px 16px; background:#f8fafb; border:1px solid #edf0f2; border-radius:8px; }
+      .stat-summary div { display:flex; flex-direction:column; align-items:flex-start; justify-content:center; gap:6px; min-width:0; padding-right:16px; border-right:1px solid #e7ebef; }
+      .stat-summary div:last-child { padding-right:0; border-right:0; }
+      .stat-summary span { flex:none; color:rgba(0,0,0,.45); font-size:12px; white-space:nowrap; }
+      .stat-summary b { min-width:0; color:rgba(0,0,0,.85); font-size:15px; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+      .stat-summary-ckpt { align-items:flex-start !important; flex-direction:column; justify-content:center !important; gap:6px !important; }
+      .stat-ckpt-select { display:block; width:100%; min-width:0; max-width:100%; height:30px; box-sizing:border-box; border:1px solid #d9dfe4; border-radius:6px; padding:0 30px 0 9px; background-color:#fff; background-image:url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1.5L6 6.5L11 1.5' stroke='%23595959' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 10px center; color:rgba(0,0,0,.82); font-size:13px; outline:none; cursor:pointer; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; appearance:none; -webkit-appearance:none; }
+      .stat-ckpt-select:focus { border-color:#1F80A0; box-shadow:0 0 0 2px rgba(31,128,160,.12); }
+      .stat-ckpt-select:disabled { border-color:#edf0f2; background-color:#fafbfc; color:rgba(0,0,0,.65); cursor:default; opacity:1; }
+      .stat-table-wrap { overflow:auto; border:1px solid #dfe5e9; border-radius:8px; background:#fff; }
+      .stat-matrix { border-collapse:separate; border-spacing:0; min-width:1500px; width:100%; font-size:12px; color:rgba(0,0,0,.72); }
+      .stat-matrix th, .stat-matrix td { border-right:1px solid #edf0f2; border-bottom:1px solid #edf0f2; padding:12px 12px; white-space:nowrap; text-align:center; height:48px; box-sizing:border-box; }
+      .stat-matrix th { height:44px; background:#f5f7f9; color:rgba(0,0,0,.55); font-weight:600; letter-spacing:0; position:sticky; top:0; z-index:3; }
+      .stat-matrix tr:last-child td { border-bottom:0; }
+      .stat-matrix th:last-child, .stat-matrix td:last-child { border-right:0; }
+      .stat-matrix tbody tr:hover td { background:#f8fbfc; }
+      .stat-matrix th:first-child, .stat-matrix td:first-child { text-align:left; position:sticky; left:0; z-index:2; }
+      .stat-matrix th:first-child { background:#f5f7f9; z-index:4; }
+      .stat-matrix td:first-child { background:#fff; }
+      .stat-prompt-head { min-width:390px; }
+      .stat-text { min-width:390px; max-width:460px; }
+      .stat-prompt-cell { display:flex; flex-direction:column; gap:4px; min-width:0; white-space:normal; }
+      .stat-prompt-zh { color:rgba(0,0,0,.82); font-size:13px; font-weight:500; line-height:1.45; }
+      .stat-prompt-en { color:rgba(0,0,0,.45); font-size:11px; line-height:1.4; }
+      .stat-result { display:inline-flex; align-items:center; justify-content:center; min-width:54px; border:1px solid transparent; border-radius:4px; padding:4px 8px; font-size:11px; line-height:1.2; }
+      .stat-result.ok { color:#237b3b; background:#f0f9f1; border-color:#b7e1bd; }
+      .stat-result.fail { color:#c9362b; background:#fff1f0; border-color:#ffccc7; }
+      .stat-result.retry { color:#1769aa; background:#eaf5ff; border-color:#b7dcfa; }
+      .stat-score { color:rgba(0,0,0,.55); font-family:'SF Mono',Menlo,Consolas,monospace; font-size:11px; }
+      .stat-total-head, .stat-total { min-width:82px; }
+      .stat-total { font-weight:600; color:#237b3b; background:#f6ffed; }
+      @media (max-width:900px) { .stat-summary { grid-template-columns:repeat(2,minmax(0,1fr)); gap:0 16px; } .stat-summary div { padding:9px 0; border-right:0; border-bottom:1px solid #e7ebef; } .stat-summary div:nth-last-child(-n+2) { border-bottom:0; } }
+      @media (max-width:700px) { .stat-page { padding:18px 16px 20px; } .stat-summary { grid-template-columns:1fr; } .stat-summary div:nth-last-child(2) { border-bottom:1px solid #e7ebef; } .stat-summary div:last-child { border-bottom:0; } }
+    </style>'''
+    return render_page("评测统计", content, active="tasks")
 
 
 @app.route("/tasks/<tid>")
@@ -5238,7 +6427,6 @@ def collect_prep(task_id):
             </div>
           </div>
         </div>'''
-
     # Prompts tree
     prompt_list = ""
     if bm and bm.get("prompt_ids"):
@@ -6036,14 +7224,24 @@ def evaluate2_list():
     empty = '<tr><td colspan="5" style="text-align:center;padding:40px;color:rgba(0,0,0,0.25);">\u6682\u65e0\u5f85\u8bc4\u6d4b\u4efb\u52a1</td></tr>' if not rows else ""
 
     content = f'''
-    <div class="filter-bar">
+    <div class="eval2-ipad-shell"><div class="eval2-ipad-screen">
+    <div class="wb-landing" id="wb-landing"><h1>端侧示意</h1><p>端侧评测任务执行入口</p><a class="wb-enter" href="/evaluate2/setup?step=1">进入端侧示意</a></div>
+    <div class="wb-wizard" id="wb-wizard" hidden>
+      <div class="wb-stepper"><span class="active">1 模式选择</span><i>→</i><span>2 任务选择</span><i>→</i><span>3 场景与提示词</span><i>→</i><span>4 执行评测</span></div>
+      <section class="wb-panel wb-panel-active" data-wb-step="1"><div class="wb-panel-title">模式选择 <small>选择任务类型后，将进行设备自检</small></div><div class="wb-mode-grid"><button class="wb-mode active" onclick="wbMode(this)"><b>▣</b><strong>Normal</strong></button><button class="wb-mode" onclick="wbMode(this)"><b>⌁</b><strong>DAgger</strong></button><button class="wb-mode" onclick="wbMode(this)"><b>☑</b><strong>Test</strong></button><button class="wb-mode" onclick="wbMode(this)"><b>▤</b><strong>Evaluation</strong></button></div><button class="wb-primary" onclick="wbSelfCheck(this)">开始自检</button><div class="wb-note">自检将检查机器人、相机、控制器与网络连接</div></section>
+      <section class="wb-panel" data-wb-step="2"><div class="wb-panel-title">任务选择 <small class="wb-pass">● 设备自检通过</small></div><div class="wb-fields"><label>项目<select><option>eval</option><option>预训练</option><option>回归验证</option></select></label><label>任务<select id="wb-task"><option value="">请选择任务</option>{"".join(f'<option value="{t["id"]}">{t["task_no"]}：{t.get("name", "评测任务")}</option>' for t in active_tasks)}</select></label></div><button class="wb-primary" onclick="wbNext(3)">确认任务</button></section>
+      <section class="wb-panel" data-wb-step="3"><div class="wb-panel-title">任务信息</div><div class="wb-task-section"><h2>场景准备</h2><div class="wb-scene"><div class="wb-scene-description"><b>场景描述</b><span>自然光，家庭场景，至少需要打开和放置两个房间</span></div><div class="wb-media"><div>场景图片<br><span>▧　▧　▧</span></div><div>场景视频<br><span>▶</span></div></div></div></div><div class="wb-task-section"><h2>提示词</h2><div class="wb-prompt-tree"><div class="wb-prompt-tree-group"><div class="wb-prompt-tree-parent">提示词组 1 · 房间整理</div><div class="wb-prompt-tree-children"><div class="wb-prompt-tree-child">抓住小猫 <small>Pick up the cat</small></div><div class="wb-prompt-tree-child">把小猫放进被窝 <small>Put the cat in the blanket</small></div></div></div><div class="wb-prompt-tree-group"><div class="wb-prompt-tree-parent">提示词组 2 · 床铺操作</div><div class="wb-prompt-tree-children"><div class="wb-prompt-tree-child">掀开被子 <small>Lift up the blanket</small></div><div class="wb-prompt-tree-child">盖上被子 <small>Cover it up</small></div></div></div></div></div><button class="wb-primary" onclick="wbNext(4)">场景已就绪，开始评测</button></section>
+      <section class="wb-panel" data-wb-step="4"><div class="wb-panel-title">执行评测 <small>逐条完成任务，提交结果后进入下一条</small></div><div class="wb-camera-grid"><div>左手臂镜头<div class="wb-camera">640×480 · 已连接</div></div><div>头部镜头<div class="wb-camera">640×480 · 已连接</div></div><div>右手臂镜头<div class="wb-camera">640×480 · 已连接</div></div></div><div class="wb-task-list"><div class="active"><b>1</b> 把小猫放进被窝 <button onclick="wbResult()">▶</button></div><div><b>2</b> 掀开被子 <button onclick="wbResult()">▶</button></div><div><b>3</b> 把小猫放进被子 <button onclick="wbResult()">▶</button></div><div><b>4</b> 盖上被子 <button onclick="wbResult()">▶</button></div></div></section>
+    </div>
+    </div></div>
+    <div class="filter-bar" style="display:none;">
       <input type="text" id="f2-id" placeholder="\u4efb\u52a1 ID" style="min-width:120px;">
       <select id="f2-bm" style="min-width:140px;"><option value="">Benchmark</option>{"".join(f'<option>{b["name"]}</option>' for b in BENCHMARKS)}</select>
       <select id="f2-pri" style="min-width:110px;"><option value="">\u4f18\u5148\u7ea7</option><option>\u9ad8</option><option>\u4e2d</option><option>\u4f4e</option></select>
       <button class="ant-btn" onclick="eval2Clear()">\u6e05\u7a7a</button>
       <button class="ant-btn ant-btn-primary" onclick="eval2Filter()">\u641c\u7d22</button>
     </div>
-    <div class="ant-card ant-card-bordered">
+    <div class="ant-card ant-card-bordered" style="display:none;">
       <table class="ant-table" id="eval2-tbl">
         <thead><tr>
           <th>\u4efb\u52a1 ID</th><th>Benchmark</th><th>\u8fdb\u5ea6</th><th>\u4f18\u5148\u7ea7</th><th>\u64cd\u4f5c</th>
@@ -6052,6 +7250,11 @@ def evaluate2_list():
       </table>
     </div>
     <script>
+    function wbStart() {{ document.getElementById('wb-landing').hidden=true; document.getElementById('wb-wizard').hidden=false; }}
+    function wbMode(btn) {{ document.querySelectorAll('.wb-mode').forEach(function(x){{x.classList.remove('active')}}); btn.classList.add('active'); }}
+    function wbSelfCheck(btn) {{ btn.textContent='自检中...'; btn.disabled=true; setTimeout(function(){{ btn.textContent='设备自检通过'; btn.classList.add('passed'); wbNext(2); }},700); }}
+    function wbNext(step) {{ document.querySelectorAll('[data-wb-step]').forEach(function(x){{x.classList.toggle('wb-panel-active', Number(x.dataset.wbStep)===step);}}); document.querySelectorAll('.wb-stepper span').forEach(function(x,i){{x.classList.toggle('active',i<step);}}); }}
+    function wbResult() {{ var m=document.createElement('div'); m.className='wb-result-mask'; m.innerHTML='<div class="wb-result-dialog"><h3>填写评测结果</h3><label>评测结果<select><option>成功</option><option>失败</option><option>重试1次成功</option><option>重试2次成功</option><option>重试3次成功</option></select></label><label>评测指标<input placeholder="填写配置的指标"></label><div class="wb-result-actions"><button onclick="this.closest(\'.wb-result-mask\').remove()">取消</button><button class="primary" onclick="this.closest(\'.wb-result-mask\').remove();window.showToast(\'已提交，进入下一条\')">提交并下一条</button></div></div>'; document.body.appendChild(m); }}
     function eval2Filter() {{
       var idv = (document.getElementById('f2-id').value || '').trim();
       var bmv = document.getElementById('f2-bm').value || '';
@@ -6074,9 +7277,89 @@ def evaluate2_list():
       document.getElementById('f2-pri').selectedIndex = 0;
       eval2Filter();
     }}
+    function eval2SelectMode(btn) {{ document.querySelectorAll('.eval2-mode').forEach(function(x){{x.classList.remove('selected')}}); btn.classList.add('selected'); }}
+    function eval2SelfCheck() {{ var b=document.getElementById('eval2-self-check'); b.textContent='自检中...'; b.disabled=true; setTimeout(function(){{ b.textContent='设备自检通过'; b.classList.add('passed'); document.getElementById('eval2-setup').hidden=false; document.getElementById('eval2-device').textContent='设备：已连接'; }},700); }}
+    function eval2EnterTask() {{ var id=document.getElementById('eval2-task').value; if(!id){{ alert('请选择任务'); return; }} window.location='/evaluate2/'+id+'/run?step=0'; }}
     </script>
+    <style>
+      .eval2-flow {{ background:#fff;border:1px solid #f0f0f0;border-radius:10px;padding:28px 32px;margin-bottom:20px; }}
+      .eval2-flow-head {{ display:flex;justify-content:space-between;align-items:flex-start; }} .eval2-flow h2 {{ margin:0;font-size:22px; }} .eval2-flow-head p {{ margin:6px 0 0;color:rgba(0,0,0,.45); }} .eval2-device {{ color:#52a66d;font-size:13px; }}
+      .eval2-mode-grid {{ display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin:24px 0; }} .eval2-mode {{ min-height:130px;background:#fff;border:1px solid #d9d9d9;border-radius:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;font-size:16px;cursor:pointer; }} .eval2-mode.selected {{ border:2px solid #2463eb;background:#f4f7ff; }} .eval2-mode-icon {{ font-size:32px;color:#2463eb; }}
+      .eval2-primary {{ width:100%;height:46px;border:0;border-radius:7px;background:#2463eb;color:#fff;font-size:16px;cursor:pointer; }} .eval2-primary.passed {{ background:#2eaf68; }} .eval2-check-note {{ text-align:center;color:rgba(0,0,0,.45);font-size:13px;margin-top:10px; }} .eval2-setup {{ margin-top:24px;border-top:1px solid #f0f0f0;padding-top:22px; }} .eval2-section-title {{ font-size:17px;font-weight:600;margin:16px 0; }} .eval2-ok {{ color:#2eaf68;font-size:13px;font-weight:400;margin-left:12px; }} .eval2-select-row {{ display:grid;grid-template-columns:1fr 2fr;gap:18px; }} .eval2-select-row label {{ display:flex;flex-direction:column;gap:7px;color:rgba(0,0,0,.65);font-size:13px; }} .eval2-select-row select {{ height:38px;border:1px solid #d9d9d9;border-radius:6px;padding:0 10px;background:#fff; }} .eval2-context {{ display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:18px; }} .eval2-context > div {{ background:#fafafa;border:1px solid #f0f0f0;border-radius:7px;padding:14px; }} .eval2-context p {{ color:rgba(0,0,0,.45);font-size:13px;margin:8px 0 0; }}
+      @media(max-width:800px){{.eval2-mode-grid,.eval2-select-row,.eval2-context{{grid-template-columns:1fr 1fr}}}} @media(max-width:560px){{.eval2-mode-grid,.eval2-select-row,.eval2-context{{grid-template-columns:1fr}}}}
+      .wb-landing {{ width:100%;height:100%;min-height:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#fff;border:0;border-radius:0;box-sizing:border-box; }} .wb-landing h1 {{ font-size:30px;margin:0 0 10px; }} .wb-landing p {{ color:rgba(0,0,0,.45);margin:0 0 34px; }} .wb-enter {{ width:min(760px,90%);height:64px;border:0;border-radius:8px;background:#2463eb;color:#fff;font-size:22px;cursor:pointer;display:flex;align-items:center;justify-content:center;text-decoration:none; }}
+      .wb-wizard {{ width:100%;height:100%;overflow:auto;box-sizing:border-box;background:#f7f8fa;padding:22px;border-radius:0; }} .wb-stepper {{ display:flex;justify-content:center;gap:14px;align-items:center;margin-bottom:18px;color:#a0a5ad;font-size:13px; }} .wb-stepper span.active {{ color:#2463eb;font-weight:600; }} .wb-stepper i {{ color:#c5c9d0;font-style:normal; }} .wb-panel {{ display:none;background:#fff;border-radius:9px;padding:28px;border:1px solid #edf0f3; }} .wb-panel.wb-panel-active {{ display:block; }} .wb-panel-title {{ font-size:22px;font-weight:600;margin-bottom:20px; }} .wb-panel-title small {{ font-size:13px;color:#8a9099;font-weight:400;margin-left:10px; }} .wb-pass {{ color:#2eaf68 !important; }} .wb-mode-grid {{ display:grid;grid-template-columns:repeat(2,1fr);gap:18px;max-width:820px;margin:0 auto 28px; }} .wb-mode {{ min-height:150px;border:1px solid #dfe3e8;background:#fff;border-radius:8px;font-size:17px;display:flex;flex-direction:column;gap:15px;align-items:center;justify-content:center;cursor:pointer; }} .wb-mode.active {{ border:2px solid #2463eb;background:#f4f7ff; }} .wb-mode b {{ font-size:34px;color:#2463eb; }} .wb-primary {{ width:100%;height:48px;border:0;border-radius:7px;background:#2463eb;color:#fff;font-size:16px;cursor:pointer; }} .wb-primary.passed {{ background:#2eaf68; }} .wb-note {{ text-align:center;color:#7e8792;margin-top:10px;font-size:13px; }} .wb-fields {{ display:grid;grid-template-columns:1fr 2fr;gap:18px;margin-bottom:24px; }} .wb-fields label,.wb-result-dialog label {{ display:flex;flex-direction:column;gap:8px;color:#5f6670;font-size:13px; }} .wb-fields select,.wb-result-dialog select,.wb-result-dialog input {{ height:40px;border:1px solid #d9dde3;border-radius:6px;padding:0 10px;background:#fff; }} .wb-scene {{ display:grid;grid-template-columns:1fr 1fr;gap:22px;padding:18px;background:#fafbfc;border:1px solid #edf0f3;border-radius:8px;margin-bottom:22px; }} .wb-scene p {{ color:#69717c;margin:8px 0 18px; }} .wb-media {{ display:grid;grid-template-columns:1fr 1fr;gap:10px;color:#7a828d;font-size:13px; }} .wb-media div {{ border:1px dashed #cdd3db;border-radius:6px;padding:18px;text-align:center; }} .wb-media span {{ display:block;font-size:30px;color:#2463eb;margin-top:18px; }} .wb-prompts {{ border:1px solid #edf0f3;border-radius:7px;margin-bottom:20px; }} .wb-prompts div {{ padding:13px 16px;border-bottom:1px solid #f0f0f0; }} .wb-prompts div:last-child {{ border:0; }} .wb-prompts b {{ display:inline-flex;width:22px;height:22px;border-radius:4px;background:#e9efff;color:#2463eb;align-items:center;justify-content:center;margin-right:10px; }} .wb-prompts small {{ color:#8a9099;margin-left:12px; }} .wb-camera-grid {{ display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px;font-weight:600; }} .wb-camera {{ height:180px;background:#15191f;border-radius:7px;margin-top:8px;color:#7f8995;display:flex;align-items:center;justify-content:center;font-weight:400; }} .wb-task-list {{ border:1px solid #edf0f3;border-radius:7px; }} .wb-task-list div {{ padding:14px 16px;border-bottom:1px solid #f0f0f0;display:flex;align-items:center;gap:12px; }} .wb-task-list div:last-child {{ border:0; }} .wb-task-list div.active {{ background:#f1f6ff;color:#2463eb; }} .wb-task-list b {{ width:22px;height:22px;display:inline-flex;align-items:center;justify-content:center;background:#edf1f7;border-radius:4px; }} .wb-task-list button {{ margin-left:auto;border:0;background:transparent;color:#2463eb;cursor:pointer;font-size:16px; }} .wb-result-mask {{ position:fixed;inset:0;z-index:1100;background:rgba(0,0,0,.35);display:flex;align-items:center;justify-content:center; }} .wb-result-dialog {{ width:560px;max-width:calc(100vw - 32px);background:#fff;border-radius:9px;padding:24px; }} .wb-result-dialog h3 {{ margin:0 0 20px; }} .wb-result-dialog label {{ margin-bottom:16px; }} .wb-result-actions {{ display:flex;justify-content:flex-end;gap:8px; }} .wb-result-actions button {{ border:1px solid #d9dde3;background:#fff;border-radius:6px;padding:8px 18px;cursor:pointer; }} .wb-result-actions .primary {{ background:#2463eb;color:#fff;border-color:#2463eb; }}
+    </style>
     '''
-    return render_page("\u8bc4\u6d4b\u5de5\u4f5c\u53f0-LL", content, active="evaluate2")
+    return render_page("\u7aef\u4fa7\u793a\u610f", content, active="evaluate2")
+
+
+@app.route("/evaluate2/setup")
+def evaluate2_setup():
+    step = max(1, min(4, int(request.args.get("step", "1"))))
+    active_tasks = [t for t in EVAL_TASKS if t.get("status") == "评测中"]
+    task_options = "".join(f'<option value="{t["id"]}">{t["task_no"]}：{t.get("name", "评测任务")}</option>' for t in active_tasks)
+    prompt_group_count = 2
+    checkpoint_count = 2
+    if step == 1:
+        body = '<div class="wb-step-page"><h1>模式选择</h1><p class="wb-muted">请选择任务类型，选择模式后将进行设备自检</p><div class="wb-mode-grid"><a class="wb-mode active" href="/evaluate2/setup?step=2"><b>▣</b><strong>Normal</strong></a><a class="wb-mode" href="/evaluate2/setup?step=2"><b>⌁</b><strong>DAgger</strong></a><a class="wb-mode" href="/evaluate2/setup?step=2"><b>☑</b><strong>Test</strong></a><a class="wb-mode" href="/evaluate2/setup?step=2"><b>▤</b><strong>Evaluation</strong></a></div><a class="wb-primary wb-link" href="/evaluate2/setup?step=2">开始自检</a><div class="wb-note">自检将检查机器人、相机、控制器与网络连接</div></div>'
+    elif step == 2:
+        body = f'<div class="wb-step-page"><h1>任务选择 <small class="wb-pass">● 设备自检通过</small></h1><div class="wb-fields"><label>项目<select><option value="">请选择项目</option><option>基础研究</option><option>宁德应用</option><option>moz1</option><option>spirit</option><option>demo采集</option><option>预训练采集</option><option>多任务</option></select></label><label>任务<select id="wb-task-select"><option value="">请选择任务</option>{task_options}</select></label></div><a class="wb-primary wb-link" href="/evaluate2/setup?step=3">确认进入任务</a></div>'
+    elif step == 3:
+        body = '<div class="wb-step-page"><h1>任务信息</h1><div class="wb-task-section"><h2>场景准备</h2><div class="wb-scene"><div class="wb-scene-description"><b>场景描述</b><span>自然光，家庭场景，至少需要打开和放置两个房间</span></div><div class="wb-media"><div>场景图片<br><span>▧　▧　▧</span></div><div>场景视频<br><span>▶</span></div></div></div></div><div class="wb-task-section"><h2>提示词</h2><div class="wb-prompt-tree"><div class="wb-prompt-tree-group"><div class="wb-prompt-tree-parent">提示词组 1 · 房间整理</div><div class="wb-prompt-tree-children"><div class="wb-prompt-tree-child">抓住小猫 <small>Pick up the cat</small></div><div class="wb-prompt-tree-child">把小猫放进被窝 <small>Put the cat in the blanket</small></div></div></div><div class="wb-prompt-tree-group"><div class="wb-prompt-tree-parent">提示词组 2 · 床铺操作</div><div class="wb-prompt-tree-children"><div class="wb-prompt-tree-child">掀开被子 <small>Lift up the blanket</small></div><div class="wb-prompt-tree-child">盖上被子 <small>Cover it up</small></div></div></div></div></div><a class="wb-primary wb-link" href="/evaluate2/setup?step=4">场景已就绪，开始评测</a></div>'
+    else:
+        active_task = active_tasks[0] if active_tasks else {}
+        target = active_tasks[0]["id"] if active_tasks else "t1"
+        prompt_group_count = len((get_benchmark(active_task.get("benchmark_id", "")) or {}).get("prompt_ids", [])) or 1
+        checkpoint_count = len(active_task.get("model_ids", [])) or 1
+        ckpt_disabled = " disabled" if checkpoint_count <= 1 else ""
+        ckpt_options = "<option>Checkpoint 9001</option>" + ("<option>Checkpoint 9002</option>" if not ckpt_disabled else "")
+        body = f'''<div class="hmi-exec">
+          <div class="hmi-exec-top"><a href="/evaluate2/setup?step=3" class="hmi-back">← 完成</a><b>整理房间 v1.5 pk v1.6</b><span>/ 整理房间 v1.5 pk v1.6 · copy_1215_InsertFlower_v0_set0_copy_from_online_51</span><div class="hmi-top-status">● <b>评测模式</b></div></div>
+          <div class="hmi-camera-row"><div class="hmi-camera-card"><b>左手臂镜头</b><span>● 已连接</span><div class="hmi-camera-view">视频画面<br><small>分辨率：640×480　FPS：25</small></div></div><div class="hmi-camera-card"><b>头部镜头</b><span>● 已连接</span><div class="hmi-camera-view">视频画面<br><small>分辨率：640×480　FPS：24.3</small></div></div><div class="hmi-camera-card"><b>右手臂镜头</b><span>● 已连接</span><div class="hmi-camera-view">视频画面<br><small>分辨率：640×480　FPS：26.7</small></div></div></div>
+          <div class="hmi-exec-grid"><div class="hmi-task-panel"><div class="hmi-panel-title"><select><option>把小猫放进被窝</option><option>把大象放进冰箱02</option></select><select class="hmi-ckpt-select"{ckpt_disabled}>{ckpt_options}</select><span class="hmi-progress">0 / 4 次</span></div><div class="hmi-task-row"><b>1</b><span class="hmi-prompt-text">抓住小猫</span><span class="hmi-result-summary"></span><button class="hmi-icon-action" title="开始执行" onclick="hmiTogglePrompt(this)">▶</button></div><div class="hmi-task-row"><b>2</b><span class="hmi-prompt-text">掀开被子</span><span class="hmi-result-summary"></span><button class="hmi-icon-action" title="开始执行" onclick="hmiTogglePrompt(this)">▶</button></div><div class="hmi-task-row"><b>3</b><span class="hmi-prompt-text">把小猫放进被子</span><span class="hmi-result-summary"></span><button class="hmi-icon-action" title="开始执行" onclick="hmiTogglePrompt(this)">▶</button></div><div class="hmi-task-row"><b>4</b><span class="hmi-prompt-text">盖上被子</span><span class="hmi-result-summary"></span><button class="hmi-icon-action" title="开始执行" onclick="hmiTogglePrompt(this)">▶</button></div></div><aside class="hmi-control-panel"><h3>开关</h3><div class="hmi-switches"><label>全部上电 <i>OFF</i></label><label>底座上电 <i>OFF</i></label><label>臂部上电 <i>OFF</i></label><label>左臂上电 <i>OFF</i></label><label>右臂上电 <i>OFF</i></label><label>障碍状态 <i>OFF</i></label></div><h3>连接状态</h3><p>Movax　<span>● 已连接</span></p><p>CaptureX　<span>● 已连接</span></p><p>Teleop　<span>● 已连接</span></p><div class="hmi-control-actions"><button>复位</button><button>重置</button><button disabled>停止</button></div></aside></div>
+          <div class="hmi-result-mask" id="hmi-result-mask" hidden><div class="hmi-result-dialog"><h3>提交评测结果</h3><section class="hmi-result-section"><h4>评测结果</h4><div class="hmi-result-radios"><label><input type="radio" name="hmi-result" value="成功">成功</label><label><input type="radio" name="hmi-result" value="失败">失败</label><label><input type="radio" name="hmi-result" value="重试1次成功">重试1次成功</label><label><input type="radio" name="hmi-result" value="重试2次成功">重试2次成功</label><label><input type="radio" name="hmi-result" value="重试3次成功">重试3次成功</label></div></section><section class="hmi-metric-section"><h4>评测指标</h4><label>任务完成度<input type="number" min="0" max="100" placeholder="请输入 0-100"></label><label>执行质量<select><option value="">请选择</option><option>优秀</option><option>合格</option><option>需改进</option></select></label><label>备注<input placeholder="请输入评测备注"></label></section><div><button onclick="hmiCancelResult()">取消</button><button class="primary" onclick="hmiSubmitResult()">提交</button></div></div></div>
+          <script>var hmiActiveButton=null;function hmiTogglePrompt(btn){{if(btn.dataset.running==='1'){{hmiActiveButton=btn;document.getElementById('hmi-result-mask').hidden=false;return;}}document.querySelectorAll('.hmi-task-row button').forEach(function(b){{if(b!==btn&&b.dataset.running==='1'){{b.dataset.running='0';b.textContent='▶';b.title='开始执行';b.closest('.hmi-task-row').classList.remove('running');}}}});btn.dataset.running='1';btn.textContent='■';btn.title='停止执行';btn.closest('.hmi-task-row').classList.add('running');}}function hmiCancelResult(){{document.getElementById('hmi-result-mask').hidden=true;}}function hmiSubmitResult(){{if(!hmiActiveButton)return;var result=document.querySelector('input[name="hmi-result"]:checked');if(!result){{alert('请选择评测结果');return;}}var row=hmiActiveButton.closest('.hmi-task-row');var summary=row.querySelector('.hmi-result-summary');var failed=result.value==='失败';summary.textContent=result.value;summary.classList.toggle('failed',failed);summary.classList.toggle('passed',!failed);row.classList.toggle('result-failed',failed);row.classList.toggle('result-passed',!failed);row.classList.add('result-submitted');hmiActiveButton.dataset.running='0';hmiActiveButton.style.display='none';hmiActiveButton.title='已提交';row.classList.remove('running');row.classList.add('completed');document.getElementById('hmi-result-mask').hidden=true;}}</script>
+        </div>'''
+    if step == 4:
+        prompt_action_html = '<button class="hmi-icon-action" title="开始执行" onclick="hmiTogglePrompt(this)">▶</button>'
+        locked_prompt_action_html = '<button class="hmi-icon-action" title="等待上一条完成" aria-hidden="true" style="display:none" onclick="hmiTogglePrompt(this)">▶</button>'
+        first_action_end = body.find(prompt_action_html) + len(prompt_action_html)
+        if first_action_end >= len(prompt_action_html):
+            body = body[:first_action_end] + body[first_action_end:].replace(prompt_action_html, locked_prompt_action_html)
+        submit_done_marker = "row.classList.add('completed');document.getElementById('hmi-result-mask').hidden=true;"
+        submit_done_replacement = "row.classList.add('completed');var nextRow=row.nextElementSibling;var nextButton=nextRow&&nextRow.querySelector('.hmi-icon-action');if(nextButton){nextButton.style.display='';nextButton.removeAttribute('aria-hidden');nextButton.title='开始执行';}hmiActiveButton=null;document.getElementById('hmi-result-mask').hidden=true;"
+        body = body.replace(submit_done_marker, submit_done_replacement)
+    body = f'<div class="eval2-ipad-shell"><div class="eval2-ipad-screen">{body}</div></div>'
+    style = '<style>.wb-step-page{width:100%;min-height:100%;background:#fff;border:0;border-radius:0;padding:32px;max-width:none;margin:0;box-sizing:border-box;overflow:auto}.wb-step-page h1{font-size:26px;margin:0 0 22px}.wb-step-page h2{font-size:18px;margin:24px 0 14px}.wb-muted{color:#7e8792}.wb-link{display:flex;align-items:center;justify-content:center;text-decoration:none}.wb-pass{color:#2eaf68;font-size:13px;font-weight:400;margin-left:12px}.wb-fields{display:grid;grid-template-columns:1fr 2fr;gap:18px;margin:24px 0}.wb-fields label{display:flex;flex-direction:column;gap:8px;color:#5f6670;font-size:13px}.wb-fields select{height:40px;border:1px solid #d9dde3;border-radius:6px;padding:0 10px;background:#fff}.wb-mode-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:18px;margin:28px auto;max-width:820px}.wb-mode{min-height:150px;border:1px solid #dfe3e8;background:#fff;border-radius:8px;font-size:17px;display:flex;flex-direction:column;gap:15px;align-items:center;justify-content:center;cursor:pointer;text-decoration:none;color:inherit}.wb-mode.active{border:2px solid #1F80A0;background:#e6f4f8}.wb-mode b{font-size:34px;color:#1F80A0}.wb-primary{width:100%;height:48px;border:0;border-radius:7px;background:#1F80A0;color:#fff;font-size:16px;cursor:pointer}.wb-note{text-align:center;color:#7e8792;margin-top:10px;font-size:13px}.wb-scene{display:grid;grid-template-columns:1fr;gap:18px;padding:18px;background:#fafbfc;border:1px solid #edf0f3;border-radius:8px}.wb-scene p{color:#69717c;margin:8px 0 18px}.wb-media{display:grid;grid-template-columns:1fr 1fr;gap:10px;color:#7a828d}.wb-media div{border:1px dashed #cdd3db;border-radius:6px;padding:30px;text-align:center}.wb-media span{display:block;font-size:30px;color:#1F80A0;margin-top:18px}.wb-prompts{border:1px solid #edf0f3;border-radius:7px;margin-bottom:20px}.wb-prompts div{padding:13px 16px;border-bottom:1px solid #f0f0f0}.wb-prompts b{display:inline-flex;width:22px;height:22px;border-radius:4px;background:#e6f4f8;color:#1F80A0;align-items:center;justify-content:center;margin-right:10px}.wb-prompts small{color:#8a9099;margin-left:12px}.wb-scene-description{display:flex;align-items:center;gap:14px;white-space:nowrap}.wb-scene-description span{color:#69717c;overflow:hidden;text-overflow:ellipsis}@media(max-width:560px){.wb-mode-grid{grid-template-columns:1fr}.wb-fields{grid-template-columns:1fr}.wb-scene-description{white-space:normal;align-items:flex-start;flex-direction:column;gap:4px}}</style>'
+    style += '<style>.hmi-exec{height:100%;min-height:100%;overflow:auto;box-sizing:border-box;background:#f7f8fa;padding:14px}.hmi-exec-top{display:flex;align-items:center;gap:10px;background:#fff;border:1px solid #edf0f3;padding:10px 14px;margin-bottom:14px;font-size:13px}.hmi-exec-top span{color:#7e8792}.hmi-back{background:#1F80A0;color:#fff;padding:6px 12px;border-radius:5px;text-decoration:none}.hmi-top-status{margin-left:auto;color:#1F80A0}.hmi-camera-row{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:14px}.hmi-camera-card{background:#fff;border:1px solid #edf0f3;padding:10px;font-size:14px}.hmi-camera-card>span{float:right;color:#2eaf68;font-size:12px}.hmi-camera-view{height:260px;background:#101317;color:#75808d;margin-top:8px;display:flex;align-items:center;justify-content:center;text-align:center;line-height:2}.hmi-camera-view small{display:block}.hmi-exec-grid{display:grid;grid-template-columns:2fr 1fr;gap:14px}.hmi-task-panel,.hmi-control-panel{background:#fff;border:1px solid #edf0f3;padding:14px}.hmi-panel-title{font-weight:600;margin-bottom:12px;display:flex;justify-content:flex-start;align-items:center;flex-wrap:wrap;gap:10px}.hmi-panel-title select{border:1px solid #d9dde3;border-radius:5px;padding:5px}.hmi-task-row{padding:14px 10px;border:1px solid #edf0f3;margin-bottom:8px;display:flex;align-items:center;gap:10px}.hmi-task-row.active{border-color:#1F80A0;background:#e6f4f8}.hmi-task-row b{width:22px;height:22px;background:#edf1f7;display:inline-flex;align-items:center;justify-content:center}.hmi-task-row button{margin-left:auto;border:0;background:transparent;color:#2eaf68;font-size:18px}.hmi-control-panel h3{font-size:15px;margin:4px 0 14px}.hmi-switches{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px}.hmi-switches label{font-size:12px;display:flex;justify-content:space-between}.hmi-switches i{font-style:normal;color:#1F80A0;background:#e6f4f8;border:1px solid #b8dce8;border-radius:10px;padding:2px 8px}.hmi-control-panel p{font-size:12px;color:#69717c;margin:8px 0}.hmi-control-panel p span{color:#2eaf68}.hmi-control-actions{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:20px}.hmi-control-actions button{height:42px;border:1px solid #b8dce8;background:#fff;border-radius:5px;color:#1F80A0}.hmi-control-actions .hmi-stop-action{color:#e54863;border-color:#ff9c9c}.hmi-control-actions button:disabled{color:#aaa;background:#f0f1f3}.hmi-submit-group{width:100%;height:46px;margin-top:10px;border:0;border-radius:7px;background:#1F80A0;color:#fff;font-size:16px;cursor:pointer}@media(max-width:800px){.hmi-camera-row,.hmi-exec-grid{grid-template-columns:1fr}.hmi-camera-view{height:200px}}</style>'
+    style += '<style>.hmi-task-row.running{border-color:#2463eb;background:#f3f7ff}.hmi-task-row.running button{color:#2463eb;font-weight:600}.hmi-task-row.completed{background:#f3fbf6;color:#2e8b57}.hmi-task-row button{font-size:16px}.hmi-panel-title{justify-content:flex-start;gap:10px}.hmi-panel-title select{min-width:220px}.hmi-ckpt-select{min-width:180px!important}.hmi-progress{margin-left:auto;color:#2463eb;font-size:12px}.hmi-icon-action{width:28px;height:28px;border:0;background:transparent;cursor:pointer}.hmi-result-mask[hidden]{display:none}.hmi-result-mask{position:fixed;inset:0;z-index:1200;background:rgba(0,0,0,.38);display:flex;align-items:center;justify-content:center}.hmi-result-dialog{width:560px;max-width:calc(100vw - 32px);background:#fff;border-radius:9px;padding:24px;box-shadow:0 12px 40px rgba(0,0,0,.2)}.hmi-result-dialog h3{margin:0 0 20px}.hmi-result-section,.hmi-metric-section{padding:14px 16px;border:1px solid #edf0f3;border-radius:7px;margin-bottom:14px}.hmi-result-section{background:#f6f9ff}.hmi-metric-section{background:#fafafa}.hmi-result-dialog h4{margin:0 0 12px;font-size:14px}.hmi-result-radios{display:flex;gap:18px;flex-wrap:wrap}.hmi-result-radios label{display:flex;align-items:center;gap:5px;color:#3f4752;font-size:13px}.hmi-metric-section label{display:flex;flex-direction:column;gap:7px;margin-bottom:12px;color:#5f6670;font-size:13px}.hmi-result-dialog select,.hmi-result-dialog input{height:38px;border:1px solid #d9dde3;border-radius:6px;padding:0 10px;background:#fff}.hmi-result-dialog>div{display:flex;justify-content:flex-end;gap:8px;margin-top:20px}.hmi-result-dialog button{padding:8px 18px;border:1px solid #d9dde3;background:#fff;border-radius:6px}.hmi-result-dialog button.primary{background:#2463eb;border-color:#2463eb;color:#fff}</style>'
+    style += '<style>.hmi-task-row{display:grid;grid-template-columns:28px minmax(0,1fr) minmax(150px,auto) 32px;align-items:center;gap:10px}.hmi-task-row.result-submitted{grid-template-columns:28px minmax(0,1fr) minmax(150px,auto)}.hmi-prompt-text{min-width:0}.hmi-result-summary{justify-self:end;text-align:right;color:#2eaf68;font-size:13px;white-space:nowrap}.hmi-result-summary.failed{color:#e54863}.hmi-result-summary.passed{color:#2eaf68}.hmi-icon-action{justify-self:end;margin-left:0!important}.hmi-task-row.result-failed{background:#fff1f0!important;border-color:#ffccc7!important}.hmi-task-row.result-passed{background:#f3fbf6!important}</style>'
+    style += '<style>.wb-scene{grid-template-columns:1fr}.wb-scene-description{display:flex;align-items:center;gap:14px;white-space:nowrap}.wb-scene-description span{color:#69717c;overflow:hidden;text-overflow:ellipsis}.hmi-panel-title{flex-wrap:nowrap;align-items:center;gap:8px;white-space:nowrap;overflow:hidden}.hmi-select-control{display:flex;align-items:center;gap:7px;min-width:0;flex:0 1 auto;padding:5px 8px;border:1px solid #d9dde3;border-radius:6px;background:#fff}.hmi-select-prefix{color:#1F80A0;font-size:12px;font-weight:600;flex-shrink:0}.hmi-select-control select{min-width:120px;max-width:260px;border:0!important;padding:4px 22px 4px 0!important;outline:0;overflow:hidden;text-overflow:ellipsis}.hmi-select-control em{color:#8a9099;font-size:11px;font-style:normal;white-space:nowrap}.hmi-progress{margin-left:auto;flex-shrink:0;padding:9px 13px;border-radius:7px;background:#e6f4f8;color:#5f6670!important;white-space:nowrap}.hmi-progress strong{color:#1F80A0;font-size:16px}.hmi-task-row button{color:#1F80A0}.hmi-switches i{color:#1F80A0!important;background:#e6f4f8!important;border:1px solid #b8dce8}.hmi-control-actions{grid-template-columns:repeat(3,1fr)!important}.hmi-control-actions button{height:42px!important;color:#1F80A0;border-color:#b8dce8!important;background:#fff!important}.hmi-control-actions .hmi-stop-action{color:#e54863;border-color:#ff9c9c!important}.hmi-submit-group{width:100%;height:46px;margin-top:10px;border:0;border-radius:7px;background:#1F80A0;color:#fff;font-size:16px;cursor:pointer}.hmi-submit-group:hover{background:#167b98}@media(max-width:800px){.hmi-select-control{flex:1;min-width:0}.hmi-progress{order:initial;width:auto;text-align:left;margin-left:auto}.wb-scene-description{white-space:normal;align-items:flex-start;flex-direction:column;gap:4px}}</style>'
+    style += '<style>.wb-task-section{margin-bottom:22px}.wb-task-section h2{font-size:16px;margin:0 0 12px;color:#26323d}.wb-prompt-tree{border:1px solid #edf0f3;border-radius:8px;overflow:hidden;background:#fff}.wb-prompt-tree-group{border-bottom:1px solid #edf0f3}.wb-prompt-tree-group:last-child{border-bottom:0}.wb-prompt-tree-parent{display:flex;align-items:center;gap:8px;padding:12px 16px;background:#f7fbfc;color:#1F80A0;font-weight:600}.wb-prompt-tree-parent:before{content:"▾";font-size:14px}.wb-prompt-tree-children{padding:4px 16px 8px 40px}.wb-prompt-tree-child{position:relative;padding:8px 0;color:#4f5964;font-size:13px}.wb-prompt-tree-child:before{content:"";position:absolute;left:-18px;top:0;width:1px;height:100%;background:#d9edf1}.wb-prompt-tree-child:after{content:"";position:absolute;left:-18px;top:17px;width:12px;height:1px;background:#d9edf1}</style>'
+    style += f'''<script>
+      document.addEventListener('DOMContentLoaded', function() {{
+        var title = document.querySelector('.hmi-panel-title');
+        if (!title) return;
+        var selects = title.querySelectorAll('select');
+        if (selects.length >= 2) {{
+          var promptOptions = selects[0].innerHTML;
+          var ckptOptions = selects[1].innerHTML;
+          var ckptDisabled = selects[1].disabled ? ' disabled' : '';
+          title.innerHTML = '<div class="hmi-select-control"><span class="hmi-select-prefix">Prompt</span><select aria-label="Prompt">' + promptOptions + '</select><em>共 {prompt_group_count} 项</em></div>'
+            + '<div class="hmi-select-control"><span class="hmi-select-prefix">ckpt</span><select class="hmi-ckpt-select" aria-label="ckpt"' + ckptDisabled + '>' + ckptOptions + '</select><em>共 {checkpoint_count} 项</em></div>'
+            + '<span class="hmi-progress">执行进度：已提交任务数 / 全部任务数&nbsp;&nbsp;<strong>20/30</strong></span>';
+        }}
+        var actions = document.querySelector('.hmi-control-actions');
+        if (actions) {{
+          actions.innerHTML = '<button type="button">复位</button><button type="button">重置</button><button type="button" class="hmi-stop-action">停止</button>';
+          var submit = document.createElement('button');
+          submit.type = 'button'; submit.className = 'hmi-submit-group'; submit.textContent = '提交本组数据'; submit.onclick = function() {{ if (window.showToast) window.showToast('本组数据已提交', 'success'); }};
+          actions.parentNode.insertBefore(submit, actions.nextSibling);
+        }}
+      }});
+    </script>'''
+    return render_page("端侧示意", body + style, active="evaluate2")
 
 
 @app.route("/evaluate2/<task_id>/run")
@@ -6114,7 +7397,7 @@ def evaluate2_run(task_id):
     pct = round((current_step) / max(total_steps, 1) * 100)
 
     if not step:
-        content = '<div style="text-align:center;padding:60px;color:rgba(0,0,0,0.25);">\u6682\u65e0\u8bc4\u6d4b\u6b65\u9aa4</div>'
+        content = '<div class="eval2-ipad-shell"><div class="eval2-ipad-screen"><div style="text-align:center;padding:60px;color:rgba(0,0,0,0.25);">\u6682\u65e0\u8bc4\u6d4b\u6b65\u9aa4</div></div></div>'
         return render_page("\u8bc4\u6d4b\u5de5\u4f5c\u53f0 2", content, active="evaluate2")
 
     is_last = current_step >= total_steps - 1
@@ -6188,6 +7471,7 @@ def evaluate2_run(task_id):
       </div>
     </div>
 
+    <div id="eval2-result-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:1000;align-items:center;justify-content:center;"><div style="background:#fff;width:560px;max-width:calc(100vw - 32px);border-radius:10px;padding:24px;"><h3 style="margin:0 0 18px;">填写评测结果</h3><div class="form-group"><label>评测结果</label><select id="eval2-result"><option>成功</option><option>失败</option><option>重试1次成功</option><option>重试2次成功</option><option>重试3次成功</option></select></div><div class="form-group"><label>评测指标</label><input class="ant-input" placeholder="填写本条评测指标"></div><div style="display:flex;justify-content:flex-end;gap:8px;margin-top:22px;"><button type="button" class="ant-btn" onclick="eval2CloseResult()">取消</button><button type="button" class="ant-btn ant-btn-primary" onclick="eval2ConfirmResult()">提交并进入下一条</button></div></div></div>
     <!-- Bottom white card: progress + note + buttons -->
     <div style="background:#fff;border-radius:8px;padding:20px;border:1px solid #f0f0f0;">
       <!-- Progress scores (1-5) -->
@@ -6327,8 +7611,10 @@ def evaluate2_run(task_id):
         setTimeout(function(){{ noteEl.style.borderColor = ''; }}, 2500);
         return;
       }}
-      window.location.href = '{next_url}';
+      document.getElementById('eval2-result-modal').style.display='flex';
     }}
+    function eval2CloseResult() {{ document.getElementById('eval2-result-modal').style.display='none'; }}
+    function eval2ConfirmResult() {{ window.location.href = '{next_url}'; }}
     var v2Pref = null;
     function v2SetPref(val, btn) {{
       v2Pref = val;
@@ -6337,12 +7623,466 @@ def evaluate2_run(task_id):
     }}
     </script>
     '''
-    return render_page("\u8bc4\u6d4b\u5de5\u4f5c\u53f0 2", content, active="evaluate2")
+    content = f'<div class="eval2-ipad-shell"><div class="eval2-ipad-screen">{content}</div></div>'
+    return render_page("\u7aef\u4fa7\u793a\u610f", content, active="evaluate2")
 
 
 # ── Evaluation Records (task-view + checkpoint-view) ──
+def _mock_eval_records():
+    """Build the flat evaluation-record list used by the result list and detail view."""
+    records = []
+    import random as _rnd_records
+    for task in EVAL_TASKS:
+        benchmark = get_benchmark(task.get("benchmark_id", ""))
+        if not benchmark:
+            continue
+        checkpoint_id = task.get("model_ids", [""])[0] if task.get("model_ids") else ""
+        checkpoint_name = get_model_name(checkpoint_id) if checkpoint_id else "--"
+        prompt_ids = task.get("selected_prompt_ids", []) or benchmark.get("prompt_ids", []) or [PROMPTS[0]["id"]]
+        selected_lowlevel_ids = set(task.get("selected_lowlevel_ids", []))
+        criterion = get_criterion(task.get("criteria_id", "")) or {}
+        result_definitions = normalize_result_definitions(criterion.get("result_definitions", {}))
+        success_values = [item["description"] for item in result_definitions.get("成功", [])] or ["成功"]
+        failure_values = [item["description"] for item in result_definitions.get("失败", [])] or ["失败"]
+        row_index = 0
+        _rnd_records.seed(sum(ord(ch) for ch in task.get("id", "")))
+        for prompt_id in prompt_ids:
+            prompt = get_prompt(prompt_id)
+            if not prompt:
+                continue
+            for step_index, low_level in enumerate(prompt.get("low_levels", [])):
+                if selected_lowlevel_ids and low_level.get("id") not in selected_lowlevel_ids:
+                    continue
+                row_index += 1
+                record_id = f'{task.get("task_no", task.get("id", "record"))}-{row_index:03d}'
+                # Recording IDs follow the data-platform convention: six-digit integers.
+                recording_id = f'{600000 + len(records) + 1:06d}'
+                is_success = _rnd_records.random() >= 0.22
+                result = _rnd_records.choice(success_values if is_success else failure_values)
+                result_parent = "成功" if is_success else "失败"
+                completion = _rnd_records.randint(58, 98)
+                quality = "优秀" if completion >= 88 else "合格" if completion >= 72 else "需改进"
+                serial = f'MOZ1-{task.get("task_no", "0000")}-{row_index:02d}'
+                operated_at = f'{task.get("created_at", "2026-06-17")} {10 + (row_index % 8):02d}:{(row_index * 7) % 60:02d}'
+                records.append({
+                    "id": record_id,
+                    "recording_id": recording_id,
+                    "task_id": task.get("id", ""),
+                    "task_no": str(task.get("task_no", "")),
+                    "task_name": task.get("name", ""),
+                    "prompt": prompt.get("high_level", ""),
+                    "prompt_en": prompt.get("high_level_en", ""),
+                    "instruction": low_level.get("zh", ""),
+                    "instruction_en": low_level.get("en", ""),
+                    "prompt_id": prompt_id,
+                    "labels": list(low_level.get("labels", [])),
+                    "serial": serial,
+                    "checkpoint_id": checkpoint_id,
+                    "checkpoint": checkpoint_name,
+                    "benchmark_id": benchmark.get("id", ""),
+                    "benchmark": benchmark.get("name", ""),
+                    "conclusion": result,
+                    "conclusion_parent": result_parent,
+                    "metrics": {"任务完成度": f"{completion}%", "执行质量": quality},
+                    "operator": task.get("created_by", "Joanna Qiao"),
+                    "operated_at": operated_at,
+                    "videos": [
+                        {"label": "头部相机", "url": "/static/eval-head.mp4"},
+                        {"label": "左臂相机", "url": "/static/eval-left.mp4"},
+                        {"label": "右臂相机", "url": "/static/eval-right.mp4"},
+                    ],
+                })
+    return records
+
+
+def _eval_record_video_html(record, compact=False):
+    parts = []
+    for index, video in enumerate(record.get("videos", [])):
+        label = html.escape(video.get("label", f"视频 {index + 1}"))
+        if compact:
+            parts.append(
+                f'<div class="vid-thumb er-record-video er-record-video-compact" aria-label="{label}"></div>'
+            )
+            continue
+        parts.append(
+            f'<div class="lab-vid er-record-video" aria-label="{label}">'
+            f'<span class="vid-label">{label}</span><span class="vid-expand" aria-hidden="true">⛶</span>▶</div>'
+        )
+    if compact:
+        prompt = html.escape(record.get("instruction_en") or record.get("prompt_en") or record.get("instruction") or "--")
+        return '<div class="er-record-video-strip er-record-video-strip-compact"><div class="er-record-video-prompt">' + prompt + '</div>' + "".join(parts) + '</div>'
+    return '<div class="er-record-video-strip">' + "".join(parts) + '</div>'
+
+
+def _eval_record_conclusion_html(value):
+    success_values = {"成功", "直接成功", "重试后成功", "重试1次成功", "重试2次成功"}
+    failure_values = {"失败", "执行超时", "动作失败", "环境异常"}
+    if value in success_values:
+        return f'<span class="er-result-pill er-result-pass">{html.escape(value)}</span>'
+    if value in failure_values:
+        return f'<span class="er-result-pill er-result-fail">{html.escape(value)}</span>'
+    return f'<span class="er-result-pill">{html.escape(value or "--")}</span>'
+
+
+def _moztrace_chart_svg(title, series, x_label, y_label, height=260):
+    """Small inline chart used for Moztrace views when Plotly is unavailable."""
+    all_values = [value for _, values, _ in series for value in values]
+    if not all_values:
+        all_values = [0, 1]
+    min_value = min(all_values)
+    max_value = max(all_values)
+    span = max(max_value - min_value, 1e-6)
+    left, top, width, chart_height = 58, 30, 790, height - 66
+    grid = ''.join(
+        f'<line x1="{left}" y1="{top + (chart_height * index / 4):.1f}" x2="{left + width}" y2="{top + (chart_height * index / 4):.1f}" stroke="#e7eeee" stroke-width="1" />'
+        for index in range(5)
+    )
+    paths = []
+    for name, values, color in series:
+        if not values:
+            continue
+        points = []
+        for index, value in enumerate(values):
+            x = left + (width * index / max(len(values) - 1, 1))
+            y = top + chart_height - ((value - min_value) / span * chart_height)
+            points.append(f'{x:.1f},{y:.1f}')
+        paths.append(
+            f'<polyline points="{" ".join(points)}" fill="none" stroke="{color}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" />'
+        )
+    legend = ''.join(
+        f'<span><i style="background:{color}"></i>{html.escape(name)}</span>'
+        for name, _, color in series
+    )
+    return (
+        f'<div class="moztrace-chart-wrap"><div class="moztrace-chart-title">{html.escape(title)}</div>'
+        f'<svg class="moztrace-chart" viewBox="0 0 900 {height}" role="img" aria-label="{html.escape(title)}">'
+        f'{grid}<line x1="{left}" y1="{top + chart_height}" x2="{left + width}" y2="{top + chart_height}" stroke="#9bb7b7" />'
+        f'<line x1="{left}" y1="{top}" x2="{left}" y2="{top + chart_height}" stroke="#9bb7b7" />'
+        f'{"".join(paths)}<line class="moztrace-frame-line" x1="{left}" y1="{top}" x2="{left}" y2="{top + chart_height}" stroke="#1F80A0" stroke-width="2" stroke-dasharray="4 3" />'
+        f'<text x="18" y="{top + chart_height / 2}" class="moztrace-chart-axis" transform="rotate(-90 18 {top + chart_height / 2})">{html.escape(y_label)}</text>'
+        f'<text x="{left + width / 2}" y="{height - 8}" class="moztrace-chart-axis">{html.escape(x_label)}</text></svg>'
+        f'<div class="moztrace-chart-legend">{legend}</div></div>'
+    )
+
+
+def _render_moztrace_detail(record):
+    """Render a self-contained Moztrace session view for an evaluation record."""
+    recording_id = str(record.get("recording_id") or "1")
+    digits = ''.join(ch for ch in recording_id if ch.isdigit())
+    numeric_id = int(digits or "1")
+    session_suffix = f"{numeric_id % 100:02d}"
+    operated_at = record.get("operated_at", "2026-05-28 13:41")
+    try:
+        start_dt = datetime.strptime(operated_at, "%Y-%m-%d %H:%M")
+    except (TypeError, ValueError):
+        start_dt = datetime(2026, 5, 28, 13, 41)
+    start_time = start_dt.replace(second=46).strftime("%Y-%m-%d %H:%M:%S")
+    end_time = (start_dt.replace(second=46) + timedelta(seconds=81)).strftime("%Y-%m-%d %H:%M:%S")
+    action_chunks = 72 + numeric_id % 9
+    action_steps = 1734 + numeric_id % 37
+    task_name = record.get("instruction") or record.get("prompt") or "Sort the tablets and place them into the tray"
+    task_name_en = record.get("instruction_en") or "Sort the tablets and place them into the tray"
+    session_name = f"moztrace_20260528_1341{session_suffix}"
+    task_rows = ''.join(
+        f'<tr><td>{index}</td><td>{html.escape(name)}</td><td>{idle}</td><td>{timestamp}</td><td><span class="moztrace-result">{result}</span></td></tr>'
+        for index, (name, idle, timestamp, result) in enumerate([
+            (task_name_en, 0, "1779946969.1400146", "-"),
+            (task_name_en, 1, "1779946983.7258635", "-"),
+        ], 1)
+    )
+    info_rows = ''.join([
+        f'<tr><th>Session Name</th><td>{html.escape(session_name)}</td><th>Platform</th><td>thor</td></tr>',
+        f'<tr><th>Start Time</th><td>{html.escape(start_time)}</td><th>End Time</th><td>{html.escape(end_time)}</td></tr>',
+        '<tr><th>Duration</th><td>1.34 minutes</td><th>Random Seed</th><td>42</td></tr>',
+    ])
+    stat_cells = ''.join([
+        f'<div><b>Tasks (non-idle)</b><span>1</span></div>',
+        f'<div><b>Action Chunks</b><span>{action_chunks}</span></div>',
+        f'<div><b>Action Steps</b><span>{action_steps}</span></div>',
+        f'<div><b>Avg Chunks/Task</b><span>{action_chunks}</span></div>',
+        f'<div><b>Avg Steps/Task</b><span>{action_steps}</span></div>',
+    ])
+    schema_rows = ''.join([
+        '<tr><td>observation.images.head</td><td>image</td><td>[480, 640, 3]</td><td>头部相机图像</td></tr>',
+        '<tr><td>observation.state</td><td>float32</td><td>[32]</td><td>机器人关节状态</td></tr>',
+        '<tr><td>action</td><td>float32</td><td>[16]</td><td>策略输出动作</td></tr>',
+        '<tr><td>timestamp</td><td>float64</td><td>1</td><td>采样时间戳</td></tr>',
+    ])
+    action_rows = ''.join([
+        '<tr><td>1</td><td>0.000 - 0.420 s</td><td>24</td><td>抓取目标</td><td><span class="moztrace-ok">完成</span></td></tr>',
+        '<tr><td>2</td><td>0.421 - 0.870 s</td><td>26</td><td>移动到托盘</td><td><span class="moztrace-ok">完成</span></td></tr>',
+        '<tr><td>3</td><td>0.871 - 1.340 s</td><td>22</td><td>释放物体</td><td><span class="moztrace-ok">完成</span></td></tr>',
+    ])
+    timeline_rows = ''.join([
+        '<div><span class="moztrace-time">00:00.000</span><i></i><p><b>Session started</b><small>开始采集 observation stream</small></p></div>',
+        '<div><span class="moztrace-time">00:00.420</span><i></i><p><b>Action chunk #1</b><small>策略输出第一段动作</small></p></div>',
+        '<div><span class="moztrace-time">00:00.870</span><i></i><p><b>Action chunk #2</b><small>机器人移动至目标位置</small></p></div>',
+        '<div><span class="moztrace-time">00:01.340</span><i></i><p><b>Session finished</b><small>任务执行完成</small></p></div>',
+    ])
+    latency_rows = ''.join([
+        '<tr><td>Observation capture</td><td>12.4 ms</td><td><span class="moztrace-bar"><i style="width:32%"></i></span></td></tr>',
+        '<tr><td>Policy inference</td><td>28.7 ms</td><td><span class="moztrace-bar"><i style="width:74%"></i></span></td></tr>',
+        '<tr><td>Action dispatch</td><td>8.6 ms</td><td><span class="moztrace-bar"><i style="width:22%"></i></span></td></tr>',
+        '<tr><td>End-to-end</td><td>49.7 ms</td><td><span class="moztrace-bar"><i style="width:100%"></i></span></td></tr>',
+    ])
+    chart_colors = ["#1F80A0", "#4f9d87", "#c18b42", "#a75d67", "#7569a8", "#6d8290"]
+    action_chunk_series = [
+        (f"Dim {index}", [0.3 - index * 0.28 + math.sin(step / 8 + index) * 0.03 - step * (index % 3) * 0.004 for step in range(60)], chart_colors[index % len(chart_colors)])
+        for index in range(6)
+    ]
+    action_analysis_series = [
+        (f"Dim {index}", [0.35 - index * 0.2 + math.sin(step / 7 + index) * 0.025 - step * (index % 4) * 0.005 for step in range(60)], chart_colors[index % len(chart_colors)])
+        for index in range(17)
+    ]
+    timeline_series = [
+        (f"Dim {index}", [0.34 - index * 0.3 + math.sin(step / 13 + index) * 0.012 - step * (index % 2) * 0.0007 for step in range(80)], chart_colors[index % len(chart_colors)])
+        for index in range(3)
+    ]
+    latency_series = [
+        ("Inference Latency (ms)", [90 + math.sin(index / 4) * 4 + (index % 11 == 0) * 11 for index in range(72)], "#1F80A0"),
+        ("Inference Interval (ms)", [202 + math.sin(index / 5) * 0.8 + (index % 13 == 0) * 1.3 for index in range(72)], "#6b9f75"),
+    ]
+    action_chunk_chart = _moztrace_chart_svg("Action Chunk (60 steps x 20 dims)", action_chunk_series, "Step", "Value", 160)
+    action_analysis_chart = _moztrace_chart_svg("Chunk 1_0 - Action Chunk (60 steps x 20 dims)", action_analysis_series, "Step", "Value", 180)
+    timeline_chart = _moztrace_chart_svg("Action Steps Timeline (1734 steps)", timeline_series, "Step", "Value", 180)
+    latency_chart = _moztrace_chart_svg("推理延迟与间隔时间序列", latency_series, "Chunk Index", "Inference Latency (ms)", 180)
+    chunk_options = ''.join(
+        f'<option value="1_{index}">1_{index} (task_id=1, seq={index})</option>'
+        for index in range(72)
+    )
+    dim_options = ''.join(
+        f'<option value="{index}"{ " selected" if index < 6 else ""}>Dim {index}</option>'
+        for index in range(20)
+    )
+    latency_cards = ''.join([
+        '<div><span>平均延迟</span><b>90.99 ms</b></div>',
+        '<div><span>P50 延迟</span><b>89.89 ms</b></div>',
+        '<div><span>P95 延迟</span><b>103.25 ms</b></div>',
+        '<div><span>P99 延迟</span><b>104.33 ms</b></div>',
+        '<div><span>最小延迟</span><b>84.43 ms</b></div>',
+        '<div><span>最大延迟</span><b>104.33 ms</b></div>',
+        '<div><span>平均推理间隔</span><b>202.03 ms</b></div>',
+        '<div><span>推理间隔范围</span><b>201.5 - 203.2 ms</b></div>',
+    ])
+    return f'''
+      <div class="moztrace-shell">
+        <div class="moztrace-tabs" role="tablist">
+          <button class="moztrace-tab active" type="button" onclick="switchMoztracePane('overview', this)">Overview</button>
+          <button class="moztrace-tab" type="button" onclick="switchMoztracePane('obs-player', this)">Obs Player</button>
+          <button class="moztrace-tab" type="button" onclick="switchMoztracePane('action-analysis', this)">Action Analysis</button>
+          <button class="moztrace-tab" type="button" onclick="switchMoztracePane('timeline', this)">Timeline</button>
+          <button class="moztrace-tab" type="button" onclick="switchMoztracePane('latency', this)">Latency</button>
+          <button class="moztrace-tab" type="button" onclick="switchMoztracePane('schema', this)">Schema</button>
+        </div>
+        <section id="moztrace-pane-overview" class="moztrace-subpane">
+          <div class="moztrace-section"><div class="moztrace-section-title">Session 信息</div><table class="moztrace-info-table"><tbody>{info_rows}</tbody></table></div>
+          <div class="moztrace-section"><div class="moztrace-section-title">数据统计</div><div class="moztrace-stat-row">{stat_cells}</div></div>
+          <div class="moztrace-section"><div class="moztrace-section-title">Tasks 列表</div><div class="moztrace-table-wrap"><table class="moztrace-table"><thead><tr><th>Task ID</th><th>Task</th><th>Is Idle</th><th>Timestamp</th><th>Result</th></tr></thead><tbody>{task_rows}</tbody></table></div></div>
+        </section>
+        <section id="moztrace-pane-schema" class="moztrace-subpane" style="display:none"><div class="moztrace-schema-diagram"><div class="moztrace-schema-table"><b>task_dump</b><span>task_id (INTEGER, PK)</span><span>task (TEXT)</span><span>is_idle (INTEGER)</span><span>timestamp (REAL)</span><span>result (TEXT)</span></div><div class="moztrace-schema-relation">1&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;N</div><div class="moztrace-schema-table moztrace-schema-table-wide"><b>action_chunk_dump</b><span>chunk_id (TEXT, PK)</span><span>task_id (INTEGER)</span><span>chunk_seq (INTEGER)</span><span>obs_timestamp (REAL)</span><span>inference_start_ts (REAL)</span><span>inference_end_ts (REAL)</span><span>robot_state (BLOB)</span><span>image_high (TEXT)</span><span>image_left_wrist (TEXT)</span><span>image_right_wrist (TEXT)</span><span>action_chunk (BLOB)</span><span>remaining_actions (BLOB)</span><span>noise (BLOB)</span><span>prefix_attention_start (INTEGER)</span><span>prefix_attention_end (INTEGER)</span><span>exec_actions (BLOB)</span><span>time_table (BLOB)</span></div><div class="moztrace-schema-relation">1&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;N</div><div class="moztrace-schema-table"><b>action_step_dump</b><span>step_id (TEXT, PK)</span><span>task_id (INTEGER)</span><span>chunk_id (TEXT)</span><span>action_idx (INTEGER)</span><span>dispatch_ts (REAL)</span><span>obs_timestamp (REAL)</span><span>action (BLOB)</span></div></div></section>
+        <section id="moztrace-pane-obs-player" class="moztrace-subpane" style="display:none"><div class="moztrace-player-toolbar"><button type="button">|◀</button><button type="button">▶ Play</button><button type="button">▶|</button><select aria-label="播放速度"><option>0.25x</option><option>0.5x</option><option selected>1x</option><option>2x</option><option>4x</option></select><span>Chunk: 1/72&nbsp;&nbsp; Time: 0.000s&nbsp;|&nbsp;Infer: 103.8 ms</span></div><div class="moztrace-camera-grid"><div><div class="moztrace-camera-frame camera-left"><span>cam_left_wrist</span></div><small>cam_left_wrist</small></div><div><div class="moztrace-camera-frame camera-high"><span>cam_high</span></div><small>cam_high</small></div><div><div class="moztrace-camera-frame camera-right"><span>cam_right_wrist</span></div><small>cam_right_wrist</small></div></div><div class="moztrace-chart-panel">{action_chunk_chart}<div class="moztrace-segmented"><button class="active" type="button">Action Chunk</button><button type="button">Action Step</button><button type="button">维度: 6 selected⌄</button></div></div></section>
+        <section id="moztrace-pane-action-analysis" class="moztrace-subpane" style="display:none"><div class="moztrace-analysis-toolbar"><label>选择 Chunk:<select aria-label="选择 Chunk">{chunk_options}</select></label></div>{action_analysis_chart}</section>
+        <section id="moztrace-pane-timeline" class="moztrace-subpane" style="display:none"><div class="moztrace-timeline-toolbar"><label>Task:<select aria-label="Task"><option>All Tasks</option><option>Task 1: Sort the tablets and place them into the tray</option></select></label><label>维度:<select multiple size="4" aria-label="维度">{dim_options}</select></label><button type="button">全选</button><button type="button">清空</button><label class="moztrace-checkbox"><input type="checkbox"> 显示数据点</label></div>{timeline_chart}</section>
+        <section id="moztrace-pane-latency" class="moztrace-subpane" style="display:none">{latency_chart}<div class="moztrace-latency-cards">{latency_cards}</div></section>
+      </div>
+    '''
+
+
+def _render_eval_records_replacement(task_id=None):
+    records = _mock_eval_records()
+    task = next((item for item in EVAL_TASKS if item["id"] == task_id), None) if task_id else None
+    if task_id:
+        records = [record for record in records if record.get("task_id") == task_id]
+    record_json = json.dumps({r["id"]: r for r in records}, ensure_ascii=False)
+    benchmark_opts = ''.join(
+        f'<option value="{html.escape(b["id"], quote=True)}">{html.escape(b["name"])}</option>'
+        for b in BENCHMARKS
+    )
+    checkpoint_opts = ''.join(
+        f'<label class="er-opt"><input type="checkbox" value="{html.escape(m["id"], quote=True)}" data-name="{html.escape(m["name"], quote=True)}" onchange="mselSync(\'er-filter-checkpoint\')"> <span>{html.escape(m["name"])}</span></label>'
+        for m in MODELS
+    )
+    conclusion_opts = ''.join(
+        f'<label class="er-opt"><input type="checkbox" value="{html.escape(value, quote=True)}" data-name="{html.escape(value)}" onchange="mselSync(\'er-filter-conclusion\')"> <span>{html.escape(value)}</span></label>'
+        for value in sorted({str(record.get("conclusion", "")) for record in records if record.get("conclusion")})
+    )
+    rows = []
+    for record in records:
+        rid = html.escape(record["id"], quote=True)
+        rows.append(
+            f'<tr data-record-id="{rid}" data-task-id="{html.escape(record["task_no"], quote=True)}" '
+            f'data-task-name="{html.escape(record["task_name"], quote=True)}" '
+            f'data-benchmark-id="{html.escape(record["benchmark_id"], quote=True)}" '
+            f'data-checkpoint-id="{html.escape(record["checkpoint_id"], quote=True)}" '
+            f'data-highlevel="{html.escape(record.get("prompt", ""), quote=True)}" '
+            f'data-lowlevel="{html.escape(record.get("instruction", ""), quote=True)}" '
+            f'data-conclusion="{html.escape(record.get("conclusion", ""), quote=True)}">'
+            f'<td class="er-record-id">{html.escape(record["recording_id"])}</td>'
+            f'<td>{_eval_record_video_html(record, compact=True)}</td>'
+            f'<td class="er-record-serial">{html.escape(record["serial"])}</td>'
+            f'<td>{html.escape(record["checkpoint"])}</td>'
+            f'<td><div class="er-record-conclusion">{_eval_record_conclusion_html(record["conclusion"])}<span class="er-metric-info" tabindex="0" aria-label="评测指标" data-tip="任务完成度：{html.escape(record["metrics"]["任务完成度"])}；执行质量：{html.escape(record["metrics"]["执行质量"])}">i</span></div></td>'
+            f'<td>{html.escape(record["operator"])}</td>'
+            f'<td class="er-record-time">{html.escape(record["operated_at"])}</td>'
+            f'<td class="actions-cell"><a href="/eval-records/{rid}" class="action-link">详情</a></td>'
+            '</tr>'
+        )
+    row_html = ''.join(rows) or '<tr><td colspan="8" class="er-empty">暂无数据</td></tr>'
+    task_context = (
+        f'<div class="er-task-context"><a href="/tasks">← 返回评测任务</a><div><b class="er-task-context-id">{html.escape(task.get("task_no", "") and str(task.get("task_no")) or "--")}</b></div><div class="er-task-context-name"><b title="{html.escape(task.get("name", "--"), quote=True)}">{html.escape(task.get("name", "--"))}</b></div></div>'
+        if task else ""
+    )
+    content = f'''
+    <div class="er-replacement">
+      {task_context}
+      <div class="filter-bar er-result-filter-bar">
+        <div class="ff"><label>recording_id</label><input id="er-filter-recording-id" type="text" placeholder="请输入 recording_id"></div>
+        <div class="ff er-checkpoint-filter"><label>ckpt（多选）</label><div class="er-dd-trigger" id="er-filter-checkpoint-btn" onclick="mselToggle('er-filter-checkpoint', event)" aria-label="ckpt（多选）"><div id="er-filter-checkpoint-chips" class="er-chips"></div><span aria-hidden="true" style="color:rgba(0,0,0,.35);font-size:11px;margin-left:6px;">▼</span></div><div class="er-dd-panel" id="er-filter-checkpoint-panel" style="width:100%;max-height:260px;overflow:auto;">{checkpoint_opts}<div style="display:flex;justify-content:flex-end;gap:12px;padding:8px 14px;border-top:1px solid #f0f0f0;"><a href="javascript:;" onclick="mselToggleAll('er-filter-checkpoint', true)" style="font-size:12px;color:#1F80A0;">全选</a><a href="javascript:;" onclick="mselToggleAll('er-filter-checkpoint', false)" style="font-size:12px;color:rgba(0,0,0,.45);">清空</a></div></div><input type="hidden" id="er-filter-checkpoint-hidden" value=""></div>
+        <div class="ff"><label>highlevel</label><input id="er-filter-highlevel" type="text" placeholder="请输入 highlevel"></div>
+        <div class="ff"><label>lowlevel</label><input id="er-filter-lowlevel" type="text" placeholder="请输入 lowlevel"></div>
+        <div class="ff er-conclusion-filter"><label>评测结论（多选）</label><div class="er-dd-trigger" id="er-filter-conclusion-btn" onclick="mselToggle('er-filter-conclusion', event)" aria-label="评测结论（多选）"><div id="er-filter-conclusion-chips" class="er-chips"></div><span aria-hidden="true" style="color:rgba(0,0,0,.35);font-size:11px;margin-left:6px;">▼</span></div><div class="er-dd-panel" id="er-filter-conclusion-panel" style="width:100%;max-height:220px;overflow:auto;">{conclusion_opts}<div style="display:flex;justify-content:flex-end;gap:12px;padding:8px 14px;border-top:1px solid #f0f0f0;"><a href="javascript:;" onclick="mselToggleAll('er-filter-conclusion', true)" style="font-size:12px;color:#1F80A0;">全选</a><a href="javascript:;" onclick="mselToggleAll('er-filter-conclusion', false)" style="font-size:12px;color:rgba(0,0,0,.45);">清空</a></div></div><input type="hidden" id="er-filter-conclusion-hidden" value=""></div>
+        <div class="filter-actions"><button type="button" class="ant-btn" onclick="erResultClear()">清空</button><button type="button" class="ant-btn ant-btn-primary" onclick="erResultApply()">搜索</button></div>
+      </div>
+      <div class="er-result-summary">共 <b id="er-result-count">{len(records)}</b> 条评测记录</div>
+      <div class="ant-card ant-card-bordered er-result-card">
+        <div class="er-result-table-wrap"><table class="ant-table er-result-table" id="er-result-table">
+          <thead><tr><th style="width:120px;">recording_id</th><th style="width:520px;">视频</th><th style="width:130px;">序列号</th><th style="width:130px;">ckpt</th><th style="width:140px;">评测结论</th><th style="width:100px;">操作人</th><th style="width:145px;">操作时间</th><th style="width:60px;">操作</th></tr></thead>
+          <tbody>{row_html}</tbody>
+        </table></div>
+        <div class="er-result-pagination"><span id="er-result-page-copy">1 / 12</span><button type="button" id="er-result-prev" onclick="erResultPageChange(-1)" aria-label="上一页">‹</button><button type="button" id="er-result-current" class="active">1</button><button type="button" id="er-result-next" onclick="erResultPageChange(1)" aria-label="下一页">›</button></div>
+      </div>
+    </div>
+    <script>
+    var evalRecordData = {record_json};
+    var ER_RESULT_PAGE_SIZE = 10;
+    var erResultPage = 1;
+    var erResultMatches = [];
+    function erResultApply() {{
+      var recordingId = (document.getElementById('er-filter-recording-id').value || '').trim().toLowerCase();
+      var checkpoints = Array.from(document.querySelectorAll('#er-filter-checkpoint-panel input[type="checkbox"]:checked')).map(function(option) {{ return option.value; }});
+      var highlevel = (document.getElementById('er-filter-highlevel').value || '').trim().toLowerCase();
+      var lowlevel = (document.getElementById('er-filter-lowlevel').value || '').trim().toLowerCase();
+      var conclusions = Array.from(document.querySelectorAll('#er-filter-conclusion-panel input[type="checkbox"]:checked')).map(function(option) {{ return option.value; }});
+      var count = 0;
+      erResultMatches = [];
+      document.querySelectorAll('#er-result-table tbody tr[data-record-id]').forEach(function(row) {{
+        var match = (!recordingId || (row.dataset.recordId || '').toLowerCase().indexOf(recordingId) >= 0)
+          && (!checkpoints.length || checkpoints.indexOf(row.dataset.checkpointId) >= 0)
+          && (!highlevel || (row.dataset.highlevel || '').toLowerCase().indexOf(highlevel) >= 0)
+          && (!lowlevel || (row.dataset.lowlevel || '').toLowerCase().indexOf(lowlevel) >= 0)
+          && (!conclusions.length || conclusions.indexOf(row.dataset.conclusion) >= 0);
+        if (match) {{ erResultMatches.push(row); count += 1; }}
+      }});
+      document.getElementById('er-result-count').textContent = String(count);
+      erResultPage = 1;
+      erResultRenderPage();
+    }}
+    function erResultRenderPage() {{
+      var totalPages = Math.max(1, Math.ceil(erResultMatches.length / ER_RESULT_PAGE_SIZE));
+      if (erResultPage > totalPages) erResultPage = totalPages;
+      document.querySelectorAll('#er-result-table tbody tr[data-record-id]').forEach(function(row) {{ row.style.display = 'none'; }});
+      var start = (erResultPage - 1) * ER_RESULT_PAGE_SIZE;
+      erResultMatches.slice(start, start + ER_RESULT_PAGE_SIZE).forEach(function(row) {{ row.style.display = ''; }});
+      document.getElementById('er-result-page-copy').textContent = erResultMatches.length ? erResultPage + ' / ' + totalPages : '0 / 0';
+      document.getElementById('er-result-current').textContent = erResultMatches.length ? String(erResultPage) : '0';
+      document.getElementById('er-result-prev').disabled = !erResultMatches.length || erResultPage <= 1;
+      document.getElementById('er-result-next').disabled = !erResultMatches.length || erResultPage >= totalPages;
+    }}
+    function erResultPageChange(delta) {{
+      erResultPage += delta;
+      erResultRenderPage();
+    }}
+    function erResultClear() {{
+      document.getElementById('er-filter-recording-id').value = '';
+      mselToggleAll('er-filter-checkpoint', false);
+      document.getElementById('er-filter-highlevel').value = '';
+      document.getElementById('er-filter-lowlevel').value = '';
+      mselToggleAll('er-filter-conclusion', false);
+      erResultApply();
+    }}
+    function openEvalRecordVideo(button) {{
+      var record = evalRecordData[button.dataset.recordId];
+      var index = Number(button.dataset.videoIndex || 0);
+      var video = record && record.videos ? record.videos[index] : null;
+      if (window.openMediaViewer) window.openMediaViewer('video', index, video ? video.label : '评测视频', video ? video.url : '');
+    }}
+    erResultApply();
+    </script>
+    <style>
+      .er-replacement {{ min-width:0; }}
+      .er-task-context {{ display:flex;align-items:center;gap:18px;margin-bottom:14px;padding:12px 16px;border:1px solid #e4eaed;border-radius:8px;background:#fff; }}
+      .er-task-context>a {{ color:#1F80A0;text-decoration:none;font-size:13px; }} .er-task-context>div {{ display:flex;align-items:center;min-width:0; }} .er-task-context-name {{ flex:1; }}
+      .er-task-context b {{ font-size:15px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap; }} .er-task-context-id {{ font-family:'SF Mono',Menlo,Consolas,monospace;font-size:13px !important;color:rgba(0,0,0,.72); }}
+      .er-result-filter-bar {{ display:grid; grid-template-columns:repeat(5,minmax(130px,1fr)) auto; gap:12px; align-items:end; padding:16px; background:#fff; border:1px solid #f0f0f0; border-radius:8px; margin-bottom:12px; }}
+      .er-result-filter-bar .ff {{ min-width:0; }} .er-checkpoint-filter,.er-conclusion-filter {{ position:relative; }} .er-checkpoint-filter .er-dd-trigger,.er-conclusion-filter .er-dd-trigger {{ min-height:32px; }} .er-checkpoint-filter .er-chips,.er-conclusion-filter .er-chips {{ min-height:22px; }}
+      .er-result-filter-bar .ff label {{ display:block; margin-bottom:5px; color:rgba(0,0,0,.55); font-size:12px; }}
+      .er-result-filter-bar input, .er-result-filter-bar select {{ width:100%; }}
+      .er-result-filter-bar .er-dd-panel input[type="checkbox"] {{ width:14px !important;height:14px !important;padding:0 !important;border:0 !important;border-radius:0 !important;appearance:auto !important;-webkit-appearance:auto !important;background:transparent !important;box-shadow:none !important; }}
+      .er-result-summary {{ color:rgba(0,0,0,.55); font-size:13px; margin:0 0 10px 2px; }}
+      .er-result-card {{ overflow:hidden; }}
+      .er-result-table-wrap {{ overflow-x:auto; }}
+      .er-result-table {{ min-width:1240px; table-layout:fixed; }}
+      .er-result-table thead th {{ background:#f7f8fa; }}
+      .er-result-table tbody td {{ height:156px; padding:10px 12px; }}
+      .er-record-id, .er-record-serial {{ font-family:'SF Mono',Menlo,Consolas,monospace; font-size:12px; color:rgba(0,0,0,.65); }}
+      .er-record-video-strip {{ display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:5px; min-width:0; }}
+      .er-record-video-strip-compact {{ grid-template-rows:28px 120px; gap:0; min-width:500px; background:#050505; border-radius:8px; overflow:hidden; }}
+      .er-record-video-prompt {{ grid-column:1/-1; display:flex; align-items:center; justify-content:center; padding:0 12px; background:#050505; color:rgba(255,255,255,.88); font-size:12px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }}
+      .er-record-video {{ position:relative; min-width:0; height:86px; border:0; border-radius:7px; overflow:hidden; background:linear-gradient(145deg,#243447 0%,#101820 55%,#304352 100%); color:#fff; cursor:default; padding:0; display:flex; align-items:center; justify-content:center; }}
+      .er-record-video::before {{ content:''; position:absolute; inset:18px 12px 10px; border:1px solid rgba(255,255,255,.22); border-radius:4px; background:linear-gradient(135deg,rgba(255,255,255,.10),transparent 50%),linear-gradient(25deg,transparent 50%,rgba(100,190,180,.24) 51%,rgba(100,190,180,.03) 78%); }}
+      .er-record-video-play {{ position:relative; z-index:1; width:27px; height:27px; border-radius:50%; background:rgba(0,0,0,.48); display:flex; align-items:center; justify-content:center; font-size:11px; padding-left:2px; }}
+      .er-record-video-label {{ position:absolute; left:7px; bottom:5px; z-index:1; font-size:10px; color:rgba(255,255,255,.82); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:calc(100% - 14px); }}
+      .er-record-video:hover {{ box-shadow:none; }}
+      .er-record-video-compact {{ height:120px; border-radius:0; }}
+      .er-record-video-compact .er-record-video-play {{ width:23px; height:23px; font-size:10px; }}
+      .er-record-video-compact.vid-thumb {{ width:auto; height:120px; flex:none; }}
+      .er-record-video-compact.vid-thumb::before {{ content:'▶'; position:absolute; left:50%; top:50%; inset:auto; transform:translate(-50%,-50%); color:rgba(255,255,255,.5); font-size:14px; border:0; border-radius:0; background:none; }}
+      .er-record-video-compact .er-record-video-label {{ display:none; }}
+      .er-record-conclusion {{ display:inline-flex; align-items:center; gap:7px; white-space:nowrap; }}
+      .er-metric-info {{ display:inline-flex; align-items:center; justify-content:center; width:16px; height:16px; border:1px solid #a9cbd4; border-radius:50%; color:#1F80A0; font-size:11px; line-height:1; cursor:help; }}
+      .er-metric-info:focus {{ outline:2px solid rgba(31,128,160,.2); outline-offset:1px; }}
+      .er-result-pill {{ display:inline-flex; align-items:center; padding:3px 9px; border-radius:5px; font-size:12px; color:rgba(0,0,0,.55); background:#f5f5f5; }}
+      .er-result-pass {{ color:#389e0d; background:#f0f9e8; border:1px solid #d9f0c5; }}
+      .er-result-fail {{ color:#d4380d; background:#fff1f0; border:1px solid #ffccc7; }}
+      .er-record-metrics {{ display:flex; flex-direction:column; gap:4px; color:rgba(0,0,0,.62); font-size:12px; line-height:1.5; }}
+      .er-result-pagination {{ display:flex; justify-content:flex-end; align-items:center; gap:5px; padding:12px 16px; color:rgba(0,0,0,.45); font-size:12px; }}
+      .er-result-pagination button {{ width:28px; height:28px; border:1px solid #d9d9d9; border-radius:5px; background:#fff; color:rgba(0,0,0,.65); cursor:pointer; }}
+      .er-result-pagination button.active {{ color:#1F80A0; border-color:#1F80A0; }}
+      .er-result-pagination button:disabled {{ color:#d9d9d9; cursor:not-allowed; }}
+      .er-empty {{ text-align:center; padding:52px !important; color:rgba(0,0,0,.35) !important; }}
+      @media (max-width:1400px) {{
+        .er-result-table {{ min-width:1240px; }}
+        .er-result-table th:nth-child(1) {{ width:120px !important; }}
+        .er-result-table th:nth-child(2) {{ width:520px !important; }}
+        .er-result-table th:nth-child(3) {{ width:130px !important; }}
+        .er-result-table th:nth-child(4) {{ width:130px !important; }}
+        .er-result-table th:nth-child(5) {{ width:140px !important; }}
+        .er-result-table th:nth-child(6) {{ width:100px !important; }}
+        .er-result-table th:nth-child(7) {{ width:145px !important; }}
+        .er-result-table th:nth-child(8) {{ width:60px !important; }}
+        .er-record-video-strip-compact {{ min-width:500px; }}
+        .er-result-table tbody td {{ padding:8px 7px; font-size:12px; }}
+        .er-result-table tbody td:nth-child(4), .er-result-table tbody td:nth-child(6), .er-result-table tbody td:nth-child(7) {{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }}
+        .er-record-video-compact.vid-thumb {{ width:auto; height:120px; }}
+      }}
+      @media (max-width:1000px) {{ .er-result-filter-bar {{ grid-template-columns:repeat(2,minmax(150px,1fr)); }} .er-result-filter-bar .filter-actions {{ grid-column:1/-1; }} }}
+    </style>
+    '''
+    return render_page("评测数据", content, active="eval_records")
+
+
 @app.route("/eval-records")
 def eval_records_page():
+    return _render_eval_records_replacement()
+
+
+@app.route("/tasks/<tid>/data")
+def task_data_page(tid):
+    if not any(task["id"] == tid for task in EVAL_TASKS):
+        return redirect(url_for("tasks_page"))
+    return _render_eval_records_replacement(tid)
+
+    # Legacy implementation retained below for compatibility with old links.
     view = request.args.get("view", "task")  # task | ckpt
     if view not in ("task", "ckpt"):
         view = "task"
@@ -6835,6 +8575,277 @@ def eval_records_page():
     </script>
     '''
     return render_page("\u8bc4\u6d4b\u7ed3\u679c\u8bb0\u5f55", content, active="eval_records")
+
+
+@app.route("/eval-records/<record_id>")
+def eval_record_detail(record_id):
+    all_records = _mock_eval_records()
+    record_index = next((index for index, item in enumerate(all_records) if item["id"] == record_id), -1)
+    record = all_records[record_index] if record_index >= 0 else None
+    if not record:
+        flash("评测记录不存在", "error")
+        return redirect(url_for("eval_records_page"))
+    prompt_text = html.escape(record.get("instruction") or record.get("prompt") or "--")
+    prompt_en = html.escape(record.get("instruction_en") or "")
+    video_html = _eval_record_video_html(record)
+    prompt_tags = render_tags_html(record.get("labels", []))
+    metric_rows = ''.join(
+        f'<tr><td>{html.escape(key)}</td><td>{html.escape(str(value))}</td></tr>'
+        for key, value in record.get("metrics", {}).items()
+    )
+    conclusion = _eval_record_conclusion_html(record.get("conclusion", "--"))
+    conclusion_class = "is-fail" if record.get("conclusion") == "失败" else "is-pass"
+    record_id_html = html.escape(record.get("id", ""))
+    recording_id_html = html.escape(record.get("recording_id", "--"))
+    checkpoint_html = html.escape(record.get("checkpoint", "--"))
+    moztrace_html = _render_moztrace_detail(record)
+    prev_record = all_records[record_index - 1] if record_index > 0 else None
+    next_record = all_records[record_index + 1] if record_index >= 0 and record_index < len(all_records) - 1 else None
+    prev_link = f'<a class="er-detail-nav-link" href="/eval-records/{html.escape(prev_record["id"], quote=True)}">← 上一条</a>' if prev_record else '<span class="er-detail-nav-link is-disabled">← 上一条</span>'
+    next_link = f'<a class="er-detail-nav-link" href="/eval-records/{html.escape(next_record["id"], quote=True)}">下一条 →</a>' if next_record else '<span class="er-detail-nav-link is-disabled">下一条 →</span>'
+    content = f'''
+    <div class="er-detail-page">
+      <div class="er-detail-head">
+        <a class="er-detail-back" href="/tasks/{html.escape(record.get("task_id", ""), quote=True)}/data">← 返回任务数据</a>
+        <span class="er-detail-title">评测记录</span>
+        <div class="er-detail-inline-meta" aria-label="记录基本信息">
+          <span><em>recording_id</em><b class="mono">{recording_id_html}</b></span>
+          <span><em>ckpt</em><b>{checkpoint_html}</b></span>
+        </div>
+      </div>
+      <section class="er-detail-prompt">
+        <div class="er-detail-prompt-line"><span class="er-detail-prompt-main">{prompt_text}</span><span class="er-detail-prompt-en">{prompt_en}</span></div>
+        <div class="er-detail-prompt-tags"><span class="er-detail-section-label">标签</span><div>{prompt_tags}</div></div>
+      </section>
+      <section class="er-detail-video-card">
+        {video_html}
+        <div class="er-detail-playback" aria-label="视频播放控制">
+          <button type="button" class="er-playback-btn" id="er-playback-toggle" onclick="toggleEvalPlayback()" aria-label="播放视频">▶</button>
+          <input id="er-detail-frame-range" type="range" min="0" max="71" value="0" step="1" oninput="setEvalPlaybackFrame(this.value)" aria-label="视频播放进度">
+          <span id="er-detail-frame-copy">帧 0 / 72</span>
+        </div>
+      </section>
+      <div class="er-detail-tabs" role="tablist">
+        <button type="button" class="er-detail-tab active" role="tab" aria-selected="true" onclick="switchEvalRecordTab('record', this)">评测记录</button>
+        <button type="button" class="er-detail-tab" role="tab" aria-selected="false" onclick="switchEvalRecordTab('moztrace', this)">moztrace</button>
+      </div>
+      <section id="er-detail-record-pane" class="er-detail-pane">
+        <div class="er-record-summary">
+          <div class="er-record-outcome {conclusion_class}">{conclusion}</div>
+          <div class="er-record-metrics">
+            <table class="er-record-metric-table"><thead><tr><th>指标</th><th>结果</th></tr></thead><tbody>{metric_rows}</tbody></table>
+          </div>
+        </div>
+      </section>
+      <section id="er-detail-moztrace-pane" class="er-detail-pane" style="display:none;">{moztrace_html}</section>
+      <div class="er-detail-nav">{prev_link}<span class="er-detail-nav-count">{record_index + 1} / {len(all_records)}</span>{next_link}</div>
+    </div>
+    <script>
+    function switchEvalRecordTab(kind, button) {{
+      document.querySelectorAll('.er-detail-tab').forEach(function(tab) {{ tab.classList.toggle('active', tab === button); tab.setAttribute('aria-selected', tab === button ? 'true' : 'false'); }});
+      document.getElementById('er-detail-record-pane').style.display = kind === 'record' ? '' : 'none';
+      document.getElementById('er-detail-moztrace-pane').style.display = kind === 'moztrace' ? '' : 'none';
+      syncEvalRecordPaneHeights();
+    }}
+    function switchMoztracePane(kind, button) {{
+      var shell = button.closest('.moztrace-shell');
+      if (!shell) return;
+      shell.querySelectorAll('.moztrace-tab').forEach(function(tab) {{ tab.classList.toggle('active', tab === button); }});
+      shell.querySelectorAll('.moztrace-subpane').forEach(function(pane) {{ pane.style.display = pane.id === 'moztrace-pane-' + kind ? '' : 'none'; }});
+      requestAnimationFrame(syncEvalRecordPaneHeights);
+    }}
+    var evalPlaybackFrame = 0;
+    var evalPlaybackTimer = null;
+    function setEvalPlaybackFrame(frame) {{
+      evalPlaybackFrame = Math.max(0, Math.min(71, Number(frame) || 0));
+      var range = document.getElementById('er-detail-frame-range');
+      var copy = document.getElementById('er-detail-frame-copy');
+      if (range) range.value = evalPlaybackFrame;
+      if (copy) copy.textContent = '帧 ' + evalPlaybackFrame + ' / 72';
+      var ratio = evalPlaybackFrame / 71;
+      document.querySelectorAll('.moztrace-frame-line').forEach(function(line) {{
+        var svg = line.closest('svg');
+        if (!svg) return;
+        var viewBox = svg.viewBox && svg.viewBox.baseVal;
+        var x = 58 + (790 * ratio);
+        line.setAttribute('x1', x.toFixed(1));
+        line.setAttribute('x2', x.toFixed(1));
+      }});
+    }}
+    function toggleEvalPlayback() {{
+      var button = document.getElementById('er-playback-toggle');
+      if (evalPlaybackTimer) {{
+        clearInterval(evalPlaybackTimer);
+        evalPlaybackTimer = null;
+        if (button) {{ button.textContent = '▶'; button.setAttribute('aria-label', '播放视频'); }}
+        return;
+      }}
+      if (evalPlaybackFrame >= 71) setEvalPlaybackFrame(0);
+      evalPlaybackTimer = setInterval(function() {{
+        if (evalPlaybackFrame >= 71) {{ toggleEvalPlayback(); return; }}
+        setEvalPlaybackFrame(evalPlaybackFrame + 1);
+      }}, 180);
+      if (button) {{ button.textContent = 'Ⅱ'; button.setAttribute('aria-label', '暂停视频'); }}
+    }}
+    function syncEvalRecordPaneHeights() {{
+      var panes = [document.getElementById('er-detail-record-pane'), document.getElementById('er-detail-moztrace-pane')];
+      if (panes.some(function(pane) {{ return !pane; }})) return;
+      panes.forEach(function(pane) {{ pane.style.removeProperty('height'); }});
+    }}
+    requestAnimationFrame(syncEvalRecordPaneHeights);
+    setEvalPlaybackFrame(0);
+    window.addEventListener('resize', syncEvalRecordPaneHeights);
+    var evalRecordDetailData = {json.dumps({record["id"]: record}, ensure_ascii=False)};
+    </script>
+    <style>
+      .er-detail-page {{ min-width:0; min-height:calc(100vh - 108px); display:flex; flex-direction:column; padding-bottom:0; }}
+      .er-detail-head {{ display:flex; align-items:center; gap:12px; margin-bottom:10px; min-height:30px; }}
+      .er-detail-back {{ color:#1F80A0; text-decoration:none; font-size:13px; }}
+      .er-detail-back:hover {{ text-decoration:underline; }}
+      .er-detail-title {{ font-size:18px; font-weight:600; color:rgba(0,0,0,.85); }}
+      .er-detail-inline-meta {{ display:flex; align-items:center; gap:18px; min-width:0; margin-left:8px; padding-left:14px; border-left:1px solid #e8ecee; }}
+      .er-detail-inline-meta span {{ display:inline-flex; align-items:baseline; gap:6px; min-width:0; }}
+      .er-detail-inline-meta em {{ color:rgba(0,0,0,.42); font-size:11px; font-style:normal; }}
+      .er-detail-inline-meta b {{ color:rgba(0,0,0,.78); font-size:12px; font-weight:500; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:260px; }}
+      .er-detail-inline-meta b.mono {{ font-family:'SF Mono',Menlo,Consolas,monospace; font-size:11px; }}
+      .er-detail-prompt {{ background:#e6f4f8; border:1px solid #b8dce8; border-radius:8px; padding:10px 14px; margin-bottom:10px; }}
+      .er-detail-section-label {{ color:rgba(0,0,0,.45); font-size:11px; margin-bottom:5px; }}
+      .er-detail-prompt-main {{ font-size:14px; font-weight:600; color:#1F80A0; line-height:1.4; }}
+      .er-detail-prompt-line {{ display:flex; align-items:baseline; gap:12px; flex-wrap:wrap; }}
+      .er-detail-prompt-en {{ color:rgba(0,0,0,.45); font-size:12px; }}
+      .er-detail-prompt-tags {{ display:flex; align-items:flex-start; gap:10px; margin-top:7px; padding-top:6px; border-top:1px solid rgba(31,128,160,.16); }}
+      .er-detail-prompt-tags .er-detail-section-label {{ flex:none; margin:3px 0 0; }}
+      .er-detail-prompt-tags > div {{ display:flex; flex-wrap:wrap; gap:4px; }}
+      .er-detail-video-card {{ background:#fff; border:1px solid #f0f0f0; border-radius:8px; padding:10px 12px; margin-bottom:10px; }}
+      .er-detail-video-head {{ display:flex; justify-content:space-between; align-items:center; font-size:13px; font-weight:500; margin-bottom:7px; }}
+      .er-detail-video-card .er-record-video-strip {{ min-width:0; gap:8px; }}
+      .er-detail-video-card .er-record-video {{ height:150px; }}
+      .er-detail-playback {{ display:flex; align-items:center; gap:8px; margin-top:8px; padding:0 2px; color:rgba(0,0,0,.52); font-size:11px; }}
+      .er-playback-btn {{ flex:0 0 28px; width:28px; height:28px; padding:0; border:1px solid #c9dddd; border-radius:5px; background:#fff; color:#1F80A0; cursor:pointer; }}
+      .er-playback-btn:hover {{ border-color:#1F80A0; background:#f1f7f7; }}
+      .er-detail-playback input[type=range] {{ flex:1; min-width:120px; accent-color:#1F80A0; cursor:pointer; }}
+      .er-detail-playback span {{ min-width:68px; text-align:right; white-space:nowrap; }}
+      .er-detail-tabs {{ display:flex; gap:4px; border-bottom:1px solid #f0f0f0; margin-bottom:10px; }}
+      .er-detail-tab {{ border:0; border-bottom:2px solid transparent; background:transparent; padding:8px 16px; font-size:13px; color:rgba(0,0,0,.55); cursor:pointer; }}
+      .er-detail-tab.active {{ color:#1F80A0; border-bottom-color:#1F80A0; font-weight:500; }}
+      .er-detail-pane {{ background:#fff; border:1px solid #f0f0f0; border-radius:8px; padding:10px 12px; box-sizing:border-box; overflow:auto; max-height:260px; }}
+      .er-detail-grid {{ display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:12px; margin-bottom:12px; font-size:13px; color:rgba(0,0,0,.72); }}
+      .er-record-summary {{ display:flex; flex-direction:column; align-items:stretch; gap:10px; min-height:0; }}
+      .er-record-outcome {{ width:100%; display:flex; align-items:center; justify-content:flex-start; padding:0 0 10px 2px; border-right:0; border-bottom:1px solid #edf0f2; }}
+      .er-record-outcome .er-result-pill {{ display:inline-flex; align-items:center; padding:3px 12px; border-radius:4px; font-size:14px; line-height:22px; font-weight:600; }}
+      .er-record-outcome .er-result-pass {{ color:#389e0d; background:#f0f9e8; border:1px solid #d9f0c5; }}
+      .er-record-outcome .er-result-fail {{ color:#d4380d; background:#fff1f0; border:1px solid #ffccc7; }}
+      .er-record-metrics {{ width:100%; display:flex; align-items:stretch; }}
+      .er-record-metric-table {{ width:100%; height:100%; border-collapse:collapse; table-layout:fixed; font-size:13px; }}
+      .er-record-metric-table th {{ height:28px; padding:0 10px; background:#f7f8fa; border-bottom:1px solid #edf0f2; color:rgba(0,0,0,.45); font-size:11px; font-weight:500; text-align:left; }}
+      .er-record-metric-table th:last-child, .er-record-metric-table td:last-child {{ width:42%; }}
+      .er-record-metric-table td {{ height:30px; padding:0 10px; border-bottom:1px solid #edf0f2; color:rgba(0,0,0,.68); text-align:left; }}
+      .er-record-metric-table tbody tr:last-child td {{ border-bottom:0; }}
+      .er-detail-label {{ display:block; color:rgba(0,0,0,.45); font-size:12px; margin-bottom:7px; }}
+      .er-detail-metric-table {{ max-width:640px; }}
+      .moztrace-shell {{ color:rgba(0,0,0,.78); min-width:0; }}
+      .moztrace-tabs {{ display:inline-flex; align-items:center; gap:3px; max-width:100%; padding:3px; margin:0 0 8px; overflow-x:auto; background:#f1f7f7; border:1px solid #d7e9e9; border-radius:9px; }}
+      .moztrace-tab {{ flex:none; border:0; border-radius:6px; background:transparent; color:rgba(0,0,0,.64); padding:7px 13px; font-size:12px; cursor:pointer; white-space:nowrap; transition:all .18s ease; }}
+      .moztrace-tab:hover {{ color:#1F80A0; background:#e6f4f4; }}
+      .moztrace-tab.active {{ color:#fff; background:#1F80A0; box-shadow:0 1px 2px rgba(31,128,160,.22); }}
+      .moztrace-section {{ border:1px solid #e6e8eb; border-radius:4px; overflow:hidden; margin-bottom:8px; background:#fff; }}
+      .moztrace-section:last-child {{ margin-bottom:0; }}
+      .moztrace-section-title {{ background:#f7f8fa; border-bottom:1px solid #e6e8eb; color:rgba(0,0,0,.65); font-size:11px; padding:5px 8px; }}
+      .moztrace-info-table, .moztrace-table {{ width:100%; border-collapse:collapse; table-layout:fixed; font-size:12px; }}
+      .moztrace-info-table th, .moztrace-info-table td, .moztrace-table th, .moztrace-table td {{ border-bottom:1px solid #edf0f2; padding:5px 8px; text-align:left; vertical-align:middle; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }}
+      .moztrace-info-table tr:last-child th, .moztrace-info-table tr:last-child td, .moztrace-table tbody tr:last-child td {{ border-bottom:0; }}
+      .moztrace-info-table th {{ width:18%; background:#fafbfc; color:rgba(0,0,0,.78); font-weight:600; text-align:center; }}
+      .moztrace-info-table td {{ width:32%; color:rgba(0,0,0,.68); }}
+      .moztrace-table th {{ background:#f7f8fa; color:rgba(0,0,0,.58); font-weight:500; }}
+      .moztrace-table th:nth-child(1) {{ width:12%; }}
+      .moztrace-table th:nth-child(2) {{ width:42%; }}
+      .moztrace-table th:nth-child(3) {{ width:14%; }}
+      .moztrace-table th:nth-child(4) {{ width:22%; }}
+      .moztrace-table th:nth-child(5) {{ width:10%; }}
+      .moztrace-table-wrap {{ overflow-x:auto; }}
+      .moztrace-stat-row {{ display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); }}
+      .moztrace-stat-row > div {{ display:flex; flex-direction:column; gap:7px; padding:11px 10px; border-right:1px solid #edf0f2; min-width:0; }}
+      .moztrace-stat-row > div:last-child {{ border-right:0; }}
+      .moztrace-stat-row b {{ font-size:11px; color:rgba(0,0,0,.58); font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }}
+      .moztrace-stat-row span {{ color:rgba(0,0,0,.82); font-size:16px; font-weight:600; }}
+      .moztrace-result {{ color:rgba(0,0,0,.4); }}
+      .moztrace-ok {{ color:#389e0d; }}
+      .moztrace-player {{ padding:14px; background:#fafbfc; }}
+      .moztrace-player-screen {{ height:150px; border-radius:4px; background:linear-gradient(145deg,#244344,#112828); color:rgba(255,255,255,.58); display:flex; align-items:center; justify-content:center; flex-direction:column; gap:8px; }}
+      .moztrace-player-screen b {{ width:40px; height:40px; display:flex; align-items:center; justify-content:center; border-radius:50%; color:#fff; background:rgba(255,255,255,.18); font-size:16px; padding-left:2px; }}
+      .moztrace-player-controls {{ display:flex; align-items:center; gap:10px; margin-top:12px; color:rgba(0,0,0,.5); font-size:12px; }}
+      .moztrace-player-controls button {{ border:0; background:transparent; color:rgba(0,0,0,.55); cursor:pointer; padding:2px 4px; }}
+      .moztrace-player-track {{ position:relative; height:4px; background:#e1e5e8; border-radius:2px; flex:1; }}
+      .moztrace-player-track i {{ display:block; height:100%; background:#1F80A0; border-radius:2px; }}
+      .moztrace-timeline {{ padding:9px 16px 5px; }}
+      .moztrace-timeline > div {{ display:grid; grid-template-columns:92px 16px 1fr; gap:10px; min-height:58px; }}
+      .moztrace-time {{ color:rgba(0,0,0,.45); font-family:monospace; font-size:11px; padding-top:2px; }}
+      .moztrace-timeline i {{ position:relative; width:8px; height:8px; margin-top:4px; background:#1F80A0; border-radius:50%; }}
+      .moztrace-timeline i::after {{ content:''; position:absolute; top:8px; left:3px; width:2px; height:50px; background:#cce3e3; }}
+      .moztrace-timeline > div:last-child i::after {{ display:none; }}
+      .moztrace-timeline p {{ margin:0; display:flex; flex-direction:column; gap:4px; }}
+      .moztrace-timeline p b {{ font-size:12px; font-weight:500; color:rgba(0,0,0,.75); }}
+      .moztrace-timeline p small {{ font-size:11px; color:rgba(0,0,0,.45); }}
+      .moztrace-schema-diagram {{ display:flex; align-items:center; justify-content:center; gap:10px; padding:16px 8px; overflow:auto; background:#fbfcfc; }}
+      .moztrace-schema-table {{ flex:0 0 215px; border:1px solid #b8d8d8; border-radius:4px; background:#fff; overflow:hidden; font-family:'SF Mono',Menlo,Consolas,monospace; font-size:11px; color:rgba(0,0,0,.65); }}
+      .moztrace-schema-table-wide {{ flex-basis:290px; }}
+      .moztrace-schema-table b {{ display:block; padding:8px 10px; color:#fff; background:#1F80A0; font-size:12px; font-weight:600; }}
+      .moztrace-schema-table span {{ display:block; padding:5px 10px; border-top:1px solid #edf2f2; white-space:nowrap; }}
+      .moztrace-schema-relation {{ flex:0 0 36px; color:#1F80A0; font-size:12px; font-weight:600; text-align:center; white-space:nowrap; }}
+      .moztrace-player-toolbar, .moztrace-analysis-toolbar, .moztrace-timeline-toolbar {{ display:flex; align-items:center; flex-wrap:wrap; gap:8px; min-height:38px; margin-bottom:12px; color:rgba(0,0,0,.65); font-size:12px; }}
+      .moztrace-player-toolbar button, .moztrace-player-toolbar select, .moztrace-analysis-toolbar select, .moztrace-timeline-toolbar select, .moztrace-timeline-toolbar button {{ min-height:28px; border:1px solid #ccdcdc; border-radius:4px; background:#fff; color:rgba(0,0,0,.72); padding:3px 9px; font-size:12px; }}
+      .moztrace-player-toolbar button, .moztrace-timeline-toolbar button {{ cursor:pointer; }}
+      .moztrace-player-toolbar button:hover, .moztrace-timeline-toolbar button:hover {{ border-color:#1F80A0; color:#1F80A0; }}
+      .moztrace-player-toolbar input[type=range] {{ flex:1; min-width:120px; accent-color:#1F80A0; }}
+      .moztrace-player-toolbar > span {{ white-space:nowrap; color:rgba(0,0,0,.55); }}
+      .moztrace-camera-grid {{ display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; }}
+      .moztrace-camera-grid > div {{ min-width:0; border:1px solid #dfe9e9; border-radius:5px; padding:5px; background:#fafcfc; text-align:center; }}
+      .moztrace-camera-frame {{ height:130px; display:flex; align-items:flex-end; justify-content:center; border-radius:3px; overflow:hidden; position:relative; background-color:#263d3e; background-image:linear-gradient(155deg,rgba(255,255,255,.24) 0 7%,transparent 7% 28%,rgba(222,235,227,.16) 28% 31%,transparent 31%),linear-gradient(175deg,transparent 0 52%,rgba(195,173,135,.36) 52% 68%,rgba(74,100,92,.7) 68% 100%); }}
+      .moztrace-camera-frame::before {{ content:''; position:absolute; left:9%; right:9%; top:18%; height:34%; border:1px solid rgba(255,255,255,.35); border-radius:4px; transform:perspective(180px) rotateX(8deg); }}
+      .moztrace-camera-frame span {{ position:relative; z-index:1; width:100%; padding:5px 3px; background:rgba(0,0,0,.4); color:rgba(255,255,255,.82); font:11px monospace; }}
+      .moztrace-camera-grid small {{ display:block; padding:5px 0 2px; color:rgba(0,0,0,.52); font-size:11px; }}
+      .moztrace-chart-panel {{ margin-top:6px; }}
+      .moztrace-chart-wrap {{ width:100%; min-width:520px; overflow:hidden; }}
+      .moztrace-chart-title {{ padding:4px 0 1px; text-align:center; color:rgba(0,0,0,.7); font-size:13px; }}
+      .moztrace-chart {{ display:block; width:100%; height:auto; max-height:180px; }}
+      .moztrace-chart-axis {{ fill:rgba(0,0,0,.55); font-size:11px; text-anchor:middle; }}
+      .moztrace-chart-legend {{ display:flex; flex-wrap:wrap; justify-content:flex-end; gap:8px 14px; padding:0 10px 8px; color:rgba(0,0,0,.55); font-size:11px; }}
+      .moztrace-chart-legend span {{ display:inline-flex; align-items:center; gap:4px; }}
+      .moztrace-chart-legend i {{ display:inline-block; width:18px; height:2px; border-radius:1px; }}
+      .moztrace-segmented {{ display:flex; justify-content:center; gap:0; margin:5px 0 2px; }}
+      .moztrace-segmented button {{ border:1px solid #c9dddd; background:#fff; color:rgba(0,0,0,.62); padding:6px 14px; font-size:12px; cursor:pointer; }}
+      .moztrace-segmented button:first-child {{ border-radius:5px 0 0 5px; }}
+      .moztrace-segmented button:last-child {{ border-radius:0 5px 5px 0; }}
+      .moztrace-segmented button + button {{ border-left:0; }}
+      .moztrace-segmented button.active {{ color:#fff; background:#1F80A0; border-color:#1F80A0; }}
+      .moztrace-analysis-toolbar label, .moztrace-timeline-toolbar label {{ display:inline-flex; align-items:center; gap:6px; }}
+      .moztrace-analysis-toolbar select {{ min-width:210px; }}
+      .moztrace-timeline-toolbar select[multiple] {{ min-width:120px; }}
+      .moztrace-checkbox {{ cursor:pointer; }}
+      .moztrace-checkbox input {{ accent-color:#1F80A0; }}
+      .moztrace-latency-cards {{ display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; margin-top:12px; }}
+      .moztrace-latency-cards > div {{ display:flex; flex-direction:column; gap:5px; padding:10px 12px; min-width:0; border:1px solid #dfe9e9; border-radius:5px; background:#f8fbfb; }}
+      .moztrace-latency-cards span {{ color:rgba(0,0,0,.52); font-size:11px; }}
+      .moztrace-latency-cards b {{ color:#1F80A0; font-size:16px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }}
+      .moztrace-latency-table th:first-child, .moztrace-latency-table td:first-child {{ width:36%; }}
+      .moztrace-latency-table th:nth-child(2), .moztrace-latency-table td:nth-child(2) {{ width:18%; }}
+      .moztrace-bar {{ display:block; height:6px; border-radius:3px; background:#eef1f4; overflow:hidden; }}
+      .moztrace-bar i {{ display:block; height:100%; background:#1F80A0; border-radius:3px; }}
+      .er-detail-nav {{ display:flex; align-items:center; justify-content:space-between; margin-top:auto; padding:10px 2px 0; min-height:40px; position:sticky; bottom:0; z-index:5; background:rgba(255,255,255,.96); border-top:1px solid #edf0f2; }}
+      .er-detail-nav-link {{ color:#1F80A0; text-decoration:none; font-size:13px; }}
+      .er-detail-nav-link:hover {{ text-decoration:underline; }}
+      .er-detail-nav-link.is-disabled {{ color:rgba(0,0,0,.25); }}
+      .er-detail-nav-count {{ color:rgba(0,0,0,.4); font-size:12px; }}
+      .er-detail-video-card .lab-vid.er-record-video::before {{ content:none; }}
+      .er-detail-video-card .lab-vid.er-record-video {{ color:rgba(255,255,255,.18); font-size:32px; }}
+      @media (max-width:900px) {{ .er-detail-grid {{ grid-template-columns:repeat(2,minmax(0,1fr)); }} .er-detail-video-card .er-record-video {{ height:170px; }} }}
+      @media (max-width:620px) {{ .er-detail-head {{ flex-wrap:wrap; }} .er-detail-inline-meta {{ flex-basis:100%; margin-left:0; padding-left:0; border-left:0; }} .er-detail-video-card .er-record-video {{ height:160px; }} }}
+      @media (max-width:620px) {{ .er-record-metrics {{ width:100%; }} }}
+      @media (max-width:620px) {{ .er-detail-video-card .er-record-video-strip {{ grid-template-columns:1fr; }} }}
+      @media (max-width:720px) {{ .moztrace-stat-row {{ grid-template-columns:repeat(2,minmax(0,1fr)); }} .moztrace-stat-row > div:nth-child(2n) {{ border-right:0; }} .moztrace-stat-row > div {{ border-bottom:1px solid #edf0f2; }} .moztrace-camera-grid {{ grid-template-columns:1fr; }} .moztrace-camera-frame {{ height:180px; }} .moztrace-latency-cards {{ grid-template-columns:repeat(2,minmax(0,1fr)); }} .moztrace-schema-diagram {{ justify-content:flex-start; }} }}
+    </style>
+    '''
+    return render_page(f"评测记录 {record_id_html}", content, active="eval_records")
 
 
 # ── Leaderboard ──
