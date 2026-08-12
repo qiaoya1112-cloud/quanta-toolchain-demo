@@ -536,7 +536,6 @@ WORKBENCH_SCHEMAS = [
         "regions": ["context", "video", "tabs", "decision", "actions"],
         "components": [
             "basic_info",
-            "instruction_context",
             "multi_view_video",
             "playback_timeline",
             "trajectory_viewer",
@@ -561,7 +560,6 @@ WORKBENCH_SCHEMAS = [
         "regions": ["context", "video", "tabs", "decision", "actions"],
         "components": [
             "basic_info",
-            "instruction_context",
             "multi_view_video",
             "playback_timeline",
             "trajectory_viewer",

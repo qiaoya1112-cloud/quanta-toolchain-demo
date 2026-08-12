@@ -1393,7 +1393,8 @@ class DataPlatformArchitectureTests(unittest.TestCase):
         semantic_workbench = self.client.get(
             "/data/workbench/edit?task=WB-2026-0922-LB&rule=精细动作标注规则%20v2%EF%BC%88%E8%AF%AD%E4%B9%89%E6%A0%87%E6%B3%A8%20E%2FF%2FG%EF%BC%89"
         ).get_data(as_text=True)
-        self.assertIn("语义标注 · E/F/G", semantic_workbench)
+        self.assertIn("语义标注工作台", semantic_workbench)
+        self.assertNotIn('data-component="instruction_context"', semantic_workbench)
         self.assertIn("lab-semantic-row", semantic_workbench)
         self.assertIn("lab-semantic-editor-cell", semantic_workbench)
         self.assertIn(
@@ -2109,11 +2110,25 @@ class DataPlatformArchitectureTests(unittest.TestCase):
         ).get_data(as_text=True)
 
         self.assertIn("动作标注工作台", action_html)
+        for expected in (
+            "处理任务 ID:", "处理任务名称:", "节点:",
+            "序列号:", "采集员:", "数据 ID:",
+            "当前节点", "上一节点", "操作人", "操作", "操作说明",
+        ):
+            self.assertIn(expected, action_html)
+        self.assertLess(
+            action_html.index('data-component="multi_view_video"'),
+            action_html.index('class="wbx-description-module annotation-context"'),
+        )
+        self.assertLess(
+            action_html.index('class="wbx-description-module annotation-context"'),
+            action_html.index('class="wbx-detail-tabbar"'),
+        )
         self.assertIn("动作元素", action_html)
         self.assertIn('data-component="action_element_editor"', action_html)
         self.assertNotIn('data-component="high_low_editor"', action_html)
         self.assertIn("语义标注工作台", semantic_html)
-        self.assertIn("语义标注 · E/F/G", semantic_html)
+        self.assertNotIn('data-component="instruction_context"', semantic_html)
         self.assertIn('data-component="high_low_editor"', semantic_html)
         self.assertIn("lab-semantic-row", semantic_html)
 
@@ -2480,7 +2495,7 @@ class DataPlatformArchitectureTests(unittest.TestCase):
                 "wbx-execution",
             ):
                 self.assertIn(component, style_html)
-            self.assertIn("<b>指令</b>", style_html)
+            self.assertNotIn('data-component="instruction_context"', style_html)
             self.assertNotIn("第1版", style_html)
             self.assertNotIn('<span class="lbl">状态:</span>', style_html)
             self.assertIn(
@@ -2503,10 +2518,7 @@ class DataPlatformArchitectureTests(unittest.TestCase):
                 '<div class="wbx-workbench-header">',
                 detail_tabs_pos,
             )
-            instruction_pos = style_html.index(
-                'class="wbx-instruction"', header_pos
-            )
-            video_pos = style_html.index('class="lab-vid-grid"', instruction_pos)
+            video_pos = style_html.index('class="lab-vid-grid"', header_pos)
             timeline_pos = style_html.index(
                 'class="lab-tools-card"', video_pos
             )
@@ -2516,8 +2528,7 @@ class DataPlatformArchitectureTests(unittest.TestCase):
             self.assertNotIn("wbx-sticky-workbench-header", style_html)
             self.assertNotIn("wbx-sticky-annotation-tools", style_html)
             self.assertLess(detail_tabs_pos, header_pos)
-            self.assertLess(header_pos, instruction_pos)
-            self.assertLess(instruction_pos, video_pos)
+            self.assertLess(header_pos, video_pos)
             self.assertLess(video_pos, timeline_pos)
             self.assertLess(timeline_pos, execution_pos)
             if has_reason:
@@ -2527,6 +2538,29 @@ class DataPlatformArchitectureTests(unittest.TestCase):
                 self.assertNotIn(">错误原因</th>", style_html)
             self.assertEqual(allow_reject, "wbOpenRejectDialog" in style_html)
             self.assertEqual(submit_reason, "wbSubmitDialog" in style_html)
+            expected_submit_label = (
+                "重新提交" if style_id in {"two", "four", "five"} else "提交"
+            )
+            self.assertIn(
+                f'class="btn btn-primary wbx-submit" onclick=',
+                style_html,
+            )
+            submit_button = re.search(
+                r'class="btn btn-primary wbx-submit"[^>]*>([^<]+)</button>',
+                style_html,
+            )
+            self.assertIsNotNone(submit_button)
+            self.assertEqual(expected_submit_label, submit_button.group(1))
+            if style_id == "one":
+                self.assertIn(
+                    '<span>上一节点</span><b>端到端切分标注</b>',
+                    style_html,
+                )
+            if style_id == "three":
+                self.assertIn(
+                    '<span>操作</span><b>提交</b>',
+                    style_html,
+                )
             readonly_style = style_id in {"three", "four", "five"}
             self.assertEqual(
                 not readonly_style,
@@ -2536,23 +2570,20 @@ class DataPlatformArchitectureTests(unittest.TestCase):
                 not readonly_style,
                 '<div class="lab-annotation-toolbox">' in style_html,
             )
-            if style_id == "one":
-                self.assertNotIn(
-                    '<section class="wbx-description-module"',
-                    style_html,
-                )
-            if style_id == "five":
-                self.assertIn(
-                    '<section class="wbx-description-module"',
-                    style_html,
-                )
+            self.assertIn(
+                '<section class="wbx-description-module annotation-context"',
+                style_html,
+            )
 
         style_five_html = self.client.get(
             "/data/workbench-v2/edit?task=WB-E2E-ACCEPTANCE"
             "&recording_id=recording_e2e_007&mode=annotation"
             "&rule=端到端切分标注规则&style=five&style_preview=1"
         ).get_data(as_text=True)
-        self.assertIn('<section class="wbx-description-module"', style_five_html)
+        self.assertIn(
+            '<section class="wbx-description-module annotation-context"',
+            style_five_html,
+        )
         self.assertIn("内部验收发现标注结果需补充确认", style_five_html)
 
         v2_workbench = self.client.get(

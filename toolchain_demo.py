@@ -1839,6 +1839,12 @@ button.tm-subtab { border:0; background:transparent; font-family:inherit; cursor
 .lab-meta .flow-version-select select { height:28px; padding:0 28px 0 10px; border:1px solid rgba(255,255,255,0.18); border-radius:6px; background:#34414d; color:#fff; outline:none; cursor:pointer; }
 .lab-meta .flow-version-select select:focus { border-color:#48b5c0; box-shadow:0 0 0 2px rgba(72,181,192,0.16); }
 .lab-meta .status-pass { background:#3DC470; color:#fff; padding:3px 12px; border-radius:6px; font-size:12px; font-weight:500; letter-spacing:0.5px; }
+.lab-meta.annotation-meta { min-height:34px; box-sizing:border-box; justify-content:space-between; flex-wrap:nowrap; gap:20px; margin-bottom:6px; padding:6px 12px; font-size:12px; }
+.lab-meta.annotation-meta .lf { gap:4px; white-space:nowrap; }
+.lab-meta.annotation-meta .lf .lbl { font-size:11px; }
+.lab-meta.annotation-meta .lf .val { font-size:12px; }
+.annotation-meta-side { display:flex; align-items:center; gap:6px 16px; min-width:0; }
+.annotation-meta-side.right { justify-content:flex-end; margin-left:auto; }
 .lab-vid-grid { display:grid; grid-template-columns:1fr 1fr 1fr; gap:6px; background:#0d0d0d; padding:6px; border-radius:8px; margin-bottom:14px; position:relative; }
 .lab-vid { background:linear-gradient(135deg,#262b31,#1c2025); border-radius:6px; position:relative; min-height:300px; display:flex; align-items:center; justify-content:center; color:rgba(255,255,255,0.18); font-size:32px; overflow:hidden; }
 .lab-vid .vid-label { position:absolute; top:10px; left:14px; color:#fff; font-size:12.5px; z-index:2; padding:0; background:transparent; }
@@ -1942,6 +1948,16 @@ button.tm-subtab { border:0; background:transparent; font-family:inherit; cursor
 .wbx-description-module>div { display:flex; align-items:flex-start; gap:12px; min-width:0; }
 .wbx-description-module span { color:#89969b; font-size:11px; }
 .wbx-description-module p { margin:0; color:#536970; font-size:12px; line-height:1.6; }
+.wbx-description-module.annotation-context { display:grid; grid-template-columns:minmax(150px,.75fr) minmax(105px,.5fr) minmax(115px,.55fr) minmax(80px,.4fr) minmax(340px,2.6fr); gap:0; margin:6px 0 8px; padding:0; overflow:hidden; }
+.annotation-context-item { display:flex!important; flex-direction:row; align-items:center!important; gap:6px!important; min-width:0; padding:6px 12px; border-right:1px solid #f1d59f; }
+.annotation-context-item:last-child { border-right:0; }
+.annotation-context-item span { flex:none; color:#9a712a; font-size:10.5px; }
+.annotation-context-item span:after { content:"："; }
+.annotation-context-item b { overflow:hidden; color:#536970; font-size:11.5px; font-weight:500; line-height:1.4; text-overflow:ellipsis; white-space:nowrap; }
+.annotation-context-item.current { background:#fff1d6; }
+.annotation-context-item.current span { color:#a66a05; font-weight:600; }
+.annotation-context-item.current b { display:inline-flex; align-items:center; min-height:20px; padding:0 8px; border-radius:4px; background:#e89b2d; color:#fff; font-weight:600; }
+@media(max-width:1100px) { .lab-meta.annotation-meta { align-items:flex-start; flex-direction:column; gap:5px; } .annotation-meta-side.right { margin-left:0; } .wbx-description-module.annotation-context { grid-template-columns:1fr 1fr; } .annotation-context-item:nth-child(2) { border-right:0; } .annotation-context-item:nth-child(-n+2) { border-bottom:1px solid #f1d59f; } }
 .wbx-reject-mask { position:fixed; inset:0; z-index:500; display:flex; align-items:center; justify-content:center; background:rgba(16,35,42,.36); }
 .wbx-reject-dialog { width:420px; padding:22px; border-radius:10px; background:#fff; box-shadow:0 14px 42px rgba(16,35,42,.2); }
 .wbx-reject-dialog h3 { margin:0 0 18px; font-size:16px; color:#263f47; }
@@ -4620,6 +4636,52 @@ def _workbench_meta_html(task, status="待处理"):
     """
 
 
+def _annotation_workbench_meta_html(task):
+    recording_id = task.get("recording_id", "3298698")
+    device = task.get("recording_device", "UDAS-00002-2983")
+    collector = task.get("recording_collector", "柳少龙")
+    return f"""
+    <div class="lab-meta annotation-meta" data-component="basic_info">
+      <div class="annotation-meta-side left">
+        <div class="lf mono"><span class="lbl">处理任务 ID:</span><span class="val">{html.escape(task.get('processing_task', '—'))}</span></div>
+        <div class="lf"><span class="lbl">处理任务名称:</span><span class="val">{html.escape(task.get('task_name', '—'))}</span></div>
+        <div class="lf"><span class="lbl">节点:</span><span class="val">{html.escape(task.get('node', '—'))}</span></div>
+      </div>
+      <div class="annotation-meta-side right">
+        <div class="lf mono"><span class="lbl">序列号:</span><span class="val">{html.escape(device)}</span></div>
+        <div class="lf"><span class="lbl">采集员:</span><span class="val">{html.escape(collector)}</span></div>
+        <div class="lf mono"><span class="lbl">数据 ID:</span><span class="val">{html.escape(recording_id)}</span></div>
+      </div>
+    </div>
+    """
+
+
+def _annotation_context_html(task):
+    node = task.get("node", "")
+    previous_node = task.get("source_node") or {
+        "供应商复核": "供应商抽验",
+        "供应商验收": "供应商复核",
+        "内部验收": "供应商验收",
+        "动作分段标注": "质检完成",
+    }.get(node, "—")
+    operator = task.get("source_operator") or task.get("user_group") or "—"
+    operation = task.get("source_operation") or (
+        "驳回" if task.get("rejection_remark") else "提交"
+    )
+    operation_note = task.get("rejection_remark") or task.get("operation_note") or "—"
+    items = (
+        ("当前节点", node or "—", "current"),
+        ("上一节点", previous_node, ""),
+        ("操作人", operator, ""),
+        ("操作", operation, ""),
+        ("操作说明", operation_note, ""),
+    )
+    return '<section class="wbx-description-module annotation-context" data-component="description">' + "".join(
+        f'<div class="annotation-context-item{" " + css_class if css_class else ""}"><span>{html.escape(label)}</span><b>{html.escape(str(value))}</b></div>'
+        for label, value, css_class in items
+    ) + "</section>"
+
+
 def _workbench_video_html():
     views = ("左臂视角", "头部视角", "右臂视角")
     panels = "".join(
@@ -4991,6 +5053,7 @@ def _workbench_execution_html(
     reject_target="",
     submit_reason=False,
     show_item_navigation=False,
+    submit_label="提交",
 ):
     if semantic:
         item_navigation = """
@@ -5031,7 +5094,7 @@ def _workbench_execution_html(
       <section class="wbx-module wbx-operation-panel" data-workbench-module="operation">
         <div class="wbx-operation-actions">
           {item_navigation}
-          <button type="button" class="btn btn-primary wbx-submit" onclick="{submit_onclick}">提交</button>
+          <button type="button" class="btn btn-primary wbx-submit" onclick="{submit_onclick}">{html.escape(submit_label)}</button>
           {reject_button}
         </div>
       </section>
@@ -5114,6 +5177,8 @@ WORKBENCH_STYLE_VARIANTS = {
         "annotation_editable": True,
         "reason_mode": "hidden",
         "submit_reason": False,
+        "submit_label": "提交",
+        "source_node": "端到端切分标注",
         "allow_reject": False,
     },
     "two": {
@@ -5124,6 +5189,7 @@ WORKBENCH_STYLE_VARIANTS = {
         "annotation_editable": True,
         "reason_mode": "filled-readonly",
         "submit_reason": True,
+        "submit_label": "重新提交",
         "allow_reject": False,
     },
     "three": {
@@ -5134,6 +5200,8 @@ WORKBENCH_STYLE_VARIANTS = {
         "annotation_editable": False,
         "reason_mode": "empty-editable",
         "submit_reason": False,
+        "submit_label": "提交",
+        "source_operation": "提交",
         "allow_reject": True,
     },
     "four": {
@@ -5144,6 +5212,7 @@ WORKBENCH_STYLE_VARIANTS = {
         "annotation_editable": False,
         "reason_mode": "partial-editable",
         "submit_reason": False,
+        "submit_label": "重新提交",
         "allow_reject": True,
     },
     "five": {
@@ -5154,6 +5223,7 @@ WORKBENCH_STYLE_VARIANTS = {
         "annotation_editable": False,
         "reason_mode": "filled-readonly",
         "submit_reason": True,
+        "submit_label": "重新提交",
         "allow_reject": True,
     },
 }
@@ -5709,6 +5779,11 @@ def data_workbench_edit(preview_mode=None):
     v2_workbench_page = request.path.startswith("/data/workbench-v2")
     style_preview = request.args.get("style_preview") == "1"
     style_config = WORKBENCH_STYLE_VARIANTS.get(request.args.get("style", ""))
+    if style_config:
+        workbench_task = dict(workbench_task)
+        for field in ("source_node", "source_operation"):
+            if field in style_config:
+                workbench_task[field] = style_config[field]
     if workbench_mode == "quality":
         rendered = _render_quality_workbench(workbench_task, management_preview)
         return (
@@ -5883,7 +5958,6 @@ def data_workbench_edit(preview_mode=None):
         """
         annotation_type_label = "动作标注 · A/B/C/D/Z"
 
-    instruction_title = "指令" if style_preview else annotation_type_label
     readonly_style = bool(
         style_config and not style_config["annotation_editable"]
     )
@@ -5904,20 +5978,7 @@ def data_workbench_edit(preview_mode=None):
             <span class="lab-tool" title="书签" onclick="toast('Demo: 书签')">&#9873;</span>
           </div>
     """
-    description_html = ""
-    if (
-        semantic_annotation
-        and (
-            workbench_task.get("node") in {"供应商抽验", "供应商复核"}
-            or request.args.get("style") == "five"
-        )
-        and request.args.get("style") != "one"
-    ):
-        description_html = f"""
-        <section class="wbx-description-module" data-component="description">
-          <b>说明</b><div><p>{html.escape(workbench_task.get('rejection_remark', '暂无驳回说明'))}</p></div>
-        </section>
-        """
+    description_html = _annotation_context_html(workbench_task)
     annotation_tabs = f"""
       <div class="wbx-detail-tabbar" role="tablist">
         <button class="wbx-detail-tab active" data-detail-tab="annotation" onclick="switchWorkbenchDetailTab(this,'annotation')">标注</button>
@@ -5940,7 +6001,6 @@ def data_workbench_edit(preview_mode=None):
       </div>
       """
     annotation_timeline_html = f"""
-    {description_html}
     <div class="lab-tools-card" data-component="playback_timeline">
       <div class="lab-timeline">
         <div class="lab-tl-ticks">{ticks_html}</div>
@@ -5969,6 +6029,7 @@ def data_workbench_edit(preview_mode=None):
         ),
         reject_target=('供应商抽验' if workbench_task.get('node') == '供应商复核' else '供应商复核'),
         submit_reason=bool(style_config and style_config["submit_reason"]),
+        submit_label=style_config.get("submit_label", "提交") if style_config else "提交",
         show_item_navigation=(
             v2_workbench_page
             and request.args.get("entry") == "todo"
@@ -6000,14 +6061,9 @@ def data_workbench_edit(preview_mode=None):
         trailing_execution_html = execution_html
     content = f"""
     {_workbench_style_example_button_html()}
-    {_workbench_meta_html(workbench_task, "待标注")}
+    {_annotation_workbench_meta_html(workbench_task)}
     {detail_tabs_open}
     {sticky_workbench_open}
-    <div class="wbx-instruction" data-component="instruction_context">
-      <b>{instruction_title}</b>
-      <span>用抹布擦拭桌下柜子内部，并将地面散落的纸张收纳到柜子里。</span>
-    </div>
-
     <div class="lab-vid-grid" data-component="multi_view_video">
       <div class="lab-vid">
         <span class="vid-label">左臂视角</span>
@@ -6026,6 +6082,7 @@ def data_workbench_edit(preview_mode=None):
       </div>
       <div class="lab-fab" onclick="toast('Demo: 录屏')" title="录屏">&#9209;</div>
     </div>
+    {description_html}
     {sticky_workbench_extra}
     {sticky_workbench_close}
 
