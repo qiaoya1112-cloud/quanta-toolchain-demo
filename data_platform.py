@@ -3306,7 +3306,7 @@ def query():
       </h3>
       <div class="q-table-scroll">
         <table class="ant-table">
-          <thead><tr><th>recording_id</th><th>Task ID</th><th>设备</th><th>类型</th><th>是否质检</th><th>是否标注</th><th>帧数</th><th>时长</th><th>操作</th></tr></thead>
+          <thead><tr><th>数据 ID</th><th>Task ID</th><th>设备</th><th>类型</th><th>是否质检</th><th>是否标注</th><th>帧数</th><th>时长</th><th>操作</th></tr></thead>
           <tbody id="qbody">{rows}</tbody>
         </table>
       </div>
@@ -4111,7 +4111,7 @@ def dataset_detail_panel_v2(d, viewed_ver=""):
                   f'<td class="actions-cell">{op}</td></tr>')
     version = f"""
     <div class="tab-pane" id="pane-version">
-      <table class="ant-table"><thead><tr><th>版本</th><th>说明</th><th>recording 数</th><th>创建人</th><th>创建时间</th><th>状态</th><th>操作</th></tr></thead>
+      <table class="ant-table"><thead><tr><th>版本</th><th>说明</th><th>数据数</th><th>创建人</th><th>创建时间</th><th>状态</th><th>操作</th></tr></thead>
       <tbody>{vrows}</tbody></table>
       <div class="muted" style="margin-top:12px;">改配方 / 处理数据 = 出新版本, 被训练引用的版本不可变, 保证实验可复现。</div>
     </div>

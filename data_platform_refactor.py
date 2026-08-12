@@ -802,6 +802,7 @@ BUSINESS_TASKS = [
             {"label": "标注", "done": 420, "total": 1200},
         ],
         "enabled": True,
+        "task_status": "published",
         "runtime_status": "正常",
         "filter_summary": "所属项目=预训练采集；采集任务=20197；质检结论=合格/操作失误",
         "filter_rules": [
@@ -850,6 +851,7 @@ BUSINESS_TASKS = [
             {"label": "验收", "done": 240, "total": 842},
         ],
         "enabled": True,
+        "task_status": "published",
         "runtime_status": "积压",
         "filter_summary": "所属项目=demo 项目；数据来源=采集；来源任务=COL-2026-0718",
         "filter_rules": [
@@ -888,6 +890,7 @@ BUSINESS_TASKS = [
             {"label": "验收", "done": 320, "total": 842},
         ],
         "enabled": True,
+        "task_status": "published",
         "runtime_status": "正常",
         "filter_summary": "所属项目=demo 项目；质检结论=合格/操作失误",
         "filter_rules": [
@@ -924,6 +927,7 @@ BUSINESS_TASKS = [
             {"label": "验收", "done": 452, "total": 488},
         ],
         "enabled": False,
+        "task_status": "unpublished",
         "runtime_status": "已关闭",
         "filter_summary": "所属项目=宁德项目；数据来源=采集/导入；标注状态=已标注",
         "filter_rules": [
@@ -2301,6 +2305,7 @@ def _state(value):
         "disabled": "orange",
         "frozen": "purple",
         "published": "green",
+        "unpublished": "gray",
         "succeeded": "green",
         "failed": "red",
     }.get(normalized, "gray")
@@ -2313,6 +2318,7 @@ def _state(value):
         "disabled": "停用",
         "frozen": "已冻结",
         "published": "已发布",
+        "unpublished": "未发布",
         "succeeded": "已完成",
         "failed": "失败",
     }.get(normalized, value)
@@ -3160,6 +3166,7 @@ def render_processing_tasks():
                 _e(project_label),
                 f'<div class="dpr-flow-binding-list">{flow_bindings}</div>',
                 status_control,
+                _state(item.get("task_status", "unpublished")),
                 _priority_tag(item["priority"]),
                 "非正式" if item.get("task_category") == "informal" else "正式",
                 _e(item["creator"]),
@@ -3186,7 +3193,8 @@ def render_processing_tasks():
                 "select",
                 ["全部流程", *[flow["name"] for flow in PROCESSING_FLOWS]],
             ),
-            ("状态", "select", ["全部状态", "开启", "关闭"]),
+            ("处理状态", "select", ["全部处理状态", "开启", "关闭"]),
+            ("任务状态", "select", ["全部任务状态", "已发布", "未发布"]),
             ("任务性质", "select", ["全部", "正式", "非正式"]),
             ("创建人", "input", []),
         ]
@@ -3197,7 +3205,8 @@ def render_processing_tasks():
             "名称",
             "所属项目",
             "处理流程",
-            "状态",
+            "处理状态",
+            "任务状态",
             "优先级",
             "任务性质",
             "创建人",
@@ -3214,6 +3223,13 @@ def render_processing_tasks():
     body = f"""
     {filters}
     {table}
+    <div class="dpr-status-confirm-mask" id="dprProcessingStatusConfirm" style="display:none;">
+      <section class="dpr-status-confirm-dialog" role="dialog" aria-modal="true" aria-labelledby="dprProcessingStatusConfirmTitle">
+        <h3 id="dprProcessingStatusConfirmTitle">确认关闭处理任务</h3>
+        <p id="dprProcessingStatusConfirmMessage">关闭后将停止筛选新数据，已流入的数据将继续处理。</p>
+        <div><button type="button" class="btn" onclick="dprCancelProcessingStatusChange()">取消</button><button type="button" class="btn btn-primary" onclick="dprConfirmProcessingStatusChange()">确认关闭</button></div>
+      </section>
+    </div>
     <section class="dpr-processing-task-page" id="drawerProcessingTaskForm" data-mode="new" aria-hidden="true">
       <style>
         .dpr-processing-task-page{{font-size:13px}}.dpr-processing-task-page-foot{{display:flex;justify-content:flex-end;gap:10px;padding:14px 28px;border-top:1px solid #e2e8ea;background:#fff}}.dpr-filter-add-bottom{{margin-top:12px;padding:0;border:0;background:transparent;color:#149DAA;font-size:13px;cursor:pointer}}.dpr-filter-cols,.dpr-filter-row{{grid-template-columns:28px 170px 1fr 26px}}.dpr-filter-and{{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:4px;background:#e8f5f6;color:#147a83;font-size:12px;font-weight:650}}.dpr-flow-selector{{border:0;background:transparent}}.dpr-flow-config-card{{display:flex;flex-direction:column;gap:10px;margin:0 0 12px;padding:16px;border:1px solid #e2e9eb;border-radius:8px;background:#fff;font-size:13px}}.dpr-flow-config-card.active{{border-color:#69bdc4;background:#f4fbfb}}.dpr-flow-config-card.collapsed{{padding-bottom:13px}}.dpr-flow-config-card-head{{display:flex!important;flex-direction:column!important;align-items:stretch!important;gap:4px}}.dpr-flow-card-title-line{{display:flex;align-items:center;justify-content:space-between;gap:12px}}.dpr-flow-card-help{{color:#849298;font-size:12px}}.dpr-flow-config-card b{{font-size:13px;color:#30484f}}.dpr-flow-config-card span{{color:#849298;font-size:12px}}.dpr-flow-config-card label{{display:flex;flex-direction:column;gap:5px;color:#74848a;font-size:13px}}.dpr-flow-config-card select{{height:36px;border:1px solid #d8e0e3;border-radius:6px;background:#fff;padding:0 9px;color:#344c54;font-size:13px}}.dpr-flow-config-card button{{padding:2px 0 0;border:0;background:transparent;color:#149DAA;text-align:left;font-size:13px;cursor:pointer}}.dpr-flow-toggle{{display:flex!important;flex-direction:row!important;align-items:center;gap:7px;white-space:nowrap;color:#74848a!important}}.dpr-flow-toggle input{{display:none}}.dpr-flow-toggle i{{position:relative;width:30px;height:17px;border-radius:10px;background:#cbd4d7;cursor:pointer}}.dpr-flow-toggle i:after{{content:"";position:absolute;left:2px;top:2px;width:13px;height:13px;border-radius:50%;background:#fff;transition:.15s}}.dpr-flow-toggle input:checked+i{{background:#149DAA}}.dpr-flow-toggle input:checked+i:after{{left:15px}}.dpr-flow-toggle em{{font-style:normal;font-size:12px}}.dpr-processing-task-form,.dpr-processing-task-form input,.dpr-processing-task-form select,.dpr-processing-task-form button{{font-size:13px}}.dpr-page-section-head p,.dpr-processing-basic-grid small,.dpr-processing-task-menu button i{{font-size:12px}}
@@ -3301,7 +3317,7 @@ def render_processing_tasks():
               <label class="fg"><span class="fg-req">优先级</span><select id="processingTaskPriority" name="priority"><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option selected>6</option><option>7</option><option>8</option><option>9</option></select><small>数字越大越先处理：1–3 低，4–6 中，7–9 高</small></label>
               <label class="fg"><span class="fg-req">预期任务量</span><select id="processingTaskExpectedMode" name="expected_task_mode" onchange="dprExpectedTaskModeChange(this)"><option value="continuous">持续任务</option><option value="count">固定条数</option><option value="duration">固定时长</option></select></label>
               <label class="fg dpr-expected-task-value" id="processingTaskExpectedValueField" hidden><span class="fg-req" id="processingTaskExpectedValueLabel">任务条数</span><div class="dpr-expected-task-input"><input id="processingTaskExpectedValue" name="expected_task_value" type="number" min="0" step="1" placeholder="请输入任务条数" oninput="dprExpectedTaskValueChange(this)"><i id="processingTaskExpectedValueUnit">条</i></div></label>
-              <label class="fg" id="processingTaskEnabledField"><span class="fg-req">任务状态</span><select id="processingTaskEnabled" name="enabled"><option value="true">开启</option><option value="false">关闭</option></select><small>关闭后停止接收新数据；在途数据继续处理完成。</small></label>
+              <label class="fg" id="processingTaskEnabledField"><span class="fg-req">处理状态</span><select id="processingTaskEnabled" name="enabled"><option value="true">开启</option><option value="false">关闭</option></select><small>关闭后停止接收新数据；在途数据继续处理完成。</small></label>
             </div>
           </div>
           <div class="dpr-processing-task-pane" data-task-pane-content="filter">
@@ -3340,26 +3356,38 @@ def render_processing_tasks():
       '采集类型': {{type:'multi', options:['Normal', 'DAgger']}},
       '采集员': {{type:'people', options:['刘素粉', '王一帆', '陈晨', 'Wei Zhang', 'Lance Li', '包媛桐']}},
       '采集时间': {{type:'datetime_range'}},
-      'recording_id': {{type:'text', placeholder:'多个 recording_id 请用英文逗号隔开'}},
+      '数据 ID': {{type:'text', placeholder:'多个数据 ID 请用英文逗号隔开'}},
       '质检结论': {{type:'multi', options:['合格', '不合格', '操作失误']}},
       '是否标注': {{type:'single', options:['是', '否']}}
     }};
     var DPR_TASK_FILTER_OPERATORS = ['等于', '不等于', '包含', '不包含', '为空', '不为空'];
+    var DPR_PENDING_PROCESSING_STATUS = null;
     function dprProcessingEscape(value) {{
       return String(value || '').replace(/&/g, '&amp;').replace(/</g, '&lt;')
         .replace(/"/g, '&quot;');
     }}
     function dprToggleProcessingTask(input, taskId) {{
-      var message = input.checked
-        ? '开启后将持续筛选数据并处理，确认开启'
-        : '关闭后将停止筛选新数据，已流入的数据将继续处理';
-      if (!window.confirm(message)) {{
-        input.checked = !input.checked;
+      if (input.checked) {{
+        toast('已开启 ' + taskId + '，将继续接收命中数据');
         return;
       }}
-      toast(input.checked
-        ? '已开启 ' + taskId + '，将继续接收命中数据'
-        : '已关闭 ' + taskId + '，不再接收新数据；在途流程继续执行');
+      input.checked = true;
+      DPR_PENDING_PROCESSING_STATUS = {{input:input, taskId:taskId}};
+      document.getElementById('dprProcessingStatusConfirmMessage').textContent =
+        '关闭后将停止筛选新数据，已流入的数据将继续处理。确认关闭任务 ' + taskId + '？';
+      document.getElementById('dprProcessingStatusConfirm').style.display = 'flex';
+    }}
+    function dprCancelProcessingStatusChange() {{
+      DPR_PENDING_PROCESSING_STATUS = null;
+      document.getElementById('dprProcessingStatusConfirm').style.display = 'none';
+    }}
+    function dprConfirmProcessingStatusChange() {{
+      if (!DPR_PENDING_PROCESSING_STATUS) return;
+      var pending = DPR_PENDING_PROCESSING_STATUS;
+      pending.input.checked = false;
+      DPR_PENDING_PROCESSING_STATUS = null;
+      document.getElementById('dprProcessingStatusConfirm').style.display = 'none';
+      toast('已关闭 ' + pending.taskId + '，不再接收新数据；在途流程继续执行');
     }}
     function dprTaskFilterValueControl(field, value) {{
       var config = DPR_TASK_FILTER_FIELDS[field] || {{type:'text'}};
@@ -4042,7 +4070,7 @@ def _render_allocation_management_legacy():
     ]
     flow_filters = """
     <div class="dpr-flow-assignment-filters">
-      <div class="ff"><label>recording_id</label><input id="dprFlowRecordingId" placeholder="请输入 recording_id"></div>
+      <div class="ff"><label>数据 ID</label><input id="dprFlowRecordingId" placeholder="请输入数据 ID"></div>
       <div class="ff"><label>所属项目</label><select id="dprFlowProject">
         <option value="">全部项目</option><option>预训练采集</option><option>demo 项目</option><option>宁德项目</option>
       </select></div>
@@ -4597,8 +4625,8 @@ def render_allocation_management_old():
     ]
     reprocess_filters = """
     <div class="dpr-flow-assignment-filters">
-      <div class="ff"><label>recording_id</label>
-        <input id="dprReprocessRecordingId" placeholder="请输入 recording_id"></div>
+      <div class="ff"><label>数据 ID</label>
+        <input id="dprReprocessRecordingId" placeholder="请输入数据 ID"></div>
       <div class="ff"><label>数据来源</label><select id="dprReprocessSource">
         <option value="">全部来源</option><option>采集</option><option>导入</option>
       </select></div>
@@ -5358,8 +5386,8 @@ def render_allocation_management():
         </div>
         <div class="dpr-dispatch-step active" data-dispatch-step="1">
           <div class="dpr-dispatch-filter-grid">
-            <div class="ff"><label>recording_id</label>
-              <input id="dprDispatchReprocessRecording" placeholder="请输入 recording_id"></div>
+            <div class="ff"><label>数据 ID</label>
+              <input id="dprDispatchReprocessRecording" placeholder="请输入数据 ID"></div>
             <div class="ff"><label>数据来源</label>
               <select id="dprDispatchReprocessSource"><option value="">全部来源</option>
                 <option>采集</option><option>导入</option></select></div>
@@ -5978,13 +6006,13 @@ def render_task_detail(task_id):
         )
         table_class = "ant-table dpr-record-table dpr-collection-record-table"
         table_head = (
-            "<th>recording_id</th><th>视频</th><th>设备序列号</th>"
+            "<th>数据 ID</th><th>视频</th><th>设备序列号</th>"
             "<th>上传状态</th><th>采集结论</th><th>操作人</th>"
         )
         empty_colspan = 6
         filter_html = """
       <div class="fb-labeled dpr-record-filters">
-        <div class="ff"><label>ID 搜索</label><input placeholder="请输入 recording_id"></div>
+        <div class="ff"><label>数据 ID</label><input placeholder="请输入数据 ID"></div>
         <div class="ff"><label>序列号</label><select><option>请选择设备序列号</option><option>UDAS-007</option><option>Benchmark</option></select></div>
         <div class="ff"><label>操作人</label><select><option>请选择操作类型/操作人</option><option>采集</option><option>质检</option><option>标注</option><option>验收</option></select></div>
         <div class="filter-actions">
@@ -6001,14 +6029,14 @@ def render_task_detail(task_id):
         )
         table_class = "ant-table dpr-record-table"
         table_head = (
-            "<th>recording_id</th><th>视频区域（头部 ｜ 左臂 ｜ 右臂）</th><th>序列号</th>"
+            "<th>数据 ID</th><th>视频区域（头部 ｜ 左臂 ｜ 右臂）</th><th>序列号</th>"
             "<th>采集结论</th><th>质检结论</th><th>标注状态</th>"
             "<th>当前环节</th><th>当前节点</th><th>操作</th>"
         )
         empty_colspan = 9
         filter_html = """
       <div class="fb-labeled dpr-record-filters">
-        <div class="ff"><label>recording_id</label><input placeholder="请输入 recording_id"></div>
+        <div class="ff"><label>数据 ID</label><input placeholder="请输入数据 ID"></div>
         <div class="filter-actions">
           <button class="btn btn-tertiary" onclick="resetFilters(this)">清空</button>
           <button class="btn btn-primary" onclick="queryFilters(this)">查询</button>
@@ -6123,7 +6151,7 @@ def render_data_management():
             """
         filters = f"""
         <div class="fb-labeled dpr-record-filters">
-          <div class="ff"><label>recording_id</label><input placeholder="请输入 recording_id"></div>
+          <div class="ff"><label>数据 ID</label><input placeholder="请输入数据 ID"></div>
           <div class="ff"><label>流程 ID</label><input placeholder="请输入流程 ID"></div>
           <div class="filter-actions">
             <button class="btn btn-tertiary" onclick="resetFilters(this)">清空</button>
@@ -6139,7 +6167,7 @@ def render_data_management():
         <div class="table-wrap dpr-record-table-wrap">
           <table class="ant-table dpr-management-record-table">
             <thead><tr>
-              <th>recording_id</th><th>数据来源</th><th>视频</th><th>上传状态</th><th>采集结论</th>
+              <th>数据 ID</th><th>数据来源</th><th>视频</th><th>上传状态</th><th>采集结论</th>
               <th>采集人</th><th>处理流程</th><th>操作</th>
             </tr></thead>
             <tbody>{rows}</tbody>
@@ -8295,19 +8323,66 @@ PAGE_RENDERERS = {
 
 def render_workbench_v2():
     pool_items = [
-        {"owner": "验收-端到端切分标注", "pool": "端到端切分标注 · 内部验收任务池", "pool_id": "POOL-E2E-ACCEPTANCE", "stage": "标注", "priority": 9, "pending": 86, "processing": 18, "stalled": "2.1 小时", "priority_summary": "9级 62 · 8级 24", "source_summary": "端到端切分标注 · 内部验收"},
-        {"owner": "供应商 A", "pool": "端到端切分标注 · 供应商 A 任务池", "pool_id": "POOL-E2E-SUPPLIER-A", "stage": "标注", "priority": 9, "pending": 124, "processing": 31, "stalled": "3.4 小时", "priority_summary": "9级 88 · 7级 36", "source_summary": "端到端切分标注 · 供应商抽验"},
-        {"owner": "光轮智能", "pool": "端到端切分标注 · 光轮智能任务池", "pool_id": "POOL-E2E-GUAN", "stage": "标注", "priority": 9, "pending": 118, "processing": 28, "stalled": "2.8 小时", "priority_summary": "9级 76 · 6级 42", "source_summary": "端到端切分标注 · 供应商抽验"},
+        {"owner": "验收-端到端切分标注", "pool": "端到端切分标注 · 内部验收任务池", "pool_id": "POOL-E2E-ACCEPTANCE", "flow": "端到端切分标注流程", "node": "内部验收", "priority": 9, "pending": 86, "processing": 18, "stalled_hours": 2.1, "priority_counts": {9: 62, 8: 24}},
+        {"owner": "供应商 A", "pool": "端到端切分标注 · 供应商 A 任务池", "pool_id": "POOL-E2E-SUPPLIER-A", "flow": "端到端切分标注流程", "node": "供应商抽验", "priority": 9, "pending": 124, "processing": 31, "stalled_hours": 3.4, "priority_counts": {9: 88, 7: 36}},
+        {"owner": "光轮智能", "pool": "端到端切分标注 · 光轮智能任务池", "pool_id": "POOL-E2E-GUAN", "flow": "端到端切分标注流程", "node": "供应商抽验", "priority": 9, "pending": 118, "processing": 28, "stalled_hours": 2.8, "priority_counts": {9: 76, 6: 42}},
     ]
-    pool_cards = "".join(
-        f"""
-        <article class="wb-pool-card">
-          <div class="wb-pool-head"><div><h3>{_e(item["owner"])}</h3></div></div>
-          <div class="wb-pool-volume"><div><b>{item["pending"]}</b><span>待领取</span></div><div><b>{item["processing"]}</b><span>处理中</span></div><div><b>{_e(item["stalled"])}</b><span>最长滞留</span></div></div>
-          <div class="wb-pool-foot wb-v2-pool-foot"><span class="wb-v2-foot-spacer" aria-hidden="true"></span><span class="wb-v2-priority-summary">{_e(item["priority_summary"])}</span><a class="btn btn-primary" href="/data/workbench-v2/pools/{_e(item['pool_id'])}">进入任务池 ›</a></div>
-        </article>
-        """
-        for item in pool_items
+    pool_groups = {}
+    for item in pool_items:
+        key = (item["flow"], item["node"])
+        group = pool_groups.setdefault(
+            key,
+            {
+                "flow": item["flow"],
+                "node": item["node"],
+                "pending": 0,
+                "processing": 0,
+                "stalled_hours": 0,
+                "priority_counts": {},
+                "pools": [],
+            },
+        )
+        group["pending"] += item["pending"]
+        group["processing"] += item["processing"]
+        group["stalled_hours"] = max(group["stalled_hours"], item["stalled_hours"])
+        group["pools"].append(item)
+        for priority, count in item["priority_counts"].items():
+            group["priority_counts"][priority] = group["priority_counts"].get(priority, 0) + count
+    pool_rows = []
+    pool_row_attrs = []
+    for group in sorted(pool_groups.values(), key=lambda item: item["node"] != "供应商抽验"):
+        priority_summary = " · ".join(
+            f"{priority}级 {count}"
+            for priority, count in sorted(group["priority_counts"].items(), reverse=True)
+        )
+        start_pool = group["pools"][0]
+        pool_rows.append(
+            [
+                f'<b class="dpr-wb2-flow-name">{_e(group["flow"])}</b>',
+                f'<span class="dpr-wb2-node-name">{_e(group["node"])}</span>',
+                f'<b class="dpr-wb2-volume-number">{group["pending"]}</b>',
+                f'<b class="dpr-wb2-volume-number">{group["processing"]}</b>',
+                f'{group["stalled_hours"]:.1f} 小时',
+                f'<span class="wb-v2-priority-summary">{_e(priority_summary)}</span>',
+                f'<div class="dpr-wb2-pool-actions"><a href="/data/workbench-v2/pools/{_e(start_pool["pool_id"])}">开始处理</a></div>',
+            ]
+        )
+        pool_row_attrs.append(
+            f'data-flow="{_e(group["flow"])}" data-node="{_e(group["node"])}"'
+        )
+    pool_table = _table(
+        ["流程", "节点", "待领取", "处理中", "最长滞留", "优先级分布", "操作"],
+        pool_rows,
+        table_id="dpr-wb2-pool-table",
+        row_attrs=pool_row_attrs,
+    )
+    pool_flow_options = "".join(
+        f'<option value="{_e(value)}">{_e(value)}</option>'
+        for value in sorted({group["flow"] for group in pool_groups.values()})
+    )
+    pool_node_options = "".join(
+        f'<option value="{_e(value)}">{_e(value)}</option>'
+        for value in sorted({group["node"] for group in pool_groups.values()})
     )
     rejected = [
         ("recording_e2e_001", "flow.annotation.e2e-review@2", "端到端切分标注流程", "供应商抽验", "供应商复核", "驳回", "第 2 轮", "切分起点与动作开始不一致", "2026-08-04 16:42", "WB-E2E-SUPPLIER-A"),
@@ -8347,19 +8422,28 @@ def render_workbench_v2():
       .dpr-wb2-items-toolbar .q-field select:disabled{{background:#f5f7f8!important;border-color:#e5eaec!important;color:#a6b1b5!important;cursor:not-allowed;opacity:1}}
       .dpr-wb2-items-split{{display:grid;grid-template-columns:minmax(240px,300px) minmax(0,1fr);gap:16px;align-items:start}}.dpr-wb2-group-panel,.dpr-wb2-recordings-panel{{min-width:0;border:1px solid #e8edef;border-radius:10px;background:#fff}}.dpr-wb2-group-panel{{overflow:hidden}}.dpr-wb2-group-panel-head,.dpr-wb2-recordings-head{{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:15px 16px;border-bottom:1px solid #edf1f2}}.dpr-wb2-group-panel-head b,.dpr-wb2-recordings-head b{{color:#263f47;font-size:13px}}.dpr-wb2-group-panel-head span,.dpr-wb2-recordings-head span{{color:#849197;font-size:11px}}.dpr-wb2-total-count{{margin-left:auto;color:#0f7f8a!important;font-size:13px!important;font-weight:700!important;white-space:nowrap}}.dpr-wb2-group-list{{display:flex;flex-direction:column;max-height:540px;overflow:auto}}.dpr-wb2-group-item{{display:block;width:100%;padding:13px 16px;border:0;border-bottom:1px solid #f0f3f4;background:#fff;text-align:left;cursor:pointer;box-sizing:border-box}}.dpr-wb2-group-item:last-child{{border-bottom:0}}.dpr-wb2-group-item:hover{{background:#f7fbfb}}.dpr-wb2-group-item.active{{background:#eef9fa;box-shadow:inset 3px 0 #149daa}}.dpr-wb2-group-title-row{{display:flex;align-items:center;gap:8px;min-width:0}}.dpr-wb2-group-title-row .dpr-wb2-group-label{{flex:none;color:#849197;font-size:10px;font-style:normal;white-space:nowrap}}.dpr-wb2-group-title-row b{{flex:1;min-width:0;overflow:hidden;color:#334c54;font-size:12px;font-weight:600;text-overflow:ellipsis;white-space:nowrap}}.dpr-wb2-group-title-row em{{flex:none;color:#149daa;font-size:11px;font-style:normal;font-weight:600;white-space:nowrap}}.dpr-wb2-group-meta{{display:grid;grid-template-columns:1fr;gap:4px;margin-top:7px;color:#718188;font-size:11px;line-height:1.5}}.dpr-wb2-group-meta span{{display:block;min-width:0;margin:0!important;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}}.dpr-wb2-group-meta i{{margin-right:3px;color:#9aa7ab;font-style:normal;font-size:10px}}.dpr-wb2-recordings-head{{align-items:flex-start;flex-direction:column;gap:4px}}.dpr-wb2-recordings-head span{{line-height:1.5}}.dpr-wb2-recordings-panel .table-wrap{{border:0;border-radius:0}}.dpr-wb2-recordings-panel .dpr-wb2-items-table{{min-width:760px}}.dpr-wb2-recordings-empty{{padding:42px 16px!important;text-align:center;color:#9aa7ab;font-size:12px}}@media(max-width:900px){{.dpr-wb2-items-split{{grid-template-columns:1fr}}.dpr-wb2-group-list{{max-height:300px}}}}
       .wb-v2-pool-foot{{display:flex;align-items:center;justify-content:flex-end;gap:7px}}.wb-v2-pool-foot .wb-v2-foot-spacer{{flex:1;visibility:hidden}}.wb-v2-pool-foot .wb-v2-priority-summary{{padding:3px 9px;border-radius:5px;background:#f2f5f6;color:#68777d;font-size:10.5px;font-weight:650;white-space:nowrap}}.wb-v2-pool-foot .btn{{flex:none}}
+      .dpr-wb2-pool-filters{{margin-bottom:12px}}.dpr-wb2-pool-filters .q-filter-row{{align-items:flex-end}}.dpr-wb2-pool-filters .q-field select{{min-width:220px}}.dpr-wb2-pool-list{{overflow:auto}}.dpr-wb2-pool-list table{{min-width:860px}}.dpr-wb2-pool-list th:nth-child(1){{width:210px}}.dpr-wb2-pool-list th:nth-child(2){{width:130px}}.dpr-wb2-pool-list th:nth-child(3),.dpr-wb2-pool-list th:nth-child(4){{width:90px}}.dpr-wb2-pool-list th:nth-child(5){{width:110px}}.dpr-wb2-pool-list th:nth-child(6){{width:220px}}.dpr-wb2-pool-list th:nth-child(7){{width:100px}}.dpr-wb2-flow-name{{color:#314950;font-size:13px}}.dpr-wb2-node-name{{display:inline-flex;padding:3px 9px;border-radius:5px;background:#edf7f8;color:#147c86;font-size:11px;font-weight:600;white-space:nowrap}}.dpr-wb2-volume-number{{color:#334c54;font:600 13px 'SF Mono',Menlo,monospace}}.dpr-wb2-pool-list .wb-v2-priority-summary{{display:inline-flex;padding:3px 9px;border-radius:5px;background:#f2f5f6;color:#68777d;font-size:10.5px;font-weight:650;white-space:nowrap}}.dpr-wb2-pool-actions{{display:flex;gap:10px;flex-wrap:wrap;white-space:nowrap}}.dpr-wb2-pool-actions a{{color:#149daa;font-size:12px}}.dpr-wb2-item-action .tbtn{{padding:0;border:0;background:transparent;color:#149daa;font-size:12px}}
       .dpr-wb2-tabs{{display:flex;gap:22px;margin:0 0 16px;border-bottom:1px solid #e3eaec}}.dpr-wb2-tab{{position:relative;padding:0 2px 11px;border:0;background:transparent;color:#718188;font-size:13px;cursor:pointer}}.dpr-wb2-tab.active{{color:#149daa;font-weight:650}}.dpr-wb2-tab.active:after{{content:"";position:absolute;right:0;bottom:-1px;left:0;height:2px;background:#149daa}}.dpr-wb2-pane{{display:none}}.dpr-wb2-pane.active{{display:block}}.dpr-wb2-pool-grid{{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}}.dpr-wb2-pool-card{{padding:16px;border:1px solid #e1e8ea;border-radius:9px;background:#fff}}.dpr-wb2-pool-head{{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:13px}}.dpr-wb2-pool-head h3{{margin:0;color:#263f47;font-size:15px}}.dpr-wb2-pool-head span{{display:block;margin-top:4px;color:#829096;font-size:11px}}.dpr-wb2-count{{color:#149daa;font-size:18px}}.dpr-wb2-pool-task{{display:flex;flex-direction:column;gap:4px;padding:11px 12px;border-radius:7px;background:#f7fafb}}.dpr-wb2-pool-task b{{color:#334c54;font-size:12px}}.dpr-wb2-pool-task span{{color:#829096;font-size:10.5px}}.dpr-wb2-pool-meta{{display:grid;grid-template-columns:minmax(0,1.5fr) 74px 100px;gap:12px;margin-top:14px}}.dpr-wb2-pool-meta span{{display:flex;flex-direction:column;gap:4px;min-width:0}}.dpr-wb2-pool-meta i{{color:#8a989d;font-size:10px;font-style:normal}}.dpr-wb2-pool-meta b{{overflow:hidden;color:#536970;font-size:11px;text-overflow:ellipsis;white-space:nowrap}}.dpr-wb2-pool-meta .dpr-priority{{align-self:flex-start}}.dpr-wb2-pool-foot{{display:flex;align-items:center;justify-content:space-between;margin-top:14px;padding-top:12px;border-top:1px solid #edf1f2;color:#849197;font-size:11px}}.dpr-wb2-pool-foot .btn{{padding:6px 12px;font-size:11px}}.dpr-wb2-items-toolbar{{margin-bottom:12px}}.dpr-wb2-items-list{{overflow:auto}}.dpr-wb2-items-table{{width:100%;min-width:1120px}}.dpr-wb2-items-table th button{{display:inline-flex;align-items:center;gap:5px;padding:0;border:0;background:transparent;color:inherit;font:inherit;cursor:pointer}}.dpr-wb2-items-table th button:hover{{color:#147a83}}.dpr-wb2-sort-indicator{{color:#149daa;font-size:10px}}.dpr-wb2-reject-reason{{max-width:360px;color:#536970}}.dpr-wb2-operation{{display:inline-flex;padding:3px 8px;border-radius:10px;background:#fff3d9;color:#ad6800;font-size:11px;white-space:nowrap}}.dpr-wb2-operation.submit{{background:#e7f6ee;color:#2f8064}}.dpr-wb2-item-action{{white-space:nowrap}}.dpr-wb2-item-action .btn{{padding:5px 11px;font-size:11px}}.dpr-wb2-pagination{{display:flex;align-items:center;justify-content:flex-end;gap:7px;margin-top:12px;color:#7a898f;font-size:11px}}.dpr-wb2-pagination button{{min-width:30px;height:30px;padding:0 9px;border:1px solid #d8e2e4;border-radius:6px;background:#fff;color:#536970;cursor:pointer}}.dpr-wb2-pagination button.active{{border-color:#149daa;background:#149daa;color:#fff}}.dpr-wb2-pagination button:disabled{{cursor:not-allowed;opacity:.45}}@media(max-width:900px){{.dpr-wb2-pool-grid{{grid-template-columns:1fr}}.dpr-wb2-items-toolbar{{flex-wrap:wrap}}.dpr-wb2-items-actions{{margin-left:0}}}}
     </style>
     <div class="dpr-intro"><div><h1>标注工作台</h1></div><div class="dpr-intro-actions"><a class="btn btn-primary" href="/data/workbench-v2/style-examples">样式示例</a></div></div>
     <div class="dpr-wb2-tabs"><button class="dpr-wb2-tab active" onclick="dprSwitchWorkbenchV2Tab(this,'pool')">任务池</button><button class="dpr-wb2-tab" onclick="dprSwitchWorkbenchV2Tab(this,'items')">待办项</button></div>
-    <section class="dpr-wb2-pane active" data-wb2-pane="pool"><div class="wb-pool-grid">{pool_cards}</div></section>
+    <section class="dpr-wb2-pane active" data-wb2-pane="pool">
+      <form class="q-filters rule-filter-panel dpr-wb2-pool-filters" onsubmit="dprWb2FilterPools(event)">
+        <div class="q-filter-row">
+          <div class="q-field"><label for="dprWb2PoolFlowFilter">流程</label><select id="dprWb2PoolFlowFilter"><option value="">全部流程</option>{pool_flow_options}</select></div>
+          <div class="q-field"><label for="dprWb2PoolNodeFilter">节点</label><select id="dprWb2PoolNodeFilter"><option value="">全部节点</option>{pool_node_options}</select></div>
+          <div class="q-actions"><button type="button" class="btn" onclick="dprWb2ClearPoolFilters()">清空</button><button type="submit" class="btn btn-primary">查询</button></div>
+        </div>
+      </form>
+      <div class="dpr-wb2-pool-list">{pool_table}</div>
+    </section>
     <section class="dpr-wb2-pane" data-wb2-pane="items">
       <div class="q-filters rule-filter-panel dpr-wb2-items-toolbar">
         <div class="q-filter-row">
-          <div class="q-field"><label for="dprWb2RecordingFilter">recording_id</label><input id="dprWb2RecordingFilter" type="search" placeholder="请输入 recording_id" oninput="dprWb2Query()"></div>
+          <div class="q-field"><label for="dprWb2RecordingFilter">数据 ID</label><input id="dprWb2RecordingFilter" type="search" placeholder="请输入数据 ID" oninput="dprWb2Query()"></div>
           <div class="q-field"><label for="dprWb2TaskFilter">处理任务</label><select id="dprWb2TaskFilter" onchange="dprWb2Query()"><option value="">全部处理任务</option></select></div>
-          <div class="q-field"><label for="dprWb2FlowFilter">流程</label><select id="dprWb2FlowFilter" onchange="dprWb2FlowChanged(this)"><option value="">全部流程</option></select></div>
-          <div class="q-field"><label for="dprWb2CurrentNodeFilter">当前节点</label><select id="dprWb2CurrentNodeFilter" onchange="dprWb2Query()" disabled><option value="">全部当前节点</option></select></div>
-          <div class="q-field"><label for="dprWb2NodeFilter">来源节点</label><select id="dprWb2NodeFilter" onchange="dprWb2Query()" disabled><option value="">全部来源节点</option></select></div>
+          <div class="q-field"><label for="dprWb2CurrentNodeFilter">当前节点</label><select id="dprWb2CurrentNodeFilter" onchange="dprWb2Query()"><option value="">全部当前节点</option></select></div>
+          <div class="q-field"><label for="dprWb2NodeFilter">来源节点</label><select id="dprWb2NodeFilter" onchange="dprWb2Query()"><option value="">全部来源节点</option></select></div>
           <div class="q-field"><label for="dprWb2OperationFilter">来源操作</label><select id="dprWb2OperationFilter" onchange="dprWb2Query()"><option value="">全部来源操作</option></select></div>
           <div class="q-actions"><button type="button" class="btn" onclick="dprWb2ClearFilters()">清空</button><button type="button" class="btn btn-primary" onclick="dprWb2Query()">查询</button></div>
         </div>
@@ -8372,7 +8456,7 @@ def render_workbench_v2():
         <section class="dpr-wb2-recordings-panel">
           <div class="table-wrap dpr-wb2-items-list">
             <table class="ant-table dpr-wb2-items-table">
-              <thead><tr><th>recording_id</th><th>来源操作</th><th>说明</th><th>当前轮次</th><th><button type="button" onclick="dprWb2Sort(&quot;updated_at&quot;)">更新时间<span class="dpr-wb2-sort-indicator" data-sort-indicator="updated_at"></span></button></th><th>操作</th></tr></thead>
+              <thead><tr><th>数据 ID</th><th>来源操作</th><th>说明</th><th>当前轮次</th><th><button type="button" onclick="dprWb2Sort(&quot;updated_at&quot;)">更新时间<span class="dpr-wb2-sort-indicator" data-sort-indicator="updated_at"></span></button></th><th>操作</th></tr></thead>
               <tbody id="dprWb2ItemsRows"></tbody>
             </table>
           </div>
@@ -8383,19 +8467,20 @@ def render_workbench_v2():
     <script>
     var dprWb2Items={todo_data_json},dprWb2SortKey='updated_at',dprWb2SortDirection='desc',dprWb2Page=1,dprWb2PageSize=10,dprWb2TotalPages=1,dprWb2SelectedGroupKey='';
     function dprSwitchWorkbenchV2Tab(button,pane){{document.querySelectorAll('.dpr-wb2-tab').forEach(function(item){{item.classList.toggle('active',item===button);}});document.querySelectorAll('.dpr-wb2-pane').forEach(function(item){{item.classList.toggle('active',item.dataset.wb2Pane===pane);}});}}
+    function dprWb2FilterPools(event){{if(event)event.preventDefault();var flow=document.getElementById('dprWb2PoolFlowFilter').value,node=document.getElementById('dprWb2PoolNodeFilter').value;document.querySelectorAll('#dpr-wb2-pool-table tbody tr[data-flow]').forEach(function(row){{row.style.display=(!flow||row.dataset.flow===flow)&&(!node||row.dataset.node===node)?'':'none';}});}}
+    function dprWb2ClearPoolFilters(){{document.getElementById('dprWb2PoolFlowFilter').value='';document.getElementById('dprWb2PoolNodeFilter').value='';dprWb2FilterPools();}}
     function dprWb2Escape(value){{return String(value==null?'':value).replace(/[&<>\"']/g,function(char){{return {{'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":'&#39;'}}[char];}});}}
     function dprWb2RenderPagination(){{var holder=document.getElementById('dprWb2PageButtons');holder.innerHTML='';for(var page=1;page<=dprWb2TotalPages;page++)holder.innerHTML+='<button type="button" class="'+(page===dprWb2Page?'active':'')+'" onclick="dprWb2GoToPage('+page+')">'+page+'</button>';document.getElementById('dprWb2PrevPage').disabled=dprWb2Page<=1;document.getElementById('dprWb2NextPage').disabled=dprWb2Page>=dprWb2TotalPages;}}
     function dprWb2Query(){{dprWb2Page=1;dprWb2RenderItems();}}
-    function dprWb2ClearFilters(){{document.getElementById('dprWb2FlowFilter').value='';document.getElementById('dprWb2TaskFilter').value='';var currentNodeSelect=document.getElementById('dprWb2CurrentNodeFilter');currentNodeSelect.value='';currentNodeSelect.disabled=true;currentNodeSelect.innerHTML='<option value="">全部当前节点</option>';var nodeSelect=document.getElementById('dprWb2NodeFilter');nodeSelect.value='';nodeSelect.disabled=true;nodeSelect.innerHTML='<option value="">全部来源节点</option>';document.getElementById('dprWb2RecordingFilter').value='';document.getElementById('dprWb2OperationFilter').value='';dprWb2SelectedGroupKey='';dprWb2Query();}}
+    function dprWb2ClearFilters(){{document.getElementById('dprWb2TaskFilter').value='';document.getElementById('dprWb2CurrentNodeFilter').value='';document.getElementById('dprWb2NodeFilter').value='';document.getElementById('dprWb2RecordingFilter').value='';document.getElementById('dprWb2OperationFilter').value='';dprWb2SelectedGroupKey='';dprWb2Query();}}
     function dprWb2GoToPage(page){{dprWb2Page=Math.max(1,Math.min(page,dprWb2TotalPages));dprWb2RenderItems();}}
     function dprWb2ChangePage(delta){{dprWb2GoToPage(dprWb2Page+delta);}}
-    function dprWb2BuildOptions(){{var flows=[],tasks=[],currentNodes=[],operations=[];dprWb2Items.forEach(function(item){{if(flows.indexOf(item.flow_name)<0)flows.push(item.flow_name);if(tasks.indexOf(item.processing_task)<0)tasks.push(item.processing_task);if(currentNodes.indexOf(item.current_node)<0)currentNodes.push(item.current_node);if(operations.indexOf(item.source_operation)<0)operations.push(item.source_operation);}});document.getElementById('dprWb2FlowFilter').innerHTML='<option value="">全部流程</option>'+flows.map(function(value){{return '<option value="'+dprWb2Escape(value)+'">'+dprWb2Escape(value)+'</option>';}}).join('');document.getElementById('dprWb2TaskFilter').innerHTML='<option value="">全部处理任务</option>'+tasks.map(function(value){{return '<option value="'+dprWb2Escape(value)+'">'+dprWb2Escape(value)+'</option>';}}).join('');document.getElementById('dprWb2CurrentNodeFilter').innerHTML='<option value="">全部当前节点</option>'+currentNodes.map(function(value){{return '<option value="'+dprWb2Escape(value)+'">'+dprWb2Escape(value)+'</option>';}}).join('');document.getElementById('dprWb2OperationFilter').innerHTML='<option value="">全部来源操作</option>'+operations.map(function(value){{return '<option value="'+dprWb2Escape(value)+'">'+dprWb2Escape(value)+'</option>';}}).join('');}}
-    function dprWb2FlowChanged(select){{var currentNodes=[],sourceNodes=[];dprWb2Items.forEach(function(item){{if(select.value&&item.flow_name===select.value){{if(currentNodes.indexOf(item.current_node)<0)currentNodes.push(item.current_node);if(sourceNodes.indexOf(item.source_node)<0)sourceNodes.push(item.source_node);}}}});var currentNodeSelect=document.getElementById('dprWb2CurrentNodeFilter');currentNodeSelect.disabled=!select.value;currentNodeSelect.value='';currentNodeSelect.innerHTML='<option value="">全部当前节点</option>'+currentNodes.map(function(value){{return '<option value="'+dprWb2Escape(value)+'">'+dprWb2Escape(value)+'</option>';}}).join('');var nodeSelect=document.getElementById('dprWb2NodeFilter');nodeSelect.disabled=!select.value;nodeSelect.value='';nodeSelect.innerHTML='<option value="">全部来源节点</option>'+sourceNodes.map(function(value){{return '<option value="'+dprWb2Escape(value)+'">'+dprWb2Escape(value)+'</option>';}}).join('');dprWb2Query();}}
+    function dprWb2BuildOptions(){{var tasks=[],currentNodes=[],sourceNodes=[],operations=[];dprWb2Items.forEach(function(item){{if(tasks.indexOf(item.processing_task)<0)tasks.push(item.processing_task);if(currentNodes.indexOf(item.current_node)<0)currentNodes.push(item.current_node);if(sourceNodes.indexOf(item.source_node)<0)sourceNodes.push(item.source_node);if(operations.indexOf(item.source_operation)<0)operations.push(item.source_operation);}});document.getElementById('dprWb2TaskFilter').innerHTML='<option value="">全部处理任务</option>'+tasks.map(function(value){{return '<option value="'+dprWb2Escape(value)+'">'+dprWb2Escape(value)+'</option>';}}).join('');document.getElementById('dprWb2CurrentNodeFilter').innerHTML='<option value="">全部当前节点</option>'+currentNodes.map(function(value){{return '<option value="'+dprWb2Escape(value)+'">'+dprWb2Escape(value)+'</option>';}}).join('');document.getElementById('dprWb2NodeFilter').innerHTML='<option value="">全部来源节点</option>'+sourceNodes.map(function(value){{return '<option value="'+dprWb2Escape(value)+'">'+dprWb2Escape(value)+'</option>';}}).join('');document.getElementById('dprWb2OperationFilter').innerHTML='<option value="">全部来源操作</option>'+operations.map(function(value){{return '<option value="'+dprWb2Escape(value)+'">'+dprWb2Escape(value)+'</option>';}}).join('');}}
     function dprWb2GroupItems(items){{var groups={{}};items.forEach(function(item){{var key=[item.task_id,item.processing_task,item.current_node,item.source_node].join('|'),group=groups[key];if(!group){{group=groups[key]=Object.assign({{}},item,{{group_key:key,group_count:0,items:[]}});}}group.group_count+=1;group.items.push(item);if(String(item.updated_at||'')>String(group.updated_at||'')){{group.updated_at=item.updated_at;}}}});return Object.keys(groups).map(function(key){{return groups[key];}});}}
-    function dprWb2FilteredItems(){{var flow=document.getElementById('dprWb2FlowFilter').value,task=document.getElementById('dprWb2TaskFilter').value,currentNode=document.getElementById('dprWb2CurrentNodeFilter').value,node=document.getElementById('dprWb2NodeFilter').value,recording=document.getElementById('dprWb2RecordingFilter').value.trim().toLowerCase(),operation=document.getElementById('dprWb2OperationFilter').value;var filtered=dprWb2Items.filter(function(item){{return (!flow||item.flow_name===flow)&&(!task||item.processing_task===task)&&(!currentNode||item.current_node===currentNode)&&(!node||item.source_node===node)&&(!recording||item.recording_id.toLowerCase().indexOf(recording)>=0)&&(!operation||item.source_operation===operation);}});return dprWb2GroupItems(filtered).sort(function(a,b){{var left=String(a[dprWb2SortKey]||''),right=String(b[dprWb2SortKey]||''),result=left.localeCompare(right,'zh-CN');return dprWb2SortDirection==='asc'?result:-result;}});}}
+    function dprWb2FilteredItems(){{var task=document.getElementById('dprWb2TaskFilter').value,currentNode=document.getElementById('dprWb2CurrentNodeFilter').value,node=document.getElementById('dprWb2NodeFilter').value,recording=document.getElementById('dprWb2RecordingFilter').value.trim().toLowerCase(),operation=document.getElementById('dprWb2OperationFilter').value;var filtered=dprWb2Items.filter(function(item){{return (!task||item.processing_task===task)&&(!currentNode||item.current_node===currentNode)&&(!node||item.source_node===node)&&(!recording||item.recording_id.toLowerCase().indexOf(recording)>=0)&&(!operation||item.source_operation===operation);}});return dprWb2GroupItems(filtered).sort(function(a,b){{var left=String(a[dprWb2SortKey]||''),right=String(b[dprWb2SortKey]||''),result=left.localeCompare(right,'zh-CN');return dprWb2SortDirection==='asc'?result:-result;}});}}
     function dprWb2SelectGroup(key){{dprWb2SelectedGroupKey=key;dprWb2Page=1;dprWb2RenderItems();}}
     function dprWb2DisplayTaskName(value){{return String(value||'').split(' · ')[0];}}
-    function dprWb2RenderItems(){{var allItems=dprWb2FilteredItems(),groups=dprWb2GroupItems(allItems),selected=groups.find(function(group){{return group.group_key===dprWb2SelectedGroupKey;}})||groups[0]||null;if(selected)dprWb2SelectedGroupKey=selected.group_key;else dprWb2SelectedGroupKey='';document.getElementById('dprWb2TotalCount').textContent=allItems.length+' 条待办';document.getElementById('dprWb2GroupList').innerHTML=groups.length?groups.map(function(group){{var groupTitle=dprWb2DisplayTaskName(group.processing_task);return '<button type="button" class="dpr-wb2-group-item'+(group.group_key===dprWb2SelectedGroupKey?' active':'')+'" data-group-key="'+dprWb2Escape(group.group_key)+'" onclick="dprWb2SelectGroup(this.dataset.groupKey)"><div class="dpr-wb2-group-title-row"><i class="dpr-wb2-group-label">处理任务</i><b>'+dprWb2Escape(groupTitle)+'</b><em>'+group.group_count+' 条待办</em></div><div class="dpr-wb2-group-meta"><span><i>当前节点</i>'+dprWb2Escape(group.current_node)+'</span><span><i>来源节点</i>'+dprWb2Escape(group.source_node)+'</span></div></button>';}}).join(''):'<div class="dpr-wb2-recordings-empty">当前没有匹配的处理分组</div>';var recordingItems=selected?selected.items:[];dprWb2TotalPages=Math.max(1,Math.ceil(recordingItems.length/dprWb2PageSize));if(dprWb2Page>dprWb2TotalPages)dprWb2Page=dprWb2TotalPages;var items=recordingItems.slice((dprWb2Page-1)*dprWb2PageSize,dprWb2Page*dprWb2PageSize);document.getElementById('dprWb2ItemsRows').innerHTML=items.length?items.map(function(item){{var operationClass=item.source_operation==='提交'?' submit':'',href='/data/workbench-v2/edit?task='+encodeURIComponent(item.task_id)+'&recording_id='+encodeURIComponent(item.recording_id)+'&entry=todo';return '<tr><td><code>'+dprWb2Escape(item.recording_id)+'</code></td><td><span class="dpr-wb2-operation'+operationClass+'">'+dprWb2Escape(item.source_operation)+'</span></td><td class="dpr-wb2-reject-reason">'+dprWb2Escape(item.description||'—')+'</td><td>'+dprWb2Escape(item.current_round)+'</td><td>'+dprWb2Escape(item.updated_at)+'</td><td class="dpr-wb2-item-action"><a class="btn btn-sm" href="'+dprWb2Escape(href)+'">处理</a></td></tr>';}}).join(''):'<tr><td colspan="6" class="dpr-wb2-recordings-empty">当前分组没有匹配的 recording</td></tr>';document.querySelectorAll('[data-sort-indicator]').forEach(function(indicator){{indicator.textContent=indicator.dataset.sortIndicator===dprWb2SortKey?(dprWb2SortDirection==='asc'?' ↑':' ↓'):'';}});dprWb2RenderPagination();}}
+    function dprWb2RenderItems(){{var allItems=dprWb2FilteredItems(),groups=dprWb2GroupItems(allItems),selected=groups.find(function(group){{return group.group_key===dprWb2SelectedGroupKey;}})||groups[0]||null;if(selected)dprWb2SelectedGroupKey=selected.group_key;else dprWb2SelectedGroupKey='';document.getElementById('dprWb2TotalCount').textContent=allItems.length+' 条待办';document.getElementById('dprWb2GroupList').innerHTML=groups.length?groups.map(function(group){{var groupTitle=dprWb2DisplayTaskName(group.processing_task);return '<button type="button" class="dpr-wb2-group-item'+(group.group_key===dprWb2SelectedGroupKey?' active':'')+'" data-group-key="'+dprWb2Escape(group.group_key)+'" onclick="dprWb2SelectGroup(this.dataset.groupKey)"><div class="dpr-wb2-group-title-row"><i class="dpr-wb2-group-label">处理任务</i><b>'+dprWb2Escape(groupTitle)+'</b><em>'+group.group_count+' 条待办</em></div><div class="dpr-wb2-group-meta"><span><i>当前节点</i>'+dprWb2Escape(group.current_node)+'</span><span><i>来源节点</i>'+dprWb2Escape(group.source_node)+'</span></div></button>';}}).join(''):'<div class="dpr-wb2-recordings-empty">当前没有匹配的处理分组</div>';var recordingItems=selected?selected.items:[];dprWb2TotalPages=Math.max(1,Math.ceil(recordingItems.length/dprWb2PageSize));if(dprWb2Page>dprWb2TotalPages)dprWb2Page=dprWb2TotalPages;var items=recordingItems.slice((dprWb2Page-1)*dprWb2PageSize,dprWb2Page*dprWb2PageSize);document.getElementById('dprWb2ItemsRows').innerHTML=items.length?items.map(function(item){{var operationClass=item.source_operation==='提交'?' submit':'',href='/data/workbench-v2/edit?task='+encodeURIComponent(item.task_id)+'&recording_id='+encodeURIComponent(item.recording_id)+'&entry=todo';return '<tr><td><code>'+dprWb2Escape(item.recording_id)+'</code></td><td><span class="dpr-wb2-operation'+operationClass+'">'+dprWb2Escape(item.source_operation)+'</span></td><td class="dpr-wb2-reject-reason">'+dprWb2Escape(item.description||'—')+'</td><td>'+dprWb2Escape(item.current_round)+'</td><td>'+dprWb2Escape(item.updated_at)+'</td><td class="dpr-wb2-item-action"><a class="tbtn" href="'+dprWb2Escape(href)+'">处理</a></td></tr>';}}).join(''):'<tr><td colspan="6" class="dpr-wb2-recordings-empty">当前分组没有匹配的 recording</td></tr>';document.querySelectorAll('[data-sort-indicator]').forEach(function(indicator){{indicator.textContent=indicator.dataset.sortIndicator===dprWb2SortKey?(dprWb2SortDirection==='asc'?' ↑':' ↓'):'';}});dprWb2RenderPagination();}}
     function dprWb2Sort(key){{if(dprWb2SortKey===key)dprWb2SortDirection=dprWb2SortDirection==='asc'?'desc':'asc';else{{dprWb2SortKey=key;dprWb2SortDirection='asc';}}dprWb2Page=1;dprWb2RenderItems();}}
     dprWb2BuildOptions();dprWb2RenderItems();
     </script>
@@ -8465,6 +8550,7 @@ DATA_PLATFORM_CSS = """
 .dpr-collection-drawer{width:500px;max-width:calc(100vw - 24px)}.dpr-collection-drawer .drawer-body{padding-top:24px}.dpr-collection-drawer .fg{margin-bottom:20px}.dpr-collection-drawer .fg input,.dpr-collection-drawer .fg select{height:38px;box-sizing:border-box;background:#fff}.dpr-optional{color:#829096;font-weight:400}.dpr-field-help{margin-top:1px;color:#849298;font-size:11.5px;line-height:1.5}.dpr-processing-drawer{width:720px}.dpr-processing-assignment{margin-top:8px;padding-top:18px;border-top:1px solid #edf1f2}.dpr-processing-assignment-title{display:flex;align-items:baseline;justify-content:space-between;gap:14px;margin-bottom:12px}.dpr-processing-assignment-title b{font-size:14px;color:#2b434b}.dpr-processing-assignment-title span{font-size:11px;color:#829197}.dpr-processing-assignment-card{margin-bottom:10px;padding:12px;border:1px solid #e2e8ea;border-radius:8px;background:#fafcfc}.dpr-processing-assignment-head{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:10px}.dpr-processing-assignment-head>div{display:flex;align-items:center;gap:7px}.dpr-processing-assignment-head b{font-size:12.5px;color:#2e464e}.dpr-processing-assignment-head>div span{padding:2px 6px;border-radius:8px;background:#e5f5ee;color:#2f8064;font-size:9.5px}.dpr-processing-assignment-head label{display:flex;align-items:center;gap:7px;color:#718087;font-size:11px}.dpr-processing-assignment-head select{width:94px;height:30px;padding:0 7px;border:1px solid #d8e0e3;border-radius:5px;background:#fff;color:#324950}.dpr-processing-assignment-cols,.dpr-processing-assignment-row{display:grid;grid-template-columns:1fr 110px 26px;align-items:center;gap:7px}.dpr-processing-assignment-cols{margin-bottom:4px;color:#879398;font-size:9.5px}.dpr-processing-assignment-row{margin-bottom:6px}.dpr-processing-assignment-row select,.dpr-processing-percent input{width:100%;height:32px;box-sizing:border-box;border:1px solid #d9e0e2;border-radius:6px;background:#fff;color:#334a52}.dpr-processing-assignment-row select{padding:0 8px}.dpr-processing-percent{position:relative}.dpr-processing-percent input{padding:0 24px 0 8px}.dpr-processing-percent span{position:absolute;right:8px;top:7px;color:#89959a;font-size:11px}.dpr-processing-assignment-remove{width:26px;height:26px;border:0;background:transparent;color:#a7b0b4;font-size:17px;cursor:pointer}.dpr-processing-assignment-remove:hover{color:#d05a50}.dpr-processing-assignment-foot{display:flex;align-items:center;justify-content:space-between;margin-top:7px}.dpr-processing-assignment-foot button{padding:0;border:0;background:transparent;color:#149DAA;font-size:11px;cursor:pointer}.dpr-processing-assignment-foot span{color:#74848a;font-size:11px}.dpr-processing-assignment-foot b.ok{color:#2f8d70}.dpr-processing-assignment-foot b.bad{color:#c64b40}.dpr-processing-assignment-empty{padding:18px;border:1px dashed #d6dfe2;border-radius:8px;background:#fafcfc;color:#7d8c91;font-size:12px;text-align:center}
 .dpr-processing-task-page{position:fixed;z-index:260;top:52px;left:220px;right:0;bottom:0;display:none;background:#f6f8f9;color:#30464e}.dpr-processing-task-page[aria-hidden="false"]{display:flex;flex-direction:column}.dpr-processing-task-page-head{height:70px;display:flex;align-items:center;justify-content:space-between;gap:18px;padding:0 28px;border-bottom:1px solid #e2e8ea;background:#fff}.dpr-processing-task-page-head>div{display:flex;align-items:center;gap:12px}.dpr-processing-task-page-head h2{margin:0;font-size:18px;color:#20383f}.dpr-processing-back{padding:0;border:0;background:transparent;color:#149DAA;font-size:12px;cursor:pointer}.dpr-processing-task-page-body{display:grid;grid-template-columns:208px minmax(0,1fr);flex:1;min-height:0}.dpr-processing-task-menu{padding:22px 12px;border-right:1px solid #e1e7e9;background:#fff}.dpr-processing-task-menu button{display:flex;align-items:center;gap:10px;width:100%;margin-bottom:5px;padding:10px 12px;border:0;border-radius:7px;background:transparent;color:#65767c;text-align:left;font-size:13px;cursor:pointer}.dpr-processing-task-menu button i{display:inline-flex;align-items:center;justify-content:center;width:19px;height:19px;border-radius:50%;background:#edf1f2;color:#7c8c91;font:600 10px sans-serif}.dpr-processing-task-menu button.active{background:#e8f7f8;color:#117a83;font-weight:650}.dpr-processing-task-menu button.active i{background:#149DAA;color:#fff}.dpr-processing-task-form{overflow:auto;padding:30px 38px}.dpr-processing-task-pane{display:none;max-width:1120px;margin:0 auto}.dpr-processing-task-pane.active{display:block}.dpr-page-section-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:20px}.dpr-page-section-head h3{margin:0;color:#243d45;font-size:17px}.dpr-page-section-head p{margin:6px 0 0;color:#7a898f;font-size:12px}.dpr-processing-basic-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px 24px;padding:24px;border:1px solid #e2e8ea;border-radius:10px;background:#fff}.dpr-processing-basic-grid .fg{display:flex;flex-direction:column;gap:7px;margin:0;color:#51646b;font-size:12px}.dpr-processing-basic-grid input,.dpr-processing-basic-grid select{height:38px;box-sizing:border-box;border:1px solid #d8e0e3;border-radius:7px;background:#fff;padding:0 11px;color:#324950}.dpr-processing-basic-grid small{color:#869399;font-size:11px;line-height:1.45}.dpr-page-config-block{margin-top:0;padding:18px;background:#fff}.dpr-flow-assignment-layout{display:grid;grid-template-columns:310px minmax(0,1fr);gap:18px;min-height:490px}.dpr-flow-selector,.dpr-flow-node-assignments{border:1px solid #e1e8ea;border-radius:10px;background:#fff}.dpr-flow-selector-tabs{display:flex;padding:10px 12px 0;border-bottom:1px solid #e8edef}.dpr-flow-selector-tabs button{flex:1;padding:9px 4px;border:0;border-bottom:2px solid transparent;background:transparent;color:#728188;font-size:12px;cursor:pointer}.dpr-flow-selector-tabs button.active{border-bottom-color:#149DAA;color:#117a83;font-weight:650}.dpr-flow-choice{display:flex;flex-direction:column;gap:5px;width:calc(100% - 24px);margin:12px;padding:13px;border:1px solid #e3e9eb;border-radius:8px;background:#fff;color:#3a5158;text-align:left;cursor:pointer}.dpr-flow-choice:hover,.dpr-flow-choice.selected{border-color:#69bdc4;background:#f1fbfb}.dpr-flow-choice b{font-size:12.5px}.dpr-flow-choice span{color:#819096;font-size:10.5px}.dpr-flow-node-assignments{padding:18px;overflow:auto}.dpr-flow-assignment-summary{display:flex;align-items:baseline;gap:8px;padding-bottom:14px;border-bottom:1px solid #e7ecee;color:#829096;font-size:11px}.dpr-flow-assignment-summary b{color:#2e464e;font-size:14px}.dpr-flow-node-card{margin-top:14px;padding:14px;border:1px solid #e2e9eb;border-radius:8px;background:#fbfcfc}.dpr-flow-node-card-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:11px}.dpr-flow-node-card-head>div{display:flex;align-items:center;gap:7px}.dpr-flow-node-card-head b{font-size:13px;color:#30484f}.dpr-flow-node-card-head>div span{padding:2px 6px;border-radius:8px;background:#e5f5ee;color:#2f8064;font-size:9.5px}.dpr-flow-total{color:#74848a;font-size:11px}.dpr-flow-total b.ok{color:#2f8d70}.dpr-flow-total b.bad{color:#c64b40}.dpr-flow-assignment-cols,.dpr-flow-assignment-row{display:grid;grid-template-columns:100px minmax(150px,1fr) 100px 26px;gap:7px;align-items:center}.dpr-flow-assignment-cols{margin-bottom:5px;color:#89959a;font-size:9.5px}.dpr-flow-assignment-row{margin-bottom:7px}.dpr-flow-assignment-row select,.dpr-flow-assignment-percent input{width:100%;height:34px;box-sizing:border-box;border:1px solid #d8e0e3;border-radius:6px;background:#fff;padding:0 9px;color:#344c54}.dpr-flow-assignment-percent{position:relative}.dpr-flow-assignment-percent input{padding-right:24px}.dpr-flow-assignment-percent span{position:absolute;right:8px;top:8px;color:#89959a;font-size:11px}.dpr-flow-add-assignment{padding:0;border:0;background:transparent;color:#149DAA;font-size:11px;cursor:pointer}.dpr-flow-add-assignment:disabled{opacity:.45;cursor:not-allowed}@media(max-width:900px){.dpr-processing-task-page{left:0}.dpr-processing-task-page-body{grid-template-columns:1fr}.dpr-processing-task-menu{display:flex;overflow:auto;padding:8px;border-right:0;border-bottom:1px solid #e1e7e9}.dpr-processing-task-menu button{min-width:max-content;margin:0}.dpr-processing-task-form{padding:20px}.dpr-flow-assignment-layout{grid-template-columns:1fr}.dpr-processing-basic-grid{grid-template-columns:1fr}}
 .dpr-source-task-note{padding:12px 14px;border:1px solid #dcebed;border-radius:8px;background:#f4fafb;color:#567078;font-size:12px;line-height:1.6}.dpr-processing-task-note{max-width:760px;color:#5d737b;font-size:12px}.dpr-task-enable{display:inline-flex;align-items:center;gap:6px;cursor:pointer}.dpr-task-enable input{display:none}.dpr-task-enable i{position:relative;width:30px;height:17px;border-radius:10px;background:#cbd4d7;transition:.2s}.dpr-task-enable i:after{content:"";position:absolute;left:2px;top:2px;width:13px;height:13px;border-radius:50%;background:#fff;transition:.2s}.dpr-task-enable input:checked+i{background:#149DAA}.dpr-task-enable input:checked+i:after{left:15px}.dpr-task-enable span{font-size:11px;color:#536a72}.dpr-task-enable+small{display:block;margin-top:5px}.dpr-filter-summary{display:block;max-width:240px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#4d656d}.dpr-flow-binding-list{display:flex;flex-direction:column;gap:6px;min-width:480px}.dpr-flow-binding-chip{display:grid;grid-template-columns:34px minmax(145px,1fr) 30px minmax(170px,.9fr);align-items:center;gap:7px}.dpr-flow-binding-chip span{padding:2px 5px;border-radius:8px;background:#edf5f6;color:#247783;font-size:9px;text-align:center}.dpr-flow-binding-chip b{font-size:10.5px;font-weight:500;color:#405860}.dpr-flow-binding-chip code{font-size:9.5px;color:#839197}.dpr-flow-progress-line{min-width:170px}.dpr-processing-volume{display:flex;flex-direction:column;gap:3px;white-space:nowrap;color:#74848a;font-size:10px}.dpr-processing-volume b{color:#334b53}.dpr-processing-volume .risk,.dpr-processing-volume .risk b{color:#bc5549}.dpr-task-config-block{margin-top:14px;padding:14px;border:1px solid #e3e9eb;border-radius:9px;background:#fbfcfc}.dpr-task-config-head{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;margin-bottom:12px}.dpr-task-config-head>div{display:flex;flex-direction:column;gap:3px}.dpr-task-config-head b{font-size:13px;color:#2a434b}.dpr-task-config-head span{color:#849298;font-size:10.5px}.dpr-task-config-head button{border:0;background:transparent;color:#149DAA;font-size:11px;cursor:pointer}.dpr-task-config-cols,.dpr-task-config-row{display:grid;align-items:center;gap:7px}.dpr-filter-cols,.dpr-filter-row{grid-template-columns:170px 1fr 26px}.dpr-flow-cols,.dpr-flow-row{grid-template-columns:64px minmax(185px,1fr) 52px minmax(158px,.9fr)}.dpr-task-config-cols{margin-bottom:5px;color:#879399;font-size:9.5px}.dpr-task-config-row{margin-bottom:7px}.dpr-task-config-row select,.dpr-task-config-row input{width:100%;height:34px;box-sizing:border-box;border:1px solid #d8e0e3;border-radius:6px;background:#fff;padding:0 9px;color:#344c54}.dpr-task-config-row code{padding:8px 4px;color:#60747b;font-size:10.5px}.dpr-flow-stage-fixed{font-size:11px;font-weight:600;color:#405860}.dpr-flow-rule-empty{color:#9aa6aa;text-align:center}.dpr-task-config-remove{width:26px;height:26px;border:0;background:transparent;color:#9da9ad;font-size:17px;cursor:pointer}.dpr-task-config-remove:hover{color:#cf584e}.dpr-task-config-empty{padding:12px;border:1px dashed #d8e1e3;border-radius:7px;color:#849298;font-size:11px;text-align:center}
+.dpr-status-confirm-mask{position:fixed;inset:0;z-index:520;display:flex;align-items:center;justify-content:center;padding:24px;background:rgba(16,35,42,.36);box-sizing:border-box}.dpr-status-confirm-dialog{width:430px;max-width:calc(100vw - 48px);padding:22px;border-radius:8px;background:#fff;box-shadow:0 16px 44px rgba(16,35,42,.22)}.dpr-status-confirm-dialog h3{margin:0 0 14px;color:#263f47;font-size:16px}.dpr-status-confirm-dialog p{margin:0;color:#607178;font-size:13px;line-height:1.7}.dpr-status-confirm-dialog>div{display:flex;justify-content:flex-end;gap:8px;margin-top:22px}
 .dpr-flow-binding-chip{grid-template-columns:34px minmax(190px,max-content) minmax(170px,.9fr)}.dpr-flow-binding-name{display:flex;align-items:center;gap:5px;min-width:0;white-space:nowrap}.dpr-flow-binding-name b{overflow:hidden;text-overflow:ellipsis}.dpr-flow-binding-name code{flex:none}
 .dpr-scenario-summary{display:flex;align-items:center;gap:28px;margin-bottom:16px;padding:14px 18px;border:1px solid #dce8ea;border-radius:9px;background:#f7fbfb}.dpr-scenario-summary>div{display:flex;align-items:baseline;gap:6px}.dpr-scenario-summary span{color:#66777d;font-size:12px}.dpr-scenario-summary b{color:#149DAA;font-size:24px}.dpr-scenario-summary small{color:#829096}.dpr-scenario-summary p{margin:0 0 0 auto;color:#53666d;font-size:12px}.dpr-capacity-overload{color:#b45246;font-weight:650;white-space:nowrap}.dpr-assignment-context{display:grid;grid-template-columns:1fr;gap:8px;margin-bottom:12px;padding:12px 14px;border:1px solid #e1e7e9;border-radius:7px;background:#fafcfc}.dpr-assignment-context span{display:flex;justify-content:space-between;gap:18px;color:#74848a;font-size:12px}.dpr-assignment-context b{color:#2f464e}.dpr-inline-notice{margin-bottom:18px;padding:10px 12px;border-left:3px solid #e5a64c;border-radius:5px;background:#fff8e8;color:#76591f;font-size:12px}.dpr-inline-notice.success{border-left-color:#69ad8d;background:#f0faf5;color:#3f725d}.dpr-project-scope{display:flex;align-items:center;gap:9px;color:#63757c;font-size:12px;white-space:nowrap}.dpr-project-scope select{min-width:152px;height:36px;padding:0 32px 0 11px;border:1px solid #d8e0e3;border-radius:7px;background:#fff;color:#2d444c}.dpr-allocation-tabs{margin-bottom:16px}.dpr-allocation-funnel{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.dpr-allocation-stage{padding:15px;border:1px solid #e4eaec;border-radius:9px;background:#fbfdfd}.dpr-allocation-stage-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:13px}.dpr-allocation-stage-head>div{display:flex;flex-direction:column;gap:4px}.dpr-allocation-stage-head b{font-size:15px;color:#263f47}.dpr-allocation-stage-head span{font-size:11px;color:#7a898f}.dpr-allocation-stage-head strong{font-size:22px;color:#273f47;text-align:right}.dpr-allocation-stage-head strong small{display:block;font-size:10px;color:#89969b;font-weight:400}.dpr-allocation-bar{display:flex;height:12px;overflow:hidden;border-radius:6px;background:#edf1f2}.dpr-allocation-bar i{display:block;height:100%}.dpr-allocation-bar i.unassigned,.dpr-allocation-legend i.unassigned{background:#d96c62}.dpr-allocation-bar i.assigned,.dpr-allocation-legend i.assigned{background:#e5a64c}.dpr-allocation-bar i.processing,.dpr-allocation-legend i.processing{background:#5c9db3}.dpr-allocation-bar i.completed,.dpr-allocation-legend i.completed{background:#69ad8d}.dpr-allocation-legend{display:grid;grid-template-columns:1fr 1fr;gap:7px 12px;margin-top:12px;color:#6c7c82;font-size:10.5px}.dpr-allocation-legend span{white-space:nowrap}.dpr-allocation-legend b{font-weight:400}.dpr-allocation-legend i{display:inline-block;width:7px;height:7px;border-radius:2px;margin-right:5px}.dpr-allocation-filters{margin-bottom:14px}.dpr-allocation-filters .ff{min-width:135px}.dpr-allocation-filters .ff input,.dpr-allocation-filters .ff select{min-width:135px}.dpr-allocation-table-foot{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:12px;color:#738289;font-size:12px}.dpr-allocation-table-foot button:disabled{opacity:.45;cursor:not-allowed}.dpr-stalled{color:#b45246;font-weight:650;white-space:nowrap}.dpr-link-button{padding:0;border:0;background:transparent;color:#149DAA;font:inherit;cursor:pointer;white-space:nowrap}#dpr-allocation-backlog-table{min-width:1320px}#dpr-allocation-backlog-table th:first-child,#dpr-allocation-backlog-table td:first-child{width:28px;text-align:center}#dpr-stream-backlog-table{min-width:1280px}#dpr-unbound-pool-table{min-width:1180px}#dpr-stream-backlog-table th:first-child,#dpr-stream-backlog-table td:first-child,#dpr-unbound-pool-table th:first-child,#dpr-unbound-pool-table td:first-child{width:28px;text-align:center}.dpr-flow-assignment-filters{display:grid;grid-template-columns:repeat(4,minmax(150px,1fr));gap:14px}.dpr-flow-assignment-filters .ff{display:flex;flex-direction:column;gap:6px}.dpr-flow-assignment-filters .ff label{font-size:12px;color:#5b6b72}.dpr-flow-assignment-filters .ff input,.dpr-flow-assignment-filters .ff select{width:100%;height:36px;padding:0 10px;border:1px solid #d9e0e2;border-radius:6px;background:#fff;box-sizing:border-box}.dpr-flow-assignment-filters .filter-actions{display:flex;align-items:flex-end;gap:8px}.dpr-flow-match{display:flex;align-items:center;justify-content:space-between;gap:18px;margin-top:18px;padding:16px 18px;border:1px solid #cfe5e7;border-radius:9px;background:#f4fbfb}.dpr-flow-match>div{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}.dpr-flow-match span{color:#5b6d73;font-size:12px}.dpr-flow-match b{font-size:14px;color:#2a424a}.dpr-flow-match em{font-size:26px;font-style:normal;color:#149DAA}.dpr-flow-match small{color:#839197}.dpr-allocation-drawer{width:500px;max-width:calc(100vw - 24px)}.dpr-allocation-drawer .drawer-body{padding-top:22px}.dpr-allocation-drawer .fg{margin-bottom:18px}.dpr-allocation-drawer .fg input,.dpr-allocation-drawer .fg select,.dpr-allocation-drawer .fg textarea{width:100%;box-sizing:border-box;background:#fff}.dpr-allocation-drawer .fg input,.dpr-allocation-drawer .fg select{height:38px}.dpr-allocation-drawer .fg textarea{padding:9px 11px;border:1px solid #d9e0e2;border-radius:6px;resize:vertical}.dpr-drawer-summary{margin-bottom:20px;padding:12px 14px;border-radius:7px;background:#f1f7f8;color:#53666d;font-size:12px}.dpr-drawer-summary b{color:#149DAA}
 .dpr-flow-assignment-cols,.dpr-flow-assignment-row{grid-template-columns:100px minmax(150px,1fr) 26px}

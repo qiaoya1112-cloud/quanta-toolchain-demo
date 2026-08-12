@@ -1535,6 +1535,15 @@ textarea.yaml-area:focus { border-color:#149DAA; box-shadow:0 0 0 2px rgba(20,15
 .wb-rule-groups.wb-rule-groups-hidden { display:none; }
 .wb-v2-pool-home .wb-filter-config { order:2; }
 .wb-v2-pool-home .wb-rule-config { order:1; }
+.wb-v2-basic-config { margin:18px 0 16px; }
+.wb-v2-basic-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:0; padding:18px 20px; }
+.wb-v2-basic-grid > div { display:flex; min-width:0; flex-direction:column; gap:7px; padding:0 20px; border-right:1px solid #edf0f1; }
+.wb-v2-basic-grid > div:first-child { padding-left:0; }
+.wb-v2-basic-grid > div:last-child { padding-right:0; border-right:0; }
+.wb-v2-basic-grid span { color:rgba(0,0,0,.42); font-size:11.5px; }
+.wb-v2-basic-grid b { overflow:hidden; color:rgba(0,0,0,.82); font-size:13px; font-weight:500; text-overflow:ellipsis; white-space:nowrap; }
+.wb-v2-filter-grid { grid-template-columns:minmax(240px,360px); }
+.wb-v2-filter-grid .wb-rule-selector { padding:0; }
 .wb-date-range { display:grid; grid-template-columns:1fr 12px 1fr; gap:7px; align-items:center; }
 .wb-date-range > span { color:rgba(0,0,0,.3); font-size:11px; text-align:center; }
 .wb-filter-tip { display:flex; align-items:center; gap:6px; margin-top:13px; color:rgba(0,0,0,.4); font-size:11.5px; }
@@ -1654,6 +1663,9 @@ textarea.yaml-area:focus { border-color:#149DAA; box-shadow:0 0 0 2px rgba(20,15
   .wb-card { align-items:flex-start; flex-direction:column; }
   .wb-card .wb-side { width:100%; justify-content:flex-end; }
   .wb-card-fields,.wb-task-brief,.wb-task-config-grid { grid-template-columns:1fr; }
+  .wb-v2-basic-grid { grid-template-columns:1fr; gap:14px; }
+  .wb-v2-basic-grid > div,.wb-v2-basic-grid > div:first-child,.wb-v2-basic-grid > div:last-child { padding:0 0 14px; border-right:0; border-bottom:1px solid #edf0f1; }
+  .wb-v2-basic-grid > div:last-child { padding-bottom:0; border-bottom:0; }
   .wb-filter-grid { grid-template-columns:1fr; }
   .wb-rule-groups { grid-template-columns:1fr; }
   .wb-operator-summary { align-items:flex-start; flex-direction:column; }
@@ -1858,12 +1870,6 @@ button.tm-subtab { border:0; background:transparent; font-family:inherit; cursor
 .lab-meta .flow-version-select select { height:28px; padding:0 28px 0 10px; border:1px solid rgba(255,255,255,0.18); border-radius:6px; background:#34414d; color:#fff; outline:none; cursor:pointer; }
 .lab-meta .flow-version-select select:focus { border-color:#48b5c0; box-shadow:0 0 0 2px rgba(72,181,192,0.16); }
 .lab-meta .status-pass { background:#3DC470; color:#fff; padding:3px 12px; border-radius:6px; font-size:12px; font-weight:500; letter-spacing:0.5px; }
-.lab-meta.annotation-meta { min-height:34px; box-sizing:border-box; justify-content:space-between; flex-wrap:nowrap; gap:20px; margin-bottom:6px; padding:6px 12px; font-size:12px; }
-.lab-meta.annotation-meta .lf { gap:4px; white-space:nowrap; }
-.lab-meta.annotation-meta .lf .lbl { font-size:11px; }
-.lab-meta.annotation-meta .lf .val { font-size:12px; }
-.annotation-meta-side { display:flex; align-items:center; gap:6px 16px; min-width:0; }
-.annotation-meta-side.right { justify-content:flex-end; margin-left:auto; }
 .lab-vid-grid { display:grid; grid-template-columns:1fr 1fr 1fr; gap:6px; background:#0d0d0d; padding:6px; border-radius:8px; margin-bottom:14px; position:relative; }
 .lab-vid { background:linear-gradient(135deg,#262b31,#1c2025); border-radius:6px; position:relative; min-height:300px; display:flex; align-items:center; justify-content:center; color:rgba(255,255,255,0.18); font-size:32px; overflow:hidden; }
 .lab-vid .vid-label { position:absolute; top:10px; left:14px; color:#fff; font-size:12.5px; z-index:2; padding:0; background:transparent; }
@@ -1962,24 +1968,30 @@ button.tm-subtab { border:0; background:transparent; font-family:inherit; cursor
 .wbx-log-item { display:grid; grid-template-columns:128px 82px 1fr; gap:12px; padding:11px 0; border-bottom:1px solid #f0f0f0; color:rgba(0,0,0,.68); font-size:12.5px; }
 .wbx-semantic-log-item { grid-template-columns:150px 120px 90px 110px minmax(180px,1fr); }
 .wbx-log-columns { display:grid; grid-template-columns:150px 120px 90px 110px minmax(180px,1fr); gap:12px; padding:8px 0; color:rgba(0,0,0,.42); font-size:11px; border-bottom:1px solid #f0f0f0; }
-.wbx-description-module { display:flex; align-items:flex-start; gap:24px; margin:12px 0; padding:12px 16px; border:1px solid #f2c879; border-left:4px solid #e8a33d; border-radius:8px; background:#fff7e6; }
-.wbx-description-module>b { min-width:44px; color:#30484f; font-size:13px; }
-.wbx-description-module>div { display:flex; align-items:flex-start; gap:12px; min-width:0; }
-.wbx-description-module span { color:#89969b; font-size:11px; }
-.wbx-description-module p { margin:0; color:#536970; font-size:12px; line-height:1.6; }
-.wbx-description-module.annotation-context { display:grid; grid-template-columns:minmax(150px,.75fr) minmax(105px,.5fr) minmax(115px,.55fr) minmax(80px,.4fr) minmax(340px,2.6fr); gap:0; margin:6px 0 8px; padding:0; overflow:hidden; }
-.annotation-context-item { display:flex!important; flex-direction:row; align-items:center!important; gap:6px!important; min-width:0; padding:6px 12px; border-right:1px solid #f1d59f; }
-.annotation-context-item:last-child { border-right:0; }
-.annotation-context-item span { flex:none; color:#9a712a; font-size:10.5px; }
-.annotation-context-item span:after { content:"："; }
-.annotation-context-item b { overflow:hidden; color:#536970; font-size:11.5px; font-weight:500; line-height:1.4; text-overflow:ellipsis; white-space:nowrap; }
-.annotation-context-item.current { background:#fff1d6; }
-.annotation-context-item.current span { color:#a66a05; font-weight:600; }
-.annotation-context-item.current b { display:inline-flex; align-items:center; min-height:20px; padding:0 8px; border-radius:4px; background:#e89b2d; color:#fff; font-weight:600; }
-@media(max-width:1100px) { .lab-meta.annotation-meta { align-items:flex-start; flex-direction:column; gap:5px; } .annotation-meta-side.right { margin-left:0; } .wbx-description-module.annotation-context { grid-template-columns:1fr 1fr; } .annotation-context-item:nth-child(2) { border-right:0; } .annotation-context-item:nth-child(-n+2) { border-bottom:1px solid #f1d59f; } }
+.wbx-flow-note { display:grid; grid-template-columns:minmax(180px,.8fr) minmax(0,3.2fr); min-height:38px; margin:-2px 0 12px; overflow:hidden; border:1px solid #f0c873; border-left:4px solid #eda62d; border-radius:8px; background:#fff8e8; color:#6f6551; box-sizing:border-box; }
+.wbx-flow-note-item { display:flex; align-items:center; gap:8px; min-width:0; padding:8px 14px; border-right:1px solid #f0d79f; font-size:12px; line-height:20px; }
+.wbx-flow-note-item:last-child { border-right:0; }
+.wbx-flow-note-label { flex:none; color:#9a7c42; font-size:11px; font-weight:600; white-space:nowrap; }
+.wbx-flow-note-value { min-width:0; overflow:hidden; color:#5b6163; font-weight:600; text-overflow:ellipsis; white-space:nowrap; }
+.wbx-flow-note-current .wbx-flow-note-value { padding:1px 10px; border-radius:5px; background:#eeaa37; color:#fff; }
+.wbx-flow-note-summary { border-right:0; gap:12px; flex-wrap:nowrap; }
+.wbx-flow-note-summary .wbx-flow-note-value { display:flex; flex:1; align-items:center; gap:8px; min-width:0; font-weight:500; white-space:normal; }
+.wbx-flow-part { display:inline-flex; align-items:center; min-height:22px; padding:1px 8px; border:1px solid #ead39d; border-radius:5px; background:rgba(255,255,255,.62); color:#6e6049; font-weight:600; white-space:nowrap; }
+.wbx-flow-part-action-reject { border-color:#f0b7a9; background:#fff1ec; color:#c4543f; }
+.wbx-flow-part-action-submit { border-color:#a9dcd1; background:#eaf8f5; color:#168574; }
+.wbx-flow-part-description { padding-left:2px; color:#665f52; font-weight:500; white-space:normal; }
+.wbx-flow-log-link { flex:none; padding:0; border:0; background:transparent; color:#149DAA; font:inherit; font-weight:400; cursor:pointer; white-space:nowrap; }
+.wbx-flow-log-link:hover { color:#0f7f89; text-decoration:underline; }
+.wbx-log-mask { position:fixed; inset:0; z-index:520; display:flex; align-items:center; justify-content:center; padding:24px; background:rgba(16,35,42,.36); box-sizing:border-box; }
+.wbx-log-dialog { display:flex; flex-direction:column; width:min(920px,calc(100vw - 48px)); max-height:min(680px,calc(100vh - 48px)); overflow:hidden; border-radius:8px; background:#fff; box-shadow:0 18px 48px rgba(16,35,42,.22); }
+.wbx-log-dialog-head { display:flex; align-items:center; justify-content:space-between; padding:16px 20px; border-bottom:1px solid #edf0f1; }
+.wbx-log-dialog-head h3 { margin:0; color:#263f47; font-size:16px; }
+.wbx-log-dialog-close { display:inline-flex; align-items:center; justify-content:center; width:30px; height:30px; padding:0; border:0; background:transparent; color:#718084; font-size:22px; cursor:pointer; }
+.wbx-log-dialog-body { overflow:auto; padding:16px 20px 20px; }
 .wbx-reject-mask { position:fixed; inset:0; z-index:500; display:flex; align-items:center; justify-content:center; background:rgba(16,35,42,.36); }
 .wbx-reject-dialog { width:420px; padding:22px; border-radius:10px; background:#fff; box-shadow:0 14px 42px rgba(16,35,42,.2); }
 .wbx-reject-dialog h3 { margin:0 0 18px; font-size:16px; color:#263f47; }
+.wbx-confirm-copy { margin:0; color:#536970; font-size:14px; line-height:1.7; }
 .wbx-reject-dialog label { display:block; margin-bottom:7px; color:#536970; font-size:12px; }
 .wbx-reject-dialog label span { color:#cf3f38; margin-left:3px; }
 .wbx-reject-target { display:flex; flex-direction:column; gap:7px; margin-bottom:16px; color:#536970; font-size:12px; }
@@ -2011,6 +2023,9 @@ button.tm-subtab { border:0; background:transparent; font-family:inherit; cursor
 }
 @media (max-width:760px) {
   .lab-vid-grid { grid-template-columns:1fr; }
+  .wbx-flow-note { grid-template-columns:1fr; }
+  .wbx-flow-note-item { border-right:0; border-bottom:1px solid #f0d79f; }
+  .wbx-flow-note-summary { border-bottom:0; }
   .wbx-detail-tabbar { overflow-x:auto; }
   .wbx-detail-tags { grid-template-columns:1fr; }
   .wbx-execution { flex-direction:column; }
@@ -3837,7 +3852,7 @@ def _legacy_data_recordings_reference():
 
     tab_self = f"""
     <div class="fb-labeled">
-      <div class="ff"><label>ID 搜索</label><input placeholder="请输入ID"></div>
+      <div class="ff"><label>数据 ID</label><input placeholder="请输入数据 ID"></div>
       <div class="ff"><label>序列号</label><select><option>请选择设备序列号</option><option>UDAS-007</option></select></div>
       <div class="ff"><label>操作人</label><select><option>请选择操作类型/操作人</option></select></div>
       <div class="filter-actions">
@@ -3849,7 +3864,7 @@ def _legacy_data_recordings_reference():
     <div class="table-wrap">
       <table class="ant-table">
         <thead><tr>
-          <th>recording_id</th><th>视频</th><th>Task ID</th><th>collection_id</th>
+          <th>数据 ID</th><th>视频</th><th>Task ID</th><th>collection_id</th>
           <th>当前节点 &#9662;</th><th>采集结论 &#9662;</th><th>质检结论 &#9662;</th>
           <th>标注状态 &#9662;</th><th>操作人</th><th>操作</th>
         </tr></thead>
@@ -4402,6 +4417,7 @@ def _render_workbench_pool_home(pool_id, selected_task_id=None, version="v1"):
         )
     if task_id_query and visible_pool_tasks and task not in visible_pool_tasks:
         task = visible_pool_tasks[0]
+    use_annotation_pool_layout = is_v2 and task["stage"] == "标注"
     meta = WB_POOL_META[pool_id]
     total_waiting = sum(item["count"] for item in pool_tasks)
     total_processing = sum(item["processing"] for item in pool_tasks)
@@ -4467,17 +4483,29 @@ def _render_workbench_pool_home(pool_id, selected_task_id=None, version="v1"):
             if rule.get("enabled") and rule["stage"] == task["stage"]
         )
         rule_options = "".join(
-            f'<option value="{html.escape(name, quote=True)}">{html.escape(name)}</option>'
+            f'<option value="{html.escape(name, quote=True)}"'
+            f'{" selected" if use_annotation_pool_layout and name == "端到端切分标注规则" else ""}>'
+            f'{html.escape(name)}</option>'
             for name in rule_names
         )
         rule_groups_class += " wb-rule-groups-hidden"
         rule_groups_attrs = ' id="wbRuleDetails" style="display:none"'
+        rule_field_label = "规则" if use_annotation_pool_layout else rule_label
+        rule_select_attrs = (
+            ""
+            if use_annotation_pool_layout
+            else 'form="wbFilterForm" onchange="var details=document.getElementById(\'wbRuleDetails\');if(details)details.style.display=this.value?\'grid\':\'none\'"'
+        )
+        rule_placeholder = (
+            ""
+            if use_annotation_pool_layout
+            else f'<option value="">请选择{rule_label}</option>'
+        )
         rule_selector = f"""
           <div class="wb-filter-field wb-rule-selector">
-            <label for="wbRule">{rule_label}<span aria-hidden="true"> *</span></label>
-            <select id="wbRule" name="rule" form="wbFilterForm" required
-              onchange="var details=document.getElementById('wbRuleDetails');if(details)details.style.display=this.value?'grid':'none'">
-              <option value="">请选择{rule_label}</option>
+            <label for="wbRule">{rule_field_label}<span aria-hidden="true"> *</span></label>
+            <select id="wbRule" name="rule" required {rule_select_attrs}>
+              {rule_placeholder}
               {rule_options}
             </select>
           </div>
@@ -4546,18 +4574,25 @@ def _render_workbench_pool_home(pool_id, selected_task_id=None, version="v1"):
       <div class="wb-task-home-head">
         <div>
           <a href="{workbench_url}">&larr; 返回工作台</a>
-          <h2>{html.escape(pool_title)}</h2>
+          {'' if use_annotation_pool_layout else f'<h2>{html.escape(pool_title)}</h2>'}
           {pool_subtitle}
         </div>
         {priority_badge}
       </div>
-      {'' if is_v2 else f'''<div class="wb-task-brief wb-pool-brief">
+      {f'''<section class="wb-task-config wb-v2-basic-config">
+        <div class="wb-task-config-title"><h3>基本信息</h3></div>
+        <div class="wb-v2-basic-grid">
+          <div><span>流程</span><b>{html.escape(task['flow'])}</b></div>
+          <div><span>节点</span><b>{html.escape(task['node'])}</b></div>
+          <div><span>用户组</span><b>{html.escape(task['user_group'])}</b></div>
+        </div>
+      </section>''' if use_annotation_pool_layout else ('' if is_v2 else f'''<div class="wb-task-brief wb-pool-brief">
         <div><span>环节</span><b>{html.escape(task['stage'])}</b></div>
         <div><span>用户组</span><b>{html.escape(task['user_group'])}</b></div>
         <div><span>待领取</span><b>{total_waiting:,} 条</b></div>
         <div><span>处理中</span><b>{total_processing:,} 条</b></div>
         <div><span>最长滞留</span><b>{html.escape(meta['oldest_wait'])}</b></div>
-      </div>'''}
+      </div>''')}
       {'' if is_v2 else f'''<section class="wb-task-config wb-source-section">
         <div class="wb-task-config-title wb-source-title">
           <div>
@@ -4587,9 +4622,17 @@ def _render_workbench_pool_home(pool_id, selected_task_id=None, version="v1"):
       </div>'''}
       {f'''<form id="wbFilterForm" action="{workbench_url}/edit" method="get" style="display:none" aria-hidden="true">
         <input type="hidden" name="task" value="{html.escape(task['id'])}">
-      </form>''' if is_v2 else ''}
+      </form>''' if is_v2 and not use_annotation_pool_layout else ''}
       <div class="wb-task-config-grid">
-        {'' if is_v2 else f'''<section class="wb-task-config wb-filter-config">
+        {f'''<section class="wb-task-config wb-filter-config">
+          <div class="wb-task-config-title">
+            <h3>筛选条件</h3>
+          </div>
+          <form class="wb-filter-form" id="wbFilterForm" action="{workbench_url}/edit" method="get">
+            <input type="hidden" name="task" value="{html.escape(task['id'])}">
+            <div class="wb-filter-grid wb-v2-filter-grid">{rule_selector}</div>
+          </form>
+        </section>''' if use_annotation_pool_layout else ('' if is_v2 else f'''<section class="wb-task-config wb-filter-config">
           <div class="wb-task-config-title">
             <h3>筛选条件</h3><span>设置本次进入工作台的数据范围</span>
           </div>
@@ -4598,9 +4641,9 @@ def _render_workbench_pool_home(pool_id, selected_task_id=None, version="v1"):
             <input type="hidden" name="task" value="{html.escape(task['id'])}">
             <div class="wb-filter-grid">
               <div class="wb-filter-field">
-                <label for="wbRecordingId">recording_id</label>
+                <label for="wbRecordingId">数据 ID</label>
                 <input id="wbRecordingId" name="recording_id"
-                  placeholder="请输入 recording_id">
+                  placeholder="请输入数据 ID">
               </div>
               <div class="wb-filter-field">
                 <label>采集时间</label>
@@ -4614,14 +4657,14 @@ def _render_workbench_pool_home(pool_id, selected_task_id=None, version="v1"):
             </div>
             <div class="wb-filter-tip">不填写时默认处理当前来源下优先级最高的数据</div>
           </form>
-        </section>'''}
-        <section class="wb-task-config wb-rule-config">
+        </section>''')}
+        {'' if use_annotation_pool_layout else f'''<section class="wb-task-config wb-rule-config">
           <div class="wb-task-config-title">
             <h3>处理规则</h3><span>{html.escape(task['task_name'])}</span>
           </div>
           {rule_selector}
           {rule_groups_html}
-        </section>
+        </section>'''}
       </div>
       <div class="wb-task-home-actions">
         {claim_control}
@@ -4673,6 +4716,8 @@ def _workbench_meta_html(task, status="待处理"):
     recording_id = task.get("recording_id", "3298698")
     device = task.get("recording_device", "UDAS-00002-2983")
     collector = task.get("recording_collector", "柳少龙")
+    display_task_id = task.get("processing_task", "—")
+    processing_task_name = task.get("task_name", "—")
     flow_versions = task.get("flow_versions", [])
     selected_flow_version = task.get(
         "selected_flow_version",
@@ -4705,63 +4750,16 @@ def _workbench_meta_html(task, status="待处理"):
     """
     return f"""
     <div class="lab-meta" data-component="basic_info">
-      <div class="lf"><span class="lbl">任务ID:</span><span class="val">{html.escape(task['id'])}</span></div>
-      <div class="lf"><span class="lbl">流程名称:</span><span class="val">{html.escape(task['flow'])}</span></div>
-      <div class="lf"><span class="lbl">节点:</span><span class="val">{html.escape(task['node'])}</span></div>
+      <div class="lf mono"><span class="lbl">任务ID:</span><span class="val">{html.escape(str(display_task_id))}</span></div>
+      <div class="lf"><span class="lbl">处理任务:</span><span class="val">{html.escape(str(processing_task_name))}</span></div>
       <div class="grow"></div>
       <div class="lf mono"><span class="lbl">序列号:</span><span class="val">{html.escape(device)}</span></div>
       <div class="lf"><span class="lbl">采集员:</span><span class="val">{html.escape(collector)}</span></div>
-      <div class="lf mono"><span class="lbl">数据ID:</span><span class="val">{html.escape(recording_id)}</span></div>
+      <div class="lf mono"><span class="lbl">数据 ID:</span><span class="val">{html.escape(recording_id)}</span></div>
       {version_control}
       {status_control}
     </div>
     """
-
-
-def _annotation_workbench_meta_html(task):
-    recording_id = task.get("recording_id", "3298698")
-    device = task.get("recording_device", "UDAS-00002-2983")
-    collector = task.get("recording_collector", "柳少龙")
-    return f"""
-    <div class="lab-meta annotation-meta" data-component="basic_info">
-      <div class="annotation-meta-side left">
-        <div class="lf mono"><span class="lbl">处理任务 ID:</span><span class="val">{html.escape(task.get('processing_task', '—'))}</span></div>
-        <div class="lf"><span class="lbl">处理任务名称:</span><span class="val">{html.escape(task.get('task_name', '—'))}</span></div>
-        <div class="lf"><span class="lbl">节点:</span><span class="val">{html.escape(task.get('node', '—'))}</span></div>
-      </div>
-      <div class="annotation-meta-side right">
-        <div class="lf mono"><span class="lbl">序列号:</span><span class="val">{html.escape(device)}</span></div>
-        <div class="lf"><span class="lbl">采集员:</span><span class="val">{html.escape(collector)}</span></div>
-        <div class="lf mono"><span class="lbl">数据 ID:</span><span class="val">{html.escape(recording_id)}</span></div>
-      </div>
-    </div>
-    """
-
-
-def _annotation_context_html(task):
-    node = task.get("node", "")
-    previous_node = task.get("source_node") or {
-        "供应商复核": "供应商抽验",
-        "供应商验收": "供应商复核",
-        "内部验收": "供应商验收",
-        "动作分段标注": "质检完成",
-    }.get(node, "—")
-    operator = task.get("source_operator") or task.get("user_group") or "—"
-    operation = task.get("source_operation") or (
-        "驳回" if task.get("rejection_remark") else "提交"
-    )
-    operation_note = task.get("rejection_remark") or task.get("operation_note") or "—"
-    items = (
-        ("当前节点", node or "—", "current"),
-        ("上一节点", previous_node, ""),
-        ("操作人", operator, ""),
-        ("操作", operation, ""),
-        ("操作说明", operation_note, ""),
-    )
-    return '<section class="wbx-description-module annotation-context" data-component="description">' + "".join(
-        f'<div class="annotation-context-item{" " + css_class if css_class else ""}"><span>{html.escape(label)}</span><b>{html.escape(str(value))}</b></div>'
-        for label, value, css_class in items
-    ) + "</section>"
 
 
 def _workbench_video_html():
@@ -4782,6 +4780,95 @@ def _workbench_video_html():
       <div class="lab-fab" onclick="toast('Demo: 录屏')" title="录屏">&#9209;</div>
     </div>
     """
+
+
+WORKBENCH_FLOW_NOTE_RECORDS = {
+    "recording_e2e_001": ("供应商复核", "供应商 A", "驳回", "切分起点与动作开始不一致"),
+    "recording_e2e_002": ("供应商复核", "光轮智能", "驳回", "High-level 片段范围需要调整"),
+    "recording_e2e_003": ("供应商复核", "供应商 A", "驳回", "存在连续片段未完成切分"),
+    "recording_e2e_004": ("供应商抽验", "供应商 A", "提交", "复核发现片段边界仍需确认"),
+    "recording_e2e_005": ("供应商验收", "供应商 A", "驳回", "Low-level 动作片段存在重叠"),
+    "recording_e2e_006": ("供应商抽验", "供应商 A", "提交", "切分结果与规则不一致"),
+    "recording_e2e_007": ("供应商验收", "joanna.qiao", "提交", "验收发现关键片段缺少结束时间"),
+    "recording_e2e_008": ("供应商验收", "joanna.qiao", "提交", "动作片段描述与切分范围不匹配"),
+    "recording_e2e_009": ("供应商验收", "joanna.qiao", "提交", "存在一条待确认的异常片段"),
+}
+
+
+def _workbench_flow_note_html(task, show_log=False, style_id=""):
+    current_node = task.get("node", "—")
+    recording_id = task.get("recording_id", "")
+    fallback_sources = {
+        "完整性质检": "自动质检",
+        "质检抽检": "自动质检",
+        "动作分段标注": "完整性质检",
+        "标注成果验收": "动作分段标注",
+        "入湖终验": "标注成果验收",
+        "供应商抽验": "端到端切分",
+        "供应商复核": "供应商抽验",
+        "内部验收": "供应商验收",
+    }
+    source_node, operator, operation, description = WORKBENCH_FLOW_NOTE_RECORDS.get(
+        recording_id,
+        (
+            task.get("source_node") or fallback_sources.get(current_node, "—"),
+            task.get("source_operator") or task.get("user_group") or "系统",
+            task.get("source_operation") or "提交",
+            task.get("source_description") or "前序节点处理完成，已流转至当前节点",
+        ),
+    )
+    style_overrides = {
+        "one": ("端到端切分标注", "系统", "提交", ""),
+        "five": (source_node, operator, "驳回", description),
+    }
+    source_node, operator, operation, description = style_overrides.get(
+        style_id,
+        (source_node, operator, operation, description),
+    )
+    action_class = "wbx-flow-part-action-submit" if operation == "提交" else "wbx-flow-part-action-reject"
+    summary = (
+        f'<span class="wbx-flow-part wbx-flow-part-source">{html.escape(source_node)}节点</span>'
+        f'<span class="wbx-flow-part wbx-flow-part-operator">{html.escape(operator)}</span>'
+        f'<span class="wbx-flow-part wbx-flow-part-action {action_class}">{html.escape(operation)}</span>'
+        + (f'<span class="wbx-flow-part-description">{html.escape(description)}</span>' if description else '')
+    )
+    cells = (
+        f'<div class="wbx-flow-note-item wbx-flow-note-current">'
+        f'<span class="wbx-flow-note-label">当前节点:</span>'
+        f'<span class="wbx-flow-note-value" title="{html.escape(str(current_node), quote=True)}">{html.escape(str(current_node))}</span></div>'
+        f'<div class="wbx-flow-note-item wbx-flow-note-summary"><span class="wbx-flow-note-value">{summary}</span>'
+        + ('<button type="button" class="wbx-flow-log-link" onclick="wbOpenLogDialog()">查看日志</button>' if show_log else '')
+        + '</div>'
+    )
+    return f'<section class="wbx-flow-note" data-component="flow_context">{cells}</section>'
+
+
+def _workbench_style_flow_note_html(style_id):
+    records = {
+        "one": ("供应商抽验", "端到端切分标注", "系统", "提交", ""),
+        "two": ("供应商抽验", "端到端切分", "供应商 A", "驳回", "切分起点与动作开始不一致"),
+        "three": ("内部验收", "供应商复核", "joanna.qiao", "提交", "验收发现关键片段缺少结束时间"),
+        "four": ("供应商复核", "供应商抽验", "供应商 A", "驳回", "切分起点与动作开始不一致"),
+        "five": ("内部验收", "供应商验收", "joanna.qiao", "驳回", "标注结果需要重新确认"),
+    }
+    current, previous, operator, operation, description = records.get(
+        style_id, ("当前节点", "—", "—", "—", "—")
+    )
+    action_class = "wbx-flow-part-action-submit" if operation == "提交" else "wbx-flow-part-action-reject"
+    summary = (
+        f'<span class="wbx-flow-part wbx-flow-part-source">{html.escape(previous)}节点</span>'
+        f'<span class="wbx-flow-part wbx-flow-part-operator">{html.escape(operator)}</span>'
+        f'<span class="wbx-flow-part wbx-flow-part-action {action_class}">{html.escape(operation)}</span>'
+        f'<span class="wbx-flow-part-description">{html.escape(description)}</span>'
+    )
+    cells = (
+        f'<div class="wbx-flow-note-item wbx-flow-note-current">'
+        f'<span class="wbx-flow-note-label">当前节点:</span>'
+        f'<span class="wbx-flow-note-value">{html.escape(current)}</span></div>'
+        f'<div class="wbx-flow-note-item wbx-flow-note-summary"><span class="wbx-flow-note-value">{summary}</span>'
+        f'<button type="button" class="wbx-flow-log-link" onclick="wbOpenLogDialog()">查看日志</button></div>'
+    )
+    return f'<div class="wbx-flow-note" data-component="flow_context">{cells}</div>'
 
 
 def _workbench_log_panel_html(semantic=False, task=None):
@@ -4828,6 +4915,25 @@ def _workbench_log_panel_html(semantic=False, task=None):
     <div class="wbx-log-summary"><span>当前数据处理记录</span><span>共 {len(log_items)} 条</span></div>
     {('<div class="wbx-log-columns"><span>时间</span><span>操作人</span><span>操作</span><span>节点</span><span>说明</span></div>' if semantic else '')}
     <div class="wbx-log-list" data-component="workbench_log">{log_html}</div>
+    """
+
+
+def _workbench_log_dialog_html(task):
+    return f"""
+    <div class="wbx-log-mask" id="wbLogDialog" style="display:none;"
+      onclick="if(event.target===this) wbCloseLogDialog()">
+      <section class="wbx-log-dialog" role="dialog" aria-modal="true" aria-labelledby="wbLogDialogTitle">
+        <header class="wbx-log-dialog-head">
+          <h3 id="wbLogDialogTitle">处理日志</h3>
+          <button type="button" class="wbx-log-dialog-close" aria-label="关闭" onclick="wbCloseLogDialog()">&times;</button>
+        </header>
+        <div class="wbx-log-dialog-body">{_workbench_log_panel_html(True, task)}</div>
+      </section>
+    </div>
+    <script>
+    function wbOpenLogDialog() {{ document.getElementById('wbLogDialog').style.display='flex'; }}
+    function wbCloseLogDialog() {{ document.getElementById('wbLogDialog').style.display='none'; }}
+    </script>
     """
 
 
@@ -5136,6 +5242,8 @@ def _workbench_execution_html(
     submit_reason=False,
     show_item_navigation=False,
     submit_label="提交",
+    show_leave=False,
+    confirm_clear_reasons=False,
 ):
     if semantic:
         item_navigation = """
@@ -5155,26 +5263,58 @@ def _workbench_execution_html(
       <div class="wbx-reject-dialog"><h3>驳回当前数据</h3>{target_option}<label>说明<span>*</span></label><textarea id="wbRejectRemark" placeholder="请输入驳回说明"></textarea><div><button type="button" class="btn" onclick="wbCloseRejectDialog()">取消</button><button type="button" class="btn btn-primary" onclick="wbConfirmReject()">确认驳回</button></div></div>
     </div>
     <script>
-    function wbOpenRejectDialog() {{ document.getElementById('wbRejectDialog').style.display='flex'; document.getElementById('wbRejectRemark').focus(); }}
+    function wbOpenRejectDialog() {{
+      var reasons = Array.from(document.querySelectorAll('.lab-error-reason'));
+      if (reasons.length && !reasons.some(function(select) {{ return select.value.trim(); }})) {{
+        toast('请至少填写一条错误原因');
+        return;
+      }}
+      document.getElementById('wbRejectDialog').style.display='flex';
+      document.getElementById('wbRejectRemark').focus();
+    }}
     function wbCloseRejectDialog() {{ document.getElementById('wbRejectDialog').style.display='none'; }}
     function wbConfirmReject() {{ var input=document.getElementById('wbRejectRemark'); if(!input.value.trim()){{ toast('请填写驳回说明'); input.focus(); return; }} toast('Demo: 已驳回当前数据 · '+input.value.trim()); wbCloseRejectDialog(); }}
     </script>
         """ if allow_reject else ""
         submit_dialog = """
     <div class="wbx-reject-mask" id="wbSubmitDialog" style="display:none;">
-      <div class="wbx-reject-dialog"><h3>提交当前数据</h3><label>提交原因<span>*</span></label><textarea id="wbSubmitRemark" placeholder="请输入提交原因"></textarea><div><button type="button" class="btn" onclick="wbCloseSubmitDialog()">取消</button><button type="button" class="btn btn-primary" onclick="wbConfirmSubmit()">确认提交</button></div></div>
+      <div class="wbx-reject-dialog"><h3>__SUBMIT_LABEL__当前数据</h3><label>提交原因<span>*</span></label><textarea id="wbSubmitRemark" placeholder="请输入提交原因"></textarea><div><button type="button" class="btn" onclick="wbCloseSubmitDialog()">取消</button><button type="button" class="btn btn-primary" onclick="wbConfirmSubmit()">确认__SUBMIT_LABEL__</button></div></div>
     </div>
     <script>
     function wbOpenSubmitDialog() { document.getElementById('wbSubmitDialog').style.display='flex'; document.getElementById('wbSubmitRemark').focus(); }
     function wbCloseSubmitDialog() { document.getElementById('wbSubmitDialog').style.display='none'; }
     function wbConfirmSubmit() { var input=document.getElementById('wbSubmitRemark'); if(!input.value.trim()){ toast('请填写提交原因'); input.focus(); return; } toast('Demo: 已提交当前数据 · '+input.value.trim()); wbCloseSubmitDialog(); }
     </script>
-        """ if submit_reason else ""
-        submit_onclick = "wbOpenSubmitDialog()" if submit_reason else "wbSubmitWorkbench(this)"
+        """.replace("__SUBMIT_LABEL__", html.escape(submit_label)) if submit_reason else ""
+        clear_reason_dialog = """
+    <div class="wbx-reject-mask" id="wbClearReasonDialog" style="display:none;">
+      <div class="wbx-reject-dialog">
+        <h3>确认提交</h3>
+        <p class="wbx-confirm-copy">有错误原因未清空，确认全部清空并提交</p>
+        <div><button type="button" class="btn" onclick="wbCloseClearReasonDialog()">取消</button><button type="button" class="btn btn-primary" onclick="wbConfirmClearReasonsAndSubmit()">确认提交</button></div>
+      </div>
+    </div>
+    <script>
+    function wbCloseClearReasonDialog() { document.getElementById('wbClearReasonDialog').style.display='none'; }
+    function wbConfirmClearReasonsAndSubmit() {
+      document.querySelectorAll('.lab-error-reason').forEach(function(select) { select.value=''; });
+      wbCloseClearReasonDialog();
+      toast('Demo: 已清空错误原因并提交当前数据');
+    }
+    </script>
+        """ if confirm_clear_reasons else ""
+        if submit_reason:
+            submit_onclick = "wbOpenSubmitDialog()"
+        elif confirm_clear_reasons:
+            submit_onclick = "wbSubmitWorkbenchWithReasonCheck()"
+        else:
+            submit_onclick = "wbSubmitWorkbench(this)"
+        leave_button = '<button type="button" class="btn wbx-leave" onclick="toast(\'Demo: 已保存当前修改并暂离\')">暂离</button>' if show_leave else ""
         return f"""
     <div class="wbx-execution" data-component="sticky_decision_actions">
       <section class="wbx-module wbx-operation-panel" data-workbench-module="operation">
         <div class="wbx-operation-actions">
+          {leave_button}
           {item_navigation}
           <button type="button" class="btn btn-primary wbx-submit" onclick="{submit_onclick}">{html.escape(submit_label)}</button>
           {reject_button}
@@ -5183,8 +5323,17 @@ def _workbench_execution_html(
     </div>
     {reject_dialog}
     {submit_dialog}
+    {clear_reason_dialog}
     <script>
     function wbSubmitWorkbench() {{ toast('Demo: 已提交当前数据'); }}
+    function wbSubmitWorkbenchWithReasonCheck() {{
+      var hasReason = Array.from(document.querySelectorAll('.lab-error-reason')).some(function(select) {{ return select.value.trim(); }});
+      if (hasReason) {{
+        document.getElementById('wbClearReasonDialog').style.display='flex';
+        return;
+      }}
+      wbSubmitWorkbench();
+    }}
     </script>
     """
     return f"""
@@ -5204,14 +5353,14 @@ def _workbench_execution_html(
       <section class="wbx-module wbx-operation-panel"
         data-workbench-module="operation">
         <div class="wbx-operation-actions">
+          <button type="button" class="btn wbx-leave"
+            onclick="toast('Demo: 已保存草稿并暂离')">暂离</button>
           <button type="button" class="btn btn-primary wbx-submit"
             disabled onclick="wbSubmitWorkbench(this)">提交</button>
           <button type="button" class="btn wbx-reject"
             onclick="toast('Demo: 已驳回当前数据')">驳回</button>
           <button type="button" class="btn"
             onclick="wbResetWorkbench()">重置</button>
-          <button type="button" class="btn"
-            onclick="toast('Demo: 已保存草稿并暂离')">暂离</button>
         </div>
       </section>
     </div>
@@ -5259,9 +5408,9 @@ WORKBENCH_STYLE_VARIANTS = {
         "annotation_editable": True,
         "reason_mode": "hidden",
         "submit_reason": False,
-        "submit_label": "提交",
-        "source_node": "端到端切分标注",
         "allow_reject": False,
+        "submit_label": "提交",
+        "show_leave": True,
     },
     "two": {
         "label": "样式二",
@@ -5271,8 +5420,9 @@ WORKBENCH_STYLE_VARIANTS = {
         "annotation_editable": True,
         "reason_mode": "filled-readonly",
         "submit_reason": True,
-        "submit_label": "重新提交",
         "allow_reject": False,
+        "submit_label": "重新提交",
+        "show_leave": False,
     },
     "three": {
         "label": "样式三",
@@ -5282,9 +5432,9 @@ WORKBENCH_STYLE_VARIANTS = {
         "annotation_editable": False,
         "reason_mode": "empty-editable",
         "submit_reason": False,
-        "submit_label": "提交",
-        "source_operation": "提交",
         "allow_reject": True,
+        "submit_label": "提交",
+        "show_leave": True,
     },
     "four": {
         "label": "样式四",
@@ -5294,8 +5444,10 @@ WORKBENCH_STYLE_VARIANTS = {
         "annotation_editable": False,
         "reason_mode": "partial-editable",
         "submit_reason": False,
-        "submit_label": "重新提交",
         "allow_reject": True,
+        "submit_label": "提交",
+        "show_leave": False,
+        "confirm_clear_reasons": True,
     },
     "five": {
         "label": "样式五",
@@ -5305,8 +5457,9 @@ WORKBENCH_STYLE_VARIANTS = {
         "annotation_editable": False,
         "reason_mode": "filled-readonly",
         "submit_reason": True,
-        "submit_label": "重新提交",
         "allow_reject": True,
+        "submit_label": "重新提交",
+        "show_leave": False,
     },
 }
 
@@ -5318,6 +5471,8 @@ def _workbench_style_example_pane(
     reason_mode,
     submit_reason,
     allow_reject,
+    submit_label="提交",
+    show_leave=False,
 ):
     style_names = {
         "one": "样式一",
@@ -5402,6 +5557,7 @@ def _workbench_style_example_pane(
         if allow_reject
         else ""
     )
+    leave_button = '<button type="button" class="btn wbx-leave" onclick="toast(\'Demo: 已保存当前修改并暂离\')">暂离</button>' if show_leave else ""
     badges = [
         f"语义标注：{'可编辑' if annotation_editable else '不可编辑'}",
         f"错误原因：{reason_labels[reason_mode]}",
@@ -5422,9 +5578,8 @@ def _workbench_style_example_pane(
       </div>
       <div class="wb-style-workbench">
         <div class="wb-style-meta">
-          <span>任务ID：<b>WB-E2E-DEMO-{style_id.upper()}</b></span>
-          <span>流程：<b>端到端切分标注流程</b></span>
-          <span>节点：<b>{html.escape(scenario.split('－')[0])}</b></span>
+          <span>任务ID：<b>20455</b></span>
+          <span>处理任务：<b>端到端切分标注任务</b></span>
           <span>数据ID：<b>recording_style_{style_id}</b></span>
           <span>状态：<i>待处理</i></span>
         </div>
@@ -5433,6 +5588,7 @@ def _workbench_style_example_pane(
           <div><span>头部视角</span><b>&#9658;</b></div>
           <div><span>右臂视角</span><b>&#9658;</b></div>
         </div>
+        {_workbench_style_flow_note_html(style_id)}
         <div class="wb-style-timeline">
           <div class="wb-style-scale"><span>0.00s</span><span>10.00s</span><span>20.00s</span><span>30.00s</span><span>42.80s</span></div>
           <div class="wb-style-track"><i style="width:22%"></i><i style="width:32%"></i><i style="width:18%"></i><i style="width:28%"></i></div>
@@ -5444,9 +5600,10 @@ def _workbench_style_example_pane(
           </table>
         </div>
         <div class="wb-style-actions">
+          {leave_button}
           {submit_reason_html}
           {reject_html}
-          <button type="button" class="btn btn-primary" onclick="toast('Demo: 已提交当前数据')">提交</button>
+          <button type="button" class="btn btn-primary" onclick="toast('Demo: 已提交当前数据')">{html.escape(submit_label)}</button>
         </div>
       </div>
     </section>
@@ -5658,13 +5815,8 @@ def _render_quality_workbench(task, management_preview=False):
     content = (
         _workbench_style_example_button_html()
         + _workbench_meta_html(task, "待质检")
-        + """
-        <div class="wbx-instruction" data-component="instruction_context">
-          <b>采集指令</b>
-          <span>清洁门窗本体与窗框：使用毛巾、抹布等清洁布擦拭门窗表面及窗框，去除浮尘与污渍，保障开闭顺畅和外观整洁。</span>
-        </div>
-        """
         + _workbench_video_html()
+        + _workbench_flow_note_html(task)
         + f"""
         <div class="wbx-detail-tabs" data-component="quality_workbench_tabs">
           <div class="wbx-detail-tabbar" role="tablist">
@@ -5727,6 +5879,7 @@ def _render_detail_workbench(task, management_preview=False):
         + _workbench_style_example_button_html()
         + _workbench_meta_html(task, "详情复核")
         + _workbench_video_html()
+        + _workbench_flow_note_html(task)
         + f"""
         <div class="wbx-detail-tabs" data-component="detail_tabs">
           <div class="wbx-detail-tabbar" role="tablist">
@@ -5861,11 +6014,6 @@ def data_workbench_edit(preview_mode=None):
     v2_workbench_page = request.path.startswith("/data/workbench-v2")
     style_preview = request.args.get("style_preview") == "1"
     style_config = WORKBENCH_STYLE_VARIANTS.get(request.args.get("style", ""))
-    if style_config:
-        workbench_task = dict(workbench_task)
-        for field in ("source_node", "source_operation"):
-            if field in style_config:
-                workbench_task[field] = style_config[field]
     if workbench_mode == "quality":
         rendered = _render_quality_workbench(workbench_task, management_preview)
         return (
@@ -6060,13 +6208,8 @@ def data_workbench_edit(preview_mode=None):
             <span class="lab-tool" title="书签" onclick="toast('Demo: 书签')">&#9873;</span>
           </div>
     """
-    description_html = _annotation_context_html(workbench_task)
-    annotation_tabs = f"""
-      <div class="wbx-detail-tabbar" role="tablist">
-        <button class="wbx-detail-tab active" data-detail-tab="annotation" onclick="switchWorkbenchDetailTab(this,'annotation')">标注</button>
-        <button class="wbx-detail-tab" data-detail-tab="log" onclick="switchWorkbenchDetailTab(this,'log')">日志</button>
-      </div>
-      """ if semantic_annotation else f"""
+    description_html = ""
+    annotation_tabs = "" if semantic_annotation else f"""
       <div class="wbx-detail-tabbar" role="tablist">
         <button class="wbx-detail-tab" data-detail-tab="trajectory" onclick="switchWorkbenchDetailTab(this,'trajectory')">轨迹</button>
         <button class="wbx-detail-tab" data-detail-tab="quality" onclick="switchWorkbenchDetailTab(this,'quality')">质检</button>
@@ -6083,6 +6226,7 @@ def data_workbench_edit(preview_mode=None):
       </div>
       """
     annotation_timeline_html = f"""
+    {description_html}
     <div class="lab-tools-card" data-component="playback_timeline">
       <div class="lab-timeline">
         <div class="lab-tl-ticks">{ticks_html}</div>
@@ -6111,7 +6255,11 @@ def data_workbench_edit(preview_mode=None):
         ),
         reject_target=('供应商抽验' if workbench_task.get('node') == '供应商复核' else '供应商复核'),
         submit_reason=bool(style_config and style_config["submit_reason"]),
-        submit_label=style_config.get("submit_label", "提交") if style_config else "提交",
+        submit_label=(style_config or {}).get("submit_label", "提交"),
+        show_leave=bool(style_config and style_config.get("show_leave")),
+        confirm_clear_reasons=bool(
+            style_config and style_config.get("confirm_clear_reasons")
+        ),
         show_item_navigation=(
             v2_workbench_page
             and request.args.get("entry") == "todo"
@@ -6143,7 +6291,7 @@ def data_workbench_edit(preview_mode=None):
         trailing_execution_html = execution_html
     content = f"""
     {_workbench_style_example_button_html()}
-    {_annotation_workbench_meta_html(workbench_task)}
+    {_workbench_meta_html(workbench_task, "待标注")}
     {detail_tabs_open}
     {sticky_workbench_open}
     <div class="lab-vid-grid" data-component="multi_view_video">
@@ -6164,7 +6312,7 @@ def data_workbench_edit(preview_mode=None):
       </div>
       <div class="lab-fab" onclick="toast('Demo: 录屏')" title="录屏">&#9209;</div>
     </div>
-    {description_html}
+    {_workbench_flow_note_html(workbench_task, semantic_annotation, request.args.get('style', ''))}
     {sticky_workbench_extra}
     {sticky_workbench_close}
 
@@ -6180,12 +6328,11 @@ def data_workbench_edit(preview_mode=None):
       </table>
     </div>
       </div>
-      <div class="wbx-detail-pane" data-detail-pane="log" data-component="workbench_log">
-        {_workbench_log_panel_html(semantic_annotation, workbench_task)}
-      </div>
+      {'' if semantic_annotation else f'<div class="wbx-detail-pane" data-detail-pane="log" data-component="workbench_log">{_workbench_log_panel_html(False, workbench_task)}</div>'}
     {detail_tabs_close}
 
     {_workbench_tabs_script_html()}
+    {_workbench_log_dialog_html(workbench_task) if semantic_annotation else ''}
     {trailing_execution_html}
     """
     active_path = "/data/workbench-management" if management_preview else ("/data/workbench-v2" if v2_workbench_page else "/data/workbench")
