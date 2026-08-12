@@ -6853,9 +6853,8 @@ def embodied_eval_prompts():
       <select id="taskSelect" onchange="applyFilters()">
         {task_options}
       </select>
-      <input id="searchInput" class="grow" type="text" placeholder="🔍 搜索提示词内容..." value="{html.escape(search_query)}" onkeypress="if(event.key==='Enter') applyFilters()">
+      <input id="searchInput" class="grow" type="text" placeholder="搜索提示词内容..." value="{html.escape(search_query)}" onkeypress="if(event.key==='Enter') applyFilters()">
       <div class="filter-actions">
-        <button class="btn btn-tertiary" onclick="location.reload()">🔄 刷新</button>
         <button class="btn btn-secondary" onclick="alert('导入功能：弹窗上传 JSON 文件（下个 Task 实现）')">导入JSON</button>
         <button class="btn btn-primary" onclick="addPromptRow()">+ 新增提示词</button>
       </div>
@@ -7193,9 +7192,8 @@ def embodied_eval_metrics():
 
     content = f"""
     <div class="filter-bar">
-      <input id="searchInput" class="grow" type="text" placeholder="🔍 搜索模板名称..." value="{html.escape(search_query)}" onkeypress="if(event.key==='Enter') applyFilters()">
+      <input id="searchInput" class="grow" type="text" placeholder="搜索模板名称..." value="{html.escape(search_query)}" onkeypress="if(event.key==='Enter') applyFilters()">
       <div class="filter-actions">
-        <button class="btn btn-tertiary" onclick="location.reload()">🔄 刷新</button>
         <button class="btn btn-primary" onclick="window.location.href='/model/embodied-eval/metrics/create'">+ 新建 Metric 模板</button>
       </div>
     </div>
@@ -7326,9 +7324,8 @@ def embodied_eval_sets():
 
     content = f"""
     <div class="filter-bar">
-      <input id="searchInput" class="grow" type="text" placeholder="🔍 搜索评测集名称..." value="{html.escape(search_query)}" onkeypress="if(event.key==='Enter') applyFilters()">
+      <input id="searchInput" class="grow" type="text" placeholder="搜索评测集名称..." value="{html.escape(search_query)}" onkeypress="if(event.key==='Enter') applyFilters()">
       <div class="filter-actions">
-        <button class="btn btn-tertiary" onclick="location.reload()">🔄 刷新</button>
         <button class="btn btn-primary" onclick="window.location.href='/model/embodied-eval/sets/create'">+ 新建评测集</button>
       </div>
     </div>
@@ -7477,7 +7474,7 @@ def _embodied_eval_set_form_page(eval_set=None):
             <select id="esLibSceneFilter" onchange="renderLibList()">
               <option value="">全部场景</option>
             </select>
-            <input id="esLibSearch" class="grow" type="text" placeholder="🔍 搜索 Prompt 文本..." oninput="renderLibList()">
+            <input id="esLibSearch" class="grow" type="text" placeholder="搜索 Prompt 文本..." oninput="renderLibList()">
           </div>
           <div class="es-lib-list" id="esLibList"></div>
         </div>
@@ -8015,9 +8012,8 @@ def embodied_eval_tasks():
 
     content = f"""
     <div class="filter-bar">
-      <input id="searchInput" class="grow" type="text" placeholder="🔍 搜索任务名称..." value="{html.escape(search_query)}" onkeypress="if(event.key==='Enter') applyFilters()">
+      <input id="searchInput" class="grow" type="text" placeholder="搜索任务名称..." value="{html.escape(search_query)}" onkeypress="if(event.key==='Enter') applyFilters()">
       <div class="filter-actions">
-        <button class="btn btn-tertiary" onclick="location.reload()">🔄 刷新</button>
         <button class="btn btn-primary" onclick="window.location.href='/model/embodied-eval/tasks/create'">+ 新建评测任务</button>
       </div>
     </div>
@@ -8666,9 +8662,8 @@ def embodied_eval_segments():
         <input type="checkbox" id="badcaseCheck" onchange="applyFilters()" {badcase_checked}>
         仅显示 BadCase
       </label>
-      <input id="searchInput" class="grow" type="text" placeholder="🔍 搜索 Prompt 文本..." value="{html.escape(search_query)}" onkeypress="if(event.key==='Enter') applyFilters()">
+      <input id="searchInput" class="grow" type="text" placeholder="搜索 Prompt 文本..." value="{html.escape(search_query)}" onkeypress="if(event.key==='Enter') applyFilters()">
       <div class="filter-actions">
-        <button class="btn btn-tertiary" onclick="location.reload()">🔄 刷新</button>
         <button class="btn btn-primary" onclick="exportCSV()">导出 CSV</button>
       </div>
     </div>

@@ -25,4 +25,6 @@ PRODUCT.md
 skills-lock.json
 
 .superpowers/
+
+# Playwright MCP artifacts
 .playwright-mcp/
