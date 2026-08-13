@@ -28,7 +28,7 @@ import re
 import sys
 import json
 from urllib.parse import quote
-from flask import Flask, render_template_string, request, redirect, jsonify, make_response
+from flask import Flask, render_template_string, request, redirect, jsonify, make_response, send_from_directory
 
 app = Flask(__name__)
 app.secret_key = "embodied-toolchain-mvp-demo"
@@ -11343,6 +11343,37 @@ def checkpoint_history(ckpt_id):
     chain.reverse()
 
     return jsonify(chain)
+
+
+@app.route("/workflow")
+def workflow_showcase():
+    """Serve the Vite-built internal product workflow showcase."""
+    build_dir = os.path.join(app.root_path, "static", "workflow")
+    entry_file = os.path.join(build_dir, "index.html")
+
+    if not os.path.isfile(entry_file):
+        return """<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Workflow frontend build required</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 720px; margin: 72px auto; padding: 0 24px; color: #173c40; }
+    code, pre { font-family: Consolas, monospace; }
+    pre { padding: 18px; background: #f3f7f7; border: 1px solid #dce6e7; border-radius: 6px; }
+  </style>
+</head>
+<body>
+  <h1>Workflow frontend build required</h1>
+  <p>Build the React application before opening this Flask route:</p>
+  <pre>cd frontend
+npm install
+npm run build</pre>
+</body>
+</html>""", 503
+
+    return send_from_directory(build_dir, "index.html")
 
 
 # ════════════════════════════════════════════════════════════════

@@ -17,6 +17,30 @@ python toolchain_demo.py
 # http://localhost:5004
 ```
 
+## React prototype workspace
+
+The repository includes a Vite, React, and Ant Design workspace under `frontend/`. Existing Flask and Jinja pages remain unchanged. New prototypes that require real Ant Design components can be implemented in this workspace and mounted behind Flask routes.
+
+Run the workflow showcase with Vite hot reload:
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+Build the frontend and verify the integrated Flask route:
+
+```bash
+cd frontend
+npm run build
+cd ..
+python toolchain_demo.py
+# http://localhost:5004/workflow
+```
+
+Vite writes production assets to `static/workflow/`. The directory is generated and ignored by Git. Render builds these assets before starting the existing Gunicorn service.
+
 ## 部署 (Render)
 
 仓库根目录已包含 `render.yaml` 蓝图。在 Render Dashboard → New + → Blueprint → 选择本仓库即可自动创建 Web Service。

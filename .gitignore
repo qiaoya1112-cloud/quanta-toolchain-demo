@@ -29,3 +29,7 @@ skills-lock.json
 # Playwright MCP artifacts
 .playwright-mcp/
 .worktrees/
+
+# React prototype workspace
+frontend/node_modules/
+static/workflow/
