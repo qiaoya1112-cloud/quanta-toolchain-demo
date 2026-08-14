@@ -6578,9 +6578,8 @@ RULES = [
         "id": "RL-009",
         "name": "端到端切分标注规则",
         "stage": "标注",
-        "annotation_method": "仅切分",
-        "rule_config": "略",
-        "workbench": "语义标注工作台",
+        "rule_type": "语义标注",
+        "rule_config": "https://docs.quanta.ai/rules/end-to-end-segmentation",
         "status": "enabled",
         "owner": "joanna.qiao",
         "created": "2026-08-03",
@@ -6631,9 +6630,8 @@ def data_rules():
             f'data-rule-{key}="{html.escape(str(value), quote=True)}"'
             for key, value in {
                 "id": r["id"], "name": r["name"], "stage": r["stage"],
-                "method": r.get("annotation_method", ""),
+                "type": r.get("rule_type", ""),
                 "config": r.get("rule_config", ""),
-                "workbench": r.get("workbench", ""),
                 "status": "enabled" if is_enabled else "disabled",
             }.items()
         )
@@ -6653,6 +6651,7 @@ def data_rules():
           <td class="mono">{r['id']}</td>
           <td><span class="wb-badge {color}">{r['stage']}</span></td>
           <td><b>{r['name']}</b></td>
+          <td>{html.escape(r.get('rule_type', ''))}</td>
           <td class="muted" style="max-width:380px;font-size:12.5px;line-height:1.55;">{r['desc']}</td>
           <td>{enabled_tag}</td>
           <td>{r['owner']}</td>
@@ -6667,65 +6666,49 @@ def data_rules():
       #drawerRuleCreate{left:auto;right:0;width:min(1120px,calc(100vw - 24px));max-width:none}
       #drawerRuleCreate .fg{width:100%;max-width:none}
       #drawerRuleCreate .fg input,#drawerRuleCreate .fg select,#drawerRuleCreate .fg textarea{width:100%;box-sizing:border-box}
-      .rule-create-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}.rule-methods{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}.rule-method-card{position:relative;display:flex;min-height:116px;flex-direction:column;padding:12px;border:1px solid #dfe6e8;border-radius:8px;background:#fff;cursor:pointer}.rule-method-card:hover{border-color:#8acbd1}.rule-method-card.active{border-color:#149DAA;background:#eef9fa;box-shadow:0 0 0 1px #149DAA}.rule-method-card input{position:absolute;opacity:0;pointer-events:none}.rule-method-head{display:flex;align-items:center;gap:7px;color:#30474f;font-size:13px;font-weight:650}.rule-method-head:before{content:"";width:14px;height:14px;border:1px solid #cbd5d8;border-radius:50%;background:#fff;box-sizing:border-box}.rule-method-card.active .rule-method-head:before{border:4px solid #149DAA}.rule-method-code{margin-left:auto;padding:2px 6px;border:1px solid #dfe5e7;border-radius:4px;background:#fff;color:#8a969b;font:10px 'SF Mono',Menlo,monospace}.rule-method-card p{margin:15px 0 0;color:#718087;font-size:11.5px;line-height:1.6}.rule-config-block{margin-top:18px;padding-top:18px;border-top:1px solid #edf1f2}.rule-config-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:9px}.rule-config-head b{color:#30474f;font-size:13px}.rule-config-table{width:100%;border-collapse:collapse;border:1px solid #e2e8ea}.rule-config-table th,.rule-config-table td{padding:8px 10px;border-bottom:1px solid #e8edef;text-align:left;font-size:12px}.rule-config-table th{background:#f5f7f8;color:#6c7d83;font-weight:500}.rule-config-table input{width:100%;height:32px;padding:0 8px;border:1px solid #d8e0e3;border-radius:5px;box-sizing:border-box}.rule-config-empty{padding:38px 20px;border:1px dashed #d9e1e3;border-radius:8px;background:#fafcfc;color:#9aa5a9;text-align:center;font-size:13px}.rule-section-label{display:block;margin:0 0 9px;color:#52666d;font-size:13px}.rule-section-label.required:before{content:"*";margin-right:4px;color:#d4504e}@media(max-width:1100px){.rule-methods{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:700px){#drawerRuleCreate{left:auto;right:0;width:calc(100vw - 24px)}.rule-methods{grid-template-columns:1fr}}
+      .rule-create-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}.rule-config-block{margin-top:18px;padding-top:18px;border-top:1px solid #edf1f2}.rule-config-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:9px}.rule-config-head b{color:#30474f;font-size:13px}.rule-config-table{width:100%;border-collapse:collapse;border:1px solid #e2e8ea}.rule-config-table th,.rule-config-table td{padding:8px 10px;border-bottom:1px solid #e8edef;text-align:left;font-size:12px}.rule-config-table th{background:#f5f7f8;color:#6c7d83;font-weight:500}.rule-config-table input{width:100%;height:32px;padding:0 8px;border:1px solid #d8e0e3;border-radius:5px;box-sizing:border-box}.rule-config-empty{padding:38px 20px;border:1px dashed #d9e1e3;border-radius:8px;background:#fafcfc;color:#9aa5a9;text-align:center;font-size:13px}.rule-section-label{display:block;margin:0 0 9px;color:#52666d;font-size:13px}.rule-section-label.required:before{content:"*";margin-right:4px;color:#d4504e}.rule-document-config .fg{margin:0}.rule-document-config input{font-family:'SF Mono',Menlo,monospace}@media(max-width:700px){#drawerRuleCreate{left:auto;right:0;width:calc(100vw - 24px)}}
     </style>
     <div class="drawer" id="drawerRuleCreate">
       <div class="drawer-head"><h3>新增规则</h3><span class="dismiss" onclick="closeDrawer()">&times;</span></div>
       <div class="drawer-body">
         <div class="fg"><label>规则名称</label><input id="ruleCreateName" placeholder="请输入规则名称"></div>
         <div class="fg"><label>业务环节</label><select id="ruleCreateStage" onchange="ruleCreateStageChanged(this.value)"><option value="质检">质检</option><option value="标注">标注</option></select></div>
-        <section id="ruleAnnotationMethod" style="display:none;">
-          <span class="rule-section-label required">标注方式</span>
-          <div class="rule-methods">
-            <label class="rule-method-card active" data-rich="1"><input type="radio" name="annotation_method" value="actionDescription" checked onchange="ruleSelectMethod(this)"><span class="rule-method-head">A:动作描述<i class="rule-method-code">actionDescription</i></span><p>仅选择动作元素和动作描述</p></label>
-            <label class="rule-method-card" data-rich="1"><input type="radio" name="annotation_method" value="dragAndDrop" onchange="ruleSelectMethod(this)"><span class="rule-method-head">B:物品拖框<i class="rule-method-code">dragAndDrop</i></span><p>自定义添加动作元素和动作描述，可添加首尾帧</p></label>
-            <label class="rule-method-card" data-rich="1"><input type="radio" name="annotation_method" value="atomicAction" onchange="ruleSelectMethod(this)"><span class="rule-method-head">C:原子动作<i class="rule-method-code">atomicAction</i></span><p>自定义添加动作元素，并填写动作描述</p></label>
-            <label class="rule-method-card" data-rich="1"><input type="radio" name="annotation_method" value="fullSemantics" onchange="ruleSelectMethod(this)"><span class="rule-method-head">D:完整语义<i class="rule-method-code">fullSemantics</i></span><p>自定义添加动作元素，并填写动作描述</p></label>
-            <label class="rule-method-card" data-rich="0"><input type="radio" name="annotation_method" value="high-low" onchange="ruleSelectMethod(this)"><span class="rule-method-head">E:High-&gt;Low<i class="rule-method-code">high-low</i></span><p>先划分大分段描述在做什么，然后切分为原子动作并描述</p></label>
-            <label class="rule-method-card" data-rich="0"><input type="radio" name="annotation_method" value="high-slice" onchange="ruleSelectMethod(this)"><span class="rule-method-head">F:High-&gt;Slice<i class="rule-method-code">high-slice</i></span><p>先划分大分段描述在做什么，然后切分为原子动作无需描述</p></label>
-            <label class="rule-method-card" data-rich="0"><input type="radio" name="annotation_method" value="slice-only" onchange="ruleSelectMethod(this)"><span class="rule-method-head">G:仅切分<i class="rule-method-code">slice-only</i></span><p>先划分大分段再切分小分段，不做动作描述等标注</p></label>
-            <label class="rule-method-card" data-rich="1"><input type="radio" name="annotation_method" value="custom" onchange="ruleSelectMethod(this)"><span class="rule-method-head">Z:自定义<i class="rule-method-code">custom</i></span><p>自定义添加动作元素、动作描述、整体描述、动作元素拖框等标注范围</p></label>
-          </div>
-        </section>
+        <div class="fg"><label>类型</label><select id="ruleCreateType" onchange="ruleCreateTypeChanged(this.value)"></select></div>
         <section class="rule-config-block">
           <span class="rule-section-label required">规则配置</span>
-          <div id="ruleRichConfig" style="display:none;">
+          <div id="ruleActionConfig" style="display:none;">
             <div class="rule-config-head"><b>动作元素</b><button class="btn btn-sm" type="button" onclick="toast('Demo: 添加动作元素')">+ 添加</button></div>
             <table class="rule-config-table"><thead><tr><th style="width:52px;">序号</th><th>动作元素名称</th><th>英文名称</th><th style="width:70px;">操作</th></tr></thead><tbody><tr><td>1</td><td><input placeholder="请输入动作元素名称"></td><td><input placeholder="请输入英文名称"></td><td><a href="#" onclick="toast('Demo: 确定');return false;">确定</a></td></tr></tbody></table>
             <div class="rule-config-head" style="margin-top:18px;"><b>动作描述</b><button class="btn btn-sm" type="button" onclick="toast('Demo: 添加动作描述')">+ 添加</button></div>
             <table class="rule-config-table"><thead><tr><th style="width:52px;">序号</th><th>中文</th><th>英文</th><th style="width:70px;">操作</th></tr></thead><tbody><tr><td>1</td><td><input placeholder="请输入中文动作描述"></td><td><input placeholder="请输入英文动作描述"></td><td><a href="#" onclick="toast('Demo: 确定');return false;">确定</a></td></tr></tbody></table>
           </div>
-          <div class="rule-config-empty" id="ruleSimpleConfig">略</div>
+          <div class="rule-document-config" id="ruleDocumentConfig" style="display:none;">
+            <div class="fg"><label>文档链接</label><input id="ruleDocumentLink" type="url" placeholder="请输入规则说明文档链接"></div>
+          </div>
+          <div class="rule-config-empty" id="ruleEmptyConfig">当前类型无需配置</div>
         </section>
-        <div class="fg" style="margin-top:18px;"><label>关联工作台</label><select id="ruleCreateWorkbench"><option data-stage="质检">质检工作台 v2.0</option><option data-stage="标注" data-annotation-kind="action">动作标注工作台 v4.1</option><option data-stage="标注" data-annotation-kind="semantic">语义标注工作台 v1.0</option></select></div>
       </div>
       <div class="drawer-foot"><button class="btn" type="button" onclick="closeDrawer()">取消</button><button class="btn btn-primary" type="button" onclick="toast('Demo: 规则已创建');closeDrawer()">创建</button></div>
     </div>
     <script>
     function ruleCreateStageChanged(stage){
-      var method=document.getElementById('ruleAnnotationMethod');
-      method.style.display=stage==='标注'?'block':'none';
-      document.querySelectorAll('#ruleCreateWorkbench option').forEach(function(option){option.hidden=option.dataset.stage!==stage;});
-      var workbench=document.getElementById('ruleCreateWorkbench');
-      var available=Array.prototype.find.call(workbench.options,function(option){return !option.hidden;});
-      if(available) workbench.value=available.value;
-      ruleRefreshConfig();
+      var type=document.getElementById('ruleCreateType');
+      type.innerHTML=stage==='标注'
+        ? '<option value="语义标注">语义标注</option><option value="动作标注">动作标注</option>'
+        : '<option value="质检规则">质检规则</option>';
+      ruleCreateTypeChanged(type.value);
     }
-    function ruleSelectMethod(input){
-      document.querySelectorAll('.rule-method-card').forEach(function(card){card.classList.toggle('active',card.contains(input));});
+    function ruleCreateTypeChanged(ruleType){
       ruleRefreshConfig();
     }
     function ruleRefreshConfig(){
       var stage=document.getElementById('ruleCreateStage').value;
-      var selected=document.querySelector('input[name="annotation_method"]:checked');
-      var rich=stage==='标注'&&selected&&selected.closest('.rule-method-card').dataset.rich==='1';
-      document.getElementById('ruleRichConfig').style.display=rich?'block':'none';
-      document.getElementById('ruleSimpleConfig').style.display=rich?'none':'block';
-      if(stage==='标注'){
-        var kind=rich?'action':'semantic';
-        var option=document.querySelector('#ruleCreateWorkbench option[data-annotation-kind="'+kind+'"]');
-        if(option) document.getElementById('ruleCreateWorkbench').value=option.value;
-      }
+      var ruleType=document.getElementById('ruleCreateType').value;
+      var action=stage==='标注'&&ruleType==='动作标注';
+      var semantic=stage==='标注'&&ruleType==='语义标注';
+      document.getElementById('ruleActionConfig').style.display=action?'block':'none';
+      document.getElementById('ruleDocumentConfig').style.display=semantic?'block':'none';
+      document.getElementById('ruleEmptyConfig').style.display=action||semantic?'none':'block';
     }
     ruleCreateStageChanged('质检');
     function openRuleDetail(trigger, editable){
@@ -6735,12 +6718,9 @@ def data_rules():
       document.getElementById('ruleCreateName').value=trigger.dataset.ruleName||'';
       document.getElementById('ruleCreateStage').value=trigger.dataset.ruleStage||'质检';
       ruleCreateStageChanged(document.getElementById('ruleCreateStage').value);
-      var method=trigger.dataset.ruleMethod||'';
-      var radio=document.querySelector('input[name="annotation_method"][value="slice-only"]');
-      if(method==='仅切分' && radio){ radio.checked=true; ruleSelectMethod(radio); }
-      var wb=document.getElementById('ruleCreateWorkbench');
-      Array.prototype.forEach.call(wb.options,function(option){ option.selected=option.textContent.indexOf(trigger.dataset.ruleWorkbench||'')===0; });
-      document.getElementById('ruleSimpleConfig').textContent=trigger.dataset.ruleConfig||'略';
+      var ruleType=trigger.dataset.ruleType||'';
+      if(ruleType){ document.getElementById('ruleCreateType').value=ruleType; ruleCreateTypeChanged(ruleType); }
+      document.getElementById('ruleDocumentLink').value=trigger.dataset.ruleConfig||'';
       drawer.querySelectorAll('input,select,button').forEach(function(control){
         control.disabled=editable===false?false:true;
       });
@@ -6752,6 +6732,9 @@ def data_rules():
       drawer.dataset.mode='new';
       document.querySelector('#drawerRuleCreate .drawer-head h3').textContent='新增规则';
       document.getElementById('ruleCreateName').value='';
+      document.getElementById('ruleCreateStage').value='质检';
+      document.getElementById('ruleDocumentLink').value='';
+      ruleCreateStageChanged('质检');
       drawer.querySelectorAll('input,select,button').forEach(function(control){ control.disabled=false; });
       drawer.querySelector('.drawer-foot').style.display='';
       openDrawer('drawerRuleCreate');
@@ -6799,13 +6782,14 @@ def data_rules():
           <th>规则 ID</th>
           <th>适用环节</th>
           <th>规则名称</th>
+          <th>类型</th>
           <th>描述</th>
           <th>状态</th>
           <th>创建人</th>
           <th>创建时间</th>
           <th>操作</th>
         </tr></thead>
-        <tbody>{rows or '<tr><td colspan="8" style="text-align:center;padding:30px;color:rgba(0,0,0,0.25);">暂无数据</td></tr>'}</tbody>
+        <tbody>{rows or '<tr><td colspan="9" style="text-align:center;padding:30px;color:rgba(0,0,0,0.25);">暂无数据</td></tr>'}</tbody>
       </table>
     </div>
     {rule_drawer}

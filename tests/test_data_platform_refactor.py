@@ -542,12 +542,18 @@ class DataPlatformArchitectureTests(unittest.TestCase):
             "人工任务节点",
             "用户组",
             "供应商",
-            "processingTaskAssignmentHint",
+            "节点配置",
+            "processingTaskNodeConfigHint",
+            "按节点配置处理人和规则",
+            "dpr-node-processor-module",
+            "dpr-node-rule-module",
+            "dpr-node-rule-select",
+            "DPR_NODE_RULES",
+            "dprNodeRuleOptions",
             "多个处理人之间为竞签关系",
-            "每个人工任务节点至少配置一个处理人",
+            "每个人工任务节点至少配置处理人和规则",
             "流程图",
-            "点击人工任务节点定位下方分配卡片",
-            "节点级",
+            "点击人工任务节点定位下方节点配置",
             "dprRenderFlowPreview",
             "dprFocusAssignmentCard",
             "dprRenderFlowChoices",
@@ -598,8 +604,15 @@ class DataPlatformArchitectureTests(unittest.TestCase):
         self.assertNotIn("数据字段变化后重新判断，命中记录只进入一次；留空表示不限制。", html)
         self.assertNotIn("选择流程后可在右侧预览流程图；点击人工任务节点可快速定位对应的分配卡片。", html)
         self.assertNotIn("每个环节仅可绑定一个流程与一条规则", html)
+        self.assertNotIn("人工任务节点分配", html)
         drawer_start = html.index('id="drawerProcessingTaskForm"')
         drawer_html = html[drawer_start:]
+        self.assertNotIn('data-rule-stage=', drawer_html)
+        self.assertNotIn("DPR_PROCESSING_RULES", drawer_html)
+        self.assertNotIn("DPR_SELECTED_RULES", drawer_html)
+        self.assertNotIn("dprProcessingRuleChange", drawer_html)
+        self.assertNotIn("质检规则<select", drawer_html)
+        self.assertNotIn("标注规则<select", drawer_html)
         field_positions = [
             drawer_html.index(f'name="{field}"')
             for field in (
@@ -1879,6 +1892,7 @@ class DataPlatformArchitectureTests(unittest.TestCase):
             "wfToggleReject",
             "wfRejectTargetsUpdate",
             "wfSaveConfig",
+            "renderWorkbenchOptions",
             "wfAddTypedNode",
             "syncConditionNoBranch",
             'data-node-type="human"',
@@ -1890,6 +1904,33 @@ class DataPlatformArchitectureTests(unittest.TestCase):
         self.assertNotIn("查看工作台配置", html)
         self.assertNotIn('<div class="ms-wrap wf-user-group-select"', html)
         self.assertIn('id="wfhAllowedActions"', html)
+        self.assertIn('<div class="wf-cfg-sec">处理规则</div>', html)
+        self.assertIn('id="wfhProcessingRuleMode"', html)
+        self.assertIn('name="wfhProcessingRuleMode" value="task_custom"', html)
+        self.assertIn('name="wfhProcessingRuleMode" value="inherit"', html)
+        self.assertIn('name="wfhProcessingRuleMode" value="none" checked', html)
+        processing_rule_config = html[
+            html.index('id="wfhProcessingRuleMode"'):
+            html.index('<div class="wf-cfg-sec">工作台</div>')
+        ]
+        self.assertLess(
+            processing_rule_config.index('value="task_custom"'),
+            processing_rule_config.index('value="inherit"'),
+        )
+        self.assertLess(
+            processing_rule_config.index('value="inherit"'),
+            processing_rule_config.index('value="none"'),
+        )
+        self.assertIn("n.processingRuleMode||'none'", html)
+        self.assertIn("n.processingRuleMode=document.querySelector", html)
+        self.assertIn('"processingRuleMode": "none"', html)
+        self.assertIn('<div class="wf-cfg-sec">工作台</div>', html)
+        self.assertIn('id="wfhWorkbench"', html)
+        self.assertIn("质检工作台 v2.0", html)
+        self.assertIn("标注工作台 v4.1", html)
+        self.assertIn("语义标注工作台 v1.0", html)
+        self.assertIn("详情工作台 v1.0", html)
+        self.assertIn("n.workbench=document.getElementById('wfhWorkbench').value", html)
         self.assertIn("var HUMAN_ACTIONS=['驳回'];", html)
         self.assertNotIn("请至少选择一个可用操作", html)
         self.assertIn("background:transparent", html)
@@ -1951,7 +1992,7 @@ class DataPlatformArchitectureTests(unittest.TestCase):
         self.assertNotIn("进入比例", human_config)
         self.assertNotIn("提交", human_config)
         self.assertNotIn("暂离", human_config)
-        self.assertIn('class="wf-reject-target-list"', human_config)
+        self.assertIn("wf-reject-target-list", human_config)
         self.assertNotIn("wf-reject-select", human_config)
         self.assertNotIn("ms-trigger", human_config)
         self.assertIn("n.allowedActions=rejectEnabled?['驳回']:[];", html)
@@ -1973,13 +2014,29 @@ class DataPlatformArchitectureTests(unittest.TestCase):
             'id="wfaIdent"',
             'id="wfaDesc"',
             'id="wfaOperator"',
+            'id="wfaProcessingRuleMode"',
+            'name="wfaProcessingRuleMode" value="task_custom"',
+            'name="wfaProcessingRuleMode" value="none" checked',
             "节点名称",
             "节点 ID",
             "节点描述",
+            "处理规则",
             "执行算子",
         ):
             self.assertIn(expected, automatic_config)
-        self.assertEqual(1, automatic_config.count('class="wf-cfg-sec"'))
+        self.assertEqual(2, automatic_config.count('class="wf-cfg-sec"'))
+        self.assertIn(
+            "n.processingRuleMode=document.querySelector('input[name=\"wfaProcessingRuleMode\"]:checked').value",
+            html,
+        )
+        self.assertLess(
+            automatic_config.index('id="wfaDesc"'),
+            automatic_config.index('id="wfaProcessingRuleMode"'),
+        )
+        self.assertLess(
+            automatic_config.index('id="wfaProcessingRuleMode"'),
+            automatic_config.index('id="wfaOperator"'),
+        )
         for removed in (
             'id="wfcImage"',
             'id="wfcScript"',
@@ -2006,7 +2063,8 @@ class DataPlatformArchitectureTests(unittest.TestCase):
             ">查询</button>",
             'id="dpr-workbench-table"',
             "工作台 ID",
-            "业务环节",
+            "业务类型",
+            "规则类型",
             "草稿",
             "启用",
             "停用",
@@ -2054,8 +2112,12 @@ class DataPlatformArchitectureTests(unittest.TestCase):
         )
         workbench_table_end = html.index("</table>", workbench_table_start)
         workbench_table = html[workbench_table_start:workbench_table_end]
-        self.assertEqual(5, workbench_table.count("<th>"))
+        self.assertEqual(6, workbench_table.count("<th>"))
         self.assertIn("<th>描述</th>", workbench_table)
+        self.assertIn("<th>业务类型</th>", workbench_table)
+        self.assertIn("<th>规则类型</th>", workbench_table)
+        self.assertIn("语义标注", workbench_table)
+        self.assertIn("动作标注", workbench_table)
         self.assertNotIn("<th>组件数</th>", workbench_table)
         self.assertNotIn("<th>操作</th>", workbench_table)
         self.assertNotIn('class="det-tabs', html)
@@ -2307,6 +2369,14 @@ class DataPlatformArchitectureTests(unittest.TestCase):
             ">创建人</label>",
             ">清空</a>",
             ">查询</button>",
+            '<label>类型</label>',
+            '<th>类型</th>',
+            '<td>语义标注</td>',
+            'id="ruleActionConfig"',
+            'id="ruleDocumentConfig"',
+            '>文档链接</label>',
+            "ruleType==='动作标注'",
+            "ruleType==='语义标注'",
         ):
             self.assertIn(expected, rules_html)
         self.assertNotIn('class="tm-tabs"', rules_html)
@@ -2323,6 +2393,10 @@ class DataPlatformArchitectureTests(unittest.TestCase):
             "<th>标注方式</th>",
             "<th>规则配置</th>",
             "<th>关联工作台</th>",
+            "标注方式",
+            "rule-method-card",
+            'name="annotation_method"',
+            "ruleSelectMethod",
         ):
             self.assertNotIn(removed, rules_html)
         self.assertEqual(1, rules_html.count('class="mono">RL-009</td>'))

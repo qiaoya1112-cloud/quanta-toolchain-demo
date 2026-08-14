@@ -532,6 +532,7 @@ WORKBENCH_SCHEMAS = [
         "name": "动作标注工作台",
         "description": "面向动作元素标注的分段、动作描述与提交工作台。",
         "type": "标注",
+        "rule_type": "动作标注",
         "annotation_kind": "action",
         "regions": ["context", "video", "tabs", "decision", "actions"],
         "components": [
@@ -556,6 +557,7 @@ WORKBENCH_SCHEMAS = [
         "name": "语义标注工作台",
         "description": "面向语义标注 E/F/G 的低高层级语义编辑工作台。",
         "type": "标注",
+        "rule_type": "语义标注",
         "annotation_kind": "semantic",
         "regions": ["context", "video", "tabs", "decision", "actions"],
         "components": [
@@ -3092,15 +3094,22 @@ def render_processing_tasks():
     """Render the v2 continuous processing-task model.
 
     A processing task subscribes to matching lake data and binds one or more
-    independently versioned flows. Human assignment intentionally does not
-    live here; it belongs to the human-node configuration and its user groups.
+    independently versioned flows. Human assignment and rules are configured
+    on each human node instead of on the whole processing stage.
     """
     flow_catalog_json = json.dumps(
         PROCESSING_FLOWS,
         ensure_ascii=False,
     ).replace("</", "<\\/")
-    rule_catalog_json = json.dumps(
-        PROCESSING_RULES,
+    node_rules_json = json.dumps(
+        [
+            {
+                "stage": rule["stage"],
+                "name": rule["name"],
+                "version": rule["version"],
+            }
+            for rule in PROCESSING_RULES
+        ],
         ensure_ascii=False,
     ).replace("</", "<\\/")
     tasks = sorted(
@@ -3112,7 +3121,11 @@ def render_processing_tasks():
         detail_path = f'/data/tasks/{_e(item["id"])}'
         project_label = TASK_PROJECT_LABELS[item["project"]]
         filter_payload = json.dumps(item["filter_rules"], ensure_ascii=False)
-        visible_flow_bindings = [binding for binding in item["flow_bindings"] if binding[0] != "验收"]
+        visible_flow_bindings = [
+            binding[:3]
+            for binding in item["flow_bindings"]
+            if binding[0] != "验收"
+        ]
         flow_payload = json.dumps(visible_flow_bindings, ensure_ascii=False)
         assignment_payload = json.dumps(item.get("assignments", {}), ensure_ascii=False)
         flowed_count = item.get("input_count", 0)
@@ -3293,10 +3306,15 @@ def render_processing_tasks():
         .dpr-node-assignment-section-head {{ display:flex;align-items:center;justify-content:space-between;padding:0 0 11px;border-bottom:1px solid #e7ecee; }}
         .dpr-node-assignment-section-head>div {{ display:flex;align-items:center;gap:8px; }}
         .dpr-node-assignment-section-head b {{ color:#30484f;font-size:13px; }}
-        .dpr-node-assignment-section-head em {{ padding:2px 7px;border-radius:10px;background:#e5f2e9;color:#348458;font-style:normal;font-size:10px;font-weight:650; }}
         .dpr-node-assignment-section-head span {{ color:#849298;font-size:11px; }}
         .dpr-node-assignment-section .dpr-flow-node-card {{ border-left:3px solid #7bc392;background:#fff; }}
         .dpr-flow-node-card.focused {{ border-color:#48a86b;box-shadow:0 0 0 3px rgba(72,168,107,.16),0 5px 14px rgba(37,73,87,.12);scroll-margin-top:18px; }}
+        .dpr-node-config-modules {{ display:flex;flex-direction:column;gap:14px; }}
+        .dpr-node-config-module + .dpr-node-config-module {{ padding-top:14px;border-top:1px solid #e6ecee; }}
+        .dpr-node-config-module-head {{ display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:9px; }}
+        .dpr-node-config-module-head b {{ color:#40575f;font-size:12px; }}
+        .dpr-node-config-module-head span {{ color:#8a989d;font-size:10.5px; }}
+        .dpr-node-rule-select {{ width:100%;height:34px;box-sizing:border-box;border:1px solid #d8e0e3;border-radius:6px;background:#fff;padding:0 30px 0 9px;color:#344c54;font-size:12px; }}
       </style>
       <div class="dpr-processing-task-page-head">
         <div><button type="button" class="dpr-processing-back" onclick="dprCloseProcessingTaskPage()">‹ 返回</button><h2 id="processingTaskDrawerTitle">新建处理任务</h2></div>
@@ -3337,7 +3355,7 @@ def render_processing_tasks():
                 <div class="dpr-flow-assignment-summary" id="processingTaskFlowSummary">—</div>
                 <div id="processingTaskFlowPreview"></div>
                 <section class="dpr-node-assignment-section">
-                  <div class="dpr-node-assignment-section-head"><div><em>节点级</em><b>人工任务节点分配</b></div><span id="processingTaskAssignmentHint">按节点配置供应商或用户组</span></div>
+                  <div class="dpr-node-assignment-section-head"><div><b>节点配置</b></div><span id="processingTaskNodeConfigHint">按节点配置处理人和规则</span></div>
                   <div id="processingTaskAssignments"></div>
                 </section>
               </div>
@@ -3349,7 +3367,7 @@ def render_processing_tasks():
     </section>
     <script>
     var DPR_PROCESSING_FLOWS = {flow_catalog_json};
-    var DPR_PROCESSING_RULES = {rule_catalog_json};
+    var DPR_NODE_RULES = {node_rules_json};
     var DPR_TASK_FILTER_FIELDS = {{
       '所属项目': {{type:'multi', options:['预训练采集', 'demo 项目', '宁德项目']}},
       '采集任务': {{type:'text', placeholder:'多个任务 ID 请用英文逗号隔开'}},
@@ -3525,7 +3543,6 @@ def render_processing_tasks():
       supplier: ['光轮智能', '供应商 A', '千寻数据']
     }};
     var DPR_SELECTED_FLOWS = {{}};
-    var DPR_SELECTED_RULES = {{}};
     var DPR_ACTIVE_ASSIGNMENT_STAGE = '质检';
     var DPR_ENABLED_FLOW_STAGES = {{质检:false, 标注:false}};
     var DPR_FLOW_ASSIGNMENT_CACHE = {{}};
@@ -3552,6 +3569,32 @@ def render_processing_tasks():
       // 处理任务中的分配类型由任务配置，不从流程节点锁定。
       return false;
     }}
+    function dprRulesForNodeStage(stage) {{
+      return DPR_NODE_RULES.filter(function(rule) {{ return rule.stage === stage; }});
+    }}
+    function dprDefaultNodeRule(flow) {{
+      var rules = dprRulesForNodeStage(flow ? flow.stage : '');
+      if (!rules.length) return '';
+      if (flow.stage === '标注') {{
+        var preferred = rules.find(function(rule) {{
+          return flow.name.indexOf('双轮') >= 0
+            ? rule.name === '通用动作标注规则'
+            : rule.name === '端到端切分标注规则';
+        }});
+        if (preferred) return preferred.name + ' ' + preferred.version;
+      }}
+      return rules[0].name + ' ' + rules[0].version;
+    }}
+    function dprNodeRuleOptions(flow, selected) {{
+      var rules = dprRulesForNodeStage(flow ? flow.stage : '');
+      var value = selected || dprDefaultNodeRule(flow);
+      return rules.map(function(rule) {{
+        var optionValue = rule.name + ' ' + rule.version;
+        return '<option value="' + dprProcessingEscape(optionValue) + '"' +
+          (optionValue === value ? ' selected' : '') + '>' +
+          dprProcessingEscape(rule.name) + ' · ' + dprProcessingEscape(rule.version) + '</option>';
+      }}).join('');
+    }}
     function dprFlowPreviewNodes(flow) {{
       if (flow && flow.preview_nodes && flow.preview_nodes.length) return flow.preview_nodes;
       return [{{name:'start',kind:'start'}}].concat((flow && flow.human_nodes || []).map(function(name) {{ return {{name:name,kind:'human'}}; }}), [{{name:'end',kind:'end'}}]);
@@ -3563,7 +3606,7 @@ def render_processing_tasks():
       var holder=document.getElementById('processingTaskFlowPreview');
       if (!flow) {{ holder.innerHTML=''; return; }}
       var nodes=dprFlowPreviewNodes(flow);
-      var html='<section class="dpr-flow-preview-section"><div class="dpr-flow-preview-head"><b>流程图</b><span>点击人工任务节点定位下方分配卡片</span></div><div class="dpr-flow-preview-canvas"><div class="dpr-flow-preview-track">';
+      var html='<section class="dpr-flow-preview-section"><div class="dpr-flow-preview-head"><b>流程图</b><span>点击人工任务节点定位下方节点配置</span></div><div class="dpr-flow-preview-canvas"><div class="dpr-flow-preview-track">';
       nodes.forEach(function(node,index) {{
         var human=node.kind==='human';
         var active=human&&node.name===DPR_ACTIVE_PREVIEW_NODE?' active':'';
@@ -3580,14 +3623,14 @@ def render_processing_tasks():
       DPR_ACTIVE_PREVIEW_NODE=nodeName;
       document.querySelectorAll('.dpr-flow-preview-node.human').forEach(function(node) {{ node.classList.toggle('active',node.dataset.focusNode===nodeName); }});
       var card=Array.from(document.querySelectorAll('#processingTaskAssignments .dpr-flow-node-card')).find(function(item) {{ return item.dataset.node===nodeName; }});
-      if (!card) {{ toast('该人工节点无需配置分配'); return; }}
+      if (!card) {{ toast('该人工节点无需配置'); return; }}
       document.querySelectorAll('#processingTaskAssignments .dpr-flow-node-card').forEach(function(item) {{ item.classList.remove('focused'); }});
       card.classList.add('focused');
       card.scrollIntoView({{behavior:'smooth',block:'center'}});
     }}
     function dprRefreshAllocationPresentation() {{
-      var hint = document.getElementById('processingTaskAssignmentHint');
-      if (hint) hint.textContent = '多个处理人之间为竞签关系';
+      var hint = document.getElementById('processingTaskNodeConfigHint');
+      if (hint) hint.textContent = '按节点配置处理人和规则';
     }}
     function dprAssignmentRow(type, amount, disabled, typeLocked) {{
       var disabledAttr = disabled ? ' disabled' : '';
@@ -3608,7 +3651,7 @@ def render_processing_tasks():
         : '请选择左侧流程';
       dprRenderFlowPreview(flow);
       if (!humanNodes.length) {{
-        holder.innerHTML = '<div class="dpr-processing-assignment-empty">该流程没有人工任务节点，无需配置处理人。</div>';
+        holder.innerHTML = '<div class="dpr-processing-assignment-empty">该流程没有人工任务节点，无需配置节点。</div>';
         return;
       }}
       if (DPR_FLOW_ASSIGNMENT_CACHE[flow.name]) {{
@@ -3621,36 +3664,36 @@ def render_processing_tasks():
         var config = dprNodeAssignmentConfig(flow, node);
         var typeLocked = dprNodeAssignmentTypeLocked(flow, node);
         var inherited = config.mode === 'inherit';
-        if (inherited) return '<section class="dpr-flow-node-card dpr-flow-node-card-inherited" data-node="' + dprProcessingEscape(node) + '" data-assignment-mode="inherit">' +
+        var processorConfig = inherited
+          ? '<div class="dpr-flow-inherit-note">' + dprProcessingEscape(config.inherit_text || '继承前序节点') + '</div>'
+          : '<div class="dpr-flow-assignment-cols"><span>类型</span><span>处理人</span><span></span></div>' +
+            '<div class="dpr-flow-assignment-rows">' + dprAssignmentRow(config.type, '', isDetail, typeLocked) + '</div>' +
+            '<button type="button" class="dpr-flow-add-assignment" onclick="dprAddFlowAssignment(this)"' + (isDetail ? ' disabled' : '') + '>+ 添加处理人</button>';
+        return '<section class="dpr-flow-node-card' + (inherited ? ' dpr-flow-node-card-inherited' : '') + '" data-node="' + dprProcessingEscape(node) + '"' + (inherited ? ' data-assignment-mode="inherit"' : '') + '>' +
           '<div class="dpr-flow-node-card-head"><div><b>' + dprProcessingEscape(node) + '</b><span>人工任务节点</span></div></div>' +
-          '<div class="dpr-flow-inherit-note">' + dprProcessingEscape(config.inherit_text || '继承前序节点') + '</div></section>';
-        return '<section class="dpr-flow-node-card" data-node="' + dprProcessingEscape(node) + '">' +
-          '<div class="dpr-flow-node-card-head"><div><b>' + dprProcessingEscape(node) + '</b><span>人工任务节点</span></div></div>' +
-          '<div class="dpr-flow-assignment-cols"><span>类型</span><span>处理人</span><span></span></div>' +
-          '<div class="dpr-flow-assignment-rows">' + dprAssignmentRow(config.type, '', isDetail, typeLocked) + '</div>' +
-          '<button type="button" class="dpr-flow-add-assignment" onclick="dprAddFlowAssignment(this)"' + (isDetail ? ' disabled' : '') + '>+ 添加处理人分配</button>' +
+          '<div class="dpr-node-config-modules">' +
+            '<section class="dpr-node-config-module dpr-node-processor-module"><div class="dpr-node-config-module-head"><b>处理人</b><span>' + (inherited ? '继承前序节点' : '多个处理人之间为竞签关系') + '</span></div>' + processorConfig + '</section>' +
+            '<section class="dpr-node-config-module dpr-node-rule-module"><div class="dpr-node-config-module-head"><b>规则</b><span>节点执行时生效</span></div><select class="dpr-node-rule-select"' + (isDetail ? ' disabled' : '') + '>' + dprNodeRuleOptions(flow, '') + '</select></section>' +
+          '</div>' +
         '</section>';
       }}).join('');
       holder.querySelectorAll('.dpr-flow-node-card').forEach(dprRefreshAssignmentTargets);
       dprRefreshAllocationPresentation();
     }}
-    function dprRulesForStage(stage) {{ return DPR_PROCESSING_RULES.filter(function(rule) {{ return rule.stage === stage; }}); }}
     function dprRenderFlowChoices(stage, isDetail) {{
       var configDisabled = isDetail || document.getElementById('drawerProcessingTaskForm').dataset.mode === 'edit';
       ['质检', '标注'].forEach(function(itemStage) {{
         var flows = dprFlowsForStage(itemStage);
         if (!DPR_SELECTED_FLOWS[itemStage]) DPR_SELECTED_FLOWS[itemStage] = flows[0] && flows[0].name;
-        var rules = dprRulesForStage(itemStage);
-        if (!DPR_SELECTED_RULES[itemStage]) DPR_SELECTED_RULES[itemStage] = rules[0] && rules[0].name;
       }});
       DPR_ACTIVE_ASSIGNMENT_STAGE = stage || DPR_ACTIVE_ASSIGNMENT_STAGE;
       document.getElementById('processingTaskFlowChoices').innerHTML = ['质检', '标注'].map(function(itemStage) {{
-        var flows = dprFlowsForStage(itemStage), rules = dprRulesForStage(itemStage), selected = DPR_SELECTED_FLOWS[itemStage];
+        var flows = dprFlowsForStage(itemStage), selected = DPR_SELECTED_FLOWS[itemStage];
         var enabled = !!DPR_ENABLED_FLOW_STAGES[itemStage];
         var disabled = configDisabled;
         return '<section class="dpr-flow-config-card' + (itemStage === DPR_ACTIVE_ASSIGNMENT_STAGE && enabled ? ' active' : '') + (!enabled ? ' collapsed' : '') + '" onclick="dprShowAssignmentsForStage(&quot;' + itemStage + '&quot;)">' +
           '<div class="dpr-flow-config-card-head"><div class="dpr-flow-card-title-line"><b>' + itemStage + '环节</b><label class="dpr-flow-toggle" onclick="event.stopPropagation()"><input type="checkbox" data-toggle-stage="' + itemStage + '" onchange="dprToggleFlowStage(this)"' + (enabled ? ' checked' : '') + (disabled ? ' disabled' : '') + '><i></i><em>' + (enabled ? '已开启' : '未开启') + '</em></label></div></div>' +
-          '<div class="dpr-flow-config-card-body" onclick="event.stopPropagation()"' + (!enabled ? ' style="display:none;"' : '') + '><label>处理流程<select data-flow-stage="' + itemStage + '" onchange="dprProcessingFlowChange(this)"' + (configDisabled ? ' disabled' : '') + '>' + flows.map(function(flow) {{ return '<option' + (flow.name === selected ? ' selected' : '') + '>' + dprProcessingEscape(flow.name) + '</option>'; }}).join('') + '</select></label><label>' + itemStage + '规则<select data-rule-stage="' + itemStage + '" onchange="dprProcessingRuleChange(this)"' + (configDisabled ? ' disabled' : '') + '>' + rules.map(function(rule) {{ return '<option' + (rule.name === DPR_SELECTED_RULES[itemStage] ? ' selected' : '') + '>' + dprProcessingEscape(rule.name + ' ' + rule.version) + '</option>'; }}).join('') + '</select></label></div></section>';
+          '<div class="dpr-flow-config-card-body" onclick="event.stopPropagation()"' + (!enabled ? ' style="display:none;"' : '') + '><label>处理流程<select data-flow-stage="' + itemStage + '" onchange="dprProcessingFlowChange(this)"' + (configDisabled ? ' disabled' : '') + '>' + flows.map(function(flow) {{ return '<option' + (flow.name === selected ? ' selected' : '') + '>' + dprProcessingEscape(flow.name) + '</option>'; }}).join('') + '</select></label></div></section>';
       }}).join('');
       dprRenderNodeAssignments(DPR_ENABLED_FLOW_STAGES[DPR_ACTIVE_ASSIGNMENT_STAGE] ? dprFlowByName(DPR_SELECTED_FLOWS[DPR_ACTIVE_ASSIGNMENT_STAGE]) : null, isDetail);
     }}
@@ -3689,7 +3732,6 @@ def render_processing_tasks():
       delete DPR_FLOW_ASSIGNMENT_CACHE[select.value];
       dprShowAssignmentsForStage(stage);
     }}
-    function dprProcessingRuleChange(select) {{ DPR_SELECTED_RULES[select.dataset.ruleStage] = select.value.split(' v')[0]; }}
     function dprShowAssignmentsForStage(stage) {{
       if (!DPR_ENABLED_FLOW_STAGES[stage]) return;
       var oldFlow = dprFlowByName(DPR_SELECTED_FLOWS[DPR_ACTIVE_ASSIGNMENT_STAGE]);
@@ -3730,6 +3772,8 @@ def render_processing_tasks():
     }}
     function dprProcessingAssignmentsValid() {{
       return Array.from(document.querySelectorAll('.dpr-flow-node-card')).every(function(card) {{
+        var rule = card.querySelector('.dpr-node-rule-select');
+        if (!rule || !rule.value) return false;
         if (card.dataset.assignmentMode === 'inherit') return true;
         var rows = Array.from(card.querySelectorAll('.dpr-flow-assignment-row'));
         return rows.length > 0 && rows.every(function(row) {{
@@ -3798,8 +3842,8 @@ def render_processing_tasks():
         filters: '[]',
         assignments: '{{}}',
         flows: JSON.stringify([
-          ['质检', '多级质检复核流程', 'v3', '通用质检规则'],
-          ['标注', '端到端切分标注流程', 'v2', '通用动作标注规则'],
+          ['质检', '多级质检复核流程', 'v3'],
+          ['标注', '端到端切分标注流程', 'v2'],
           ['验收', '数据验收流程', 'v1']
         ])
       }};
@@ -3829,13 +3873,11 @@ def render_processing_tasks():
       try {{ DPR_INITIAL_ASSIGNMENTS = JSON.parse(data.assignments || '{{}}'); }} catch (error) {{ DPR_INITIAL_ASSIGNMENTS = {{}}; }}
       DPR_FLOW_ASSIGNMENT_CACHE = {{}};
       DPR_SELECTED_FLOWS = {{}};
-      DPR_SELECTED_RULES = {{}};
       DPR_ENABLED_FLOW_STAGES = {{质检:false, 标注:false}};
       dprRenderTaskFilters(filters);
       (flows || []).forEach(function(binding) {{
         if (binding[0] === '质检' || binding[0] === '标注') {{
           DPR_SELECTED_FLOWS[binding[0]] = binding[1];
-          if (binding[3]) DPR_SELECTED_RULES[binding[0]] = binding[3];
           if (mode !== 'new') DPR_ENABLED_FLOW_STAGES[binding[0]] = true;
         }}
       }});
@@ -3887,7 +3929,7 @@ def render_processing_tasks():
         return;
       }}
       if (!dprProcessingAssignmentsValid()) {{
-        toast('每个人工任务节点至少配置一个处理人');
+        toast('每个人工任务节点至少配置处理人和规则');
         return;
       }}
       var mode = document.getElementById('drawerProcessingTaskForm').dataset.mode;
@@ -7276,19 +7318,23 @@ def render_workbench_management():
         "wb.data-detail@1.0": "draft",
     }
     for schema in WORKBENCH_SCHEMAS:
-        business_stage = "验收" if schema["type"] == "详情" else schema["type"]
+        business_type = "验收" if schema["type"] == "详情" else schema["type"]
+        rule_type = schema.get("rule_type", "")
         workbench_rows.append(
             [
                 f'<code>{_e(schema["id"])}</code>',
                 f'<b>{_e(schema["name"])}</b>',
                 _e(schema.get("description", "")),
-                _record_tag(business_stage),
+                _record_tag(business_type),
+                _record_tag(rule_type) if rule_type else "—",
                 _state(management_statuses.get(schema["id"], "draft")),
             ]
         )
         workbench_row_attrs.append(
             f'data-workbench-name="{_e(schema["name"])}" '
-            f'data-workbench-description="{_e(schema.get("description", ""))}"'
+            f'data-workbench-description="{_e(schema.get("description", ""))}" '
+            f'data-workbench-type="{_e(business_type)}" '
+            f'data-workbench-rule-type="{_e(rule_type)}"'
         )
 
     category_order = ["基础信息", "视频区", "工作区", "处理表单", "结论", "操作栏"]
@@ -7370,7 +7416,7 @@ def render_workbench_management():
           </div>
         </form>
         {_table(
-            ["工作台 ID", "名称", "描述", "业务环节", "状态"],
+            ["工作台 ID", "名称", "描述", "业务类型", "规则类型", "状态"],
             workbench_rows,
             table_id="dpr-workbench-table",
             row_attrs=workbench_row_attrs,

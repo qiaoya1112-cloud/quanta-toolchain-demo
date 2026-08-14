@@ -5086,6 +5086,11 @@ WF_CANVAS_JS = r"""
     '质检复核用户组','内部验收用户组'
   ];
   var HUMAN_ACTIONS=['驳回'];
+  var HUMAN_WORKBENCHES={
+    '质检':['质检工作台 v2.0'],
+    '标注':['标注工作台 v4.1','语义标注工作台 v1.0'],
+    '验收':['详情工作台 v1.0']
+  };
   function esc(v){ return String(v==null?'':v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;'); }
   function optionList(items,selected){
     return items.map(function(item){ return '<option'+(item===selected?' selected':'')+'>'+esc(item)+'</option>'; }).join('');
@@ -5108,6 +5113,21 @@ WF_CANVAS_JS = r"""
     if((n.businessStage||'').indexOf('验收')>=0) return '详情工作台 v1.0';
     if((n.businessStage||'').indexOf('标注')>=0) return '标注工作台 v4.1';
     return '质检工作台 v2.0';
+  }
+  function renderWorkbenchOptions(n){
+    var stage=Object.keys(HUMAN_WORKBENCHES).filter(function(item){
+      return (n.businessStage||'').indexOf(item)>=0;
+    })[0];
+    var allItems=[].concat(
+      HUMAN_WORKBENCHES['质检'],HUMAN_WORKBENCHES['标注'],HUMAN_WORKBENCHES['验收']
+    );
+    var items=stage?HUMAN_WORKBENCHES[stage].concat(allItems.filter(function(item){
+      return HUMAN_WORKBENCHES[stage].indexOf(item)<0;
+    })):allItems;
+    var selected=items.indexOf(n.workbench)>=0?n.workbench:defaultWorkbench(n);
+    var select=document.getElementById('wfhWorkbench');
+    select.innerHTML=optionList(items,selected);
+    select.value=selected;
   }
   function workflowFrameIndex(phaseId){
     for(var i=0;i<FRAMES.length;i++) if(FRAMES[i].id===phaseId) return i;
@@ -5276,8 +5296,11 @@ WF_CANVAS_JS = r"""
       document.getElementById('wfhName').value=n.name||'';
       document.getElementById('wfhIdent').value=n.ident||'';
       document.getElementById('wfhDesc').value=n.desc||'';
+      renderWorkbenchOptions(n);
       var assigneeMode=n.assigneeMode||'task_custom';
       document.querySelectorAll('input[name="wfhAssigneeMode"]').forEach(function(input){ input.checked=input.value===assigneeMode; });
+      var processingRuleMode=n.processingRuleMode||'none';
+      document.querySelectorAll('input[name="wfhProcessingRuleMode"]').forEach(function(input){ input.checked=input.value===processingRuleMode; });
       wfRefreshAssigneeInheritance();
       document.getElementById('wfhAssigneeInheritNode').value=n.inheritAssigneeNodeId||'';
       var previousNodes=previousHumanNodes(n);
@@ -5318,6 +5341,10 @@ WF_CANVAS_JS = r"""
       document.getElementById('wfaName').value=n.name||'';
       document.getElementById('wfaIdent').value=n.ident||'';
       document.getElementById('wfaDesc').value=n.desc||'';
+      var automaticProcessingRuleMode=n.processingRuleMode||'none';
+      document.querySelectorAll('input[name="wfaProcessingRuleMode"]').forEach(function(input){
+        input.checked=input.value===automaticProcessingRuleMode;
+      });
       var selectedOperatorId=n.operatorId||Object.keys(OPS).filter(function(operatorId){
         return OPS[operatorId].ident===n.ident;
       })[0]||'';
@@ -5441,6 +5468,8 @@ WF_CANVAS_JS = r"""
       n.name=humanName;
       n.ident=document.getElementById('wfhIdent').value.trim();
       n.desc=document.getElementById('wfhDesc').value.trim();
+      n.workbench=document.getElementById('wfhWorkbench').value;
+      n.processingRuleMode=document.querySelector('input[name="wfhProcessingRuleMode"]:checked').value;
       n.allowedActions=rejectEnabled?['驳回']:[];
       n.rejectEnabled=rejectEnabled;
       n.rejectTargets=rejectTargets;
@@ -5474,6 +5503,7 @@ WF_CANVAS_JS = r"""
       n.name=automaticName;
       n.ident=automaticIdent;
       n.desc=document.getElementById('wfaDesc').value.trim();
+      n.processingRuleMode=document.querySelector('input[name="wfaProcessingRuleMode"]:checked').value;
       n.operatorId=operatorId;
       n.operatorName=OPS[operatorId].name;
       document.getElementById('wfcName').textContent=n.name;
@@ -5624,8 +5654,9 @@ WF_CANVAS_JS = r"""
       script:kind==='automatic'?'请选择算子':(kind==='condition'?'条件表达式':'人工任务'),
       operatorId:kind==='automatic'?(Object.keys(OPS)[0]||''):'',
       params:'',returns:'处理结果',kind:kind,
-      businessStage:'通用',workbench:'质检工作台',userGroups:[],
+      businessStage:'通用',workbench:'质检工作台 v2.0',userGroups:[],
       assigneeType:'supplier',assigneeMode:'task_custom',inheritAssigneeNodeId:'',
+      processingRuleMode:'none',
       allowedActions:['提交','暂离'],x:nodePosition.x,y:nodePosition.y
     };
     NODES.push(node);
@@ -5825,6 +5856,7 @@ def _processing_canvas_payload(pl):
             "userGroups": node.get("user_groups", []),
             "assigneeType": node.get("assignee_type", "supplier"),
             "assigneeMode": node.get("assignee_mode", "task_custom"),
+            "processingRuleMode": node.get("processing_rule_mode", "none"),
             "inheritAssigneeNodeId": node_name_to_id.get(
                 node.get("inherit_assignee_node", ""),
                 node.get("inherit_assignee_node_id", ""),
@@ -6198,7 +6230,17 @@ def pipeline_editor(pid):
               <div id="wfhAssigneeInheritHint" class="wf-reject-hint"></div>
             </div>
 
-            <div class="wf-cfg-sec">可用操作</div>
+            <div class="wf-cfg-sec">处理规则</div>
+            <div class="wf-human-label">处理规则</div>
+            <div class="wf-choice-grid" id="wfhProcessingRuleMode">
+              <label><input type="radio" name="wfhProcessingRuleMode" value="task_custom"><span>任务自定义</span></label>
+              <label><input type="radio" name="wfhProcessingRuleMode" value="inherit"><span>继承前序节点</span></label>
+              <label><input type="radio" name="wfhProcessingRuleMode" value="none" checked><span>无需配置</span></label>
+            </div>
+
+            <div class="wf-cfg-sec">工作台</div>
+            <label><span class="wf-human-label">工作台</span><select id="wfhWorkbench" class="wf-edit-field"></select></label>
+            <div class="wf-human-label" style="margin-top:12px;">可用操作</div>
             <div class="wf-choice-grid actions" id="wfhAllowedActions"></div>
 
             <div class="wf-operation-reject">
@@ -6229,6 +6271,15 @@ def pipeline_editor(pid):
               <label><span class="wf-human-label">节点名称</span><input id="wfaName" class="wf-edit-field" placeholder="请输入节点名称"></label>
               <label><span class="wf-human-label">节点 ID</span><input id="wfaIdent" class="wf-edit-field" placeholder="请输入节点 ID"></label>
               <label class="full"><span class="wf-human-label">节点描述</span><textarea id="wfaDesc" class="wf-edit-field" placeholder="请输入节点描述"></textarea></label>
+            </div>
+
+            <div class="wf-cfg-sec">处理规则</div>
+            <div class="wf-human-label">处理规则</div>
+            <div class="wf-choice-grid" id="wfaProcessingRuleMode">
+              <label><input type="radio" name="wfaProcessingRuleMode" value="task_custom"><span>任务自定义</span></label>
+              <label><input type="radio" name="wfaProcessingRuleMode" value="none" checked><span>无需配置</span></label>
+            </div>
+            <div class="wf-human-grid" style="margin-top:12px;">
               <label class="full"><span class="wf-human-label">执行算子</span><select id="wfaOperator" class="wf-edit-field"></select></label>
             </div>
           </div>
