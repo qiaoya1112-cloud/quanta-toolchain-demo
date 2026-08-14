@@ -1,0 +1,174 @@
+# =============================================================================
+# spirit vla pretrain stage2 训练配置
+# =============================================================================
+
+# Quanta 会自动填充dataset相关的内容，不需要填写dataset下的repo_id、root、sample_weights_cfg
+# 请确认是否需要修改checkpoint.tos.prefix，checkpoint上传到tos的路径为tos://{bucket}/{prefix}/{job_name}/checkpoints/
+
+
+seed: 42
+job_name:
+output_dir: outputs/${job_name}
+txt_output_path: ${output_dir}/loss_and_time.txt
+
+# 训练步数与频率
+steps: 200000
+batch_size: 32
+eval_batch_size: 16
+eval_freq: 5000
+save_freq: 5000
+log_freq: 25
+eval_reduced_scale_factor: 1.0 # if eval too long set --eval_reduced_scale_factor=0.1
+enable_mfu: false
+enable_manual_gc: true
+save_checkpoint: true
+# 预训练权重加载，若不想加载可注释此配置以从头训练。
+pretrained_ckpt_path: /mnt/vepfs01/output/carter.fan/model_ckpts/pretrained_model/model.safetensors
+pretrained_load_norm: false
+
+# 恢复训练
+recover: false
+recover_checkpoint_dir: /mnt/vepfs02/output/blair.li/codebase/mozbrain_main_0429_udas/outputs/train_pretrain_stage2_scaling_1w_10w/
+
+# 原始数据集 / FSDP dtype
+use_raw_dataset: true
+fsdp2_param_bf16: true
+deterministic: false
+
+# =============================================================================
+# WandB / Profiler / Checkpoint(TOS)
+# =============================================================================
+wandb:
+  enable: true
+  project: train_insert_pour
+
+profiler:
+  enable: true
+  output_dir: ${output_dir}/profiler
+
+checkpoint:
+  tos:
+    enable: true
+    prefix: default_tos_ckpt
+    keep_local_checkpoint_versions: 2
+
+# =============================================================================
+# 训练数据集 (dataset)
+# =============================================================================
+dataset:
+  use_mozdataset: false
+  multimodal_weights_cfg: null
+  robotic_ratio: 0.8
+  disable_stats: false
+  use_stats_cache: false
+  norm_stats_root: null
+  num_stats_samples: 1000000
+  norm_per_task: true
+  default_norm_root_path: null
+  load_norm_stats_json: null
+  task_annotation_mode: random
+  stats_per_shard_limit: 100
+  shard_global_shuffle: true
+  image_transforms:
+    use_posttrain_transform: true
+
+# =============================================================================
+# 评估数据集 (eval_dataset)
+# =============================================================================
+# eval_dataset:
+#   repo_id: ${job_name}-eval
+#   root: ${dataset.root}
+#   use_mozdataset: false
+#   sample_weights_cfg: null
+#   multimodal_weights_cfg: null
+#   sample_interval: 1
+#   scaling_law: true
+#   fast_eval: true
+#   image_transforms:
+#     use_posttrain_transform: true
+
+# =============================================================================
+# OOD 评估数据集 (ood_eval_dataset) 取消注释下面几行以启用 OOD 评估
+# =============================================================================
+# ood_eval_dataset:
+#   repo_id: train_pretrain_stage2-eval
+#   root: ${dataset.root}
+#   use_mozdataset: true
+#   sample_weights_cfg: /mnt/vepfs01/output/blair.li/cache/sample_weights/posttrain_rb_eval_ood_0314.json
+#   scaling_law: true
+#   fast_eval: true
+#   image_transforms:
+#     use_posttrain_transform: true
+#     image_size: [240, 320]
+
+# =============================================================================
+# Policy (policy.type 决定加载哪种 policy 配置)
+# =============================================================================
+policy:
+  type: spirit_qwen_dit_cotrain
+  backbone: Qwen/Qwen3-VL-4B-Instruct
+  attention_implementation: flash_attention_2
+  action_expert_type: qwen3_gate
+
+  # 损失权重
+  rb_loss_weight: 10.0
+  mm_loss_weight: 1.0
+
+  # state / observation
+  use_state: true
+  observation_config:
+    robot_type: moz1
+    image_size: [360, 480]
+    wrist_image_size: [240, 320]
+    image_resize_mode: resize
+    use_gripper_action: true
+    moz1_structure: wholebody_without_base
+    auto_pad_missing_components: true
+
+  # 优化器 / 学习率
+  optimizer_lr: 2.5e-5
+  optimizer_weight_decay: 1e-2
+  scheduler_decay_lr: 5e-6
+  use_separate_lr: false
+  lr_vlm: 2.5e-06
+  lr_dit: 5e-05
+  lr_others: 5e-05
+
+  # 学习率调度器 (wsd)
+  scheduler_type: wsd
+  scheduler_decay_phase_ratio: 0.1
+  scheduler_warmup_steps: 1000
+  scheduler_decay_steps: 19000  # ${.xxx}=同级引用；${steps}=根级
+
+  # DiT / qwen3 expert
+  dit_cross_attention_dim: 2560
+  qwen3_expert_hidden_size: 1024
+  qwen3_expert_num_layers: 18
+  qwen3_expert_num_heads: 32
+  qwen3_expert_num_kv_heads: 8
+  qwen3_expert_head_dim: 128
+  qwen3_expert_intermediate_size: 4096
+  qwen3_expert_rms_norm_eps: 1e-6
+  qwen3_expert_rope_theta: 5000000.0
+  qwen3_expert_dropout: 0.0
+  qwen3_expert_interleave_self_attention: true
+  qwen3_expert_gating_mode: headwise
+  qwen3_expert_fusion_mode: cross_attention
+  qwen3_expert_num_vlm_last_embd: 1
+
+  # action token / dit 开关
+  enable_action_token: false
+  enable_dit: true
+  action_tokenizer_path: /mnt/vepfs01/output/blair.li/cache/action_tokenizer/fast_action_tokenizer_pretrain_v9_all
+
+  # 其他
+  vlm_use_sac: true
+  vlm_sac_skip_last_n_layers: 4
+  rb_preprocess_mode: dataloader
+  enable_packing: true
+  gripper_droid2our_value: 0.12
+  use_action_clip: true
+  droid2moz_data_process_type: xy_and_orientation
+  # YAML 双引号会把 \n 解析成真正的换行符（0x0A），喂给模型的是真换行。
+  # 若要保持字面反斜杠+n（与原始 .sh 一致），改用单引号即可。
+  user_prompt_template: "{image_placeholders}\nGlobal instruction: {task}"

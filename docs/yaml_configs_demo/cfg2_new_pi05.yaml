@@ -1,0 +1,83 @@
+# FSDP training configuration file
+# Directly corresponds to TrainPipelineConfig in lerobot/configs/train.py
+
+# Quanta 会自动填充dataset相关的内容，不需要填写dataset下的repo_id、root、sample_weights_cfg
+# 请确认是否需要修改checkpoint.tos.prefix，checkpoint上传到tos的路径为tos://{bucket}/{prefix}/{job_name}/checkpoints/
+
+# === Dataset configuration ===
+use_raw_dataset: true
+dataset:
+  num_stats_samples: 20000
+  mistake_filter: "drop_error_prefix"
+  unknown_filter: true
+  use_stats_cache: true
+
+# === Basic configuration ===
+device: "cuda"
+job_name: ""
+output_dir: "outputs/${job_name}"
+seed: 42
+
+# === Training parameters ===
+num_workers_per_rank: 8
+batch_size: 32
+steps: 30000
+eval_freq: 100000
+log_freq: 100
+
+# === Checkpoint configuration ===
+checkpoint:
+  save_checkpoint: true
+  save_freq: 2000
+  tos:
+    keep_local_checkpoint_versions: 0
+    prefix: "default_tos_ckpt"
+    enable: true
+
+# === Policy configuration ===
+policy:
+  type: "pi05"
+  chunk_size: 60
+  n_action_steps: 60
+  use_delta_joint_actions_aloha: true
+  freeze_vision_encoder: false
+  use_amp: true
+  tokenizer_max_length: 128
+  observation_config:
+    robot_type: "moz1"
+    moz1_structure: "wholebody"
+    use_gripper_action: true
+    auto_pad_missing_components: true
+    use_stop_signal: true
+    state_mask_config:
+      leftarm: [true, true, false, true, true, true]
+      rightarm: [true, true, false, true, true, true]
+      torso: [true, true, false, true, true, true]
+  tokenizer_path: "/mnt/vepfs01/output/maple.liu/cache/pi05_base_torch/paligemma_tokenizer.model"
+  tokenizer_type: "sentencepiece"
+  
+
+# === Optimizer and scheduler configuration ===
+use_policy_training_preset: false
+auto_resume: true
+pretrained_ckpt_path: "/mnt/vepfs01/output/maple.liu/cache/pi05_base_torch/model.safetensors"
+load_optimizer: false
+optimizer:
+  type: "adamw"
+  lr: 5e-5
+  weight_decay: 1e-10
+  betas: [0.9, 0.95]
+  eps: 1e-8
+  grad_clip_norm: 1.0
+  fused: true
+scheduler:
+  type: "cosine_decay_with_warmup"
+  num_decay_steps: 30000
+  num_warmup_steps: 1000
+  peak_lr: 5e-05
+  decay_lr: 5e-05
+
+# === WandB configuration ===
+wandb:
+  enable: false
+  project: "lerobot"

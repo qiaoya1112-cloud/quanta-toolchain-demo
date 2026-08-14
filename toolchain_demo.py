@@ -717,6 +717,80 @@ EMBODIED_SEGMENTS = [
     },
 ]
 
+# Additional records keep list pages representative of day-to-day evaluation work.
+EMBODIED_PROMPTS.extend([
+    {"id": "ep007", "scene": "桌面", "task": "整理任务", "prompt": "将马克杯移动到托盘中央", "tags": ["抓取", "放置"], "creator": "Min Chen", "created_at": "2026-06-18"},
+    {"id": "ep008", "scene": "桌面", "task": "整理任务", "prompt": "把散落文具放入收纳盒", "tags": ["整理"], "creator": "Min Chen", "created_at": "2026-06-18"},
+    {"id": "ep009", "scene": "货架", "task": "补货任务", "prompt": "从周转箱取出红色饮料瓶", "tags": ["抓取"], "creator": "Joanna Qiao", "created_at": "2026-06-20"},
+    {"id": "ep010", "scene": "货架", "task": "补货任务", "prompt": "将饮料瓶放到货架第二层", "tags": ["放置"], "creator": "Joanna Qiao", "created_at": "2026-06-20"},
+    {"id": "ep011", "scene": "微波炉", "task": "加热任务", "prompt": "拉开微波炉门", "tags": ["开门动作"], "creator": "Rick Guo", "created_at": "2026-06-22"},
+    {"id": "ep012", "scene": "微波炉", "task": "加热任务", "prompt": "将餐盒放入微波炉", "tags": ["放置"], "creator": "Rick Guo", "created_at": "2026-06-22"},
+    {"id": "ep013", "scene": "微波炉", "task": "加热任务", "prompt": "关闭微波炉门", "tags": ["关门动作"], "creator": "Rick Guo", "created_at": "2026-06-22"},
+    {"id": "ep014", "scene": "水槽", "task": "清洁任务", "prompt": "抓取水槽中的海绵", "tags": ["抓取"], "creator": "Lance Li", "created_at": "2026-06-24"},
+    {"id": "ep015", "scene": "水槽", "task": "清洁任务", "prompt": "擦拭台面指定区域", "tags": ["清洁"], "creator": "Lance Li", "created_at": "2026-06-24"},
+])
+
+EMBODIED_METRIC_TEMPLATES.extend([
+    {"id": "emt003", "name": "操作安全性 4 项", "fields": [{"name": "碰撞次数", "type": "integer"}, {"name": "最大接触力", "type": "float"}, {"name": "越界次数", "type": "integer"}, {"name": "安全等级", "type": "enum", "options": ["安全", "关注", "危险"]}], "created_at": "2026-06-18"},
+    {"id": "emt004", "name": "任务效率 4 项", "fields": [{"name": "总耗时", "type": "float"}, {"name": "动作步数", "type": "integer"}, {"name": "重规划次数", "type": "integer"}, {"name": "是否达成", "type": "boolean"}], "created_at": "2026-06-20"},
+])
+
+EMBODIED_EVAL_SETS.extend([
+    {"id": "ees002", "name": "桌面整理标准集", "version": "v1.2", "is_benchmark": True, "scene_tags": ["桌面"], "description": "覆盖抓取、归类与稳定放置", "metric_template_id": "emt001", "custom_metrics": [], "prompts": [{"scene": "桌面", "task": "整理任务", "items": [{"prompt_id": "ep006", "text": "整齐摆放书籍", "edited": False}, {"prompt_id": "ep007", "text": "将马克杯移动到托盘中央", "edited": False}, {"prompt_id": "ep008", "text": "把散落文具放入收纳盒", "edited": False}]}], "created_at": "2026-06-18"},
+    {"id": "ees003", "name": "商超补货能力集", "version": "v0.9", "is_benchmark": False, "scene_tags": ["货架"], "description": "商超货架抓取与补货验证", "metric_template_id": "emt004", "custom_metrics": [], "prompts": [{"scene": "货架", "task": "补货任务", "items": [{"prompt_id": "ep009", "text": "从周转箱取出红色饮料瓶", "edited": False}, {"prompt_id": "ep010", "text": "将饮料瓶放到货架第二层", "edited": False}]}], "created_at": "2026-06-20"},
+    {"id": "ees004", "name": "厨房电器操作集", "version": "v1.1", "is_benchmark": True, "scene_tags": ["微波炉"], "description": "厨房电器门体与容器操作", "metric_template_id": "emt003", "custom_metrics": [], "prompts": [{"scene": "微波炉", "task": "加热任务", "items": [{"prompt_id": "ep011", "text": "拉开微波炉门", "edited": False}, {"prompt_id": "ep012", "text": "将餐盒放入微波炉", "edited": False}, {"prompt_id": "ep013", "text": "关闭微波炉门", "edited": False}]}], "created_at": "2026-06-22"},
+    {"id": "ees005", "name": "清洁操作探索集", "version": "v0.6", "is_benchmark": False, "scene_tags": ["水槽"], "description": "用于清洁策略早期验证", "metric_template_id": "emt004", "custom_metrics": [{"name": "覆盖率", "type": "percentage"}], "prompts": [{"scene": "水槽", "task": "清洁任务", "items": [{"prompt_id": "ep014", "text": "抓取水槽中的海绵", "edited": False}, {"prompt_id": "ep015", "text": "擦拭台面指定区域", "edited": False}]}], "created_at": "2026-06-24"},
+    {"id": "ees006", "name": "厨房回归测试集", "version": "v1.3", "is_benchmark": True, "scene_tags": ["冰箱", "洗碗机", "微波炉"], "description": "版本发布前厨房场景回归", "metric_template_id": "emt001", "custom_metrics": [], "prompts": [{"scene": "冰箱", "task": "冰柜任务", "items": [{"prompt_id": "ep001", "text": "打开冰柜门", "edited": False}, {"prompt_id": "ep003", "text": "关闭冰柜门", "edited": False}]}, {"scene": "微波炉", "task": "加热任务", "items": [{"prompt_id": "ep011", "text": "拉开微波炉门", "edited": False}]}], "created_at": "2026-06-26"},
+])
+
+_TASK_SCENARIOS = [
+    ("eet002", "Spirit v1.7 桌面回归", "ees002", "completed", 18),
+    ("eet003", "ControlNet 补货对比", "ees003", "running", 12),
+    ("eet004", "Spirit v1.7 厨房安全测试", "ees004", "failed", 9),
+    ("eet005", "清洁策略首轮验证", "ees005", "pending", 6),
+    ("eet006", "Release 1.8 厨房回归", "ees006", "running", 24),
+    ("eet007", "Baseline 桌面稳定性测试", "ees002", "completed", 27),
+    ("eet008", "补货策略超时复现", "ees003", "failed", 12),
+    ("eet009", "厨房 Benchmark 周测", "ees001", "completed", 30),
+    ("eet010", "Spirit v1.9 候选模型验证", "ees006", "pending", 24),
+]
+for index, (task_id, name, set_id, status, segment_count) in enumerate(_TASK_SCENARIOS, start=2):
+    EMBODIED_EVAL_TASKS.append({
+        "id": task_id, "name": name, "eval_set_id": set_id,
+        "models": [{"name": "Spirit_v1.7", "version": f"ckpt_{40 + index}k", "ckpt_path": f"/models/spirit/ckpt{40 + index}k", "code_branch": "release/1.7"}],
+        "exec_params": {"repeat_count": 3, "timeout": 300}, "status": status,
+        "segment_count": segment_count, "created_at": f"2026-06-{12 + index:02d}",
+        "started_at": None if status == "pending" else f"2026-06-{12 + index:02d} 10:00",
+        "ended_at": f"2026-06-{12 + index:02d} 14:30" if status in ("completed", "failed") else None,
+    })
+
+for index, task in enumerate(EMBODIED_EVAL_TASKS, start=1):
+    total = task.setdefault("segment_count", 30 if task["id"] == "eet001" else 12)
+    completed = total if task["status"] in ("completed", "failed") else (int(total * 0.58) if task["status"] == "running" else 0)
+    task.setdefault("completed_segments", completed)
+    task.setdefault("success_rate", 93 if task["status"] == "completed" else (76 if task["status"] == "running" else 0))
+    task.setdefault("hmi_device", f"moz1-{(index % 3) + 1:03d}")
+    task.setdefault("deployment_status", "已就绪" if task["status"] != "pending" else "未部署")
+
+for index in range(3, 21):
+    task = EMBODIED_EVAL_TASKS[(index - 1) % len(EMBODIED_EVAL_TASKS)]
+    prompt = EMBODIED_PROMPTS[(index - 1) % len(EMBODIED_PROMPTS)]
+    timed_out = index % 6 == 0
+    EMBODIED_SEGMENTS.append({
+        "segment_id": f"eseg{index:03d}", "task_id": task["id"], "task_name": task["name"],
+        "eval_set_id": task["eval_set_id"], "prompt_id": prompt["id"], "prompt_text": prompt["prompt"],
+        "scene": prompt["scene"], "task_group": prompt["task"], "policy_name": task["models"][0]["name"],
+        "policy_version": task["models"][0]["version"], "repeat_index": (index - 1) % 3 + 1, "repeat_total": 3,
+        "metrics": {"碰撞次数": 1 if timed_out else 0, "执行状态": "timeout" if timed_out else "success", "耗时": 300.0 if timed_out else 10.0 + index, "成功率": 0.0 if timed_out else 100.0, "是否重试": timed_out},
+        "status": "timeout" if timed_out else "completed", "is_badcase": timed_out,
+        "video_url": f"/mock/video_eseg{index:03d}.mp4", "robot_state_file": f"/mock/robot_eseg{index:03d}.parquet",
+        "moz_trace_file": f"/mock/moztrace_eseg{index:03d}.json", "created_at": f"2026-06-{10 + (index % 18):02d} 10:{index:02d}:00",
+    })
+
+for segment in EMBODIED_SEGMENTS:
+    segment.setdefault("upload_state", "已入湖" if segment.get("status") == "completed" else "部分完成")
+    segment.setdefault("fail_category", "执行超时" if segment.get("status") == "timeout" else "—")
+
 
 # ════════════════════════════════════════════════════════════════
 # Section 2: Platform Config (定义 4 个平台的元信息 + 左侧栏)
@@ -1519,6 +1593,32 @@ textarea.yaml-area:focus { border-color:#149DAA; box-shadow:0 0 0 2px rgba(20,15
 .mini-pager .pg-btn:hover { border-color:#149DAA; color:#149DAA; }
 .mini-pager input.pg-goto { width:42px; height:28px; border:1px solid #d9d9d9; border-radius:5px; padding:0 8px; font-size:13px; outline:none; }
 .mini-pager .pg-go { padding:0 12px; color:#149DAA; cursor:pointer; }
+
+/* ── Embodied evaluation shared layout ── */
+.ee-page-head { display:flex; align-items:flex-start; justify-content:space-between; gap:24px; margin:0 0 18px; }
+.ee-page-head h2 { margin:0 0 6px; font-size:20px; line-height:28px; font-weight:600; color:rgba(0,0,0,0.85); }
+.ee-page-head p { margin:0; max-width:760px; font-size:13px; line-height:20px; color:rgba(0,0,0,0.45); }
+.ee-page-actions { display:flex; align-items:center; gap:8px; flex:none; }
+.ee-table-scroll { overflow-x:auto; }
+.ee-table-scroll .ant-table { min-width:920px; }
+.ee-cell-main { color:rgba(0,0,0,0.85); font-weight:500; }
+.ee-cell-sub { margin-top:4px; color:rgba(0,0,0,0.45); font-size:12px; line-height:18px; }
+.ee-inline-tags { display:flex; align-items:center; gap:4px; flex-wrap:wrap; }
+.ee-progress { display:flex; align-items:center; gap:8px; min-width:132px; }
+.ee-progress-track { width:76px; height:6px; overflow:hidden; border-radius:3px; background:#f0f0f0; }
+.ee-progress-fill { height:100%; border-radius:3px; background:#149DAA; }
+.ee-progress-text { color:rgba(0,0,0,0.55); font-size:12px; white-space:nowrap; }
+.ee-summary-left { display:flex; align-items:center; gap:18px; flex-wrap:wrap; }
+.ee-summary-item { color:rgba(0,0,0,0.55); font-size:13px; }
+.ee-summary-item b { margin-left:4px; color:rgba(0,0,0,0.85); font-weight:600; }
+.ee-planned { color:#8c8c8c; background:#fafafa; border-color:#d9d9d9; }
+.ee-check { display:inline-flex; align-items:center; gap:6px; margin-top:18px; color:rgba(0,0,0,0.65); font-size:13px; white-space:nowrap; }
+.ee-check input[type="checkbox"] { width:16px; height:16px; min-width:16px; padding:0; margin:0; }
+.ee-detail-strip { display:flex; align-items:center; gap:28px; padding:14px 18px; margin-bottom:16px; border:1px solid #f0f0f0; border-radius:6px; background:#fff; flex-wrap:wrap; }
+.ee-detail-strip .label { display:block; margin-bottom:4px; color:rgba(0,0,0,0.45); font-size:12px; }
+.ee-detail-strip .value { color:rgba(0,0,0,0.85); font-size:13px; }
+.ee-section-note { margin:-6px 0 14px; color:rgba(0,0,0,0.45); font-size:12px; line-height:20px; }
+@media (max-width:900px) { .ee-page-head { flex-direction:column; } .ee-page-actions { width:100%; } }
 
 /* ── 训练任务详情 ── */
 .tdsplit { display:flex; gap:14px; align-items:flex-start; }
@@ -3151,6 +3251,37 @@ def progress_bar(cur, total, cls=""):
 def page_header(title, sub_mvp, sub_deferred=None):
     """详情页标题已统一去掉, 返回空串. 调用点保持原签名兼容."""
     return ""
+
+
+def embodied_page_head(title, description, actions=""):
+    """Build the compact heading shared by embodied evaluation pages."""
+    actions_html = f'<div class="ee-page-actions">{actions}</div>' if actions else ""
+    return f"""
+    <div class="ee-page-head">
+      <div>
+        <h2>{html.escape(title)}</h2>
+        <p>{html.escape(description)}</p>
+      </div>
+      {actions_html}
+    </div>
+    """
+
+
+def embodied_pager(total, page_size=10):
+    """Build a visual pager consistent with mature list pages."""
+    page_count = max(1, (total + page_size - 1) // page_size)
+    page_buttons = ''.join(
+        f'<span class="pg-btn{" active" if page == 1 else ""}">{page}</span>'
+        for page in range(1, min(page_count, 3) + 1)
+    )
+    return f"""
+    <div class="mini-pager">
+      <span>共 {total} 条</span>
+      <select aria-label="每页条数"><option>{page_size} 条/页</option><option>20 条/页</option></select>
+      <span class="pg-btn">‹</span>{page_buttons}<span class="pg-btn">›</span>
+      <span>跳至</span><input class="pg-goto" value="1" aria-label="跳转页码"><span>页</span>
+    </div>
+    """
 
 
 def stat_grid(items):
@@ -6775,6 +6906,11 @@ def inference():
 # Section 7.4: 具身评测模块 (/model/embodied-eval/*)
 # ════════════════════════════════════════════════════════════════
 
+@app.route("/model/embodied-eval/")
+def embodied_eval_root():
+    """Use the task list as the working entry instead of adding an overview page."""
+    return redirect("/model/embodied-eval/tasks")
+
 @app.route("/model/embodied-eval/prompts")
 def embodied_eval_prompts():
     """提示词库 - 列表展示与筛选"""
@@ -6846,18 +6982,19 @@ def embodied_eval_prompts():
         table_rows = '<tr><td colspan="6" class="table-empty">还没有提示词<span class="te-hint">点击右上角「新增提示词」或「导入 JSON」开始构建提示词库</span></td></tr>'
 
     content = f"""
-    <div class="filter-bar">
-      <select id="sceneSelect" onchange="applyFilters()">
-        {scene_options}
-      </select>
-      <select id="taskSelect" onchange="applyFilters()">
-        {task_options}
-      </select>
-      <input id="searchInput" class="grow" type="text" placeholder="搜索提示词内容..." value="{html.escape(search_query)}" onkeypress="if(event.key==='Enter') applyFilters()">
+    <div class="fb-labeled">
+      <div class="ff"><label>场景</label><select id="sceneSelect" onchange="applyFilters()">{scene_options}</select></div>
+      <div class="ff"><label>任务</label><select id="taskSelect" onchange="applyFilters()">{task_options}</select></div>
+      <div class="ff"><label>Prompt 文本</label><input id="searchInput" type="text" placeholder="请输入 Prompt 文本" value="{html.escape(search_query)}" onkeypress="if(event.key==='Enter') applyFilters()"></div>
       <div class="filter-actions">
-        <button class="btn btn-secondary" onclick="alert('导入功能：弹窗上传 JSON 文件（下个 Task 实现）')">导入JSON</button>
-        <button class="btn btn-primary" onclick="addPromptRow()">+ 新增提示词</button>
+        <button class="btn btn-tertiary" onclick="window.location.href='/model/embodied-eval/prompts'">重置</button>
+        <button class="btn btn-primary" onclick="applyFilters()">查询</button>
       </div>
+    </div>
+
+    <div class="list-summarybar">
+      <div class="txt">提示词 <b>{len(filtered)}</b> 条，覆盖场景 <b>{len(set(p['scene'] for p in filtered))}</b> 个，任务 <b>{len(set(p['task'] for p in filtered))}</b> 类</div>
+      <div class="filter-actions"><button class="btn btn-tertiary" onclick="alert('规划能力：批量 JSON 导入')">导入 JSON <span class="qa ee-planned">规划</span></button><button class="btn btn-primary" onclick="addPromptRow()">+ 新增提示词</button></div>
     </div>
 
     <div class="card" style="padding:0;overflow:hidden;">
@@ -6879,6 +7016,7 @@ def embodied_eval_prompts():
         </table>
       </div>
     </div>
+    {embodied_pager(len(filtered))}
 
     <script>
     function applyFilters() {{
@@ -7044,7 +7182,11 @@ def _embodied_metric_form_page(tpl=None):
     fields_html = "".join(_embodied_metric_field_block_html(f) for f in fields)
     title = "编辑 Metric 模板" if is_edit else "新建 Metric 模板"
 
-    content = f"""
+    content = embodied_page_head(
+        title,
+        "定义可复用的指标字段与数据类型；已被评测集引用的模板修改后会影响后续新建任务。",
+        '<button class="btn" onclick="window.location.href=\'/model/embodied-eval/metrics\'">返回列表</button>'
+    ) + f"""
     <div class="card" style="max-width:760px;">
       <h3>{title}</h3>
       <div class="fg">
@@ -7164,43 +7306,49 @@ def embodied_eval_metrics():
     if search_query:
         filtered = [t for t in filtered if search_query in t["name"].lower()]
 
-    cards_html = ""
+    rows = ""
     if filtered:
         for tpl in filtered:
             fields = tpl["fields"]
-            preview_fields = fields[:5]
-            field_items = "".join(
-                f'<li><span>{html.escape(f["name"])}</span><span class="em-field-type">{EMBODIED_METRIC_TYPE_LABELS.get(f["type"], f["type"])}</span></li>'
-                for f in preview_fields
+            field_tags = "".join(
+                f'<span class="tag-inline">{html.escape(f["name"])} · {EMBODIED_METRIC_TYPE_LABELS.get(f["type"], f["type"])}</span>'
+                for f in fields[:4]
             )
-            more_html = f'<div class="em-card-more">...共 {len(fields)} 项</div>' if len(fields) > 5 else ""
-            cards_html += f"""
-            <div class="em-card">
-              <div class="em-card-title">&#128202; {html.escape(tpl["name"])}</div>
-              <ul class="em-card-fields">{field_items}</ul>
-              {more_html}
-              <div class="em-card-meta">创建时间: {tpl["created_at"]}</div>
-              <div class="em-card-actions">
-                <a onclick="alert('跳转到评测集创建页面并预填此模板（后续实现）')">应用到评测集</a>
+            more_html = f'<span class="muted">+{len(fields) - 4}</span>' if len(fields) > 4 else ""
+            usage_count = sum(1 for item in EMBODIED_EVAL_SETS if item.get("metric_template_id") == tpl["id"])
+            rows += f"""
+            <tr>
+              <td><div class="ee-cell-main">{html.escape(tpl["name"])}</div><div class="ee-cell-sub mono">{tpl["id"]}</div></td>
+              <td><div class="ee-inline-tags">{field_tags}{more_html}</div></td>
+              <td class="mono">{len(fields)}</td>
+              <td class="mono">{usage_count}</td>
+              <td class="muted mono">{tpl["created_at"]}</td>
+              <td class="actions-cell">
                 <a onclick="window.location.href='/model/embodied-eval/metrics/{tpl["id"]}/edit'">编辑</a>
                 <a class="danger" onclick="deleteMetricTpl('{tpl["id"]}')">删除</a>
-              </div>
-            </div>
+              </td>
+            </tr>
             """
     else:
-        cards_html = '<div class="card table-empty">还没有 Metric 模板<span class="te-hint">点击右上角「新建 Metric 模板」定义可复用的评测字段组</span></div>'
+        rows = '<tr><td colspan="6" class="table-empty">还没有 Metric 模板<span class="te-hint">新建可复用的评测字段组后，可在评测集中引用</span></td></tr>'
 
     content = f"""
-    <div class="filter-bar">
-      <input id="searchInput" class="grow" type="text" placeholder="搜索模板名称..." value="{html.escape(search_query)}" onkeypress="if(event.key==='Enter') applyFilters()">
+    <div class="fb-labeled">
+      <div class="ff"><label>模板名称</label><input id="searchInput" type="text" placeholder="请输入模板名称" value="{html.escape(search_query)}" onkeypress="if(event.key==='Enter') applyFilters()"></div>
       <div class="filter-actions">
-        <button class="btn btn-primary" onclick="window.location.href='/model/embodied-eval/metrics/create'">+ 新建 Metric 模板</button>
+        <button class="btn btn-tertiary" onclick="window.location.href='/model/embodied-eval/metrics'">重置</button>
+        <button class="btn btn-primary" onclick="applyFilters()">查询</button>
       </div>
     </div>
-
-    <div class="em-card-grid">
-      {cards_html}
+    <div class="list-summarybar">
+      <div class="txt">模板 <b>{len(filtered)}</b> 个，字段共 <b>{sum(len(t['fields']) for t in filtered)}</b> 项，已引用模板 <b>{sum(1 for t in filtered if any(s.get('metric_template_id') == t['id'] for s in EMBODIED_EVAL_SETS))}</b> 个</div>
+      <button class="btn btn-primary" onclick="window.location.href='/model/embodied-eval/metrics/create'">+ 新建 Metric 模板</button>
     </div>
+    <div class="card" style="padding:0;overflow:hidden;"><div class="table-wrap ee-table-scroll"><table class="ant-table">
+      <thead><tr><th style="width:230px;">模板</th><th>字段预览</th><th style="width:90px;">字段数</th><th style="width:100px;">引用次数</th><th style="width:130px;">创建时间</th><th style="width:120px;">操作</th></tr></thead>
+      <tbody>{rows}</tbody>
+    </table></div></div>
+    {embodied_pager(len(filtered))}
 
     <script>
     function applyFilters() {{
@@ -7323,11 +7471,17 @@ def embodied_eval_sets():
         rows = '<tr><td colspan="7" class="table-empty">还没有评测集<span class="te-hint">点击右上角「新建评测集」组合提示词与 Metric，形成一份评测卷子</span></td></tr>'
 
     content = f"""
-    <div class="filter-bar">
-      <input id="searchInput" class="grow" type="text" placeholder="搜索评测集名称..." value="{html.escape(search_query)}" onkeypress="if(event.key==='Enter') applyFilters()">
+    <div class="fb-labeled">
+      <div class="ff"><label>评测集名称</label><input id="searchInput" type="text" placeholder="请输入名称或版本" value="{html.escape(search_query)}" onkeypress="if(event.key==='Enter') applyFilters()"></div>
+      <div class="ff"><label>类型</label><select><option>全部类型</option><option>Benchmark</option><option>普通评测集</option></select></div>
       <div class="filter-actions">
-        <button class="btn btn-primary" onclick="window.location.href='/model/embodied-eval/sets/create'">+ 新建评测集</button>
+        <button class="btn btn-tertiary" onclick="window.location.href='/model/embodied-eval/sets'">重置</button>
+        <button class="btn btn-primary" onclick="applyFilters()">查询</button>
       </div>
+    </div>
+    <div class="list-summarybar">
+      <div class="txt">评测集 <b>{len(filtered)}</b> 个，Benchmark <b>{sum(1 for s in filtered if s.get('is_benchmark'))}</b> 个，Prompt 共 <b>{sum(_embodied_eval_set_prompt_count(s) for s in filtered)}</b> 条</div>
+      <button class="btn btn-primary" onclick="window.location.href='/model/embodied-eval/sets/create'">+ 新建评测集</button>
     </div>
 
     <div class="card" style="padding:0;overflow:hidden;">
@@ -7350,6 +7504,7 @@ def embodied_eval_sets():
         </table>
       </div>
     </div>
+    {embodied_pager(len(filtered))}
 
     <script>
     function applyFilters() {{
@@ -7399,7 +7554,11 @@ def _embodied_eval_set_form_page(eval_set=None):
 
     custom_fields_html = "".join(_embodied_metric_field_block_html(f) for f in custom_metrics)
 
-    content = f"""
+    content = embodied_page_head(
+        title,
+        "组合版本化的 Prompt 与 Metric 口径，形成评测任务可直接引用的配置基线。",
+        '<button class="btn" onclick="window.location.href=\'/model/embodied-eval/sets\'">返回列表</button>'
+    ) + f"""
     <div class="form-section">
       <div class="form-section-title">基本信息</div>
       <div class="fg">
@@ -7993,6 +8152,13 @@ def embodied_eval_tasks():
             status_label = status_labels.get(status, status)
             status_html = f'<span class="qa {status_class}">{status_label}</span>'
 
+            total_segments = t.get("segment_count", 0)
+            completed_segments = t.get("completed_segments", 0)
+            progress_pct = 0 if total_segments == 0 else int(completed_segments * 100 / total_segments)
+            progress_html = f'<div class="ee-progress"><div class="ee-progress-track"><div class="ee-progress-fill" style="width:{progress_pct}%"></div></div><span class="ee-progress-text">{completed_segments}/{total_segments}</span></div>'
+            primary_model = t.get("models", [{}])[0]
+            policy_html = f'<div class="ee-cell-main">{html.escape(primary_model.get("name", "—"))}</div><div class="ee-cell-sub mono">{html.escape(primary_model.get("version", ""))}</div>'
+
             # Actions based on status
             actions_html = f'<a onclick="window.location.href=\'/model/embodied-eval/tasks/{t["id"]}\'">查看详情</a>'
             if status == "pending":
@@ -8002,31 +8168,44 @@ def embodied_eval_tasks():
             rows += f"""<tr>
               <td><b>{html.escape(t["name"])}</b></td>
               <td>{html.escape(eval_set_name)}</td>
-              <td class="mono">{model_count}</td>
+              <td>{policy_html}{f'<div class="ee-cell-sub">共 {model_count} 个 Policy</div>' if model_count > 1 else ''}</td>
+              <td>{html.escape(t.get("hmi_device", "—"))}<div class="ee-cell-sub">{html.escape(t.get("deployment_status", "—"))}</div></td>
               <td>{status_html}</td>
+              <td>{progress_html}</td>
+              <td class="mono">{t.get("success_rate", 0)}%</td>
               <td class="muted mono">{t.get("created_at", "")}</td>
               <td class="actions-cell">{actions_html}</td>
             </tr>"""
     else:
-        rows = '<tr><td colspan="6" class="table-empty">还没有评测任务<span class="te-hint">点击右上角「新建评测任务」选择评测集与被测模型后发起评测</span></td></tr>'
+        rows = '<tr><td colspan="9" class="table-empty">还没有评测任务<span class="te-hint">点击右上角「新建评测任务」选择评测集与被测模型后发起评测</span></td></tr>'
 
     content = f"""
-    <div class="filter-bar">
-      <input id="searchInput" class="grow" type="text" placeholder="搜索任务名称..." value="{html.escape(search_query)}" onkeypress="if(event.key==='Enter') applyFilters()">
+    <div class="fb-labeled">
+      <div class="ff"><label>任务名称</label><input id="searchInput" type="text" placeholder="请输入任务名称" value="{html.escape(search_query)}" onkeypress="if(event.key==='Enter') applyFilters()"></div>
+      <div class="ff"><label>任务状态</label><select id="statusFilter" onchange="applyFilters()"><option value="">全部状态</option><option>待执行</option><option>执行中</option><option>已完成</option><option>失败</option></select></div>
       <div class="filter-actions">
-        <button class="btn btn-primary" onclick="window.location.href='/model/embodied-eval/tasks/create'">+ 新建评测任务</button>
+        <button class="btn btn-tertiary" onclick="window.location.href='/model/embodied-eval/tasks'">重置</button>
+        <button class="btn btn-primary" onclick="applyFilters()">查询</button>
       </div>
     </div>
 
+    <div class="list-summarybar">
+      <div class="txt">执行中任务 <b>{sum(1 for t in filtered if t.get('status') == 'running')}</b> 条，全部任务 <b>{len(filtered)}</b> 条</div>
+      <button class="btn btn-primary" onclick="window.location.href='/model/embodied-eval/tasks/create'">+ 新建评测任务</button>
+    </div>
+
     <div class="card" style="padding:0;overflow:hidden;">
-      <div class="table-wrap">
+      <div class="table-wrap ee-table-scroll">
         <table class="ant-table">
           <thead>
             <tr>
               <th>任务名称</th>
               <th style="width:200px;">评测集</th>
-              <th style="width:100px;">被测模型数</th>
+              <th style="width:150px;">Policy</th>
+              <th style="width:120px;">HMI / 设备</th>
               <th style="width:120px;">状态</th>
+              <th style="width:150px;">执行进度</th>
+              <th style="width:110px;">Segment 成功率</th>
               <th style="width:140px;">创建时间</th>
               <th style="width:180px;">操作</th>
             </tr>
@@ -8037,6 +8216,7 @@ def embodied_eval_tasks():
         </table>
       </div>
     </div>
+    {embodied_pager(len(filtered))}
 
     <script>
     function applyFilters() {{
@@ -8085,7 +8265,11 @@ def embodied_eval_tasks_create():
     for es in EMBODIED_EVAL_SETS:
         eval_set_options += f'<option value="{es["id"]}">{html.escape(es["name"])} ({es.get("version", "v1.0")})</option>'
 
-    content = f"""
+    content = embodied_page_head(
+        "新建评测任务",
+        "选择固定版本的评测集与一个或多个被测模型，并配置重复次数和执行超时。",
+        '<button class="btn" onclick="window.location.href=\'/model/embodied-eval/tasks\'">返回列表</button>'
+    ) + f"""
     <div class="form-section">
       <div class="form-section-title">基本信息</div>
       <div class="fg">
@@ -8406,19 +8590,17 @@ def embodied_eval_task_detail(task_id):
     if status == "completed":
         action_buttons += f' <a class="btn btn-primary" href="/model/embodied-eval/segments?task_id={task_id}">查看评测记录</a>'
 
-    content = f"""
-    <div style="margin-bottom:16px;">
-      <h2 style="margin:0 0 8px;font-size:20px;color:rgba(0,0,0,0.88);">{html.escape(task["name"])}</h2>
-      <div style="display:flex;gap:16px;align-items:center;color:rgba(0,0,0,0.45);font-size:13px;">
-        <span>任务 ID: <span class="mono">{task["id"]}</span></span>
-        <span>创建时间: {task.get("created_at", "—")}</span>
-        {f'<span>开始时间: {task.get("started_at", "—")}</span>' if task.get("started_at") else ''}
-        {f'<span>结束时间: {task.get("ended_at", "—")}</span>' if task.get("ended_at") else ''}
-      </div>
-    </div>
-
-    <div style="display:flex;gap:10px;margin-bottom:16px;">
-      {action_buttons}
+    content = embodied_page_head(
+        task["name"],
+        "核对评测集版本、被测模型与执行参数，并从同一任务进入 Segment 运行结果。",
+        action_buttons
+    ) + f"""
+    <div class="ee-detail-strip">
+      <div><span class="label">任务 ID</span><span class="value mono">{task["id"]}</span></div>
+      <div><span class="label">创建时间</span><span class="value">{task.get("created_at", "—")}</span></div>
+      <div><span class="label">开始时间</span><span class="value">{task.get("started_at") or "—"}</span></div>
+      <div><span class="label">结束时间</span><span class="value">{task.get("ended_at") or "—"}</span></div>
+      <div><span class="label">运行状态</span><span class="value">{status_html}</span></div>
     </div>
 
     <div class="card">
@@ -8651,21 +8833,19 @@ def embodied_eval_segments():
         rows = f'<tr><td colspan="9" class="table-empty">{_seg_empty}</td></tr>'
 
     content = f"""
-    <div class="filter-bar">
-      <select id="taskSelect" onchange="applyFilters()">
-        {task_options}
-      </select>
-      <select id="statusSelect" onchange="applyFilters()">
-        {status_options}
-      </select>
-      <label style="display:flex;align-items:center;gap:6px;font-size:13px;white-space:nowrap;">
-        <input type="checkbox" id="badcaseCheck" onchange="applyFilters()" {badcase_checked}>
-        仅显示 BadCase
-      </label>
-      <input id="searchInput" class="grow" type="text" placeholder="搜索 Prompt 文本..." value="{html.escape(search_query)}" onkeypress="if(event.key==='Enter') applyFilters()">
+    <div class="fb-labeled">
+      <div class="ff"><label>评测任务</label><select id="taskSelect" onchange="applyFilters()">{task_options}</select></div>
+      <div class="ff"><label>执行状态</label><select id="statusSelect" onchange="applyFilters()">{status_options}</select></div>
+      <div class="ff"><label>Prompt 文本</label><input id="searchInput" type="text" placeholder="请输入 Prompt 文本" value="{html.escape(search_query)}" onkeypress="if(event.key==='Enter') applyFilters()"></div>
+      <label class="ee-check"><input type="checkbox" id="badcaseCheck" onchange="applyFilters()" {badcase_checked}>仅 BadCase</label>
       <div class="filter-actions">
-        <button class="btn btn-primary" onclick="exportCSV()">导出 CSV</button>
+        <button class="btn btn-tertiary" onclick="window.location.href='/model/embodied-eval/segments'">重置</button>
+        <button class="btn btn-primary" onclick="applyFilters()">查询</button>
       </div>
+    </div>
+    <div class="list-summarybar">
+      <div class="txt">评测记录 <b>{len(filtered)}</b> 条，成功 <b>{sum(1 for s in filtered if s.get('status') == 'completed')}</b> 条，BadCase <b>{sum(1 for s in filtered if s.get('is_badcase'))}</b> 条</div>
+      <button class="btn btn-primary" onclick="exportCSV()">导出 CSV</button>
     </div>
 
     <div class="card" style="padding:0;overflow:hidden;">
@@ -8690,6 +8870,7 @@ def embodied_eval_segments():
         </table>
       </div>
     </div>
+    {embodied_pager(len(filtered))}
 
     <script>
     function applyFilters() {{
@@ -8935,7 +9116,12 @@ def embodied_eval_segment_detail(segment_id):
           <div class="bi-info-value mono" style="font-size:12px;">{html.escape(moz_trace_file) if moz_trace_file else "—"}</div>
         </div>
       </div>
-      <p style="margin-top:12px;color:rgba(0,0,0,0.45);font-size:13px;">轨迹可视化功能待实现</p>
+      <div class="ee-detail-strip" style="margin:14px 0 0;">
+        <div><span class="label">数据入湖</span><span class="value"><span class="qa qa-pass">{html.escape(seg.get('upload_state', '待确认'))}</span></span></div>
+        <div><span class="label">联动回放</span><span class="value"><span class="qa ee-planned">规划</span></span></div>
+        <div><span class="label">日志检索</span><span class="value"><span class="qa ee-planned">规划</span></span></div>
+      </div>
+      <p style="margin-top:12px;color:rgba(0,0,0,0.45);font-size:13px;">轨迹可视化与视频联动播放按 PRD 标记为后续能力，当前页面仅展示原始产物链路。</p>
     </div>
     """
 
@@ -8960,6 +9146,10 @@ def embodied_eval_segment_detail(segment_id):
         metrics_rows = '<tr><td colspan="2" class="table-empty">无 Metric 数据</td></tr>'
 
     tab3_content = f"""
+    <div class="ee-detail-strip">
+      <div><span class="label">失败归因</span><span class="value">{html.escape(seg.get('fail_category', '—'))}</span></div>
+      <div><span class="label">回流 DAgger</span><span class="value"><span class="qa ee-planned">边界待确认</span></span></div>
+    </div>
     <div class="table-wrap">
       <table class="ant-table">
         <thead>
@@ -9046,13 +9236,16 @@ def embodied_eval_segment_detail(segment_id):
     """
 
     # Build page content with tabs
-    content = f"""
-    <div style="margin-bottom:16px;">
-      <h2 style="margin:0 0 8px;font-size:20px;color:rgba(0,0,0,0.88);">Segment 详情</h2>
-      <div style="display:flex;gap:16px;align-items:center;color:rgba(0,0,0,0.45);font-size:13px;">
-        <span>Segment ID: <span class="mono">{html.escape(seg["segment_id"])}</span></span>
-        <span>状态: {status_html}</span>
-      </div>
+    content = embodied_page_head(
+        "Segment 详情",
+        "还原一次机器人执行的输入、策略版本、指标结果和原始产物，支持 BadCase 复盘。",
+        f'<a class="btn" href="/model/embodied-eval/segments?task_id={seg["task_id"]}">返回记录</a>'
+    ) + f"""
+    <div class="ee-detail-strip">
+      <div><span class="label">Segment ID</span><span class="value mono">{html.escape(seg["segment_id"])}</span></div>
+      <div><span class="label">所属任务</span><span class="value"><a href="/model/embodied-eval/tasks/{seg['task_id']}">{html.escape(seg.get('task_name', '—'))}</a></span></div>
+      <div><span class="label">策略版本</span><span class="value mono">{html.escape(seg.get('policy_name', '—'))} {html.escape(seg.get('policy_version', ''))}</span></div>
+      <div><span class="label">状态</span><span class="value">{status_html}</span></div>
     </div>
 
     <div style="margin-bottom:16px;">

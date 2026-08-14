@@ -2,7 +2,7 @@
 
 **Date:** 2026-08-14
 
-**Status:** Approved design pending written-spec review
+**Status:** Approved
 
 **Target:** Flask inline HTML templates with the existing Ant Design v4 visual language
 
@@ -24,7 +24,7 @@ The product requirements in `docs/eval-module-prd-hmi-quanta.md` are the primary
 - Evaluation task list, create, and detail experiences
 - Segment record list and detail experiences
 - A redirect from `/model/embodied-eval/` to `/model/embodied-eval/tasks`
-- Shared embodied-evaluation page header, filter, summary, table, status, detail, and pagination patterns
+- Shared embodied-evaluation filter, summary, table, status, detail, and pagination patterns
 - Realistic mock data that covers the important lifecycle and error states
 - Regression checks for training, data, and the existing general evaluation module
 
@@ -71,11 +71,12 @@ The general evaluation navigation and routes remain unchanged.
 
 Every embodied evaluation list page uses the same hierarchy:
 
-1. Compact page heading and one-sentence purpose
-2. Field-labeled filter panel
-3. Result summary and primary action row
-4. Main table or business-specific content
-5. Pagination
+1. Field-labeled filter panel
+2. Result summary and primary action row
+3. Main table or business-specific content
+4. Pagination
+
+List pages do not render a standalone page title or purpose sentence. They match the existing Training Tasks and Deployment Tasks lists directly: `.fb-labeled` contains `.ff` fields, the filter actions appear in reset-then-query order, and the primary page action appears on the right side of `.list-summarybar`. Create and detail pages retain contextual headings.
 
 The redesign reuses existing project patterns wherever possible:
 
@@ -404,7 +405,7 @@ Planned entries use an explicit `Planned` or `Rule pending` label.
 The redesign is accepted when:
 
 1. `/model/embodied-eval/` redirects to `/model/embodied-eval/tasks`.
-2. All five list pages share the heading, purpose, filters, summary, primary action, table, and pagination hierarchy.
+2. All five list pages share the same filters, summary, primary action, table, and pagination hierarchy as Training Tasks and Deployment Tasks, without a standalone title or purpose block.
 3. Information density is comparable to the training-task list without becoming visually crowded.
 4. Create and detail pages reuse the project's established form, tab, information-card, and status styles.
 5. Evaluation set, task, and Segment relationships are traceable through visible fields and links.

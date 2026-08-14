@@ -1,0 +1,1185 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI 辅助产品工具链实践</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #2c5f6f;
+            --primary-light: #3d7a8c;
+            --accent: #149DAA;
+            --text-primary: #1a1a1a;
+            --text-secondary: #666666;
+            --text-tertiary: #999999;
+            --bg: #ffffff;
+            --bg-secondary: #f8f9fa;
+            --border: #e5e5e5;
+            --success: #52c41a;
+            --warning: #faad14;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB',
+                'Microsoft YaHei', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            color: var(--text-primary);
+            background: var(--bg);
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* Header */
+        .header {
+            background: var(--bg);
+            border-bottom: 1px solid var(--border);
+            padding: 80px 0 60px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 40px;
+        }
+
+        .header-content {
+            max-width: 800px;
+        }
+
+        .header-meta {
+            font-size: 14px;
+            color: var(--text-tertiary);
+            margin-bottom: 16px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .header h1 {
+            font-size: 48px;
+            font-weight: 700;
+            line-height: 1.2;
+            margin-bottom: 20px;
+            color: var(--text-primary);
+        }
+
+        .header-subtitle {
+            font-size: 20px;
+            color: var(--text-secondary);
+            line-height: 1.5;
+            margin-bottom: 40px;
+        }
+
+        .metrics {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 32px;
+            margin-top: 48px;
+        }
+
+        .metric-item {
+            border-left: 3px solid var(--primary);
+            padding-left: 16px;
+        }
+
+        .metric-value {
+            font-size: 32px;
+            font-weight: 700;
+            color: var(--primary);
+            line-height: 1;
+            margin-bottom: 8px;
+        }
+
+        .metric-label {
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+
+        /* Section */
+        .section {
+            padding: 80px 0;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .section-header {
+            margin-bottom: 48px;
+        }
+
+        .section-label {
+            font-size: 12px;
+            color: var(--accent);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 600;
+            margin-bottom: 12px;
+        }
+
+        .section-title {
+            font-size: 36px;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 16px;
+        }
+
+        .section-description {
+            font-size: 18px;
+            color: var(--text-secondary);
+            line-height: 1.6;
+            max-width: 700px;
+        }
+
+        /* Challenges */
+        .challenges {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 32px;
+        }
+
+        .challenge-card {
+            background: var(--bg-secondary);
+            padding: 32px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+        }
+
+        .challenge-number {
+            display: inline-block;
+            width: 32px;
+            height: 32px;
+            background: var(--primary);
+            color: white;
+            border-radius: 50%;
+            text-align: center;
+            line-height: 32px;
+            font-weight: 600;
+            margin-bottom: 16px;
+        }
+
+        .challenge-card h3 {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 12px;
+            color: var(--text-primary);
+        }
+
+        .challenge-card p {
+            font-size: 15px;
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+
+        /* Workflow Visualization */
+        .workflow-visual {
+            background: var(--bg-secondary);
+            padding: 60px;
+            border-radius: 12px;
+            margin-top: 32px;
+        }
+
+        .workflow-stages {
+            display: flex;
+            align-items: stretch;
+            gap: 0;
+            position: relative;
+        }
+
+        .workflow-stage {
+            flex: 1;
+            background: white;
+            padding: 32px 24px;
+            border: 2px solid var(--border);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            position: relative;
+        }
+
+        .workflow-stage:first-child {
+            border-radius: 8px 0 0 8px;
+        }
+
+        .workflow-stage:last-child {
+            border-radius: 0 8px 8px 0;
+        }
+
+        .workflow-stage:not(:last-child) {
+            border-right: none;
+        }
+
+        .workflow-stage:not(:last-child)::after {
+            content: '';
+            position: absolute;
+            right: -12px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 0;
+            height: 0;
+            border-left: 12px solid var(--border);
+            border-top: 12px solid transparent;
+            border-bottom: 12px solid transparent;
+            z-index: 2;
+        }
+
+        .workflow-stage:not(:last-child)::before {
+            content: '';
+            position: absolute;
+            right: -10px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 0;
+            height: 0;
+            border-left: 10px solid white;
+            border-top: 10px solid transparent;
+            border-bottom: 10px solid transparent;
+            z-index: 3;
+        }
+
+        .workflow-stage:hover {
+            border-color: var(--primary);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            z-index: 1;
+        }
+
+        .workflow-stage:hover::after {
+            border-left-color: var(--primary);
+        }
+
+        .stage-number {
+            font-size: 12px;
+            color: var(--text-tertiary);
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .stage-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 12px;
+            color: var(--text-primary);
+        }
+
+        .stage-info {
+            font-size: 13px;
+            color: var(--text-secondary);
+            line-height: 1.5;
+        }
+
+        .stage-count {
+            margin-top: 16px;
+            padding-top: 16px;
+            border-top: 1px solid var(--border);
+            font-size: 13px;
+            color: var(--text-tertiary);
+        }
+
+        .workflow-hint {
+            text-align: center;
+            margin-top: 24px;
+            font-size: 14px;
+            color: var(--text-tertiary);
+        }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(4px);
+        }
+
+        .modal.active {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            animation: fadeIn 0.2s ease;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 12px;
+            max-width: 1000px;
+            width: 90%;
+            max-height: 85vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            animation: slideUp 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .modal-header {
+            padding: 32px 40px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-header h2 {
+            font-size: 24px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .modal-close {
+            width: 32px;
+            height: 32px;
+            border: none;
+            background: var(--bg-secondary);
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 20px;
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+
+        .modal-close:hover {
+            background: var(--border);
+            color: var(--text-primary);
+        }
+
+        .modal-body {
+            padding: 48px;
+            overflow-y: auto;
+            display: grid;
+            grid-template-columns: 1fr 380px;
+            gap: 48px;
+            align-items: start;
+        }
+
+        .process-flow {
+            display: flex;
+            flex-direction: column;
+            gap: 0;
+        }
+
+        .process-step {
+            display: flex;
+            gap: 20px;
+            position: relative;
+            padding-bottom: 32px;
+        }
+
+        .process-step:last-child {
+            padding-bottom: 0;
+        }
+
+        .process-step::before {
+            content: '';
+            position: absolute;
+            left: 19px;
+            top: 40px;
+            bottom: 0;
+            width: 3px;
+            background: linear-gradient(180deg, var(--primary) 0%, var(--border) 100%);
+        }
+
+        .process-step:last-child::before {
+            display: none;
+        }
+
+        .step-indicator {
+            flex-shrink: 0;
+            width: 40px;
+            height: 40px;
+            background: var(--primary);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 18px;
+            color: white;
+            z-index: 1;
+            box-shadow: 0 2px 8px rgba(44, 95, 111, 0.3);
+        }
+
+        .step-content {
+            flex: 1;
+            padding-top: 6px;
+        }
+
+        .step-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 12px;
+            color: var(--text-primary);
+        }
+
+        .step-description {
+            font-size: 15px;
+            color: var(--text-secondary);
+            line-height: 1.7;
+        }
+
+        .step-tag {
+            display: inline-block;
+            background: var(--accent);
+            color: white;
+            padding: 6px 14px;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 500;
+            margin-top: 10px;
+            margin-right: 8px;
+        }
+
+        .modal-sidebar {
+            position: sticky;
+            top: 0;
+        }
+
+        .key-insights {
+            padding: 28px;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+            border-radius: 12px;
+            color: white;
+            margin-bottom: 24px;
+        }
+
+        .key-insights h4 {
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 20px;
+            color: white;
+        }
+
+        .insight-list {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .insight-item {
+            display: flex;
+            gap: 12px;
+            font-size: 15px;
+            line-height: 1.6;
+        }
+
+        .insight-icon {
+            flex-shrink: 0;
+            width: 24px;
+            height: 24px;
+            background: rgba(255, 255, 255, 0.25);
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 14px;
+            font-weight: 700;
+            margin-top: 2px;
+        }
+
+        .insight-text {
+            flex: 1;
+            color: rgba(255, 255, 255, 0.95);
+        }
+
+        .insight-text strong {
+            color: white;
+            font-weight: 700;
+        }
+
+        .tools-showcase {
+            background: white;
+            border: 2px solid var(--border);
+            border-radius: 12px;
+            padding: 24px;
+        }
+
+        .tools-showcase h4 {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            color: var(--text-primary);
+        }
+
+        .tool-item {
+            padding: 12px 0;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .tool-item:last-child {
+            border-bottom: none;
+        }
+
+        .tool-name {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--primary);
+            margin-bottom: 4px;
+        }
+
+        .tool-desc {
+            font-size: 13px;
+            color: var(--text-secondary);
+            line-height: 1.5;
+        }
+
+        .stats-card {
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            padding: 24px;
+            text-align: center;
+        }
+
+        .stats-number {
+            font-size: 36px;
+            font-weight: 700;
+            color: var(--primary);
+            margin-bottom: 8px;
+        }
+
+        .stats-label {
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+
+        /* Case Study */
+        .case-study {
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            padding: 48px;
+            margin-top: 32px;
+        }
+
+        .case-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 40px;
+            gap: 24px;
+        }
+
+        .case-info h3 {
+            font-size: 24px;
+            font-weight: 600;
+            margin-bottom: 12px;
+            color: var(--text-primary);
+        }
+
+        .case-info p {
+            font-size: 15px;
+            color: var(--text-secondary);
+        }
+
+        .case-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 24px;
+            background: var(--primary);
+            color: white;
+            text-decoration: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+
+        .case-link:hover {
+            background: var(--primary-light);
+        }
+
+        .case-metrics {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 24px;
+        }
+
+        .case-metric {
+            background: white;
+            padding: 24px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+        }
+
+        .case-metric-label {
+            font-size: 13px;
+            color: var(--text-tertiary);
+            margin-bottom: 8px;
+        }
+
+        .case-metric-value {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        /* Comparison */
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 48px;
+            margin-top: 48px;
+        }
+
+        .comparison-column h3 {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 24px;
+            color: var(--text-primary);
+        }
+
+        .comparison-items {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .comparison-item {
+            background: var(--bg-secondary);
+            padding: 20px 24px;
+            border-radius: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .comparison-label {
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+
+        .comparison-value {
+            font-size: 24px;
+            font-weight: 700;
+        }
+
+        .comparison-column.before .comparison-value {
+            color: var(--text-tertiary);
+        }
+
+        .comparison-column.after .comparison-value {
+            color: var(--primary);
+        }
+
+        .comparison-summary {
+            grid-column: 1 / -1;
+            text-align: center;
+            margin-top: 32px;
+            padding: 24px;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+            border-radius: 8px;
+            color: white;
+        }
+
+        .comparison-summary-value {
+            font-size: 36px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .comparison-summary-label {
+            font-size: 16px;
+            opacity: 0.9;
+        }
+
+
+        /* Footer */
+        .footer {
+            padding: 60px 0;
+            text-align: center;
+        }
+
+        .footer h2 {
+            font-size: 32px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            color: var(--text-primary);
+        }
+
+        .footer p {
+            font-size: 16px;
+            color: var(--text-secondary);
+        }
+
+        /* Responsive */
+        @media (max-width: 968px) {
+            .container {
+                padding: 0 24px;
+            }
+
+            .header h1 {
+                font-size: 36px;
+            }
+
+            .metrics {
+                grid-template-columns: 1fr;
+                gap: 24px;
+            }
+
+            .challenges {
+                grid-template-columns: 1fr;
+            }
+
+            .workflow-stages {
+                flex-direction: column;
+            }
+
+            .workflow-stage {
+                border-radius: 8px !important;
+                border-right: 2px solid var(--border) !important;
+            }
+
+            .workflow-stage::after,
+            .workflow-stage::before {
+                display: none;
+            }
+
+            .comparison-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .modal-body {
+                grid-template-columns: 1fr;
+                padding: 32px 24px;
+            }
+
+            .case-metrics {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .modal-body {
+                padding: 24px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
+            <div class="header-content">
+                <div class="header-meta">产品效率创新</div>
+                <h1>AI 辅助产品工具链实践</h1>
+                <p class="header-subtitle">通过工具链整合与流程优化，突破传统产品工作的效率瓶颈</p>
+                <div class="metrics">
+                    <div class="metric-item">
+                        <div class="metric-value">70%</div>
+                        <div class="metric-label">文档产出效率提升</div>
+                    </div>
+                    <div class="metric-item">
+                        <div class="metric-value">60%</div>
+                        <div class="metric-label">原型迭代速度提升</div>
+                    </div>
+                    <div class="metric-item">
+                        <div class="metric-value">1 天</div>
+                        <div class="metric-label">评审周期缩短至</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Challenges -->
+    <section class="section">
+        <div class="container">
+            <div class="section-header">
+                <div class="section-label">背景</div>
+                <h2 class="section-title">产品团队的效率挑战</h2>
+            </div>
+            <div class="challenges">
+                <div class="challenge-card">
+                    <div class="challenge-number">1</div>
+                    <h3>文档产出效率低</h3>
+                    <p>PRD、交互文档、用户手册等重复性文档工作占用大量时间，压缩了需求思考和方案设计的空间</p>
+                </div>
+                <div class="challenge-card">
+                    <div class="challenge-number">2</div>
+                    <h3>原型迭代周期长</h3>
+                    <p>传统原型评审依赖同步会议，沟通成本高，反馈收集分散，导致迭代周期拉长</p>
+                </div>
+                <div class="challenge-card">
+                    <div class="challenge-number">3</div>
+                    <h3>质量与速度难兼顾</h3>
+                    <p>业务需求响应速度要求高，但保证产出质量需要时间，两者难以平衡</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Workflow -->
+    <section class="section">
+        <div class="container">
+            <div class="section-header">
+                <div class="section-label">解决方案</div>
+                <h2 class="section-title">工作流程</h2>
+                <p class="section-description">通过三个阶段的系统化流程，从需求到验证形成完整闭环</p>
+            </div>
+            <div class="workflow-visual">
+                <div class="workflow-stages">
+                    <div class="workflow-stage" onclick="openModal('stage1')">
+                        <div class="stage-number">阶段 1</div>
+                        <div class="stage-title">需求阶段</div>
+                        <div class="stage-info">需求收集、整理与优先级评估，输出 PRD v1</div>
+                        <div class="stage-count">4 个关键步骤</div>
+                    </div>
+                    <div class="workflow-stage" onclick="openModal('stage2')">
+                        <div class="stage-number">阶段 2</div>
+                        <div class="stage-title">方案实施阶段</div>
+                        <div class="stage-info">方案设计、原型开发、部署与迭代优化</div>
+                        <div class="stage-count">6 个关键步骤</div>
+                    </div>
+                    <div class="workflow-stage" onclick="openModal('stage3')">
+                        <div class="stage-number">阶段 3</div>
+                        <div class="stage-title">验证阶段</div>
+                        <div class="stage-info">用户手册编写与持续优化</div>
+                        <div class="stage-count">1 个关键步骤</div>
+                    </div>
+                </div>
+                <p class="workflow-hint">点击任意阶段查看详细流程</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Case Study -->
+    <section class="section">
+        <div class="container">
+            <div class="section-header">
+                <div class="section-label">实践案例</div>
+                <h2 class="section-title">S004 用户手册更新迭代</h2>
+            </div>
+            <div class="case-study">
+                <div class="case-header">
+                    <div class="case-info">
+                        <h3>Embodied Eval MVP 功能迭代</h3>
+                        <p>基于用户反馈，快速完成评测平台功能迭代与文档更新</p>
+                    </div>
+                    <a href="https://quanta-toolchain-demo.onrender.com" target="_blank" class="case-link">
+                        <span>查看原型</span>
+                        <span>→</span>
+                    </a>
+                </div>
+                <div class="case-metrics">
+                    <div class="case-metric">
+                        <div class="case-metric-label">需求来源</div>
+                        <div class="case-metric-value">用户反馈</div>
+                    </div>
+                    <div class="case-metric">
+                        <div class="case-metric-label">迭代次数</div>
+                        <div class="case-metric-value">3 次</div>
+                    </div>
+                    <div class="case-metric">
+                        <div class="case-metric-label">完成时间</div>
+                        <div class="case-metric-value">1 天</div>
+                    </div>
+                    <div class="case-metric">
+                        <div class="case-metric-label">评审反馈</div>
+                        <div class="case-metric-value">15+ 条</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Comparison -->
+    <section class="section">
+        <div class="container">
+            <div class="section-header">
+                <div class="section-label">效果</div>
+                <h2 class="section-title">效率对比</h2>
+            </div>
+            <div class="comparison-grid">
+                <div class="comparison-column before">
+                    <h3>传统方式</h3>
+                    <div class="comparison-items">
+                        <div class="comparison-item">
+                            <span class="comparison-label">PRD 产出</span>
+                            <span class="comparison-value">2 天</span>
+                        </div>
+                        <div class="comparison-item">
+                            <span class="comparison-label">原型产出</span>
+                            <span class="comparison-value">3 天</span>
+                        </div>
+                        <div class="comparison-item">
+                            <span class="comparison-label">评审周期</span>
+                            <span class="comparison-value">2-3 天</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="comparison-column after">
+                    <h3>使用工具链</h3>
+                    <div class="comparison-items">
+                        <div class="comparison-item">
+                            <span class="comparison-label">PRD 产出</span>
+                            <span class="comparison-value">4 小时</span>
+                        </div>
+                        <div class="comparison-item">
+                            <span class="comparison-label">原型产出</span>
+                            <span class="comparison-value">6 小时</span>
+                        </div>
+                        <div class="comparison-item">
+                            <span class="comparison-label">评审周期</span>
+                            <span class="comparison-value">1 天内</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="comparison-summary">
+                    <div class="comparison-summary-value">60-70%</div>
+                    <div class="comparison-summary-label">整体效率提升</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <h2>Q&A</h2>
+            <p>欢迎提问与讨论</p>
+        </div>
+    </footer>
+
+    <!-- Modals -->
+    <div id="modal-stage1" class="modal" onclick="closeModal('stage1')">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <h2>阶段 1：需求阶段</h2>
+                <button class="modal-close" onclick="closeModal('stage1')">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="process-flow">
+                    <div class="process-step">
+                        <div class="step-indicator">1</div>
+                        <div class="step-content">
+                            <div class="step-title">需求收集</div>
+                            <div class="step-description">通过用户访谈、数据分析、竞品研究等方式收集需求，建立需求池</div>
+                        </div>
+                    </div>
+                    <div class="process-step">
+                        <div class="step-indicator">2</div>
+                        <div class="step-content">
+                            <div class="step-title">需求了解与整理</div>
+                            <div class="step-description">使用 lark-cli 读取飞书文档，快速了解需求背景、上下文和关键信息</div>
+                            <span class="step-tag">lark-cli</span>
+                        </div>
+                    </div>
+                    <div class="process-step">
+                        <div class="step-indicator">3</div>
+                        <div class="step-content">
+                            <div class="step-title">需求优先级评估</div>
+                            <div class="step-description">基于业务目标、用户价值、技术可行性等维度进行优先级排序，确定迭代节奏</div>
+                            <span class="step-tag">人工决策</span>
+                        </div>
+                    </div>
+                    <div class="process-step">
+                        <div class="step-indicator">4</div>
+                        <div class="step-content">
+                            <div class="step-title">PRD v1（问题定义）</div>
+                            <div class="step-description">AI 辅助生成 PRD 框架和格式化文档，产品经理补充业务逻辑和决策依据</div>
+                            <span class="step-tag">Claude Code</span>
+                            <span class="step-tag">ChatGPT</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-sidebar">
+                    <div class="key-insights">
+                        <h4>核心要点</h4>
+                        <div class="insight-list">
+                            <div class="insight-item">
+                                <div class="insight-icon">1</div>
+                                <div class="insight-text"><strong>人机协作分工</strong><br>判断与决策由人完成，格式化与执行由 AI 完成</div>
+                            </div>
+                            <div class="insight-item">
+                                <div class="insight-icon">2</div>
+                                <div class="insight-text"><strong>效率提升</strong><br>从需求到 PRD v1 从 2 天缩短至 4 小时</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="stats-card">
+                        <div class="stats-number">4 小时</div>
+                        <div class="stats-label">PRD v1 产出时间</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-stage2" class="modal" onclick="closeModal('stage2')">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <h2>阶段 2：方案实施阶段</h2>
+                <button class="modal-close" onclick="closeModal('stage2')">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="process-flow">
+                    <div class="process-step">
+                        <div class="step-indicator">1</div>
+                        <div class="step-content">
+                            <div class="step-title">方案探讨 → PRD v2</div>
+                            <div class="step-description">与开发、设计团队讨论技术方案和交互细节，确定最终实现路径，更新 PRD</div>
+                        </div>
+                    </div>
+                    <div class="process-step">
+                        <div class="step-indicator">2</div>
+                        <div class="step-content">
+                            <div class="step-title">原型设计迭代</div>
+                            <div class="step-description">使用 Claude Code + superpowers（方案整理）+ UI Skills 工具链快速生成交互原型</div>
+                            <span class="step-tag">Claude Code</span>
+                            <span class="step-tag">superpowers</span>
+                            <span class="step-tag">ui-ux-pro-max</span>
+                        </div>
+                    </div>
+                    <div class="process-step">
+                        <div class="step-indicator">3</div>
+                        <div class="step-content">
+                            <div class="step-title">快速部署</div>
+                            <div class="step-description">部署到 Vercel/Render，2-3 分钟内生成可访问的公开链接</div>
+                            <span class="step-tag">Vercel</span>
+                            <span class="step-tag">Render</span>
+                        </div>
+                    </div>
+                    <div class="process-step">
+                        <div class="step-indicator">4</div>
+                        <div class="step-content">
+                            <div class="step-title">编写迭代文档</div>
+                            <div class="step-description">在 S00x 迭代文档中嵌入原型链接和版本说明，方便团队异步访问</div>
+                        </div>
+                    </div>
+                    <div class="process-step">
+                        <div class="step-indicator">5</div>
+                        <div class="step-content">
+                            <div class="step-title">原型评审（异步）</div>
+                            <div class="step-description">评审者直接访问真实可交互的原型，体验完整流程后在文档中留下结构化反馈</div>
+                        </div>
+                    </div>
+                    <div class="process-step">
+                        <div class="step-indicator">6</div>
+                        <div class="step-content">
+                            <div class="step-title">迭代优化</div>
+                            <div class="step-description">根据反馈快速迭代，重新部署，链接不变，评审者刷新即可查看最新版本</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-sidebar">
+                    <div class="key-insights">
+                        <h4>核心创新</h4>
+                        <div class="insight-list">
+                            <div class="insight-item">
+                                <div class="insight-icon">1</div>
+                                <div class="insight-text"><strong>先部署后评审</strong><br>评审者访问真实交互原型，反馈质量更高</div>
+                            </div>
+                            <div class="insight-item">
+                                <div class="insight-icon">2</div>
+                                <div class="insight-text"><strong>异步评审机制</strong><br>无需同步会议，降低沟通成本</div>
+                            </div>
+                            <div class="insight-item">
+                                <div class="insight-icon">3</div>
+                                <div class="insight-text"><strong>快速迭代闭环</strong><br>部署快、链接不变、反馈即时</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="tools-showcase">
+                        <h4>工具链组合</h4>
+                        <div class="tool-item">
+                            <div class="tool-name">Claude Code</div>
+                            <div class="tool-desc">代码生成与原型开发</div>
+                        </div>
+                        <div class="tool-item">
+                            <div class="tool-name">superpowers</div>
+                            <div class="tool-desc">方案整理与结构化</div>
+                        </div>
+                        <div class="tool-item">
+                            <div class="tool-name">UI Skills</div>
+                            <div class="tool-desc">ui-ux-pro-max、tasteskill 等</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-stage3" class="modal" onclick="closeModal('stage3')">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <h2>阶段 3：验证阶段</h2>
+                <button class="modal-close" onclick="closeModal('stage3')">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="process-flow">
+                    <div class="process-step">
+                        <div class="step-indicator">1</div>
+                        <div class="step-content">
+                            <div class="step-title">用户手册生成</div>
+                            <div class="step-description">使用 Claude Code 自动生成用户手册框架和内容，直接写入飞书文档，产品经理补充业务细节和注意事项</div>
+                            <span class="step-tag">Claude Code</span>
+                            <span class="step-tag">飞书 API</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-sidebar">
+                    <div class="key-insights">
+                        <h4>价值</h4>
+                        <div class="insight-list">
+                            <div class="insight-item">
+                                <div class="insight-icon">1</div>
+                                <div class="insight-text"><strong>文档自动化</strong><br>从原型到手册全流程自动化，释放产品经理时间</div>
+                            </div>
+                            <div class="insight-item">
+                                <div class="insight-icon">2</div>
+                                <div class="insight-text"><strong>端到端闭环</strong><br>从需求到验证完整闭环，1 天内完成</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="stats-card">
+                        <div class="stats-number">1 天</div>
+                        <div class="stats-label">完整迭代周期</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function openModal(stage) {
+            document.getElementById('modal-' + stage).classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeModal(stage) {
+            document.getElementById('modal-' + stage).classList.remove('active');
+            document.body.style.overflow = 'auto';
+        }
+
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                document.querySelectorAll('.modal').forEach(modal => {
+                    modal.classList.remove('active');
+                });
+                document.body.style.overflow = 'auto';
+            }
+        });
+    </script>
+</body>
+</html>
