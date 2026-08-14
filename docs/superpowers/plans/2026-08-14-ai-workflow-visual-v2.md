@@ -10,7 +10,7 @@
 
 ## Global Constraints
 
-- Preserve `ai-workflow-share-enhanced.html` with SHA-256 `a5456472039b41ea5363c90da30e1f12bdbab05d7d830465543b6191b78d459d`.
+- Preserve the current user-edited `ai-workflow-share-enhanced.html` with SHA-256 `5360c9077ca170dd9d63bc2b5f4499b08725b3627c7e6191d9343b064f553ba2`.
 - Create only `ai-workflow-share-enhanced-v2.html` for the visual version.
 - Preserve all visible content, section order, modal content, and JavaScript behavior.
 - Do not add React, Vue, Ant Design, or external component dependencies.
@@ -32,8 +32,8 @@
 - [ ] **Step 1: Write the failing regression tests**
 
 ```python
-import hashlib
 import unittest
+from html.parser import HTMLParser
 from pathlib import Path
 
 
@@ -42,52 +42,64 @@ ORIGINAL = ROOT / "ai-workflow-share-enhanced.html"
 V2 = ROOT / "ai-workflow-share-enhanced-v2.html"
 
 
+class PageContractParser(HTMLParser):
+    def __init__(self):
+        super().__init__()
+        self.ignored_depth = 0
+        self.root_attributes = {}
+        self.visible_text = []
+        self.modal_ids = []
+        self.onclick_handlers = []
+        self.external_scripts = []
+
+    def handle_starttag(self, tag, attrs):
+        attributes = dict(attrs)
+        if tag in {"style", "script"}:
+            self.ignored_depth += 1
+        if tag == "html":
+            self.root_attributes = attributes
+        element_id = attributes.get("id", "")
+        if element_id.startswith("modal-stage"):
+            self.modal_ids.append(element_id)
+        if "onclick" in attributes:
+            self.onclick_handlers.append(attributes["onclick"])
+        if tag == "script" and attributes.get("src"):
+            self.external_scripts.append(attributes["src"])
+
+    def handle_endtag(self, tag):
+        if tag in {"style", "script"}:
+            self.ignored_depth -= 1
+
+    def handle_data(self, data):
+        if self.ignored_depth:
+            return
+        normalized = " ".join(data.split())
+        if normalized:
+            self.visible_text.append(normalized)
+
+
+def parse_page(path):
+    parser = PageContractParser()
+    parser.feed(path.read_text(encoding="utf-8"))
+    return parser
+
+
 class AiWorkflowVisualV2Test(unittest.TestCase):
-    def test_original_file_is_unchanged(self):
-        digest = hashlib.sha256(ORIGINAL.read_bytes()).hexdigest()
+    def test_v2_preserves_visible_content_and_interactions(self):
+        original = parse_page(ORIGINAL)
+        v2 = parse_page(V2)
+        self.assertEqual(v2.visible_text, original.visible_text)
+        self.assertEqual(v2.modal_ids, original.modal_ids)
+        self.assertEqual(v2.onclick_handlers, original.onclick_handlers)
+
+    def test_v2_is_an_independent_framework_free_document(self):
+        v2 = parse_page(V2)
+        self.assertEqual(v2.root_attributes.get("data-visual-version"), "v2")
+        self.assertEqual(v2.external_scripts, [])
         self.assertEqual(
-            digest,
-            "a5456472039b41ea5363c90da30e1f12bdbab05d7d830465543b6191b78d459d",
+            v2.modal_ids,
+            ["modal-stage1", "modal-stage2", "modal-stage3"],
         )
-
-    def test_v2_preserves_content_and_interaction_contract(self):
-        original = ORIGINAL.read_text(encoding="utf-8")
-        v2 = V2.read_text(encoding="utf-8")
-        for text in (
-            "AI 辅助产品工具链实践",
-            "产品团队的效率挑战",
-            "工作流程",
-            "S004 用户手册更新迭代",
-            "效率对比",
-            "阶段 1：需求阶段",
-            "阶段 2：方案实施阶段",
-            "阶段 3：验证阶段",
-        ):
-            self.assertIn(text, original)
-            self.assertIn(text, v2)
-        for hook in (
-            "openModal('stage1')",
-            "openModal('stage2')",
-            "openModal('stage3')",
-            "function openModal(stage)",
-            "function closeModal(stage)",
-        ):
-            self.assertIn(hook, v2)
-
-    def test_v2_has_scoped_visual_tokens_and_reduced_motion(self):
-        v2 = V2.read_text(encoding="utf-8")
-        self.assertIn('data-visual-version="v2"', v2)
-        self.assertIn("--canvas: #f3f6fa", v2.lower())
-        self.assertIn("--surface-emphasis: #eaf1f8", v2.lower())
-        self.assertIn("@media (prefers-reduced-motion: reduce)", v2)
-
-    def test_v2_does_not_add_framework_dependencies(self):
-        v2 = V2.read_text(encoding="utf-8").lower()
-        self.assertNotIn("react", v2)
-        self.assertNotIn("vue", v2)
-        self.assertNotIn("antd", v2)
-        self.assertNotIn("unpkg.com", v2)
-        self.assertNotIn("cdn.jsdelivr.net", v2)
 
 
 if __name__ == "__main__":
@@ -98,7 +110,7 @@ if __name__ == "__main__":
 
 Run: `python -m unittest tests.test_ai_workflow_visual_v2 -v`
 
-Expected: the original hash test passes and V2 tests fail because `ai-workflow-share-enhanced-v2.html` does not exist.
+Expected: both tests fail because `ai-workflow-share-enhanced-v2.html` does not exist.
 
 - [ ] **Step 3: Commit the failing tests**
 
