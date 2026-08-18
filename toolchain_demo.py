@@ -401,17 +401,17 @@ EVALS = [
     {"id": "t5", "task_no": 1005, "name": "Spirit v1.6-rc1 多维能力量表评估",
      "benchmark": "多维能力评估", "status": "评测中", "at": "2026-04-14", "ckpt_id": "9001", "success_rate": 0.889},
     # ── DEMO 演示链路评测（用于完整血缘展示）──
-    {"id": "t6", "task_no": 1006, "name": "白板清洁基础能力评测_v5_ckpt40k",
+    {"id": "t6", "task_no": 1006, "name": "白板清洁基础能力评测_v5_checkpoint40k",
      "benchmark": "白板清洁基础", "status": "评测完成", "at": "2026-06-17", "ckpt_id": "9001", "success_rate": 0.873},
-    {"id": "t7", "task_no": 1007, "name": "白板清洁进阶场景评测_v5_ckpt40k",
+    {"id": "t7", "task_no": 1007, "name": "白板清洁进阶场景评测_v5_checkpoint40k",
      "benchmark": "白板清洁进阶", "status": "评测完成", "at": "2026-06-17", "ckpt_id": "9001", "success_rate": 0.865},
-    {"id": "t8", "task_no": 1008, "name": "白板清洁基础能力评测_v5_ckpt50k",
+    {"id": "t8", "task_no": 1008, "name": "白板清洁基础能力评测_v5_checkpoint50k",
      "benchmark": "白板清洁基础", "status": "评测完成", "at": "2026-06-17", "ckpt_id": "9002", "success_rate": 0.889},
-    {"id": "t9", "task_no": 1009, "name": "白板清洁基础能力评测_v5ctrl_ckpt45k",
+    {"id": "t9", "task_no": 1009, "name": "白板清洁基础能力评测_v5ctrl_checkpoint45k",
      "benchmark": "白板清洁基础", "status": "评测完成", "at": "2026-06-18", "ckpt_id": "9003", "success_rate": 0.842},
-    {"id": "t10", "task_no": 1010, "name": "桌面整理综合评测_joint_ckpt35k",
+    {"id": "t10", "task_no": 1010, "name": "桌面整理综合评测_joint_checkpoint35k",
      "benchmark": "桌面整理综合", "status": "评测完成", "at": "2026-06-19", "ckpt_id": "9004", "success_rate": 0.828},
-    {"id": "t11", "task_no": 1011, "name": "桌面清洁基准评测_baseline_ckpt30k",
+    {"id": "t11", "task_no": 1011, "name": "桌面清洁基准评测_baseline_checkpoint30k",
      "benchmark": "桌面清洁基准", "status": "评测完成", "at": "2026-06-20", "ckpt_id": "9005", "success_rate": 0.781},
 ]
 
@@ -488,7 +488,7 @@ CHECKPOINTS = [
     {"id": "7285", "name": "20260608_opd_exp4_cascade_taskAB_gpu8_50000",
      "status": "cached", "owner": "—", "created": "2026-06-10 15:08:00", "exp_id": "exp_7285",
      "parent_checkpoint_id": None, "parent_type": None},
-    {"id": "6873", "name": "catl-ckpt-0608",
+    {"id": "6873", "name": "catl-checkpoint-0608",
      "status": "cached", "owner": "Liquan Zheng", "created": "2026-06-08 18:12:22", "exp_id": "exp_6873",
      "parent_checkpoint_id": None, "parent_type": None},
     {"id": "6869", "name": "catl-liquanzheng-upload",
@@ -2396,8 +2396,8 @@ BASE_TEMPLATE = """<!DOCTYPE html>
     <div class="modal-body">
       <ol style="margin:0;padding-left:20px;color:rgba(0,0,0,0.72);font-size:14px;line-height:1.9;">
         <li>复用当前 TEST、DAgger 能力</li>
-        <li>增加 ckpt 对应的训练镜像，端侧选择任务，会自动带出模型和镜像</li>
-        <li>TEST、DAgger 支持选择机器（可选），如果选了，会异步发起该机器的 ckpt 部署任务，不选择现场拉</li>
+        <li>增加 checkpoint 对应的训练镜像，端侧选择任务，会自动带出模型和镜像</li>
+        <li>TEST、DAgger 支持选择机器（可选），如果选了，会异步发起该机器的 checkpoint 部署任务，不选择现场拉</li>
       </ol>
     </div>
     <div class="modal-foot">
@@ -9461,7 +9461,7 @@ def _new_checkpoint_drawer_html():
       <div class="drawer-head"><h3>新建 Checkpoint</h3><span class="dismiss" onclick="closeDrawer()">&times;</span></div>
       <div class="drawer-body">
         <div class="fg-row">
-          <div class="fg"><label class="fg-req">Checkpoint 名称</label><input value="manual_ckpt_20260702_40000" placeholder="如 robotwin_stack_blocks_40000"></div>
+          <div class="fg"><label class="fg-req">Checkpoint 名称</label><input value="manual_checkpoint_20260702_40000" placeholder="如 robotwin_stack_blocks_40000"></div>
           <div class="fg"><label>Checkpoint ID</label><input placeholder="自动生成"></div>
         </div>
         <div class="fg"><label class="fg-req">描述</label><textarea rows="3" placeholder="说明训练阶段、适用场景、效果备注...">手动登记的稳定候选版本, 用于部署前评测和缓存追踪。</textarea></div>
@@ -9475,7 +9475,7 @@ def _new_checkpoint_drawer_html():
           </div>
           <div class="fg"><label class="fg-req">训练 Step</label><input value="40000" placeholder="如 40000"></div>
         </div>
-        <div class="fg"><label class="fg-req">Artifact URI</label><input value="tos://quanta-model/checkpoints/manual_ckpt_20260702_40000.pt" placeholder="tos://bucket/path/to/ckpt.pt"></div>
+        <div class="fg"><label class="fg-req">Artifact URI</label><input value="tos://quanta-model/checkpoints/manual_checkpoint_20260702_40000.pt" placeholder="tos://bucket/path/to/checkpoint.pt"></div>
         <div class="fg-row">
           <div class="fg"><label>状态</label>
             <select>

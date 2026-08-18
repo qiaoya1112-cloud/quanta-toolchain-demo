@@ -144,6 +144,25 @@ PROMPTS = [
     },
 ]
 
+# highlevel 维护场景示意图，lowlevel 继承所属 highlevel 的场景语境。
+# Demo 中保存图片元数据和 data URL，便于直接预览交互。
+PROMPT_SCENE_IMAGE_SEEDS = {
+    "p1": [
+        {"id": "si-p1-1", "name": "桌面初始状态.jpg", "role": "初始状态", "src": ""},
+        {"id": "si-p1-2", "name": "目标摆放状态.jpg", "role": "目标状态", "src": ""},
+    ],
+    "p2": [
+        {"id": "si-p2-1", "name": "桌面物体布置.jpg", "role": "初始状态", "src": ""},
+        {"id": "si-p2-2", "name": "人手位置参考.jpg", "role": "关键步骤", "src": ""},
+        {"id": "si-p2-3", "name": "整理完成效果.jpg", "role": "目标状态", "src": ""},
+    ],
+    "p4": [
+        {"id": "si-p4-1", "name": "花盆与浇水壶初始位置.jpg", "role": "初始状态", "src": ""},
+    ],
+}
+for _prompt in PROMPTS:
+    _prompt["scene_images"] = PROMPT_SCENE_IMAGE_SEEDS.get(_prompt["id"], [])
+
 TAXONOMY = {
     "version": "1.0",
     "dimensions": [
@@ -601,7 +620,7 @@ EVAL_TASKS = [
     },
     # \u2500\u2500 DEMO \u6f14\u793a\u94fe\u8def\u8bc4\u6d4b\u4efb\u52a1 \u2500\u2500
     {
-        "id": "t6", "task_no": 1006, "name": "\u767d\u677f\u6e05\u6d01\u57fa\u7840\u80fd\u529b\u8bc4\u6d4b_v5_ckpt40k",
+        "id": "t6", "task_no": 1006, "name": "\u767d\u677f\u6e05\u6d01\u57fa\u7840\u80fd\u529b\u8bc4\u6d4b_v5_checkpoint40k",
         "benchmark_id": "b1", "eval_type": "baseline",
         "model_ids": ["m3"],
         "status": "\u8bc4\u6d4b\u5b8c\u6210", "priority": "\u9ad8",
@@ -610,7 +629,7 @@ EVAL_TASKS = [
         "ckpt_id": "9001",
     },
     {
-        "id": "t7", "task_no": 1007, "name": "\u767d\u677f\u6e05\u6d01\u8fdb\u9636\u573a\u666f\u8bc4\u6d4b_v5_ckpt40k",
+        "id": "t7", "task_no": 1007, "name": "\u767d\u677f\u6e05\u6d01\u8fdb\u9636\u573a\u666f\u8bc4\u6d4b_v5_checkpoint40k",
         "benchmark_id": "b1", "eval_type": "baseline",
         "model_ids": ["m3"],
         "status": "\u8bc4\u6d4b\u5b8c\u6210", "priority": "\u9ad8",
@@ -619,7 +638,7 @@ EVAL_TASKS = [
         "ckpt_id": "9001",
     },
     {
-        "id": "t8", "task_no": 1008, "name": "\u767d\u677f\u6e05\u6d01\u57fa\u7840\u80fd\u529b\u8bc4\u6d4b_v5_ckpt50k",
+        "id": "t8", "task_no": 1008, "name": "\u767d\u677f\u6e05\u6d01\u57fa\u7840\u80fd\u529b\u8bc4\u6d4b_v5_checkpoint50k",
         "benchmark_id": "b1", "eval_type": "baseline",
         "model_ids": ["m3"],
         "status": "\u8bc4\u6d4b\u5b8c\u6210", "priority": "\u9ad8",
@@ -628,7 +647,7 @@ EVAL_TASKS = [
         "ckpt_id": "9002",
     },
     {
-        "id": "t9", "task_no": 1009, "name": "\u767d\u677f\u6e05\u6d01\u57fa\u7840\u80fd\u529b\u8bc4\u6d4b_v5ctrl_ckpt45k",
+        "id": "t9", "task_no": 1009, "name": "\u767d\u677f\u6e05\u6d01\u57fa\u7840\u80fd\u529b\u8bc4\u6d4b_v5ctrl_checkpoint45k",
         "benchmark_id": "b1", "eval_type": "baseline",
         "model_ids": ["m4"],
         "status": "\u8bc4\u6d4b\u5b8c\u6210", "priority": "\u9ad8",
@@ -637,7 +656,7 @@ EVAL_TASKS = [
         "ckpt_id": "9003",
     },
     {
-        "id": "t10", "task_no": 1010, "name": "\u684c\u9762\u6574\u7406\u7efc\u5408\u8bc4\u6d4b_joint_ckpt35k",
+        "id": "t10", "task_no": 1010, "name": "\u684c\u9762\u6574\u7406\u7efc\u5408\u8bc4\u6d4b_joint_checkpoint35k",
         "benchmark_id": "b2", "eval_type": "baseline",
         "model_ids": ["m4"],
         "status": "\u8bc4\u6d4b\u5b8c\u6210", "priority": "\u4e2d",
@@ -646,7 +665,7 @@ EVAL_TASKS = [
         "ckpt_id": "9004",
     },
     {
-        "id": "t11", "task_no": 1011, "name": "\u684c\u9762\u6e05\u6d01\u57fa\u51c6\u8bc4\u6d4b_baseline_ckpt30k",
+        "id": "t11", "task_no": 1011, "name": "\u684c\u9762\u6e05\u6d01\u57fa\u51c6\u8bc4\u6d4b_baseline_checkpoint30k",
         "benchmark_id": "b2", "eval_type": "baseline",
         "model_ids": ["m5"],
         "status": "\u8bc4\u6d4b\u5b8c\u6210", "priority": "\u4f4e",
@@ -1591,37 +1610,96 @@ def get_criterion(cid):
 
 
 def normalize_result_definitions(definitions):
-    """Normalize legacy result arrays and the current typed result structure."""
-    normalized = {"成功": [], "失败": []}
-    if not isinstance(definitions, dict):
-        definitions = {}
-    for parent in ("成功", "失败"):
-        values = definitions.get(parent, []) or []
-        if isinstance(values, (str, int, float)):
-            values = [values]
-        for index, value in enumerate(values, 1):
-            if isinstance(value, dict):
-                description = value.get("description") or value.get("name") or "--"
-                degree = value.get("degree", index)
-            else:
-                description = str(value)
-                degree = index
-            description = str(description)
-            try:
-                degree = int(degree)
-            except (TypeError, ValueError):
-                degree = index
-            normalized[parent].append({"description": description, "degree": degree})
-        normalized[parent].sort(key=lambda item: item["degree"], reverse=True)
-    # Completion is a single ranking shared by success and failure definitions.
-    # Keep the current order for equal legacy degrees, then assign a global
-    # descending sequence so a larger value always means higher completion.
-    ordered = [item for parent in ("成功", "失败") for item in normalized[parent]]
-    ordered.sort(key=lambda item: item["degree"], reverse=True)
-    total = len(ordered)
-    for index, item in enumerate(ordered):
+    """Return ordered result types while accepting the legacy grouped structure."""
+    rows = []
+    if isinstance(definitions, list):
+        source_rows = definitions
+    elif isinstance(definitions, dict):
+        source_rows = []
+        for legacy_parent, values in definitions.items():
+            values = values if isinstance(values, list) else [values]
+            for value in values:
+                if isinstance(value, dict):
+                    source_rows.append({
+                        "type": value.get("type") or value.get("name") or value.get("description") or legacy_parent,
+                        "degree": value.get("degree"),
+                    })
+                else:
+                    source_rows.append({"type": str(value or legacy_parent), "degree": None})
+    else:
+        source_rows = []
+
+    for index, value in enumerate(source_rows, 1):
+        if isinstance(value, dict):
+            result_type = value.get("type") or value.get("name") or value.get("description") or ""
+            degree = value.get("degree", index)
+        else:
+            result_type = str(value)
+            degree = index
+        result_type = str(result_type).strip()
+        if not result_type:
+            continue
+        try:
+            degree = int(degree)
+        except (TypeError, ValueError):
+            degree = index
+        rows.append({"type": result_type[:20], "degree": degree})
+
+    rows.sort(key=lambda item: item["degree"], reverse=True)
+    total = len(rows)
+    for index, item in enumerate(rows):
         item["degree"] = total - index
-    return normalized
+    return rows
+
+
+def result_type_is_failure(value):
+    """Keep legacy failure styling without imposing a fixed result taxonomy."""
+    text = str(value or "")
+    return any(marker in text for marker in ("失败", "异常", "超时", "未完成"))
+
+
+ENDPOINT_MODES = (
+    ("normal", "普通采集", "▣"),
+    ("dagger", "DAgger 采集", "⌁"),
+    ("assess", "模型评测", "▤"),
+    ("eval", "对比评测", "⇄"),
+    ("test", "测试任务", "☑"),
+)
+
+
+def endpoint_mode_buttons(css_class, selected_class, onclick):
+    """Render the shared five-mode endpoint selector."""
+    return "".join(
+        f'<button type="button" class="{css_class}{" " + selected_class if index == 0 else ""}" '
+        f'data-mode="{code}" onclick="{onclick}(this)"><b>{icon}</b>'
+        f'<span class="endpoint-mode-copy"><strong>{label}</strong><small>{code}</small></span>'
+        f'<i class="endpoint-mode-selected">✓</i></button>'
+        for index, (code, label, icon) in enumerate(ENDPOINT_MODES)
+    )
+
+
+ENDPOINT_MODE_STYLE = '''<style>
+  .wb-mode-grid,.eval2-mode-grid { display:flex;flex-direction:column;gap:10px;width:100%;max-width:860px;margin:24px auto; }
+  .wb-mode,.eval2-mode { width:100%;min-height:68px;box-sizing:border-box;padding:0 18px;border:1px solid #dfe3e8;border-radius:8px;background:#fff;display:grid;grid-template-columns:42px minmax(0,1fr) 24px;align-items:center;gap:14px;color:#26323d;text-align:left;cursor:pointer;text-decoration:none;transition:border-color .15s,background .15s,box-shadow .15s; }
+  .wb-mode:hover,.eval2-mode:hover { border-color:#8fc4d3;background:#f8fcfd; }
+  .wb-mode.active,.eval2-mode.selected { border:2px solid #1F80A0;background:#eaf6f8;box-shadow:0 0 0 2px rgba(31,128,160,.08); }
+  .wb-mode b,.eval2-mode b { display:flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:8px;background:#e6f4f8;color:#1F80A0;font-size:21px;font-weight:500; }
+  .endpoint-mode-copy { min-width:0;display:flex;align-items:baseline;gap:12px; }
+  .endpoint-mode-copy strong { color:#26323d;font-size:16px;font-weight:600; }
+  .endpoint-mode-copy small { color:#8a9099;font-size:13px;font-weight:500;text-transform:lowercase; }
+  .endpoint-mode-selected { color:transparent;font-size:18px;font-style:normal;text-align:center; }
+  .wb-mode.active .endpoint-mode-selected,.eval2-mode.selected .endpoint-mode-selected { color:#1F80A0; }
+</style>'''
+
+
+ENDPOINT_SETUP_MODE_SCRIPT = '''<script>
+  function wbSelectSetupMode(button) {
+    document.querySelectorAll('.wb-mode').forEach(function(item) { item.classList.remove('active'); });
+    button.classList.add('active');
+    var start = document.querySelector('.wb-step-page .wb-primary');
+    if (start) start.href = '/evaluate2/setup?step=2&mode=' + encodeURIComponent(button.dataset.mode || 'normal');
+  }
+</script>'''
 
 
 def get_criterion_metrics(criterion):
@@ -1637,6 +1715,7 @@ def get_criterion_metrics(criterion):
     return [
         {
             "name": item.get("metric_name") or item.get("prompt") or "",
+            "description": item.get("description") or item.get("metric_description") or "",
             "type": "数字" if item.get("score_range") else "文本",
             "options": item.get("options", []) or [],
             "default_value": item.get("value") if item.get("value") is not None else "",
@@ -1666,6 +1745,7 @@ INLINE_INPUT = 'style="width:100%;padding:5px 12px;height:36px;border:1px solid 
 def prompts_page():
     tree_html = build_tree_selector_html("shared")
     filter_tree = build_tree_selector_html("filter")
+    prompt_error = request.args.get("prompt_error", "").strip()
     creators_set = sorted(set(p["creator"] for p in PROMPTS))
     creator_options = "".join(f"<option>{c}</option>" for c in creators_set)
 
@@ -1678,6 +1758,47 @@ def prompts_page():
     def prompt_action(href, label, style=""):
         style_class = f" {style}" if style else ""
         return f'<a class="prompt-action-link{style_class}" href="{href}" title="{label}" data-tip="{label}">{label}</a>'
+
+    def scene_image_entry(prompt):
+        images = prompt.get("scene_images", [])
+        editable = not prompt.get("enabled", True)
+        if not images:
+            label = "添加场景图" if editable else "暂无场景图"
+            if editable:
+                return (
+                    f'<a class="prompt-scene-add" href="javascript:;" '
+                    f'onclick="openPromptSceneModal(\'{prompt["id"]}\')">{label}</a>'
+                )
+            return '<span class="prompt-scene-empty">—</span>'
+        thumbs = "".join(
+            '<span class="prompt-scene-thumb">'
+            + (f'<img src="{html.escape(item.get("src", ""), quote=True)}" alt="">'
+               if item.get("src") else '<span class="prompt-scene-placeholder">景</span>')
+            + '</span>'
+            for item in images[:3]
+        )
+        action = "维护" if editable else "查看"
+        return (
+            f'<button type="button" class="prompt-scene-entry" '
+            f'onclick="openPromptSceneModal(\'{prompt["id"]}\')" '
+            f'aria-label="{action}场景示意图，共{len(images)}张">'
+            f'<span class="prompt-scene-thumbs">{thumbs}</span>'
+            f'<span class="prompt-scene-count">{len(images)} 张</span>'
+            '</button>'
+        )
+
+    scene_data_json = json.dumps(
+        {
+            p["id"]: {
+                "id": p["id"],
+                "name": p["high_level"],
+                "editable": not p.get("enabled", True),
+                "images": p.get("scene_images", []),
+            }
+            for p in PROMPTS
+        },
+        ensure_ascii=False,
+    ).replace("</", "<\\/")
 
     rows = ""
     for prompt_index, p in enumerate(PROMPTS):
@@ -1709,6 +1830,8 @@ def prompts_page():
         rows += f'<td class="prompt-tree-cell"><button class="expand-btn" data-target="sub-{pid}">&#9654;</button></td>'
         rows += td_tip(p["high_level"], 'style="font-weight:600;"')
         rows += td_tip(p["high_level_en"])
+        rows += f'<td class="prompt-scene-cell">{scene_image_entry(p)}</td>'
+        rows += f'<td class="prompt-id-cell">{html.escape(str(pid))}</td>'
         rows += '<td class="prompt-seq prompt-seq-parent prompt-seq-col">—</td>'
         rows += f'<td>{difficulty_html(p.get("difficulty", 3))}</td>'
         rows += td_tip(labels_html, tip_text=labels_tip)
@@ -1731,6 +1854,9 @@ def prompts_page():
             rows += '<td class="prompt-drag-cell"><span class="prompt-drag-handle" title="拖拽调整顺序">&#8942;&#8942;</span></td>'
             rows += td_tip(ll["zh"])
             rows += td_tip(ll["en"])
+            rows += '<td class="prompt-scene-cell"><span class="prompt-scene-inherited">继承上级</span></td>'
+            child_id = str(ll.get("id") or f"{pid}-{index}")
+            rows += f'<td class="prompt-id-cell">{html.escape(child_id)}</td>'
             rows += f'<td class="prompt-seq prompt-seq-col">{index}</td>'
             rows += f'<td>{difficulty_html(ll.get("difficulty", 3))}</td>'
             rows += td_tip(render_tags_html(ll.get("labels", [])), tip_text=_build_tip_text(ll.get("labels", [])))
@@ -1742,11 +1868,14 @@ def prompts_page():
             rows += '</tr>'
 
         child_tree = build_tree_selector_html(f"child-{pid}")
+        next_child_id = f"{pid}-{len(p['low_levels']) + 1}"
         rows += f'''
         <tr class="row-child row-inline-child prompt-add-child-row" id="add-child-{pid}" data-parent="{pid}" style="display:none;">
           <td class="prompt-drag-cell"><span class="prompt-drag-placeholder"></span></td>
           <td><input type="text" form="form-child-{pid}" name="zh" placeholder="输入 Low level" {INLINE_INPUT}></td>
           <td><input type="text" form="form-child-{pid}" name="en" placeholder="输入 Task-Prompt" {INLINE_INPUT}></td>
+          <td class="prompt-scene-cell"><span class="prompt-scene-inherited">继承上级</span></td>
+          <td class="prompt-id-cell">{html.escape(next_child_id)}</td>
           <td class="prompt-seq prompt-seq-col">{len(p["low_levels"]) + 1}</td>
           <td>
             <div class="prompt-difficulty-stepper">
@@ -1769,10 +1898,12 @@ def prompts_page():
         </form>'''
 
     content = f'''
+    {f'<div class="ant-alert ant-alert-error ant-alert-no-icon" style="margin-bottom:16px;"><div class="ant-alert-message">{html.escape(prompt_error)}</div></div>' if prompt_error else ''}
     <form id="inline-add" method="POST" action="/prompts/create" style="display:none;"></form>
     <div class="filter-bar fb-labeled prompt-filter-bar">
       <div class="ff"><label>任务提示词</label><input type="text" placeholder="搜索任务提示词"></div>
       <div class="ff"><label>Task-Prompt</label><input type="text" placeholder="搜索 Task-Prompt"></div>
+      <div class="ff"><label>id</label><input type="text" placeholder="搜索 id"></div>
       <div class="ff"><label>标签</label>
         <div class="ts-wrap prompt-filter-select" id="ts-filter">
           <div class="ts-trigger" onclick="tsToggle('ts-filter')"><span class="ts-placeholder">选择标签</span></div>
@@ -1792,11 +1923,14 @@ def prompts_page():
     </div>
 
     <div class="ant-card ant-card-bordered prompt-table-card">
+      <div class="prompt-table-scroll">
       <table class="ant-table" id="prompt-table">
         <thead><tr>
           <th></th>
           <th>任务提示词</th>
           <th>Task-Prompt</th>
+          <th>场景示意图</th>
+          <th>id</th>
           <th class="prompt-seq-col">序号</th>
           <th>难度</th>
           <th>标签</th>
@@ -1811,6 +1945,8 @@ def prompts_page():
             <td></td>
             <td><input type="text" form="inline-add" name="high_level" placeholder="输入任务提示词" {INLINE_INPUT}></td>
             <td><input type="text" form="inline-add" name="high_level_en" placeholder="输入 Task-Prompt" {INLINE_INPUT}></td>
+            <td class="prompt-scene-cell"><span class="prompt-scene-after-save">保存后添加</span></td>
+            <td><input type="text" form="inline-add" name="prompt_id" placeholder="输入 id" required {INLINE_INPUT}></td>
             <td class="prompt-seq prompt-seq-col">—</td>
             <td>
               <div class="prompt-difficulty-stepper">
@@ -1838,6 +1974,7 @@ def prompts_page():
           <tr id="new-children-anchor" style="display:none;"></tr>
         </tbody>
       </table>
+      </div>
       <template id="tree-tpl">{tree_html}</template>
     </div>
 
@@ -1847,25 +1984,63 @@ def prompts_page():
       <input aria-label="跳转页码"><span>go</span>
     </div>
 
+    <div class="prompt-scene-mask" id="prompt-scene-modal" aria-hidden="true">
+      <section class="prompt-scene-modal" role="dialog" aria-modal="true" aria-labelledby="prompt-scene-title">
+        <header class="prompt-scene-header">
+          <div>
+            <h3 id="prompt-scene-title">场景示意图</h3>
+            <p id="prompt-scene-context"></p>
+          </div>
+          <button type="button" class="prompt-scene-close" onclick="closePromptSceneModal()" aria-label="关闭">&times;</button>
+        </header>
+        <div class="prompt-scene-body">
+          <div class="prompt-scene-guidance">
+            <span class="prompt-scene-guidance-icon">i</span>
+            <span>场景图将展示在端侧的「任务信息」中，建议覆盖初始状态、目标状态和关键物体位置。</span>
+          </div>
+          <label class="prompt-scene-upload" id="prompt-scene-upload">
+            <input id="prompt-scene-file" type="file" accept="image/*" multiple hidden onchange="addPromptSceneFiles(this.files)">
+            <span class="prompt-scene-upload-icon">&#8682;</span>
+            <strong>点击或拖拽上传场景图</strong>
+            <small>支持 JPG、PNG、WebP，单张不超过 5MB，最多 3 张</small>
+          </label>
+          <div class="prompt-scene-toolbar">
+            <strong id="prompt-scene-total">场景图（0/3）</strong>
+          </div>
+          <div class="prompt-scene-grid" id="prompt-scene-grid"></div>
+          <div class="prompt-scene-empty-state" id="prompt-scene-empty">
+            <span>图</span><strong>暂无场景图</strong><small>上传后可设置图片类型</small>
+          </div>
+        </div>
+        <footer class="prompt-scene-footer">
+          <button type="button" class="ant-btn" onclick="closePromptSceneModal()" id="prompt-scene-cancel">取消</button>
+          <button type="button" class="ant-btn ant-btn-primary" onclick="savePromptSceneImages()" id="prompt-scene-save">保存</button>
+        </footer>
+      </section>
+    </div>
+
     <style>
       .prompt-table-card {{ position:relative; z-index:1; border-radius:0; overflow:visible; }}
+      .prompt-table-scroll {{ width:100%; overflow-x:auto; overflow-y:visible; }}
       .prompt-filter-bar {{ position:relative; z-index:30; overflow:visible; }}
       .prompt-filter-bar .ff, .prompt-filter-bar .ts-wrap {{ overflow:visible; }}
       .prompt-filter-bar .ts-panel {{ z-index:1200; }}
       .prompt-filter-bar .ff {{ flex:1 1 180px; min-width:180px; }}
       .prompt-filter-bar .ff input, .prompt-filter-bar .ff select {{ width:100%; min-width:0; }}
       .prompt-filter-bar .ff .prompt-filter-select {{ width:100%; min-width:0; }}
-      #prompt-table {{ table-layout:fixed; }}
+      #prompt-table {{ table-layout:fixed; min-width:1530px; }}
       #prompt-table th:nth-child(1) {{ width:42px; }}
-      #prompt-table th:nth-child(2) {{ width:17%; }}
-      #prompt-table th:nth-child(3) {{ width:23%; }}
-      #prompt-table th:nth-child(4), #prompt-table td:nth-child(4) {{ width:56px; }}
-      #prompt-table th:nth-child(5) {{ width:112px; }}
-      #prompt-table th:nth-child(6) {{ width:24%; }}
-      #prompt-table th:nth-child(7) {{ width:86px; }}
-      #prompt-table th:nth-child(8) {{ width:108px; }}
-      #prompt-table th:nth-child(9) {{ width:145px; }}
-      #prompt-table th:nth-child(10) {{ width:190px; }}
+      #prompt-table th:nth-child(2) {{ width:15%; }}
+      #prompt-table th:nth-child(3) {{ width:18%; }}
+      #prompt-table th:nth-child(4) {{ width:126px; }}
+      #prompt-table th:nth-child(5), #prompt-table td:nth-child(5) {{ width:110px; }}
+      #prompt-table th:nth-child(6), #prompt-table td:nth-child(6) {{ width:56px; }}
+      #prompt-table th:nth-child(7) {{ width:112px; }}
+      #prompt-table th:nth-child(8) {{ width:18%; }}
+      #prompt-table th:nth-child(9) {{ width:86px; }}
+      #prompt-table th:nth-child(10) {{ width:108px; }}
+      #prompt-table th:nth-child(11) {{ width:145px; }}
+      #prompt-table th:nth-child(12) {{ width:180px; }}
       #prompt-table td {{ text-overflow:ellipsis; white-space:nowrap; max-width:0; overflow:hidden; }}
       #prompt-table .actions-cell {{ overflow:visible; white-space:nowrap; }}
       .prompt-parent-row td {{ font-weight:500; background:#fff; }}
@@ -1878,10 +2053,22 @@ def prompts_page():
       .prompt-drag-handle:active {{ cursor:grabbing; }}
       .prompt-seq {{ text-align:center; color:rgba(0,0,0,.65); font-variant-numeric:tabular-nums; }}
       .prompt-seq-parent {{ color:rgba(0,0,0,.2); }}
+      .prompt-id-cell {{ color:rgba(0,0,0,.58); font-family:SFMono-Regular,Menlo,Monaco,Consolas,monospace; font-size:12px; white-space:nowrap; }}
       .prompt-difficulty {{ color:#ad8b00; white-space:nowrap; }}
       .prompt-status {{ display:inline-block; padding:2px 8px; border-radius:10px; font-size:12px; line-height:1.5; white-space:nowrap; }}
       .prompt-status.is-enabled {{ color:#18794e; background:#e8f7ef; }}
       .prompt-status.is-disabled {{ color:#8a5a00; background:#fff4d6; }}
+      .prompt-scene-cell {{ overflow:visible !important; }}
+      .prompt-scene-entry {{ display:inline-flex; align-items:center; gap:7px; height:32px; padding:0; border:0; background:transparent; color:#1F80A0; cursor:pointer; }}
+      .prompt-scene-entry:hover .prompt-scene-count {{ text-decoration:underline; }}
+      .prompt-scene-thumbs {{ display:flex; align-items:center; padding-left:8px; }}
+      .prompt-scene-thumb {{ width:28px; height:28px; margin-left:-8px; overflow:hidden; border:2px solid #fff; border-radius:6px; background:#e8f4f6; box-shadow:0 1px 4px rgba(25,96,116,.16); }}
+      .prompt-scene-thumb img {{ width:100%; height:100%; object-fit:cover; display:block; }}
+      .prompt-scene-placeholder {{ display:flex; width:100%; height:100%; align-items:center; justify-content:center; color:#1F80A0; background:linear-gradient(145deg,#d8eef2,#f5fbfc); font-size:12px; }}
+      .prompt-scene-count {{ white-space:nowrap; font-size:12px; }}
+      .prompt-scene-add {{ color:#1F80A0; font-size:12px; text-decoration:none; }}
+      .prompt-scene-add:hover {{ text-decoration:underline; }}
+      .prompt-scene-inherited, .prompt-scene-after-save, .prompt-scene-empty {{ color:rgba(0,0,0,.35); font-size:12px; white-space:nowrap; }}
       .prompt-difficulty-stepper {{ height:34px; display:inline-flex; align-items:center; border:1px solid #d9d9d9; border-radius:6px; overflow:hidden; background:#fff; }}
       .prompt-difficulty-stepper button {{ width:28px; height:32px; border:0; background:#fafafa; cursor:pointer; color:rgba(0,0,0,.55); }}
       .prompt-difficulty-stepper input {{ width:36px; height:32px; border:0; border-left:1px solid #f0f0f0; border-right:1px solid #f0f0f0; text-align:center; outline:0; appearance:textfield; }}
@@ -1911,11 +2098,161 @@ def prompts_page():
       .prompt-pagination button.active {{ color:#1F80A0; border-color:#1F80A0; }}
       .prompt-pagination input {{ width:48px; }}
       .prompt-pagination span {{ color:#1F80A0; font-size:13px; }}
+      body.prompt-scene-modal-open {{ overflow:hidden; }}
+      .prompt-scene-mask {{ display:none; position:fixed; inset:0; z-index:3000; align-items:center; justify-content:center; padding:24px; background:rgba(0,0,0,.42); }}
+      .prompt-scene-mask.open {{ display:flex; }}
+      .prompt-scene-modal {{ display:flex; flex-direction:column; width:min(860px,calc(100vw - 48px)); max-height:min(780px,calc(100vh - 48px)); overflow:hidden; border-radius:10px; background:#fff; box-shadow:0 18px 54px rgba(0,0,0,.22); }}
+      .prompt-scene-header {{ display:flex; flex:0 0 auto; align-items:flex-start; justify-content:space-between; padding:20px 24px 16px; border-bottom:1px solid #f0f0f0; }}
+      .prompt-scene-header h3 {{ margin:0; color:rgba(0,0,0,.88); font-size:18px; line-height:28px; }}
+      .prompt-scene-header p {{ margin:3px 0 0; color:rgba(0,0,0,.45); font-size:13px; }}
+      .prompt-scene-close {{ width:30px; height:30px; border:0; background:transparent; color:rgba(0,0,0,.45); font-size:24px; line-height:28px; cursor:pointer; }}
+      .prompt-scene-body {{ flex:1 1 auto; overflow:auto; padding:20px 24px 24px; }}
+      .prompt-scene-guidance {{ display:flex; align-items:flex-start; gap:10px; margin-bottom:16px; padding:10px 12px; border-radius:6px; color:#276677; background:#edf7f9; font-size:13px; line-height:20px; }}
+      .prompt-scene-guidance-icon {{ display:inline-flex; flex:0 0 auto; align-items:center; justify-content:center; width:18px; height:18px; margin-top:1px; border-radius:50%; color:#fff; background:#1F80A0; font-size:12px; font-weight:700; }}
+      .prompt-scene-upload {{ display:flex; min-height:116px; box-sizing:border-box; flex-direction:column; align-items:center; justify-content:center; gap:5px; border:1px dashed #86bccb; border-radius:8px; color:rgba(0,0,0,.65); background:#fbfefe; cursor:pointer; transition:.18s ease; }}
+      .prompt-scene-upload:hover, .prompt-scene-upload.dragover {{ border-color:#1F80A0; background:#f1f9fa; }}
+      .prompt-scene-upload-icon {{ color:#1F80A0; font-size:25px; line-height:24px; }}
+      .prompt-scene-upload strong {{ font-size:14px; font-weight:500; }}
+      .prompt-scene-upload small {{ color:rgba(0,0,0,.42); font-size:12px; }}
+      .prompt-scene-toolbar {{ display:flex; align-items:center; justify-content:space-between; margin:20px 0 12px; }}
+      .prompt-scene-toolbar strong {{ color:rgba(0,0,0,.78); font-size:14px; }}
+      .prompt-scene-grid {{ display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:14px; }}
+      .prompt-scene-card {{ position:relative; overflow:hidden; border:1px solid #e7e7e7; border-radius:8px; background:#fff; transition:.18s ease; }}
+      .prompt-scene-preview {{ position:relative; height:118px; overflow:hidden; background:linear-gradient(145deg,#dbeef1,#f6fbfc); }}
+      .prompt-scene-preview img {{ width:100%; height:100%; object-fit:cover; display:block; }}
+      .prompt-scene-preview-fallback {{ display:flex; width:100%; height:100%; align-items:center; justify-content:center; color:#2c7d92; font-size:32px; }}
+      .prompt-scene-card-body {{ padding:10px 12px 12px; }}
+      .prompt-scene-name {{ overflow:hidden; margin-bottom:9px; color:rgba(0,0,0,.75); font-size:13px; font-weight:500; text-overflow:ellipsis; white-space:nowrap; }}
+      .prompt-scene-role {{ width:100%; height:30px; padding:0 28px 0 9px; border:1px solid #d9d9d9; border-radius:6px; color:rgba(0,0,0,.68); background:#fff; font-size:12px; }}
+      .prompt-scene-card-actions {{ display:flex; align-items:center; gap:12px; min-height:24px; margin-top:8px; }}
+      .prompt-scene-card-actions button {{ padding:0; border:0; color:#1F80A0; background:transparent; font-size:12px; line-height:24px; cursor:pointer; }}
+      .prompt-scene-card-actions button.danger {{ color:#d4380d; }}
+      .prompt-scene-card-actions button:disabled {{ color:rgba(0,0,0,.25); cursor:not-allowed; }}
+      .prompt-scene-empty-state {{ display:none; flex-direction:column; align-items:center; justify-content:center; min-height:190px; color:rgba(0,0,0,.32); }}
+      .prompt-scene-empty-state span {{ display:flex; align-items:center; justify-content:center; width:48px; height:48px; margin-bottom:10px; border-radius:10px; background:#f1f5f6; font-size:20px; }}
+      .prompt-scene-empty-state strong {{ color:rgba(0,0,0,.45); font-size:14px; font-weight:500; }}
+      .prompt-scene-empty-state small {{ margin-top:4px; font-size:12px; }}
+      .prompt-scene-footer {{ display:flex; flex:0 0 auto; justify-content:flex-end; gap:10px; padding:14px 24px; border-top:1px solid #f0f0f0; background:#fff; }}
+      .prompt-scene-mask.readonly .prompt-scene-upload, .prompt-scene-mask.readonly #prompt-scene-save {{ display:none; }}
+      @media (max-width:900px) {{ .prompt-scene-grid {{ grid-template-columns:repeat(2,minmax(0,1fr)); }} }}
     </style>
 
     <script>
     let newChildCount = 0;
     let promptDraggedRow = null;
+    const promptSceneData = {scene_data_json};
+    const promptSceneRoles = ['初始状态','目标状态','关键步骤','其他'];
+    let promptScenePid = '';
+    let promptSceneDraft = [];
+
+    function promptSceneCloneImages(images) {{
+      return (images || []).map(image => ({{...image}}));
+    }}
+    function openPromptSceneModal(pid) {{
+      const data = promptSceneData[pid];
+      if (!data) return;
+      promptScenePid = pid;
+      promptSceneDraft = promptSceneCloneImages(data.images);
+      const modal = document.getElementById('prompt-scene-modal');
+      modal.classList.toggle('readonly', !data.editable);
+      modal.classList.add('open');
+      modal.setAttribute('aria-hidden','false');
+      document.body.classList.add('prompt-scene-modal-open');
+      document.getElementById('prompt-scene-title').textContent = data.editable ? '维护场景示意图' : '查看场景示意图';
+      document.getElementById('prompt-scene-context').textContent = 'Highlevel：' + data.name + (data.editable ? '' : ' · 已发布，仅支持查看');
+      document.getElementById('prompt-scene-cancel').textContent = data.editable ? '取消' : '关闭';
+      renderPromptSceneImages();
+    }}
+    function closePromptSceneModal() {{
+      const modal = document.getElementById('prompt-scene-modal');
+      modal.classList.remove('open','readonly');
+      modal.setAttribute('aria-hidden','true');
+      document.body.classList.remove('prompt-scene-modal-open');
+      promptScenePid = '';
+      promptSceneDraft = [];
+      document.getElementById('prompt-scene-file').value = '';
+    }}
+    function renderPromptSceneImages() {{
+      const data = promptSceneData[promptScenePid] || {{editable:false}};
+      const editable = !!data.editable;
+      const grid = document.getElementById('prompt-scene-grid');
+      const empty = document.getElementById('prompt-scene-empty');
+      document.getElementById('prompt-scene-total').textContent = '场景图（' + promptSceneDraft.length + '/3）';
+      grid.style.display = promptSceneDraft.length ? 'grid' : 'none';
+      empty.style.display = promptSceneDraft.length ? 'none' : 'flex';
+      grid.innerHTML = promptSceneDraft.map((image,index) => {{
+        const roleOptions = promptSceneRoles.map(role => '<option value="'+role+'" '+(role === image.role ? 'selected' : '')+'>'+role+'</option>').join('');
+        const preview = image.src
+          ? '<img src="'+image.src+'" alt="'+escapePromptSceneText(image.name)+'">'
+          : '<span class="prompt-scene-preview-fallback">景</span>';
+        const actions = editable
+          ? '<button type="button" class="danger" onclick="deletePromptSceneImage('+index+')">删除</button>'
+          : '';
+        return '<article class="prompt-scene-card" data-index="'+index+'">'
+          + '<div class="prompt-scene-preview">'+preview+'</div>'
+          + '<div class="prompt-scene-card-body"><div class="prompt-scene-name" title="'+escapePromptSceneText(image.name)+'">'+escapePromptSceneText(image.name)+'</div>'
+          + '<select class="prompt-scene-role" onchange="setPromptSceneRole('+index+',this.value)" '+(editable ? '' : 'disabled')+'>'+roleOptions+'</select>'
+          + '<div class="prompt-scene-card-actions">'+actions+'</div></div></article>';
+      }}).join('');
+    }}
+    function escapePromptSceneText(text) {{
+      const div = document.createElement('div');
+      div.textContent = text || '';
+      return div.innerHTML;
+    }}
+    function addPromptSceneFiles(files) {{
+      const data = promptSceneData[promptScenePid];
+      if (!data || !data.editable || !files || !files.length) return;
+      const room = 3 - promptSceneDraft.length;
+      if (room <= 0) {{ showToast('最多上传 3 张场景图','error'); return; }}
+      const selected = Array.from(files).slice(0,room);
+      let pending = selected.length;
+      selected.forEach(file => {{
+        if (!file.type.startsWith('image/')) {{ pending -= 1; return; }}
+        if (file.size > 5 * 1024 * 1024) {{
+          showToast(file.name + ' 超过 5MB，已跳过','error');
+          pending -= 1;
+          if (!pending) renderPromptSceneImages();
+          return;
+        }}
+        const reader = new FileReader();
+        reader.onload = event => {{
+          promptSceneDraft.push({{
+            id:'si-' + Date.now() + '-' + Math.random().toString(16).slice(2),
+            name:file.name,
+            role:'关键步骤',
+            src:event.target.result
+          }});
+          pending -= 1;
+          if (!pending) renderPromptSceneImages();
+        }};
+        reader.readAsDataURL(file);
+      }});
+      if (selected.length < files.length) showToast('最多保留 3 张场景图','error');
+      document.getElementById('prompt-scene-file').value = '';
+    }}
+    function setPromptSceneRole(index,role) {{
+      if (promptSceneDraft[index]) promptSceneDraft[index].role = role;
+    }}
+    function deletePromptSceneImage(index) {{
+      promptSceneDraft.splice(index,1);
+      renderPromptSceneImages();
+    }}
+    function savePromptSceneImages() {{
+      const data = promptSceneData[promptScenePid];
+      if (!data || !data.editable) return;
+      const pid = promptScenePid;
+      fetch('/prompts/' + pid + '/scene-images', {{
+        method:'POST',
+        headers:{{'Content-Type':'application/json'}},
+        body:JSON.stringify({{images:promptSceneDraft}})
+      }}).then(async response => {{
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.message || '保存失败');
+        showToast('场景示意图已保存','success');
+        window.setTimeout(() => window.location.href = window.location.pathname, 250);
+      }}).catch(error => showToast(error.message || '保存失败，请重试','error'));
+    }}
 
     function promptImportJson(input) {{
       if (!input.files || !input.files.length) return;
@@ -1927,7 +2264,7 @@ def prompts_page():
       row.style.display = 'table-row';
       if (newChildCount === 0) addNewChildRow();
       row.scrollIntoView({{behavior:'smooth', block:'center'}});
-      row.querySelector('input[name="high_level"]').focus();
+      row.querySelector('input[name="prompt_id"]').focus();
     }}
     function cancelNewParent() {{
       document.getElementById('new-parent-row').style.display = 'none';
@@ -1944,6 +2281,8 @@ def prompts_page():
         <td class="prompt-drag-cell"><span class="prompt-drag-placeholder"></span></td>
         <td><input type="text" form="inline-add" name="child_zh_${{idx}}" placeholder="输入任务提示词" {INLINE_INPUT}></td>
         <td><input type="text" form="inline-add" name="child_en_${{idx}}" placeholder="输入 Task-Prompt" {INLINE_INPUT}></td>
+        <td class="prompt-scene-cell"><span class="prompt-scene-inherited">继承上级</span></td>
+        <td class="prompt-id-cell">保存后生成</td>
         <td class="prompt-seq prompt-seq-col">${{idx + 1}}</td>
         <td><div class="prompt-difficulty-stepper"><button type="button" onclick="stepPromptDifficulty(this,-1)">−</button><input type="number" form="inline-add" name="child_difficulty_${{idx}}" min="1" max="5" value="3" readonly><button type="button" onclick="stepPromptDifficulty(this,1)">＋</button></div></td>
         <td>
@@ -2080,6 +2419,22 @@ def prompts_page():
     }}
     document.querySelectorAll('.ts-wrap').forEach(w => tsInit(w));
     initPromptDrag();
+    const promptSceneUpload = document.getElementById('prompt-scene-upload');
+    ['dragenter','dragover'].forEach(type => promptSceneUpload.addEventListener(type,event => {{
+      event.preventDefault(); promptSceneUpload.classList.add('dragover');
+    }}));
+    ['dragleave','drop'].forEach(type => promptSceneUpload.addEventListener(type,event => {{
+      event.preventDefault(); promptSceneUpload.classList.remove('dragover');
+    }}));
+    promptSceneUpload.addEventListener('drop',event => addPromptSceneFiles(event.dataTransfer.files));
+    document.getElementById('prompt-scene-modal').addEventListener('click',event => {{
+      if (event.target.id === 'prompt-scene-modal') closePromptSceneModal();
+    }});
+    document.addEventListener('keydown',event => {{
+      if (event.key === 'Escape' && document.getElementById('prompt-scene-modal').classList.contains('open')) closePromptSceneModal();
+    }});
+    const promptSceneOpenPid = new URLSearchParams(window.location.search).get('scene_pid');
+    if (promptSceneOpenPid && promptSceneData[promptSceneOpenPid]) openPromptSceneModal(promptSceneOpenPid);
     </script>
     '''
     return render_page("任务提示词", content, active="prompts")
@@ -2089,15 +2444,37 @@ def prompts_page():
 def prompts_create():
     hl = request.form.get("high_level", "").strip()
     hl_en = request.form.get("high_level_en", "").strip()
+    prompt_id = request.form.get("prompt_id", "").strip()
     difficulty = max(1, min(5, request.form.get("difficulty", 3, type=int)))
     parent_labels = [l.strip() for l in request.form.get("parent_labels", "").split(",") if l.strip()]
     if not hl:
         flash("\u4efb\u52a1\u540d\u79f0\u4e0d\u80fd\u4e3a\u7a7a", "error")
         return redirect(url_for("prompts_page"))
-    new_id = f"p{len(PROMPTS)+1}"
+    if not prompt_id:
+        return redirect(url_for("prompts_page", prompt_error="请输入任务提示词 id"))
+
+    # highlevel 与 lowlevel 共用同一套 id 命名空间，避免后续按 id 定位
+    # 场景图、任务提示词或评测数据时出现歧义。
+    all_prompt_ids = {
+        str(item.get("id", "")).strip()
+        for item in PROMPTS
+        if str(item.get("id", "")).strip()
+    }
+    all_prompt_ids.update(
+        str(child.get("id", "")).strip()
+        for item in PROMPTS
+        for child in item.get("low_levels", [])
+        if str(child.get("id", "")).strip()
+    )
+    if prompt_id in all_prompt_ids:
+        return redirect(url_for("prompts_page", prompt_error=f"任务提示词 id「{prompt_id}」已存在，请更换"))
+
+    new_id = prompt_id
     # Collect children
     child_count = int(request.form.get("child_count", 0))
     low_levels = []
+    generated_child_ids = set(all_prompt_ids)
+    generated_child_ids.add(new_id)
     for i in range(child_count):
         zh = request.form.get(f"child_zh_{i}", "").strip()
         en = request.form.get(f"child_en_{i}", "").strip()
@@ -2107,8 +2484,14 @@ def prompts_create():
         )
         cl = [l.strip() for l in request.form.get(f"child_labels_{i}", "").split(",") if l.strip()]
         if zh:
+            child_number = len(low_levels) + 1
+            child_id = f"{new_id}-{child_number}"
+            while child_id in generated_child_ids:
+                child_number += 1
+                child_id = f"{new_id}-{child_number}"
+            generated_child_ids.add(child_id)
             low_levels.append({
-                "id": f"{new_id}-{len(low_levels)+1}",
+                "id": child_id,
                 "zh": zh,
                 "en": en,
                 "difficulty": child_difficulty,
@@ -2121,10 +2504,49 @@ def prompts_create():
         "difficulty": difficulty,
         "enabled": False,
         "creator": "Joanna Qiao",
+        "scene_images": [],
         "low_levels": low_levels,
     })
-    flash(f"\u63d0\u793a\u8bcd\u300c{hl}\u300d\u521b\u5efa\u6210\u529f", "success")
-    return redirect(url_for("prompts_page"))
+    flash(f"\u63d0\u793a\u8bcd\u300c{hl}\u300d\u521b\u5efa\u6210\u529f\uff0c\u8bf7\u7ee7\u7eed\u7ef4\u62a4\u573a\u666f\u793a\u610f\u56fe", "success")
+    return redirect(url_for("prompts_page", scene_pid=new_id))
+
+
+@app.route("/prompts/<pid>/scene-images", methods=["POST"])
+def prompt_scene_images_save(pid):
+    prompt = next((item for item in PROMPTS if item["id"] == pid), None)
+    if not prompt:
+        return jsonify({"ok": False, "message": "Highlevel 不存在"}), 404
+    if prompt.get("enabled", True):
+        return jsonify({"ok": False, "message": "已发布的 Highlevel 不可修改场景图"}), 403
+
+    payload = request.get_json(silent=True) or {}
+    raw_images = payload.get("images")
+    if not isinstance(raw_images, list):
+        return jsonify({"ok": False, "message": "场景图数据格式错误"}), 400
+
+    allowed_roles = {"初始状态", "目标状态", "关键步骤", "其他"}
+    images = []
+    for index, raw in enumerate(raw_images[:3]):
+        if not isinstance(raw, dict):
+            continue
+        name = str(raw.get("name", "")).strip()[:120]
+        if not name:
+            continue
+        role = str(raw.get("role", "关键步骤"))
+        if role not in allowed_roles:
+            role = "关键步骤"
+        src = str(raw.get("src", ""))
+        if src and not src.startswith("data:image/"):
+            src = ""
+        images.append({
+            "id": str(raw.get("id") or f"si-{pid}-{index + 1}"),
+            "name": name,
+            "role": role,
+            "src": src,
+        })
+
+    prompt["scene_images"] = images
+    return jsonify({"ok": True, "count": len(images), "images": images})
 
 
 @app.route("/prompts/<pid>/add-child", methods=["POST"])
@@ -2138,7 +2560,22 @@ def prompt_add_child_post(pid):
     difficulty = max(1, min(5, request.form.get("difficulty", 3, type=int)))
     labels = [l.strip() for l in request.form.get("labels", "").split(",") if l.strip()]
     if zh:
-        child_id = f"{pid}-{len(p['low_levels'])+1}"
+        used_ids = {
+            str(item.get("id", "")).strip()
+            for item in PROMPTS
+            if str(item.get("id", "")).strip()
+        }
+        used_ids.update(
+            str(child.get("id", "")).strip()
+            for item in PROMPTS
+            for child in item.get("low_levels", [])
+            if str(child.get("id", "")).strip()
+        )
+        child_number = len(p["low_levels"]) + 1
+        child_id = f"{pid}-{child_number}"
+        while child_id in used_ids:
+            child_number += 1
+            child_id = f"{pid}-{child_number}"
         p["low_levels"].append({
             "id": child_id,
             "zh": zh,
@@ -3082,7 +3519,7 @@ def criteria_page():
       <button class="ant-btn ant-btn-primary" onclick="openCriteriaCreate()">\u65b0\u589e\u8bc4\u4ef7\u6807\u51c6</button>
     </div>
 
-    <div class="ant-card ant-card-bordered">
+    <div class="ant-card ant-card-bordered criteria-list-card">
       <table class="ant-table">
         <thead><tr>
           <th>\u6807\u51c6\u540d\u79f0</th>
@@ -3112,20 +3549,38 @@ def criteria_page():
           <hr style="border:none;border-top:1px solid #f0f0f0;margin:20px 0;">
           <div class="form-group"><label>评测结果</label>
             <table class="ant-table criteria-result-table" id="criteria-result-table">
-              <thead><tr><th>结果类型</th><th>结果描述</th><th style="width:110px;">完成度 <span class="criteria-completion-tip" data-tip="数值越高完成度越高" tabindex="0">i</span></th><th style="width:64px;">操作</th></tr></thead>
+              <thead><tr><th>结果类型</th><th style="width:110px;">完成度 <span class="criteria-completion-tip" data-tip="数值越高完成度越高" tabindex="0">i</span></th><th style="width:64px;">操作</th></tr></thead>
               <tbody></tbody>
             </table>
             <div class="criteria-result-add-actions"><a href="javascript:void(0)" class="action-link criteria-add-result" onclick="criteriaAddResultRow()">新增评测结果</a></div>
           </div>
           <div class="form-group"><label>评测指标</label>
-          <table class="ant-table criteria-metrics-table" id="criteria-metrics-table"><thead><tr><th>指标名称</th><th>字段类型</th><th>选项（单选/多选）</th><th>默认值</th><th>操作</th></tr></thead><tbody><tr class="criteria-metric-row"><td><input class="ant-input" name="metric_name" placeholder="请输入指标名称"></td><td><select class="ant-input metric-type" name="metric_type" onchange="criteriaMetricTypeChange(this)"><option>文本</option><option>单选</option><option>多选</option><option>数字</option></select></td><td><input class="ant-input metric-options" name="metric_options" placeholder="逗号分隔选项" disabled oninput="criteriaMetricOptionsChange(this)"></td><td class="metric-default-cell"><input class="ant-input" name="metric_default" placeholder="请输入默认值"></td><td><a href="javascript:void(0)" class="action-link" onclick="criteriaRemoveMetric(this)">删除</a></td></tr></tbody></table>
+          <table class="ant-table criteria-metrics-table" id="criteria-metrics-table"><thead><tr><th>指标名称</th><th>字段类型</th><th>选项（单选/多选）</th><th>默认值</th><th>指标说明</th><th>操作</th></tr></thead><tbody><tr class="criteria-metric-row"><td><input class="ant-input" name="metric_name" placeholder="请输入指标名称"></td><td><select class="ant-input metric-type" name="metric_type" onchange="criteriaMetricTypeChange(this)"><option>文本</option><option>单选</option><option>多选</option><option>数字</option></select></td><td><input class="ant-input metric-options" name="metric_options" placeholder="逗号分隔选项" disabled oninput="criteriaMetricOptionsChange(this)"></td><td class="metric-default-cell"><input class="ant-input" name="metric_default" placeholder="请输入默认值"></td><td><input class="ant-input" name="metric_description" placeholder="请输入指标说明"></td><td><a href="javascript:void(0)" class="action-link" onclick="criteriaRemoveMetric(this)">删除</a></td></tr></tbody></table>
           <a href="javascript:void(0)" class="action-link criteria-add-metric" onclick="criteriaAddMetric()">新增指标</a></div>
         </div>
         <div class="ant-drawer-footer">
-          <button type="button" class="ant-btn" onclick="closeModal('create-criteria-drawer')">\u53d6\u6d88</button>
+          <button type="button" class="ant-btn" onclick="closeModal('create-criteria-drawer')">关闭</button>
+          <button type="button" class="ant-btn criteria-preview-trigger" onclick="openCriteriaPreview()">预览</button>
           <button type="submit" class="ant-btn ant-btn-primary">\u521b\u5efa</button>
         </div>
         </form>
+      </div>
+    </div>
+    <div class="criteria-preview-mask" id="criteria-preview-mask" hidden onclick="if(event.target===this) criteriaClosePreview()">
+      <div class="hmi-result-dialog criteria-preview-dialog" role="dialog" aria-modal="true" aria-labelledby="criteria-preview-title">
+        <h3 id="criteria-preview-title">提交评测结果</h3>
+        <section class="hmi-result-section">
+          <h4>评测结果</h4>
+          <div class="hmi-result-radios" id="criteria-preview-results"></div>
+        </section>
+        <section class="hmi-metric-section">
+          <h4>评测指标</h4>
+          <div id="criteria-preview-metrics"></div>
+        </section>
+        <div class="criteria-preview-actions">
+          <button type="button" onclick="criteriaClosePreview()">取消</button>
+          <button type="button" class="primary" onclick="criteriaPreviewSubmit()">提交</button>
+        </div>
       </div>
     </div>
     <style>
@@ -3133,8 +3588,8 @@ def criteria_page():
       .criteria-drawer-content .ant-drawer-body {{ padding: 20px 24px; }}
       .criteria-metrics-table {{ table-layout: fixed; font-size: 12px; }}
       .criteria-metrics-table th, .criteria-metrics-table td {{ padding: 8px 6px; }}
-      .criteria-metrics-table th:nth-child(1) {{ width: 23%; }} .criteria-metrics-table th:nth-child(2) {{ width: 17%; }}
-      .criteria-metrics-table th:nth-child(3) {{ width: 25%; }} .criteria-metrics-table th:nth-child(4) {{ width: 22%; }} .criteria-metrics-table th:nth-child(5) {{ width: 13%; }}
+      .criteria-metrics-table th:nth-child(1) {{ width: 18%; }} .criteria-metrics-table th:nth-child(2) {{ width: 13%; }}
+      .criteria-metrics-table th:nth-child(3) {{ width: 20%; }} .criteria-metrics-table th:nth-child(4) {{ width: 17%; }} .criteria-metrics-table th:nth-child(5) {{ width: 24%; }} .criteria-metrics-table th:nth-child(6) {{ width: 8%; }}
       .criteria-metrics-table .ant-input {{ width: 100%; min-width: 0; box-sizing: border-box; }}
       .criteria-metrics-table select.metric-type {{ padding-right: 30px; -webkit-appearance: none; appearance: none; }}
       .criteria-metrics-table select.metric-default-select[multiple] {{ height: 34px; overflow: hidden; }}
@@ -3144,23 +3599,41 @@ def criteria_page():
       .criteria-result-summary b {{ color:rgba(0,0,0,.75);font-weight:600; }}
       .criteria-result-table {{ table-layout:fixed;font-size:12px;margin-top:8px; }}
       .criteria-result-table th,.criteria-result-table td {{ padding:8px 10px;vertical-align:middle; }}
-      .criteria-result-table th:nth-child(1) {{ width:150px; }} .criteria-result-table th:nth-child(3) {{ width:110px; }} .criteria-result-table th:nth-child(4) {{ width:64px; }}
-      .criteria-result-table .ant-input {{ width:100%;box-sizing:border-box; }} .criteria-result-table select {{ appearance:none;-webkit-appearance:none;padding-right:28px; }}
+      .criteria-result-table th:nth-child(1) {{ width:auto; }} .criteria-result-table th:nth-child(2) {{ width:110px; }} .criteria-result-table th:nth-child(3) {{ width:64px; }}
+      .criteria-result-table .ant-input {{ width:100%;box-sizing:border-box; }}
       .criteria-result-table tbody tr {{ cursor:grab; }} .criteria-result-table tbody tr:active {{ cursor:grabbing; }} .criteria-result-table tbody tr.criteria-dragging {{ opacity:.45; }} .criteria-result-table tbody tr.criteria-drag-over {{ box-shadow:inset 0 2px 0 #1F80A0; }}
       .criteria-result-table tbody tr:hover {{ background:#fafcff; }} .criteria-result-empty td {{ text-align:center;color:rgba(0,0,0,.35);padding:22px 10px; }}
-      .criteria-result-group {{ display:inline-flex;padding:3px 10px;border-radius:4px;font-weight:600; }}
-      .criteria-result-group.result-success {{ color:#237b3b;background:#f0f9f1;border:1px solid #b7e1bd; }}
-      .criteria-result-group.result-failure {{ color:#c9362b;background:#fff1f0;border:1px solid #ffccc7; }}
       .criteria-drag-handle {{ display:inline-block;margin-right:7px;color:rgba(0,0,0,.28);font-size:13px;letter-spacing:-2px;cursor:grab; }}
       .criteria-result-table .result-degree:disabled {{ background:#f5f5f5;color:rgba(0,0,0,.45);border-color:#d9d9d9;cursor:not-allowed;opacity:1;pointer-events:none;user-select:none; }}
-      .criteria-result-type {{ width:auto !important; min-width:72px; height:28px !important; padding:2px 24px 2px 9px !important; border-radius:4px; font-size:12px !important; font-weight:600; cursor:pointer; background-image:none !important; }}
-      .criteria-result-type.result-success {{ color:#237b3b; background:#f0f9f1; border-color:#b7e1bd; }}
-      .criteria-result-type.result-failure {{ color:#c9362b; background:#fff1f0; border-color:#ffccc7; }}
-      .criteria-result-type:disabled {{ cursor:not-allowed; opacity:1; }}
+      .criteria-result-type {{ min-width:0; }}
       .criteria-completion-tip {{ display:inline-flex;align-items:center;justify-content:center;width:15px;height:15px;border:1px solid #a9cbd4;border-radius:50%;color:#1F80A0;font-size:10px;font-weight:500;cursor:help; }}
       .criteria-result-add-actions {{ display:flex;gap:18px;margin-top:10px; }}
       .criteria-add-result {{ display:inline-block; }}
       .criteria-add-metric {{ display:inline-block; margin-top:10px; }}
+      .criteria-preview-mask[hidden] {{ display:none; }}
+      .criteria-preview-mask {{ position:fixed;inset:0;z-index:1500;background:rgba(0,0,0,.38);display:flex;align-items:center;justify-content:center; }}
+      .criteria-preview-dialog {{ width:560px;max-width:calc(100vw - 32px);max-height:calc(100vh - 48px);overflow:auto;background:#fff;border-radius:9px;padding:24px;box-shadow:0 12px 40px rgba(0,0,0,.2);box-sizing:border-box; }}
+      .criteria-preview-dialog h3 {{ margin:0 0 20px; }}
+      .criteria-preview-dialog .hmi-result-section,.criteria-preview-dialog .hmi-metric-section {{ padding:14px 16px;border:1px solid #edf0f3;border-radius:7px;margin-bottom:14px; }}
+      .criteria-preview-dialog .hmi-result-section {{ background:#f6f9ff; }}
+      .criteria-preview-dialog .hmi-metric-section {{ background:#fafafa; }}
+      .criteria-preview-dialog h4 {{ margin:0 0 12px;font-size:14px; }}
+      .criteria-preview-dialog .hmi-result-radios {{ display:flex;gap:18px;flex-wrap:wrap; }}
+      .criteria-preview-dialog .hmi-result-radios label {{ display:flex;align-items:center;gap:5px;color:#3f4752;font-size:13px; }}
+      .criteria-preview-dialog .hmi-metric-section label {{ display:flex;flex-direction:column;gap:7px;margin-bottom:12px;color:#5f6670;font-size:13px; }}
+      .criteria-preview-dialog .hmi-metric-section label:last-child {{ margin-bottom:0; }}
+      .criteria-preview-dialog .hmi-metric-label {{ display:flex;align-items:center;gap:6px; }}
+      .criteria-preview-dialog .hmi-metric-tip {{ display:inline-flex;align-items:center;justify-content:center;width:15px;height:15px;border:1px solid #a9cbd4;border-radius:50%;color:#1F80A0;font-size:10px;line-height:1;cursor:help; }}
+      .criteria-preview-dialog select,.criteria-preview-dialog input[type="text"],.criteria-preview-dialog input[type="number"] {{ width:100%;height:38px;border:1px solid #d9dde3;border-radius:6px;padding:0 10px;background:#fff;box-sizing:border-box; }}
+      .criteria-preview-dialog input[type="radio"],.criteria-preview-dialog input[type="checkbox"] {{ accent-color:#2463eb; }}
+      .criteria-preview-multi {{ margin-bottom:12px; }}
+      .criteria-preview-multi-title {{ display:block;margin-bottom:8px;color:#5f6670;font-size:13px; }}
+      .criteria-preview-options {{ display:flex;gap:16px;flex-wrap:wrap;padding:9px 10px;border:1px solid #d9dde3;border-radius:6px;background:#fff; }}
+      .criteria-preview-dialog .criteria-preview-options label {{ display:flex;flex-direction:row;align-items:center;gap:5px;margin:0;color:#3f4752; }}
+      .criteria-preview-empty {{ color:rgba(0,0,0,.35);font-size:13px;padding:4px 0; }}
+      .criteria-preview-actions {{ display:flex;justify-content:flex-end;gap:8px;margin-top:20px; }}
+      .criteria-preview-actions button {{ padding:8px 18px;border:1px solid #d9dde3;background:#fff;border-radius:6px;cursor:pointer; }}
+      .criteria-preview-actions button.primary {{ background:#2463eb;border-color:#2463eb;color:#fff; }}
     </style>
     <script>
     var criteriaViewData = {criteria_view_data};
@@ -3168,9 +3641,10 @@ def criteria_page():
       metric = metric || {{}};
       var tr = document.createElement('tr');
       tr.className = 'criteria-metric-row';
-      tr.innerHTML = '<td><input class="ant-input" name="metric_name" placeholder="请输入指标名称"></td><td><select class="ant-input metric-type" name="metric_type" onchange="criteriaMetricTypeChange(this)"><option>文本</option><option>单选</option><option>多选</option><option>数字</option></select></td><td><input class="ant-input metric-options" name="metric_options" placeholder="逗号分隔选项" disabled oninput="criteriaMetricOptionsChange(this)"></td><td class="metric-default-cell"><input class="ant-input" name="metric_default" placeholder="请输入默认值"></td><td><a href="javascript:void(0)" class="action-link" onclick="criteriaRemoveMetric(this)">删除</a></td>';
+      tr.innerHTML = '<td><input class="ant-input" name="metric_name" placeholder="请输入指标名称"></td><td><select class="ant-input metric-type" name="metric_type" onchange="criteriaMetricTypeChange(this)"><option>文本</option><option>单选</option><option>多选</option><option>数字</option></select></td><td><input class="ant-input metric-options" name="metric_options" placeholder="逗号分隔选项" disabled oninput="criteriaMetricOptionsChange(this)"></td><td class="metric-default-cell"><input class="ant-input" name="metric_default" placeholder="请输入默认值"></td><td><input class="ant-input" name="metric_description" placeholder="请输入指标说明"></td><td><a href="javascript:void(0)" class="action-link" onclick="criteriaRemoveMetric(this)">删除</a></td>';
       document.querySelector('.criteria-drawer-content #criteria-metrics-table tbody').appendChild(tr);
       tr.querySelector('[name="metric_name"]').value = metric.name || metric.metric_name || '';
+      tr.querySelector('[name="metric_description"]').value = metric.description || metric.metric_description || '';
       tr.querySelector('[name="metric_type"]').value = metric.type || metric.metric_type || '文本';
       tr.querySelector('[name="metric_options"]').value = Array.isArray(metric.options) ? metric.options.join(',') : (metric.options || '');
       criteriaMetricTypeChange(tr.querySelector('[name="metric_type"]'));
@@ -3206,6 +3680,50 @@ def criteria_page():
       }}
     }}
     function criteriaRemoveMetric(btn) {{ var row = btn.closest('tr'); if (row) row.remove(); }}
+    function criteriaPreviewControlValue(control) {{
+      if (!control) return '';
+      if (control.multiple) return Array.from(control.selectedOptions).map(function(option) {{ return option.value; }}).filter(Boolean);
+      return control.value || '';
+    }}
+    function criteriaPreviewMetricHtml(row, index) {{
+      var name = row.querySelector('[name="metric_name"]').value.trim();
+      if (!name) return '';
+      var descriptionControl = row.querySelector('[name="metric_description"]');
+      var description = descriptionControl ? descriptionControl.value.trim() : '';
+      var metricLabel = criteriaEscape(name) + (description ? ' <span class="hmi-metric-tip" tabindex="0" data-tip="' + criteriaEscape(description) + '">i</span>' : '');
+      var type = row.querySelector('[name="metric_type"]').value;
+      var optionsControl = row.querySelector('[name="metric_options"]');
+      var options = (optionsControl ? optionsControl.value : '').split(',').map(function(value) {{ return value.trim(); }}).filter(Boolean);
+      var defaultValue = criteriaPreviewControlValue(row.querySelector('[name="metric_default"]'));
+      var defaults = Array.isArray(defaultValue) ? defaultValue : [String(defaultValue)];
+      var fieldName = 'criteria-preview-metric-' + index;
+      if (type === '单选') {{
+        var optionHtml = '<option value="">请选择</option>' + options.map(function(option) {{ return '<option' + (defaults.indexOf(option) >= 0 ? ' selected' : '') + '>' + criteriaEscape(option) + '</option>'; }}).join('');
+        return '<label><span class="hmi-metric-label">' + metricLabel + '</span><select name="' + fieldName + '">' + optionHtml + '</select></label>';
+      }}
+      if (type === '多选') {{
+        var checkboxHtml = options.map(function(option) {{ return '<label><input type="checkbox" name="' + fieldName + '" value="' + criteriaEscape(option) + '"' + (defaults.indexOf(option) >= 0 ? ' checked' : '') + '>' + criteriaEscape(option) + '</label>'; }}).join('');
+        return '<div class="criteria-preview-multi"><span class="criteria-preview-multi-title hmi-metric-label">' + metricLabel + '</span><div class="criteria-preview-options">' + (checkboxHtml || '<span class="criteria-preview-empty">暂无可选项</span>') + '</div></div>';
+      }}
+      var inputType = type === '数字' ? 'number' : 'text';
+      var placeholder = type === '数字' ? '请输入数字' : '请输入';
+      return '<label><span class="hmi-metric-label">' + metricLabel + '</span><input type="' + inputType + '" name="' + fieldName + '" value="' + criteriaEscape(defaults[0] || '') + '" placeholder="' + placeholder + '"></label>';
+    }}
+    function openCriteriaPreview() {{
+      var drawer = document.querySelector('.criteria-drawer-content');
+      var results = Array.from(drawer.querySelectorAll('#criteria-result-table [name="result_type"]')).map(function(input) {{ return input.value.trim(); }}).filter(Boolean);
+      var resultRoot = document.getElementById('criteria-preview-results');
+      resultRoot.innerHTML = results.length ? results.map(function(result, index) {{ return '<label><input type="radio" name="criteria-preview-result" value="' + criteriaEscape(result) + '"' + (index === 0 ? ' checked' : '') + '>' + criteriaEscape(result) + '</label>'; }}).join('') : '<span class="criteria-preview-empty">暂无评测结果</span>';
+      var metricRows = Array.from(drawer.querySelectorAll('#criteria-metrics-table tbody tr.criteria-metric-row'));
+      var metricsHtml = metricRows.map(criteriaPreviewMetricHtml).filter(Boolean).join('');
+      document.getElementById('criteria-preview-metrics').innerHTML = metricsHtml || '<div class="criteria-preview-empty">暂无评测指标</div>';
+      document.getElementById('criteria-preview-mask').hidden = false;
+    }}
+    function criteriaClosePreview() {{ document.getElementById('criteria-preview-mask').hidden = true; }}
+    function criteriaPreviewSubmit() {{
+      criteriaClosePreview();
+      if (window.showToast) window.showToast('当前为预览模式，不会提交数据', 'info');
+    }}
     var criteriaDraggingRow = null;
     function criteriaBindResultDrag(tr) {{
       tr.draggable = true;
@@ -3229,53 +3747,43 @@ def criteria_page():
       tr.addEventListener('drop', function(event) {{ event.preventDefault(); tr.classList.remove('criteria-drag-over'); criteriaRenumberResults(); }});
       tr.addEventListener('dragend', function() {{ tr.classList.remove('criteria-dragging'); document.querySelectorAll('.criteria-drag-over').forEach(function(row) {{ row.classList.remove('criteria-drag-over'); }}); criteriaDraggingRow = null; criteriaRenumberResults(); }});
     }}
-    function criteriaResultTypeChange(select) {{
-      select.classList.toggle('result-success', select.value === '成功');
-      select.classList.toggle('result-failure', select.value === '失败');
-      select.closest('tr').dataset.resultParent = select.value;
-    }}
-    function criteriaResultRow(parent, item) {{
+    function criteriaResultRow(resultType, item) {{
       item = item || {{}};
       var tr = document.createElement('tr'); tr.className = 'criteria-result-row';
-      tr.dataset.resultParent = parent;
+      tr.dataset.resultType = resultType || '';
       var degree = item.degree || 1;
-      var desc = item.description || '';
-      tr.innerHTML = '<td><span class="criteria-drag-handle" aria-hidden="true">⋮⋮</span><select class="criteria-result-type ' + (parent === '成功' ? 'result-success' : 'result-failure') + '" name="result_parent" onchange="criteriaResultTypeChange(this)" aria-label="结果类型"><option value="成功"' + (parent === '成功' ? ' selected' : '') + '>成功</option><option value="失败"' + (parent === '失败' ? ' selected' : '') + '>失败</option></select></td><td><input class="ant-input" name="result_desc" placeholder="请输入结果描述" value="' + criteriaEscape(desc) + '"></td><td><input class="ant-input result-degree" type="number" value="' + degree + '" disabled readonly tabindex="-1" aria-readonly="true" aria-label="完成度"><input type="hidden" class="result-degree-value" name="result_degree" value="' + degree + '"></td><td><a href="javascript:void(0)" class="action-link danger" onclick="criteriaRemoveResultRow(this)">删除</a></td>';
+      tr.innerHTML = '<td><div style="display:flex;align-items:center;"><span class="criteria-drag-handle" aria-hidden="true">⋮⋮</span><input class="ant-input criteria-result-type" name="result_type" maxlength="20" required placeholder="请输入结果类型，最多20个字符" value="' + criteriaEscape(resultType) + '"></div></td><td><input class="ant-input result-degree" type="number" value="' + degree + '" disabled readonly tabindex="-1" aria-readonly="true" aria-label="完成度"><input type="hidden" class="result-degree-value" name="result_degree" value="' + degree + '"></td><td><a href="javascript:void(0)" class="action-link danger" onclick="criteriaRemoveResultRow(this)">删除</a></td>';
       document.querySelector('#criteria-result-table tbody').appendChild(tr);
+      tr.querySelector('[name="result_type"]').addEventListener('input', function() {{ tr.dataset.resultType = this.value; }});
       criteriaBindResultDrag(tr);
       return tr;
     }}
     function criteriaEscape(value) {{ return String(value || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }}
     function criteriaRenumberResults() {{
-      var rows = Array.from(document.querySelectorAll('#criteria-result-table tbody tr[data-result-parent]'));
+      var rows = Array.from(document.querySelectorAll('#criteria-result-table tbody tr.criteria-result-row'));
       rows.forEach(function(row, index) {{ var value = rows.length - index; var degree = row.querySelector('.result-degree'); var hidden = row.querySelector('.result-degree-value'); if (degree) degree.value = value; if (hidden) hidden.value = value; }});
     }}
     function criteriaSortResults() {{
       var body = document.querySelector('#criteria-result-table tbody'); if (!body) return;
-      Array.from(body.querySelectorAll('tr[data-result-parent]')).sort(function(a, b) {{
+      Array.from(body.querySelectorAll('tr.criteria-result-row')).sort(function(a, b) {{
         return Number(b.querySelector('.result-degree').value || 0) - Number(a.querySelector('.result-degree').value || 0);
       }}).forEach(function(row) {{ body.appendChild(row); }});
     }}
-    function criteriaAddResultRow(parent) {{
-      var body = document.querySelector('#criteria-result-table tbody');
-      if (!parent) parent = '成功';
-      var tr = criteriaResultRow(parent, {{degree: 1, description: ''}});
+    function criteriaAddResultRow() {{
+      var tr = criteriaResultRow('', {{degree: 1}});
       criteriaRenumberResults();
       criteriaSortResults();
-      tr.querySelector('[name="result_desc"]').focus();
+      tr.querySelector('[name="result_type"]').focus();
     }}
     function criteriaRemoveResultRow(btn) {{ var row = btn.closest('tr'); if (row) row.remove(); criteriaRenumberResults(); criteriaSortResults(); }}
     function criteriaResetRows(definitions) {{
       var body = document.querySelector('#criteria-result-table tbody'); if (!body) return;
       body.innerHTML = '';
-      definitions = definitions || {{}};
-      var items = [];
-      ['成功', '失败'].forEach(function(parent) {{
-        (definitions[parent] || []).forEach(function(item) {{ items.push({{ parent: parent, item: item }}); }});
-      }});
-      if (!items.length) items = [{{parent:'成功', item:{{description:'成功', degree:1}}}}, {{parent:'失败', item:{{description:'失败', degree:1}}}}];
-      items.sort(function(a, b) {{ return Number(b.item.degree || 0) - Number(a.item.degree || 0); }});
-      items.forEach(function(entry) {{ criteriaResultRow(entry.parent, entry.item); }});
+      definitions = definitions || [];
+      var items = Array.isArray(definitions) ? definitions.slice() : [];
+      if (!items.length) items = [{{type:'', degree:1}}];
+      items.sort(function(a, b) {{ return Number(b.degree || 0) - Number(a.degree || 0); }});
+      items.forEach(function(item) {{ criteriaResultRow(item.type || '', item); }});
       criteriaRenumberResults();
       criteriaSortResults();
     }}
@@ -3332,6 +3840,13 @@ def criteria_page():
     }}
     document.addEventListener('DOMContentLoaded', function() {{ criteriaResetRows({{}}); criteriaResetMetrics([]); }});
     </script>
+    <style>
+      .criteria-list-card {{ position:relative; z-index:10; overflow:visible; }}
+      .criteria-list-card .ant-table,
+      .criteria-list-card .actions-cell {{ overflow:visible; }}
+      .criteria-list-card .action-more-wrap {{ position:relative; z-index:60; }}
+      .criteria-list-card .action-more-menu {{ top:auto; bottom:calc(100% + 4px); z-index:120; }}
+    </style>
     '''
     return render_page("\u8bc4\u4ef7\u6807\u51c6\u7ba1\u7406", content, active="criteria")
 
@@ -3348,25 +3863,36 @@ def criteria_create():
     scale_range = request.form.get("scale_range", "")
     scale_desc = request.form.get("scale_desc", "")
     note = request.form.get("note", "").strip() or None
-    result_types = request.form.getlist("result_parent") or request.form.getlist("result_type")
+    result_types = request.form.getlist("result_type")
     result_degrees = request.form.getlist("result_degree")
-    result_descs = request.form.getlist("result_desc")
-    result_definitions = {"成功": [], "失败": []}
-    for index, (result_type, result_desc) in enumerate(zip(result_types, result_descs)):
+    result_definitions = []
+    for index, result_type in enumerate(result_types):
         result_type = result_type.strip()
-        result_desc = result_desc.strip()
-        if result_type in result_definitions and result_desc:
-            degree = result_degrees[index] if index < len(result_degrees) else len(result_definitions[result_type]) + 1
-            result_definitions[result_type].append({"description": result_desc, "degree": degree})
+        if len(result_type) > 20:
+            flash("结果类型不能超过 20 个字符", "error")
+            return redirect(url_for("criteria_page"))
+        if result_type:
+            degree = result_degrees[index] if index < len(result_degrees) else len(result_definitions) + 1
+            result_definitions.append({"type": result_type, "degree": degree})
     # Backward-compatible fallback for callers that still submit the old comma-separated fields.
-    if not any(result_definitions.values()):
-        result_definitions = {
-            "成功": [{"description": x.strip(), "degree": i + 1} for i, x in enumerate(request.form.get("success_definitions", "").replace("，", ",").split(",")) if x.strip()],
-            "失败": [{"description": x.strip(), "degree": i + 1} for i, x in enumerate(request.form.get("failure_definitions", "").replace("，", ",").split(",")) if x.strip()],
-        }
+    if not result_definitions:
+        legacy_values = [
+            x.strip()
+            for field in ("success_definitions", "failure_definitions")
+            for x in request.form.get(field, "").replace("，", ",").split(",")
+            if x.strip()
+        ]
+        result_definitions = [
+            {"type": value[:20], "degree": len(legacy_values) - index}
+            for index, value in enumerate(legacy_values)
+        ]
+    if not result_definitions:
+        flash("请至少配置一个结果类型", "error")
+        return redirect(url_for("criteria_page"))
     result_definitions = normalize_result_definitions(result_definitions)
 
     metric_names = request.form.getlist("metric_name")
+    metric_descriptions = request.form.getlist("metric_description")
     metric_types = request.form.getlist("metric_type")
     metric_options = request.form.getlist("metric_options")
     metric_defaults = request.form.getlist("metric_default")
@@ -3375,10 +3901,11 @@ def criteria_create():
         metric_name = metric_name.strip()
         if not metric_name:
             continue
+        description = metric_descriptions[index].strip() if index < len(metric_descriptions) else ""
         metric_type = metric_types[index] if index < len(metric_types) else "文本"
         options = [x.strip() for x in (metric_options[index] if index < len(metric_options) else "").replace("，", ",").split(",") if x.strip()]
         default_value = metric_defaults[index] if index < len(metric_defaults) else ""
-        metrics.append({"name": metric_name, "type": metric_type, "options": options, "default_value": default_value})
+        metrics.append({"name": metric_name, "description": description, "type": metric_type, "options": options, "default_value": default_value})
     if not name:
         flash("\u6807\u51c6\u540d\u79f0\u4e0d\u80fd\u4e3a\u7a7a", "error")
         return redirect(url_for("criteria_page"))
@@ -3536,18 +4063,17 @@ def criteria_detail(cid):
         note_card = f'<div class="ant-card ant-card-bordered"><div class="ant-card-head" style="padding:12px 20px;"><h3>\u5907\u6ce8\u6a21\u5757</h3></div><div class="ant-card-body">{note_section}</div></div>'
     definitions = normalize_result_definitions(c.get("result_definitions", {}))
     result_definition_rows = "".join(
-        f'<tr><td><span class="criteria-readonly-result {"is-success" if parent == "成功" else "is-failure"}">{parent}</span></td><td>{item["degree"]}</td><td>{html.escape(item["description"])}</td></tr>'
-        for parent in ("成功", "失败")
-        for item in definitions.get(parent, [])
-    ) or '<tr><td colspan="3" class="criteria-readonly-empty">暂无评测结果</td></tr>'
+        f'<tr><td><span class="criteria-readonly-result">{html.escape(item["type"])}</span></td><td>{item["degree"]}</td></tr>'
+        for item in definitions
+    ) or '<tr><td colspan="2" class="criteria-readonly-empty">暂无评测结果</td></tr>'
     metric_data = get_criterion_metrics(c) or [
         {"name": item.get("metric_name", "--"), "type": "数字", "options": [], "default_value": f'{item.get("score_range", {}).get("min", 0)} ~ {item.get("score_range", {}).get("max", 5)}'}
         for item in scale_items
     ]
     metric_rows = "".join(
-        f'<tr><td>{html.escape(str(item.get("name", item.get("metric_name", "--"))))}</td><td>{html.escape(str(item.get("type", "文本")))}</td><td>{html.escape(", ".join(item.get("options", [])) if isinstance(item.get("options", []), list) else str(item.get("options", "--")))}</td><td>{html.escape(str(item.get("default_value", item.get("default", ""))) or "--")}</td></tr>'
+        f'<tr><td>{html.escape(str(item.get("name", item.get("metric_name", "--"))))}</td><td>{html.escape(str(item.get("description", item.get("metric_description", ""))) or "--")}</td><td>{html.escape(str(item.get("type", "文本")))}</td><td>{html.escape(", ".join(item.get("options", [])) if isinstance(item.get("options", []), list) else str(item.get("options", "--")))}</td><td>{html.escape(str(item.get("default_value", item.get("default", ""))) or "--")}</td></tr>'
         for item in metric_data
-    ) or '<tr><td colspan="4" class="criteria-readonly-empty">暂无评测指标</td></tr>'
+    ) or '<tr><td colspan="5" class="criteria-readonly-empty">暂无评测指标</td></tr>'
 
     content = f'''
     <div class="criteria-readonly-page">
@@ -3558,8 +4084,8 @@ def criteria_detail(cid):
           <div class="form-group"><label>标准名称</label><input class="ant-input" value="{html.escape(c.get("name", ""), quote=True)}" disabled></div>
           <div class="form-group"><label>描述</label><textarea class="ant-input" rows="3" disabled>{html.escape(c.get("description", ""))}</textarea></div>
           <hr style="border:none;border-top:1px solid #f0f0f0;margin:20px 0;">
-          <div class="form-group"><label>评测结果</label><table class="ant-table criteria-result-table criteria-readonly-table"><thead><tr><th>结果类型</th><th>程度</th><th>结果描述</th></tr></thead><tbody>{result_definition_rows}</tbody></table></div>
-          <div class="form-group"><label>评测指标</label><table class="ant-table criteria-metrics-table criteria-readonly-table"><thead><tr><th>指标名称</th><th>字段类型</th><th>字段值</th><th>默认值</th></tr></thead><tbody>{metric_rows}</tbody></table></div>
+          <div class="form-group"><label>评测结果</label><table class="ant-table criteria-result-table criteria-readonly-table"><thead><tr><th>结果类型</th><th>完成度</th></tr></thead><tbody>{result_definition_rows}</tbody></table></div>
+          <div class="form-group"><label>评测指标</label><table class="ant-table criteria-metrics-table criteria-readonly-table"><thead><tr><th>指标名称</th><th>指标说明</th><th>字段类型</th><th>字段值</th><th>默认值</th></tr></thead><tbody>{metric_rows}</tbody></table></div>
           {('<div class="form-group"><label>备注</label><textarea class="ant-input" rows="2" disabled>' + html.escape(form.get("note", "")) + '</textarea></div>') if form.get("note") else ''}
         </div>
         <div class="ant-drawer-footer"><a href="/criteria" class="ant-btn">关闭</a></div>
@@ -3575,9 +4101,7 @@ def criteria_detail(cid):
       .criteria-readonly-body .ant-input[disabled] { color:rgba(0,0,0,.72); background:#fafafa; cursor:default; }
       .criteria-readonly-table { margin-top:8px; }
       .criteria-readonly-table th,.criteria-readonly-table td { padding:9px 10px; }
-      .criteria-readonly-result { display:inline-flex; padding:3px 9px; border-radius:4px; font-size:12px; }
-      .criteria-readonly-result.is-success { color:#237b3b; background:#f0f9f1; }
-      .criteria-readonly-result.is-failure { color:#c9362b; background:#fff1f0; }
+      .criteria-readonly-result { display:inline-flex; padding:3px 9px; border-radius:4px; font-size:12px; color:#23677a; background:#eef8fa; }
       .criteria-readonly-empty { text-align:center; color:rgba(0,0,0,.35); padding:20px !important; }
     </style>'''
     return render_page(f"\u8bc4\u4ef7\u6807\u51c6 - {c['name']}", NOTICE_MVP + content, active="criteria")
@@ -3797,12 +4321,49 @@ def scene_detail(sid):
 
 
 # ── Benchmark Management ──
+@app.route("/benchmarks/prompt-search")
+def benchmark_prompt_search():
+    query = request.args.get("q", "").strip().casefold()
+    if not query:
+        return jsonify({"items": []})
+
+    items = []
+    for prompt in PROMPTS:
+        searchable_values = [
+            prompt.get("high_level", ""),
+            prompt.get("high_level_en", ""),
+        ]
+        for child in prompt.get("low_levels", []):
+            searchable_values.extend((child.get("zh", ""), child.get("en", "")))
+        if query not in " ".join(str(value) for value in searchable_values).casefold():
+            continue
+        items.append({
+            "id": prompt["id"],
+            "name": prompt.get("high_level", ""),
+            "name_en": prompt.get("high_level_en", ""),
+            "step_count": len(prompt.get("low_levels", [])),
+        })
+        if len(items) >= 20:
+            break
+    return jsonify({"items": items})
+
+
 @app.route("/benchmarks")
 def benchmarks_page():
     benchmark_filter = request.args.get("name", "").strip()
+    prompt_filter_id = request.args.get("prompt_id", "").strip()
+    prompt_filter_name = request.args.get("prompt_name", "").strip()
+    publish_status_filter = request.args.get("publish_status", "").strip()
+    selected_prompt = get_prompt(prompt_filter_id) if prompt_filter_id else None
+    if selected_prompt:
+        prompt_filter_name = selected_prompt.get("high_level", "")
     rows = ""
     for b in BENCHMARKS:
         if benchmark_filter and benchmark_filter.lower() not in b.get("name", "").lower():
+            continue
+        if prompt_filter_id and prompt_filter_id not in b.get("prompt_ids", []):
+            continue
+        if publish_status_filter and publish_status_filter != b.get("publish_status", "已发布"):
             continue
         prompt_count = len(b.get("prompt_ids", []))
         prompt_tags = ""
@@ -3864,19 +4425,25 @@ def benchmarks_page():
         for b in BENCHMARKS
     }, ensure_ascii=False)
     content = f'''
-    <div class="filter-bar fb-labeled">
-      <div class="ff"><label>评测集</label><input type="text" value="{html.escape(benchmark_filter, quote=True)}" placeholder="\u641c\u7d22评测集"></div>
-      <div class="ff"><label>\u63d0\u793a\u8bcd</label><input type="text" placeholder="\u641c\u7d22\u63d0\u793a\u8bcd\uff08\u6a21\u7cca\u5339\u914d\uff09"></div>
-      <div class="ff"><label>状态</label><select name="publish_status"><option value="">全部状态</option><option>未发布</option><option>已发布</option></select></div>
+    <form class="filter-bar fb-labeled benchmark-filter-bar" method="get" action="/benchmarks">
+      <div class="ff"><label>评测集</label><input type="text" name="name" value="{html.escape(benchmark_filter, quote=True)}" placeholder="\u641c\u7d22评测集"></div>
+      <div class="ff benchmark-prompt-filter"><label>\u63d0\u793a\u8bcd</label>
+        <div class="benchmark-remote-select" id="benchmark-prompt-remote">
+          <input type="text" id="benchmark-prompt-input" name="prompt_name" value="{html.escape(prompt_filter_name, quote=True)}" placeholder="请输入关键词搜索提示词组" autocomplete="off" oninput="benchmarkPromptRemoteInput(this.value)" onfocus="benchmarkPromptRemoteFocus()">
+          <input type="hidden" id="benchmark-prompt-id" name="prompt_id" value="{html.escape(prompt_filter_id, quote=True)}">
+          <div class="benchmark-remote-panel" id="benchmark-prompt-panel" hidden></div>
+        </div>
+      </div>
+      <div class="ff"><label>状态</label><select name="publish_status"><option value="">全部状态</option><option value="未发布"{' selected' if publish_status_filter == '未发布' else ''}>未发布</option><option value="已发布"{' selected' if publish_status_filter == '已发布' else ''}>已发布</option></select></div>
       <div class="filter-actions">
-        <button class="ant-btn" onclick="clearFilters()">\u6e05\u7a7a</button>
-        <button class="ant-btn ant-btn-primary" onclick="doSearch()">\u641c\u7d22</button>
+        <a class="ant-btn" href="/benchmarks">\u6e05\u7a7a</a>
+        <button class="ant-btn ant-btn-primary" type="submit">\u641c\u7d22</button>
       </div>
       <div style="flex:1;"></div>
-      <button class="ant-btn ant-btn-primary" onclick="openBenchmarkCreate()">\u65b0\u589e评测集</button>
-    </div>
+      <button class="ant-btn ant-btn-primary" type="button" onclick="openBenchmarkCreate()">\u65b0\u589e评测集</button>
+    </form>
 
-    <div class="ant-card ant-card-bordered">
+    <div class="ant-card ant-card-bordered benchmark-list-card">
       <table class="ant-table">
         <thead><tr>
           <th>\u540d\u79f0</th><th>\u63d0\u793a\u8bcd</th><th>状态</th><th>\u521b\u5efa\u4eba</th><th>\u521b\u5efa\u65f6\u95f4</th><th>\u64cd\u4f5c</th>
@@ -3945,6 +4512,8 @@ def benchmarks_page():
     var benchmarkViewData = {benchmark_view_data};
     var benchmarkExecutionSelections = new Set();
     var benchmarkInitializedGroups = new Set();
+    var benchmarkPromptRemoteTimer = null;
+    var benchmarkPromptRemoteController = null;
     document.addEventListener('DOMContentLoaded', function() {{
       if (new URLSearchParams(window.location.search).get('open') === 'create' && typeof openModal === 'function') openModal('create-bm-drawer');
       benchmarkTagsInit();
@@ -4004,6 +4573,44 @@ def benchmarks_page():
     }}
     function benchmarkPromptEscape(value) {{
       return String(value || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }}
+    function benchmarkPromptRemoteInput(value) {{
+      document.getElementById('benchmark-prompt-id').value = '';
+      window.clearTimeout(benchmarkPromptRemoteTimer);
+      var keyword = String(value || '').trim();
+      if (!keyword) {{ benchmarkPromptRemoteClose(); return; }}
+      benchmarkPromptRemoteTimer = window.setTimeout(function() {{ benchmarkPromptRemoteSearch(keyword); }}, 250);
+    }}
+    function benchmarkPromptRemoteFocus() {{
+      var input = document.getElementById('benchmark-prompt-input');
+      if (input && input.value.trim() && !document.getElementById('benchmark-prompt-id').value) benchmarkPromptRemoteInput(input.value);
+    }}
+    function benchmarkPromptRemoteSearch(keyword) {{
+      var panel = document.getElementById('benchmark-prompt-panel');
+      panel.hidden = false;
+      panel.innerHTML = '<div class="benchmark-remote-state">搜索中...</div>';
+      if (benchmarkPromptRemoteController) benchmarkPromptRemoteController.abort();
+      benchmarkPromptRemoteController = new AbortController();
+      fetch('/benchmarks/prompt-search?q=' + encodeURIComponent(keyword), {{ signal: benchmarkPromptRemoteController.signal }})
+        .then(function(response) {{ return response.json(); }})
+        .then(function(data) {{
+          var items = data.items || [];
+          if (!items.length) {{ panel.innerHTML = '<div class="benchmark-remote-state">未找到匹配的提示词组</div>'; return; }}
+          panel.innerHTML = items.map(function(item) {{
+            return '<button type="button" class="benchmark-remote-option" data-id="' + benchmarkPromptEscape(item.id) + '" data-name="' + benchmarkPromptEscape(item.name) + '" onclick="benchmarkPromptRemoteSelect(this)"><span class="benchmark-remote-name">' + benchmarkPromptEscape(item.name) + '</span><span class="benchmark-remote-meta">' + benchmarkPromptEscape(item.name_en) + ' · ' + item.step_count + ' 个 lowlevel</span></button>';
+          }}).join('');
+        }})
+        .catch(function(error) {{ if (error.name !== 'AbortError') panel.innerHTML = '<div class="benchmark-remote-state">搜索失败，请重试</div>'; }});
+    }}
+    function benchmarkPromptRemoteSelect(option) {{
+      document.getElementById('benchmark-prompt-input').value = option.dataset.name || '';
+      document.getElementById('benchmark-prompt-id').value = option.dataset.id || '';
+      benchmarkPromptRemoteClose();
+    }}
+    function benchmarkPromptRemoteClose() {{
+      var panel = document.getElementById('benchmark-prompt-panel');
+      panel.hidden = true;
+      panel.innerHTML = '';
     }}
     window.renderBenchmarkPromptExecutionTree = function() {{
       var tree = document.getElementById('bm-prompt-execution-tree');
@@ -4110,7 +4717,28 @@ def benchmarks_page():
       if (row) row.classList.remove('selected');
       benchmarkTagsSync();
     }}
+    document.addEventListener('click', function(event) {{
+      var remote = document.getElementById('benchmark-prompt-remote');
+      if (remote && !remote.contains(event.target)) benchmarkPromptRemoteClose();
+    }});
     </script>
+    <style>
+      .benchmark-filter-bar {{ overflow:visible; position:relative; z-index:20; }}
+      .benchmark-list-card {{ position:relative; z-index:10; overflow:visible; }}
+      .benchmark-list-card .ant-table,
+      .benchmark-list-card .actions-cell {{ overflow:visible; }}
+      .benchmark-list-card .action-more-wrap {{ position:relative; z-index:60; }}
+      .benchmark-list-card .action-more-menu {{ top:auto; bottom:calc(100% + 4px); z-index:120; }}
+      .benchmark-prompt-filter {{ min-width:280px; }}
+      .benchmark-remote-select {{ position:relative; }}
+      .benchmark-remote-select > input[type="text"] {{ width:100%; padding-right:30px; }}
+      .benchmark-remote-panel {{ position:absolute; z-index:1300; top:calc(100% + 4px); left:0; width:100%; max-height:280px; overflow-y:auto; padding:4px 0; border:1px solid #d9d9d9; border-radius:6px; background:#fff; box-shadow:0 6px 18px rgba(0,0,0,.12); }}
+      .benchmark-remote-option {{ display:flex; width:100%; padding:9px 12px; border:0; background:#fff; flex-direction:column; align-items:flex-start; gap:3px; text-align:left; cursor:pointer; }}
+      .benchmark-remote-option:hover {{ background:#f5f8f9; }}
+      .benchmark-remote-name {{ color:rgba(0,0,0,.85); font-size:13px; line-height:1.4; }}
+      .benchmark-remote-meta {{ max-width:100%; overflow:hidden; color:rgba(0,0,0,.45); font-size:11px; line-height:1.4; text-overflow:ellipsis; white-space:nowrap; }}
+      .benchmark-remote-state {{ padding:18px 12px; color:rgba(0,0,0,.38); font-size:12px; text-align:center; }}
+    </style>
     '''
     return render_page("评测集", content, active="benchmarks")
 
@@ -4534,9 +5162,6 @@ def tasks_page():
     task_view_data = {}
     for _task in EVAL_TASKS:
         _bm = get_benchmark(_task.get("benchmark_id", ""))
-        _scene = get_scene(_task.get("scene_id", "")) or {}
-        _scene_env = _scene.get("environment", {}) or {}
-        _scene_refs = _scene.get("references", {}) or {}
         _selected_prompt_ids = list(_task.get("selected_prompt_ids", []))
         _selected_lowlevel_ids = list(_task.get("selected_lowlevel_ids", []))
         if not _selected_lowlevel_ids:
@@ -4557,9 +5182,6 @@ def tasks_page():
             "model_names": [get_model_name(mid) for mid in _task.get("model_ids", [])],
             "benchmark_id": _task.get("benchmark_id", ""),
             "benchmark_name": _bm.get("name", "") if _bm else "",
-            "scene_description": _task.get("scene_description", "") or _scene.get("description", ""),
-            "scene_images": list(_task.get("scene_images", [])) or [item.get("description", "场景图片") for item in _scene_refs.get("images", [])],
-            "scene_videos": list(_task.get("scene_videos", [])) or [item.get("description", "场景视频") for item in (_scene_refs.get("capture_videos", []) + _scene_refs.get("demo_videos", []))],
             "criteria_id": _task.get("criteria_id", ""),
             "selected_prompt_ids": _selected_prompt_ids,
             "selected_lowlevel_ids": _selected_lowlevel_ids,
@@ -4567,38 +5189,41 @@ def tasks_page():
         }
     task_view_data_json = _json.dumps(task_view_data, ensure_ascii=False)
 
-    # Checkpoint options (mselSync pattern)
-    ckpt_ms_opts = "".join(
-        f'<label class="er-opt"><input type="checkbox" value="{m["id"]}" data-name="{m["name"]}" onchange="mselSync(\'ms-ckpt\')"> <span>{m["name"]} <span style="color:rgba(0,0,0,0.35);">{m["version"]}</span></span></label>'
+    # Checkpoint is a single-select resource for a new evaluation task.
+    ckpt_select_opts = '<option value="">请选择 checkpoint</option>' + "".join(
+        f'<option value="{html.escape(m["id"], quote=True)}" data-name="{html.escape(m["name"], quote=True)}">{html.escape(m["name"])} · {html.escape(m["version"])}</option>'
         for m in MODELS
     )
     type_filter_opts = "".join(f'<option value="{k}">{v["label"]}</option>' for k, v in CRITERIA_TYPES.items())
     bm_filter_opts = "".join(f'<option>{b["name"]}</option>' for b in BENCHMARKS)
     model_filter_opts = "".join(f'<option>{m["name"]}</option>' for m in MODELS)
+    endpoint_modes_eval2 = endpoint_mode_buttons("eval2-mode", "selected", "eval2SelectMode")
 
     content = f'''
     <div style="display:none" class="eval2-flow" id="eval2-flow">
       <div class="eval2-flow-head"><div><h2>模式选择</h2><p>选择评测模式后开始端侧自检</p></div><span class="eval2-device" id="eval2-device">设备：未知设备</span></div>
-      <div class="eval2-mode-grid"><button type="button" class="eval2-mode selected" onclick="eval2SelectMode(this)"><span class="eval2-mode-icon">▣</span><b>Normal</b></button><button type="button" class="eval2-mode" onclick="eval2SelectMode(this)"><span class="eval2-mode-icon">⌁</span><b>DAgger</b></button><button type="button" class="eval2-mode" onclick="eval2SelectMode(this)"><span class="eval2-mode-icon">☑</span><b>Test</b></button><button type="button" class="eval2-mode" onclick="eval2SelectMode(this)"><span class="eval2-mode-icon">▤</span><b>Evaluation</b></button></div>
+      <div class="eval2-mode-grid">{endpoint_modes_eval2}</div>
       <button type="button" class="eval2-primary" id="eval2-self-check" onclick="eval2SelfCheck()">开始自检</button><div class="eval2-check-note">自检将检查机器人、相机、控制器与网络连接</div>
       <div class="eval2-setup" id="eval2-setup" hidden><div class="eval2-section-title">项目与任务 <span class="eval2-ok">● 设备自检通过</span></div><div class="eval2-select-row"><label>项目<select><option>eval</option><option>预训练</option><option>回归验证</option></select></label><label>任务<select id="eval2-task"><option value="">请选择任务</option>{"".join(f'<option value="{t["id"]}">{t["task_no"]}：{t.get("name", "评测任务")}</option>' for t in active_tasks)}</select></label></div><div class="eval2-section-title">场景和提示词</div><div class="eval2-context"><div><b>场景</b><p>选择任务后展示关联场景和参考素材</p></div><div><b>提示词</b><p>选择任务后展示待执行提示词组</p></div></div><button type="button" class="eval2-primary" onclick="eval2EnterTask()">确认进入任务</button></div>
     </div>
     <div class="filter-bar fb-labeled task-filter-bar">
-      <div class="ff"><label>\u4efb\u52a1</label><input type="text" placeholder="\u641c\u7d22\u4efb\u52a1"></div>
+      <div class="ff"><label>\u4efb\u52a1 ID</label><input id="eval-task-filter-id" type="text" placeholder="\u8bf7\u8f93\u5165\u4efb\u52a1 ID" onkeydown="if(event.key==='Enter')filterEvalTasks()"></div>
+      <div class="ff"><label>\u4efb\u52a1\u540d\u79f0</label><input id="eval-task-filter-name" type="text" placeholder="\u8bf7\u8f93\u5165\u4efb\u52a1\u540d\u79f0" onkeydown="if(event.key==='Enter')filterEvalTasks()"></div>
       <div class="ff"><label>\u8bc4\u6d4b\u96c6</label><select name="benchmark"><option value="">\u8bc4\u6d4b\u96c6</option>{bm_filter_opts}</select></div>
       <div class="ff"><label>Checkpoint</label><select name="checkpoint"><option value="">Checkpoint</option>{model_filter_opts}</select></div>
       <div class="ff"><label>\u72b6\u6001</label><select name="publish_status"><option value="">\u5168\u90e8\u72b6\u6001</option><option>未发布</option><option>已发布</option></select></div>
       <div class="ff"><label>\u4f18\u5148\u7ea7</label><select name="priority"><option value="">\u4f18\u5148\u7ea7</option><option>\u9ad8</option><option>\u4e2d</option><option>\u4f4e</option></select></div>
       <div class="filter-actions">
-        <button class="ant-btn" onclick="clearFilters()">\u6e05\u7a7a</button>
-        <button class="ant-btn ant-btn-primary" onclick="doSearch()">\u641c\u7d22</button>
+        <button class="ant-btn" type="button" onclick="clearEvalTaskFilters()">\u6e05\u7a7a</button>
+        <button class="ant-btn ant-btn-primary" type="button" onclick="filterEvalTasks()">\u641c\u7d22</button>
       </div>
       <div style="flex:1;"></div>
+      <button class="ant-btn" type="button" onclick="exportEvalTasks()">导出</button>
       <button class="ant-btn ant-btn-primary" onclick="openTaskCreate()">+ \u65b0\u589e\u8bc4\u6d4b\u4efb\u52a1</button>
     </div>
 
     <div class="ant-card ant-card-bordered">
-      <table class="ant-table">
+      <table class="ant-table" id="eval-task-table">
         <thead><tr>
           <th style="width:50px;">ID</th><th>\u4efb\u52a1\u540d\u79f0</th><th>\u8bc4\u6d4b\u96c6</th><th>Checkpoint</th><th>状态</th><th>评测状态</th><th>\u8fdb\u5ea6</th><th>\u4f18\u5148\u7ea7</th><th>\u521b\u5efa\u4eba</th><th>\u64cd\u4f5c</th>
         </tr></thead>
@@ -4629,37 +5254,12 @@ def tasks_page():
 
           <hr style="border:none;border-top:1px solid #f0f0f0;margin:20px 0;">
 
-          <!-- Section 2: Scene Description -->
-          <h4 style="font-size:14px;font-weight:500;margin-bottom:12px;color:rgba(0,0,0,0.85);">\u573a\u666f\u63cf\u8ff0</h4>
-          <div class="form-group"><label class="req">\u63cf\u8ff0</label><textarea name="scene_description" rows="3" required placeholder="描述场景环境、物体布局和执行约束"></textarea></div>
-          <div class="task-scene-upload-grid">
-            <div><label>\u56fe\u7247</label><div class="upload-zone" onclick="this.querySelector('input').click()"><input type="file" name="scene_images" multiple accept="image/*" style="display:none;" onchange="window.showFileNames(this)"><div class="upload-icon">▧</div><div class="upload-text">点击或拖拽上传图片</div><div class="upload-hint">JPG / PNG，支持多张</div><div class="upload-files" id="task-scene-images-files"></div></div></div>
-            <div><label>\u89c6\u9891</label><div class="upload-zone" onclick="this.querySelector('input').click()"><input type="file" name="scene_videos" multiple accept="video/*" style="display:none;" onchange="window.showFileNames(this)"><div class="upload-icon">▶</div><div class="upload-text">点击或拖拽上传视频</div><div class="upload-hint">MP4，支持多个</div><div class="upload-files" id="task-scene-videos-files"></div></div></div>
-          </div>
-
-          <hr style="border:none;border-top:1px solid #f0f0f0;margin:20px 0;">
-
-          <!-- Section 3: Eval Config -->
+          <!-- Section 2: Eval Config -->
           <h4 style="font-size:14px;font-weight:500;margin-bottom:12px;color:rgba(0,0,0,0.85);">\u8bc4\u6d4b\u914d\u7f6e</h4>
           <div class="form-row">
             <div class="form-group" style="grid-column:1/4;">
               <label class="req task-resource-label"><span class="task-resource-title">Checkpoint</span><span class="task-resource-actions"><a id="task-ckpt-view" class="task-resource-link" href="/model/checkpoints"><span class="task-resource-icon" aria-hidden="true">↗</span>\u53bb\u67e5\u770b</a><a class="task-resource-link task-resource-create" href="/model/checkpoints?open=create"><span class="task-resource-icon" aria-hidden="true">＋</span>\u53bb\u521b\u5efa</a></span></label>
-              <div style="position:relative;">
-                <div class="er-dd-trigger" id="ms-ckpt-btn" onclick="mselToggle('ms-ckpt', event)">
-                  <div id="ms-ckpt-chips" class="er-chips"></div>
-                  <span style="margin-left:auto;color:rgba(0,0,0,0.35);font-size:10px;flex-shrink:0;padding-left:4px;">&#9660;</span>
-                </div>
-                <div class="er-dd-panel" id="ms-ckpt-panel" style="width:100%;">
-                  <div style="padding:8px 12px;border-bottom:1px solid #f0f0f0;display:flex;gap:16px;align-items:center;">
-                    <a href="javascript:;" onclick="mselToggleAll('ms-ckpt', true)" style="font-size:12px;color:#1F80A0;">\u5168\u9009</a>
-                    <a href="javascript:;" onclick="mselToggleAll('ms-ckpt', false)" style="font-size:12px;color:rgba(0,0,0,0.45);">\u6e05\u7a7a</a>
-                  </div>
-                  <div style="max-height:240px;overflow-y:auto;padding:6px 0;">
-                    {ckpt_ms_opts}
-                  </div>
-                </div>
-                <input type="hidden" name="model_ids" id="ms-ckpt-hidden" value="">
-              </div>
+              <select name="model_ids" id="task-ckpt-select" required onchange="updateTaskResourceLinks()">{ckpt_select_opts}</select>
             </div>
           </div>
 
@@ -4704,7 +5304,6 @@ def tasks_page():
     </div>
 
     <style>
-      .task-scene-upload-grid {{ display:grid;grid-template-columns:1fr 1fr;gap:16px; }} .task-scene-upload-grid>div>label {{ display:block;margin-bottom:7px;color:rgba(0,0,0,.85);font-size:14px; }} .task-scene-upload-grid .upload-zone {{ padding:16px; }} .task-scene-upload-grid .upload-icon {{ color:#1F80A0;font-size:22px; }}
       .task-prompt-tree {{ margin-top:10px;border:1px solid #e3e8ec;border-radius:6px;background:#fff;overflow:hidden; }}
       .task-prompt-tree-head {{ display:flex;align-items:center;justify-content:space-between;padding:11px 14px;background:#f7f9fa;border-bottom:1px solid #e8ecef;font-size:13px; }}
       .task-prompt-tree-head label {{ display:flex;align-items:center;gap:7px;margin:0; }}
@@ -4740,12 +5339,77 @@ def tasks_page():
       .task-view-mode .task-prompt-child small,
       .task-view-mode .task-prompt-parent small {{ color:rgba(0,0,0,.28); }}
       .task-view-mode input[type="checkbox"]:disabled {{ filter:grayscale(1); opacity:.55; cursor:not-allowed; }}
-      @media (max-width:760px) {{ .task-scene-upload-grid {{ grid-template-columns:1fr; }} }}
     </style>
     <script>
     var bmData = {bm_preview_json};
     var taskViewData = {task_view_data_json};
     var bmCurrentId = null;
+    function filterEvalTasks() {{
+      var bar = document.querySelector('.task-filter-bar');
+      var taskId = (document.getElementById('eval-task-filter-id').value || '').trim().toLowerCase();
+      var taskName = (document.getElementById('eval-task-filter-name').value || '').trim().toLowerCase();
+      var benchmark = bar.querySelector('select[name="benchmark"]').value || '';
+      var checkpoint = bar.querySelector('select[name="checkpoint"]').value || '';
+      var status = bar.querySelector('select[name="publish_status"]').value || '';
+      var priority = bar.querySelector('select[name="priority"]').value || '';
+      document.querySelectorAll('#eval-task-table tbody tr').forEach(function(row) {{
+        if (row.cells.length < 8) return;
+        var idText = (row.cells[0].textContent || '').trim().toLowerCase();
+        var nameText = (row.cells[1].textContent || '').trim().toLowerCase();
+        var benchmarkText = (row.cells[2].textContent || '').trim();
+        var checkpointText = (row.cells[3].textContent || '').trim();
+        var statusText = (row.cells[4].textContent || '').trim();
+        var priorityText = (row.cells[7].textContent || '').trim();
+        var matched = (!taskId || idText.indexOf(taskId) >= 0)
+          && (!taskName || nameText.indexOf(taskName) >= 0)
+          && (!benchmark || benchmarkText === benchmark)
+          && (!checkpoint || checkpointText.indexOf(checkpoint) >= 0)
+          && (!status || statusText === status)
+          && (!priority || priorityText === priority);
+        row.style.display = matched ? '' : 'none';
+      }});
+    }}
+    function clearEvalTaskFilters() {{
+      var bar = document.querySelector('.task-filter-bar');
+      document.getElementById('eval-task-filter-id').value = '';
+      document.getElementById('eval-task-filter-name').value = '';
+      bar.querySelectorAll('select').forEach(function(select) {{
+        select.selectedIndex = 0;
+        select.classList.remove('has-value');
+      }});
+      filterEvalTasks();
+    }}
+    function exportEvalTasks() {{
+      var table = document.getElementById('eval-task-table');
+      if (!table) return;
+      var rows = [];
+      var headers = [];
+      table.querySelectorAll('thead th').forEach(function(th, index) {{
+        if (index < table.querySelector('thead tr').cells.length - 1) headers.push((th.textContent || '').trim());
+      }});
+      rows.push(headers);
+      table.querySelectorAll('tbody tr').forEach(function(tr) {{
+        if (tr.style.display === 'none' || tr.cells.length < 2) return;
+        var row = [];
+        for (var i = 0; i < tr.cells.length - 1; i++) row.push((tr.cells[i].textContent || '').replace(/\\s+/g, ' ').trim());
+        rows.push(row);
+      }});
+      if (rows.length <= 1) {{
+        if (window.showToast) window.showToast('暂无数据可导出', 'warning');
+        return;
+      }}
+      var csv = rows.map(function(row) {{ return row.map(function(value) {{
+        var text = String(value).replace(/"/g, '""');
+        return /[,"\\n]/.test(text) ? '"' + text + '"' : text;
+      }}).join(','); }}).join('\\n');
+      var url = URL.createObjectURL(new Blob(['\\uFEFF' + csv], {{type:'text/csv;charset=utf-8'}}));
+      var link = document.createElement('a');
+      link.href = url;
+      link.download = '评测任务_' + new Date().toISOString().slice(0, 10) + '.csv';
+      document.body.appendChild(link); link.click(); link.remove();
+      setTimeout(function() {{ URL.revokeObjectURL(url); }}, 1000);
+      if (window.showToast) window.showToast('已导出 ' + (rows.length - 1) + ' 条数据', 'success');
+    }}
     function setTaskDrawerReadonly(readonly) {{
       var drawer = document.getElementById('create-task-drawer');
       if (!drawer) return;
@@ -4753,13 +5417,6 @@ def tasks_page():
       drawer.querySelectorAll('#task-drawer-form input, #task-drawer-form select, #task-drawer-form textarea').forEach(function(el) {{
         if (el.type !== 'hidden') el.disabled = readonly;
       }});
-      var trigger = document.getElementById('ms-ckpt-btn');
-      if (trigger) {{
-        trigger.classList.toggle('is-disabled', readonly);
-        trigger.setAttribute('aria-disabled', readonly ? 'true' : 'false');
-      }}
-      document.querySelectorAll('#ms-ckpt-panel input').forEach(function(cb) {{ cb.disabled = readonly; }});
-      document.querySelectorAll('#ms-ckpt-panel a').forEach(function(a) {{ a.style.pointerEvents = readonly ? 'none' : ''; a.style.opacity = readonly ? '0.45' : ''; }});
       document.querySelectorAll('#bm-pv-prompts input, #task-prompt-all').forEach(function(cb) {{ cb.disabled = readonly; }});
       document.querySelectorAll('#bm-pv-prompts .task-prompt-expand').forEach(function(btn) {{ btn.disabled = readonly; btn.style.cursor = readonly ? 'default' : ''; }});
       document.querySelectorAll('#create-task-drawer .task-resource-create').forEach(function(a) {{ a.style.display = readonly ? 'none' : ''; }});
@@ -4771,12 +5428,10 @@ def tasks_page():
       var form = document.getElementById('task-drawer-form');
       if (!form) return;
       form.reset();
-      document.querySelectorAll('#ms-ckpt-panel input[type="checkbox"]').forEach(function(cb) {{ cb.checked = false; }});
-      window.mselSync('ms-ckpt');
+      var ckptSelect = document.getElementById('task-ckpt-select');
+      if (ckptSelect) ckptSelect.value = '';
       var bmSelect = document.getElementById('bm-select');
       if (bmSelect) {{ bmSelect.value = ''; bmSelect.classList.remove('has-value'); }}
-      document.getElementById('task-scene-images-files').innerHTML = '';
-      document.getElementById('task-scene-videos-files').innerHTML = '';
       var promptHidden = document.getElementById('selected-prompt-ids');
       if (promptHidden) promptHidden.value = '';
       var lowlevelHidden = document.getElementById('selected-lowlevel-ids');
@@ -4810,12 +5465,9 @@ def tasks_page():
       document.getElementById('task-publish-status-field').style.display = '';
       var bmSelect = document.getElementById('bm-select');
       if (bmSelect) {{ bmSelect.value = d.benchmark_id || ''; bmSelect.classList.toggle('has-value', !!d.benchmark_id); }}
-      form.querySelector('textarea[name="scene_description"]').value = d.scene_description || '';
-      document.getElementById('task-scene-images-files').innerHTML = (d.scene_images || []).map(function(name) {{ return '<div class="upload-file-item"><span class="file-icon">▧</span>' + name + '</div>'; }}).join('');
-      document.getElementById('task-scene-videos-files').innerHTML = (d.scene_videos || []).map(function(name) {{ return '<div class="upload-file-item"><span class="file-icon">▶</span>' + name + '</div>'; }}).join('');
       form.querySelector('select[name="criteria_id"]').value = d.criteria_id || '';
-      document.querySelectorAll('#ms-ckpt-panel input[type="checkbox"]').forEach(function(cb) {{ cb.checked = d.model_ids.indexOf(cb.value) >= 0; }});
-      window.mselSync('ms-ckpt');
+      var ckptSelect = document.getElementById('task-ckpt-select');
+      if (ckptSelect) ckptSelect.value = (d.model_ids || [])[0] || '';
       previewBm(d.benchmark_id || '', d.selected_lowlevel_ids || []);
       setTaskDrawerReadonly(true);
       openModal('create-task-drawer');
@@ -4831,8 +5483,9 @@ def tasks_page():
     window.updateTaskResourceLinks = function() {{
       var ckptLink = document.getElementById('task-ckpt-view');
       if (ckptLink) {{
-        var selected = document.querySelector('#ms-ckpt-panel input[type="checkbox"]:checked');
-        var ckptName = selected ? (selected.getAttribute('data-name') || '') : '';
+        var ckptSelect = document.getElementById('task-ckpt-select');
+        var selected = ckptSelect && ckptSelect.value ? ckptSelect.options[ckptSelect.selectedIndex] : null;
+        var ckptName = selected ? (selected.getAttribute('data-name') || selected.textContent || '').trim() : '';
         if (ckptName) {{
           ckptLink.href = '/model/checkpoints?name=' + encodeURIComponent(ckptName);
           ckptLink.classList.remove('is-disabled');
@@ -5073,21 +5726,10 @@ def tasks_page():
       if (!due.value) return fail('\u8bf7\u9009\u62e9\u9884\u671f\u4ea4\u4ed8\u65e5\u671f', due);
       var sessions = form.querySelector('input[name="total_sessions"]');
       if (!sessions.value || parseInt(sessions.value) < 1) return fail('\u8bf7\u586b\u5199\u8bc4\u6d4b\u6b21\u6570', sessions);
-      var hidden = document.getElementById('ms-ckpt-hidden');
-      var ids = (hidden && hidden.value) ? hidden.value.split(',').filter(Boolean) : [];
-      if (ids.length < 2) {{
-        if (window.showToast) window.showToast('Checkpoint \u81f3\u5c11\u9009 2 \u4e2a\uff0c\u5f53\u524d\u9009\u4e86 ' + ids.length + ' \u4e2a', 'warning');
-        var trig = document.getElementById('ms-ckpt-btn');
-        if (trig) {{
-          trig.style.borderColor = '#ff4d4f';
-          setTimeout(function() {{ trig.style.borderColor = ''; }}, 2500);
-        }}
-        return false;
-      }}
+      var ckptSelect = document.getElementById('task-ckpt-select');
+      if (!ckptSelect || !ckptSelect.value) return fail('请选择 checkpoint', ckptSelect);
       var bm = form.querySelector('select[name="benchmark_id"]');
       if (!bm.value) return fail('\u8bf7\u9009\u62e9\u8bc4\u6d4b\u96c6', bm);
-      var sceneDescription = form.querySelector('textarea[name="scene_description"]');
-      if (!sceneDescription.value.trim()) return fail('请填写场景描述', sceneDescription);
       var criteria = form.querySelector('select[name="criteria_id"]');
       if (!criteria.value) return fail('\u8bf7\u9009\u62e9\u8bc4\u4ef7\u6807\u51c6', criteria);
       var selectedLowlevels = (document.getElementById('selected-lowlevel-ids').value || '').split(',').filter(Boolean);
@@ -5112,15 +5754,16 @@ def tasks_create():
     if not name:
         flash("\u4efb\u52a1\u540d\u79f0\u4e0d\u80fd\u4e3a\u7a7a", "error")
         return redirect(url_for("tasks_page"))
-    # Parse model_ids from hidden field (comma-separated) or form list
+    # Parse the single checkpoint value (keep compatibility with older clients).
     model_raw = request.form.get("model_ids", "")
     model_ids = [m.strip() for m in model_raw.split(",") if m.strip()] if model_raw else request.form.getlist("model_ids")
+    # New evaluation tasks bind exactly one checkpoint. Keep the first value if
+    # an older client still submits a comma-separated multi-select payload.
+    model_ids = model_ids[:1]
     selected_prompt_ids = [p.strip() for p in request.form.get("selected_prompt_ids", "").split(",") if p.strip()]
     selected_lowlevel_ids = [p.strip() for p in request.form.get("selected_lowlevel_ids", "").split(",") if p.strip()]
     edit_id = request.form.get("edit_id", "").strip()
     edit_target = next((item for item in EVAL_TASKS if item["id"] == edit_id), None) if edit_id else None
-    scene_image_names = [item.filename for item in request.files.getlist("scene_images") if item and item.filename]
-    scene_video_names = [item.filename for item in request.files.getlist("scene_videos") if item and item.filename]
     task_payload = {
         "name": name,
         "display_name": name,
@@ -5135,7 +5778,6 @@ def tasks_create():
         "deploy_mode": request.form.get("deploy_mode", "").strip(),
         "benchmark_id": request.form.get("benchmark_id", ""),
         "scene_id": "",
-        "scene_description": request.form.get("scene_description", "").strip(),
         "criteria_id": request.form.get("criteria_id", ""),
         "selected_prompt_ids": selected_prompt_ids,
         "selected_lowlevel_ids": selected_lowlevel_ids,
@@ -5145,10 +5787,6 @@ def tasks_create():
         "total_sessions": int(request.form.get("total_sessions", 30)),
     }
     if edit_target and edit_target.get("publish_status") == "未发布":
-        if scene_image_names:
-            task_payload["scene_images"] = scene_image_names
-        if scene_video_names:
-            task_payload["scene_videos"] = scene_video_names
         edit_target.update(task_payload)
         flash(f"评测任务「{name}」保存成功", "success")
         return redirect(url_for("tasks_page"))
@@ -5159,8 +5797,6 @@ def tasks_create():
     EVAL_TASKS.append({
         "id": f"t{len(EVAL_TASKS)+1}",
         "task_no": new_no,
-        "scene_images": scene_image_names,
-        "scene_videos": scene_video_names,
         "status": "\u672a\u5f00\u59cb",
         "publish_status": "未发布",
         "collect_done": 0, "eval_done": 0, "completed_sessions": 0,
@@ -5423,27 +6059,28 @@ def task_statistics(tid):
     checkpoint_ids = list(task.get("model_ids", []))
     if not checkpoint_ids and task.get("ckpt_id"):
         checkpoint_ids = [str(task["ckpt_id"])]
-    selected_checkpoint = request.args.get("ckpt", "")
-    if selected_checkpoint not in checkpoint_ids:
-        selected_checkpoint = checkpoint_ids[0] if checkpoint_ids else ""
-    selected_checkpoint_index = checkpoint_ids.index(selected_checkpoint) if selected_checkpoint in checkpoint_ids else 0
-    checkpoint_options = "".join(
-        f'<option value="{html.escape(checkpoint_id, quote=True)}"{" selected" if checkpoint_id == selected_checkpoint else ""}>{html.escape(get_model_name(checkpoint_id))}</option>'
-        for checkpoint_id in checkpoint_ids
+    checkpoint_names = [get_model_name(checkpoint_id) for checkpoint_id in checkpoint_ids]
+    requested_checkpoint_id = request.args.get("checkpoint", "")
+    selected_checkpoint_id = (
+        requested_checkpoint_id
+        if requested_checkpoint_id in checkpoint_ids
+        else (checkpoint_ids[0] if checkpoint_ids else "")
     )
-    checkpoint_disabled = " disabled" if len(checkpoint_ids) <= 1 else ""
-    checkpoint_control = (
-        f'<select class="stat-ckpt-select" aria-label="切换 ckpt" title="{html.escape(get_model_name(selected_checkpoint), quote=True)}" onchange="switchStatCheckpoint(this.value)"{checkpoint_disabled}>{checkpoint_options}</select>'
-        if checkpoint_options else '<b>--</b>'
+    selected_checkpoint_index = (
+        checkpoint_ids.index(selected_checkpoint_id)
+        if selected_checkpoint_id in checkpoint_ids else 0
     )
+    if checkpoint_names:
+        checkpoint_control = (
+            f'<b class="stat-checkpoint-static" title="{html.escape(checkpoint_names[selected_checkpoint_index], quote=True)}">'
+            f'{html.escape(checkpoint_names[selected_checkpoint_index])}</b>'
+        )
+    else:
+        checkpoint_control = '<b class="stat-checkpoint-static">--</b>'
     selected_prompt_ids = task.get("selected_prompt_ids", []) or benchmark.get("prompt_ids", [])
     criterion = get_criterion(task.get("criteria_id", "")) or {}
     result_definitions = normalize_result_definitions(criterion.get("result_definitions", {}))
-    definitions = [
-        (parent, item["description"])
-        for parent in ("成功", "失败")
-        for item in result_definitions.get(parent, [])
-    ] or [("成功", "直接成功"), ("失败", "动作失败")]
+    result_types = [item["type"] for item in result_definitions] or ["成功", "失败"]
     prompt_rows = []
     selected_lowlevel_ids = set(task.get("selected_lowlevel_ids", []))
     for prompt_id in selected_prompt_ids:
@@ -5456,22 +6093,19 @@ def task_statistics(tid):
         prompt_rows.append((prompt, low_levels))
     if not prompt_rows:
         prompt_rows = [(PROMPTS[0], PROMPTS[0].get("low_levels", []) or [{"zh": "--", "en": ""}])]
-    secondary_values = [value for _, value in definitions]
-    if not secondary_values:
-        secondary_values = ["直接成功", "动作失败"]
+    secondary_values = result_types
     lowlevel_total = sum(max(len(low_levels), 1) for _, low_levels in prompt_rows)
 
     def make_statuses(seed_index, include_unexecuted=False):
         pattern = []
         for trial in range(10):
             # Low Level Prompt 可能在某个轮次未实际执行，该轮结果保持为空。
-            if include_unexecuted and (seed_index * 5 + trial * 3 + selected_checkpoint_index) % 17 == 0:
+            if include_unexecuted and (seed_index * 5 + trial * 3) % 17 == 0:
                 pattern.append(None)
                 continue
-            value_index = (seed_index * 3 + trial + selected_checkpoint_index) % len(secondary_values)
+            value_index = (seed_index * 3 + trial) % len(secondary_values)
             value = secondary_values[value_index]
-            parent = next((parent for parent, child in definitions if child == value), "成功" if value_index == 0 else "失败")
-            pattern.append((parent, value))
+            pattern.append(value)
         return pattern
 
     def render_result_cells(statuses):
@@ -5481,13 +6115,13 @@ def task_statistics(tid):
             if status is None:
                 status_cells.append('<td class="stat-result-empty"></td>')
                 continue
-            parent, value = status
+            value = status
             result_counts[value] = result_counts.get(value, 0) + 1
-            css_class = "ok" if parent == "成功" else "fail"
+            css_class = "fail" if result_type_is_failure(value) else "ok"
             status_cells.append(f'<td><span class="stat-result {css_class}">{html.escape(value)}</span></td>')
         executed_count = sum(result_counts.values())
         detail_html = "".join(
-            f'<div class="stat-secondary-item"><span class="stat-result {"ok" if next((p for p, v in definitions if v == value), "失败") == "成功" else "fail"}">{html.escape(value)}</span><b>{count} 次</b><em>{count / executed_count * 100:.1f}%</em></div>'
+            f'<div class="stat-secondary-item"><span class="stat-result {"fail" if result_type_is_failure(value) else "ok"}">{html.escape(value)}</span><b>{count} 次</b><em>{count / executed_count * 100:.1f}%</em></div>'
             for value, count in result_counts.items()
         )
         summary_html = f'共 {executed_count} 次'
@@ -5498,11 +6132,13 @@ def task_statistics(tid):
     total_runs = 0
     for row_index, (prompt, low_levels) in enumerate(prompt_rows):
         prompt_text = prompt.get("high_level") or prompt.get("high_level_en") or "--"
+        prompt_id = prompt.get("id", "")
+        prompt_label = f"{prompt_text} #{prompt_id}" if prompt_id else prompt_text
         prompt_en = prompt.get("high_level_en", "")
-        statuses = make_statuses(row_index)
+        statuses = make_statuses(row_index + selected_checkpoint_index * 11)
         status_cells, secondary_html = render_result_cells(statuses)
         group_id = f'stat-group-{row_index}'
-        prompt_tree_html = f'<div class="stat-tree-row stat-tree-parent-row"><button type="button" class="stat-tree-toggle" aria-label="展开 Prompt" aria-expanded="false" onclick="toggleStatPrompt(\'{group_id}\', this)">›</button><span><b>{html.escape(prompt_text)}</b>{("<em>" + html.escape(prompt_en) + "</em>") if prompt_en else ""}</span></div>'
+        prompt_tree_html = f'<div class="stat-tree-row stat-tree-parent-row"><button type="button" class="stat-tree-toggle" aria-label="展开 Prompt" aria-expanded="false" onclick="toggleStatPrompt(\'{group_id}\', this)">›</button><span><b>{html.escape(prompt_label)}</b>{("<em>" + html.escape(prompt_en) + "</em>") if prompt_en else ""}</span></div>'
         matrix_rows.append(
             f'<tr class="stat-highlevel-row"><td class="stat-prompt-tree-cell">{prompt_tree_html}</td>'
             + "".join(status_cells)
@@ -5510,11 +6146,13 @@ def task_statistics(tid):
         )
         for low_index, low in enumerate(low_levels):
             low_text = low.get("zh") or low.get("en") or "--"
+            low_id = low.get("id", "")
+            low_label = f"{low_text} #{low_id}" if low_id else low_text
             low_en = low.get("en", "")
-            child_statuses = make_statuses(row_index * 7 + low_index + 1, include_unexecuted=True)
+            child_statuses = make_statuses(row_index * 7 + low_index + 1 + selected_checkpoint_index * 11, include_unexecuted=True)
             total_runs += sum(status is not None for status in child_statuses)
             child_cells, child_secondary = render_result_cells(child_statuses)
-            child_html = f'<div class="stat-tree-row stat-tree-child-row"><span class="stat-tree-branch" aria-hidden="true"></span><span><b>{html.escape(low_text)}</b>{("<em>" + html.escape(low_en) + "</em>") if low_en and low_text != low_en else ""}</span></div>'
+            child_html = f'<div class="stat-tree-row stat-tree-child-row"><span class="stat-tree-branch" aria-hidden="true"></span><span><b>{html.escape(low_label)}</b>{("<em>" + html.escape(low_en) + "</em>") if low_en and low_text != low_en else ""}</span></div>'
             matrix_rows.append(
                 f'<tr class="stat-lowlevel-row" data-stat-group="{group_id}" style="display:none;"><td class="stat-prompt-tree-cell">{child_html}</td>'
                 + child_cells
@@ -5523,17 +6161,16 @@ def task_statistics(tid):
     rows = "".join(matrix_rows)
     headers = "".join(f"<th>T{i}</th>" for i in range(1, 11))
     content = f'''<div class="stat-page">
-      <div class="stat-head"><h1>评测统计</h1></div>
+      <div class="stat-head"><h1>评测统计</h1><button class="ant-btn" type="button" onclick="exportEvalStatistics()">导出</button></div>
       <div class="stat-summary">
         <div><span>评测集</span><b title="{html.escape(benchmark.get("name", "--"), quote=True)}">{html.escape(benchmark.get("name", "--"))}</b></div>
-        <div class="stat-summary-ckpt"><span>ckpt</span>{checkpoint_control}</div>
+        <div class="stat-summary-ckpt"><span>checkpoint</span>{checkpoint_control}</div>
         <div><span>Prompt 总数</span><b>{lowlevel_total}</b></div>
         <div><span>执行次数</span><b>{total_runs}</b></div>
       </div>
       <div class="stat-table-wrap"><table class="stat-matrix"><thead><tr><th class="stat-prompt-head">prompt</th>{headers}<th class="stat-secondary-head"><div class="stat-secondary-head-inner"><span>结果统计</span><a href="javascript:;" id="stat-detail-toggle" class="stat-detail-toggle" onclick="toggleStatDetails()">展开详情</a></div></th></tr></thead><tbody>{rows}</tbody></table></div>
     </div>
     <script>
-      function switchStatCheckpoint(checkpointId) {{ var url=new URL(window.location.href);url.searchParams.set('ckpt',checkpointId);window.location.href=url.toString(); }}
       function toggleStatPrompt(groupId, button) {{
         var rows = document.querySelectorAll('[data-stat-group="' + groupId + '"]');
         var open = button.getAttribute('aria-expanded') !== 'true';
@@ -5551,14 +6188,41 @@ def task_statistics(tid):
         var toggle = document.getElementById('stat-detail-toggle');
         setStatDetails(toggle && toggle.textContent === '展开详情');
       }}
+      function exportEvalStatistics() {{
+        var table = document.querySelector('.stat-matrix');
+        if (!table) return;
+        var rows = [];
+        var headerCells = table.querySelectorAll('thead th');
+        rows.push(Array.from(headerCells).map(function(cell) {{ return (cell.textContent || '').replace(/\\s+/g, ' ').trim(); }}));
+        table.querySelectorAll('tbody tr').forEach(function(tr) {{
+          if (tr.cells.length < 2) return;
+          rows.push(Array.from(tr.cells).map(function(cell) {{ return (cell.textContent || '').replace(/\\s+/g, ' ').trim(); }}));
+        }});
+        if (rows.length <= 1) {{
+          if (window.showToast) window.showToast('暂无数据可导出', 'warning');
+          return;
+        }}
+        var csv = rows.map(function(row) {{ return row.map(function(value) {{
+          var text = String(value).replace(/"/g, '""');
+          return /[,"\\n]/.test(text) ? '"' + text + '"' : text;
+        }}).join(','); }}).join('\\n');
+        var url = URL.createObjectURL(new Blob(['\\uFEFF' + csv], {{type:'text/csv;charset=utf-8'}}));
+        var link = document.createElement('a');
+        link.href = url;
+        link.download = '评测统计_' + new Date().toISOString().slice(0, 10) + '.csv';
+        document.body.appendChild(link); link.click(); link.remove();
+        setTimeout(function() {{ URL.revokeObjectURL(url); }}, 1000);
+        if (window.showToast) window.showToast('已导出 ' + (rows.length - 1) + ' 条数据', 'success');
+      }}
     </script>
     <style>
       .stat-page {{ background:#fff;border:1px solid #e6ebef;border-radius:8px;padding:22px 24px 24px; }}
-      .stat-head h1 {{ margin:0 0 20px;font-size:20px; }}
+      .stat-head {{ display:flex;align-items:center;justify-content:space-between;margin-bottom:20px; }}
+      .stat-head h1 {{ margin:0;font-size:20px; }}
       .stat-summary {{ display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:20px;padding:14px 16px;background:#f8fafb;border:1px solid #edf0f2;border-radius:8px; }}
       .stat-summary>div {{ display:flex;flex-direction:column;gap:6px;min-width:0;padding-right:16px;border-right:1px solid #e7ebef; }} .stat-summary>div:last-child {{ border-right:0; }}
       .stat-summary span {{ color:rgba(0,0,0,.45);font-size:12px; }} .stat-summary b {{ overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:15px; }}
-      .stat-ckpt-select {{ width:100%;height:30px;border:1px solid #d9dfe4;border-radius:6px;padding:0 30px 0 9px;background:#fff;color:rgba(0,0,0,.82); }}
+      .stat-checkpoint-static {{ display:block;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap; }}
       .stat-table-wrap {{ overflow:auto;border:1px solid #dfe5e9;border-radius:8px;background:#fff; }}
       .stat-matrix {{ border-collapse:separate;border-spacing:0;min-width:1650px;width:100%;font-size:12px;color:rgba(0,0,0,.72); }}
       .stat-matrix th,.stat-matrix td {{ border-right:1px solid #edf0f2;border-bottom:1px solid #edf0f2;padding:12px;white-space:nowrap;text-align:center;height:56px;box-sizing:border-box; }}
@@ -5609,7 +6273,7 @@ def task_statistics(tid):
       </div>
       <div class="stat-summary">
         <div><span>评测集</span><b title="{html.escape(benchmark.get("name", "--"), quote=True)}">{html.escape(benchmark.get("name", "--"))}</b></div>
-        <div class="stat-summary-ckpt"><span>ckpt</span>{checkpoint_control}</div>
+        <div class="stat-summary-ckpt"><span>checkpoint</span>{checkpoint_control}</div>
         <div><span>Prompt 总数</span><b>{len(prompt_rows)}</b></div>
         <div><span>执行次数</span><b>{len(prompt_rows) * 10}</b></div>
         <div><span>平均分</span><b>{average_score:.1f}</b></div>
@@ -6726,7 +7390,6 @@ def evaluate_list():
             "</tr>"
         )
     empty = '<tr><td colspan="5" style="text-align:center;padding:40px;color:rgba(0,0,0,0.25);">\u6682\u65e0\u5f85\u8bc4\u6d4b\u4efb\u52a1</td></tr>' if not rows else ""
-
     content = f'''
     <div class="filter-bar">
       <input type="text" id="f-id" placeholder="\u4efb\u52a1 ID" style="min-width:120px;">
@@ -7232,13 +7895,14 @@ def evaluate2_list():
             "</tr>"
         )
     empty = '<tr><td colspan="5" style="text-align:center;padding:40px;color:rgba(0,0,0,0.25);">\u6682\u65e0\u5f85\u8bc4\u6d4b\u4efb\u52a1</td></tr>' if not rows else ""
+    endpoint_modes_wb = endpoint_mode_buttons("wb-mode", "active", "wbMode")
 
     content = f'''
     <div class="eval2-ipad-shell"><div class="eval2-ipad-screen">
     <div class="wb-landing" id="wb-landing"><h1>端侧示意</h1><p>端侧评测任务执行入口</p><a class="wb-enter" href="/evaluate2/setup?step=1">进入端侧示意</a></div>
     <div class="wb-wizard" id="wb-wizard" hidden>
       <div class="wb-stepper"><span class="active">1 模式选择</span><i>→</i><span>2 任务选择</span><i>→</i><span>3 场景与提示词</span><i>→</i><span>4 执行评测</span></div>
-      <section class="wb-panel wb-panel-active" data-wb-step="1"><div class="wb-panel-title">模式选择 <small>选择任务类型后，将进行设备自检</small></div><div class="wb-mode-grid"><button class="wb-mode active" onclick="wbMode(this)"><b>▣</b><strong>Normal</strong></button><button class="wb-mode" onclick="wbMode(this)"><b>⌁</b><strong>DAgger</strong></button><button class="wb-mode" onclick="wbMode(this)"><b>☑</b><strong>Test</strong></button><button class="wb-mode" onclick="wbMode(this)"><b>▤</b><strong>Evaluation</strong></button></div><button class="wb-primary" onclick="wbSelfCheck(this)">开始自检</button><div class="wb-note">自检将检查机器人、相机、控制器与网络连接</div></section>
+      <section class="wb-panel wb-panel-active" data-wb-step="1"><div class="wb-panel-title">模式选择 <small>选择任务类型后，将进行设备自检</small></div><div class="wb-mode-grid">{endpoint_modes_wb}</div><button class="wb-primary" onclick="wbSelfCheck(this)">开始自检</button><div class="wb-note">自检将检查机器人、相机、控制器与网络连接</div></section>
       <section class="wb-panel" data-wb-step="2"><div class="wb-panel-title">任务选择 <small class="wb-pass">● 设备自检通过</small></div><div class="wb-fields"><label>项目<select><option>eval</option><option>预训练</option><option>回归验证</option></select></label><label>任务<select id="wb-task"><option value="">请选择任务</option>{"".join(f'<option value="{t["id"]}">{t["task_no"]}：{t.get("name", "评测任务")}</option>' for t in active_tasks)}</select></label></div><button class="wb-primary" onclick="wbNext(3)">确认任务</button></section>
       <section class="wb-panel" data-wb-step="3"><div class="wb-panel-title">任务信息</div><div class="wb-task-section"><h2>场景准备</h2><div class="wb-scene"><div class="wb-scene-description"><b>场景描述</b><span>自然光，家庭场景，至少需要打开和放置两个房间</span></div><div class="wb-media"><div>场景图片<br><span>▧　▧　▧</span></div><div>场景视频<br><span>▶</span></div></div></div></div><div class="wb-task-section"><h2>提示词</h2><div class="wb-prompt-tree"><div class="wb-prompt-tree-group"><div class="wb-prompt-tree-parent">提示词组 1 · 房间整理</div><div class="wb-prompt-tree-children"><div class="wb-prompt-tree-child">抓住小猫 <small>Pick up the cat</small></div><div class="wb-prompt-tree-child">把小猫放进被窝 <small>Put the cat in the blanket</small></div></div></div><div class="wb-prompt-tree-group"><div class="wb-prompt-tree-parent">提示词组 2 · 床铺操作</div><div class="wb-prompt-tree-children"><div class="wb-prompt-tree-child">掀开被子 <small>Lift up the blanket</small></div><div class="wb-prompt-tree-child">盖上被子 <small>Cover it up</small></div></div></div></div></div><button class="wb-primary" onclick="wbNext(4)">场景已就绪，开始评测</button></section>
       <section class="wb-panel" data-wb-step="4"><div class="wb-panel-title">执行评测 <small>逐条完成任务，提交结果后进入下一条</small></div><div class="wb-camera-grid"><div>左手臂镜头<div class="wb-camera">640×480 · 已连接</div></div><div>头部镜头<div class="wb-camera">640×480 · 已连接</div></div><div>右手臂镜头<div class="wb-camera">640×480 · 已连接</div></div></div><div class="wb-task-list"><div class="active"><b>1</b> 把小猫放进被窝 <button onclick="wbResult()">▶</button></div><div><b>2</b> 掀开被子 <button onclick="wbResult()">▶</button></div><div><b>3</b> 把小猫放进被子 <button onclick="wbResult()">▶</button></div><div><b>4</b> 盖上被子 <button onclick="wbResult()">▶</button></div></div></section>
@@ -7301,6 +7965,7 @@ def evaluate2_list():
       .wb-wizard {{ width:100%;height:100%;overflow:auto;box-sizing:border-box;background:#f7f8fa;padding:22px;border-radius:0; }} .wb-stepper {{ display:flex;justify-content:center;gap:14px;align-items:center;margin-bottom:18px;color:#a0a5ad;font-size:13px; }} .wb-stepper span.active {{ color:#2463eb;font-weight:600; }} .wb-stepper i {{ color:#c5c9d0;font-style:normal; }} .wb-panel {{ display:none;background:#fff;border-radius:9px;padding:28px;border:1px solid #edf0f3; }} .wb-panel.wb-panel-active {{ display:block; }} .wb-panel-title {{ font-size:22px;font-weight:600;margin-bottom:20px; }} .wb-panel-title small {{ font-size:13px;color:#8a9099;font-weight:400;margin-left:10px; }} .wb-pass {{ color:#2eaf68 !important; }} .wb-mode-grid {{ display:grid;grid-template-columns:repeat(2,1fr);gap:18px;max-width:820px;margin:0 auto 28px; }} .wb-mode {{ min-height:150px;border:1px solid #dfe3e8;background:#fff;border-radius:8px;font-size:17px;display:flex;flex-direction:column;gap:15px;align-items:center;justify-content:center;cursor:pointer; }} .wb-mode.active {{ border:2px solid #2463eb;background:#f4f7ff; }} .wb-mode b {{ font-size:34px;color:#2463eb; }} .wb-primary {{ width:100%;height:48px;border:0;border-radius:7px;background:#2463eb;color:#fff;font-size:16px;cursor:pointer; }} .wb-primary.passed {{ background:#2eaf68; }} .wb-note {{ text-align:center;color:#7e8792;margin-top:10px;font-size:13px; }} .wb-fields {{ display:grid;grid-template-columns:1fr 2fr;gap:18px;margin-bottom:24px; }} .wb-fields label,.wb-result-dialog label {{ display:flex;flex-direction:column;gap:8px;color:#5f6670;font-size:13px; }} .wb-fields select,.wb-result-dialog select,.wb-result-dialog input {{ height:40px;border:1px solid #d9dde3;border-radius:6px;padding:0 10px;background:#fff; }} .wb-scene {{ display:grid;grid-template-columns:1fr 1fr;gap:22px;padding:18px;background:#fafbfc;border:1px solid #edf0f3;border-radius:8px;margin-bottom:22px; }} .wb-scene p {{ color:#69717c;margin:8px 0 18px; }} .wb-media {{ display:grid;grid-template-columns:1fr 1fr;gap:10px;color:#7a828d;font-size:13px; }} .wb-media div {{ border:1px dashed #cdd3db;border-radius:6px;padding:18px;text-align:center; }} .wb-media span {{ display:block;font-size:30px;color:#2463eb;margin-top:18px; }} .wb-prompts {{ border:1px solid #edf0f3;border-radius:7px;margin-bottom:20px; }} .wb-prompts div {{ padding:13px 16px;border-bottom:1px solid #f0f0f0; }} .wb-prompts div:last-child {{ border:0; }} .wb-prompts b {{ display:inline-flex;width:22px;height:22px;border-radius:4px;background:#e9efff;color:#2463eb;align-items:center;justify-content:center;margin-right:10px; }} .wb-prompts small {{ color:#8a9099;margin-left:12px; }} .wb-camera-grid {{ display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px;font-weight:600; }} .wb-camera {{ height:180px;background:#15191f;border-radius:7px;margin-top:8px;color:#7f8995;display:flex;align-items:center;justify-content:center;font-weight:400; }} .wb-task-list {{ border:1px solid #edf0f3;border-radius:7px; }} .wb-task-list div {{ padding:14px 16px;border-bottom:1px solid #f0f0f0;display:flex;align-items:center;gap:12px; }} .wb-task-list div:last-child {{ border:0; }} .wb-task-list div.active {{ background:#f1f6ff;color:#2463eb; }} .wb-task-list b {{ width:22px;height:22px;display:inline-flex;align-items:center;justify-content:center;background:#edf1f7;border-radius:4px; }} .wb-task-list button {{ margin-left:auto;border:0;background:transparent;color:#2463eb;cursor:pointer;font-size:16px; }} .wb-result-mask {{ position:fixed;inset:0;z-index:1100;background:rgba(0,0,0,.35);display:flex;align-items:center;justify-content:center; }} .wb-result-dialog {{ width:560px;max-width:calc(100vw - 32px);background:#fff;border-radius:9px;padding:24px; }} .wb-result-dialog h3 {{ margin:0 0 20px; }} .wb-result-dialog label {{ margin-bottom:16px; }} .wb-result-actions {{ display:flex;justify-content:flex-end;gap:8px; }} .wb-result-actions button {{ border:1px solid #d9dde3;background:#fff;border-radius:6px;padding:8px 18px;cursor:pointer; }} .wb-result-actions .primary {{ background:#2463eb;color:#fff;border-color:#2463eb; }}
     </style>
     '''
+    content += ENDPOINT_MODE_STYLE
     return render_page("\u7aef\u4fa7\u793a\u610f", content, active="evaluate2")
 
 
@@ -7308,57 +7973,122 @@ def evaluate2_list():
 def evaluate2_setup():
     step = max(1, min(4, int(request.args.get("step", "1"))))
     active_tasks = [t for t in EVAL_TASKS if t.get("status") == "评测中"]
-    task_options = "".join(f'<option value="{t["id"]}">{t["task_no"]}：{t.get("name", "评测任务")}</option>' for t in active_tasks)
+    selected_task_id = request.args.get("task", "")
+    selected_task = next((task for task in active_tasks if task.get("id") == selected_task_id), None)
+    if not selected_task and step >= 3 and active_tasks:
+        selected_task = active_tasks[0]
+        selected_task_id = selected_task["id"]
+    task_options = "".join(
+        f'<option value="{t["id"]}"{" selected" if t["id"] == selected_task_id else ""}>'
+        f'{t["task_no"]}：{html.escape(t.get("name", "评测任务"))}</option>'
+        for t in active_tasks
+    )
     prompt_group_count = 2
-    checkpoint_count = 2
+    endpoint_modes_setup = endpoint_mode_buttons("wb-mode", "active", "wbSelectSetupMode")
     if step == 1:
-        body = '<div class="wb-step-page"><h1>模式选择</h1><p class="wb-muted">请选择任务类型，选择模式后将进行设备自检</p><div class="wb-mode-grid"><a class="wb-mode active" href="/evaluate2/setup?step=2"><b>▣</b><strong>Normal</strong></a><a class="wb-mode" href="/evaluate2/setup?step=2"><b>⌁</b><strong>DAgger</strong></a><a class="wb-mode" href="/evaluate2/setup?step=2"><b>☑</b><strong>Test</strong></a><a class="wb-mode" href="/evaluate2/setup?step=2"><b>▤</b><strong>Evaluation</strong></a></div><a class="wb-primary wb-link" href="/evaluate2/setup?step=2">开始自检</a><div class="wb-note">自检将检查机器人、相机、控制器与网络连接</div></div>'
+        body = f'<div class="wb-step-page"><h1>模式选择</h1><p class="wb-muted">请选择任务类型，选择模式后将进行设备自检</p><div class="wb-mode-grid">{endpoint_modes_setup}</div><a class="wb-primary wb-link" href="/evaluate2/setup?step=2">开始自检</a><div class="wb-note">自检将检查机器人、相机、控制器与网络连接</div></div>'
     elif step == 2:
-        body = f'<div class="wb-step-page"><h1>任务选择 <small class="wb-pass">● 设备自检通过</small></h1><div class="wb-fields"><label>项目<select><option value="">请选择项目</option><option>基础研究</option><option>宁德应用</option><option>moz1</option><option>spirit</option><option>demo采集</option><option>预训练采集</option><option>多任务</option></select></label><label>任务<select id="wb-task-select"><option value="">请选择任务</option>{task_options}</select></label></div><a class="wb-primary wb-link" href="/evaluate2/setup?step=3">确认进入任务</a></div>'
+        body = f'''<div class="wb-step-page"><h1>任务选择 <small class="wb-pass">● 设备自检通过</small></h1><div class="wb-fields"><label>项目<select><option value="">请选择项目</option><option>基础研究</option><option>宁德应用</option><option>moz1</option><option>spirit</option><option>demo采集</option><option>预训练采集</option><option>多任务</option></select></label><label>任务<select id="wb-task-select"><option value="">请选择任务</option>{task_options}</select></label></div><button type="button" class="wb-primary" onclick="wbConfirmEndpointTask()">确认进入任务</button><script>function wbConfirmEndpointTask(){{var select=document.getElementById('wb-task-select');if(!select.value){{if(window.showToast)window.showToast('请选择任务','warning');return;}}window.location='/evaluate2/setup?step=3&task='+encodeURIComponent(select.value);}}</script></div>'''
     elif step == 3:
-        body = '<div class="wb-step-page"><h1>任务信息</h1><div class="wb-task-section"><h2>场景准备</h2><div class="wb-scene"><div class="wb-scene-description"><b>场景描述</b><span>自然光，家庭场景，至少需要打开和放置两个房间</span></div><div class="wb-media"><div>场景图片<br><span>▧　▧　▧</span></div><div>场景视频<br><span>▶</span></div></div></div></div><div class="wb-task-section"><h2>提示词</h2><div class="wb-prompt-tree"><div class="wb-prompt-tree-group"><div class="wb-prompt-tree-parent">提示词组 1 · 房间整理</div><div class="wb-prompt-tree-children"><div class="wb-prompt-tree-child">抓住小猫 <small>Pick up the cat</small></div><div class="wb-prompt-tree-child">把小猫放进被窝 <small>Put the cat in the blanket</small></div></div></div><div class="wb-prompt-tree-group"><div class="wb-prompt-tree-parent">提示词组 2 · 床铺操作</div><div class="wb-prompt-tree-children"><div class="wb-prompt-tree-child">掀开被子 <small>Lift up the blanket</small></div><div class="wb-prompt-tree-child">盖上被子 <small>Cover it up</small></div></div></div></div></div><a class="wb-primary wb-link" href="/evaluate2/setup?step=4">场景已就绪，开始评测</a></div>'
+        task = selected_task or {}
+        benchmark = get_benchmark(task.get("benchmark_id", "")) or {}
+        prompt_ids = task.get("selected_prompt_ids", []) or benchmark.get("prompt_ids", [])
+        selected_lowlevel_ids = set(task.get("selected_lowlevel_ids", []))
+        prompt_groups = []
+        for prompt_index, prompt_id in enumerate(prompt_ids, 1):
+            prompt = get_prompt(prompt_id)
+            if not prompt:
+                continue
+            lowlevels = [
+                item for item in prompt.get("low_levels", [])
+                if not selected_lowlevel_ids or item.get("id") in selected_lowlevel_ids
+            ]
+            lowlevel_html = ''.join(
+                f'<div class="wb-prompt-tree-child"><span class="wb-lowlevel-index">{index}</span>'
+                f'<span>{html.escape(item.get("zh", ""))}<small>{html.escape(item.get("en", ""))}</small></span></div>'
+                for index, item in enumerate(lowlevels, 1)
+            ) or '<div class="wb-prompt-tree-empty">暂无 lowlevel</div>'
+            scene_images = prompt.get("scene_images", [])
+            scene_cards = []
+            for image_index, image_item in enumerate(scene_images, 1):
+                source = image_item.get("src", "")
+                preview = (
+                    f'<img src="{html.escape(source, quote=True)}" alt="{html.escape(image_item.get("name", "场景示意图"), quote=True)}">'
+                    if source else '<span class="wb-highlevel-scene-placeholder">景</span>'
+                )
+                scene_cards.append(
+                    f'<div class="wb-highlevel-scene-card"><div class="wb-highlevel-scene-preview">{preview}</div>'
+                    f'<div><b>{html.escape(image_item.get("role", "关键步骤"))}</b>'
+                    f'<small title="{html.escape(image_item.get("name", ""), quote=True)}">{html.escape(image_item.get("name", ""))}</small></div></div>'
+                )
+            scene_content = (
+                '<div class="wb-highlevel-scenes">' + ''.join(scene_cards) + '</div>'
+                if scene_cards
+                else '<div class="wb-highlevel-scene-empty"><span>▧</span><small>暂无图片</small></div>'
+            )
+            scene_column = (
+                '<div class="wb-prompt-scene-column"><div class="wb-highlevel-scene-title">场景示意图</div>'
+                + scene_content + '</div>'
+            )
+            prompt_groups.append(
+                f'<section class="wb-prompt-tree-group" data-prompt-id="{html.escape(prompt_id, quote=True)}">'
+                f'<div class="wb-prompt-tree-parent-row"><button type="button" class="wb-prompt-tree-parent" onclick="toggleEndpointPromptGroup(this)" aria-expanded="true">'
+                f'<span class="wb-prompt-caret">▾</span><span class="wb-prompt-parent-copy"><b>{html.escape(prompt.get("high_level", ""))}</b>'
+                f'<small>{html.escape(prompt.get("high_level_en", ""))}</small></span></button></div>'
+                f'<div class="wb-prompt-tree-children"><div class="wb-prompt-group-content{" has-scenes" if scene_cards else " no-scenes"}">'
+                f'<div class="wb-prompt-lowlevel-column"><div class="wb-lowlevel-title">lowlevel 执行项</div><div class="wb-lowlevel-list">{lowlevel_html}</div></div>'
+                f'{scene_column}</div></div></section>'
+            )
+        body = f'''<div class="wb-step-page wb-task-info-page"><div class="wb-task-info-head"><div><h1>任务信息</h1><p>{html.escape(str(task.get("task_no", "--")))} · {html.escape(task.get("name", "评测任务"))}</p></div></div><div class="wb-task-section"><div class="wb-prompt-tree">{"".join(prompt_groups) or '<div class="wb-prompt-tree-empty">当前任务暂无提示词</div>'}</div></div><a class="wb-primary wb-link" href="/evaluate2/setup?step=4&task={html.escape(selected_task_id, quote=True)}">开始评测</a><script>function toggleEndpointPromptGroup(button){{var group=button.closest('.wb-prompt-tree-group');var children=group.querySelector('.wb-prompt-tree-children');var expanded=button.getAttribute('aria-expanded')==='true';button.setAttribute('aria-expanded',expanded?'false':'true');children.hidden=expanded;button.querySelector('.wb-prompt-caret').textContent=expanded?'›':'▾';}}</script></div>'''
     else:
-        active_task = active_tasks[0] if active_tasks else {}
-        target = active_tasks[0]["id"] if active_tasks else "t1"
-        prompt_group_count = len((get_benchmark(active_task.get("benchmark_id", "")) or {}).get("prompt_ids", [])) or 1
-        checkpoint_count = len(active_task.get("model_ids", [])) or 1
-        ckpt_disabled = " disabled" if checkpoint_count <= 1 else ""
-        ckpt_options = "<option>Checkpoint 9001</option>" + ("<option>Checkpoint 9002</option>" if not ckpt_disabled else "")
+        active_task = selected_task or (active_tasks[0] if active_tasks else {})
+        target = active_task.get("id", "t1")
+        active_benchmark = get_benchmark(active_task.get("benchmark_id", "")) or {}
+        execution_prompt_ids = active_task.get("selected_prompt_ids", []) or active_benchmark.get("prompt_ids", [])
+        execution_prompt_items = [get_prompt(pid) for pid in execution_prompt_ids]
+        execution_prompt_items = [item for item in execution_prompt_items if item]
+        prompt_group_count = len(execution_prompt_items) or 1
+        execution_prompt_options = "".join(
+            f'<option value="{html.escape(item.get("id", ""), quote=True)}">{html.escape(item.get("high_level", "提示词组"))}</option>'
+            for item in execution_prompt_items
+        ) or '<option value="">暂无提示词组</option>'
+        execution_scene_data_json = json.dumps(
+            {
+                item.get("id", ""): {
+                    "name": item.get("high_level", "提示词组"),
+                    "images": item.get("scene_images", [])[:3],
+                }
+                for item in execution_prompt_items
+            },
+            ensure_ascii=False,
+        )
         body = f'''<div class="hmi-exec">
           <div class="hmi-exec-top"><a href="/evaluate2/setup?step=3" class="hmi-back">← 完成</a><div class="hmi-top-status">● <b>评测模式</b></div></div>
           <div class="hmi-camera-row"><div class="hmi-camera-card"><b>左手臂镜头</b><span>● 已连接</span><div class="hmi-camera-view">视频画面<br><small>分辨率：640×480　FPS：25</small></div></div><div class="hmi-camera-card"><b>头部镜头</b><span>● 已连接</span><div class="hmi-camera-view">视频画面<br><small>分辨率：640×480　FPS：24.3</small></div></div><div class="hmi-camera-card"><b>右手臂镜头</b><span>● 已连接</span><div class="hmi-camera-view">视频画面<br><small>分辨率：640×480　FPS：26.7</small></div></div></div>
-          <div class="hmi-exec-grid"><div class="hmi-task-panel"><div class="hmi-panel-title"><select><option>把小猫放进被窝</option><option>把大象放进冰箱02</option></select><select class="hmi-ckpt-select"{ckpt_disabled}>{ckpt_options}</select><span class="hmi-progress">0 / 4 次</span></div><div class="hmi-task-row"><b>1</b><span class="hmi-prompt-text">抓住小猫</span><span class="hmi-result-summary"></span><button class="hmi-icon-action" title="开始执行" onclick="hmiTogglePrompt(this)">▶</button></div><div class="hmi-task-row"><b>2</b><span class="hmi-prompt-text">掀开被子</span><span class="hmi-result-summary"></span><button class="hmi-icon-action" title="开始执行" onclick="hmiTogglePrompt(this)">▶</button></div><div class="hmi-task-row"><b>3</b><span class="hmi-prompt-text">把小猫放进被子</span><span class="hmi-result-summary"></span><button class="hmi-icon-action" title="开始执行" onclick="hmiTogglePrompt(this)">▶</button></div><div class="hmi-task-row"><b>4</b><span class="hmi-prompt-text">盖上被子</span><span class="hmi-result-summary"></span><button class="hmi-icon-action" title="开始执行" onclick="hmiTogglePrompt(this)">▶</button></div></div><aside class="hmi-control-panel"><h3>开关</h3><div class="hmi-switches"><label>全部上电 <i>OFF</i></label><label>底座上电 <i>OFF</i></label><label>臂部上电 <i>OFF</i></label><label>左臂上电 <i>OFF</i></label><label>右臂上电 <i>OFF</i></label><label>障碍状态 <i>OFF</i></label></div><h3>连接状态</h3><p>Movax　<span>● 已连接</span></p><p>CaptureX　<span>● 已连接</span></p><p>Teleop　<span>● 已连接</span></p><div class="hmi-control-actions"><button>复位</button><button>重置</button><button disabled>停止</button></div></aside></div>
-          <div class="hmi-result-mask" id="hmi-result-mask" hidden><div class="hmi-result-dialog"><h3>提交评测结果</h3><section class="hmi-result-section"><h4>评测结果</h4><div class="hmi-result-radios"><label><input type="radio" name="hmi-result" value="成功">成功</label><label><input type="radio" name="hmi-result" value="失败">失败</label><label><input type="radio" name="hmi-result" value="重试1次成功">重试1次成功</label><label><input type="radio" name="hmi-result" value="重试2次成功">重试2次成功</label><label><input type="radio" name="hmi-result" value="重试3次成功">重试3次成功</label></div></section><section class="hmi-metric-section"><h4>评测指标</h4><label>任务完成度<input type="number" min="0" max="100" placeholder="请输入 0-100"></label><label>执行质量<select><option value="">请选择</option><option>优秀</option><option>合格</option><option>需改进</option></select></label><label>备注<input placeholder="请输入评测备注"></label></section><div><button onclick="hmiCancelResult()">取消</button><button class="primary" onclick="hmiSubmitResult()">提交</button></div></div></div>
-          <script>var hmiActiveButton=null;function hmiTogglePrompt(btn){{if(btn.dataset.running==='1'){{hmiActiveButton=btn;document.getElementById('hmi-result-mask').hidden=false;return;}}document.querySelectorAll('.hmi-task-row button').forEach(function(b){{if(b!==btn&&b.dataset.running==='1'){{b.dataset.running='0';b.textContent='▶';b.title='开始执行';b.closest('.hmi-task-row').classList.remove('running');}}}});btn.dataset.running='1';btn.textContent='■';btn.title='停止执行';btn.closest('.hmi-task-row').classList.add('running');}}function hmiCancelResult(){{document.getElementById('hmi-result-mask').hidden=true;}}function hmiSubmitResult(){{if(!hmiActiveButton)return;var result=document.querySelector('input[name="hmi-result"]:checked');if(!result){{alert('请选择评测结果');return;}}var row=hmiActiveButton.closest('.hmi-task-row');var summary=row.querySelector('.hmi-result-summary');var failed=result.value==='失败';summary.textContent=result.value;summary.classList.toggle('failed',failed);summary.classList.toggle('passed',!failed);row.classList.toggle('result-failed',failed);row.classList.toggle('result-passed',!failed);row.classList.add('result-submitted');hmiActiveButton.dataset.running='0';hmiActiveButton.style.display='none';hmiActiveButton.title='已提交';row.classList.remove('running');row.classList.add('completed');document.getElementById('hmi-result-mask').hidden=true;}}</script>
+          <div class="hmi-exec-grid"><div class="hmi-task-panel"><div class="hmi-panel-title"><select id="hmi-prompt-select">{execution_prompt_options}</select><a href="javascript:void(0)" class="hmi-scene-link" id="hmi-scene-link" onclick="hmiOpenScene()">场景示意</a><span class="hmi-progress">0 / 4 次</span></div><div class="hmi-task-row"><b>1</b><span class="hmi-prompt-text">抓住小猫</span><span class="hmi-result-summary"></span><button class="hmi-result-edit" type="button" hidden aria-label="编辑评测结果" title="编辑评测结果" onclick="hmiEditResult(this)"><span aria-hidden="true">✎</span></button><button class="hmi-icon-action" title="开始执行" aria-label="开始执行" onclick="hmiTogglePrompt(this)">▶</button></div><div class="hmi-task-row"><b>2</b><span class="hmi-prompt-text">掀开被子</span><span class="hmi-result-summary"></span><button class="hmi-result-edit" type="button" hidden aria-label="编辑评测结果" title="编辑评测结果" onclick="hmiEditResult(this)"><span aria-hidden="true">✎</span></button><button class="hmi-icon-action" title="开始执行" aria-label="开始执行" onclick="hmiTogglePrompt(this)">▶</button></div><div class="hmi-task-row"><b>3</b><span class="hmi-prompt-text">把小猫放进被子</span><span class="hmi-result-summary"></span><button class="hmi-result-edit" type="button" hidden aria-label="编辑评测结果" title="编辑评测结果" onclick="hmiEditResult(this)"><span aria-hidden="true">✎</span></button><button class="hmi-icon-action" title="开始执行" aria-label="开始执行" onclick="hmiTogglePrompt(this)">▶</button></div><div class="hmi-task-row"><b>4</b><span class="hmi-prompt-text">盖上被子</span><span class="hmi-result-summary"></span><button class="hmi-result-edit" type="button" hidden aria-label="编辑评测结果" title="编辑评测结果" onclick="hmiEditResult(this)"><span aria-hidden="true">✎</span></button><button class="hmi-icon-action" title="开始执行" aria-label="开始执行" onclick="hmiTogglePrompt(this)">▶</button></div></div><aside class="hmi-control-panel"><h3>开关</h3><div class="hmi-switches"><label>全部上电 <i>OFF</i></label><label>底座上电 <i>OFF</i></label><label>臂部上电 <i>OFF</i></label><label>左臂上电 <i>OFF</i></label><label>右臂上电 <i>OFF</i></label><label>障碍状态 <i>OFF</i></label></div><h3>连接状态</h3><p>Movax　<span>● 已连接</span></p><p>CaptureX　<span>● 已连接</span></p><p>Teleop　<span>● 已连接</span></p><div class="hmi-control-actions"><button>复位</button><button>重置</button><button disabled>停止</button></div></aside></div>
+          <div class="hmi-scene-mask" id="hmi-scene-mask" hidden><div class="hmi-scene-dialog" role="dialog" aria-modal="true" aria-labelledby="hmi-scene-title"><div class="hmi-scene-dialog-head"><h3 id="hmi-scene-title">场景示意</h3><button type="button" onclick="hmiCloseScene()" aria-label="关闭">×</button></div><div class="hmi-scene-dialog-body" id="hmi-scene-body"></div></div></div>
+          <div class="hmi-result-mask" id="hmi-result-mask" hidden><div class="hmi-result-dialog"><h3 id="hmi-result-title">提交评测结果</h3><section class="hmi-result-section"><h4>评测结果</h4><div class="hmi-result-radios"><label><input type="radio" name="hmi-result" value="成功">成功</label><label><input type="radio" name="hmi-result" value="失败">失败</label><label><input type="radio" name="hmi-result" value="重试1次成功">重试1次成功</label><label><input type="radio" name="hmi-result" value="重试2次成功">重试2次成功</label><label><input type="radio" name="hmi-result" value="重试3次成功">重试3次成功</label></div></section><section class="hmi-metric-section"><h4>评测指标</h4><label><span class="hmi-metric-label">任务完成度 <span class="hmi-metric-tip" tabindex="0" data-tip="任务目标完成的完整程度，按实际完成步骤评估">i</span></span><input type="number" min="0" max="100" placeholder="请输入 0-100"></label><label><span class="hmi-metric-label">执行质量 <span class="hmi-metric-tip" tabindex="0" data-tip="动作执行的准确性、稳定性和流畅度">i</span></span><select><option value="">请选择</option><option>优秀</option><option>合格</option><option>需改进</option></select></label><label><span class="hmi-metric-label">备注 <span class="hmi-metric-tip" tabindex="0" data-tip="补充记录本次评测中的异常、原因或其他说明">i</span></span><input placeholder="请输入评测备注"></label></section><div><button onclick="hmiCancelResult()">取消</button><button class="primary" onclick="hmiSubmitResult()">提交</button></div></div></div>
+          <script>var hmiSceneData={execution_scene_data_json};var hmiActiveButton=null;var hmiEditing=false;function hmiSceneEscape(value){{return String(value||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}}function hmiPromptChanged(select){{var link=document.getElementById('hmi-scene-link');if(link)link.classList.toggle('is-empty',!(hmiSceneData[select.value]&&hmiSceneData[select.value].images&&hmiSceneData[select.value].images.length));}}function hmiOpenScene(){{var select=document.getElementById('hmi-prompt-select');var data=hmiSceneData[(select&&select.value)||'']||{{name:'当前提示词组',images:[]}};var body=document.getElementById('hmi-scene-body');var title=document.getElementById('hmi-scene-title');if(title)title.textContent=data.name+' · 场景示意';if(body)body.innerHTML=(data.images&&data.images.length)?data.images.map(function(image){{var preview=image.src?'<img src="'+hmiSceneEscape(image.src)+'" alt="'+hmiSceneEscape(image.name||'场景示意图')+'">':'<span class="hmi-scene-placeholder">景</span>';return '<article class="hmi-scene-card"><div class="hmi-scene-preview">'+preview+'</div><div><b>'+hmiSceneEscape(image.role||'关键步骤')+'</b><small>'+hmiSceneEscape(image.name||'场景示意图')+'</small></div></article>';}}).join(''):'<div class="hmi-scene-empty">暂无场景示意图</div>';document.getElementById('hmi-scene-mask').hidden=false;}}function hmiCloseScene(){{document.getElementById('hmi-scene-mask').hidden=true;}}function hmiResetResultFields(){{document.querySelectorAll('input[name="hmi-result"]').forEach(function(input){{input.checked=false;}});var number=document.querySelector('.hmi-metric-section input[type="number"]');if(number)number.value='';var quality=document.querySelector('.hmi-metric-section select');if(quality)quality.value='';var note=document.querySelector('.hmi-metric-section input[placeholder="请输入评测备注"]');if(note)note.value='';}}function hmiTogglePrompt(btn){{if(btn.dataset.running==='1'){{hmiActiveButton=btn;hmiEditing=false;document.getElementById('hmi-result-title').textContent='提交评测结果';document.getElementById('hmi-result-mask').hidden=false;return;}}hmiEditing=false;hmiResetResultFields();document.querySelectorAll('.hmi-task-row .hmi-icon-action').forEach(function(b){{if(b!==btn&&b.dataset.running==='1'){{b.dataset.running='0';b.textContent='▶';b.title='开始执行';b.closest('.hmi-task-row').classList.remove('running');}}}});btn.dataset.running='1';btn.textContent='■';btn.title='停止执行';btn.closest('.hmi-task-row').classList.add('running');}}function hmiEditResult(editButton){{var row=editButton.closest('.hmi-task-row');hmiActiveButton=row.querySelector('.hmi-icon-action');hmiEditing=true;var currentResult=row.dataset.result||'';document.querySelectorAll('input[name="hmi-result"]').forEach(function(input){{input.checked=input.value===currentResult;}});var number=document.querySelector('.hmi-metric-section input[type="number"]');if(number)number.value=row.dataset.completion||'';var quality=document.querySelector('.hmi-metric-section select');if(quality)quality.value=row.dataset.quality||'';var note=document.querySelector('.hmi-metric-section input[placeholder="请输入评测备注"]');if(note)note.value=row.dataset.note||'';document.getElementById('hmi-result-title').textContent='编辑评测结果';document.getElementById('hmi-result-mask').hidden=false;}}function hmiCancelResult(){{document.getElementById('hmi-result-mask').hidden=true;hmiEditing=false;}}function hmiSubmitResult(){{if(!hmiActiveButton)return;var result=document.querySelector('input[name="hmi-result"]:checked');if(!result){{alert('请选择评测结果');return;}}var row=hmiActiveButton.closest('.hmi-task-row');var summary=row.querySelector('.hmi-result-summary');var edit=row.querySelector('.hmi-result-edit');var number=document.querySelector('.hmi-metric-section input[type="number"]');var quality=document.querySelector('.hmi-metric-section select');var note=document.querySelector('input[placeholder="请输入评测备注"]');var failed=result.value==='失败';row.dataset.result=result.value;row.dataset.completion=number?number.value:'';row.dataset.quality=quality?quality.value:'';row.dataset.note=note?note.value:'';summary.textContent=result.value;summary.classList.toggle('failed',failed);summary.classList.toggle('passed',!failed);if(edit)edit.hidden=false;row.classList.toggle('result-failed',failed);row.classList.toggle('result-passed',!failed);row.classList.add('result-submitted');if(!hmiEditing){{hmiActiveButton.dataset.running='0';hmiActiveButton.style.display='none';hmiActiveButton.title='已提交';row.classList.remove('running');}}row.classList.add('completed');hmiEditing=false;document.getElementById('hmi-result-mask').hidden=true;}}</script>
         </div>'''
-    if step == 4:
-        prompt_action_html = '<button class="hmi-icon-action" title="开始执行" onclick="hmiTogglePrompt(this)">▶</button>'
-        locked_prompt_action_html = '<button class="hmi-icon-action" title="等待上一条完成" aria-hidden="true" style="display:none" onclick="hmiTogglePrompt(this)">▶</button>'
-        first_action_end = body.find(prompt_action_html) + len(prompt_action_html)
-        if first_action_end >= len(prompt_action_html):
-            body = body[:first_action_end] + body[first_action_end:].replace(prompt_action_html, locked_prompt_action_html)
-        submit_done_marker = "row.classList.add('completed');document.getElementById('hmi-result-mask').hidden=true;"
-        submit_done_replacement = "row.classList.add('completed');var nextRow=row.nextElementSibling;var nextButton=nextRow&&nextRow.querySelector('.hmi-icon-action');if(nextButton){nextButton.style.display='';nextButton.removeAttribute('aria-hidden');nextButton.title='开始执行';}hmiActiveButton=null;document.getElementById('hmi-result-mask').hidden=true;"
-        body = body.replace(submit_done_marker, submit_done_replacement)
     body = f'<div class="eval2-ipad-shell"><div class="eval2-ipad-screen">{body}</div></div>'
     style = '<style>.wb-step-page{width:100%;min-height:100%;background:#fff;border:0;border-radius:0;padding:32px;max-width:none;margin:0;box-sizing:border-box;overflow:auto}.wb-step-page h1{font-size:26px;margin:0 0 22px}.wb-step-page h2{font-size:18px;margin:24px 0 14px}.wb-muted{color:#7e8792}.wb-link{display:flex;align-items:center;justify-content:center;text-decoration:none}.wb-pass{color:#2eaf68;font-size:13px;font-weight:400;margin-left:12px}.wb-fields{display:grid;grid-template-columns:1fr 2fr;gap:18px;margin:24px 0}.wb-fields label{display:flex;flex-direction:column;gap:8px;color:#5f6670;font-size:13px}.wb-fields select{height:40px;border:1px solid #d9dde3;border-radius:6px;padding:0 10px;background:#fff}.wb-mode-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:18px;margin:28px auto;max-width:820px}.wb-mode{min-height:150px;border:1px solid #dfe3e8;background:#fff;border-radius:8px;font-size:17px;display:flex;flex-direction:column;gap:15px;align-items:center;justify-content:center;cursor:pointer;text-decoration:none;color:inherit}.wb-mode.active{border:2px solid #1F80A0;background:#e6f4f8}.wb-mode b{font-size:34px;color:#1F80A0}.wb-primary{width:100%;height:48px;border:0;border-radius:7px;background:#1F80A0;color:#fff;font-size:16px;cursor:pointer}.wb-note{text-align:center;color:#7e8792;margin-top:10px;font-size:13px}.wb-scene{display:grid;grid-template-columns:1fr;gap:18px;padding:18px;background:#fafbfc;border:1px solid #edf0f3;border-radius:8px}.wb-scene p{color:#69717c;margin:8px 0 18px}.wb-media{display:grid;grid-template-columns:1fr 1fr;gap:10px;color:#7a828d}.wb-media div{border:1px dashed #cdd3db;border-radius:6px;padding:30px;text-align:center}.wb-media span{display:block;font-size:30px;color:#1F80A0;margin-top:18px}.wb-prompts{border:1px solid #edf0f3;border-radius:7px;margin-bottom:20px}.wb-prompts div{padding:13px 16px;border-bottom:1px solid #f0f0f0}.wb-prompts b{display:inline-flex;width:22px;height:22px;border-radius:4px;background:#e6f4f8;color:#1F80A0;align-items:center;justify-content:center;margin-right:10px}.wb-prompts small{color:#8a9099;margin-left:12px}.wb-scene-description{display:flex;align-items:center;gap:14px;white-space:nowrap}.wb-scene-description span{color:#69717c;overflow:hidden;text-overflow:ellipsis}@media(max-width:560px){.wb-mode-grid{grid-template-columns:1fr}.wb-fields{grid-template-columns:1fr}.wb-scene-description{white-space:normal;align-items:flex-start;flex-direction:column;gap:4px}}</style>'
     style += '<style>.hmi-exec{height:100%;min-height:100%;overflow:auto;box-sizing:border-box;background:#f7f8fa;padding:14px}.hmi-exec-top{display:flex;align-items:center;gap:10px;background:#fff;border:1px solid #edf0f3;padding:10px 14px;margin-bottom:14px;font-size:13px}.hmi-exec-top span{color:#7e8792}.hmi-back{background:#1F80A0;color:#fff;padding:6px 12px;border-radius:5px;text-decoration:none}.hmi-top-status{margin-left:auto;color:#1F80A0}.hmi-camera-row{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:14px}.hmi-camera-card{background:#fff;border:1px solid #edf0f3;padding:10px;font-size:14px}.hmi-camera-card>span{float:right;color:#2eaf68;font-size:12px}.hmi-camera-view{height:260px;background:#101317;color:#75808d;margin-top:8px;display:flex;align-items:center;justify-content:center;text-align:center;line-height:2}.hmi-camera-view small{display:block}.hmi-exec-grid{display:grid;grid-template-columns:2fr 1fr;gap:14px}.hmi-task-panel,.hmi-control-panel{background:#fff;border:1px solid #edf0f3;padding:14px}.hmi-panel-title{font-weight:600;margin-bottom:12px;display:flex;justify-content:flex-start;align-items:center;flex-wrap:wrap;gap:10px}.hmi-panel-title select{border:1px solid #d9dde3;border-radius:5px;padding:5px}.hmi-task-row{padding:14px 10px;border:1px solid #edf0f3;margin-bottom:8px;display:flex;align-items:center;gap:10px}.hmi-task-row.active{border-color:#1F80A0;background:#e6f4f8}.hmi-task-row b{width:22px;height:22px;background:#edf1f7;display:inline-flex;align-items:center;justify-content:center}.hmi-task-row button{margin-left:auto;border:0;background:transparent;color:#2eaf68;font-size:18px}.hmi-control-panel h3{font-size:15px;margin:4px 0 14px}.hmi-switches{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px}.hmi-switches label{font-size:12px;display:flex;justify-content:space-between}.hmi-switches i{font-style:normal;color:#1F80A0;background:#e6f4f8;border:1px solid #b8dce8;border-radius:10px;padding:2px 8px}.hmi-control-panel p{font-size:12px;color:#69717c;margin:8px 0}.hmi-control-panel p span{color:#2eaf68}.hmi-control-actions{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:20px}.hmi-control-actions button{height:42px;border:1px solid #b8dce8;background:#fff;border-radius:5px;color:#1F80A0}.hmi-control-actions .hmi-stop-action{color:#e54863;border-color:#ff9c9c}.hmi-control-actions button:disabled{color:#aaa;background:#f0f1f3}.hmi-submit-group{width:100%;height:46px;margin-top:10px;border:0;border-radius:7px;background:#1F80A0;color:#fff;font-size:16px;cursor:pointer}@media(max-width:800px){.hmi-camera-row,.hmi-exec-grid{grid-template-columns:1fr}.hmi-camera-view{height:200px}}</style>'
-    style += '<style>.hmi-task-row.running{border-color:#2463eb;background:#f3f7ff}.hmi-task-row.running button{color:#2463eb;font-weight:600}.hmi-task-row.completed{background:#f3fbf6;color:#2e8b57}.hmi-task-row button{font-size:16px}.hmi-panel-title{justify-content:flex-start;gap:10px}.hmi-panel-title select{min-width:220px}.hmi-ckpt-select{min-width:180px!important}.hmi-progress{margin-left:auto;color:#2463eb;font-size:12px}.hmi-icon-action{width:28px;height:28px;border:0;background:transparent;cursor:pointer}.hmi-result-mask[hidden]{display:none}.hmi-result-mask{position:fixed;inset:0;z-index:1200;background:rgba(0,0,0,.38);display:flex;align-items:center;justify-content:center}.hmi-result-dialog{width:560px;max-width:calc(100vw - 32px);background:#fff;border-radius:9px;padding:24px;box-shadow:0 12px 40px rgba(0,0,0,.2)}.hmi-result-dialog h3{margin:0 0 20px}.hmi-result-section,.hmi-metric-section{padding:14px 16px;border:1px solid #edf0f3;border-radius:7px;margin-bottom:14px}.hmi-result-section{background:#f6f9ff}.hmi-metric-section{background:#fafafa}.hmi-result-dialog h4{margin:0 0 12px;font-size:14px}.hmi-result-radios{display:flex;gap:18px;flex-wrap:wrap}.hmi-result-radios label{display:flex;align-items:center;gap:5px;color:#3f4752;font-size:13px}.hmi-metric-section label{display:flex;flex-direction:column;gap:7px;margin-bottom:12px;color:#5f6670;font-size:13px}.hmi-result-dialog select,.hmi-result-dialog input{height:38px;border:1px solid #d9dde3;border-radius:6px;padding:0 10px;background:#fff}.hmi-result-dialog>div{display:flex;justify-content:flex-end;gap:8px;margin-top:20px}.hmi-result-dialog button{padding:8px 18px;border:1px solid #d9dde3;background:#fff;border-radius:6px}.hmi-result-dialog button.primary{background:#2463eb;border-color:#2463eb;color:#fff}</style>'
+    style += '<style>.hmi-task-row.running{border-color:#2463eb;background:#f3f7ff}.hmi-task-row.running button{color:#2463eb;font-weight:600}.hmi-task-row.completed{background:#f3fbf6;color:#2e8b57}.hmi-task-row button{font-size:16px}.hmi-panel-title{justify-content:flex-start;gap:10px}.hmi-panel-title select{min-width:220px}.hmi-ckpt-select{min-width:180px!important}.hmi-progress{margin-left:auto;color:#2463eb;font-size:12px}.hmi-icon-action{width:28px;height:28px;border:0;background:transparent;cursor:pointer}.hmi-result-mask[hidden]{display:none}.hmi-result-mask{position:fixed;inset:0;z-index:1200;background:rgba(0,0,0,.38);display:flex;align-items:center;justify-content:center}.hmi-result-dialog{width:560px;max-width:calc(100vw - 32px);background:#fff;border-radius:9px;padding:24px;box-shadow:0 12px 40px rgba(0,0,0,.2)}.hmi-result-dialog h3{margin:0 0 20px}.hmi-result-section,.hmi-metric-section{padding:14px 16px;border:1px solid #edf0f3;border-radius:7px;margin-bottom:14px}.hmi-result-section{background:#f6f9ff}.hmi-metric-section{background:#fafafa}.hmi-result-dialog h4{margin:0 0 12px;font-size:14px}.hmi-result-radios{display:flex;gap:18px;flex-wrap:wrap}.hmi-result-radios label{display:flex;align-items:center;gap:5px;color:#3f4752;font-size:13px}.hmi-metric-section label{display:flex;flex-direction:column;gap:7px;margin-bottom:12px;color:#5f6670;font-size:13px}.hmi-metric-label{display:flex;align-items:center;gap:6px}.hmi-metric-tip{display:inline-flex;align-items:center;justify-content:center;width:15px;height:15px;border:1px solid #a9cbd4;border-radius:50%;color:#1F80A0;font-size:10px;line-height:1;cursor:help}.hmi-result-dialog select,.hmi-result-dialog input{height:38px;border:1px solid #d9dde3;border-radius:6px;padding:0 10px;background:#fff}.hmi-result-dialog>div{display:flex;justify-content:flex-end;gap:8px;margin-top:20px}.hmi-result-dialog button{padding:8px 18px;border:1px solid #d9dde3;background:#fff;border-radius:6px}.hmi-result-dialog button.primary{background:#2463eb;border-color:#2463eb;color:#fff}</style>'
     style += '<style>.hmi-task-row{display:grid;grid-template-columns:28px minmax(0,1fr) minmax(150px,auto) 32px;align-items:center;gap:10px}.hmi-task-row.result-submitted{grid-template-columns:28px minmax(0,1fr) minmax(150px,auto)}.hmi-prompt-text{min-width:0}.hmi-result-summary{justify-self:end;text-align:right;color:#2eaf68;font-size:13px;white-space:nowrap}.hmi-result-summary.failed{color:#e54863}.hmi-result-summary.passed{color:#2eaf68}.hmi-icon-action{justify-self:end;margin-left:0!important}.hmi-task-row.result-failed{background:#fff1f0!important;border-color:#ffccc7!important}.hmi-task-row.result-passed{background:#f3fbf6!important}</style>'
+    style += '<style>.hmi-result-edit{justify-self:end;margin-left:0!important;padding:0!important;border:0!important;background:transparent!important;color:#1F80A0!important;font-size:12px!important;cursor:pointer}.hmi-result-edit:hover{text-decoration:underline}.hmi-result-edit[hidden]{display:none!important}.hmi-task-row{grid-template-columns:28px minmax(0,1fr) minmax(150px,auto) 44px 32px}.hmi-task-row.result-submitted{grid-template-columns:28px minmax(0,1fr) minmax(150px,auto) 44px}</style>'
     style += '<style>.wb-scene{grid-template-columns:1fr}.wb-scene-description{display:flex;align-items:center;gap:14px;white-space:nowrap}.wb-scene-description span{color:#69717c;overflow:hidden;text-overflow:ellipsis}.hmi-panel-title{flex-wrap:nowrap;align-items:center;gap:8px;white-space:nowrap;overflow:hidden}.hmi-select-control{display:flex;align-items:center;gap:7px;min-width:0;flex:0 1 auto;padding:5px 8px;border:1px solid #d9dde3;border-radius:6px;background:#fff}.hmi-select-prefix{color:#1F80A0;font-size:12px;font-weight:600;flex-shrink:0}.hmi-select-control select{min-width:120px;max-width:260px;border:0!important;padding:4px 22px 4px 0!important;outline:0;overflow:hidden;text-overflow:ellipsis}.hmi-select-control em{color:#8a9099;font-size:11px;font-style:normal;white-space:nowrap}.hmi-progress{margin-left:auto;flex-shrink:0;padding:9px 13px;border-radius:7px;background:#e6f4f8;color:#5f6670!important;white-space:nowrap}.hmi-progress strong{color:#1F80A0;font-size:16px}.hmi-task-row button{color:#1F80A0}.hmi-switches i{color:#1F80A0!important;background:#e6f4f8!important;border:1px solid #b8dce8}.hmi-control-actions{grid-template-columns:repeat(3,1fr)!important}.hmi-control-actions button{height:42px!important;color:#1F80A0;border-color:#b8dce8!important;background:#fff!important}.hmi-control-actions .hmi-stop-action{color:#e54863;border-color:#ff9c9c!important}.hmi-submit-group{width:100%;height:46px;margin-top:10px;border:0;border-radius:7px;background:#1F80A0;color:#fff;font-size:16px;cursor:pointer}.hmi-submit-group:hover{background:#167b98}@media(max-width:800px){.hmi-select-control{flex:1;min-width:0}.hmi-progress{order:initial;width:auto;text-align:left;margin-left:auto}.wb-scene-description{white-space:normal;align-items:flex-start;flex-direction:column;gap:4px}}</style>'
-    style += '<style>.wb-task-section{margin-bottom:22px}.wb-task-section h2{font-size:16px;margin:0 0 12px;color:#26323d}.wb-prompt-tree{border:1px solid #edf0f3;border-radius:8px;overflow:hidden;background:#fff}.wb-prompt-tree-group{border-bottom:1px solid #edf0f3}.wb-prompt-tree-group:last-child{border-bottom:0}.wb-prompt-tree-parent{display:flex;align-items:center;gap:8px;padding:12px 16px;background:#f7fbfc;color:#1F80A0;font-weight:600}.wb-prompt-tree-parent:before{content:"▾";font-size:14px}.wb-prompt-tree-children{padding:4px 16px 8px 40px}.wb-prompt-tree-child{position:relative;padding:8px 0;color:#4f5964;font-size:13px}.wb-prompt-tree-child:before{content:"";position:absolute;left:-18px;top:0;width:1px;height:100%;background:#d9edf1}.wb-prompt-tree-child:after{content:"";position:absolute;left:-18px;top:17px;width:12px;height:1px;background:#d9edf1}</style>'
+    style += '<style>.wb-task-info-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:20px}.wb-task-info-head h1{margin-bottom:4px!important}.wb-task-info-head p{margin:0;color:#69717c;font-size:13px}.wb-task-info-head>span{padding:5px 10px;border-radius:12px;background:#e6f4f8;color:#1F80A0;font-size:12px;white-space:nowrap}.wb-task-section{margin-bottom:22px}.wb-task-section h2{display:flex;align-items:baseline;gap:8px;font-size:16px;margin:0 0 12px;color:#26323d}.wb-task-section h2 small{color:#8a9099;font-size:11px;font-weight:400}.wb-scene-task-only{display:grid!important;grid-template-columns:minmax(0,1fr) 300px!important;align-items:stretch}.wb-scene-task-only .wb-scene-description{align-items:flex-start;flex-direction:column;gap:6px;white-space:normal}.wb-scene-task-only .wb-scene-description span{line-height:1.7;white-space:normal}.wb-scene-video{display:flex;align-items:center;gap:12px;padding:12px 14px;border:1px solid #dce7ea;border-radius:7px;background:#fff}.wb-scene-video-icon{display:flex;align-items:center;justify-content:center;width:38px;height:38px;flex:none;border-radius:50%;background:#e6f4f8;color:#1F80A0;font-size:15px;padding-left:2px}.wb-scene-video>div{display:flex;flex-direction:column;gap:4px;min-width:0}.wb-scene-video b{color:#3f4b55;font-size:13px}.wb-scene-video small{color:#7a838c;font-size:11px;line-height:1.5}.wb-prompt-tree{border:1px solid #dfe8eb;border-radius:8px;overflow:hidden;background:#fff}.wb-prompt-tree-group{border-bottom:1px solid #dfe8eb}.wb-prompt-tree-group:last-child{border-bottom:0}.wb-prompt-tree-parent{width:100%;display:grid;grid-template-columns:18px minmax(0,1fr) auto;align-items:center;gap:9px;padding:13px 16px;border:0;background:#f7fbfc;color:#1F80A0;text-align:left;cursor:pointer}.wb-prompt-caret{font-size:16px;line-height:1}.wb-prompt-parent-copy{display:flex;flex-direction:column;gap:2px;min-width:0}.wb-prompt-parent-copy b{overflow:hidden;color:#2d5965;font-size:14px;text-overflow:ellipsis;white-space:nowrap}.wb-prompt-parent-copy small{overflow:hidden;color:#7a8b91;font-size:11px;text-overflow:ellipsis;white-space:nowrap}.wb-prompt-parent-meta{color:#6d7b80;font-size:11px;font-weight:400;white-space:nowrap}.wb-prompt-tree-children{padding:14px 16px 16px 43px;background:#fff}.wb-prompt-group-content{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(320px,.95fr);gap:18px;align-items:start}.wb-prompt-group-content.no-scenes{grid-template-columns:minmax(0,1.05fr) minmax(320px,.95fr)}.wb-prompt-scene-column,.wb-prompt-lowlevel-column{min-width:0}.wb-prompt-scene-column{padding-left:18px;border-left:1px solid #e3ecef}.wb-highlevel-scene-title,.wb-lowlevel-title{display:flex;align-items:baseline;gap:7px;margin-bottom:9px;color:#43525a;font-size:12px;font-weight:600}.wb-highlevel-scene-title small{color:#8a969b;font-size:10px;font-weight:400}.wb-highlevel-scenes{display:grid;grid-template-columns:minmax(0,1fr);gap:10px;margin-bottom:0}.wb-highlevel-scene-card{display:grid;grid-template-columns:80px minmax(0,1fr);gap:9px;min-width:0;padding:6px;border:1px solid #e1e8eb;border-radius:7px;background:#fafcfc}.wb-highlevel-scene-preview{position:relative;height:62px;overflow:hidden;border-radius:5px;background:linear-gradient(145deg,#d9ecef,#f3f9fa)}.wb-highlevel-scene-preview img{width:100%;height:100%;display:block;object-fit:cover}.wb-highlevel-scene-preview i{position:absolute;left:5px;top:5px;padding:1px 5px;border-radius:8px;background:#1F80A0;color:#fff;font-size:9px;font-style:normal}.wb-highlevel-scene-placeholder{display:flex;width:100%;height:100%;align-items:center;justify-content:center;color:#1F80A0;font-size:22px}.wb-highlevel-scene-card>div:last-child{display:flex;flex-direction:column;justify-content:center;gap:5px;min-width:0}.wb-highlevel-scene-card b{color:#40515a;font-size:11px}.wb-highlevel-scene-card small{overflow:hidden;color:#7a868c;font-size:10px;text-overflow:ellipsis;white-space:nowrap}.wb-highlevel-scene-empty{display:flex;min-height:72px;margin:0;align-items:center;justify-content:center;gap:8px;border:1px dashed #d5e0e3;border-radius:7px;color:#8a9499;background:#fafbfc}.wb-highlevel-scene-empty span{color:#9aabb0;font-size:20px}.wb-highlevel-scene-empty small{font-size:11px}.wb-lowlevel-list{border-left:1px solid #d9edf1;margin-left:10px}.wb-prompt-tree-child{display:grid;grid-template-columns:24px minmax(0,1fr);align-items:start;gap:7px;position:relative;padding:7px 0 7px 14px;color:#4f5964;font-size:12px}.wb-prompt-tree-child:before{content:"";position:absolute;left:0;top:17px;width:10px;height:1px;background:#d9edf1}.wb-prompt-tree-child>span:last-child{display:flex;flex-direction:column;gap:2px}.wb-prompt-tree-child small{display:block;margin:0;color:#8b969c;font-size:10px}.wb-lowlevel-index{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:4px;background:#edf5f6;color:#1F80A0;font-size:10px}.wb-prompt-tree-empty{padding:22px;color:#8a9499;text-align:center;font-size:12px}@media(max-width:760px){.wb-scene-task-only{grid-template-columns:1fr!important}.wb-prompt-tree-parent{grid-template-columns:18px minmax(0,1fr)}.wb-prompt-parent-meta{grid-column:2}.wb-prompt-tree-children{padding-left:24px}.wb-prompt-group-content,.wb-prompt-group-content.no-scenes{grid-template-columns:1fr}.wb-prompt-scene-column{padding-left:0;border-left:0}.wb-highlevel-scenes{grid-template-columns:1fr}}</style>'
     style += f'''<script>
       document.addEventListener('DOMContentLoaded', function() {{
         var title = document.querySelector('.hmi-panel-title');
         if (!title) return;
         var selects = title.querySelectorAll('select');
-        if (selects.length >= 2) {{
+        if (selects.length >= 1) {{
           var promptOptions = selects[0].innerHTML;
-          var ckptOptions = selects[1].innerHTML;
-          var ckptDisabled = selects[1].disabled ? ' disabled' : '';
-          title.innerHTML = '<div class="hmi-select-control"><span class="hmi-select-prefix">Prompt</span><select aria-label="Prompt">' + promptOptions + '</select><em>共 {prompt_group_count} 项</em></div>'
-            + '<div class="hmi-select-control"><span class="hmi-select-prefix">ckpt</span><select class="hmi-ckpt-select" aria-label="ckpt"' + ckptDisabled + '>' + ckptOptions + '</select><em>共 {checkpoint_count} 项</em></div>'
+          title.innerHTML = '<div class="hmi-select-control"><span class="hmi-select-prefix">Prompt</span><select id="hmi-prompt-select" aria-label="Prompt" onchange="hmiPromptChanged(this)">' + promptOptions + '</select><em>共 {prompt_group_count} 项</em></div>'
+            + '<a href="javascript:void(0)" class="hmi-scene-link" id="hmi-scene-link" onclick="hmiOpenScene()">场景示意</a>'
             + '<span class="hmi-progress">执行进度：已提交任务数 / 全部任务数&nbsp;&nbsp;<strong>20/30</strong></span>';
+          hmiPromptChanged(document.getElementById('hmi-prompt-select'));
         }}
         var actions = document.querySelector('.hmi-control-actions');
         if (actions) {{
@@ -7367,8 +8097,15 @@ def evaluate2_setup():
           submit.type = 'button'; submit.className = 'hmi-submit-group'; submit.textContent = '提交本组数据'; submit.onclick = function() {{ if (window.showToast) window.showToast('本组数据已提交', 'success'); }};
           actions.parentNode.insertBefore(submit, actions.nextSibling);
         }}
+        document.querySelectorAll('.hmi-result-edit span[aria-hidden="true"]').forEach(function(icon) {{
+          icon.innerHTML = '<svg class="hmi-edit-glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 16.5 3 21l4.5-1L19 8.5 15.5 5 4 16.5Z"></path><path d="m14 6.5 3.5 3.5"></path></svg>';
+        }});
       }});
     </script>'''
+    style += '<style>.hmi-edit-glyph{display:block;width:15px;height:15px}.hmi-result-edit:hover{color:#166f88!important;text-decoration:none}</style>'
+    style += '<style>.hmi-scene-link{flex:0 0 auto;color:#1F80A0;font-size:12px;text-decoration:none;white-space:nowrap}.hmi-scene-link:hover{text-decoration:underline}.hmi-scene-link.is-empty{color:#9aa3aa}.hmi-scene-mask[hidden]{display:none}.hmi-scene-mask{position:fixed;inset:0;z-index:1250;background:rgba(0,0,0,.38);display:flex;align-items:center;justify-content:center;padding:20px}.hmi-scene-dialog{width:720px;max-width:calc(100vw - 32px);max-height:calc(100vh - 40px);overflow:auto;background:#fff;border-radius:9px;box-shadow:0 12px 40px rgba(0,0,0,.2)}.hmi-scene-dialog-head{display:flex;align-items:center;justify-content:space-between;padding:18px 22px;border-bottom:1px solid #edf0f3}.hmi-scene-dialog-head h3{margin:0;font-size:17px;color:#26323d}.hmi-scene-dialog-head button{border:0;background:transparent;color:#7f8993;font-size:24px;line-height:1;cursor:pointer}.hmi-scene-dialog-body{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;padding:20px}.hmi-scene-card{overflow:hidden;border:1px solid #e2eaec;border-radius:8px;background:#fff}.hmi-scene-preview{height:150px;background:linear-gradient(145deg,#d9ecef,#f4fafb);display:flex;align-items:center;justify-content:center}.hmi-scene-preview img{width:100%;height:100%;object-fit:cover;display:block}.hmi-scene-placeholder{color:#1F80A0;font-size:36px}.hmi-scene-card>div:last-child{display:flex;flex-direction:column;gap:5px;padding:10px 12px}.hmi-scene-card b{color:#40515a;font-size:12px}.hmi-scene-card small{overflow:hidden;color:#7a868c;font-size:11px;text-overflow:ellipsis;white-space:nowrap}.hmi-scene-empty{grid-column:1/-1;padding:42px 12px;color:#8a9499;text-align:center}@media(max-width:680px){.hmi-scene-dialog-body{grid-template-columns:1fr 1fr}}@media(max-width:460px){.hmi-scene-dialog-body{grid-template-columns:1fr}}</style>'
+    style += '<style>.wb-prompt-tree-parent-row{display:flex;align-items:stretch;background:#f7fbfc;border-bottom:1px solid #dfe8eb}.wb-prompt-tree-parent-row .wb-prompt-tree-parent{flex:1;width:auto}.wb-prompt-group-content.has-scenes{grid-template-columns:minmax(0,1.05fr) minmax(320px,.95fr)}.wb-prompt-group-content.no-scenes{grid-template-columns:minmax(0,1fr)}@media(max-width:760px){.wb-prompt-group-content.has-scenes{grid-template-columns:1fr}}</style>'
+    style += ENDPOINT_MODE_STYLE + ENDPOINT_SETUP_MODE_SCRIPT
     return render_page("端侧示意", body + style, active="evaluate2")
 
 
@@ -7652,8 +8389,13 @@ def _mock_eval_records():
         selected_lowlevel_ids = set(task.get("selected_lowlevel_ids", []))
         criterion = get_criterion(task.get("criteria_id", "")) or {}
         result_definitions = normalize_result_definitions(criterion.get("result_definitions", {}))
-        success_values = [item["description"] for item in result_definitions.get("成功", [])] or ["成功"]
-        failure_values = [item["description"] for item in result_definitions.get("失败", [])] or ["失败"]
+        result_types = [item["type"] for item in result_definitions] or ["成功", "失败"]
+        failure_values = [value for value in result_types if result_type_is_failure(value)]
+        success_values = [value for value in result_types if not result_type_is_failure(value)]
+        if not success_values:
+            success_values = result_types
+        if not failure_values:
+            failure_values = result_types
         row_index = 0
         _rnd_records.seed(sum(ord(ch) for ch in task.get("id", "")))
         for prompt_id in prompt_ids:
@@ -7669,7 +8411,7 @@ def _mock_eval_records():
                 recording_id = f'{600000 + len(records) + 1:06d}'
                 is_success = _rnd_records.random() >= 0.22
                 result = _rnd_records.choice(success_values if is_success else failure_values)
-                result_parent = "成功" if is_success else "失败"
+                result_parent = "失败" if result_type_is_failure(result) else "成功"
                 completion = _rnd_records.randint(58, 98)
                 quality = "优秀" if completion >= 88 else "合格" if completion >= 72 else "需改进"
                 serial = f'MOZ1-{task.get("task_no", "0000")}-{row_index:02d}'
@@ -7677,6 +8419,7 @@ def _mock_eval_records():
                 records.append({
                     "id": record_id,
                     "recording_id": recording_id,
+                    "group": f"1:2:{row_index + 3}",
                     "task_id": task.get("id", ""),
                     "task_no": str(task.get("task_no", "")),
                     "task_name": task.get("name", ""),
@@ -7684,6 +8427,7 @@ def _mock_eval_records():
                     "prompt_en": prompt.get("high_level_en", ""),
                     "instruction": low_level.get("zh", ""),
                     "instruction_en": low_level.get("en", ""),
+                    "lowlevel_id": low_level.get("id", ""),
                     "prompt_id": prompt_id,
                     "labels": list(low_level.get("labels", [])),
                     "serial": serial,
@@ -7908,10 +8652,6 @@ def _render_eval_records_replacement(task_id=None):
         f'<option value="{html.escape(b["id"], quote=True)}">{html.escape(b["name"])}</option>'
         for b in BENCHMARKS
     )
-    checkpoint_opts = ''.join(
-        f'<label class="er-opt"><input type="checkbox" value="{html.escape(m["id"], quote=True)}" data-name="{html.escape(m["name"], quote=True)}" onchange="mselSync(\'er-filter-checkpoint\')"> <span>{html.escape(m["name"])}</span></label>'
-        for m in MODELS
-    )
     conclusion_opts = ''.join(
         f'<label class="er-opt"><input type="checkbox" value="{html.escape(value, quote=True)}" data-name="{html.escape(value)}" onchange="mselSync(\'er-filter-conclusion\')"> <span>{html.escape(value)}</span></label>'
         for value in sorted({str(record.get("conclusion", "")) for record in records if record.get("conclusion")})
@@ -7922,11 +8662,14 @@ def _render_eval_records_replacement(task_id=None):
         rows.append(
             f'<tr data-record-id="{rid}" data-task-id="{html.escape(record["task_no"], quote=True)}" '
             f'data-task-name="{html.escape(record["task_name"], quote=True)}" '
+            f'data-data-id="{html.escape(record["recording_id"], quote=True)}" '
             f'data-benchmark-id="{html.escape(record["benchmark_id"], quote=True)}" '
             f'data-checkpoint-id="{html.escape(record["checkpoint_id"], quote=True)}" '
             f'data-highlevel="{html.escape(record.get("prompt", ""), quote=True)}" '
             f'data-lowlevel="{html.escape(record.get("instruction", ""), quote=True)}" '
+            f'data-lowlevel-id="{html.escape(record.get("lowlevel_id", ""), quote=True)}" '
             f'data-conclusion="{html.escape(record.get("conclusion", ""), quote=True)}">'
+            f'<td class="er-record-group">{html.escape(record["group"])}</td>'
             f'<td class="er-record-id">{html.escape(record["recording_id"])}</td>'
             f'<td>{_eval_record_video_html(record, compact=True)}</td>'
             f'<td class="er-record-serial">{html.escape(record["serial"])}</td>'
@@ -7937,26 +8680,26 @@ def _render_eval_records_replacement(task_id=None):
             f'<td class="actions-cell"><a href="/eval-records/{rid}" class="action-link">详情</a></td>'
             '</tr>'
         )
-    row_html = ''.join(rows) or '<tr><td colspan="8" class="er-empty">暂无数据</td></tr>'
+    row_html = ''.join(rows) or '<tr><td colspan="9" class="er-empty">暂无数据</td></tr>'
     task_context = (
-        f'<div class="er-task-context"><a href="/tasks">← 返回评测任务</a><div><b class="er-task-context-id">{html.escape(task.get("task_no", "") and str(task.get("task_no")) or "--")}</b></div><div class="er-task-context-name"><b title="{html.escape(task.get("name", "--"), quote=True)}">{html.escape(task.get("name", "--"))}</b></div></div>'
-        if task else ""
+        f'<div class="er-task-context"><a href="/tasks">← 返回评测任务</a><div><b class="er-task-context-id">{html.escape(task.get("task_no", "") and str(task.get("task_no")) or "--")}</b></div><div class="er-task-context-name"><b title="{html.escape(task.get("name", "--"), quote=True)}">{html.escape(task.get("name", "--"))}</b></div><button class="ant-btn er-export-button" type="button" onclick="exportEvalRecords()">导出</button></div>'
+        if task else '<div class="er-page-head"><h1>评测数据</h1><button class="ant-btn" type="button" onclick="exportEvalRecords()">导出</button></div>'
     )
     content = f'''
     <div class="er-replacement">
       {task_context}
       <div class="filter-bar er-result-filter-bar">
-        <div class="ff"><label>recording_id</label><input id="er-filter-recording-id" type="text" placeholder="请输入 recording_id"></div>
-        <div class="ff er-checkpoint-filter"><label>ckpt（多选）</label><div class="er-dd-trigger" id="er-filter-checkpoint-btn" onclick="mselToggle('er-filter-checkpoint', event)" aria-label="ckpt（多选）"><div id="er-filter-checkpoint-chips" class="er-chips"></div><span aria-hidden="true" style="color:rgba(0,0,0,.35);font-size:11px;margin-left:6px;">▼</span></div><div class="er-dd-panel" id="er-filter-checkpoint-panel" style="width:100%;max-height:260px;overflow:auto;">{checkpoint_opts}<div style="display:flex;justify-content:flex-end;gap:12px;padding:8px 14px;border-top:1px solid #f0f0f0;"><a href="javascript:;" onclick="mselToggleAll('er-filter-checkpoint', true)" style="font-size:12px;color:#1F80A0;">全选</a><a href="javascript:;" onclick="mselToggleAll('er-filter-checkpoint', false)" style="font-size:12px;color:rgba(0,0,0,.45);">清空</a></div></div><input type="hidden" id="er-filter-checkpoint-hidden" value=""></div>
+        <div class="ff"><label>数据 ID</label><input id="er-filter-data-id" type="text" placeholder="请输入数据 ID"></div>
         <div class="ff"><label>highlevel</label><input id="er-filter-highlevel" type="text" placeholder="请输入 highlevel"></div>
         <div class="ff"><label>lowlevel</label><input id="er-filter-lowlevel" type="text" placeholder="请输入 lowlevel"></div>
-        <div class="ff er-conclusion-filter"><label>评测结论（多选）</label><div class="er-dd-trigger" id="er-filter-conclusion-btn" onclick="mselToggle('er-filter-conclusion', event)" aria-label="评测结论（多选）"><div id="er-filter-conclusion-chips" class="er-chips"></div><span aria-hidden="true" style="color:rgba(0,0,0,.35);font-size:11px;margin-left:6px;">▼</span></div><div class="er-dd-panel" id="er-filter-conclusion-panel" style="width:100%;max-height:220px;overflow:auto;">{conclusion_opts}<div style="display:flex;justify-content:flex-end;gap:12px;padding:8px 14px;border-top:1px solid #f0f0f0;"><a href="javascript:;" onclick="mselToggleAll('er-filter-conclusion', true)" style="font-size:12px;color:#1F80A0;">全选</a><a href="javascript:;" onclick="mselToggleAll('er-filter-conclusion', false)" style="font-size:12px;color:rgba(0,0,0,.45);">清空</a></div></div><input type="hidden" id="er-filter-conclusion-hidden" value=""></div>
+        <div class="ff"><label>lowlevel_id</label><input id="er-filter-lowlevel-id" type="text" placeholder="请输入 lowlevel_id"></div>
+        <div class="ff er-conclusion-filter"><label>评测结果（多选）</label><div class="er-dd-trigger" id="er-filter-conclusion-btn" onclick="mselToggle('er-filter-conclusion', event)" aria-label="评测结果（多选）"><div id="er-filter-conclusion-chips" class="er-chips"></div><span aria-hidden="true" style="color:rgba(0,0,0,.35);font-size:11px;margin-left:6px;">▼</span></div><div class="er-dd-panel" id="er-filter-conclusion-panel" style="width:100%;max-height:220px;overflow:auto;">{conclusion_opts}<div style="display:flex;justify-content:flex-end;gap:12px;padding:8px 14px;border-top:1px solid #f0f0f0;"><a href="javascript:;" onclick="mselToggleAll('er-filter-conclusion', true)" style="font-size:12px;color:#1F80A0;">全选</a><a href="javascript:;" onclick="mselToggleAll('er-filter-conclusion', false)" style="font-size:12px;color:rgba(0,0,0,.45);">清空</a></div></div><input type="hidden" id="er-filter-conclusion-hidden" value=""></div>
         <div class="filter-actions"><button type="button" class="ant-btn" onclick="erResultClear()">清空</button><button type="button" class="ant-btn ant-btn-primary" onclick="erResultApply()">搜索</button></div>
       </div>
       <div class="er-result-summary">共 <b id="er-result-count">{len(records)}</b> 条评测记录</div>
       <div class="ant-card ant-card-bordered er-result-card">
         <div class="er-result-table-wrap"><table class="ant-table er-result-table" id="er-result-table">
-          <thead><tr><th style="width:120px;">recording_id</th><th style="width:520px;">视频</th><th style="width:130px;">序列号</th><th style="width:130px;">ckpt</th><th style="width:140px;">评测结论</th><th style="width:100px;">操作人</th><th style="width:145px;">操作时间</th><th style="width:60px;">操作</th></tr></thead>
+          <thead><tr><th style="width:90px;">分组</th><th style="width:120px;">数据 ID</th><th style="width:520px;">视频</th><th style="width:130px;">设备序列号</th><th style="width:130px;">checkpoint</th><th style="width:140px;">评测结果</th><th style="width:100px;">操作人</th><th style="width:145px;">操作时间</th><th style="width:60px;">操作</th></tr></thead>
           <tbody>{row_html}</tbody>
         </table></div>
         <div class="er-result-pagination"><span id="er-result-page-copy">1 / 12</span><button type="button" id="er-result-prev" onclick="erResultPageChange(-1)" aria-label="上一页">‹</button><button type="button" id="er-result-current" class="active">1</button><button type="button" id="er-result-next" onclick="erResultPageChange(1)" aria-label="下一页">›</button></div>
@@ -7968,18 +8711,18 @@ def _render_eval_records_replacement(task_id=None):
     var erResultPage = 1;
     var erResultMatches = [];
     function erResultApply() {{
-      var recordingId = (document.getElementById('er-filter-recording-id').value || '').trim().toLowerCase();
-      var checkpoints = Array.from(document.querySelectorAll('#er-filter-checkpoint-panel input[type="checkbox"]:checked')).map(function(option) {{ return option.value; }});
+      var dataId = (document.getElementById('er-filter-data-id').value || '').trim().toLowerCase();
       var highlevel = (document.getElementById('er-filter-highlevel').value || '').trim().toLowerCase();
       var lowlevel = (document.getElementById('er-filter-lowlevel').value || '').trim().toLowerCase();
+      var lowlevelId = (document.getElementById('er-filter-lowlevel-id').value || '').trim().toLowerCase();
       var conclusions = Array.from(document.querySelectorAll('#er-filter-conclusion-panel input[type="checkbox"]:checked')).map(function(option) {{ return option.value; }});
       var count = 0;
       erResultMatches = [];
       document.querySelectorAll('#er-result-table tbody tr[data-record-id]').forEach(function(row) {{
-        var match = (!recordingId || (row.dataset.recordId || '').toLowerCase().indexOf(recordingId) >= 0)
-          && (!checkpoints.length || checkpoints.indexOf(row.dataset.checkpointId) >= 0)
+        var match = (!dataId || (row.dataset.dataId || '').toLowerCase().indexOf(dataId) >= 0)
           && (!highlevel || (row.dataset.highlevel || '').toLowerCase().indexOf(highlevel) >= 0)
           && (!lowlevel || (row.dataset.lowlevel || '').toLowerCase().indexOf(lowlevel) >= 0)
+          && (!lowlevelId || (row.dataset.lowlevelId || '').toLowerCase().indexOf(lowlevelId) >= 0)
           && (!conclusions.length || conclusions.indexOf(row.dataset.conclusion) >= 0);
         if (match) {{ erResultMatches.push(row); count += 1; }}
       }});
@@ -8003,12 +8746,44 @@ def _render_eval_records_replacement(task_id=None):
       erResultRenderPage();
     }}
     function erResultClear() {{
-      document.getElementById('er-filter-recording-id').value = '';
-      mselToggleAll('er-filter-checkpoint', false);
+      document.getElementById('er-filter-data-id').value = '';
       document.getElementById('er-filter-highlevel').value = '';
       document.getElementById('er-filter-lowlevel').value = '';
+      document.getElementById('er-filter-lowlevel-id').value = '';
       mselToggleAll('er-filter-conclusion', false);
       erResultApply();
+    }}
+    function exportEvalRecords() {{
+      var table = document.getElementById('er-result-table');
+      if (!table) return;
+      var rows = [];
+      var headerCells = table.querySelectorAll('thead th');
+      var exportColumnCount = Math.max(0, headerCells.length - 1);
+      rows.push(Array.from(headerCells).slice(0, exportColumnCount).map(function(cell) {{ return (cell.textContent || '').trim(); }}));
+      // erResultMatches is maintained by the filter/pagination logic; export the
+      // complete filtered result set rather than only the currently visible page.
+      var sourceRows = erResultMatches;
+      sourceRows.forEach(function(tr) {{
+        if (tr.cells.length < 2) return;
+        var row = [];
+        for (var i = 0; i < exportColumnCount; i++) row.push((tr.cells[i].textContent || '').replace(/\\s+/g, ' ').trim());
+        rows.push(row);
+      }});
+      if (rows.length <= 1) {{
+        if (window.showToast) window.showToast('暂无数据可导出', 'warning');
+        return;
+      }}
+      var csv = rows.map(function(row) {{ return row.map(function(value) {{
+        var text = String(value).replace(/"/g, '""');
+        return /[,"\\n]/.test(text) ? '"' + text + '"' : text;
+      }}).join(','); }}).join('\\n');
+      var url = URL.createObjectURL(new Blob(['\\uFEFF' + csv], {{type:'text/csv;charset=utf-8'}}));
+      var link = document.createElement('a');
+      link.href = url;
+      link.download = '评测数据_' + new Date().toISOString().slice(0, 10) + '.csv';
+      document.body.appendChild(link); link.click(); link.remove();
+      setTimeout(function() {{ URL.revokeObjectURL(url); }}, 1000);
+      if (window.showToast) window.showToast('已导出 ' + (rows.length - 1) + ' 条数据', 'success');
     }}
     function openEvalRecordVideo(button) {{
       var record = evalRecordData[button.dataset.recordId];
@@ -8022,19 +8797,21 @@ def _render_eval_records_replacement(task_id=None):
       .er-replacement {{ min-width:0; }}
       .er-task-context {{ display:flex;align-items:center;gap:18px;margin-bottom:14px;padding:12px 16px;border:1px solid #e4eaed;border-radius:8px;background:#fff; }}
       .er-task-context>a {{ color:#1F80A0;text-decoration:none;font-size:13px; }} .er-task-context>div {{ display:flex;align-items:center;min-width:0; }} .er-task-context-name {{ flex:1; }}
+      .er-task-context .er-export-button {{ margin-left:auto; }}
+      .er-page-head {{ display:flex;align-items:center;justify-content:space-between;margin-bottom:14px; }} .er-page-head h1 {{ margin:0;font-size:20px;font-weight:600;color:rgba(0,0,0,.85); }}
       .er-task-context b {{ font-size:15px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap; }} .er-task-context-id {{ font-family:'SF Mono',Menlo,Consolas,monospace;font-size:13px !important;color:rgba(0,0,0,.72); }}
       .er-result-filter-bar {{ display:grid; grid-template-columns:repeat(5,minmax(130px,1fr)) auto; gap:12px; align-items:end; padding:16px; background:#fff; border:1px solid #f0f0f0; border-radius:8px; margin-bottom:12px; }}
-      .er-result-filter-bar .ff {{ min-width:0; }} .er-checkpoint-filter,.er-conclusion-filter {{ position:relative; }} .er-checkpoint-filter .er-dd-trigger,.er-conclusion-filter .er-dd-trigger {{ min-height:32px; }} .er-checkpoint-filter .er-chips,.er-conclusion-filter .er-chips {{ min-height:22px; }}
+      .er-result-filter-bar .ff {{ min-width:0; }} .er-conclusion-filter {{ position:relative; }} .er-conclusion-filter .er-dd-trigger {{ min-height:32px; }} .er-conclusion-filter .er-chips {{ min-height:22px; }}
       .er-result-filter-bar .ff label {{ display:block; margin-bottom:5px; color:rgba(0,0,0,.55); font-size:12px; }}
       .er-result-filter-bar input, .er-result-filter-bar select {{ width:100%; }}
       .er-result-filter-bar .er-dd-panel input[type="checkbox"] {{ width:14px !important;height:14px !important;padding:0 !important;border:0 !important;border-radius:0 !important;appearance:auto !important;-webkit-appearance:auto !important;background:transparent !important;box-shadow:none !important; }}
       .er-result-summary {{ color:rgba(0,0,0,.55); font-size:13px; margin:0 0 10px 2px; }}
       .er-result-card {{ overflow:hidden; }}
       .er-result-table-wrap {{ overflow-x:auto; }}
-      .er-result-table {{ min-width:1240px; table-layout:fixed; }}
+      .er-result-table {{ min-width:1335px; table-layout:fixed; }}
       .er-result-table thead th {{ background:#f7f8fa; }}
       .er-result-table tbody td {{ height:156px; padding:10px 12px; }}
-      .er-record-id, .er-record-serial {{ font-family:'SF Mono',Menlo,Consolas,monospace; font-size:12px; color:rgba(0,0,0,.65); }}
+      .er-record-group, .er-record-id, .er-record-serial {{ font-family:'SF Mono',Menlo,Consolas,monospace; font-size:12px; color:rgba(0,0,0,.65); }}
       .er-record-video-strip {{ display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:5px; min-width:0; }}
       .er-record-video-strip-compact {{ grid-template-rows:28px 120px; gap:0; min-width:500px; background:#050505; border-radius:8px; overflow:hidden; }}
       .er-record-video-prompt {{ grid-column:1/-1; display:flex; align-items:center; justify-content:center; padding:0 12px; background:#050505; color:rgba(255,255,255,.88); font-size:12px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }}
@@ -8061,18 +8838,19 @@ def _render_eval_records_replacement(task_id=None):
       .er-result-pagination button:disabled {{ color:#d9d9d9; cursor:not-allowed; }}
       .er-empty {{ text-align:center; padding:52px !important; color:rgba(0,0,0,.35) !important; }}
       @media (max-width:1400px) {{
-        .er-result-table {{ min-width:1240px; }}
-        .er-result-table th:nth-child(1) {{ width:120px !important; }}
-        .er-result-table th:nth-child(2) {{ width:520px !important; }}
-        .er-result-table th:nth-child(3) {{ width:130px !important; }}
+        .er-result-table {{ min-width:1335px; }}
+        .er-result-table th:nth-child(1) {{ width:90px !important; }}
+        .er-result-table th:nth-child(2) {{ width:120px !important; }}
+        .er-result-table th:nth-child(3) {{ width:520px !important; }}
         .er-result-table th:nth-child(4) {{ width:130px !important; }}
-        .er-result-table th:nth-child(5) {{ width:140px !important; }}
-        .er-result-table th:nth-child(6) {{ width:100px !important; }}
-        .er-result-table th:nth-child(7) {{ width:145px !important; }}
-        .er-result-table th:nth-child(8) {{ width:60px !important; }}
+        .er-result-table th:nth-child(5) {{ width:130px !important; }}
+        .er-result-table th:nth-child(6) {{ width:140px !important; }}
+        .er-result-table th:nth-child(7) {{ width:100px !important; }}
+        .er-result-table th:nth-child(8) {{ width:145px !important; }}
+        .er-result-table th:nth-child(9) {{ width:60px !important; }}
         .er-record-video-strip-compact {{ min-width:500px; }}
         .er-result-table tbody td {{ padding:8px 7px; font-size:12px; }}
-        .er-result-table tbody td:nth-child(4), .er-result-table tbody td:nth-child(6), .er-result-table tbody td:nth-child(7) {{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }}
+        .er-result-table tbody td:nth-child(5), .er-result-table tbody td:nth-child(7), .er-result-table tbody td:nth-child(8) {{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }}
         .er-record-video-compact.vid-thumb {{ width:auto; height:120px; }}
       }}
       @media (max-width:1000px) {{ .er-result-filter-bar {{ grid-template-columns:repeat(2,minmax(150px,1fr)); }} .er-result-filter-bar .filter-actions {{ grid-column:1/-1; }} }}
@@ -8603,8 +9381,23 @@ def eval_record_detail(record_id):
         f'<tr><td>{html.escape(key)}</td><td>{html.escape(str(value))}</td></tr>'
         for key, value in record.get("metrics", {}).items()
     )
-    conclusion = _eval_record_conclusion_html(record.get("conclusion", "--"))
-    conclusion_class = "is-fail" if record.get("conclusion") == "失败" else "is-pass"
+    selected_conclusion = str(record.get("conclusion", "--"))
+    task = next((item for item in EVAL_TASKS if item.get("id") == record.get("task_id")), None) or {}
+    criterion = get_criterion(task.get("criteria_id", "")) or {}
+    result_options = [
+        item["type"]
+        for item in normalize_result_definitions(criterion.get("result_definitions", {}))
+        if item.get("type")
+    ]
+    if selected_conclusion not in result_options:
+        result_options.append(selected_conclusion)
+    result_options_html = ''.join(
+        f'<span class="er-record-result-option'
+        f'{" is-selected" if option == selected_conclusion else ""}"'
+        f' aria-current="{"true" if option == selected_conclusion else "false"}">'
+        f'{html.escape(option)}</span>'
+        for option in result_options
+    )
     record_id_html = html.escape(record.get("id", ""))
     recording_id_html = html.escape(record.get("recording_id", "--"))
     checkpoint_html = html.escape(record.get("checkpoint", "--"))
@@ -8619,8 +9412,8 @@ def eval_record_detail(record_id):
         <a class="er-detail-back" href="/tasks/{html.escape(record.get("task_id", ""), quote=True)}/data">← 返回任务数据</a>
         <span class="er-detail-title">评测记录</span>
         <div class="er-detail-inline-meta" aria-label="记录基本信息">
-          <span><em>recording_id</em><b class="mono">{recording_id_html}</b></span>
-          <span><em>ckpt</em><b>{checkpoint_html}</b></span>
+          <span><em>数据 ID</em><b class="mono">{recording_id_html}</b></span>
+          <span><em>checkpoint</em><b>{checkpoint_html}</b></span>
         </div>
       </div>
       <section class="er-detail-prompt">
@@ -8632,7 +9425,6 @@ def eval_record_detail(record_id):
         <div class="er-detail-playback" aria-label="视频播放控制">
           <button type="button" class="er-playback-btn" id="er-playback-toggle" onclick="toggleEvalPlayback()" aria-label="播放视频">▶</button>
           <input id="er-detail-frame-range" type="range" min="0" max="71" value="0" step="1" oninput="setEvalPlaybackFrame(this.value)" aria-label="视频播放进度">
-          <span id="er-detail-frame-copy">帧 0 / 72</span>
         </div>
       </section>
       <div class="er-detail-tabs" role="tablist">
@@ -8641,7 +9433,7 @@ def eval_record_detail(record_id):
       </div>
       <section id="er-detail-record-pane" class="er-detail-pane">
         <div class="er-record-summary">
-          <div class="er-record-outcome {conclusion_class}">{conclusion}</div>
+          <div class="er-record-outcome"><span class="er-record-outcome-label">评测结果</span><div class="er-record-result-options">{result_options_html}</div></div>
           <div class="er-record-metrics">
             <table class="er-record-metric-table"><thead><tr><th>指标</th><th>结果</th></tr></thead><tbody>{metric_rows}</tbody></table>
           </div>
@@ -8669,9 +9461,7 @@ def eval_record_detail(record_id):
     function setEvalPlaybackFrame(frame) {{
       evalPlaybackFrame = Math.max(0, Math.min(71, Number(frame) || 0));
       var range = document.getElementById('er-detail-frame-range');
-      var copy = document.getElementById('er-detail-frame-copy');
       if (range) range.value = evalPlaybackFrame;
-      if (copy) copy.textContent = '帧 ' + evalPlaybackFrame + ' / 72';
       var ratio = evalPlaybackFrame / 71;
       document.querySelectorAll('.moztrace-frame-line').forEach(function(line) {{
         var svg = line.closest('svg');
@@ -8734,17 +9524,17 @@ def eval_record_detail(record_id):
       .er-playback-btn {{ flex:0 0 28px; width:28px; height:28px; padding:0; border:1px solid #c9dddd; border-radius:5px; background:#fff; color:#1F80A0; cursor:pointer; }}
       .er-playback-btn:hover {{ border-color:#1F80A0; background:#f1f7f7; }}
       .er-detail-playback input[type=range] {{ flex:1; min-width:120px; accent-color:#1F80A0; cursor:pointer; }}
-      .er-detail-playback span {{ min-width:68px; text-align:right; white-space:nowrap; }}
       .er-detail-tabs {{ display:flex; gap:4px; border-bottom:1px solid #f0f0f0; margin-bottom:10px; }}
       .er-detail-tab {{ border:0; border-bottom:2px solid transparent; background:transparent; padding:8px 16px; font-size:13px; color:rgba(0,0,0,.55); cursor:pointer; }}
       .er-detail-tab.active {{ color:#1F80A0; border-bottom-color:#1F80A0; font-weight:500; }}
       .er-detail-pane {{ background:#fff; border:1px solid #f0f0f0; border-radius:8px; padding:10px 12px; box-sizing:border-box; overflow:auto; max-height:260px; }}
       .er-detail-grid {{ display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:12px; margin-bottom:12px; font-size:13px; color:rgba(0,0,0,.72); }}
       .er-record-summary {{ display:flex; flex-direction:column; align-items:stretch; gap:10px; min-height:0; }}
-      .er-record-outcome {{ width:100%; display:flex; align-items:center; justify-content:flex-start; padding:0 0 10px 2px; border-right:0; border-bottom:1px solid #edf0f2; }}
-      .er-record-outcome .er-result-pill {{ display:inline-flex; align-items:center; padding:3px 12px; border-radius:4px; font-size:14px; line-height:22px; font-weight:600; }}
-      .er-record-outcome .er-result-pass {{ color:#389e0d; background:#f0f9e8; border:1px solid #d9f0c5; }}
-      .er-record-outcome .er-result-fail {{ color:#d4380d; background:#fff1f0; border:1px solid #ffccc7; }}
+      .er-record-outcome {{ width:100%; display:flex; align-items:flex-start; gap:14px; padding:0 0 12px 2px; border-right:0; border-bottom:1px solid #edf0f2; }}
+      .er-record-outcome-label {{ flex:0 0 auto; padding-top:6px; color:rgba(0,0,0,.48); font-size:12px; }}
+      .er-record-result-options {{ display:flex; flex-wrap:wrap; gap:8px; min-width:0; }}
+      .er-record-result-option {{ display:inline-flex; align-items:center; gap:6px; min-height:30px; box-sizing:border-box; padding:4px 10px; border:1px solid #e1e5e8; border-radius:6px; color:rgba(0,0,0,.55); background:#fafafa; font-size:12px; line-height:20px; }}
+      .er-record-result-option.is-selected {{ padding:3px 9px; border:2px solid #1F80A0; color:#1F80A0; background:#e6f4f8; font-weight:400; box-shadow:0 0 0 2px rgba(31,128,160,.08); }}
       .er-record-metrics {{ width:100%; display:flex; align-items:stretch; }}
       .er-record-metric-table {{ width:100%; height:100%; border-collapse:collapse; table-layout:fixed; font-size:13px; }}
       .er-record-metric-table th {{ height:28px; padding:0 10px; background:#f7f8fa; border-bottom:1px solid #edf0f2; color:rgba(0,0,0,.45); font-size:11px; font-weight:500; text-align:left; }}

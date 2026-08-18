@@ -3125,22 +3125,448 @@ class DataPlatformArchitectureTests(unittest.TestCase):
         self.assertIn("能力标签 &gt; 方位理解 &gt; 左右", drawer.group(0))
         self.assertIn("datasetTagToggleOption", drawer.group(0))
 
+    def test_eval_task_drawer_omits_scene_description_section(self):
+        html = self.client.get("/model/eval/tasks").get_data(as_text=True)
+        drawer_start = html.index('id="create-task-drawer"')
+        drawer_end = html.index("</form>", drawer_start)
+        drawer = html[drawer_start:drawer_end]
+
+        self.assertIn("新增评测任务", drawer)
+        self.assertIn("基础信息", drawer)
+        self.assertIn("评测配置", drawer)
+        for removed in (
+            "场景描述",
+            'name="scene_description"',
+            'name="scene_images"',
+            'name="scene_videos"',
+            "task-scene-upload-grid",
+        ):
+            self.assertNotIn(removed, drawer)
+        self.assertNotIn("请填写场景描述", html)
+
+    def test_eval_task_filters_split_task_id_and_task_name(self):
+        html = self.client.get("/model/eval/tasks").get_data(as_text=True)
+        for marker in (
+            '<label>任务 ID</label>',
+            'id="eval-task-filter-id"',
+            '请输入任务 ID',
+            '<label>任务名称</label>',
+            'id="eval-task-filter-name"',
+            '请输入任务名称',
+            'id="eval-task-table"',
+            'function filterEvalTasks()',
+            'function clearEvalTaskFilters()',
+            'onclick="filterEvalTasks()"',
+            'onclick="clearEvalTaskFilters()"',
+        ):
+            with self.subTest(marker=marker):
+                self.assertIn(marker, html)
+        self.assertNotIn('<label>任务</label><input type="text" placeholder="搜索任务">', html)
+
+    def test_eval_task_data_and_statistics_pages_expose_plain_export_buttons(self):
+        tasks_html = self.client.get("/model/eval/tasks").get_data(as_text=True)
+        self.assertIn('function exportEvalTasks()', tasks_html)
+        self.assertRegex(
+            tasks_html,
+            r'<button class="ant-btn" type="button" onclick="exportEvalTasks\(\)">导出</button>',
+        )
+
+        data_html = self.client.get("/model/eval/tasks/t1/data").get_data(as_text=True)
+        self.assertIn('function exportEvalRecords()', data_html)
+        self.assertRegex(
+            data_html,
+            r'<button class="ant-btn er-export-button" type="button" onclick="exportEvalRecords\(\)">导出</button>',
+        )
+
+        statistics_html = self.client.get("/model/eval/tasks/t1/statistics").get_data(as_text=True)
+        self.assertIn('function exportEvalStatistics()', statistics_html)
+        self.assertRegex(
+            statistics_html,
+            r'<div class="stat-head"><h1>评测统计</h1><button class="ant-btn" type="button" onclick="exportEvalStatistics\(\)">导出</button></div>',
+        )
+
+    def test_eval_task_data_list_uses_group_and_data_id_labels(self):
+        html = self.client.get("/model/eval/tasks/t1/data").get_data(as_text=True)
+        self.assertIn('<label>数据 ID</label>', html)
+        self.assertIn('id="er-filter-data-id"', html)
+        self.assertIn('<label>lowlevel_id</label>', html)
+        self.assertIn('id="er-filter-lowlevel-id"', html)
+        self.assertIn('data-lowlevel-id="', html)
+        self.assertNotIn('id="er-filter-checkpoint-btn"', html)
+        self.assertNotIn('<label>ckpt（多选）</label>', html)
+        self.assertRegex(html, r'<td class="er-record-group">\d+:\d+:\d+</td>')
+        header = re.search(r'<table class="ant-table er-result-table".*?<thead><tr>(.*?)</tr></thead>', html, flags=re.S)
+        self.assertIsNotNone(header)
+        header_html = header.group(1)
+        self.assertLess(header_html.index("分组"), header_html.index("数据 ID"))
+        self.assertLess(header_html.index("数据 ID"), header_html.index("视频"))
+        self.assertIn("设备序列号", header_html)
+        self.assertIn("checkpoint", header_html)
+        self.assertNotIn(">序列号<", header_html)
+        self.assertNotIn(">ckpt<", header_html)
+        self.assertIn("评测结果", header_html)
+        self.assertNotIn("评测结论", header_html)
+        self.assertIn("row.dataset.dataId", html)
+
+    def test_eval_record_detail_shows_all_result_options_and_hides_frame_copy(self):
+        html = self.client.get("/model/eval/eval-records/1001-001").get_data(as_text=True)
+        self.assertIn('<em>数据 ID</em>', html)
+        self.assertIn('<em>checkpoint</em>', html)
+        self.assertNotIn('<em>recording_id</em>', html)
+        self.assertNotIn('<em>ckpt</em>', html)
+        self.assertNotIn('id="er-detail-frame-copy"', html)
+        self.assertNotIn('帧 0 / 72', html)
+        outcome = re.search(r'<div class="er-record-outcome">(.*?)</div></div>', html, flags=re.S)
+        self.assertIsNotNone(outcome)
+        for result in ("环境异常", "动作失败", "执行超时", "重试后成功", "直接成功"):
+            self.assertIn(result, outcome.group(1))
+        self.assertEqual(1, outcome.group(1).count('aria-current="true"'))
+        self.assertEqual(1, outcome.group(1).count("is-selected"))
+        self.assertNotIn("当前结果", outcome.group(1))
+        self.assertNotIn("is-pass", outcome.group(1))
+        self.assertNotIn("is-fail", outcome.group(1))
+        self.assertIn(
+            ".er-record-result-option.is-selected { padding:3px 9px; border:2px solid #1F80A0; color:#1F80A0; background:#e6f4f8; font-weight:400;",
+            html,
+        )
+        self.assertNotIn(
+            ".er-record-result-option.is-selected { padding:3px 9px; border:2px solid #1677ff",
+            html,
+        )
+
+    def test_criteria_result_types_are_manual_and_limited_to_twenty_chars(self):
+        html = self.client.get("/model/eval/criteria").get_data(as_text=True)
+        drawer_start = html.index('id="create-criteria-drawer"')
+        drawer_end = html.index("</form>", drawer_start)
+        drawer = html[drawer_start:drawer_end]
+
+        self.assertIn("结果类型", drawer)
+        self.assertIn("完成度", drawer)
+        self.assertIn('name="result_type"', html)
+        self.assertIn('maxlength="20"', html)
+        self.assertIn("请输入结果类型，最多20个字符", html)
+        self.assertNotIn("结果描述", drawer)
+        self.assertNotIn('name="result_desc"', html)
+        self.assertNotIn('name="result_parent"', html)
+        self.assertIn("if (!items.length) items = [{type:'', degree:1}]", html)
+        self.assertNotIn("type:'成功', degree:2", html)
+        self.assertNotIn("type:'失败', degree:1", html)
+
+        normalized = toolchain_demo.ep.normalize_result_definitions(
+            {"成功": [{"description": "直接成功", "degree": 2}], "失败": ["动作失败"]}
+        )
+        self.assertEqual(["直接成功", "动作失败"], [item["type"] for item in normalized])
+        self.assertEqual([2, 1], [item["degree"] for item in normalized])
+
+        original_count = len(toolchain_demo.ep.CRITERIA)
+        response = self.client.post(
+            "/model/eval/criteria/create",
+            data={"name": "长度校验", "result_type": "超" * 21, "result_degree": "1"},
+            follow_redirects=False,
+        )
+        self.assertEqual(302, response.status_code)
+        self.assertEqual(original_count, len(toolchain_demo.ep.CRITERIA))
+        with self.client.session_transaction() as session:
+            flashes = session.get("_flashes", [])
+            self.assertIn(("error", "结果类型不能超过 20 个字符"), flashes)
+            session.pop("_flashes", None)
+
+        custom_name = "自定义结果类型校验"
+        response = self.client.post(
+            "/model/eval/criteria/create",
+            data={
+                "name": custom_name,
+                "result_type": ["优秀完成", "需要人工复核"],
+                "result_degree": ["2", "1"],
+            },
+            follow_redirects=False,
+        )
+        self.assertEqual(302, response.status_code)
+        created = next(item for item in toolchain_demo.ep.CRITERIA if item["name"] == custom_name)
+        try:
+            self.assertEqual(
+                [
+                    {"type": "优秀完成", "degree": 2},
+                    {"type": "需要人工复核", "degree": 1},
+                ],
+                created["result_definitions"],
+            )
+            self.assertTrue(all("description" not in item for item in created["result_definitions"]))
+        finally:
+            toolchain_demo.ep.CRITERIA.remove(created)
+            with self.client.session_transaction() as session:
+                session.pop("_flashes", None)
+
+    def test_criteria_drawer_previews_terminal_result_form(self):
+        html = self.client.get("/model/eval/criteria").get_data(as_text=True)
+        drawer_start = html.index('id="create-criteria-drawer"')
+        drawer_end = html.index("</form>", drawer_start)
+        drawer = html[drawer_start:drawer_end]
+        footer = drawer[drawer.index('class="ant-drawer-footer"') :]
+
+        self.assertLess(footer.index("关闭"), footer.index("预览"))
+        self.assertLess(footer.index("预览"), footer.index("创建"))
+        self.assertIn('onclick="openCriteriaPreview()"', footer)
+        for marker in (
+            'id="criteria-preview-mask"',
+            'class="hmi-result-dialog criteria-preview-dialog"',
+            '<h3 id="criteria-preview-title">提交评测结果</h3>',
+            'class="hmi-result-section"',
+            'class="hmi-result-radios"',
+            'class="hmi-metric-section"',
+            "function openCriteriaPreview()",
+            "type === '单选'",
+            "type === '多选'",
+            "type === '数字'",
+            "当前为预览模式，不会提交数据",
+        ):
+            self.assertIn(marker, html)
+
+    def test_criteria_metric_description_is_after_default_value(self):
+        html = self.client.get("/model/eval/criteria").get_data(as_text=True)
+        drawer_start = html.index('id="create-criteria-drawer"')
+        drawer_end = html.index("</form>", drawer_start)
+        drawer = html[drawer_start:drawer_end]
+        table_start = drawer.index('id="criteria-metrics-table"')
+        table = drawer[table_start:]
+        header_order = ["指标名称", "字段类型", "选项（单选/多选）", "默认值", "指标说明", "操作"]
+        positions = [table.index(label) for label in header_order]
+        self.assertEqual(sorted(positions), positions)
+        row_order = [
+            'name="metric_name"',
+            'name="metric_type"',
+            'name="metric_options"',
+            'name="metric_default"',
+            'name="metric_description"',
+        ]
+        row_positions = [table.index(marker) for marker in row_order]
+        self.assertEqual(sorted(row_positions), row_positions)
+
+    def test_criteria_more_actions_are_not_clipped(self):
+        html = self.client.get("/model/eval/criteria").get_data(as_text=True)
+        for marker in (
+            'class="ant-card ant-card-bordered criteria-list-card"',
+            ".criteria-list-card { position:relative; z-index:10; overflow:visible; }",
+            ".criteria-list-card .action-more-menu { top:auto; bottom:calc(100% + 4px); z-index:120; }",
+            'class="action-more-menu"',
+            ">编辑</a>",
+            ">删除</a>",
+        ):
+            self.assertIn(marker, html)
+
+    def test_endpoint_uses_five_horizontal_mode_rows(self):
+        landing = self.client.get("/model/eval/evaluate2")
+        self.assertEqual(200, landing.status_code)
+        self.assertIn("进入端侧示意", landing.get_data(as_text=True))
+
+        html = self.client.get("/model/eval/evaluate2/setup?step=1").get_data(as_text=True)
+        mode_order = (
+            ("normal", "普通采集"),
+            ("dagger", "DAgger 采集"),
+            ("assess", "模型评测"),
+            ("eval", "对比评测"),
+            ("test", "测试任务"),
+        )
+
+        positions = []
+        for code, label in mode_order:
+            marker = f'data-mode="{code}"'
+            self.assertIn(marker, html)
+            self.assertIn(f"<strong>{label}</strong><small>{code}</small>", html)
+            positions.append(html.index(marker))
+        self.assertEqual(sorted(positions), positions)
+        self.assertEqual(5, len(re.findall(r'<button type="button" class="wb-mode(?: active)?"', html)))
+        self.assertIn(".wb-mode-grid,.eval2-mode-grid { display:flex;flex-direction:column", html)
+        self.assertIn("function wbSelectSetupMode(button)", html)
+        self.assertIn("?step=2&mode=", html)
+
+    def test_endpoint_task_info_binds_scene_images_to_highlevel_prompts(self):
+        selection = self.client.get("/model/eval/evaluate2/setup?step=2").get_data(as_text=True)
+        self.assertIn("function wbConfirmEndpointTask()", selection)
+        self.assertIn("step=3&task=", selection)
+
+        html = self.client.get("/model/eval/evaluate2/setup?step=3&task=t2").get_data(as_text=True)
+        for marker in (
+            "wb-task-info-page",
+            'data-prompt-id="p1"',
+            "wb-prompt-group-content has-scenes",
+            "wb-prompt-scene-column",
+            "wb-prompt-scene-link",
+            'onclick="toggleEndpointPromptScene(this)"',
+            'class="wb-prompt-scene-column" hidden',
+            "wb-prompt-lowlevel-column",
+            "wb-prompt-group-content no-scenes",
+            "wb-highlevel-scenes",
+            "桌面初始状态.jpg",
+            "目标摆放状态.jpg",
+            "lowlevel 执行项",
+            "function toggleEndpointPromptGroup(button)",
+            "function toggleEndpointPromptScene(link)",
+            "step=4&task=t2",
+        ):
+            with self.subTest(marker=marker):
+                self.assertIn(marker, html)
+        body_start = html.index('<div class="eval2-ipad-shell">')
+        body_end = html.index("<style>", body_start)
+        task_info_body = html[body_start:body_end]
+        self.assertNotIn("<h2>提示词</h2>", task_info_body)
+        for removed in (
+            "场景准备",
+            "wb-scene-task-only",
+            "场景图与 highlevel 绑定",
+            "归属当前 highlevel",
+            "个 highlevel",
+            "条 lowlevel ·",
+            "张场景图",
+            "封面",
+            "当前 highlevel 暂未配置场景示意图",
+        ):
+            with self.subTest(removed=removed):
+                self.assertNotIn(removed, task_info_body)
+        p1_start = task_info_body.index('data-prompt-id="p1"')
+        p1_end = task_info_body.index("</section>", p1_start)
+        p1_body = task_info_body[p1_start:p1_end]
+        self.assertLess(
+            p1_body.index("wb-prompt-lowlevel-column"),
+            p1_body.index("wb-prompt-scene-column"),
+        )
+        self.assertIn(
+            ".wb-prompt-group-content.no-scenes{grid-template-columns:minmax(0,1.05fr) minmax(320px,.95fr)}",
+            html,
+        )
+        self.assertIn(
+            ".wb-highlevel-scenes{display:grid;grid-template-columns:minmax(0,1fr)",
+            html,
+        )
+        self.assertIn('<div class="wb-highlevel-scene-empty"><span>▧</span><small>暂无图片</small></div>', task_info_body)
+        self.assertGreaterEqual(html.count('class="wb-prompt-tree-group" data-prompt-id='), 3)
+
+    def test_endpoint_execution_removes_checkpoint_switcher_and_allows_result_editing(self):
+        html = self.client.get(
+            "/model/eval/evaluate2/setup?step=4&task=t2"
+        ).get_data(as_text=True)
+        body_start = html.index('<div class="eval2-ipad-shell">')
+        body_end = html.index("<style>", body_start)
+        execution_body = html[body_start:body_end]
+
+        self.assertNotIn('<select class="hmi-ckpt-select"', execution_body)
+        self.assertNotIn('hmi-select-prefix">checkpoint', html)
+        self.assertEqual(4, execution_body.count('class="hmi-result-edit"'))
+        for marker in (
+            "function hmiEditResult",
+            "编辑评测结果",
+            "row.dataset.result",
+            "row.dataset.completion",
+            "row.dataset.quality",
+            "row.dataset.note",
+            "edit.hidden=false",
+            'aria-label="Prompt"',
+        ):
+            with self.subTest(marker=marker):
+                self.assertIn(marker, html)
+        self.assertEqual(4, execution_body.count('class="hmi-icon-action"'))
+        self.assertEqual(4, execution_body.count('aria-label="开始执行"'))
+        self.assertEqual(4, execution_body.count('aria-label="编辑评测结果"'))
+        self.assertIn('class="hmi-edit-glyph"', html)
+        self.assertNotIn('等待上一条完成', execution_body)
+
+    def test_benchmark_prompt_filter_uses_remote_group_search(self):
+        html = self.client.get("/model/eval/benchmarks").get_data(as_text=True)
+        for marker in (
+            'id="benchmark-prompt-input"',
+            'id="benchmark-prompt-id"',
+            'id="benchmark-prompt-panel"',
+            "请输入关键词搜索提示词组",
+            "benchmarkPromptRemoteInput",
+            "benchmarkPromptRemoteSearch",
+            "benchmarkPromptRemoteSelect",
+            "fetch('/model/eval/benchmarks/prompt-search?q='",
+            "未找到匹配的提示词组",
+            'class="ant-card ant-card-bordered benchmark-list-card"',
+            ".benchmark-list-card { position:relative; z-index:10; overflow:visible; }",
+            ".benchmark-list-card .action-more-menu { top:auto; bottom:calc(100% + 4px); z-index:120; }",
+        ):
+            self.assertIn(marker, html)
+
+        response = self.client.get(
+            "/model/eval/benchmarks/prompt-search?q=桌面"
+        )
+        self.assertEqual(200, response.status_code)
+        items = response.get_json()["items"]
+        self.assertTrue(items)
+        self.assertTrue(
+            all(
+                {"id", "name", "name_en", "step_count"} <= set(item)
+                for item in items
+            )
+        )
+        self.assertIn("p1", {item["id"] for item in items})
+
+        filtered = self.client.get(
+            "/model/eval/benchmarks?prompt_id=p6&prompt_name=VP"
+        ).get_data(as_text=True)
+        table_start = filtered.index('<table class="ant-table">')
+        body_start = filtered.index("<tbody>", table_start)
+        body_end = filtered.index("</tbody>", body_start)
+        filtered_rows = filtered[body_start:body_end]
+        self.assertIn("抽屉柜体操作评测", filtered_rows)
+        self.assertIn("综合能力评测 v1", filtered_rows)
+        self.assertNotIn("基础操作能力评测", filtered_rows)
+
+    def test_eval_task_checkpoint_is_single_select_and_statistics_shows_one_checkpoint(self):
+        tasks_html = self.client.get("/model/eval/tasks").get_data(as_text=True)
+        drawer_start = tasks_html.index('id="create-task-drawer"')
+        drawer_end = tasks_html.index("</form>", drawer_start)
+        drawer = tasks_html[drawer_start:drawer_end]
+        self.assertIn('id="task-ckpt-select"', drawer)
+        self.assertIn('name="model_ids"', drawer)
+        self.assertIn('onchange="updateTaskResourceLinks()"', drawer)
+        self.assertNotIn('id="ms-ckpt-panel"', drawer)
+        self.assertNotIn('aria-multiselectable="true"', drawer)
+        self.assertNotIn("mselSync('ms-ckpt')", drawer)
+        self.assertIn("请选择 checkpoint", tasks_html)
+        self.assertIn("请选择 checkpoint', ckptSelect", tasks_html)
+        self.assertNotIn("请至少选择 1 个 checkpoint", tasks_html)
+        self.assertNotIn("Checkpoint 至少选 2 个", tasks_html)
+
+        multiple_statistics = self.client.get(
+            "/model/eval/tasks/t1/statistics"
+        ).get_data(as_text=True)
+        self.assertIn("<span>checkpoint</span>", multiple_statistics)
+        self.assertIn('class="stat-checkpoint-static"', multiple_statistics)
+        self.assertIn("Spirit v1.5", multiple_statistics)
+        self.assertNotIn('class="stat-checkpoint-select"', multiple_statistics)
+        self.assertNotIn('aria-label="切换 checkpoint"', multiple_statistics)
+        self.assertNotIn("switchStatCheckpoint", multiple_statistics)
+        self.assertIn("方位感知测试 #p1", multiple_statistics)
+        self.assertIn("识别桌面上物体的相对位置 #p1-1", multiple_statistics)
+
+        single_statistics = self.client.get(
+            "/model/eval/tasks/t6/statistics"
+        ).get_data(as_text=True)
+        self.assertIn("<span>checkpoint</span>", single_statistics)
+        self.assertIn('class="stat-checkpoint-static"', single_statistics)
+        self.assertNotIn('class="stat-checkpoint-select"', single_statistics)
+        self.assertNotIn('aria-label="切换 checkpoint"', single_statistics)
+
     def test_model_prompt_management_uses_ordered_expandable_rows(self):
         html = self.client.get("/model/eval/prompts").get_data(as_text=True)
         for marker in (
             "任务提示词",
-            "Labels",
+            "标签",
+            '>id</label><input type="text" placeholder="搜索 id">',
+            ">id<",
             "序号",
             "Task-Prompt",
-            "Difficulty",
-            "Creator",
-            "Actions",
+            "难度",
+            "创建人",
+            "操作",
             "prompt-child-row",
             "prompt-drag-handle",
             "拖拽调整顺序",
             "prompt-add-child-row",
             "stepPromptDifficulty",
-            ">新增测试任务</button>",
+            ">新增任务提示词</button>",
             "导入 JSON",
             ">保存</button>",
         ):
@@ -3155,6 +3581,43 @@ class DataPlatformArchitectureTests(unittest.TestCase):
             "fetch('/model/eval/prompts/' + pid + '/reorder-children'",
             html,
         )
+        self.assertIn('name="prompt_id"', html)
+        self.assertIn('name="prompt_id" placeholder="输入 id" required', html)
+        self.assertIn('prompt-id-cell">p1<', html)
+        self.assertIn('prompt-id-cell">p1-1<', html)
+
+    def test_model_prompt_create_requires_unique_manual_id(self):
+        prompts = toolchain_demo.ep.PROMPTS
+        original = list(prompts)
+        try:
+            before = len(prompts)
+            self.client.post(
+                "/model/eval/prompts/create",
+                data={"high_level": "缺少 ID 的提示词"},
+            )
+            self.assertEqual(before, len(prompts))
+
+            self.client.post(
+                "/model/eval/prompts/create",
+                data={"high_level": "重复 ID 的提示词", "prompt_id": "p1"},
+            )
+            self.assertEqual(before, len(prompts))
+
+            response = self.client.post(
+                "/model/eval/prompts/create",
+                data={
+                    "high_level": "手动 ID 提示词",
+                    "prompt_id": "manual-100",
+                    "child_count": "1",
+                    "child_zh_0": "子级提示词",
+                    "child_en_0": "child prompt",
+                },
+            )
+            self.assertEqual(302, response.status_code)
+            created = next(item for item in prompts if item["id"] == "manual-100")
+            self.assertEqual("manual-100-1", created["low_levels"][0]["id"])
+        finally:
+            prompts[:] = original
 
     def test_model_prompt_child_reorder_persists(self):
         prompt = toolchain_demo.ep.PROMPTS[0]
@@ -3178,6 +3641,102 @@ class DataPlatformArchitectureTests(unittest.TestCase):
                 f'/model/eval/prompts/{prompt["id"]}/reorder-children',
                 json={"order": original},
             )
+
+    def test_model_prompt_highlevel_scene_images_use_dedicated_modal(self):
+        html = self.client.get("/model/eval/prompts").get_data(as_text=True)
+        for marker in (
+            "场景示意图",
+            "prompt-scene-entry",
+            'id="prompt-scene-modal"',
+            'id="prompt-scene-file" type="file" accept="image/*" multiple',
+            "初始状态",
+            "目标状态",
+            "关键步骤",
+            "最多 3 张",
+            "场景图（0/3）",
+            "prompt-scene-inherited",
+            "保存后添加",
+            "openPromptSceneModal",
+        ):
+            with self.subTest(marker=marker):
+                self.assertIn(marker, html)
+
+        self.assertIn('"editable": false', html)
+        self.assertIn('"editable": true', html)
+        self.assertIn(
+            "fetch('/model/eval/prompts/' + pid + '/scene-images'",
+            html,
+        )
+        for removed in (
+            "封面",
+            "设为封面",
+            "拖动图片可调整端侧展示顺序",
+            "promptSceneDragged",
+            "initPromptSceneSort",
+            "setPromptSceneCover",
+            "prompt-scene-order",
+            "prompt-scene-cover",
+            'draggable="\'+editable+\'"',
+            "最多 9 张",
+            "场景图（0/9）",
+        ):
+            self.assertNotIn(removed, html)
+
+    def test_model_prompt_scene_images_save_only_for_draft_highlevel(self):
+        draft = next(item for item in toolchain_demo.ep.PROMPTS if not item.get("enabled"))
+        published = next(item for item in toolchain_demo.ep.PROMPTS if item.get("enabled"))
+        original = [dict(image) for image in draft.get("scene_images", [])]
+        payload = {
+            "images": [
+                {
+                    "id": "test-scene-1",
+                    "name": "新的初始场景.png",
+                    "role": "初始状态",
+                    "src": "data:image/png;base64,dGVzdA==",
+                },
+                {
+                    "id": "test-scene-2",
+                    "name": "新的目标场景.png",
+                    "role": "目标状态",
+                    "src": "",
+                },
+                {
+                    "id": "test-scene-3",
+                    "name": "新的关键步骤.png",
+                    "role": "关键步骤",
+                    "src": "",
+                },
+                {
+                    "id": "test-scene-4",
+                    "name": "不应保存的第四张.png",
+                    "role": "其他",
+                    "src": "",
+                },
+            ]
+        }
+        try:
+            response = self.client.post(
+                f'/model/eval/prompts/{draft["id"]}/scene-images',
+                json=payload,
+            )
+            self.assertEqual(200, response.status_code)
+            self.assertEqual(3, response.get_json()["count"])
+            self.assertEqual("新的初始场景.png", draft["scene_images"][0]["name"])
+            self.assertNotIn(
+                "不应保存的第四张.png",
+                [image["name"] for image in draft["scene_images"]],
+            )
+            self.assertTrue(
+                all("is_cover" not in image for image in draft["scene_images"])
+            )
+
+            response = self.client.post(
+                f'/model/eval/prompts/{published["id"]}/scene-images',
+                json=payload,
+            )
+            self.assertEqual(403, response.status_code)
+        finally:
+            draft["scene_images"] = original
 
     def test_retired_architecture_and_old_refactor_paths_redirect(self):
         redirects = {
