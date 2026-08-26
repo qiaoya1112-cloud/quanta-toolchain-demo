@@ -3580,6 +3580,7 @@ def render_page(title, content, active="", breadcrumb=None, extra_script=None,
         )
     # 统一查询筛选器文案；保留 resetFilters 等行为函数及业务表单动作。
     _list_paths = ("/model/experiments", "/model/checkpoints", "/model/deploy", "/model/queues",
+                   "/model/config/images",
                    "/model/eval/tasks", "/model/eval/eval-records",
                    "/model/eval/benchmarks", "/model/eval/scenes", "/model/eval/prompts",
                    "/model/eval/criteria")
@@ -9608,8 +9609,7 @@ def model_config_images():
         for i in TRAIN_IMAGE_CATALOG
     )
     content = f"""
-    {page_header('镜像管理', '维护新增训练任务可选的推荐镜像', '推荐镜像目录')}
-    <div class="list-summarybar"><div class="txt">推荐镜像共 <b>{len(TRAIN_IMAGE_CATALOG)}</b> 个</div><button class="btn btn-primary" onclick="openImageEditor()">新增镜像</button></div>
+    <button class="btn btn-primary" onclick="openImageEditor()">新增镜像</button>
     <div class="card"><table class="ant-table"><thead><tr><th>镜像名称</th><th>版本</th><th>描述信息</th><th>创建人</th><th>创建时间</th><th>操作</th></tr></thead><tbody>{rows}</tbody></table></div>
     <div class="drawer-mask" id="imageEditorModal" onclick="if(event.target===this)closeImageEditor()"><div class="drawer image-config-drawer" id="imageEditorDrawer"><div class="drawer-head"><h3 id="imageEditorTitle">新增镜像</h3><button class="drawer-close" onclick="closeImageEditor()">&times;</button></div><div class="drawer-body"><div class="fg"><label>镜像名称</label><input id="imageEditorName" placeholder="例如 mozbrain_release"></div><div class="fg"><label>版本</label><input id="imageEditorVersion" placeholder="例如 thor-v1.0.0"></div><div class="fg"><label>描述信息</label><textarea id="imageEditorDescription" rows="3" placeholder="填写镜像用途和兼容范围"></textarea></div></div><div class="drawer-foot"><button class="btn" onclick="closeImageEditor()">取消</button><button class="btn btn-primary" onclick="saveImageEditor()">保存</button></div></div></div>
     <div class="drawer-mask" id="imageDeleteModal" onclick="if(event.target===this)closeImageDelete()"><div class="drawer image-config-drawer" id="imageDeleteDrawer"><div class="drawer-head"><h3>删除镜像</h3><button class="drawer-close" onclick="closeImageDelete()">&times;</button></div><div class="drawer-body"><p>确认删除镜像 <b id="imageDeleteName"></b>？删除后不可恢复。</p></div><div class="drawer-foot"><button class="btn" onclick="closeImageDelete()">取消</button><button class="btn btn-danger" onclick="confirmImageDelete()">删除</button></div></div></div>

@@ -228,6 +228,17 @@ def test_recommended_image_mode_uses_selectable_curated_images():
     assert 'id="trainImageVersion"' in html
 
 
+def test_image_management_has_title_without_recommended_count_copy():
+    client = toolchain_demo.app.test_client()
+    response = client.get("/model/config/images")
+
+    assert response.status_code == 200
+    html = response.get_data(as_text=True)
+    assert '<div class="model-list-title"><h1>镜像管理</h1>' in html
+    assert '<div class="model-list-actions"><button class="btn btn-primary" onclick="openImageEditor()">新增镜像</button></div>' in html
+    assert "推荐镜像共" not in html
+
+
 def test_internal_train_drawer_removes_dualarm_robot_option():
     client = toolchain_demo.app.test_client()
     response = client.get("/model/experiments")
