@@ -273,17 +273,18 @@ DATASETS = [
     {"id": "ds_500", "name": "clean_whiteboard_v3", "version": "v3", "type": "train",
      "episodes": 95, "frames": 34200, "train_ratio": 0.8, "val_ratio": 0.1, "test_ratio": 0.1,
      "owner": "joanna.qiao", "status": "active", "created": "2026-06-10 10:00",
-     "source_tasks": ["11092"]},
+     "source_tasks": ["11092", "11091", "12088"],
+     "tags": ["场景标签 > 作业区域 > 白板区", "动作标签 > 清洁类 > 擦拭", "质量标签 > 数据质量 > 高质量"], "ident": "test1"},
     {"id": "ds_501", "name": "clean_whiteboard_v4", "version": "v4", "type": "train",
      "episodes": 137, "frames": 51200, "train_ratio": 0.8, "val_ratio": 0.1, "test_ratio": 0.1,
      "owner": "joanna.qiao", "status": "active", "created": "2026-06-14 10:00",
      "source_tasks": ["擦白板 · 第 3 批", "擦白板 · 补采"],
-     "tags": ["场景标签 > 作业区域 > 白板区", "动作标签 > 清洁类 > 擦拭", "质量标签 > 数据质量 > 高质量"]},
+     "tags": ["场景标签 > 作业区域 > 白板区", "动作标签 > 清洁类 > 擦拭", "质量标签 > 数据质量 > 高质量"], "ident": "test2"},
     {"id": "ds_502", "name": "tidy_desk_v2", "version": "v2", "type": "train",
      "episodes": 118, "frames": 44600, "train_ratio": 0.8, "val_ratio": 0.1, "test_ratio": 0.1,
      "owner": "Lance Li", "status": "active", "created": "2026-06-09 17:00",
      "source_tasks": ["整理桌面 · 导师演示"],
-     "tags": ["场景标签 > 作业区域 > 桌面", "动作标签 > 拿放类 > 拿取", "动作标签 > 拿放类 > 放置"]},
+     "tags": ["场景标签 > 作业区域 > 桌面", "动作标签 > 拿放类 > 拿取", "动作标签 > 拿放类 > 放置"], "ident": "test3"},
     {"id": "ds_503", "name": "plant_pour_pilot", "version": "v1", "type": "train",
      "episodes": 0, "frames": 0, "train_ratio": 0.8, "val_ratio": 0.1, "test_ratio": 0.1,
      "owner": "Min Chen", "status": "pending", "created": "2026-06-16 14:30",
@@ -336,12 +337,12 @@ EXPERIMENTS = [
      "best_metric": 0.0, "metric_name": "成功率", "status": "queued",
      "started": "2026-06-21 10:00:00", "dur": "—", "owner": "joanna.qiao"},
     {"id": "exp_7916", "name": "robotwin_pi05_datamil_stack_blocks_two_top10pct_cotrain",
-     "model_type": "Spirit v1.7", "dataset": "—", "dataset_id": "ds_505", "dataset_ids": ["ds_505", "ds_502"], "tag": "—",
+     "model_type": "Spirit v1.7", "dataset": "—", "dataset_id": "ds_505", "dataset_ids": ["ds_505", "ds_502", "ds_500"], "tag": "—",
      "epochs": 50, "current_epoch": 35,
      "best_metric": 0.852, "metric_name": "成功率", "status": "running",
      "started": "2026-06-17 03:23:39", "dur": "—", "owner": "—"},
     {"id": "exp_7757", "name": "20260615_pi05_oldft_sortpill_newobs_centercrop_manip2",
-     "model_type": "Spirit v1.7", "dataset": "—", "dataset_id": "ds_505", "tag": "—",
+     "model_type": "Spirit v1.7", "dataset": "—", "dataset_id": "ds_505", "dataset_ids": ["ds_505", "ds_500"], "tag": "—",
      "epochs": 50, "current_epoch": 28,
      "best_metric": 0.821, "metric_name": "成功率", "status": "running",
      "started": "2026-06-16 11:57:35", "dur": "—", "owner": "—"},
@@ -392,8 +393,8 @@ EVALS = [
     # 这里作为血缘系统的数据源，保持与评测平台同步
     {"id": "t1", "task_no": 1001, "name": "Spirit v1.5 vs v1.6-alpha 基础能力横测",
      "benchmark": "基础能力横测", "status": "评测完成", "at": "2026-04-05", "ckpt_id": "7916", "success_rate": 0.873},
-    {"id": "t2", "task_no": 1002, "name": "Spirit v1.6 全版本综合评测",
-     "benchmark": "综合评测", "status": "评测中", "at": "2026-04-08", "ckpt_id": "7757", "success_rate": 0.792},
+     {"id": "t2", "task_no": 1002, "name": "Spirit v1.6 全版本综合评测",
+      "benchmark": "综合评测", "status": "评测中", "at": "2026-04-08", "ckpt_id": "7757", "success_rate": 0.792, "lineage_kind": "assets"},
     {"id": "t3", "task_no": 1003, "name": "Spirit v1.6-rc1 vs 外部基线对标",
      "benchmark": "外部基线对标", "status": "采集中", "at": "2026-04-10", "ckpt_id": "7560", "success_rate": 0.848},
     {"id": "t4", "task_no": 1004, "name": "工具使用场景专项测试",
@@ -402,17 +403,17 @@ EVALS = [
      "benchmark": "多维能力评估", "status": "评测中", "at": "2026-04-14", "ckpt_id": "9001", "success_rate": 0.889},
     # ── DEMO 演示链路评测（用于完整血缘展示）──
     {"id": "t6", "task_no": 1006, "name": "白板清洁基础能力评测_v5_checkpoint40k",
-     "benchmark": "白板清洁基础", "status": "评测完成", "at": "2026-06-17", "ckpt_id": "9001", "success_rate": 0.873},
+     "benchmark": "白板清洁基础", "status": "评测完成", "at": "2026-06-17", "ckpt_id": "9001", "success_rate": 0.873, "lineage_kind": "assets"},
     {"id": "t7", "task_no": 1007, "name": "白板清洁进阶场景评测_v5_checkpoint40k",
-     "benchmark": "白板清洁进阶", "status": "评测完成", "at": "2026-06-17", "ckpt_id": "9001", "success_rate": 0.865},
+     "benchmark": "白板清洁进阶", "status": "评测完成", "at": "2026-06-17", "ckpt_id": "9001", "success_rate": 0.865, "lineage_kind": "assets"},
     {"id": "t8", "task_no": 1008, "name": "白板清洁基础能力评测_v5_checkpoint50k",
-     "benchmark": "白板清洁基础", "status": "评测完成", "at": "2026-06-17", "ckpt_id": "9002", "success_rate": 0.889},
+     "benchmark": "白板清洁基础", "status": "评测完成", "at": "2026-06-17", "ckpt_id": "9002", "success_rate": 0.889, "lineage_kind": "assets"},
     {"id": "t9", "task_no": 1009, "name": "白板清洁基础能力评测_v5ctrl_checkpoint45k",
-     "benchmark": "白板清洁基础", "status": "评测完成", "at": "2026-06-18", "ckpt_id": "9003", "success_rate": 0.842},
+     "benchmark": "白板清洁基础", "status": "评测完成", "at": "2026-06-18", "ckpt_id": "9003", "success_rate": 0.842, "lineage_kind": "assets"},
     {"id": "t10", "task_no": 1010, "name": "桌面整理综合评测_joint_checkpoint35k",
-     "benchmark": "桌面整理综合", "status": "评测完成", "at": "2026-06-19", "ckpt_id": "9004", "success_rate": 0.828},
+     "benchmark": "桌面整理综合", "status": "评测完成", "at": "2026-06-19", "ckpt_id": "9004", "success_rate": 0.828, "lineage_kind": "assets"},
     {"id": "t11", "task_no": 1011, "name": "桌面清洁基准评测_baseline_checkpoint30k",
-     "benchmark": "桌面清洁基准", "status": "评测完成", "at": "2026-06-20", "ckpt_id": "9005", "success_rate": 0.781},
+     "benchmark": "桌面清洁基准", "status": "评测完成", "at": "2026-06-20", "ckpt_id": "9005", "success_rate": 0.781, "lineage_kind": "assets"},
 ]
 
 DEPLOYS = [
@@ -619,8 +620,9 @@ PLATFORMS = {
                 ("/model/eval/evaluate2",    "端侧示意",   "&#9878;", ""),
             ]),
             ("配置", [
-                ("/model/eval/prompts",      "任务提示词",   "&#9998;", ""),
                 ("/model/eval/tags",         "标签管理",     "&#9873;", ""),
+                ("/model/eval/prompts",      "任务提示词",   "&#9998;", ""),
+                ("/model/config/images",     "镜像管理",      "&#9881;", ""),
             ]),
             ("管理", [
                 ("/model/queues",             "队列管理",     "&#9783;", ""),
@@ -1017,6 +1019,9 @@ select option:disabled { color:rgba(0,0,0,0.32); }
 .ckpt-status-option { display:block; width:100%; height:34px; padding:0 14px; border:0; background:#fff; color:rgba(0,0,0,0.88); text-align:left; font-size:14px; line-height:34px; cursor:pointer; white-space:nowrap; }
 .ckpt-status-option:hover { background:#f5f7fa; }
 .ckpt-status-option.active { background:#238da3; color:#fff; }
+.qi { position:relative; display:inline-flex; align-items:center; justify-content:center; width:16px; height:16px; margin-left:3px; border:1.5px solid #71858d; border-radius:50%; color:#526971; font-size:11px; font-weight:700; line-height:1; cursor:help; vertical-align:-2px; outline:none; }
+.qi::after { content:attr(data-tooltip); position:absolute; left:0; top:calc(100% + 8px); z-index:260; width:220px; padding:8px 10px; border:1px solid rgba(31,45,51,.12); border-radius:6px; background:#25343a; color:#fff; font-size:12px; font-weight:400; line-height:1.5; text-align:left; white-space:normal; opacity:0; pointer-events:none; transform:translateY(4px); transition:opacity .16s ease, transform .16s ease; box-shadow:0 6px 16px rgba(17,31,36,.18); }
+.qi:hover::after, .qi:focus-visible::after { opacity:1; transform:translateY(0); }
 .status-with-log { display:inline-flex; align-items:center; gap:6px; white-space:nowrap; }
 .status-log-icon { width:18px; height:18px; padding:0; border:1px solid #f3d6d5; border-radius:50%; background:#fff; color:#d4504e; font-size:12px; line-height:16px; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; }
 .status-log-icon:hover { border-color:#d4504e; background:#fdf3f3; }
@@ -1064,6 +1069,7 @@ select option:disabled { color:rgba(0,0,0,0.32); }
 .drawer-head h3 { font-size:16px; margin:0; font-weight:500; }
 .drawer-body { flex:1; overflow-y:auto; padding:20px 24px; }
 .drawer-foot { padding:14px 24px; border-top:1px solid #f0f0f0; display:flex; justify-content:flex-end; gap:8px; }
+.image-config-drawer { width:460px; max-width:100vw; }
 .fg { display:flex; flex-direction:column; gap:6px; margin-bottom:14px; }
 .fg label { font-size:13px; color:rgba(0,0,0,0.65); }
 .fg input, .fg select, .fg textarea { padding:7px 12px; border:1px solid #d9d9d9; border-radius:8px; font-size:14px; outline:none; font-family:inherit; }
@@ -1114,6 +1120,17 @@ select option:disabled { color:rgba(0,0,0,0.32); }
 .lin-node.dagger { background:#F8FAFC; border-left:3px solid #ff9500; border-top:1px solid #E2E8F0; border-right:1px solid #E2E8F0; border-bottom:1px solid #E2E8F0; }
 .lin-node.anchor { background:#EFF6FF; border:2px solid #3B82F6; box-shadow:0 0 0 4px rgba(59,130,246,0.15); transform:scale(1.05); z-index:10; }
 .lin-node.dagger.anchor { background:#EFF6FF; border:2px solid #3B82F6; border-left:3px solid #ff9500; box-shadow:0 0 0 3px rgba(59,130,246,0.1); }
+.lin-node[data-lineage-group="source"][data-lineage-kind="normal"] { border-left:3px solid #149DAA; }
+.lin-node[data-lineage-group="source"][data-lineage-kind="dagger"] { border-left:3px solid #ff9500; }
+.lin-node[data-lineage-group="eval"][data-lineage-kind="test"] { border-left:3px solid #2563EB; }
+.lin-node[data-lineage-group="eval"][data-lineage-kind="dagger"] { border-left:3px solid #ff9500; }
+.lin-node[data-lineage-group="eval"][data-lineage-kind="assets"] { border-left:3px solid #7C3AED; }
+.lin-type-badge { display:inline-flex; align-items:center; width:max-content; height:20px; margin-bottom:7px; padding:0 7px; border:1px solid currentColor; border-radius:4px; font-size:10px; font-weight:600; line-height:18px; letter-spacing:0; }
+.lin-type-badge.normal { background:#EAF8F8; color:#0F8793; border-color:#A8DDE0; }
+.lin-type-badge.dagger { background:#FFF7E8; color:#C56A00; border-color:#FFD59A; }
+.lin-type-badge.test { background:#EEF4FF; color:#2563EB; border-color:#BDD2FF; }
+.lin-type-badge.assets { background:#F5F0FF; color:#7C3AED; border-color:#D7C4FF; }
+.lin-node[data-lineage-group] .ln-ttl { display:-webkit-box; min-height:42px; overflow:hidden; -webkit-box-orient:vertical; -webkit-line-clamp:2; }
 
 /* 卡片固定高度 + 相对定位（供浮层锚定）*/
 .lin-node { position:relative; }
@@ -1135,7 +1152,10 @@ select option:disabled { color:rgba(0,0,0,0.32); }
 .lineage-hint .hint-dot.blue { background:#EFF6FF; border:2px solid #3B82F6; }
 .lineage-hint .hint-dot.gray { background:#F8FAFC; border:1px solid #E2E8F0; }
 .lineage-hint .hint-bar { width:3px; height:16px; border-radius:1px; display:inline-block; }
+.lineage-hint .hint-bar.normal { background:#149DAA; }
 .lineage-hint .hint-bar.dagger { background:#ff9500; }
+.lineage-hint .hint-bar.test { background:#2563EB; }
+.lineage-hint .hint-bar.assets { background:#7C3AED; }
 /* 锚点"当前"角标 */
 .lin-node.anchor { position:relative; }
 .lin-node.anchor::before { content:"当前"; position:absolute; top:-8px; left:10px; background:#149DAA; color:#fff; font-size:10px; padding:1px 6px; border-radius:3px; z-index:3; }
@@ -1154,11 +1174,43 @@ select option:disabled { color:rgba(0,0,0,0.32); }
 .lin-actions { display:flex; justify-content:flex-end; gap:8px; margin-bottom:14px; }
 .lin-table { margin-top:16px; }
 .lin-filter { background:#fff; border:1px solid #f0f0f0; border-radius:8px; padding:14px 16px; margin-bottom:14px; }
-.lin-filter .lf-input-group { display:flex; gap:8px; align-items:center; max-width:600px; }
+.lin-filter .lf-input-group { display:flex; gap:8px; align-items:center; max-width:none; }
+.lin-filter-label { flex:0 0 auto; color:rgba(0,0,0,.65); font-size:13px; font-weight:600; white-space:nowrap; }
+.lin-dimension-picker { position:relative; flex:0 0 220px; min-width:220px; }
+.lin-dimension-trigger { display:flex; align-items:center; justify-content:space-between; width:100%; height:36px; padding:0 12px; border:1px solid #d9d9d9; border-radius:6px; background:#fff; color:rgba(0,0,0,.85); font:inherit; font-size:13px; text-align:left; cursor:pointer; transition:border-color .16s ease, box-shadow .16s ease; }
+.lin-dimension-trigger:hover, .lin-dimension-picker.open .lin-dimension-trigger { border-color:#149DAA; box-shadow:0 0 0 2px rgba(20,157,170,.10); }
+.lin-dimension-trigger-label { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.lin-dimension-chevron { color:rgba(0,0,0,.42); font-size:17px; line-height:1; transform:translateY(-1px); transition:transform .16s ease; }
+.lin-dimension-picker.open .lin-dimension-chevron { transform:rotate(180deg) translateY(1px); }
+.lin-dimension-menu { display:none; position:absolute; top:calc(100% + 6px); left:0; z-index:1000; width:540px; min-height:236px; grid-template-columns:220px minmax(260px,1fr); overflow:hidden; border:1px solid #edf0f2; border-radius:8px; background:#fff; box-shadow:0 10px 28px rgba(23,42,51,.14); }
+.lin-dimension-picker.open .lin-dimension-menu { display:grid; }
+.lin-dimension-primary { padding:6px 0; border-right:1px solid #e5e9ed; background:#fff; }
+.lin-dimension-primary-item { display:flex; align-items:center; justify-content:space-between; width:100%; min-height:42px; padding:0 16px; border:0; background:transparent; color:rgba(0,0,0,.72); font:inherit; font-size:13px; text-align:left; cursor:pointer; }
+.lin-dimension-primary-item:hover, .lin-dimension-primary-item.active { background:#f4f7f9; color:rgba(0,0,0,.88); font-weight:600; }
+.lin-dimension-primary-item .lin-dimension-arrow { color:rgba(0,0,0,.52); font-size:20px; font-weight:400; line-height:1; }
+.lin-dimension-secondary { min-height:236px; padding:6px 0; background:#fff; }
+.lin-dimension-secondary-empty { display:flex; align-items:center; justify-content:center; height:100%; padding:16px; color:rgba(0,0,0,.35); font-size:13px; text-align:center; }
+.lin-dimension-submenu { display:none; }
+.lin-dimension-submenu.active { display:block; }
+.lin-dimension-option { display:flex; align-items:center; justify-content:space-between; width:100%; min-height:42px; padding:0 18px; border:0; background:#fff; color:rgba(0,0,0,.72); font:inherit; font-size:13px; text-align:left; cursor:pointer; }
+.lin-dimension-option:hover, .lin-dimension-option.selected { background:#f4f7f9; color:#0f8190; font-weight:600; }
+.lin-native-dimension { position:absolute; width:1px; height:1px; opacity:0; pointer-events:none; }
 .lin-filter .lf-dimension-select { height:34px; border:1px solid #d9d9d9; border-radius:6px; padding:0 11px; font-size:13px; outline:none; background:#fff; min-width:120px; }
 .lin-filter .lf-dimension-select:focus { border-color:#149DAA; box-shadow:0 0 0 2px rgba(20,157,170,0.10); }
 .lin-filter input { flex:1; height:34px; border:1px solid #d9d9d9; border-radius:6px; padding:0 11px; font-size:13px; outline:none; box-sizing:border-box; min-width:200px; }
 .lin-filter input:focus { border-color:#149DAA; box-shadow:0 0 0 2px rgba(20,157,170,0.10); }
+.lineage-type-filter { display:flex; align-items:center; gap:8px; font-size:12px; color:#475569; }
+.lineage-type-filter label { font-weight:600; white-space:nowrap; }
+.lineage-type-filter select { height:32px; min-width:128px; padding:0 9px; border:1px solid #d9d9d9; border-radius:6px; background:#fff; color:#334155; font-size:12px; outline:none; }
+.lineage-type-filter select:focus { border-color:#149DAA; box-shadow:0 0 0 2px rgba(20,157,170,0.10); }
+.lin-node.lineage-filtered { display:none; }
+.lineage-empty { display:none; padding:18px 10px; border:1px dashed #CBD5E1; border-radius:6px; color:#94A3B8; font-size:12px; text-align:center; background:#FAFBFC; }
+@media (max-width:640px) {
+  .lin-filter .lf-input-group { flex-wrap:wrap; }
+  .lin-dimension-picker { flex:1 1 100%; min-width:0; }
+  .lin-dimension-menu { width:min(540px, calc(100vw - 48px)); grid-template-columns:minmax(148px, .85fr) minmax(170px, 1fr); }
+  .lin-filter input { min-width:0; }
+}
 
 /* Checkpoint History Modal */
 .ckpt-history-modal { position:fixed; top:0; left:0; width:100%; height:100%; z-index:9999; display:flex; align-items:center; justify-content:center; }
@@ -1228,7 +1280,69 @@ select option:disabled { color:rgba(0,0,0,0.32); }
 .tbtn:hover { border-color:#149DAA; color:#149DAA; }
 
 /* ── Wide drawer (for 新增训练任务) ── */
-.drawer.drawer-wide { width:680px; }
+.drawer.drawer-wide { width:760px; max-width:100vw; }
+.train-drawer-head { position:sticky; top:0; z-index:4; background:#fff; }
+.train-drawer-head .drawer-title-wrap { display:flex; flex-direction:column; gap:3px; min-width:0; }
+.train-drawer-head .drawer-title-sub { color:rgba(0,0,0,0.45); font-size:12px; }
+.train-section-nav { position:sticky; top:0; z-index:3; display:flex; gap:3px; padding:8px 24px; border-bottom:1px solid #f0f0f0; background:#fff; }
+.train-section-nav button { flex:1; height:32px; border:0; border-radius:6px; background:transparent; color:rgba(0,0,0,0.58); font:inherit; font-size:13px; cursor:pointer; transition:all .16s ease; }
+.train-section-nav button:hover { color:#149DAA; background:#f1fbfc; }
+.train-section-nav button.active { color:#0f8190; background:#e6f7f8; font-weight:600; }
+.train-section { margin:0 0 18px; padding:0 0 18px; border-bottom:1px solid #f0f0f0; scroll-margin-top:52px; }
+.train-section:last-child { margin-bottom:0; padding-bottom:0; border-bottom:0; }
+.train-section-head { display:flex; align-items:center; justify-content:flex-start; gap:6px; margin-bottom:14px; cursor:pointer; user-select:none; }
+.train-section-title { display:flex; align-items:center; gap:8px; margin:0; color:rgba(0,0,0,0.86); font-size:15px; font-weight:600; }
+.train-section-title::before { content:''; width:3px; height:15px; border-radius:2px; background:#149DAA; }
+.train-section-toggle { display:inline-flex; align-items:center; justify-content:center; width:24px; height:24px; color:rgba(0,0,0,0.38); }
+.train-section-caret { color:rgba(0,0,0,0.35); font-size:11px; transition:transform .16s ease; }
+.train-section.collapsed .train-section-caret { transform:rotate(-90deg); }
+.train-section.collapsed .train-section-body { display:none; }
+.train-section-body { min-width:0; }
+.train-meta-options-row { align-items:stretch; }
+.train-notify-field { display:flex; flex-direction:column; justify-content:flex-start; align-items:center; gap:0; min-height:58px; }
+.train-notify-title { width:max-content; text-align:center; }
+.train-notify-title label { display:block; }
+.train-notify-toggle { margin-top:14px; }
+.train-recommended-image { width:100%; min-height:36px; }
+.train-section .fg:last-child { margin-bottom:0; }
+.train-name-control { position:relative; }
+.train-name-control input { padding-right:55px; }
+.train-name-count { position:absolute; right:11px; top:50%; transform:translateY(-50%); color:rgba(0,0,0,0.35); font-size:11px; pointer-events:none; }
+.train-tag-select { position:relative; display:block; width:100%; }
+.train-tag-select .ts-trigger { width:100%; min-height:36px; padding:3px 32px 3px 4px; border:1px solid #d9d9d9; border-radius:8px; cursor:pointer; display:flex; flex-wrap:wrap; gap:3px; align-items:center; background:#fff; box-sizing:border-box; font-size:13px; position:relative; }
+.train-tag-select .ts-trigger::after { content:''; position:absolute; right:10px; top:50%; width:0; height:0; border-left:5px solid transparent; border-right:5px solid transparent; border-top:5px solid #bfbfbf; transform:translateY(-50%); transition:transform .2s; }
+.train-tag-select.open .ts-trigger::after { transform:translateY(-50%) rotate(180deg); }
+.train-tag-select .ts-trigger:hover { border-color:#149DAA; }
+.train-tag-select .ts-placeholder { color:rgba(0,0,0,0.25); padding:0 7px; line-height:28px; }
+.train-tag-select .ts-chip { display:inline-flex; align-items:center; gap:4px; background:#f5f5f5; border:1px solid #f0f0f0; border-radius:4px; padding:0 4px 0 8px; font-size:12px; color:rgba(0,0,0,0.65); line-height:24px; max-width:180px; }
+.train-tag-select .ts-chip-text { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.train-tag-select .ts-chip-close { cursor:pointer; color:rgba(0,0,0,0.35); font-size:10px; padding:0 2px; border-radius:2px; }
+.train-tag-select .ts-chip-close:hover { color:rgba(0,0,0,0.85); background:rgba(0,0,0,0.06); }
+.train-tag-select .ts-panel { display:none; position:absolute; top:100%; left:0; min-width:100%; width:max-content; max-width:420px; z-index:999; background:#fff; border:1px solid #d9d9d9; border-radius:8px; box-shadow:0 6px 16px rgba(0,0,0,0.08); margin-top:4px; max-height:320px; overflow-y:auto; padding:4px 0; }
+.train-tag-select.open .ts-panel { display:block; }
+.train-tag-select .ts-row { display:flex; align-items:center; padding:5px 12px; cursor:pointer; font-size:13px; color:rgba(0,0,0,0.85); transition:background .15s; white-space:nowrap; }
+.train-tag-select .ts-row:hover { background:#f5f5f5; }
+.train-tag-select .ts-row.selected { background:#e6f4f8; color:#149DAA; }
+.train-tag-select .ts-row-dim { cursor:default; }
+.train-tag-select .ts-row-dim:hover { background:transparent; }
+.train-tag-select .ts-arrow { cursor:pointer; display:inline-block; width:16px; flex:none; text-align:center; color:rgba(0,0,0,0.55); transition:transform .2s; user-select:none; margin-right:0; font-size:10px; }
+.train-tag-select .ts-arrow.empty { cursor:default; visibility:hidden; }
+.train-tag-select .ts-arrow.expanded { transform:rotate(90deg); }
+.train-tag-select .ts-children { display:none; }
+.train-tag-select .ts-children.expanded { display:block; }
+.train-tag-select .ts-children .ts-row { padding-left:28px; }
+.train-tag-select .ts-children .ts-children .ts-row { padding-left:44px; }
+.train-tag-select .ts-level { margin-left:7px; color:rgba(0,0,0,0.38); font-size:11px; }
+.drawer-foot.train-drawer-foot { position:sticky; bottom:0; z-index:4; background:#fff; }
+@media (max-width:720px) {
+  .drawer.drawer-wide { width:100vw; }
+  .train-section-nav { padding-left:16px; padding-right:16px; }
+  .train-drawer-body { padding-left:16px; padding-right:16px; }
+  .train-drawer-head, .drawer-foot.train-drawer-foot { padding-left:16px; padding-right:16px; }
+  .fg-row { flex-wrap:wrap; }
+  .fg-row > .fg { min-width:calc(50% - 7px); }
+}
+@media (max-width:480px) { .fg-row > .fg { min-width:100%; } }
 
 /* ── Drawer form: row 2-col ── */
 .fg-row { display:flex; gap:14px; }
@@ -1278,6 +1392,16 @@ select option:disabled { color:rgba(0,0,0,0.32); }
 .adv-sub.collapsed .adv-sub-body { display:none; }
 .adv-sub-body { padding-top:12px; }
 .adv-sub-body textarea.yaml-area { width:100%; min-height:220px; box-sizing:border-box; }
+.train-config-mode-tabs { display:flex; gap:0; width:max-content; max-width:100%; margin:0 0 14px; padding:3px; border-radius:8px; background:#f5f7fa; }
+.train-config-mode-tab { height:32px; padding:0 18px; border:0; border-radius:6px; background:transparent; color:rgba(0,0,0,0.58); font:inherit; font-size:13px; cursor:pointer; }
+.train-config-mode-tab:hover { color:#149DAA; }
+.train-config-mode-tab.active { background:#fff; color:#0f8190; box-shadow:0 1px 4px rgba(0,0,0,0.08); font-weight:600; }
+.train-config-panel { display:none; }
+.train-config-panel.active { display:block; }
+.custom-yaml-status { min-height:18px; color:rgba(0,0,0,0.45); font-size:12px; line-height:18px; }
+.custom-yaml-status.ok { color:#389e0d; }
+.custom-yaml-status.error { color:#cf1322; }
+.custom-yaml-area { min-height:460px !important; }
 
 /* ── Drawer: advanced config tabs ── */
 .adv-tabs { display:flex; gap:6px; border-bottom:1px solid #e5e7eb; margin-bottom:12px; align-items:flex-end; }
@@ -1286,6 +1410,8 @@ select option:disabled { color:rgba(0,0,0,0.32); }
 .adv-tabs .at.active { color:#149DAA; border-bottom-color:#149DAA; font-weight:600; background:rgba(20,157,170,0.06); }
 .adv-tabs .at-reset { margin-left:auto; font-size:12.5px; color:rgba(0,0,0,0.6); padding:5px 12px; border:1px solid #d9d9d9; border-radius:6px; cursor:pointer; background:#fff; transition:all 0.2s ease; }
 .adv-tabs .at-reset:hover { border-color:#149DAA; color:#149DAA; background:rgba(20,157,170,0.04); }
+.adv-sub-head .at-reset { margin-left:auto; font-size:12.5px; color:rgba(0,0,0,0.6); padding:5px 12px; border:1px solid #d9d9d9; border-radius:6px; cursor:pointer; background:#fff; transition:all 0.2s ease; }
+.adv-sub-head .at-reset:hover { border-color:#149DAA; color:#149DAA; background:rgba(20,157,170,0.04); }
 textarea.yaml-area { width:100%; min-height:460px; padding:12px 14px; font-family:'SF Mono',Menlo,Consolas,monospace; font-size:12.5px; line-height:1.65; background:#fafbfc; border:1px solid #e5e7eb; border-radius:8px; resize:vertical; outline:none; color:rgba(0,0,0,0.85); box-sizing:border-box; white-space:pre; overflow:auto; }
 textarea.yaml-area:focus { border-color:#149DAA; box-shadow:0 0 0 2px rgba(20,157,170,0.12); }
 .entry-command-area { width:100%; min-height:220px; padding:12px 14px; font-family:'SF Mono',Menlo,Consolas,monospace; font-size:12.5px; line-height:1.65; background:#fafbfc; border:1px solid #e5e7eb; border-radius:8px; resize:vertical; outline:none; color:rgba(0,0,0,0.85); box-sizing:border-box; white-space:pre; overflow:auto; }
@@ -2225,6 +2351,10 @@ button.tm-subtab { border:0; background:transparent; font-family:inherit; cursor
 .yaml-readonly { background:linear-gradient(135deg, #fafbfc 0%, #f7f9fa 100%); border:1px solid #e5e7eb; border-radius:10px; padding:16px 18px; font-family:'SF Mono',Menlo,monospace; font-size:13px; line-height:1.7; color:rgba(0,0,0,0.88); white-space:pre; overflow:auto; max-height:450px; margin:0; box-shadow:inset 0 1px 3px rgba(0,0,0,0.03); }
 
 /* 基础信息新版：以分组卡片和只读字段强调信息层级，避免整页成为一张松散的表单。 */
+.bi-submodule-title { margin:16px 0 8px; padding-left:10px; border-left:3px solid #149DAA; color:rgba(0,0,0,0.75); font-size:13px; font-weight:600; }
+.dataset-ident-inline { font-size:13px; font-weight:400; color:rgba(0,0,0,0.45); }
+.bi-subsection { margin-top:18px; padding-top:14px; border-top:1px solid #f0f0f0; }
+.bi-subsection-title { margin:0 0 10px; color:rgba(0,0,0,0.68); font-size:13px; font-weight:600; }
 .basic-info { padding:2px 0 24px; }
 .basic-info .bi-sec { background:#fff; border:1px solid #e7edef; border-radius:10px; padding:20px 22px; margin:0 0 14px; box-shadow:0 2px 8px rgba(25,55,65,0.03); }
 .basic-info .bi-sec:last-child { margin-bottom:0; }
@@ -2709,16 +2839,134 @@ function initTrainCodeEditor(id, mode){
     ta._cm.refresh();
   }
 }
+function scrollTrainSection(button){
+  var targetId = button && button.dataset ? button.dataset.target : '';
+  var target = targetId ? document.getElementById(targetId) : null;
+  if (!target) return;
+  document.querySelectorAll('#trainSectionNav button').forEach(function(item){ item.classList.toggle('active', item === button); });
+  target.scrollIntoView({behavior:'smooth', block:'start'});
+}
+function toggleTrainSection(head){
+  var section = head && head.closest ? head.closest('.train-section') : null;
+  if (section) section.classList.toggle('collapsed');
+}
+function initTrainSectionNav(){
+  var body = document.getElementById('trainDrawerBody');
+  if (!body || body._sectionNavInited) return;
+  body._sectionNavInited = true;
+  body.addEventListener('scroll', function(){
+    var sections = Array.prototype.slice.call(body.querySelectorAll('.train-section'));
+    var current = sections.reduce(function(best, section){
+      var distance = Math.abs(section.getBoundingClientRect().top - body.getBoundingClientRect().top - 12);
+      return !best || distance < best.distance ? {section:section, distance:distance} : best;
+    }, null);
+    if (current) document.querySelectorAll('#trainSectionNav button').forEach(function(button){ button.classList.toggle('active', button.dataset.target === current.section.id); });
+  });
+}
+function toggleTrainTagPicker(event){
+  if (event) event.stopPropagation();
+  var picker = document.getElementById('trainTagPicker');
+  if (!picker) return;
+  initTrainTagPicker();
+  picker.classList.toggle('open');
+}
+function closeTrainTagPicker(){
+  var picker = document.getElementById('trainTagPicker');
+  if (picker) picker.classList.remove('open');
+}
+function initTrainTagPicker(){
+  var picker = document.getElementById('trainTagPicker');
+  if (!picker || picker.dataset.initialized) return;
+  picker.dataset.initialized = '1';
+  picker.querySelectorAll('.ts-arrow:not(.empty)').forEach(function(arrow){
+    arrow.addEventListener('click', function(event){
+      event.stopPropagation();
+      this.classList.toggle('expanded');
+      var children = this.closest('.ts-node').querySelector('.ts-children');
+      if (children) children.classList.toggle('expanded');
+    });
+  });
+  picker.querySelectorAll('.ts-row[data-id]').forEach(function(row){
+    row.addEventListener('click', function(event){
+      if (event.target.classList.contains('ts-arrow')) return;
+      selectTrainTag(this);
+    });
+  });
+  trainTagsSync();
+}
+function selectTrainTag(option){
+  if (!option || !option.dataset.id) return;
+  option.classList.toggle('selected');
+  trainTagsSync();
+}
+function trainTagsSync(){
+  var picker = document.getElementById('trainTagPicker');
+  if (!picker) return;
+  var trigger = document.getElementById('trainTagTrigger');
+  var rows = picker.querySelectorAll('.ts-row[data-id]');
+  var selected = Array.prototype.filter.call(rows, function(row){ return row.classList.contains('selected'); });
+  var ids = selected.map(function(row){ return row.dataset.id; });
+  var chips = selected.map(function(row){ return '<span class="ts-chip"><span class="ts-chip-text">' + row.dataset.path + '</span><span class="ts-chip-close" data-id="' + row.dataset.id + '" onclick="event.stopPropagation();trainTagRemove(this)">&times;</span></span>'; }).join('');
+  if (trigger) trigger.innerHTML = chips || '<span class="ts-placeholder">请选择标签</span>';
+  var hidden = document.getElementById('trainTagsHidden'); if (hidden) hidden.value = ids.join(',');
+}
+function trainTagRemove(button){
+  var picker = document.getElementById('trainTagPicker');
+  var row = picker && picker.querySelector('.ts-row[data-id="' + button.dataset.id + '"]');
+  if (row) row.classList.remove('selected');
+  trainTagsSync();
+}
+document.addEventListener('click', function(event){
+  var picker = document.getElementById('trainTagPicker');
+  if (picker && picker.classList.contains('open') && !picker.contains(event.target)) closeTrainTagPicker();
+});
 function openTrainDrawer(){
   openDrawer('drawerNewTrain');
+  updateRecommendedImageVersions();
   updateTrainImagePath();
+  var instanceCount = document.getElementById('trainInstanceCount');
+  if (instanceCount) instanceCount.value = '1';
+  validateTrainInstanceCount(instanceCount);
   // 重置表单联动状态并生成默认配置
   var ov = document.getElementById('yamlOverride');
   if (ov) ov.value = '';
-  var mc = document.getElementById('moreCfg');
-  if (mc) mc.classList.remove('collapsed');
+  var tag = document.getElementById('trainTagPicker');
+  if (tag){ tag.querySelectorAll('.ts-row.selected').forEach(function(row){ row.classList.remove('selected'); }); trainTagsSync(); closeTrainTagPicker(); }
+  document.querySelectorAll('#trainSectionNav button').forEach(function(item, index){ item.classList.toggle('active', index === 0); });
+  document.querySelectorAll('#drawerNewTrain .train-section').forEach(function(section){ section.classList.remove('collapsed'); });
+  var entry = document.getElementById('entryCmdBox'); if (entry) entry.classList.add('collapsed');
+  TRAIN_CONFIG_MODE = 'recommended';
+  CUSTOM_YAML_DIRTY = false;
+  initCustomYamlEditor();
+  var custom = document.getElementById('customYamlEditor'); if (custom) custom.value = '';
+  var rec = document.getElementById('trainRecommendedConfig'); if (rec) rec.classList.add('active');
+  var customPanel = document.getElementById('trainCustomConfig'); if (customPanel) customPanel.classList.remove('active');
+  document.querySelectorAll('#trainConfigModeTabs [data-train-config-mode]').forEach(function(tab){ tab.classList.toggle('active', tab.dataset.trainConfigMode === 'recommended'); });
+  initTrainSectionNav();
   initEnvRows();
   regenDefaultConfig();
+}
+function validateTrainInstanceCount(input){
+  if (!input) return;
+  var value = Number(input.value || 1);
+  input.setCustomValidity(value >= 1 && value <= 4 && Number.isInteger(value) ? '' : '实例数需为 1-4 的整数');
+}
+function validateTrainForm(){
+  var name = document.getElementById('trainNameInput');
+  if (name && !String(name.value || '').trim()){
+    name.setCustomValidity('请输入任务名称'); name.reportValidity(); return false;
+  }
+  if (name) name.setCustomValidity('');
+  if (TRAIN_CONFIG_MODE === 'custom' && !validateCustomYaml()) return false;
+  var input = document.getElementById('trainInstanceCount');
+  if (input) validateTrainInstanceCount(input);
+  if (input && !input.checkValidity()){
+    input.reportValidity();
+    return false;
+  }
+  toast('Demo: 训练任务已提交');
+  closeDrawer();
+  return true;
 }
 function updateNameCount(input){
   var c = document.getElementById('nameCount');
@@ -2726,6 +2974,83 @@ function updateNameCount(input){
 }
 
 /* ── 训练任务: 默认配置 / 参数覆盖联动 ── */
+var TRAIN_CONFIG_MODE = 'recommended';
+var CUSTOM_YAML_DIRTY = false;
+function setCustomYamlStatus(message, type){
+  var status = document.getElementById('customYamlStatus');
+  if (!status) return;
+  status.textContent = message;
+  status.className = 'custom-yaml-status' + (type ? ' ' + type : '');
+}
+function switchTrainConfigMode(button, mode){
+  var nextMode = mode || 'recommended';
+  if (nextMode === TRAIN_CONFIG_MODE) return;
+  if (nextMode === 'recommended' && TRAIN_CONFIG_MODE === 'custom' && CUSTOM_YAML_DIRTY){
+    if (!window.confirm('切换到推荐配置会丢失当前自定义 YAML 修改，是否继续？')) return;
+  }
+  var editor = document.getElementById('customYamlEditor');
+  var recommended = document.getElementById('yamlEditor');
+  if (nextMode === 'custom' && editor && recommended){
+    editor.value = recommended.value || currentTrainTemplate();
+    CUSTOM_YAML_DIRTY = false;
+    setCustomYamlStatus('已带入当前推荐配置，可继续粘贴或编辑完整 YAML');
+  }
+  TRAIN_CONFIG_MODE = nextMode;
+  document.querySelectorAll('#trainConfigModeTabs [data-train-config-mode]').forEach(function(tab){
+    tab.classList.toggle('active', tab.dataset.trainConfigMode === nextMode);
+    tab.setAttribute('aria-selected', tab.dataset.trainConfigMode === nextMode ? 'true' : 'false');
+  });
+  var rec = document.getElementById('trainRecommendedConfig');
+  var custom = document.getElementById('trainCustomConfig');
+  if (rec) rec.classList.toggle('active', nextMode === 'recommended');
+  if (custom) custom.classList.toggle('active', nextMode === 'custom');
+}
+function initCustomYamlEditor(){
+  var editor = document.getElementById('customYamlEditor');
+  if (!editor || editor._trainYamlInited) return;
+  editor._trainYamlInited = true;
+  editor.addEventListener('input', function(){
+    CUSTOM_YAML_DIRTY = true;
+    setCustomYamlStatus('已修改自定义 YAML，提交前请先校验');
+  });
+}
+function copyCustomYaml(){
+  var editor = document.getElementById('customYamlEditor');
+  var value = editor ? editor.value : '';
+  if (!value.trim()){ setCustomYamlStatus('没有可复制的 YAML 内容', 'error'); return; }
+  var done = function(){ setCustomYamlStatus('完整 YAML 已复制', 'ok'); };
+  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(value).then(done);
+  else { var ta=document.createElement('textarea'); ta.value=value; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove(); done(); }
+}
+function formatCustomYaml(){
+  var editor = document.getElementById('customYamlEditor');
+  if (!editor) return;
+  editor.value = editor.value.replace(/\\r\\n?/g, '\\n').split('\\n').map(function(line){ return line.replace(/[ \\t]+$/g, ''); }).join('\\n').replace(/^\\n+|\\n+$/g, '') + (editor.value.trim() ? '\\n' : '');
+  CUSTOM_YAML_DIRTY = true;
+  setCustomYamlStatus('已整理换行和行尾空格', 'ok');
+}
+function validateCustomYaml(){
+  var editor = document.getElementById('customYamlEditor');
+  if (!editor || !editor.value.trim()){ setCustomYamlStatus('YAML 不能为空', 'error'); return false; }
+  var lines = editor.value.replace(/\\r\\n?/g, '\\n').split('\\n');
+  for (var i=0; i<lines.length; i++){
+    var rawLine = lines[i];
+    var line = rawLine.trim();
+    if (!line || line.charAt(0) === '#') continue;
+    if (line.charAt(0) === '-' || line.indexOf(':') > 0 || /^\\s+/.test(rawLine)) continue;
+    setCustomYamlStatus('第 ' + (i + 1) + ' 行缺少键值分隔符 “:”', 'error');
+    return false;
+  }
+  setCustomYamlStatus('YAML 基础格式校验通过', 'ok');
+  return true;
+}
+function restoreRecommendedYaml(){
+  var editor = document.getElementById('customYamlEditor');
+  var recommended = document.getElementById('yamlEditor');
+  if (editor && recommended) editor.value = recommended.value || currentTrainTemplate();
+  CUSTOM_YAML_DIRTY = false;
+  setCustomYamlStatus('已恢复当前推荐配置', 'ok');
+}
 // 读取当前 模型 × 是否使用新感知 对应的整套模板
 // trainRobotSel: new=新感知(cfg2) / old=旧感知(cfg1)
 function currentTrainTemplate(){
@@ -2896,10 +3221,10 @@ function hideTrainCodeMenu(){
 }
 
 var TRAIN_IMAGE_MODE = 'default';
-var DEFAULT_TRAIN_IMAGE = {
-  name: 'mozbrain',
-  version: 'thor-v1.0.0',
-  path: 'spirit-ai-cn-beijing.cr.volces.com/spirit-ai/mozbrain:thor-v1.0.0'
+var TRAIN_RECOMMENDED_IMAGES = {
+  'mozbrain_release': ['thor-v1.0.0', 'thor-v0.9.8'],
+  'mozbrain': ['thor-v1.0.0'],
+  'mozbrain_base': ['thor-v1.0.0']
 };
 var TRAIN_IMAGE_VERSIONS = {
   'mozbrain_release': ['thor-v1.0.0', 'thor-v0.9.8', 'latest'],
@@ -2916,6 +3241,20 @@ function switchTrainImageMode(el, mode){
   if (custom) custom.classList.toggle('active', mode === 'custom');
   updateTrainImagePath();
 }
+function updateRecommendedImageVersions(){
+  var curated = document.getElementById('trainRecommendedImage');
+  if (curated){ updateTrainImagePath(); return; }
+  var nameSel = document.getElementById('trainRecommendedName');
+  var versionSel = document.getElementById('trainRecommendedVersion');
+  if (!nameSel || !versionSel) return;
+  var versions = TRAIN_RECOMMENDED_IMAGES[nameSel.value] || [];
+  versionSel.innerHTML = versions.map(function(v, index){
+    return '<option value="' + v + '"' + (index === 0 ? ' selected' : '') + '>' + v + '</option>';
+  }).join('');
+  refreshSelectPlaceholderState(nameSel);
+  refreshSelectPlaceholderState(versionSel);
+  updateTrainImagePath();
+}
 function updateTrainImageVersions(){
   var nameSel = document.getElementById('trainImageName');
   var versionSel = document.getElementById('trainImageVersion');
@@ -2927,14 +3266,26 @@ function updateTrainImageVersions(){
   updateTrainImagePath();
 }
 function updateTrainImagePath(){
-  var nameSel = document.getElementById('trainImageName');
-  var versionSel = document.getElementById('trainImageVersion');
   var pathEl = document.getElementById('trainImagePath');
   if (!pathEl) return;
   if (TRAIN_IMAGE_MODE === 'default'){
-    pathEl.textContent = DEFAULT_TRAIN_IMAGE.path;
+    var curated = document.getElementById('trainRecommendedImage');
+    if (curated){
+      var selected = curated.options[curated.selectedIndex];
+      pathEl.textContent = selected && selected.dataset.path ? selected.dataset.path : '请选择推荐镜像';
+      return;
+    }
+    var recommendedName = document.getElementById('trainRecommendedName');
+    var recommendedVersion = document.getElementById('trainRecommendedVersion');
+    if (!recommendedName || !recommendedVersion || !recommendedName.value || !recommendedVersion.value){
+      pathEl.textContent = '请选择推荐镜像名称和版本';
+      return;
+    }
+    pathEl.textContent = 'spirit-ai-cn-beijing.cr.volces.com/spirit-ai/' + recommendedName.value + ':' + recommendedVersion.value;
     return;
   }
+  var nameSel = document.getElementById('trainImageName');
+  var versionSel = document.getElementById('trainImageVersion');
   if (!nameSel || !versionSel) return;
   if (!nameSel.value || !versionSel.value){
     pathEl.textContent = '请选择镜像名称和版本';
@@ -7340,7 +7691,7 @@ def _render_shared_dataset_management(active, module, prefix):
     dp.datasets()
     inner = _rewrite_dp_links(_dp_capture.get("content", "") or "", prefix=prefix)
     extra = _dp_capture.get("extra_script")
-    selected_dataset = request.args.get("sel") or "ds1"
+    selected_dataset = _resolve_dataset_id(request.args.get("sel") or "ds1")
     action_open = '<div class="dataset-detail-actions">'
     if module == "data":
         lineage_btn = (
@@ -7396,7 +7747,7 @@ def model_data_query():
 # ── 数据集 ID 映射表（data_platform → toolchain_demo）──
 DATA_PLATFORM_DS_MAP = {
     # data_platform 的 ds1, ds4 等映射到 toolchain_demo 的实际数据集
-    "ds1": "ds_505",   # clean_whiteboard_v3 → clean_whiteboard_v5 (最接近)
+    "ds1": "ds_500",   # clean_whiteboard_v3 → clean_whiteboard_v3
     "ds4": "ds_501",   # 其他数据集的映射（根据实际需要调整）
     # 已存在的 ID 保持不变
     "ds_501": "ds_501",
@@ -7449,7 +7800,7 @@ def data_datasets_process(did):
 
 @app.route("/model/data/datasets/<ds_id>")
 def model_data_dataset_detail(ds_id):
-    ds = _dataset_by_id_or_name(ds_id) or DATASETS[0]
+    ds = _dataset_by_id_or_name(_resolve_dataset_id(ds_id)) or DATASETS[0]
     src_html = " · ".join(
         f'<span class="tag tag-teal">{resolve_task_name(s)}</span>'
         for s in ds["source_tasks"]
@@ -7461,18 +7812,24 @@ def model_data_dataset_detail(ds_id):
         if ds.get("tags") else "—"
     )
     split = f'{int(ds["train_ratio"]*100)} / {int(ds["val_ratio"]*100)} / {int(ds["test_ratio"]*100)}'
-    related_exps = [e for e in EXPERIMENTS if e["dataset"] == ds["name"]]
+    related_exps = get_experiments_for_dataset(ds["id"])
+    if not related_exps:
+        related_exps = [e for e in EXPERIMENTS if e["dataset"] == ds["name"]]
     if not related_exps:
         related_exps = [e for e in EXPERIMENTS if any(m["from_exp"] == e["id"] and m["from_dataset"] == ds["name"] for m in MODELS)]
     exp_rows = "".join(
         f'<tr><td><a href="/model/experiments/{e["id"]}">{e["name"]}</a></td><td>{e["status"]}</td><td>{e["owner"]}</td><td class="mono muted">{e["started"]}</td></tr>'
         for e in related_exps
     ) or '<tr><td colspan="4" class="muted" style="text-align:center;padding:24px;">暂无关联训练任务</td></tr>'
+    ds_format = "Mozdataset" if ds.get("type") == "eval" or "eval" in ds.get("name", "").lower() else "LeRobot"
+    ds_ident = html.escape(ds.get("ident", ""), quote=True)
+    ds_ident_html = f'<span class="dataset-ident-inline">{ds_ident}</span>' if ds_ident else ''
     content = page_header(
         ds["name"],
         f'{ds["version"]} · {ds["type"]} · {ds["episodes"]} episodes',
         "数据集详情 · 版本 · 来源采集任务 · 下游训练",
     ) + f"""
+    <div class="content-header dataset-detail-title"><h2>{html.escape(ds["name"])} {ds_ident_html} <span class="tag tag-blue">{ds_format}</span></h2></div>
     <div class="lin-actions">
       <a class="btn" href="/model/data/datasets">返回数据集</a>
       <a class="btn btn-secondary" href="/model/lineage/dataset/{ds['id']}">查看血缘</a>
@@ -7511,6 +7868,10 @@ def model_data_dataset_detail(ds_id):
 @app.route("/model/data/ds_progress")
 def model_data_ds_progress():
     return _dp_render(dp.ds_progress, "/model/data/query")
+
+@app.route("/ds_progress")
+def legacy_ds_progress():
+    return redirect("/model/data/ds_progress")
 
 
 @app.route("/model/data/raw")
@@ -7728,7 +8089,13 @@ def _eval_task_detail_with_tabs(tid):
         return redirect("/model/eval/tasks")
     basic_content = _rewrite_ep_links(_eval_capture["content"])
     collections_content = _eval_task_collections_html(tid)
+    lineage_link = (
+        f'<div class="lin-actions" style="margin-bottom:14px;">'
+        f'<a class="btn btn-secondary" href="/model/lineage/eval/{html.escape(tid, quote=True)}">查看血缘</a>'
+        f'</div>'
+    )
     content = f"""
+    {lineage_link}
     <div class="det-tabs">
       <span class="det-tab active" onclick="switchDetTab(this,'basic')">基本信息</span>
       <span class="det-tab" onclick="switchDetTab(this,'collections')">采集任务</span>
@@ -8174,6 +8541,13 @@ def _resource_tabs(base_path, selected):
         for key, label in RESOURCE_TAB_LABELS.items()
     ) + '</div>'
 
+
+def _experiment_numeric_id(exp):
+    """Display the numeric task identifier while retaining the internal mock key."""
+    match = re.search(r"(\d+)$", str(exp.get("id", "")))
+    return match.group(1) if match else str(exp.get("id", ""))
+
+
 @app.route("/model/experiments")
 def experiments():
     selected_resource = request.args.get("resource", "volcano")
@@ -8215,9 +8589,10 @@ def experiments():
             if e["status"] == "running"
             else '<span class="action-link action-disabled">停止</span>'
         )
-        # 编辑仅在「排队中」状态显示，其余状态不出现在「更多」菜单中
+        # 编辑仅在「排队中」状态显示，并放在「更多」菜单内
         edit_item = (
-            f'<a href="#" onclick="toast(\'Demo: 编辑训练任务\');return false;">编辑</a>'
+            '<a href="#" class="action-edit" '
+            'onclick="toast(\'Demo: 编辑训练任务\');return false;">编辑</a>'
             if e["status"] in ("queued", "排队中")
             else ''
         )
@@ -8239,6 +8614,7 @@ def experiments():
             {more_menu}
           </td>""" if show_actions else ""
         rows += f"""<tr>
+          <td class="mono muted">{_experiment_numeric_id(e)}</td>
           <td><a href="/model/experiments/{e['id']}" style="color:#149DAA">{e['name']}</a></td>
           {description_cell}
           <td>{status_html}</td>
@@ -8253,6 +8629,10 @@ def experiments():
     total_count = len(visible_experiments)
     train_yaml_json = json.dumps(TRAIN_YAML_TEMPLATES, ensure_ascii=False)
     train_code_json = json.dumps(TRAIN_CODE_REFS, ensure_ascii=False)
+    train_image_catalog_json = json.dumps([
+        {"name": i["name"], "version": i["version"], "path": _train_image_path(i)}
+        for i in TRAIN_IMAGE_CATALOG
+    ], ensure_ascii=False)
     content = page_header(
         "训练任务",
         "数据集挂载 · 实验管理 · 超参 · Checkpoint",
@@ -8276,6 +8656,7 @@ def experiments():
     <div class="table-wrap">
       <table class="ant-table">
         <thead><tr>
+          <th>ID</th>
           <th>名称</th>
           {"<th>描述</th>" if show_description else ""}
           <th>状态 &#9662;</th>
@@ -8305,142 +8686,135 @@ def experiments():
     <script>
       window.TRAIN_YAML_TEMPLATES = {train_yaml_json};
       window.TRAIN_CODE_REFS = {train_code_json};
+      window.TRAIN_IMAGE_CATALOG = {train_image_catalog_json};
     </script>
     <div class="drawer drawer-wide" id="drawerNewTrain">
-      <div class="drawer-head"><h3>新增训练任务</h3><span class="dismiss" onclick="closeDrawer()">&times;</span></div>
-      <div class="drawer-body">
+      <div class="drawer-head train-drawer-head">
+        <div class="drawer-title-wrap"><h3>新增训练任务</h3><span class="drawer-title-sub">填写任务信息、运行资源和训练配置</span></div>
+        <span class="dismiss" onclick="closeDrawer()">&times;</span>
+      </div>
+      <div class="drawer-body train-drawer-body" id="trainDrawerBody">
 
-        <div class="fg">
-          <label class="fg-req">名称</label>
-          <input id="trainNameInput" placeholder="请输入名称（A-z,0-9,_）" maxlength="50" oninput="updateNameCount(this);syncJobName(this)">
-          <div class="fg-hint" style="text-align:right" id="nameCount">0 / 50</div>
-        </div>
-
-        <div class="fg">
-          <label>描述</label>
-          <textarea rows="3" placeholder="请输入训练任务描述，例如任务目标、数据范围或备注说明"></textarea>
-        </div>
-
-        <div class="fg">
-          <label class="fg-req">训练代码</label>
-          <div style="position:relative;">
-            <input type="text" id="trainCodeInput" placeholder="输入 Commit ID 搜索"
-                   oninput="filterTrainCode(this)" onblur="hideTrainCodeMenu()" autocomplete="off"
-                   data-branch="" data-commit="">
-            <div id="trainCodeMenu" class="tc-menu"></div>
+        <section class="train-section" id="trainSectionMeta">
+          <div class="train-section-head" onclick="toggleTrainSection(this)">
+            <h4 class="train-section-title">任务信息</h4>
+            <span class="train-section-toggle"><span class="train-section-caret">&#9660;</span></span>
           </div>
-        </div>
-
-        <div class="fg">
-          <label class="fg-req">镜像</label>
-          <div class="tm-subtabs image-mode-tabs">
-            <button type="button" class="tm-subtab active" onclick="switchTrainImageMode(this,'default')">默认镜像</button>
-            <button type="button" class="tm-subtab" onclick="switchTrainImageMode(this,'custom')">自定义镜像</button>
-          </div>
-          <div id="trainImageDefault" class="image-mode-panel active">
-            <div class="fg-row">
-              <div class="fg" style="margin-bottom:0;">
-                <label>名称</label>
-                <input value="mozbrain" disabled>
+          <div class="train-section-body">
+            <div class="fg">
+              <label class="fg-req">名称</label>
+              <div class="train-name-control"><input id="trainNameInput" placeholder="请输入名称（A-z,0-9,_）" maxlength="50" oninput="updateNameCount(this);syncJobName(this)"><span class="train-name-count" id="nameCount">0 / 50</span></div>
+            </div>
+            <div class="fg">
+              <label>描述</label>
+              <textarea rows="3" placeholder="请输入训练任务描述，例如任务目标、数据范围或备注说明"></textarea>
+            </div>
+            <div class="fg-row train-meta-options-row">
+              <div class="fg">
+                <label>标签</label>
+                <div class="ts-wrap train-tag-select" id="trainTagPicker">
+                  <div class="ts-trigger" id="trainTagTrigger" onclick="toggleTrainTagPicker(event)"><span class="ts-placeholder">请选择标签</span></div>
+                  <div class="ts-panel" id="trainTagMenu" onclick="event.stopPropagation()">
+                    <div class="ts-node"><div class="ts-row ts-row-dim"><span class="ts-arrow expanded">&#9654;</span><strong>场景标签</strong></div><div class="ts-children expanded">
+                      <div class="ts-row" data-id="scene-desk" data-level="二级标签" data-path="场景 / 桌面整理"><span class="ts-arrow empty"></span>桌面整理<span class="ts-level">二级</span></div>
+                      <div class="ts-node"><div class="ts-row ts-row-dim"><span class="ts-arrow expanded">&#9654;</span><strong>桌面整理</strong></div><div class="ts-children expanded">
+                        <div class="ts-row" data-id="scene-desk-store" data-level="三级标签" data-path="场景 / 桌面整理 / 收纳"><span class="ts-arrow empty"></span>收纳<span class="ts-level">三级</span></div>
+                        <div class="ts-row" data-id="scene-desk-board" data-level="三级标签" data-path="场景 / 桌面整理 / 擦白板"><span class="ts-arrow empty"></span>擦白板<span class="ts-level">三级</span></div>
+                      </div></div>
+                    </div></div>
+                    <div class="ts-node"><div class="ts-row ts-row-dim"><span class="ts-arrow expanded">&#9654;</span><strong>训练标签</strong></div><div class="ts-children expanded">
+                      <div class="ts-row" data-id="train-type" data-level="一级标签" data-path="训练类型"><span class="ts-arrow empty"></span>训练类型<span class="ts-level">一级</span></div>
+                      <div class="ts-row" data-id="train-finetune" data-level="二级标签" data-path="训练类型 / 微调"><span class="ts-arrow empty"></span>微调<span class="ts-level">二级</span></div>
+                    </div></div>
+                  </div>
+                  <input type="hidden" id="trainTagsHidden" value="">
+                </div>
               </div>
-              <div class="fg" style="margin-bottom:0;">
-                <label>版本</label>
-                <input value="thor-v1.0.0" disabled>
+              <div class="fg train-notify-field">
+                <div class="train-notify-title"><label for="trainFeishuNotify">飞书通知 <span class="qi" data-tooltip="开启通知即可通过飞书通知训练启动、进度和报错信息" tabindex="0" aria-label="开启通知即可通过飞书通知训练启动、进度和报错信息">i</span></label></div>
+                <label class="toggle-sw train-notify-toggle">
+                  <input id="trainFeishuNotify" type="checkbox" checked><span class="slider"></span>
+                </label>
               </div>
             </div>
           </div>
-          <div id="trainImageCustom" class="image-mode-panel">
-            <div class="fg-row">
-              <div class="fg" style="margin-bottom:0;">
-                <label>名称</label>
-                <select id="trainImageName" onchange="updateTrainImageVersions()">
-                  <option value="" selected disabled>镜像名称</option>
-                  <option value="mozbrain_release">mozbrain_release</option>
-                  <option value="mozbrain">mozbrain</option>
-                  <option value="mozbrain_base">mozbrain_base</option>
+        </section>
+
+        <section class="train-section" id="trainSectionRuntime">
+          <div class="train-section-head" onclick="toggleTrainSection(this)">
+            <h4 class="train-section-title">运行配置</h4>
+            <span class="train-section-toggle"><span class="train-section-caret">&#9660;</span></span>
+          </div>
+          <div class="train-section-body">
+            <div class="fg">
+              <label class="fg-req">镜像</label>
+              <div class="tm-subtabs image-mode-tabs">
+                <button type="button" class="tm-subtab active" onclick="switchTrainImageMode(this,'default')">推荐镜像</button>
+                <button type="button" class="tm-subtab" onclick="switchTrainImageMode(this,'custom')">自定义镜像</button>
+              </div>
+              <div id="trainImageDefault" class="image-mode-panel active">
+                <select id="trainRecommendedImage" class="train-recommended-image" onchange="updateTrainImagePath()">
+                  {''.join(f'<option value="{html.escape(_train_image_path(i), quote=True)}" data-path="{html.escape(_train_image_path(i), quote=True)}" data-image-path="{html.escape(_train_image_path(i), quote=True)}">{html.escape(i["name"])}　{html.escape(i["version"])}</option>' for i in TRAIN_IMAGE_CATALOG)}
                 </select>
+                <div style="display:none"><select id="trainRecommendedName"><option value="mozbrain_release">mozbrain_release</option></select><select id="trainRecommendedVersion"><option value="thor-v1.0.0">thor-v1.0.0</option></select></div>
               </div>
-              <div class="fg" style="margin-bottom:0;">
-                <label>版本</label>
-                <select id="trainImageVersion" onchange="updateTrainImagePath()">
-                  <option value="" selected disabled>镜像版本</option>
-                </select>
+              <div id="trainImageCustom" class="image-mode-panel">
+                <div class="fg-row">
+                  <div class="fg" style="margin-bottom:0;"><label>名称</label><select id="trainImageName" onchange="updateTrainImageVersions()"><option value="" selected disabled>镜像名称</option><option value="mozbrain_release">mozbrain_release</option><option value="mozbrain">mozbrain</option><option value="mozbrain_base">mozbrain_base</option></select></div>
+                  <div class="fg" style="margin-bottom:0;"><label>版本</label><select id="trainImageVersion" onchange="updateTrainImagePath()"><option value="" selected disabled>镜像版本</option></select></div>
+                </div>
+              </div>
+              <div class="image-path-hint"><span class="path" id="trainImagePath">spirit-ai-cn-beijing.cr.volces.com/spirit-ai/mozbrain:thor-v1.0.0</span></div>
+            </div>
+            <div class="fg train-runtime-code-row"><label>训练代码</label><div style="position:relative;"><input type="text" id="trainCodeInput" placeholder="输入 Commit ID 搜索（可选）" oninput="filterTrainCode(this)" onblur="hideTrainCodeMenu()" autocomplete="off" data-branch="" data-commit=""><div id="trainCodeMenu" class="tc-menu"></div></div></div>
+            <div class="fg-row train-runtime-queue-row">
+              <div class="fg"><label class="fg-req">优先级 <span class="qi" data-tooltip="数值越大，优先级越大" tabindex="0" aria-label="数值越大，优先级越大">i</span></label><select id="trainPriority"><option value="2">2</option><option value="4" selected>4</option><option value="6">6</option></select></div>
+              <div class="fg"><label class="fg-req">训练队列</label><select><option>CPU</option><option>GPU-A100</option><option>GPU-H100</option></select></div>
+            </div>
+            <div class="fg-row train-runtime-priority-row">
+              <div class="fg"><label class="fg-req">实例数</label><input id="trainInstanceCount" type="number" min="1" max="4" step="1" value="1" inputmode="numeric" oninput="validateTrainInstanceCount(this)"></div>
+              <div class="fg"><label class="fg-req">实例规格</label><select><option>请选择实例规格</option><option>2 × A100 80GB</option><option>4 × A100 80GB</option><option>8 × H100 80GB</option></select></div>
+            </div>
+          </div>
+        </section>
+
+        <section class="train-section" id="trainSectionConfig">
+          <div class="train-section-head" onclick="toggleTrainSection(this)">
+            <h4 class="train-section-title">训练配置</h4>
+            <span class="train-section-toggle"><span class="train-section-caret">&#9660;</span></span>
+          </div>
+          <div class="train-section-body">
+            <div class="fg">
+              <label>数据集及权重</label>
+              <div class="ds-table"><div class="ds-head"><span>数据集名称</span><span>权重</span><span>操作</span></div><div class="ds-row"><select><option>请选择数据集</option><option>clean_whiteboard_v4</option><option>tidy_desk_v2</option><option>plant_pour_pilot</option></select><input value="1"><span class="ds-confirm" onclick="toast('Demo: 已添加')">确定</span></div></div>
+            </div>
+            <div class="train-config-mode-tabs" id="trainConfigModeTabs" role="tablist" aria-label="训练配置模式">
+              <button type="button" class="train-config-mode-tab active" data-train-config-mode="recommended" onclick="switchTrainConfigMode(this,'recommended')">推荐配置</button>
+              <button type="button" class="train-config-mode-tab" data-train-config-mode="custom" onclick="switchTrainConfigMode(this,'custom')">自定义配置</button>
+            </div>
+            <div class="train-config-panel active" id="trainRecommendedConfig">
+            <div class="fg-row">
+              <div class="fg"><label class="fg-req">模型</label><select id="trainModelSel" onchange="regenDefaultConfig()"><option value="pi05">pi0.5</option><option value="spiritv1_6">spiritv1.6</option></select></div>
+              <div class="fg"><label class="fg-req">是否使用新感知</label><select id="trainRobotSel" onchange="regenDefaultConfig()"><option value="new">是</option><option value="old">否</option></select></div>
+              <div class="fg"><label class="fg-req">机器人结构</label><select id="trainBaseSel" onchange="regenDefaultConfig()"><option value="wholebody">wholebody</option><option value="wholebody_without_base">wholebody_without_base</option></select></div>
+            </div>
+            <div class="adv-sub" id="advConfigBox">
+              <div class="adv-sub-head" onclick="document.getElementById('advConfigBox').classList.toggle('collapsed')"><span class="caret">&#9660;</span><label>高级配置</label></div>
+              <div class="adv-sub-body"><div class="adv-tabs"><span class="at active" onclick="switchAdvTab(this,'default')">默认配置</span><span class="at" onclick="switchAdvTab(this,'override')">参数覆盖</span><button class="at-reset" onclick="resetTrainConfig()">恢复默认</button></div><textarea id="yamlEditor" class="yaml-area" spellcheck="false" readonly></textarea><textarea id="yamlOverride" class="yaml-area" spellcheck="false" style="display:none;" placeholder="# 只填写需要覆盖的参数, 例如:&#10;batch_size: 64&#10;steps: 300000&#10;&#10;# 这些值会覆盖到左侧「默认配置」中" oninput="applyOverride()"></textarea></div>
+            </div>
+            </div>
+            <div class="train-config-panel" id="trainCustomConfig">
+              <div class="adv-sub" id="customYamlBox">
+                <div class="adv-sub-head" onclick="document.getElementById('customYamlBox').classList.toggle('collapsed')"><span class="caret">&#9660;</span><label>高级配置</label><button type="button" class="at-reset" onclick="event.stopPropagation();restoreRecommendedYaml()">恢复推荐配置</button></div>
+                <div class="adv-sub-body">
+                  <div class="custom-yaml-status" id="customYamlStatus">切换到自定义配置后，可粘贴或编辑完整 YAML</div>
+                  <textarea id="customYamlEditor" class="yaml-area custom-yaml-area" spellcheck="false" placeholder="# 粘贴完整 YAML 配置"></textarea>
+                </div>
               </div>
             </div>
-          </div>
-          <div class="image-path-hint">
-            <span class="path" id="trainImagePath">spirit-ai-cn-beijing.cr.volces.com/spirit-ai/mozbrain:thor-v1.0.0</span>
-          </div>
-        </div>
-
-        <div class="fg-row">
-          <div class="fg"><label class="fg-req">训练队列</label>
-            <select><option>CPU</option><option>GPU-A100</option><option>GPU-H100</option></select>
-          </div>
-          <div class="fg"><label class="fg-req">实例规格</label>
-            <select><option>请选择实例规格</option><option>2 × A100 80GB</option><option>4 × A100 80GB</option><option>8 × H100 80GB</option></select>
-          </div>
-        </div>
-
-        <div class="fg">
-          <label>数据集</label>
-          <div class="ds-table">
-            <div class="ds-head"><span>数据集名称</span><span>权重</span><span>操作</span></div>
-            <div class="ds-row">
-              <select><option>请选择数据集</option><option>clean_whiteboard_v4</option><option>tidy_desk_v2</option><option>plant_pour_pilot</option></select>
-              <input value="1">
-              <span class="ds-confirm" onclick="toast('Demo: 已添加')">确定</span>
-            </div>
-          </div>
-        </div>
-
-        <div class="fg-row">
-          <div class="fg"><label class="fg-req">模型</label>
-            <select id="trainModelSel" onchange="regenDefaultConfig()">
-              <option value="pi05">pi0.5</option>
-              <option value="spiritv1_6">spiritv1.6</option>
-            </select>
-          </div>
-          <div class="fg"><label class="fg-req">是否使用新感知</label>
-            <select id="trainRobotSel" onchange="regenDefaultConfig()">
-              <option value="new">是</option>
-              <option value="old">否</option>
-            </select>
-          </div>
-          <div class="fg"><label class="fg-req">机器人结构</label>
-            <select id="trainBaseSel" onchange="regenDefaultConfig()">
-              <option value="wholebody">wholebody</option>
-              <option value="wholebody_without_base">wholebody_without_base</option>
-              <option value="dualarm">dualarm</option>
-            </select>
-          </div>
-        </div>
-
-        <div class="adv-sub" id="advConfigBox">
-          <div class="adv-sub-head" onclick="document.getElementById('advConfigBox').classList.toggle('collapsed')">
-            <span class="caret">&#9660;</span>
-            <label>高级配置</label>
-          </div>
-          <div class="adv-sub-body">
-            <div class="adv-tabs">
-              <span class="at active" onclick="switchAdvTab(this,'default')">默认配置</span>
-              <span class="at" onclick="switchAdvTab(this,'override')">参数覆盖</span>
-              <button class="at-reset" onclick="resetTrainConfig()">恢复默认</button>
-            </div>
-            <textarea id="yamlEditor" class="yaml-area" spellcheck="false" readonly></textarea>
-            <textarea id="yamlOverride" class="yaml-area" spellcheck="false" style="display:none;"
-                      placeholder="# 只填写需要覆盖的参数, 例如:&#10;batch_size: 64&#10;steps: 300000&#10;&#10;# 这些值会覆盖到左侧「默认配置」中"
-                      oninput="applyOverride()"></textarea>
-          </div>
-        </div>
-
-        <div class="adv-sub" id="entryCmdBox">
-          <div class="adv-sub-head" onclick="document.getElementById('entryCmdBox').classList.toggle('collapsed')">
-            <span class="caret">&#9660;</span>
-            <label>入口命令</label>
-          </div>
-          <div class="adv-sub-body">
-            <textarea id="entryCmdInput" class="entry-command-area" spellcheck="false"># 需要填写个人的WANDB_API_KEY，如export WANDB_API_KEY=aaffxxxx
+            <div class="adv-sub collapsed" id="entryCmdBox">
+              <div class="adv-sub-head" onclick="document.getElementById('entryCmdBox').classList.toggle('collapsed')"><span class="caret">&#9660;</span><label>入口命令</label></div>
+              <div class="adv-sub-body"><textarea id="entryCmdInput" class="entry-command-area" spellcheck="false"># 需要填写个人的WANDB_API_KEY，如export WANDB_API_KEY=aaffxxxx
 # export WANDB_API_KEY=put_your_wandb_api_key_here
 # export WANDB_BASE_URL=https://api.bandw.top
 
@@ -8453,26 +8827,14 @@ export ENABLE_REPORT_QUANTA=True
 export QUANTA_SERVICE_URL="https://quanta.i.spirit-ai.com"
 
 # Quanta会自动填充experiment_id为实际的experiment_id，请不要修改yaml文件路径
-bash lerobot/scripts/train_unified.sh /mnt/vepfs01/output/quanta/experiments/configs/{{experiment_id}}/customized.yaml</textarea>
+bash lerobot/scripts/train_unified.sh /mnt/vepfs01/output/quanta/experiments/configs/{{experiment_id}}/customized.yaml</textarea></div>
+            </div>
+            <div class="adv-sub collapsed" id="envVarsBox" style="display:none;"><div class="adv-sub-head" onclick="document.getElementById('envVarsBox').classList.toggle('collapsed')"><span class="caret">&#9660;</span><label>环境变量</label></div><div class="adv-sub-body"><div id="envRows"></div><span class="env-add" id="envAddBtn" onclick="addEnvRow()">&#43; 新增环境变量 <span id="envCount">(0/20)</span></span></div></div>
           </div>
-        </div>
-
-        <div class="adv-sub collapsed" id="envVarsBox" style="display:none;">
-          <div class="adv-sub-head" onclick="document.getElementById('envVarsBox').classList.toggle('collapsed')">
-            <span class="caret">&#9660;</span>
-            <label>环境变量</label>
-          </div>
-          <div class="adv-sub-body">
-            <div id="envRows"></div>
-            <span class="env-add" id="envAddBtn" onclick="addEnvRow()">&#43; 新增环境变量 <span id="envCount">(0/20)</span></span>
-          </div>
-        </div>
+        </section>
 
       </div>
-      <div class="drawer-foot">
-        <button class="btn" onclick="closeDrawer()">取消</button>
-        <button class="btn btn-primary" onclick="toast('Demo: 训练任务已提交');closeDrawer()">提交创建</button>
-      </div>
+      <div class="drawer-foot train-drawer-foot"><button class="btn" onclick="closeDrawer()">取消</button><button class="btn btn-primary" onclick="validateTrainForm()">提交创建</button></div>
     </div>
     """
     return render_page("训练任务", content, active="/model/experiments", module="model",
@@ -8798,67 +9160,36 @@ dataset:
 
       <!-- 基本信息 (字段顺序对齐「新增训练任务」表单) -->
       <div class="bi-sec">
-        <h4 class="bi-sec-title">基本信息</h4>
-        <div class="bi-field-row bi-field-row-2">
-          <div class="bi-field-item">
-            <div class="bi-field-label">训练代码</div>
-            <div class="bi-field-value">
-              <span class="bi-commit">a5ebbdd</span>
-              <span class="bi-copy-btn" onclick="copyBiField(this,'a5ebbdd')" title="复制"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 012-2h10"/></svg></span>
-            </div>
-          </div>
-          <div class="bi-field-item">
-            <div class="bi-field-label">镜像</div>
-            <div class="bi-field-value mono">
-              <span class="bi-ellipsis" title="spirit-ai-cn-beijing.cr.volces.com/spirit-ai/mozbrain:thor-v1.0.0">spirit-ai-cn-beijing.cr.volces.com/spirit-ai/mozbrain:thor-v1.0.0</span>
-              <span class="bi-copy-btn" onclick="copyBiField(this,'spirit-ai-cn-beijing.cr.volces.com/spirit-ai/mozbrain:thor-v1.0.0')" title="复制"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 012-2h10"/></svg></span>
-            </div>
-          </div>
-        </div>
-        <div class="bi-field-row bi-field-row-2">
-          <div class="bi-field-item">
-            <div class="bi-field-label">训练队列</div>
-            <div class="bi-field-value">GPU-A100</div>
-          </div>
-          <div class="bi-field-item">
-            <div class="bi-field-label">实例规格</div>
-            <div class="bi-field-value">2 × A100 80GB</div>
-          </div>
-        </div>
-        <div class="bi-field-row bi-field-row-2">
-          <div class="bi-field-item">
-            <div class="bi-field-label">模型</div>
-            <div class="bi-field-value"><span class="tag-inline">pi0.5</span></div>
-          </div>
-          <div class="bi-field-item">
-            <div class="bi-field-label">是否新感知</div>
-            <div class="bi-field-value">是</div>
-          </div>
-        </div>
-        <div class="bi-field-row bi-field-row-2">
-          <div class="bi-field-item">
-            <div class="bi-field-label">机器人结构</div>
-            <div class="bi-field-value">wholebody</div>
-          </div>
-          <div class="bi-field-item">
-            <div class="bi-field-label">描述</div>
-            <div class="bi-field-value">HouseHold stop 场景微调，14 维双臂 + 停止信号</div>
-          </div>
-        </div>
+        <h4 class="bi-sec-title">任务信息</h4>
+        <div class="bi-field-row"><div class="bi-field-item"><div class="bi-field-label">任务名称</div><div class="bi-field-value">{html.escape(e['name'])}</div></div></div>
+        <div class="bi-field-row"><div class="bi-field-item"><div class="bi-field-label">描述</div><div class="bi-field-value">{html.escape(_experiment_description(e))}</div></div></div>
+        <div class="bi-field-row bi-field-row-2"><div class="bi-field-item"><div class="bi-field-label">标签</div><div class="bi-field-value">{html.escape(e.get('tag', '—'))}</div></div><div class="bi-field-item"><div class="bi-field-label">飞书通知</div><div class="bi-field-value">默认开启</div></div></div>
       </div>
 
-      <!-- 数据集 -->
       <div class="bi-sec">
-        <h4 class="bi-sec-title">数据集</h4>
-        <div class="bi-dstable">
-          <div class="ds-head"><span>数据集名称</span><span>权重</span></div>
-          <div class="ds-row"><span class="mono">{ds_name}</span><span class="mono">1</span></div>
+        <h4 class="bi-sec-title">运行配置</h4>
+        <div class="bi-field-row bi-field-row-2">
+          <div class="bi-field-item"><div class="bi-field-label">镜像模式</div><div class="bi-field-value">推荐镜像</div></div>
+          <div class="bi-field-item"><div class="bi-field-label">镜像</div><div class="bi-field-value mono"><span class="bi-ellipsis" title="spirit-ai-cn-beijing.cr.volces.com/spirit-ai/mozbrain:thor-v1.0.0">spirit-ai-cn-beijing.cr.volces.com/spirit-ai/mozbrain:thor-v1.0.0</span></div></div>
         </div>
+        <div class="bi-field-row"><div class="bi-field-item"><div class="bi-field-label">训练代码</div><div class="bi-field-value"><span class="bi-commit">a5ebbdd</span></div></div></div>
+        <div class="bi-field-row bi-field-row-2"><div class="bi-field-item"><div class="bi-field-label">训练队列</div><div class="bi-field-value">GPU-A100</div></div><div class="bi-field-item"><div class="bi-field-label">优先级</div><div class="bi-field-value">{e.get('priority', '4')}</div></div></div>
+        <div class="bi-field-row bi-field-row-2"><div class="bi-field-item"><div class="bi-field-label">实例规格</div><div class="bi-field-value">2 × A100 80GB</div></div><div class="bi-field-item"><div class="bi-field-label">实例数</div><div class="bi-field-value">{e.get('instance_count', 1)}</div></div></div>
       </div>
+
+      <div class="bi-sec">
+        <h4 class="bi-sec-title">训练配置</h4>
+        <div class="bi-field-row"><div class="bi-field-item"><div class="bi-field-label">数据集及权重</div><div class="bi-field-value">{html.escape(ds_name)} · 权重 1</div></div></div>
+        <div class="bi-field-row"><div class="bi-field-item"><div class="bi-field-label">配置模式</div><div class="bi-field-value">推荐配置</div></div></div>
+        <div class="bi-field-row bi-field-row-2">
+          <div class="bi-field-item"><div class="bi-field-label">模型</div><div class="bi-field-value"><span class="tag-inline">pi0.5</span></div></div>
+          <div class="bi-field-item"><div class="bi-field-label">是否新感知</div><div class="bi-field-value">是</div></div>
+        </div>
+        <div class="bi-field-row"><div class="bi-field-item"><div class="bi-field-label">机器人结构</div><div class="bi-field-value">wholebody</div></div></div>
 
       <!-- 高级配置 - 可折叠 -->
-      <div class="bi-sec bi-collapsible">
-        <h4 class="bi-sec-title bi-sec-toggle" onclick="toggleBiSection(this)">
+      <div class="bi-subsection bi-collapsible">
+        <h4 class="bi-subsection-title bi-sec-toggle" onclick="toggleBiSection(this)">
           <span>高级配置</span>
           <svg class="bi-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <polyline points="6 9 12 15 18 9"/>
@@ -8876,8 +9207,8 @@ steps: 300000</pre>
       </div>
 
       <!-- 入口命令 - 可折叠 -->
-      <div class="bi-sec bi-collapsible">
-        <h4 class="bi-sec-title bi-sec-toggle" onclick="toggleBiSection(this)">
+      <div class="bi-subsection bi-collapsible">
+        <h4 class="bi-subsection-title bi-sec-toggle" onclick="toggleBiSection(this)">
           <span>入口命令</span>
           <svg class="bi-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <polyline points="6 9 12 15 18 9"/>
@@ -8947,8 +9278,9 @@ bash lerobot/scripts/train_unified.sh /mnt/vepfs01/output/quanta/experiments/con
       <div class="tdh-actions">
         {detail_action}
       </div>
-      <div class="tdh-meta">
-        <div><span class="lbl">创建人:</span><span class="val">{owner}</span></div>
+       <div class="tdh-meta">
+         <div><span class="lbl">任务 ID:</span><span class="val mono">{e['id']}</span></div>
+         <div><span class="lbl">创建人:</span><span class="val">{owner}</span></div>
         <div><span class="lbl">创建时间:</span><span class="val">{e['started']}</span></div>
       </div>
     </div>
@@ -9255,6 +9587,42 @@ CKPT_STATUS_LABEL = {
     "cached":       '<span class="tag tag-green">已缓存</span>',
     "cache_failed": '<span class="tag tag-red">缓存失败</span>',
 }
+
+# Curated images shared by the image management page and the training drawer.
+TRAIN_IMAGE_CATALOG = [
+    {"name": "mozbrain_release", "version": "thor-v1.0.0", "description": "Spirit v1.6 推荐训练镜像", "creator": "tao.wang", "created": "2026-08-18 09:20"},
+    {"name": "mozbrain_release", "version": "thor-v0.9.8", "description": "Spirit v1.5 兼容镜像", "creator": "hannah.wang", "created": "2026-08-12 16:30"},
+    {"name": "mozbrain", "version": "thor-v1.0.0", "description": "基础训练镜像", "creator": "joanna.qiao", "created": "2026-08-08 09:20"},
+]
+
+def _train_image_path(image):
+    return f"spirit-ai-cn-beijing.cr.volces.com/spirit-ai/{image['name']}:{image['version']}"
+
+@app.route("/model/config/images")
+def model_config_images():
+    rows = "".join(
+        f"<tr><td>{html.escape(i['name'])}</td><td>{html.escape(i['version'])}</td>"
+        f"<td>{html.escape(i['description'])}</td><td>{html.escape(i['creator'])}</td><td class='mono'>{html.escape(i['created'])}</td>"
+        f"<td><a href='#' onclick=\"openImageEditor('{html.escape(i['name'], quote=True)}','{html.escape(i['version'], quote=True)}','{html.escape(i['description'], quote=True)}');return false;\">编辑</a> "
+        f"<a href='#' onclick=\"openImageDelete('{html.escape(i['name'], quote=True)}','{html.escape(i['version'], quote=True)}');return false;\">删除</a></td></tr>"
+        for i in TRAIN_IMAGE_CATALOG
+    )
+    content = f"""
+    {page_header('镜像管理', '维护新增训练任务可选的推荐镜像', '推荐镜像目录')}
+    <div class="list-summarybar"><div class="txt">推荐镜像共 <b>{len(TRAIN_IMAGE_CATALOG)}</b> 个</div><button class="btn btn-primary" onclick="openImageEditor()">新增镜像</button></div>
+    <div class="card"><table class="ant-table"><thead><tr><th>镜像名称</th><th>版本</th><th>描述信息</th><th>创建人</th><th>创建时间</th><th>操作</th></tr></thead><tbody>{rows}</tbody></table></div>
+    <div class="drawer-mask" id="imageEditorModal" onclick="if(event.target===this)closeImageEditor()"><div class="drawer image-config-drawer" id="imageEditorDrawer"><div class="drawer-head"><h3 id="imageEditorTitle">新增镜像</h3><button class="drawer-close" onclick="closeImageEditor()">&times;</button></div><div class="drawer-body"><div class="fg"><label>镜像名称</label><input id="imageEditorName" placeholder="例如 mozbrain_release"></div><div class="fg"><label>版本</label><input id="imageEditorVersion" placeholder="例如 thor-v1.0.0"></div><div class="fg"><label>描述信息</label><textarea id="imageEditorDescription" rows="3" placeholder="填写镜像用途和兼容范围"></textarea></div></div><div class="drawer-foot"><button class="btn" onclick="closeImageEditor()">取消</button><button class="btn btn-primary" onclick="saveImageEditor()">保存</button></div></div></div>
+    <div class="drawer-mask" id="imageDeleteModal" onclick="if(event.target===this)closeImageDelete()"><div class="drawer image-config-drawer" id="imageDeleteDrawer"><div class="drawer-head"><h3>删除镜像</h3><button class="drawer-close" onclick="closeImageDelete()">&times;</button></div><div class="drawer-body"><p>确认删除镜像 <b id="imageDeleteName"></b>？删除后不可恢复。</p></div><div class="drawer-foot"><button class="btn" onclick="closeImageDelete()">取消</button><button class="btn btn-danger" onclick="confirmImageDelete()">删除</button></div></div></div>
+    <script>
+    function openImageEditor(name,version,description){{document.getElementById('imageEditorTitle').textContent=name?'编辑镜像':'新增镜像';document.getElementById('imageEditorName').value=name||'';document.getElementById('imageEditorVersion').value=version||'';document.getElementById('imageEditorDescription').value=description||'';document.getElementById('imageEditorModal').classList.add('active');document.getElementById('imageEditorDrawer').classList.add('active');}}
+    function closeImageEditor(){{document.getElementById('imageEditorModal').classList.remove('active');document.getElementById('imageEditorDrawer').classList.remove('active');}}
+    function saveImageEditor(){{if(!document.getElementById('imageEditorName').value.trim()||!document.getElementById('imageEditorVersion').value.trim()){{toast('请填写镜像名称和版本');return;}}toast('Demo: 镜像已保存');closeImageEditor();}}
+    function openImageDelete(name,version){{document.getElementById('imageDeleteName').textContent=name+':'+version;document.getElementById('imageDeleteModal').classList.add('active');document.getElementById('imageDeleteDrawer').classList.add('active');}}
+    function closeImageDelete(){{document.getElementById('imageDeleteModal').classList.remove('active');document.getElementById('imageDeleteDrawer').classList.remove('active');}}
+    function confirmImageDelete(){{toast('Demo: 镜像已删除');closeImageDelete();}}
+    </script>
+    """
+    return render_page('镜像管理', content, active='/model/config/images', module='model', breadcrumb='模型平台 / 配置 / <b>镜像管理</b>')
 
 CKPT_DESC_FALLBACKS = [
     "HouseHold stop 32 任务 40k step 稳定版本",
@@ -10904,7 +11272,7 @@ def _asset_lineage_legacy_redirect():
 # ── 血缘系统配置 ──
 LINEAGE_CONFIG = {
     'dataset': {
-        'find_fn': lambda val: next((d for d in DATASETS if d["name"] == val or d["id"] == val), None),
+        'find_fn': lambda val: _dataset_by_id_or_name(_resolve_dataset_id(val)),
         'title': '血缘',
         'subtitle': '数据集的上游采集与下游训练链路',
         'list_path': '/model/data/datasets',
@@ -10928,12 +11296,12 @@ LINEAGE_CONFIG = {
         'breadcrumb_fn': lambda obj: f'模型平台 / Checkpoint / {obj["id"]} / <b>血缘</b>',
     },
     'eval': {
-        'find_fn': lambda val: next((e for e in EVALS if e.get("name") == val or e["id"] == val), None),
+        'find_fn': lambda val: _eval_by_id(val),
         'title': '血缘',
-        'subtitle': '评测任务的 Checkpoint 来源与数据链路',
+         'subtitle': '评测任务的 Checkpoint 来源与数据链路',
         'list_path': '/model/eval/tasks',
         'detail_url_fn': lambda obj: f'/model/eval/tasks/{obj["id"]}',
-        'breadcrumb_fn': lambda obj: f'模型平台 / 评测任务 / {obj.get("name", obj["id"])} / <b>血缘</b>',
+         'breadcrumb_fn': lambda obj: f'模型平台 / 评测任务 / {obj.get("name", obj["id"])} / <b>血缘</b>',
     },
     'task': {
         'find_fn': lambda task_id: _task_by_id(task_id),
@@ -10949,7 +11317,7 @@ LINEAGE_FILTERS = [
     {'key': 'dataset', 'label': '数据集', 'placeholder': '输入数据集名称', 'route': '/model/lineage/dataset/'},
     {'key': 'train', 'label': '训练任务', 'placeholder': '输入训练任务名称', 'route': '/model/lineage/train/'},
     {'key': 'checkpoint', 'label': 'Checkpoint', 'placeholder': '输入 Checkpoint 名称', 'route': '/model/lineage/checkpoint/'},
-    {'key': 'eval', 'label': '评测任务', 'placeholder': '输入评测任务名称', 'route': '/model/lineage/eval/'},
+    {'key': 'eval', 'label': '评测任务', 'placeholder': '输入评测任务名称或 ID', 'route': '/model/lineage/eval/'},
     {'key': 'task', 'label': '采集任务', 'placeholder': '输入采集任务 ID / 名称', 'route': '/model/lineage/task/'},
 ]
 
@@ -10975,8 +11343,46 @@ def _ckpt_by_id(value):
     return next((c for c in CHECKPOINTS if c["id"] == value or c["name"] == value), None)
 
 
+def _evaluation_lineage_records():
+    """Return evaluation tasks in the shape consumed by the lineage view."""
+    records = {item["id"]: dict(item) for item in EVALS}
+    if not EP_AVAILABLE:
+        return list(records.values())
+
+    for task in ep.EVAL_TASKS:
+        task_id = task.get("id")
+        if not task_id:
+            continue
+        checkpoint_id = task.get("ckpt_id")
+        if not checkpoint_id:
+            checkpoint_id = next(
+                (str(model_id) for model_id in task.get("model_ids", [])
+                 if _ckpt_by_id(str(model_id))),
+                "",
+            )
+        benchmark = ep.get_benchmark(task.get("benchmark_id"))
+        record = records.get(task_id, {})
+        task_lineage_kind = task.get("lineage_kind") or task.get("collect_type")
+        if task_lineage_kind not in ("test", "dagger", "assets"):
+            task_lineage_kind = record.get("lineage_kind", "test")
+        record.update({
+            "id": task_id,
+            "task_no": task.get("task_no", record.get("task_no", "—")),
+            "name": task.get("name", record.get("name", "评测任务")),
+            "benchmark": benchmark.get("name", "—") if benchmark else record.get("benchmark", "—"),
+            "status": task.get("status", record.get("status", "—")),
+            "at": task.get("created_at", record.get("at", "—")),
+            "ckpt_id": str(checkpoint_id or record.get("ckpt_id", "")),
+            "success_rate": task.get("success_rate", record.get("success_rate")),
+            "lineage_kind": task_lineage_kind,
+        })
+        records[task_id] = record
+    return list(records.values())
+
+
 def _eval_by_id(value):
-    return next((e for e in EVALS if e["id"] == value or e.get("name") == value), None)
+    return next((e for e in _evaluation_lineage_records()
+                 if e["id"] == value or e.get("name") == value), None)
 
 
 def _task_by_id(value):
@@ -11006,7 +11412,7 @@ def get_checkpoints_for_experiment(exp_id):
 
 def get_evals_for_checkpoint(ckpt_id):
     """Checkpoint → 评测任务列表（全量，按 ckpt_id）"""
-    return [ev for ev in EVALS if ev.get("ckpt_id") == ckpt_id]
+    return [ev for ev in _evaluation_lineage_records() if ev.get("ckpt_id") == str(ckpt_id)]
 
 
 def _ckpt_exp(ckpt):
@@ -11100,7 +11506,7 @@ def _lineage_context(anchor_type, anchor_id):
         datasets, tasks = up_from_experiments(experiments)
         checkpoints, evals = down_from_experiments(experiments)
     elif anchor_type == "dataset":
-        ds = _dataset_by_id_or_name(anchor_id) or DATASETS[0]
+        ds = _dataset_by_id_or_name(_resolve_dataset_id(anchor_id)) or DATASETS[0]
         datasets = [ds]
         tasks = up_from_datasets(datasets)
         experiments, checkpoints, evals = down_from_datasets(datasets)
@@ -11110,7 +11516,7 @@ def _lineage_context(anchor_type, anchor_id):
         experiments, datasets, tasks = up_from_checkpoints(checkpoints)
         evals = down_from_checkpoints(checkpoints)
     elif anchor_type == "eval":
-        ev = _eval_by_id(anchor_id) or EVALS[0]
+        ev = _eval_by_id(anchor_id) or _evaluation_lineage_records()[0]
         evals = [ev]
         ckpt = _ckpt_by_id(ev.get("ckpt_id") or "")
         checkpoints = [ckpt] if ckpt else []
@@ -11235,6 +11641,8 @@ def _lineage_detail_html(anchor_type, anchor_id):
     def _task_card(t):
         is_dagger = t.get("source_type") == "dagger"
         task_node_id = f'task_{t["id"]}'
+        task_name = html.escape(t["name"])
+        task_name_attr = html.escape(t["name"], quote=True)
         # 找到该任务所属的数据集
         ds_id = next((ds["id"] for ds in datasets if t["id"] in ds.get("source_tasks", [])), None)
         if is_dagger:
@@ -11242,8 +11650,8 @@ def _lineage_detail_html(anchor_type, anchor_id):
             tip = (f'失败类型: {t.get("src_failure_type","—")}｜触发时间: {t.get("src_dagger_at","—")}'
                    f'｜触发设备: {t.get("src_trigger_device","—")}｜质检通过: {t.get("qc_pass","—")}/{t.get("collected","—")}')
             return (
-                f'<div class="{cls("task","lin-node dagger")}" data-chain-id="{get_chains(task_node_id)}" data-node-id="{task_node_id}" data-lineage-tip="{tip}">'
-                f'<div class="ln-ttl">{t["name"]}</div>'
+                f'<div class="{cls("task","lin-node dagger")}" data-chain-id="{get_chains(task_node_id)}" data-node-id="{task_node_id}" data-lineage-group="source" data-lineage-kind="dagger" data-lineage-tip="{tip}">'
+                f'<span class="lin-type-badge dagger">DAGGER</span><div class="ln-ttl" title="{task_name_attr}">{task_name}</div>'
                 f'<div class="ln-footer">'
                 f'<div class="ln-meta">Task ID: {t["id"]}</div>'
                 f'</div>'
@@ -11257,8 +11665,8 @@ def _lineage_detail_html(anchor_type, anchor_id):
         tip = (f'项目: {t.get("project","—")}｜阶段: {t.get("stage","—")}｜创建人: {t.get("owner","joanna.qiao")}'
                f'｜创建时间: {t.get("created","—")}｜质检通过: {t.get("qc_pass","—")}')
         return (
-            f'<div class="{cls("task","lin-node teal")}" data-chain-id="{get_chains(task_node_id)}" data-node-id="{task_node_id}" data-lineage-tip="{tip}">'
-            f'<div class="ln-ttl">{t["name"]}</div>'
+            f'<div class="{cls("task","lin-node teal")}" data-chain-id="{get_chains(task_node_id)}" data-node-id="{task_node_id}" data-lineage-group="source" data-lineage-kind="normal" data-lineage-tip="{tip}">'
+            f'<span class="lin-type-badge normal">NORMAL</span><div class="ln-ttl" title="{task_name_attr}">{task_name}</div>'
             f'<div class="ln-footer">'
             f'<div class="ln-meta">Task ID: {t["id"]}</div>'
             f'</div>'
@@ -11291,7 +11699,7 @@ def _lineage_detail_html(anchor_type, anchor_id):
             f'<div class="{cls("dataset","lin-node blue")}" data-chain-id="{get_chains(ds_node_id)}" data-node-id="{ds_node_id}" data-lineage-tip="{ds_tip}">'
             f'<div class="ln-ttl">{ds["name"]} {ds["version"]}</div>'
             f'<div class="ln-footer">'
-            f'<div class="ln-meta">{ds["episodes"]} Episode</div>'
+             f'<div class="ln-meta">标识: {html.escape(ds.get("ident", ""), quote=True)} · {ds["episodes"]} Episode</div>'
             f'</div>'
             f'<div class="ln-icon-actions">'
             f'<a class="ln-icon-btn" href="/model/lineage/dataset/{ds["id"]}" data-tooltip="查看血缘关系图">{ICON_GIT_BRANCH}</a>'
@@ -11312,7 +11720,7 @@ def _lineage_detail_html(anchor_type, anchor_id):
             f'<div class="{cls("train","lin-node purple")}" data-chain-id="{get_chains(e["id"])}" data-node-id="{e["id"]}" data-lineage-tip="{tip}">'
             f'<div class="ln-ttl">{ename}</div>'
             f'<div class="ln-footer">'
-            f'<div class="ln-meta">{status_display}</div>'
+            f'<div class="ln-meta">ID {e["id"]}</div>'
             f'</div>'
             f'<div class="ln-icon-actions">'
             f'<a class="ln-icon-btn" href="/model/lineage/train/{e["id"]}" data-tooltip="查看血缘关系图">{ICON_GIT_BRANCH}</a>'
@@ -11334,16 +11742,13 @@ def _lineage_detail_html(anchor_type, anchor_id):
         ckpt_node_id = f'checkpoint_{c["id"]}'
         ckpt_name = c.get("name", c["id"])
 
-        # History button only if parent exists
         history_btn = ""
-        if c.get("parent_checkpoint_id"):
-            history_btn = f'<a class="ln-icon-btn" data-ckpt-id="{c["id"]}" onclick="showCkptHistory(this.dataset.ckptId); return false;" href="#" data-tooltip="查看历史版本">{ICON_HISTORY}</a>'
 
         return (
             f'<div class="{cls("checkpoint","lin-node amber")}" data-chain-id="{get_chains(ckpt_node_id)}" data-node-id="{ckpt_node_id}" data-lineage-tip="{tip}">'
             f'<div class="ln-ttl">{ckpt_name}</div>'
             f'<div class="ln-footer">'
-            f'<div class="ln-meta">Step {step}{(" · " + desc) if desc else ""}</div>'
+            f'<div class="ln-meta">ID {c["id"]} · Step {step}</div>'
             f'</div>'
             f'<div class="ln-icon-actions">'
             f'<a class="ln-icon-btn" href="/model/lineage/checkpoint/{c["id"]}" data-tooltip="查看血缘关系图">{ICON_GIT_BRANCH}</a>'
@@ -11360,10 +11765,15 @@ def _lineage_detail_html(anchor_type, anchor_id):
         tip = f'benchmark: {ev.get("benchmark","—")}｜成功率: {sr}｜状态: {ev.get("status","—")}｜时间: {ev.get("at","—")}'
         eval_node_id = f'eval_{ev["id"]}'
         task_name = ev.get("name", "—")
+        task_name_html = html.escape(task_name)
+        task_name_attr = html.escape(task_name, quote=True)
         task_no = ev.get("task_no", ev.get("id", "—"))
+        eval_kind = ev.get("lineage_kind", "test")
+        if eval_kind not in ("test", "dagger", "assets"):
+            eval_kind = "test"
         return (
-            f'<div class="{cls("eval","lin-node green")}" data-chain-id="{get_chains(eval_node_id)}" data-node-id="{eval_node_id}" data-lineage-tip="{tip}">'
-            f'<div class="ln-ttl">{task_name}</div>'
+            f'<div class="{cls("eval","lin-node green")}" data-chain-id="{get_chains(eval_node_id)}" data-node-id="{eval_node_id}" data-lineage-group="eval" data-lineage-kind="{eval_kind}" data-lineage-tip="{tip}">'
+            f'<span class="lin-type-badge {eval_kind}">{"TEST" if eval_kind == "test" else ("DAGGER" if eval_kind == "dagger" else "ASSETS")}</span><div class="ln-ttl" title="{task_name_attr}">{task_name_html}</div>'
             f'<div class="ln-footer">'
             f'<div class="ln-meta">ID {task_no}</div>'
             f'</div>'
@@ -11402,11 +11812,11 @@ def _lineage_detail_html(anchor_type, anchor_id):
 
     # 候选数据：各维度的 name→id 映射，用于模糊搜索
     suggestions_data = {
-        "task":       [{"label": t["name"], "id": t["id"]} for t in COLLECT_TASKS],
+        "task":       [{"label": t["name"], "id": t["id"], "kind": ("dagger" if t.get("source_type") == "dagger" else "normal")} for t in COLLECT_TASKS],
         "dataset":    [{"label": f'{d["name"]} {d["version"]}', "id": d["id"]} for d in DATASETS],
         "train":      [{"label": e["name"], "id": e["id"]} for e in EXPERIMENTS],
         "checkpoint": [{"label": c["name"], "id": c["id"]} for c in CHECKPOINTS],
-        "eval":       [{"label": ev["name"], "id": ev["id"]} for ev in EVALS],
+        "eval":       [{"label": ev["name"], "id": ev["id"], "kind": ev.get("lineage_kind", "test")} for ev in _evaluation_lineage_records()],
     }
     suggestions_json = json.dumps(suggestions_data, ensure_ascii=False)
 
@@ -11429,14 +11839,51 @@ def _lineage_detail_html(anchor_type, anchor_id):
     filter_html = f"""
     <div class="lin-filter">
       <div class="lf-input-group">
-        <select id="linDimension" class="lf-dimension-select">
-          <option value="task" {'selected' if anchor_type == 'task' else ''}>采集任务</option>
+        <span class="lin-filter-label">定位节点</span>
+        <div class="lin-dimension-picker" id="linDimensionPicker">
+          <button type="button" class="lin-dimension-trigger" id="linDimensionTrigger" aria-haspopup="listbox" aria-expanded="false">
+            <span class="lin-dimension-trigger-label" id="linDimensionTriggerLabel">数据集</span>
+            <span class="lin-dimension-chevron" aria-hidden="true">⌄</span>
+          </button>
+          <div class="lin-dimension-menu" id="linDimensionMenu" role="listbox" aria-label="血缘维度">
+            <div class="lin-dimension-primary">
+              <button type="button" class="lin-dimension-primary-item has-submenu" data-dimension="task">数据任务<span class="lin-dimension-arrow" aria-hidden="true">›</span></button>
+              <button type="button" class="lin-dimension-primary-item" data-dimension="dataset">数据集</button>
+              <button type="button" class="lin-dimension-primary-item" data-dimension="train">训练任务</button>
+              <button type="button" class="lin-dimension-primary-item" data-dimension="checkpoint">Checkpoint</button>
+              <button type="button" class="lin-dimension-primary-item has-submenu" data-dimension="eval">评测任务<span class="lin-dimension-arrow" aria-hidden="true">›</span></button>
+            </div>
+            <div class="lin-dimension-secondary" id="linDimensionSecondary">
+              <div class="lin-dimension-secondary-empty">选择数据任务或评测任务后查看类型</div>
+              <div class="lin-dimension-submenu" data-for="task">
+                <button type="button" class="lin-dimension-option" data-value="task:normal">Normal任务</button>
+                <button type="button" class="lin-dimension-option" data-value="task:dagger">DAgger任务</button>
+              </div>
+              <div class="lin-dimension-submenu" data-for="eval">
+                <button type="button" class="lin-dimension-option" data-value="eval:test">TEST评测</button>
+                <button type="button" class="lin-dimension-option" data-value="eval:dagger">DAgger评测</button>
+                <button type="button" class="lin-dimension-option" data-value="eval:assets">Assets评测</button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <select id="linDimension" class="lf-dimension-select lin-native-dimension" aria-hidden="true" tabindex="-1">
+          <optgroup label="数据任务">
+            <option value="task" {'selected' if anchor_type == 'task' else ''}>数据任务</option>
+            <option value="task:normal">Normal任务</option>
+            <option value="task:dagger">DAgger任务</option>
+          </optgroup>
           <option value="dataset" {'selected' if anchor_type == 'dataset' else ''}>数据集</option>
           <option value="train" {'selected' if anchor_type == 'train' else ''}>训练任务</option>
           <option value="checkpoint" {'selected' if anchor_type == 'checkpoint' else ''}>Checkpoint</option>
-          <option value="eval" {'selected' if anchor_type == 'eval' else ''}>评测任务</option>
+          <optgroup label="评测任务" data-lineage-kind-tokens='value="test" value="dagger" value="assets"'>
+            <option value="eval" {'selected' if anchor_type == 'eval' else ''}>评测任务</option>
+            <option value="eval:test">TEST评测</option>
+            <option value="eval:dagger">DAgger评测</option>
+            <option value="eval:assets">Assets评测</option>
+          </optgroup>
         </select>
-        <input id="linInput" value="{input_value}" placeholder="输入名称进行搜索" list="linInputSuggestions">
+        <input id="linInput" value="{input_value}" placeholder="输入名称或 ID" list="linInputSuggestions">
         <datalist id="linInputSuggestions"></datalist>
         <button class="btn btn-primary" onclick="linApplyFilter()">确认</button>
       </div>
@@ -11448,10 +11895,6 @@ def _lineage_detail_html(anchor_type, anchor_id):
         <span class="hint-label">节点状态：</span>
         <span class="hint-item"><span class="hint-dot blue"></span>当前查看</span>
         <span class="hint-item"><span class="hint-dot gray"></span>关联节点</span>
-      </span>
-      <span class="hint-section">
-        <span class="hint-label">特殊类型：</span>
-        <span class="hint-item"><span class="hint-bar dagger"></span>Dagger 回流</span>
       </span>
     </div>
     """
@@ -11475,11 +11918,11 @@ def _lineage_detail_html(anchor_type, anchor_id):
     return filter_html + legend_html + f"""
     <div class="lin-flow lin-flow-5" id="linFlow" style="position:relative;">
       <svg id="linSvg" style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:0;"></svg>
-      <div class="lin-col"><h4 class="lin-col-title">采集任务 ({len(tasks)})</h4><div class="lin-col-body">{task_html}</div></div>
-      <div class="lin-col"><h4 class="lin-col-title">训练数据集 ({len(datasets)})</h4><div class="lin-col-body">{ds_html}</div></div>
+       <div class="lin-col"><h4 class="lin-col-title">数据任务 (<span data-lineage-count="source" data-lineage-count-value="source">{len(tasks)}</span>)</h4><div class="lin-col-body">{task_html}<div class="lineage-empty" data-lineage-empty="source" aria-live="polite">暂无匹配的数据任务</div></div></div>
+      <div class="lin-col"><h4 class="lin-col-title">数据集 ({len(datasets)})</h4><div class="lin-col-body">{ds_html}</div></div>
       <div class="lin-col"><h4 class="lin-col-title">训练任务 ({len(experiments)})</h4><div class="lin-col-body">{exp_html}</div></div>
       <div class="lin-col"><h4 class="lin-col-title">Checkpoint ({len(checkpoints)})</h4><div class="lin-col-body">{ckpt_html}</div></div>
-      <div class="lin-col"><h4 class="lin-col-title">TEST任务 ({len(evals)})</h4><div class="lin-col-body">{eval_html}</div></div>
+       <div class="lin-col"><h4 class="lin-col-title">评测任务 (<span data-lineage-count="eval" data-lineage-count-value="eval">{len(evals)}</span>)</h4><div class="lin-col-body">{eval_html}<div class="lineage-empty" data-lineage-empty="eval" aria-live="polite">暂无匹配的评测任务</div></div></div>
     </div>
     """ + modal_html + f"""
     <script>
@@ -11499,15 +11942,107 @@ def _lineage_detail_html(anchor_type, anchor_id):
       }});
     }}
 
+    function linSelectionParts() {{
+      var selection = document.getElementById('linDimension').value || '';
+      var parts = selection.split(':');
+      return {{ dimension: parts[0], kind: parts[1] || 'all' }};
+    }}
+
+    var __linDimensionLabels = {{
+      task: '数据任务',
+      'task:normal': 'Normal任务',
+      'task:dagger': 'DAgger任务',
+      dataset: '数据集',
+      train: '训练任务',
+      checkpoint: 'Checkpoint',
+      eval: '评测任务',
+      'eval:test': 'TEST评测',
+      'eval:dagger': 'DAgger评测',
+      'eval:assets': 'Assets评测'
+    }};
+
+    function linShowDimensionSubmenu(dimension) {{
+      var primaryItems = document.querySelectorAll('.lin-dimension-primary-item');
+      primaryItems.forEach(function(item) {{
+        item.classList.toggle('active', item.dataset.dimension === dimension);
+      }});
+      var hasSubmenu = dimension === 'task' || dimension === 'eval';
+      document.querySelectorAll('.lin-dimension-submenu').forEach(function(menu) {{
+        menu.classList.toggle('active', menu.dataset.for === dimension);
+      }});
+      var empty = document.querySelector('.lin-dimension-secondary-empty');
+      if (empty) empty.style.display = hasSubmenu ? 'none' : 'flex';
+      var selection = document.getElementById('linDimension').value;
+      document.querySelectorAll('.lin-dimension-option').forEach(function(option) {{
+        option.classList.toggle('selected', option.dataset.value === selection);
+      }});
+    }}
+
+    function linSyncDimensionPicker() {{
+      var selection = linSelectionParts();
+      var label = document.getElementById('linDimensionTriggerLabel');
+      if (label) label.textContent = __linDimensionLabels[document.getElementById('linDimension').value] || __linDimensionLabels[selection.dimension] || selection.dimension;
+      linShowDimensionSubmenu(selection.dimension);
+    }}
+
+    function linCloseDimensionPicker() {{
+      var picker = document.getElementById('linDimensionPicker');
+      var trigger = document.getElementById('linDimensionTrigger');
+      if (picker) picker.classList.remove('open');
+      if (trigger) trigger.setAttribute('aria-expanded', 'false');
+    }}
+
+    function linOpenDimensionPicker() {{
+      var picker = document.getElementById('linDimensionPicker');
+      var trigger = document.getElementById('linDimensionTrigger');
+      if (picker) picker.classList.add('open');
+      if (trigger) trigger.setAttribute('aria-expanded', 'true');
+      linShowDimensionSubmenu(linSelectionParts().dimension);
+    }}
+
+    function linChooseDimension(value, closeMenu) {{
+      var select = document.getElementById('linDimension');
+      select.value = value;
+      select.dispatchEvent(new Event('change', {{ bubbles: true }}));
+      linSyncDimensionPicker();
+      if (closeMenu) linCloseDimensionPicker();
+      else linOpenDimensionPicker();
+    }}
+
+    (function setupLineageDimensionPicker() {{
+      var picker = document.getElementById('linDimensionPicker');
+      var trigger = document.getElementById('linDimensionTrigger');
+      if (!picker || !trigger) return;
+      trigger.addEventListener('click', function() {{
+        if (picker.classList.contains('open')) linCloseDimensionPicker();
+        else linOpenDimensionPicker();
+      }});
+      picker.querySelectorAll('.lin-dimension-primary-item').forEach(function(item) {{
+        item.addEventListener('click', function() {{
+          if (item.classList.contains('has-submenu')) linChooseDimension(item.dataset.dimension, false);
+          else linChooseDimension(item.dataset.dimension, true);
+        }});
+      }});
+      picker.querySelectorAll('.lin-dimension-option').forEach(function(option) {{
+        option.addEventListener('click', function() {{ linChooseDimension(option.dataset.value, true); }});
+      }});
+      document.addEventListener('click', function(event) {{
+        if (!picker.contains(event.target)) linCloseDimensionPicker();
+      }});
+    }})();
+
     function linApplyFilter(){{
-      var dimension = document.getElementById('linDimension').value;
+      var selection = linSelectionParts();
+      var dimension = selection.dimension;
       var rawValue = (document.getElementById('linInput').value || '').trim();
       if (!rawValue) {{
         toast('请输入名称或 ID');
         return;
       }}
       // 优先从候选列表中匹配 label→id（支持名称输入）
-      var items = __linSuggestions[dimension] || [];
+      var items = (__linSuggestions[dimension] || []).filter(function(item){{
+        return selection.kind === 'all' || !item.kind || item.kind === selection.kind;
+      }});
       var matched = items.find(function(item) {{
         return item.label === rawValue || item.id === rawValue;
       }});
@@ -11517,6 +12052,10 @@ def _lineage_detail_html(anchor_type, anchor_id):
         matched = items.find(function(item) {{
           return item.label.toLowerCase().indexOf(lv) >= 0 || item.id.toLowerCase().indexOf(lv) >= 0;
         }});
+      }}
+      if (!matched && selection.kind !== 'all') {{
+        toast('未找到匹配的任务类型，请检查名称或 ID');
+        return;
       }}
       var value = matched ? matched.id : rawValue;
       if (dimension === 'task') {{
@@ -11532,24 +12071,26 @@ def _lineage_detail_html(anchor_type, anchor_id):
       }}
     }}
 
-    // 下拉框切换时清空输入框并刷新候选项
+    // 切换定位维度时清空输入框并刷新候选项；不会修改当前血缘图
     document.getElementById('linDimension').addEventListener('change', function() {{
-      var dimension = this.value;
+      var dimension = linSelectionParts().dimension;
       var input = document.getElementById('linInput');
       var placeholders = {{
         task: '输入采集任务 ID / 名称',
         dataset: '输入数据集名称',
         train: '输入训练任务名称',
         checkpoint: '输入 Checkpoint 名称',
-        eval: '输入评测任务名称',
+         eval: '输入评测任务名称或 ID',
       }};
       input.placeholder = placeholders[dimension] || '输入名称';
       input.value = '';
       linFillSuggestions(dimension);
+      linSyncDimensionPicker();
     }});
 
     // 初始化当前维度的候选项
-    linFillSuggestions(document.getElementById('linDimension').value);
+    linFillSuggestions(linSelectionParts().dimension);
+    linSyncDimensionPicker();
 
     // 回车键触发跳转
     document.getElementById('linInput').addEventListener('keypress', function(e) {{
@@ -11557,6 +12098,26 @@ def _lineage_detail_html(anchor_type, anchor_id):
         linApplyFilter();
       }}
     }});
+
+    function applyLineageTypeFilters() {{
+      // Compatibility hook for older integrations. The top control locates a
+      // new anchor after confirmation and never filters this graph in place.
+      updateLineageFilterState();
+      if (window.__linDraw) window.__linDraw();
+    }}
+
+    function updateLineageFilterState() {{
+      ['source', 'eval'].forEach(function(group) {{
+        var visibleCount = document.querySelectorAll('.lin-node[data-lineage-group="' + group + '"]:not(.lineage-filtered)').length;
+        var countValue = document.querySelector('[data-lineage-count-value="' + group + '"]');
+        var emptyState = document.querySelector('[data-lineage-empty="' + group + '"]');
+        if (countValue) countValue.textContent = visibleCount;
+        if (emptyState) emptyState.style.display = visibleCount ? 'none' : 'block';
+      }});
+    }}
+
+    updateLineageFilterState();
+
     // 链路高亮系统
     (function() {{
         const nodes = document.querySelectorAll('.lin-node[data-chain-id]');
@@ -11645,6 +12206,7 @@ def _lineage_detail_html(anchor_type, anchor_id):
             edges.forEach(([childId, parentId]) => {{
                 const c = nodeEl(childId), p = nodeEl(parentId);
                 if (!c || !p) return;  // 父级找不到不画
+                if (c.classList.contains('lineage-filtered') || p.classList.contains('lineage-filtered')) return;
                 const cr = c.getBoundingClientRect(), pr = p.getBoundingClientRect();
                 // 从父卡片右缘中点 → 子卡片左缘中点
                 const x1 = pr.right - flowRect.left, y1 = pr.top + pr.height/2 - flowRect.top;

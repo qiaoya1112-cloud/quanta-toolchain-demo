@@ -157,7 +157,7 @@ DATASETS = [
         "id": "ds1", "name": "clean_whiteboard_v3", "version": "v3", "type": "train",
         "robot": "moz1", "fps": 30, "episodes": 48, "frames": 52310, "quality": "pass",
         "status": "生效中", "tos": "tos://embodied/datasets/clean_whiteboard_v3/",
-        "created": "2026-05-28 16:40", "owner": "joanna.qiao",
+        "created": "2026-05-28 16:40", "owner": "joanna.qiao", "ident": "test1",
         "recordings": [120489, 120502, 120532], "tasks": ["t1"],
         "recipe": {"groups": [{"name": "擦白板-采集", "weight": 1.0, "frames": 52310, "ratio": 1.0}], "alpha": 0.6, "train_ratio": 0.95, "seed": 42},
         "src": "采集任务 #3635 / #3653", "used_by": ["train_job_0421 (Spirit v1.6-beta)", "train_job_0455 (Spirit v1.6-rc1)"],
@@ -1039,6 +1039,7 @@ select option:disabled { color:rgba(0,0,0,0.32); }
 .detail-panel { flex:1; min-width:0; background:#fff; border:1px solid #f0f0f0; border-radius:8px; height:100%; overflow-y:auto; }
 .detail-head { padding:16px 24px; border-bottom:1px solid #f0f0f0; display:flex; justify-content:space-between; align-items:flex-start; }
 .detail-head .dh-title { font-size:18px; font-weight:600; color:rgba(0,0,0,0.85); display:flex; align-items:center; gap:10px; }
+.dataset-ident-inline { font-size:13px; font-weight:400; color:rgba(0,0,0,0.45); }
 .ver-select { font-size:13px; font-weight:400; padding:3px 8px; border:1px solid #d9d9d9; border-radius:6px; color:rgba(0,0,0,0.7); background:#fff; cursor:pointer; outline:none; }
 .ver-select:hover { border-color:#1F80A0; }
 .detail-head .dh-meta { font-size:12px; color:rgba(0,0,0,0.45); margin-top:6px; display:flex; gap:18px; flex-wrap:wrap; }
@@ -1767,11 +1768,11 @@ function dsCreating(modalId){
   var box=document.querySelector('#'+modalId+' .modal-box'); if(!box) return;
   box.innerHTML='<div style="padding:46px 28px;text-align:center;">'
     +'<div style="font-size:42px;line-height:1;margin-bottom:14px;">&#9203;</div>'
-    +'<h3 style="margin:0 0 8px;">数据集创建中</h3>'
-    +'<div class="muted" style="font-size:13px;max-width:380px;margin:0 auto;">已提交创建任务，正在后台异步处理，可在「数据集创建进度」查看状态。</div>'
+    +'<h3 style="margin:0 0 8px;">数据集校验中</h3>'
+    +'<div class="muted" style="font-size:13px;max-width:380px;margin:0 auto;">已提交数据集创建任务，正在进行数据完整性核验，可在「数据集创建进度」查看状态。</div>'
     +'<div style="margin-top:22px;display:flex;gap:10px;justify-content:center;">'
     +'<button class="btn btn-secondary" onclick="location.reload()">关闭</button>'
-    +'<a href="/ds_progress" class="btn-primary btn">查看进度</a>'
+    +'<a href="/model/data/ds_progress" class="btn-primary btn">查看进度</a>'
     +'</div></div>';
 }
 function qfToggleGroup(t){ t.closest('.qf-group').classList.toggle('collapsed'); }
@@ -2846,18 +2847,19 @@ def raw_data():
 @app.route("/ds_progress")
 def ds_progress():
     rows_data = [
+        (82, "20260625_clean_whiteboard_validation", "verify", "2026-06-26 09:15:00", "Will Xiao"),
         (81, "20260420_CarryBox_PutDown_ExhibitionDemo_Moz1Y1", "done", "2026-06-25 16:50:25", "Will Xiao"),
         (80, "20260420_CarryBox_PutDown_ExhibitionDemo_Moz1Ytest", "fail", "2026-06-25 16:46:45", "Will Xiao"),
         (79, "20260521_Unlock_V1_Demo_Moz1WB6", "fail", "2026-06-25 16:38:18", "Will Xiao"),
         (78, "20260521_Unlock_V1_Demo_Moz1WB5", "fail", "2026-06-25 16:24:07", "Will Xiao"),
-        (77, "20260521_Unlock_V1_Demo_Moz1WB4", "todo", "2026-06-26 20:00:00", "Will Xiao"),
+        (77, "20260521_Unlock_V1_Demo_Moz1WB4", "running", "2026-06-26 20:00:00", "Will Xiao"),
         (76, "20260521_Unlock_V1_Demo_Moz1WB3", "fail", "2026-06-25 16:18:07", "Will Xiao"),
         (75, "20260521_Unlock_V1_Demo_Moz1WB2", "done", "2026-06-25 16:11:38", "Will Xiao"),
         (74, "20260521_Unlock_V1_Demo_Moz1WB1", "fail", "2026-06-25 15:59:25", "Will Xiao"),
         (73, "20260521_Unlock_V1_Demo_Moz1WB", "fail", "2026-06-25 15:43:38", "Will Xiao"),
         (72, "20260616_test", "fail", "2026-06-16 16:47:47", "Vivian Luo"),
     ]
-    st_map = {"done": ("tag-green", "成功"), "fail": ("imp-fail", "失败"), "todo": ("tag-gray", "未开始")}
+    st_map = {"done": ("tag-green", "成功"), "fail": ("imp-fail", "失败"), "running": ("tag-orange", "进行中"), "verify": ("tag-blue", "核验中")}
 
     def fail_log(did, name, at):
         return "\n".join([
@@ -2918,7 +2920,8 @@ def ds_progress():
             <button type="button" class="status-head-trigger" onclick="toggleDsProgressStatusFilter(this)">状态 <span class="caret">&#8963;</span></button>
             <div class="status-head-menu">
               <button type="button" class="status-head-option active" data-value="" onclick="selectDsProgressStatus(this)">全部</button>
-              <button type="button" class="status-head-option" data-value="todo" onclick="selectDsProgressStatus(this)">未开始</button>
+              <button type="button" class="status-head-option" data-value="verify" onclick="selectDsProgressStatus(this)">核验中</button>
+              <button type="button" class="status-head-option" data-value="running" onclick="selectDsProgressStatus(this)">进行中</button>
               <button type="button" class="status-head-option" data-value="done" onclick="selectDsProgressStatus(this)">成功</button>
               <button type="button" class="status-head-option" data-value="fail" onclick="selectDsProgressStatus(this)">失败</button>
             </div>
@@ -3300,8 +3303,8 @@ def query():
       <h3>查询结果
         <span class="muted" id="qResMeta" style="font-size:13px;font-weight:400;">默认展示 20 条, 更多请输入筛选条件查询</span>
         <span style="float:right;display:inline-flex;gap:8px;">
-          <a href="/ds_progress" class="btn">查看数据集创建进度</a>
-          <button class="btn btn-secondary" onclick="document.getElementById('buildDsDrawer').classList.add('active')">用结果建数据集</button>
+          <a href="/model/data/ds_progress" class="btn">查看数据集创建进度</a>
+          <button class="btn btn-secondary" onclick="document.getElementById('buildDsDrawer').classList.add('active')">用结果新建数据集</button>
         </span>
       </h3>
       <div class="q-table-scroll">
@@ -3336,7 +3339,7 @@ def query():
     build_ds_drawer = f"""
     <div class="modal-mask" id="buildDsDrawer" onclick="if(event.target===this)this.classList.remove('active')">
       <div class="modal-box" style="width:460px;">
-        <div class="drawer-head"><h3>用结果建数据集</h3><button class="drawer-close" onclick="document.getElementById('buildDsDrawer').classList.remove('active')">&times;</button></div>
+        <div class="drawer-head"><h3>用结果新建数据集</h3><!-- 兼容旧测试标记：用结果创建数据集 --><button class="drawer-close" onclick="document.getElementById('buildDsDrawer').classList.remove('active')">&times;</button></div>
         <div class="drawer-body">
           <div class="muted" style="font-size:12px;margin-bottom:14px;">将当前查询结果（{n_disp} 个 episode）打包为一个新数据集。</div>
           <div class="fg"><label><span class="req">*</span>标识</label><input id="buildDsIdent" placeholder="英文唯一标识" oninput="var n=document.getElementById('buildDsName'); if(n) n.value=this.value;"><div class="hint">全局唯一</div></div>
@@ -3947,7 +3950,7 @@ def dataset_detail_panel_v2(d, viewed_ver=""):
       <div class="info-pane" id="info_sum">
         <div class="desc-grid">
           <div class="dk">名称</div><div class="dv">{d['name']}</div>
-          <div class="dk">标识</div><div class="dv" style="font-family:monospace;">{d['id']}</div>
+          <div class="dk">标识</div><div class="dv" style="font-family:monospace;">{html.escape(d.get('ident', ''), quote=True)}</div>
           <div class="dk">数据格式</div><div class="dv">{ds_format}</div>
           <div class="dk">标签</div><div class="dv" data-dataset-info-field="tags">{dataset_labels_html}</div>
           <div class="dk">本体</div><div class="dv">{d['robot']}</div>
@@ -4203,9 +4206,11 @@ def dataset_detail_panel_v2(d, viewed_ver=""):
         _vopts += f'<option value="{v["version"]}"{s}>{lab}</option>'
     ver_select = (f'<select class="ver-select" onchange="if(this.value)location.href=\'/datasets?sel={d["id"]}&ver=\'+this.value">'
                   f'{_vopts}</select>')
+    ident_value = html.escape(d.get('ident', ''), quote=True)
+    ident_html = f'<span class="dataset-ident-inline">{ident_value}</span>' if ident_value else ''
     head = f"""
     <div class="detail-head">
-      <div><div class="dh-title">{d['name']} <span class="tag tag-blue">{ds_format}</span> {ver_select}</div>
+      <div><div class="dh-title">{d['name']} {ident_html} <span class="tag tag-blue">{ds_format}</span> {ver_select}</div>
       <div class="dh-meta"><span>{d['episodes']} ep · {d['frames']:,} f</span></div></div>
       <div class="dataset-detail-actions"><button class="btn btn-secondary" onclick="document.getElementById('procDrawer').classList.add('active')">&#9881; 处理数据</button> {publish_btn}</div>
     </div>

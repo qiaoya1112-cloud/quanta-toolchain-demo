@@ -5066,6 +5066,7 @@ def tasks_page():
             action_btns += f'<a href="/tasks/{t["id"]}/delete" class="action-link danger" title="删除" onclick="return confirm(\'确认删除该评测任务吗？\')">删除</a>'
         else:
             action_btns = view_btn + data_btn + stats_btn
+        action_btns += task_action(f'/model/lineage/eval/{t["id"]}', "血缘")
 
         # Enable switch: ON for started tasks, clickable only when 未开始
         is_enabled = st != "\u672a\u5f00\u59cb"
