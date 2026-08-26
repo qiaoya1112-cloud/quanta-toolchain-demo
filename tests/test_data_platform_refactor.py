@@ -3163,6 +3163,51 @@ class DataPlatformArchitectureTests(unittest.TestCase):
                 self.assertIn(marker, html)
         self.assertNotIn('<label>任务</label><input type="text" placeholder="搜索任务">', html)
 
+    def test_eval_task_create_prompts_checkpoint_dispatch(self):
+        eval_platform = toolchain_demo.ep
+        original_tasks = list(eval_platform.EVAL_TASKS)
+        prompt = eval_platform.PROMPTS[0]
+        lowlevel_id = prompt["low_levels"][0]["id"]
+        try:
+            response = self.client.post(
+                "/model/eval/tasks/create",
+                data={
+                    "name": "checkpoint 下发提示测试",
+                    "project": "基础研究",
+                    "task_mode": "Evaluaton",
+                    "priority": "中",
+                    "due_date": "2026-09-01",
+                    "model_ids": eval_platform.MODELS[0]["id"],
+                    "total_sessions": "3",
+                    "benchmark_id": eval_platform.BENCHMARKS[0]["id"],
+                    "criteria_id": eval_platform.CRITERIA[0]["id"],
+                    "selected_prompt_ids": prompt["id"],
+                    "selected_lowlevel_ids": lowlevel_id,
+                },
+            )
+
+            self.assertEqual(302, response.status_code)
+            location = response.headers["Location"]
+            self.assertIn("/model/eval/tasks?checkpoint_dispatch=", location)
+            self.assertIn(eval_platform.MODELS[0]["id"], location)
+            self.assertEqual(len(original_tasks) + 1, len(eval_platform.EVAL_TASKS))
+
+            html = self.client.get(location).get_data(as_text=True)
+            for marker in (
+                "checkpoint 下发",
+                "建议提前前往设备管理平台，将 checkpoint 下发至机器人。",
+                "评测时可直接加载本地 checkpoint，避免实时拉取，缩短等待时间。",
+                "复制 checkpoint 去下发",
+                "navigator.clipboard.writeText(text)",
+                "window.location.href = '/device/devices'",
+                "url.searchParams.delete('checkpoint_dispatch')",
+            ):
+                with self.subTest(marker=marker):
+                    self.assertIn(marker, html)
+            self.assertIn(eval_platform.MODELS[0]["name"], html)
+        finally:
+            eval_platform.EVAL_TASKS[:] = original_tasks
+
     def test_eval_task_data_and_statistics_pages_expose_plain_export_buttons(self):
         tasks_html = self.client.get("/model/eval/tasks").get_data(as_text=True)
         self.assertIn('function exportEvalTasks()', tasks_html)
@@ -3233,6 +3278,26 @@ class DataPlatformArchitectureTests(unittest.TestCase):
             ".er-record-result-option.is-selected { padding:3px 9px; border:2px solid #1677ff",
             html,
         )
+
+    def test_eval_record_detail_reuses_trajectory_preview_and_syncs_playback(self):
+        html = self.client.get("/model/eval/eval-records/1001-001").get_data(as_text=True)
+
+        self.assertLess(html.index(">moztrace</button>"), html.index(">轨迹信息</button>"))
+        self.assertIn('id="er-detail-trajectory-pane"', html)
+        for label in ("LeftArm", "Torso", "RightArm", "Base", "3D Replay"):
+            self.assertIn(f">{label}</button>", html)
+        self.assertIn('id="er-trajectory-arm-view"', html)
+        self.assertIn('id="er-trajectory-base-view"', html)
+        self.assertIn('id="er-trajectory-replay-view"', html)
+        self.assertEqual(1, html.count('type="range" min="0" max="71"'))
+        self.assertNotIn('id="er-trajectory-range"', html)
+        self.assertNotIn('id="er-trajectory-time"', html)
+        self.assertIn("document.getElementById('er-detail-frame-range')", html)
+        self.assertIn(
+            "document.querySelectorAll('.moztrace-frame-line, .er-trajectory-frame-line')",
+            html,
+        )
+        self.assertIn("setEvalPlaybackButtons(true)", html)
 
     def test_criteria_result_types_are_manual_and_limited_to_twenty_chars(self):
         html = self.client.get("/model/eval/criteria").get_data(as_text=True)

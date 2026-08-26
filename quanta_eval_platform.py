@@ -5189,6 +5189,16 @@ def tasks_page():
         }
     task_view_data_json = _json.dumps(task_view_data, ensure_ascii=False)
 
+    dispatch_checkpoint_id = request.args.get("checkpoint_dispatch", "").strip()
+    dispatch_checkpoint = next((m for m in MODELS if m["id"] == dispatch_checkpoint_id), None)
+    checkpoint_dispatch_data = None
+    if dispatch_checkpoint:
+        checkpoint_dispatch_data = {
+            "id": dispatch_checkpoint["id"],
+            "name": f'{dispatch_checkpoint["name"]} · {dispatch_checkpoint["version"]}',
+        }
+    checkpoint_dispatch_json = _json.dumps(checkpoint_dispatch_data, ensure_ascii=False)
+
     # Checkpoint is a single-select resource for a new evaluation task.
     ckpt_select_opts = '<option value="">请选择 checkpoint</option>' + "".join(
         f'<option value="{html.escape(m["id"], quote=True)}" data-name="{html.escape(m["name"], quote=True)}">{html.escape(m["name"])} · {html.escape(m["version"])}</option>'
@@ -5303,6 +5313,22 @@ def tasks_page():
       </div>
     </div>
 
+    <div class="task-checkpoint-modal-mask" id="task-checkpoint-modal" hidden>
+      <section class="task-checkpoint-modal" role="dialog" aria-modal="true" aria-labelledby="task-checkpoint-modal-title">
+        <div class="task-checkpoint-modal-head">
+          <h3 id="task-checkpoint-modal-title">checkpoint 下发</h3>
+          <button type="button" class="task-checkpoint-modal-close" onclick="closeCheckpointDispatchModal()" aria-label="关闭">&times;</button>
+        </div>
+        <div class="task-checkpoint-modal-body">
+          <p>建议提前前往设备管理平台，将 checkpoint 下发至机器人。评测时可直接加载本地 checkpoint，避免实时拉取，缩短等待时间。</p>
+          <div class="task-checkpoint-modal-value"><span>本次 checkpoint</span><strong id="task-checkpoint-dispatch-name">--</strong></div>
+        </div>
+        <div class="task-checkpoint-modal-footer">
+          <button type="button" class="ant-btn ant-btn-primary" onclick="copyCheckpointAndGo()">复制 checkpoint 去下发</button>
+        </div>
+      </section>
+    </div>
+
     <style>
       .task-prompt-tree {{ margin-top:10px;border:1px solid #e3e8ec;border-radius:6px;background:#fff;overflow:hidden; }}
       .task-prompt-tree-head {{ display:flex;align-items:center;justify-content:space-between;padding:11px 14px;background:#f7f9fa;border-bottom:1px solid #e8ecef;font-size:13px; }}
@@ -5339,11 +5365,52 @@ def tasks_page():
       .task-view-mode .task-prompt-child small,
       .task-view-mode .task-prompt-parent small {{ color:rgba(0,0,0,.28); }}
       .task-view-mode input[type="checkbox"]:disabled {{ filter:grayscale(1); opacity:.55; cursor:not-allowed; }}
+      .task-checkpoint-modal-mask[hidden] {{ display:none; }}
+      .task-checkpoint-modal-mask {{ position:fixed;inset:0;z-index:1300;display:flex;align-items:center;justify-content:center;padding:20px;background:rgba(0,0,0,.42);box-sizing:border-box; }}
+      .task-checkpoint-modal {{ width:520px;max-width:100%;overflow:hidden;background:#fff;border-radius:8px;box-shadow:0 16px 48px rgba(0,0,0,.2); }}
+      .task-checkpoint-modal-head {{ display:flex;align-items:center;justify-content:space-between;padding:18px 22px;border-bottom:1px solid #f0f0f0; }}
+      .task-checkpoint-modal-head h3 {{ margin:0;color:rgba(0,0,0,.88);font-size:17px;font-weight:600; }}
+      .task-checkpoint-modal-close {{ width:28px;height:28px;padding:0;border:0;background:transparent;color:rgba(0,0,0,.45);font-size:24px;line-height:26px;cursor:pointer; }}
+      .task-checkpoint-modal-body {{ padding:22px; }}
+      .task-checkpoint-modal-body p {{ margin:0;color:rgba(0,0,0,.65);font-size:14px;line-height:1.75; }}
+      .task-checkpoint-modal-value {{ display:flex;align-items:center;gap:16px;margin-top:18px;padding:12px 14px;border:1px solid #d9e8ed;border-radius:6px;background:#f4fafb; }}
+      .task-checkpoint-modal-value span {{ flex:0 0 auto;color:rgba(0,0,0,.45);font-size:12px; }}
+      .task-checkpoint-modal-value strong {{ min-width:0;overflow:hidden;color:#1F80A0;font-size:13px;font-weight:500;text-overflow:ellipsis;white-space:nowrap; }}
+      .task-checkpoint-modal-footer {{ display:flex;justify-content:flex-end;padding:12px 22px 18px; }}
     </style>
     <script>
     var bmData = {bm_preview_json};
     var taskViewData = {task_view_data_json};
+    var checkpointDispatchData = {checkpoint_dispatch_json};
     var bmCurrentId = null;
+    function closeCheckpointDispatchModal() {{
+      var modal = document.getElementById('task-checkpoint-modal');
+      if (modal) modal.hidden = true;
+    }}
+    function fallbackCopyCheckpoint(text) {{
+      var input = document.createElement('textarea');
+      input.value = text;
+      input.setAttribute('readonly', '');
+      input.style.position = 'fixed';
+      input.style.opacity = '0';
+      document.body.appendChild(input);
+      input.select();
+      try {{ document.execCommand('copy'); }} catch (e) {{}}
+      input.remove();
+    }}
+    function copyCheckpointAndGo() {{
+      var text = checkpointDispatchData ? checkpointDispatchData.name : '';
+      var goToDevicePlatform = function() {{ window.location.href = '/device/devices'; }};
+      if (navigator.clipboard && window.isSecureContext) {{
+        navigator.clipboard.writeText(text).then(goToDevicePlatform).catch(function() {{
+          fallbackCopyCheckpoint(text);
+          goToDevicePlatform();
+        }});
+        return;
+      }}
+      fallbackCopyCheckpoint(text);
+      goToDevicePlatform();
+    }}
     function filterEvalTasks() {{
       var bar = document.querySelector('.task-filter-bar');
       var taskId = (document.getElementById('eval-task-filter-id').value || '').trim().toLowerCase();
@@ -5737,6 +5804,24 @@ def tasks_page():
       return true;
     }}
     window.updateTaskResourceLinks();
+    (function showCheckpointDispatchModal() {{
+      if (!checkpointDispatchData) return;
+      var drawer = document.getElementById('create-task-drawer');
+      if (drawer) {{
+        drawer.classList.remove('active');
+        drawer.style.display = 'none';
+      }}
+      var name = document.getElementById('task-checkpoint-dispatch-name');
+      if (name) {{
+        name.textContent = checkpointDispatchData.name;
+        name.title = checkpointDispatchData.name;
+      }}
+      var modal = document.getElementById('task-checkpoint-modal');
+      if (modal) modal.hidden = false;
+      var url = new URL(window.location.href);
+      url.searchParams.delete('checkpoint_dispatch');
+      window.history.replaceState(null, '', url.pathname + url.search + url.hash);
+    }})();
     document.addEventListener('click', function(e) {{
       document.querySelectorAll('.ts-wrap.open').forEach(function(w) {{
         if (!w.contains(e.target)) w.classList.remove('open');
@@ -5805,6 +5890,8 @@ def tasks_create():
         **task_payload,
     })
     flash(f"\u8bc4\u6d4b\u4efb\u52a1\u300c{name}\u300d\u521b\u5efa\u6210\u529f", "success")
+    if model_ids:
+        return redirect(url_for("tasks_page", checkpoint_dispatch=model_ids[0]))
     return redirect(url_for("tasks_page"))
 
 
@@ -8642,6 +8729,43 @@ def _render_moztrace_detail(record):
     '''
 
 
+def _render_eval_trajectory_detail():
+    """Render the data-preview trajectory controls inside an evaluation record."""
+    return '''
+      <div class="er-trajectory-shell">
+        <div class="er-trajectory-toolbar">
+          <div class="er-trajectory-tabs" role="tablist" aria-label="轨迹视图">
+            <button type="button" class="active" data-trajectory-arm="LeftArm" onclick="toggleEvalTrajectoryArm(this, 'LeftArm')">LeftArm</button>
+            <button type="button" data-trajectory-arm="Torso" onclick="toggleEvalTrajectoryArm(this, 'Torso')">Torso</button>
+            <button type="button" data-trajectory-arm="RightArm" onclick="toggleEvalTrajectoryArm(this, 'RightArm')">RightArm</button>
+            <i aria-hidden="true"></i>
+            <button type="button" data-trajectory-mode="base" onclick="setEvalTrajectoryMode(this, 'base')">Base</button>
+            <button type="button" data-trajectory-mode="replay" onclick="setEvalTrajectoryMode(this, 'replay')">3D Replay</button>
+          </div>
+          <div class="er-trajectory-playback">
+            <button type="button" id="er-trajectory-play" onclick="toggleEvalPlayback()" aria-label="播放视频">▶</button>
+            <button type="button" onclick="setEvalPlaybackFrame(0)" aria-label="重置播放">↻</button>
+          </div>
+          <div class="er-trajectory-legend"><span><i class="cmd"></i>CMD</span><span><i class="state"></i>State</span></div>
+        </div>
+        <div class="er-trajectory-views">
+          <div id="er-trajectory-arm-view" data-trajectory-view="arm"></div>
+          <div id="er-trajectory-base-view" class="er-trajectory-base-grid" data-trajectory-view="base" style="display:none"></div>
+          <div id="er-trajectory-replay-view" class="er-trajectory-replay" data-trajectory-view="replay" style="display:none">
+            <div class="er-trajectory-floor"></div>
+            <div class="er-trajectory-robot" id="er-trajectory-robot"><span></span><b>MOZ</b></div>
+            <div class="er-trajectory-replay-info">
+              <b>3D Replay</b>
+              <span id="er-trajectory-left-position">左臂笛卡尔：0.215, -0.261, -0.052</span>
+              <span id="er-trajectory-right-position">右臂笛卡尔：-0.174, -0.292, -0.050</span>
+              <span id="er-trajectory-base-position">底盘速度：0.000, 0.000, 0.000</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    '''
+
+
 def _render_eval_records_replacement(task_id=None):
     records = _mock_eval_records()
     task = next((item for item in EVAL_TASKS if item["id"] == task_id), None) if task_id else None
@@ -9402,6 +9526,7 @@ def eval_record_detail(record_id):
     recording_id_html = html.escape(record.get("recording_id", "--"))
     checkpoint_html = html.escape(record.get("checkpoint", "--"))
     moztrace_html = _render_moztrace_detail(record)
+    trajectory_html = _render_eval_trajectory_detail()
     prev_record = all_records[record_index - 1] if record_index > 0 else None
     next_record = all_records[record_index + 1] if record_index >= 0 and record_index < len(all_records) - 1 else None
     prev_link = f'<a class="er-detail-nav-link" href="/eval-records/{html.escape(prev_record["id"], quote=True)}">← 上一条</a>' if prev_record else '<span class="er-detail-nav-link is-disabled">← 上一条</span>'
@@ -9425,11 +9550,13 @@ def eval_record_detail(record_id):
         <div class="er-detail-playback" aria-label="视频播放控制">
           <button type="button" class="er-playback-btn" id="er-playback-toggle" onclick="toggleEvalPlayback()" aria-label="播放视频">▶</button>
           <input id="er-detail-frame-range" type="range" min="0" max="71" value="0" step="1" oninput="setEvalPlaybackFrame(this.value)" aria-label="视频播放进度">
+          <span id="er-detail-playback-time">00:00.000 / 00:12.780</span>
         </div>
       </section>
       <div class="er-detail-tabs" role="tablist">
         <button type="button" class="er-detail-tab active" role="tab" aria-selected="true" onclick="switchEvalRecordTab('record', this)">评测记录</button>
         <button type="button" class="er-detail-tab" role="tab" aria-selected="false" onclick="switchEvalRecordTab('moztrace', this)">moztrace</button>
+        <button type="button" class="er-detail-tab" role="tab" aria-selected="false" onclick="switchEvalRecordTab('trajectory', this)">轨迹信息</button>
       </div>
       <section id="er-detail-record-pane" class="er-detail-pane">
         <div class="er-record-summary">
@@ -9440,6 +9567,7 @@ def eval_record_detail(record_id):
         </div>
       </section>
       <section id="er-detail-moztrace-pane" class="er-detail-pane" style="display:none;">{moztrace_html}</section>
+      <section id="er-detail-trajectory-pane" class="er-detail-pane er-detail-trajectory-pane" style="display:none;">{trajectory_html}</section>
       <div class="er-detail-nav">{prev_link}<span class="er-detail-nav-count">{record_index + 1} / {len(all_records)}</span>{next_link}</div>
     </div>
     <script>
@@ -9447,6 +9575,7 @@ def eval_record_detail(record_id):
       document.querySelectorAll('.er-detail-tab').forEach(function(tab) {{ tab.classList.toggle('active', tab === button); tab.setAttribute('aria-selected', tab === button ? 'true' : 'false'); }});
       document.getElementById('er-detail-record-pane').style.display = kind === 'record' ? '' : 'none';
       document.getElementById('er-detail-moztrace-pane').style.display = kind === 'moztrace' ? '' : 'none';
+      document.getElementById('er-detail-trajectory-pane').style.display = kind === 'trajectory' ? '' : 'none';
       syncEvalRecordPaneHeights();
     }}
     function switchMoztracePane(kind, button) {{
@@ -9456,28 +9585,124 @@ def eval_record_detail(record_id):
       shell.querySelectorAll('.moztrace-subpane').forEach(function(pane) {{ pane.style.display = pane.id === 'moztrace-pane-' + kind ? '' : 'none'; }});
       requestAnimationFrame(syncEvalRecordPaneHeights);
     }}
+    var evalTrajectoryMode = 'arm';
+    var evalTrajectoryArms = new Set(['LeftArm']);
+    function evalTrajectorySpark(seed, armIndex, rowIndex) {{
+      var cmd = [], state = [], count = 72;
+      for (var index = 0; index < count; index++) {{
+        var x = index / (count - 1) * 200;
+        var cmdValue = Math.sin(index / 6 + seed * .7 + armIndex * 1.2 + rowIndex * .8) * .68 + Math.sin(index / 2.7 + rowIndex) * .13;
+        var stateValue = Math.sin((index - 2) / 6 + seed * .7 + armIndex * 1.2 + rowIndex * .8) * .68 + Math.sin((index - 2) / 2.7 + rowIndex) * .13;
+        cmd.push(x.toFixed(1) + ',' + ((.5 - cmdValue / 2) * 30.4 + 3.8).toFixed(1));
+        state.push(x.toFixed(1) + ',' + ((.5 - stateValue / 2) * 30.4 + 3.8).toFixed(1));
+      }}
+      return '<svg class="er-trajectory-spark" viewBox="0 0 200 38" preserveAspectRatio="none">'
+        + '<polyline points="' + cmd.join(' ') + '" fill="none" stroke="#1F80A0" stroke-width="1.2" vector-effect="non-scaling-stroke"></polyline>'
+        + '<polyline points="' + state.join(' ') + '" fill="none" stroke="#52c41a" stroke-width="1.2" vector-effect="non-scaling-stroke"></polyline>'
+        + '<line class="er-trajectory-frame-line" data-frame-left="0" data-frame-width="200" x1="0" y1="1" x2="0" y2="37"></line></svg>';
+    }}
+    function renderEvalTrajectoryArms() {{
+      var view = document.getElementById('er-trajectory-arm-view');
+      if (!view) return;
+      var arms = ['LeftArm', 'Torso', 'RightArm'].filter(function(arm) {{ return evalTrajectoryArms.has(arm); }});
+      var rows = ['X', 'Y', 'Z', 'r', 'p', 'y', 'G'];
+      var output = '<table class="er-trajectory-grid"><thead><tr><th></th>';
+      arms.forEach(function(arm) {{ output += '<th>' + arm + '</th>'; }});
+      output += '</tr></thead><tbody>';
+      rows.forEach(function(row, rowIndex) {{
+        output += '<tr><td>' + row + '</td>';
+        arms.forEach(function(arm, armIndex) {{
+          output += row === 'G' && arm === 'Torso' ? '<td></td>' : '<td>' + evalTrajectorySpark(1, armIndex, rowIndex) + '</td>';
+        }});
+        output += '</tr>';
+      }});
+      view.innerHTML = output + '</tbody></table>';
+      setEvalPlaybackFrame(evalPlaybackFrame);
+    }}
+    function renderEvalTrajectoryBase() {{
+      var view = document.getElementById('er-trajectory-base-view');
+      if (!view || view.dataset.rendered) return;
+      view.innerHTML = '<div><b>底盘速度 · State / CMD</b>' + evalTrajectorySpark(3, 0, 2) + '</div>'
+        + '<div><b>底盘 XY 轨迹</b><svg class="er-trajectory-xy" viewBox="0 0 200 100" preserveAspectRatio="none">'
+        + '<path d="M20,72 C45,18 76,17 101,55 S157,94 184,31" fill="none" stroke="#1F80A0" stroke-width="2"></path>'
+        + '<path d="M20,78 C45,24 76,23 101,61 S157,100 184,37" fill="none" stroke="#52c41a" stroke-width="2"></path>'
+        + '<line class="er-trajectory-frame-line" data-frame-left="0" data-frame-width="200" x1="0" y1="2" x2="0" y2="98"></line></svg></div>';
+      view.dataset.rendered = 'true';
+      setEvalPlaybackFrame(evalPlaybackFrame);
+    }}
+    function updateEvalTrajectoryView() {{
+      document.querySelectorAll('[data-trajectory-view]').forEach(function(view) {{ view.style.display = view.dataset.trajectoryView === evalTrajectoryMode ? '' : 'none'; }});
+      document.querySelectorAll('[data-trajectory-arm]').forEach(function(button) {{ button.classList.toggle('active', evalTrajectoryMode === 'arm' && evalTrajectoryArms.has(button.dataset.trajectoryArm)); }});
+      document.querySelectorAll('[data-trajectory-mode]').forEach(function(button) {{ button.classList.toggle('active', button.dataset.trajectoryMode === evalTrajectoryMode); }});
+      var legend = document.querySelector('.er-trajectory-legend');
+      if (legend) legend.style.visibility = evalTrajectoryMode === 'replay' ? 'hidden' : 'visible';
+      if (evalTrajectoryMode === 'base') renderEvalTrajectoryBase();
+    }}
+    function toggleEvalTrajectoryArm(button, arm) {{
+      if (evalTrajectoryMode !== 'arm') {{
+        evalTrajectoryMode = 'arm';
+        evalTrajectoryArms = new Set([arm]);
+      }} else if (evalTrajectoryArms.has(arm)) {{
+        if (evalTrajectoryArms.size > 1) evalTrajectoryArms.delete(arm);
+      }} else {{
+        evalTrajectoryArms.add(arm);
+      }}
+      updateEvalTrajectoryView();
+      renderEvalTrajectoryArms();
+    }}
+    function setEvalTrajectoryMode(button, mode) {{
+      evalTrajectoryMode = mode;
+      updateEvalTrajectoryView();
+      setEvalPlaybackFrame(evalPlaybackFrame);
+    }}
     var evalPlaybackFrame = 0;
     var evalPlaybackTimer = null;
+    function evalPlaybackTime(frame) {{
+      var totalMilliseconds = Math.round(frame * 180);
+      var seconds = Math.floor(totalMilliseconds / 1000);
+      var milliseconds = String(totalMilliseconds % 1000).padStart(3, '0');
+      return '00:' + String(seconds).padStart(2, '0') + '.' + milliseconds;
+    }}
     function setEvalPlaybackFrame(frame) {{
       evalPlaybackFrame = Math.max(0, Math.min(71, Number(frame) || 0));
       var range = document.getElementById('er-detail-frame-range');
       if (range) range.value = evalPlaybackFrame;
       var ratio = evalPlaybackFrame / 71;
-      document.querySelectorAll('.moztrace-frame-line').forEach(function(line) {{
+      var timeCopy = evalPlaybackTime(evalPlaybackFrame) + ' / 00:12.780';
+      var timeLabel = document.getElementById('er-detail-playback-time');
+      if (timeLabel) timeLabel.textContent = timeCopy;
+      document.querySelectorAll('.moztrace-frame-line, .er-trajectory-frame-line').forEach(function(line) {{
         var svg = line.closest('svg');
         if (!svg) return;
-        var viewBox = svg.viewBox && svg.viewBox.baseVal;
-        var x = 58 + (790 * ratio);
+        var left = Number(line.dataset.frameLeft || 58);
+        var width = Number(line.dataset.frameWidth || 790);
+        var x = left + (width * ratio);
         line.setAttribute('x1', x.toFixed(1));
         line.setAttribute('x2', x.toFixed(1));
       }});
+      var phase = ratio * Math.PI * 2;
+      var leftPosition = document.getElementById('er-trajectory-left-position');
+      var rightPosition = document.getElementById('er-trajectory-right-position');
+      var basePosition = document.getElementById('er-trajectory-base-position');
+      if (leftPosition) leftPosition.textContent = '左臂笛卡尔：' + (0.215 + Math.sin(phase) * .018).toFixed(3) + ', ' + (-0.261 + Math.cos(phase) * .012).toFixed(3) + ', -0.052';
+      if (rightPosition) rightPosition.textContent = '右臂笛卡尔：' + (-0.174 + Math.cos(phase) * .016).toFixed(3) + ', ' + (-0.292 + Math.sin(phase) * .010).toFixed(3) + ', -0.050';
+      if (basePosition) basePosition.textContent = '底盘速度：' + (Math.sin(phase) * .08).toFixed(3) + ', ' + (Math.cos(phase) * .05).toFixed(3) + ', 0.000';
+      var robot = document.getElementById('er-trajectory-robot');
+      if (robot) robot.style.transform = 'translate(' + (Math.sin(phase) * 22).toFixed(1) + 'px,' + (Math.cos(phase) * 6).toFixed(1) + 'px)';
+    }}
+    function setEvalPlaybackButtons(playing) {{
+      [['er-playback-toggle', '▶', 'Ⅱ'], ['er-trajectory-play', '▶', 'Ⅱ']].forEach(function(config) {{
+        var button = document.getElementById(config[0]);
+        if (!button) return;
+        button.textContent = playing ? config[2] : config[1];
+        button.setAttribute('aria-label', playing ? '暂停视频' : '播放视频');
+      }});
     }}
     function toggleEvalPlayback() {{
-      var button = document.getElementById('er-playback-toggle');
       if (evalPlaybackTimer) {{
         clearInterval(evalPlaybackTimer);
         evalPlaybackTimer = null;
-        if (button) {{ button.textContent = '▶'; button.setAttribute('aria-label', '播放视频'); }}
+        setEvalPlaybackButtons(false);
         return;
       }}
       if (evalPlaybackFrame >= 71) setEvalPlaybackFrame(0);
@@ -9485,14 +9710,16 @@ def eval_record_detail(record_id):
         if (evalPlaybackFrame >= 71) {{ toggleEvalPlayback(); return; }}
         setEvalPlaybackFrame(evalPlaybackFrame + 1);
       }}, 180);
-      if (button) {{ button.textContent = 'Ⅱ'; button.setAttribute('aria-label', '暂停视频'); }}
+      setEvalPlaybackButtons(true);
     }}
     function syncEvalRecordPaneHeights() {{
-      var panes = [document.getElementById('er-detail-record-pane'), document.getElementById('er-detail-moztrace-pane')];
+      var panes = [document.getElementById('er-detail-record-pane'), document.getElementById('er-detail-moztrace-pane'), document.getElementById('er-detail-trajectory-pane')];
       if (panes.some(function(pane) {{ return !pane; }})) return;
       panes.forEach(function(pane) {{ pane.style.removeProperty('height'); }});
     }}
     requestAnimationFrame(syncEvalRecordPaneHeights);
+    renderEvalTrajectoryArms();
+    updateEvalTrajectoryView();
     setEvalPlaybackFrame(0);
     window.addEventListener('resize', syncEvalRecordPaneHeights);
     var evalRecordDetailData = {json.dumps({record["id"]: record}, ensure_ascii=False)};
@@ -9524,6 +9751,7 @@ def eval_record_detail(record_id):
       .er-playback-btn {{ flex:0 0 28px; width:28px; height:28px; padding:0; border:1px solid #c9dddd; border-radius:5px; background:#fff; color:#1F80A0; cursor:pointer; }}
       .er-playback-btn:hover {{ border-color:#1F80A0; background:#f1f7f7; }}
       .er-detail-playback input[type=range] {{ flex:1; min-width:120px; accent-color:#1F80A0; cursor:pointer; }}
+      .er-detail-playback > span {{ flex:0 0 118px; color:rgba(0,0,0,.45); font-family:'SF Mono',Menlo,Consolas,monospace; font-size:10px; text-align:right; white-space:nowrap; }}
       .er-detail-tabs {{ display:flex; gap:4px; border-bottom:1px solid #f0f0f0; margin-bottom:10px; }}
       .er-detail-tab {{ border:0; border-bottom:2px solid transparent; background:transparent; padding:8px 16px; font-size:13px; color:rgba(0,0,0,.55); cursor:pointer; }}
       .er-detail-tab.active {{ color:#1F80A0; border-bottom-color:#1F80A0; font-weight:500; }}
@@ -9543,6 +9771,43 @@ def eval_record_detail(record_id):
       .er-record-metric-table tbody tr:last-child td {{ border-bottom:0; }}
       .er-detail-label {{ display:block; color:rgba(0,0,0,.45); font-size:12px; margin-bottom:7px; }}
       .er-detail-metric-table {{ max-width:640px; }}
+      .er-detail-trajectory-pane {{ max-height:300px; overflow:hidden; }}
+      .er-trajectory-shell {{ min-width:0; }}
+      .er-trajectory-toolbar {{ display:grid; grid-template-columns:minmax(0,1fr) auto minmax(120px,1fr); align-items:center; gap:12px; min-height:34px; padding-bottom:8px; border-bottom:1px solid #edf0f2; }}
+      .er-trajectory-tabs {{ display:flex; align-items:center; gap:6px; min-width:0; overflow-x:auto; }}
+      .er-trajectory-tabs button {{ flex:none; min-height:28px; padding:4px 11px; border:1px solid #d8e0e3; border-radius:5px; background:#fff; color:rgba(0,0,0,.58); font-size:11.5px; cursor:pointer; }}
+      .er-trajectory-tabs button:hover {{ border-color:#1F80A0; color:#1F80A0; }}
+      .er-trajectory-tabs button.active {{ border-color:#1F80A0; background:#1F80A0; color:#fff; }}
+      .er-trajectory-tabs > i {{ flex:0 0 1px; width:1px; height:18px; margin:0 2px; background:#e3e8ea; }}
+      .er-trajectory-playback {{ display:flex; align-items:center; justify-content:center; gap:6px; }}
+      .er-trajectory-playback button {{ width:28px; height:28px; padding:0; border:1px solid #d8e0e3; border-radius:5px; background:#fff; color:#1F80A0; cursor:pointer; }}
+      .er-trajectory-playback button:hover {{ border-color:#1F80A0; background:#f1f7f7; }}
+      .er-trajectory-legend {{ display:flex; align-items:center; justify-content:flex-end; gap:12px; color:rgba(0,0,0,.48); font-size:10.5px; }}
+      .er-trajectory-legend span {{ display:inline-flex; align-items:center; gap:5px; }}
+      .er-trajectory-legend i {{ display:inline-block; width:8px; height:8px; border-radius:2px; }}
+      .er-trajectory-legend .cmd {{ background:#1F80A0; }}
+      .er-trajectory-legend .state {{ background:#52c41a; }}
+      .er-trajectory-views {{ height:176px; overflow:hidden; }}
+      .er-trajectory-grid {{ width:100%; height:100%; border-collapse:collapse; table-layout:fixed; }}
+      .er-trajectory-grid th {{ height:22px; padding:2px 8px; border-bottom:1px solid #edf0f2; color:rgba(0,0,0,.68); font-size:11px; font-weight:500; text-align:center; }}
+      .er-trajectory-grid th:first-child, .er-trajectory-grid td:first-child {{ width:30px; color:rgba(0,0,0,.45); text-align:center; }}
+      .er-trajectory-grid td {{ height:21px; padding:1px 8px; border-bottom:1px solid #f4f6f7; }}
+      .er-trajectory-grid tr:last-child td {{ border-bottom:0; }}
+      .er-trajectory-spark {{ display:block; width:100%; height:19px; }}
+      .er-trajectory-frame-line {{ stroke:#d46b36; stroke-width:1.4; stroke-dasharray:3 2; vector-effect:non-scaling-stroke; pointer-events:none; }}
+      .er-trajectory-base-grid {{ display:grid; grid-template-columns:1fr 1fr; gap:12px; height:100%; padding:8px 0 2px; box-sizing:border-box; }}
+      .er-trajectory-base-grid > div {{ display:flex; flex-direction:column; min-width:0; padding:10px 12px 7px; border:1px solid #e5eaec; border-radius:6px; background:#fbfcfc; }}
+      .er-trajectory-base-grid b {{ margin-bottom:6px; color:rgba(0,0,0,.68); font-size:11px; font-weight:500; }}
+      .er-trajectory-base-grid .er-trajectory-spark, .er-trajectory-xy {{ flex:1; width:100%; height:110px; }}
+      .er-trajectory-replay {{ position:relative; height:166px; margin-top:8px; overflow:hidden; border:1px solid #e5eaec; border-radius:6px; background:#fbfcfd; }}
+      .er-trajectory-floor {{ position:absolute; inset:45% 0 -50%; background-size:28px 28px; background-image:linear-gradient(#e7edef 1px,transparent 1px),linear-gradient(90deg,#e7edef 1px,transparent 1px); transform:perspective(420px) rotateX(55deg); transform-origin:bottom; }}
+      .er-trajectory-robot {{ position:absolute; left:45%; top:51px; display:flex; flex-direction:column; align-items:center; gap:3px; transition:transform .12s linear; }}
+      .er-trajectory-robot > span {{ position:relative; display:block; width:28px; height:48px; border-radius:6px 6px 4px 4px; background:#c8d0d4; box-shadow:0 32px 0 -6px #aebbc0; }}
+      .er-trajectory-robot > span::before {{ content:''; position:absolute; left:7px; top:-19px; width:14px; height:14px; border-radius:50%; background:#b8c4c8; }}
+      .er-trajectory-robot > span::after {{ content:''; position:absolute; left:-12px; top:6px; width:52px; height:7px; border-radius:4px; background:#b8c4c8; }}
+      .er-trajectory-robot b {{ color:rgba(0,0,0,.48); font-size:9px; font-weight:500; }}
+      .er-trajectory-replay-info {{ position:absolute; right:10px; top:10px; display:flex; flex-direction:column; gap:5px; width:290px; padding:9px 11px; border:1px solid #e3e9eb; border-radius:6px; background:#fff; box-shadow:0 3px 12px rgba(0,0,0,.04); color:rgba(0,0,0,.52); font:9.5px 'SF Mono',Menlo,Consolas,monospace; }}
+      .er-trajectory-replay-info b {{ color:rgba(0,0,0,.72); font:500 11px sans-serif; }}
       .moztrace-shell {{ color:rgba(0,0,0,.78); min-width:0; }}
       .moztrace-tabs {{ display:inline-flex; align-items:center; gap:3px; max-width:100%; padding:3px; margin:0 0 8px; overflow-x:auto; background:#f1f7f7; border:1px solid #d7e9e9; border-radius:9px; }}
       .moztrace-tab {{ flex:none; border:0; border-radius:6px; background:transparent; color:rgba(0,0,0,.64); padding:7px 13px; font-size:12px; cursor:pointer; white-space:nowrap; transition:all .18s ease; }}
@@ -9642,6 +9907,7 @@ def eval_record_detail(record_id):
       @media (max-width:620px) {{ .er-detail-head {{ flex-wrap:wrap; }} .er-detail-inline-meta {{ flex-basis:100%; margin-left:0; padding-left:0; border-left:0; }} .er-detail-video-card .er-record-video {{ height:160px; }} }}
       @media (max-width:620px) {{ .er-record-metrics {{ width:100%; }} }}
       @media (max-width:620px) {{ .er-detail-video-card .er-record-video-strip {{ grid-template-columns:1fr; }} }}
+      @media (max-width:720px) {{ .er-trajectory-toolbar {{ grid-template-columns:1fr auto; }} .er-trajectory-legend {{ display:none; }} .er-trajectory-replay-info {{ width:230px; }} }}
       @media (max-width:720px) {{ .moztrace-stat-row {{ grid-template-columns:repeat(2,minmax(0,1fr)); }} .moztrace-stat-row > div:nth-child(2n) {{ border-right:0; }} .moztrace-stat-row > div {{ border-bottom:1px solid #edf0f2; }} .moztrace-camera-grid {{ grid-template-columns:1fr; }} .moztrace-camera-frame {{ height:180px; }} .moztrace-latency-cards {{ grid-template-columns:repeat(2,minmax(0,1fr)); }} .moztrace-schema-diagram {{ justify-content:flex-start; }} }}
     </style>
     '''
