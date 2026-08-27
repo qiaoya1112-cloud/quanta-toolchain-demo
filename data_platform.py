@@ -960,10 +960,19 @@ select option:disabled { color:rgba(0,0,0,0.32); }
 .status-head-option { display:block; width:100%; height:34px; padding:0 14px; border:0; background:#fff; color:rgba(0,0,0,0.88); text-align:left; font-size:14px; line-height:34px; cursor:pointer; white-space:nowrap; }
 .status-head-option:hover { background:#f5f7fa; }
 .status-head-option.active { background:#238da3; color:#fff; }
-.status-with-log { display:inline-flex; align-items:center; gap:6px; white-space:nowrap; }
-.status-log-icon { width:18px; height:18px; padding:0; border:1px solid #f3d6d5; border-radius:50%; background:#fff; color:#d4504e; font-size:12px; line-height:16px; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; }
-.status-log-icon:hover { border-color:#d4504e; background:#fdf3f3; }
-.dp-log-pre { height:260px; margin:0; padding:12px 14px; border:1px solid #e5e7eb; border-radius:6px; background:#fafbfc; color:rgba(0,0,0,0.78); font-family:'SFMono-Regular',Consolas,Menlo,monospace; font-size:12.5px; line-height:1.65; white-space:pre-wrap; overflow:auto; box-sizing:border-box; }
+.status-with-reason { display:inline-flex; align-items:center; gap:6px; white-space:nowrap; }
+.status-reason-icon { width:18px; height:18px; padding:0; border:1px solid #f3d6d5; border-radius:50%; background:#fff; color:#d4504e; font-size:12px; line-height:16px; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; }
+.status-reason-icon:hover { border-color:#d4504e; background:#fdf3f3; }
+.ds-error-body { max-height:56vh; padding:22px 24px 26px; overflow:auto; }
+.ds-error-section + .ds-error-section { margin-top:22px; padding-top:22px; border-top:1px solid #f0f0f0; }
+.ds-error-section h4 { margin:0 0 16px; color:rgba(0,0,0,0.88); font-size:14px; font-weight:600; }
+.ds-error-group { display:grid; grid-template-columns:72px minmax(0,1fr); gap:12px; align-items:start; }
+.ds-error-group + .ds-error-group { margin-top:14px; }
+.ds-error-group-label,.ds-error-recording-label { color:rgba(0,0,0,0.45); font-size:12px; line-height:22px; }
+.ds-error-id-line { color:rgba(0,0,0,0.78); font-family:'SFMono-Regular',Consolas,Menlo,monospace; font-size:12.5px; line-height:22px; overflow-wrap:anywhere; }
+.ds-error-task + .ds-error-task { margin-top:16px; }
+.ds-error-task-id { margin-bottom:5px; color:rgba(0,0,0,0.85); font-family:'SFMono-Regular',Consolas,Menlo,monospace; font-size:12.5px; font-weight:600; }
+.ds-error-recording-row { display:grid; grid-template-columns:88px minmax(0,1fr); gap:10px; align-items:start; }
 
 /* ── Tags / status ── */
 .tag { display:inline-block; padding:1px 8px; border-radius:4px; font-size:12px; line-height:20px; border:1px solid transparent; }
@@ -1769,7 +1778,7 @@ function dsCreating(modalId){
   box.innerHTML='<div style="padding:46px 28px;text-align:center;">'
     +'<div style="font-size:42px;line-height:1;margin-bottom:14px;">&#9203;</div>'
     +'<h3 style="margin:0 0 8px;">数据集校验中</h3>'
-    +'<div class="muted" style="font-size:13px;max-width:380px;margin:0 auto;">已提交数据集创建任务，正在进行数据完整性核验，可在「数据集创建进度」查看状态。</div>'
+    +'<div class="muted" style="font-size:13px;max-width:380px;margin:0 auto;">已提交数据集创建任务，正在进行数据完整性校验，可在「数据集创建进度」查看状态。</div>'
     +'<div style="margin-top:22px;display:flex;gap:10px;justify-content:center;">'
     +'<button class="btn btn-secondary" onclick="location.reload()">关闭</button>'
     +'<a href="/model/data/ds_progress" class="btn-primary btn">查看进度</a>'
@@ -2859,31 +2868,73 @@ def ds_progress():
         (73, "20260521_Unlock_V1_Demo_Moz1WB", "fail", "2026-06-25 15:43:38", "Will Xiao"),
         (72, "20260616_test", "fail", "2026-06-16 16:47:47", "Vivian Luo"),
     ]
-    st_map = {"done": ("tag-green", "成功"), "fail": ("imp-fail", "失败"), "running": ("tag-orange", "进行中"), "verify": ("tag-blue", "核验中")}
+    st_map = {"done": ("tag-green", "成功"), "fail": ("imp-fail", "失败"), "running": ("tag-orange", "进行中"), "verify": ("tag-blue", "校验中")}
 
-    def fail_log(did, name, at):
-        return "\n".join([
-            f"[{at}] dataset_builder: start create dataset {name}",
-            f"[{at}] dataset_builder: task_id={did}, status=failed",
-            "export_dataset: source recording manifest validation failed",
-            "doctor_check: missing parquet segments in 3 episodes",
-            "suggestion: 检查源 recording 完整性后重新提交数据集创建任务",
-        ])
+    def failure_reason(did):
+        feature_groups = {
+            80: [["task_11092", "task_11095"], ["task_11103", "task_11108"]],
+            76: [["task_11061", "task_11066"], ["task_11073"]],
+            73: [["task_10984", "task_10991"], ["task_11002", "task_11005"]],
+        }.get(did, [])
+        missing_recordings = {
+            79: {"task_11092": ["rec_0012", "rec_0018"], "task_11103": ["rec_0041"]},
+            78: {"task_11078": ["rec_0136", "rec_0142", "rec_0147"]},
+            74: {"task_11031": ["rec_0064"], "task_11038": ["rec_0091", "rec_0095"]},
+            72: {"task_10972": ["rec_0023", "rec_0028"]},
+        }.get(did, {})
+        if not feature_groups and not missing_recordings:
+            missing_recordings = {f"task_{did:05d}": [f"rec_{did:04d}_01", f"rec_{did:04d}_02"]}
+        return feature_groups, missing_recordings
+
+    def failure_template(did):
+        feature_groups, missing_recordings = failure_reason(did)
+        sections = []
+        if feature_groups:
+            groups_html = "".join(
+                '<div class="ds-error-group">'
+                f'<div class="ds-error-group-label">配置组 {index}</div>'
+                f'<div class="ds-error-id-line">{"、".join(html.escape(task_id) for task_id in task_ids)}</div>'
+                '</div>'
+                for index, task_ids in enumerate(feature_groups, 1)
+            )
+            sections.append(
+                '<section class="ds-error-section">'
+                '<h4>Task Feature 配置不一致</h4>'
+                f'{groups_html}'
+                '</section>'
+            )
+        if missing_recordings:
+            tasks_html = "".join(
+                '<div class="ds-error-task">'
+                f'<div class="ds-error-task-id">{html.escape(task_id)}</div>'
+                '<div class="ds-error-recording-row">'
+                '<div class="ds-error-recording-label">RecordingID</div>'
+                f'<div class="ds-error-id-line">{"、".join(html.escape(recording_id) for recording_id in recording_ids)}</div>'
+                '</div></div>'
+                for task_id, recording_ids in missing_recordings.items()
+            )
+            sections.append(
+                '<section class="ds-error-section">'
+                '<h4>视频文件缺失</h4>'
+                f'{tasks_html}'
+                '</section>'
+            )
+        return f'<template id="dpErrorTemplate{did}">{"".join(sections)}</template>'
 
     def status_cell(did, name, st, at):
         cls, txt = st_map[st]
         tag = f'<span class="tag {cls}">{txt}</span>'
         if st != "fail":
             return tag
-        log_attr = html.escape(fail_log(did, name, at), quote=True)
         return (
-            f'<span class="status-with-log">{tag}'
-            f'<button type="button" class="status-log-icon" title="查看失败日志" '
-            f'data-log="{log_attr}" onclick="openDsProgressLog(this)">i</button>'
+            f'<span class="status-with-reason">{tag}'
+            f'<button type="button" class="status-reason-icon" title="查看异常原因" aria-label="查看异常原因" '
+            f'onclick="openDsProgressError({did})">i</button>'
             f'</span>'
         )
 
     rows = ""
+    failure_templates = []
     for did, name, st, at, by in rows_data:
         if st == "done":
             view_btn = f'<button class="btn" onclick="location.href=\'/datasets\'">查看数据集</button>'
@@ -2897,6 +2948,8 @@ def ds_progress():
                  f'<button class="btn" onclick="dpDetail(\'{name}\')">任务详情</button>'
                  f'{view_btn}'
                  f'</div></td></tr>')
+        if st == "fail":
+            failure_templates.append(failure_template(did))
     creator_ms = ms_search_html("creator", "请选择创建人", CREATOR_POOL, [])
     content = f"""
     <div style="display:flex;align-items:center;gap:12px;margin-bottom:18px;">
@@ -2920,7 +2973,7 @@ def ds_progress():
             <button type="button" class="status-head-trigger" onclick="toggleDsProgressStatusFilter(this)">状态 <span class="caret">&#8963;</span></button>
             <div class="status-head-menu">
               <button type="button" class="status-head-option active" data-value="" onclick="selectDsProgressStatus(this)">全部</button>
-              <button type="button" class="status-head-option" data-value="verify" onclick="selectDsProgressStatus(this)">核验中</button>
+              <button type="button" class="status-head-option" data-value="verify" onclick="selectDsProgressStatus(this)">校验中</button>
               <button type="button" class="status-head-option" data-value="running" onclick="selectDsProgressStatus(this)">进行中</button>
               <button type="button" class="status-head-option" data-value="done" onclick="selectDsProgressStatus(this)">成功</button>
               <button type="button" class="status-head-option" data-value="fail" onclick="selectDsProgressStatus(this)">失败</button>
@@ -2952,11 +3005,14 @@ def ds_progress():
         </div>
       </div>
     </div>
-    <div class="modal-mask" id="dpLogModal" onclick="if(event.target===this)this.classList.remove('active')">
-      <div class="modal-box" style="width:620px;max-width:92vw;">
-        <div class="drawer-head"><h3>日志</h3><button class="drawer-close" onclick="closeDrawerById('dpLogModal')">&times;</button></div>
-        <div class="drawer-body">
-          <pre class="dp-log-pre" id="dpLogBody"></pre>
+    {''.join(failure_templates)}
+    <div class="modal-mask" id="dpErrorModal" onclick="if(event.target===this)closeDrawerById('dpErrorModal')">
+      <div class="modal-box" style="width:640px;max-width:92vw;" role="dialog" aria-modal="true" aria-labelledby="dpErrorTitle">
+        <div class="drawer-head"><h3 id="dpErrorTitle">异常原因</h3><button class="drawer-close" onclick="closeDrawerById('dpErrorModal')" aria-label="关闭">&times;</button></div>
+        <div class="ds-error-body" id="dpErrorBody"></div>
+        <div class="drawer-foot">
+          <button type="button" class="btn btn-secondary" onclick="closeDrawerById('dpErrorModal')">关闭</button>
+          <a class="btn btn-primary" href="/model/data/query">返回数据查询</a>
         </div>
       </div>
     </div>
@@ -2979,10 +3035,11 @@ def ds_progress():
         }});
         filter.classList.remove('open');
       }}
-      function openDsProgressLog(btn){{
-        var body=document.getElementById('dpLogBody');
-        if(body) body.textContent=btn.getAttribute('data-log') || '';
-        openDrawerById('dpLogModal');
+      function openDsProgressError(id){{
+        var template=document.getElementById('dpErrorTemplate'+id);
+        var body=document.getElementById('dpErrorBody');
+        if(body) body.innerHTML=template ? template.innerHTML : '';
+        openDrawerById('dpErrorModal');
       }}
       document.addEventListener('click', function(e){{
         document.querySelectorAll('.status-head-filter.open').forEach(function(wrap){{

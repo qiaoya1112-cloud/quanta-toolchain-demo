@@ -1205,11 +1205,41 @@ select option:disabled { color:rgba(0,0,0,0.32); }
 .lineage-type-filter select:focus { border-color:#149DAA; box-shadow:0 0 0 2px rgba(20,157,170,0.10); }
 .lin-node.lineage-filtered { display:none; }
 .lineage-empty { display:none; padding:18px 10px; border:1px dashed #CBD5E1; border-radius:6px; color:#94A3B8; font-size:12px; text-align:center; background:#FAFBFC; }
+.lineage-workspace { position:relative; overflow:hidden; border:1px solid #E2E8F0; border-radius:10px; background:#fff; box-shadow:0 6px 20px rgba(29,78,86,.06); }
+.lineage-canvas-head { min-height:54px; padding:9px 12px; border-bottom:1px solid #E8EDF1; display:flex; align-items:center; justify-content:space-between; gap:12px; background:#FBFCFD; }
+.lineage-canvas-nav { min-width:0; display:flex; align-items:center; gap:12px; }
+.lineage-back-view { height:32px; padding:0 11px; border:1px solid #D8E1E6; border-radius:6px; background:#fff; color:#24434A; font:inherit; font-size:12px; font-weight:600; cursor:pointer; white-space:nowrap; transition:border-color .16s ease, color .16s ease, background .16s ease, transform .16s ease; }
+.lineage-back-view:hover:not(:disabled) { border-color:#149DAA; color:#0F8793; background:#F2FBFC; }
+.lineage-back-view:active:not(:disabled) { transform:translateY(1px); }
+.lineage-back-view:focus-visible, .lineage-control-btn:focus-visible, .lineage-trail-btn:focus-visible { outline:2px solid rgba(20,157,170,.34); outline-offset:2px; }
+.lineage-back-view:disabled { cursor:not-allowed; color:#A7B1B7; background:#F4F6F7; border-color:#E3E8EB; }
+.lineage-trail { min-width:0; display:flex; align-items:center; gap:5px; color:#738087; font-size:12px; white-space:nowrap; overflow:hidden; }
+.lineage-trail-btn { min-width:0; max-width:210px; padding:3px 4px; border:0; border-radius:4px; background:transparent; color:#53666D; font:inherit; font-size:12px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; cursor:pointer; transition:color .16s ease, background .16s ease; }
+.lineage-trail-btn:hover:not(:disabled) { color:#0F8793; background:#EAF8F8; }
+.lineage-trail-btn.current { color:#183B42; font-weight:600; cursor:default; }
+.lineage-trail-sep, .lineage-trail-ellipsis { flex:none; color:#A2ADB2; }
+.lineage-canvas-tools { flex:none; display:flex; align-items:center; gap:4px; }
+.lineage-control-group { display:flex; align-items:center; overflow:hidden; border:1px solid #D8E1E6; border-radius:6px; background:#fff; }
+.lineage-control-btn { height:30px; min-width:30px; padding:0 8px; border:0; border-right:1px solid #E4E9EC; background:#fff; color:#40565D; font:inherit; font-size:12px; cursor:pointer; transition:color .16s ease, background .16s ease; }
+.lineage-control-btn:last-child { border-right:0; }
+.lineage-control-btn:hover { color:#0F8793; background:#F2FBFC; }
+.lineage-control-btn:active { background:#E5F6F7; }
+.lineage-zoom-value { min-width:50px; color:#40565D; font-variant-numeric:tabular-nums; cursor:default; }
+.lineage-viewport { position:relative; height:clamp(520px, 66vh, 760px); overflow:hidden; background-color:#F7F9FA; background-image:radial-gradient(circle, rgba(99,121,128,.20) 1px, transparent 1px); background-size:20px 20px; cursor:grab; touch-action:none; }
+.lineage-viewport.dragging { cursor:grabbing; }
+.lineage-stage { position:absolute; top:0; left:0; width:calc(100% - 32px); min-width:1180px; padding:16px; box-sizing:border-box; transform-origin:0 0; will-change:transform; }
+.lineage-stage .lin-flow { width:100%; min-width:1148px; box-sizing:border-box; border:0; box-shadow:0 1px 0 rgba(18,54,62,.04); }
+.lineage-canvas-help { position:absolute; right:12px; bottom:10px; z-index:20; padding:5px 8px; border:1px solid rgba(203,213,225,.8); border-radius:5px; background:rgba(255,255,255,.88); color:#7B898F; font-size:11px; pointer-events:none; backdrop-filter:blur(6px); }
 @media (max-width:640px) {
   .lin-filter .lf-input-group { flex-wrap:wrap; }
   .lin-dimension-picker { flex:1 1 100%; min-width:0; }
   .lin-dimension-menu { width:min(540px, calc(100vw - 48px)); grid-template-columns:minmax(148px, .85fr) minmax(170px, 1fr); }
   .lin-filter input { min-width:0; }
+  .lineage-canvas-head { align-items:flex-start; flex-direction:column; }
+  .lineage-canvas-nav { width:100%; align-items:flex-start; flex-direction:column; gap:6px; }
+  .lineage-trail { width:100%; }
+  .lineage-canvas-tools { width:100%; justify-content:flex-end; }
+  .lineage-viewport { height:560px; }
 }
 
 /* Checkpoint History Modal */
@@ -11836,6 +11866,21 @@ def _lineage_detail_html(anchor_type, anchor_id):
         t = _task_by_id(anchor_id)
         input_value = t["name"] if t else anchor_id
 
+    anchor_type_labels = {
+        "task": "数据任务",
+        "dataset": "数据集",
+        "train": "训练任务",
+        "checkpoint": "Checkpoint",
+        "eval": "评测任务",
+    }
+    current_anchor_json = json.dumps({
+        "type": anchor_type,
+        "typeLabel": anchor_type_labels.get(anchor_type, anchor_type),
+        "id": str(anchor_id),
+        "label": input_value or str(anchor_id),
+        "path": f"/model/lineage/{anchor_type}/{anchor_id}",
+    }, ensure_ascii=False).replace("<", "\\u003c")
+
     filter_html = f"""
     <div class="lin-filter">
       <div class="lf-input-group">
@@ -11916,18 +11961,332 @@ def _lineage_detail_html(anchor_type, anchor_id):
     """
 
     return filter_html + legend_html + f"""
-    <div class="lin-flow lin-flow-5" id="linFlow" style="position:relative;">
-      <svg id="linSvg" style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:0;"></svg>
-       <div class="lin-col"><h4 class="lin-col-title">数据任务 (<span data-lineage-count="source" data-lineage-count-value="source">{len(tasks)}</span>)</h4><div class="lin-col-body">{task_html}<div class="lineage-empty" data-lineage-empty="source" aria-live="polite">暂无匹配的数据任务</div></div></div>
-      <div class="lin-col"><h4 class="lin-col-title">数据集 ({len(datasets)})</h4><div class="lin-col-body">{ds_html}</div></div>
-      <div class="lin-col"><h4 class="lin-col-title">训练任务 ({len(experiments)})</h4><div class="lin-col-body">{exp_html}</div></div>
-      <div class="lin-col"><h4 class="lin-col-title">Checkpoint ({len(checkpoints)})</h4><div class="lin-col-body">{ckpt_html}</div></div>
-       <div class="lin-col"><h4 class="lin-col-title">评测任务 (<span data-lineage-count="eval" data-lineage-count-value="eval">{len(evals)}</span>)</h4><div class="lin-col-body">{eval_html}<div class="lineage-empty" data-lineage-empty="eval" aria-live="polite">暂无匹配的评测任务</div></div></div>
-    </div>
+    <section class="lineage-workspace" aria-label="血缘关系画板">
+      <header class="lineage-canvas-head">
+        <div class="lineage-canvas-nav">
+          <button type="button" class="lineage-back-view" id="linBackView" onclick="linGoBackView()">&#8249; 返回上一个视图</button>
+          <nav class="lineage-trail" id="linTrail" aria-label="血缘浏览路径"></nav>
+        </div>
+        <div class="lineage-canvas-tools" aria-label="画板控制">
+          <div class="lineage-control-group">
+            <button type="button" class="lineage-control-btn" onclick="linZoomBy(-0.1)" aria-label="缩小" title="缩小">&#8722;</button>
+            <button type="button" class="lineage-control-btn lineage-zoom-value" id="linZoomValue" onclick="linResetView()" title="恢复到 100%">100%</button>
+            <button type="button" class="lineage-control-btn" onclick="linZoomBy(0.1)" aria-label="放大" title="放大">+</button>
+          </div>
+          <div class="lineage-control-group">
+            <button type="button" class="lineage-control-btn" onclick="linFitView()" title="完整显示当前血缘图">适应画板</button>
+            <button type="button" class="lineage-control-btn" onclick="linResetView()" title="恢复缩放和位置">重置</button>
+          </div>
+        </div>
+      </header>
+      <div class="lineage-viewport" id="linViewport" tabindex="0" aria-label="可缩放和拖动的血缘关系图">
+        <div class="lineage-stage" id="linStage">
+          <div class="lin-flow lin-flow-5" id="linFlow" style="position:relative;">
+            <svg id="linSvg" style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:0;"></svg>
+            <div class="lin-col"><h4 class="lin-col-title">数据任务 (<span data-lineage-count="source" data-lineage-count-value="source">{len(tasks)}</span>)</h4><div class="lin-col-body">{task_html}<div class="lineage-empty" data-lineage-empty="source" aria-live="polite">暂无匹配的数据任务</div></div></div>
+            <div class="lin-col"><h4 class="lin-col-title">数据集 ({len(datasets)})</h4><div class="lin-col-body">{ds_html}</div></div>
+            <div class="lin-col"><h4 class="lin-col-title">训练任务 ({len(experiments)})</h4><div class="lin-col-body">{exp_html}</div></div>
+            <div class="lin-col"><h4 class="lin-col-title">Checkpoint ({len(checkpoints)})</h4><div class="lin-col-body">{ckpt_html}</div></div>
+            <div class="lin-col"><h4 class="lin-col-title">评测任务 (<span data-lineage-count="eval" data-lineage-count-value="eval">{len(evals)}</span>)</h4><div class="lin-col-body">{eval_html}<div class="lineage-empty" data-lineage-empty="eval" aria-live="polite">暂无匹配的评测任务</div></div></div>
+          </div>
+        </div>
+        <div class="lineage-canvas-help">拖动空白区域移动 · 滚轮平移 · Ctrl + 滚轮缩放</div>
+      </div>
+    </section>
     """ + modal_html + f"""
     <script>
     window.__linEdges = {edges_json};
     var __linSuggestions = {suggestions_json};
+    window.__linCurrent = {current_anchor_json};
+    var __linPendingKey = 'quanta.lineage.pending.v1';
+    var __linStateSaveTimer = null;
+
+    function linReadPendingTrail() {{
+      try {{
+        var raw = sessionStorage.getItem(__linPendingKey);
+        if (!raw) return null;
+        var pending = JSON.parse(raw);
+        if (!pending || pending.path !== location.pathname || !Array.isArray(pending.trail)) return null;
+        sessionStorage.removeItem(__linPendingKey);
+        return pending.trail;
+      }} catch (error) {{
+        return null;
+      }}
+    }}
+
+    function linInitialiseHistory() {{
+      var state = window.history.state || {{}};
+      var trail = linReadPendingTrail() || state.lineageTrail;
+      if (!Array.isArray(trail) || !trail.length) trail = [window.__linCurrent];
+      var last = trail[trail.length - 1];
+      if (!last || last.path !== location.pathname) trail = trail.concat([window.__linCurrent]);
+      window.__linTrail = trail;
+      window.history.replaceState(Object.assign({{}}, state, {{ lineageTrail: trail }}), '', location.href);
+      linRenderTrail();
+    }}
+
+    function linTrailText(item) {{
+      return (item.typeLabel || item.type || '') + ' ' + (item.label || item.id || '');
+    }}
+
+    function linRenderTrail() {{
+      var trail = window.__linTrail || [window.__linCurrent];
+      var nav = document.getElementById('linTrail');
+      var back = document.getElementById('linBackView');
+      if (back) back.disabled = trail.length <= 1;
+      if (!nav) return;
+      nav.innerHTML = '';
+      var visible = [];
+      if (trail.length <= 3) {{
+        trail.forEach(function(item, index) {{ visible.push({{ item: item, index: index }}); }});
+      }} else {{
+        visible.push({{ item: trail[0], index: 0 }});
+        visible.push({{ ellipsis: true }});
+        visible.push({{ item: trail[trail.length - 2], index: trail.length - 2 }});
+        visible.push({{ item: trail[trail.length - 1], index: trail.length - 1 }});
+      }}
+      visible.forEach(function(entry, visibleIndex) {{
+        if (visibleIndex) {{
+          var separator = document.createElement('span');
+          separator.className = 'lineage-trail-sep';
+          separator.textContent = '›';
+          nav.appendChild(separator);
+        }}
+        if (entry.ellipsis) {{
+          var ellipsis = document.createElement('span');
+          ellipsis.className = 'lineage-trail-ellipsis';
+          ellipsis.textContent = '…';
+          nav.appendChild(ellipsis);
+          return;
+        }}
+        var button = document.createElement('button');
+        var isCurrent = entry.index === trail.length - 1;
+        button.type = 'button';
+        button.className = 'lineage-trail-btn' + (isCurrent ? ' current' : '');
+        button.textContent = linTrailText(entry.item);
+        button.title = linTrailText(entry.item);
+        button.disabled = isCurrent;
+        if (!isCurrent) button.onclick = function() {{ linJumpToHistory(entry.index); }};
+        nav.appendChild(button);
+      }});
+    }}
+
+    function linGetViewSnapshot() {{
+      var dimension = document.getElementById('linDimension');
+      var input = document.getElementById('linInput');
+      return {{
+        canvas: window.__lineageViewport ? window.__lineageViewport.getState() : null,
+        dimension: dimension ? dimension.value : '',
+        query: input ? input.value : ''
+      }};
+    }}
+
+    function linPersistCurrentView() {{
+      var state = window.history.state || {{}};
+      window.history.replaceState(Object.assign({{}}, state, {{
+        lineageTrail: window.__linTrail || [window.__linCurrent],
+        lineageView: linGetViewSnapshot()
+      }}), '', location.href);
+    }}
+
+    function linScheduleStateSave() {{
+      window.clearTimeout(__linStateSaveTimer);
+      __linStateSaveTimer = window.setTimeout(linPersistCurrentView, 80);
+    }}
+
+    function linMetaFromUrl(url, source) {{
+      var target = new URL(url, location.origin);
+      var match = target.pathname.match(new RegExp('^/model/lineage/(task|dataset|train|checkpoint|eval)/([^/?#]+)'));
+      if (!match) return null;
+      var type = match[1];
+      var labels = {{ task:'数据任务', dataset:'数据集', train:'训练任务', checkpoint:'Checkpoint', eval:'评测任务' }};
+      var card = source && source.closest ? source.closest('.lin-node') : null;
+      var title = card ? card.querySelector('.ln-ttl') : null;
+      return {{
+        type: type,
+        typeLabel: labels[type] || type,
+        id: decodeURIComponent(match[2]),
+        label: title ? title.textContent.trim() : decodeURIComponent(match[2]),
+        path: target.pathname
+      }};
+    }}
+
+    function linNavigate(url, meta) {{
+      var target = new URL(url, location.origin);
+      if (target.pathname === location.pathname && target.search === location.search) {{
+        toast('当前已是该节点的血缘视图');
+        return;
+      }}
+      linPersistCurrentView();
+      var targetMeta = meta || linMetaFromUrl(target.href, null);
+      var trail = (window.__linTrail || [window.__linCurrent]).slice();
+      if (targetMeta) trail.push(targetMeta);
+      try {{
+        sessionStorage.setItem(__linPendingKey, JSON.stringify({{ path: target.pathname, trail: trail }}));
+      }} catch (error) {{}}
+      location.assign(target.href);
+    }}
+
+    function linGoBackView() {{
+      if (!window.__linTrail || window.__linTrail.length <= 1) return;
+      linPersistCurrentView();
+      window.history.back();
+    }}
+
+    function linJumpToHistory(index) {{
+      var trail = window.__linTrail || [];
+      var delta = index - (trail.length - 1);
+      if (delta >= 0) return;
+      linPersistCurrentView();
+      window.history.go(delta);
+    }}
+
+    document.addEventListener('click', function(event) {{
+      if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+      var link = event.target.closest('a[href^="/model/lineage/"]');
+      if (!link || link.target === '_blank') return;
+      var meta = linMetaFromUrl(link.href, link);
+      if (!meta) return;
+      event.preventDefault();
+      linNavigate(link.href, meta);
+    }});
+
+    (function setupLineageViewport() {{
+      var viewport = document.getElementById('linViewport');
+      var stage = document.getElementById('linStage');
+      if (!viewport || !stage) return;
+      var minScale = 0.5;
+      var maxScale = 1.6;
+      var view = {{ scale:1, x:16, y:16 }};
+      var drag = null;
+
+      function clampValue(value, min, max) {{ return Math.min(max, Math.max(min, value)); }}
+      function clampPan() {{
+        var viewportWidth = viewport.clientWidth;
+        var viewportHeight = viewport.clientHeight;
+        var stageWidth = stage.offsetWidth * view.scale;
+        var stageHeight = stage.offsetHeight * view.scale;
+        var margin = 64;
+        view.x = stageWidth <= viewportWidth - 32
+          ? (viewportWidth - stageWidth) / 2
+          : clampValue(view.x, viewportWidth - stageWidth - margin, margin);
+        view.y = stageHeight <= viewportHeight - 32
+          ? (viewportHeight - stageHeight) / 2
+          : clampValue(view.y, viewportHeight - stageHeight - margin, margin);
+      }}
+      function render(saveState) {{
+        clampPan();
+        stage.style.transform = 'translate3d(' + view.x + 'px,' + view.y + 'px,0) scale(' + view.scale + ')';
+        var label = document.getElementById('linZoomValue');
+        if (label) label.textContent = Math.round(view.scale * 100) + '%';
+        if (window.__linDraw) window.setTimeout(window.__linDraw, 0);
+        if (saveState !== false) linScheduleStateSave();
+      }}
+      function setScale(nextScale, centerX, centerY) {{
+        var previous = view.scale;
+        var next = clampValue(nextScale, minScale, maxScale);
+        if (Math.abs(next - previous) < 0.001) return;
+        var cx = centerX == null ? viewport.clientWidth / 2 : centerX;
+        var cy = centerY == null ? viewport.clientHeight / 2 : centerY;
+        var worldX = (cx - view.x) / previous;
+        var worldY = (cy - view.y) / previous;
+        view.scale = next;
+        view.x = cx - worldX * next;
+        view.y = cy - worldY * next;
+        render();
+      }}
+      function fit() {{
+        var availableWidth = Math.max(1, viewport.clientWidth - 32);
+        var availableHeight = Math.max(1, viewport.clientHeight - 32);
+        view.scale = clampValue(Math.min(availableWidth / stage.offsetWidth, availableHeight / stage.offsetHeight, 1), minScale, 1);
+        view.x = (viewport.clientWidth - stage.offsetWidth * view.scale) / 2;
+        view.y = (viewport.clientHeight - stage.offsetHeight * view.scale) / 2;
+        render();
+      }}
+      function reset() {{
+        view = {{ scale:1, x:16, y:16 }};
+        render();
+      }}
+      function restore(saved) {{
+        if (!saved || !Number.isFinite(saved.scale) || !Number.isFinite(saved.x) || !Number.isFinite(saved.y)) return false;
+        view = {{ scale:clampValue(saved.scale, minScale, maxScale), x:saved.x, y:saved.y }};
+        render(false);
+        return true;
+      }}
+
+      window.__lineageViewport = {{
+        getState:function() {{ return {{ scale:view.scale, x:view.x, y:view.y }}; }},
+        getScale:function() {{ return view.scale; }},
+        zoomBy:function(delta) {{ setScale(view.scale + delta); }},
+        fit:fit,
+        reset:reset,
+        restore:restore
+      }};
+
+      viewport.addEventListener('pointerdown', function(event) {{
+        if (event.button !== 0 || event.target.closest('a,button,input,select,.lin-node')) return;
+        drag = {{ pointerId:event.pointerId, startX:event.clientX, startY:event.clientY, x:view.x, y:view.y }};
+        viewport.classList.add('dragging');
+        viewport.setPointerCapture(event.pointerId);
+      }});
+      viewport.addEventListener('pointermove', function(event) {{
+        if (!drag || drag.pointerId !== event.pointerId) return;
+        view.x = drag.x + event.clientX - drag.startX;
+        view.y = drag.y + event.clientY - drag.startY;
+        render(false);
+      }});
+      function endDrag(event) {{
+        if (!drag || drag.pointerId !== event.pointerId) return;
+        drag = null;
+        viewport.classList.remove('dragging');
+        linScheduleStateSave();
+      }}
+      viewport.addEventListener('pointerup', endDrag);
+      viewport.addEventListener('pointercancel', endDrag);
+      viewport.addEventListener('wheel', function(event) {{
+        event.preventDefault();
+        var rect = viewport.getBoundingClientRect();
+        if (event.ctrlKey || event.metaKey) {{
+          setScale(view.scale + (event.deltaY < 0 ? 0.1 : -0.1), event.clientX - rect.left, event.clientY - rect.top);
+        }} else {{
+          view.x -= event.deltaX;
+          view.y -= event.deltaY;
+          render();
+        }}
+      }}, {{ passive:false }});
+      viewport.addEventListener('keydown', function(event) {{
+        var handled = true;
+        if (event.key === '+' || event.key === '=') setScale(view.scale + 0.1);
+        else if (event.key === '-') setScale(view.scale - 0.1);
+        else if (event.key === '0') reset();
+        else if (event.key.toLowerCase() === 'f') fit();
+        else if (event.key === 'ArrowLeft') {{ view.x += 40; render(); }}
+        else if (event.key === 'ArrowRight') {{ view.x -= 40; render(); }}
+        else if (event.key === 'ArrowUp') {{ view.y += 40; render(); }}
+        else if (event.key === 'ArrowDown') {{ view.y -= 40; render(); }}
+        else handled = false;
+        if (handled) event.preventDefault();
+      }});
+      window.addEventListener('resize', function() {{ render(false); }});
+
+      window.setTimeout(function() {{
+        var state = window.history.state || {{}};
+        var savedView = state.lineageView || {{}};
+        var dimension = document.getElementById('linDimension');
+        var input = document.getElementById('linInput');
+        if (savedView.dimension && dimension) dimension.value = savedView.dimension;
+        if (savedView.query != null && input) input.value = savedView.query;
+        if (!restore(savedView.canvas)) fit();
+        linFillSuggestions(linSelectionParts().dimension);
+        linSyncDimensionPicker();
+      }}, 120);
+    }})();
+
+    function linZoomBy(delta) {{ if (window.__lineageViewport) window.__lineageViewport.zoomBy(delta); }}
+    function linFitView() {{ if (window.__lineageViewport) window.__lineageViewport.fit(); }}
+    function linResetView() {{ if (window.__lineageViewport) window.__lineageViewport.reset(); }}
+
+    linInitialiseHistory();
 
     // 根据当前维度填充 datalist 候选项
     function linFillSuggestions(dimension) {{
@@ -12058,17 +12417,22 @@ def _lineage_detail_html(anchor_type, anchor_id):
         return;
       }}
       var value = matched ? matched.id : rawValue;
-      if (dimension === 'task') {{
-        location.href = '/model/lineage/task/' + encodeURIComponent(value);
-      }} else if (dimension === 'dataset') {{
-        location.href = '/model/lineage/dataset/' + encodeURIComponent(value);
-      }} else if (dimension === 'train') {{
-        location.href = '/model/lineage/train/' + encodeURIComponent(value);
-      }} else if (dimension === 'checkpoint') {{
-        location.href = '/model/lineage/checkpoint/' + encodeURIComponent(value);
-      }} else if (dimension === 'eval') {{
-        location.href = '/model/lineage/eval/' + encodeURIComponent(value);
-      }}
+      var routes = {{
+        task:'/model/lineage/task/',
+        dataset:'/model/lineage/dataset/',
+        train:'/model/lineage/train/',
+        checkpoint:'/model/lineage/checkpoint/',
+        eval:'/model/lineage/eval/'
+      }};
+      var typeLabels = {{ task:'数据任务', dataset:'数据集', train:'训练任务', checkpoint:'Checkpoint', eval:'评测任务' }};
+      var url = (routes[dimension] || routes.dataset) + encodeURIComponent(value);
+      linNavigate(url, {{
+        type:dimension,
+        typeLabel:typeLabels[dimension] || dimension,
+        id:String(value),
+        label:matched ? matched.label : rawValue,
+        path:new URL(url, location.origin).pathname
+      }});
     }}
 
     // 切换定位维度时清空输入框并刷新候选项；不会修改当前血缘图
@@ -12086,6 +12450,7 @@ def _lineage_detail_html(anchor_type, anchor_id):
       input.value = '';
       linFillSuggestions(dimension);
       linSyncDimensionPicker();
+      linScheduleStateSave();
     }});
 
     // 初始化当前维度的候选项
@@ -12098,6 +12463,7 @@ def _lineage_detail_html(anchor_type, anchor_id):
         linApplyFilter();
       }}
     }});
+    document.getElementById('linInput').addEventListener('input', linScheduleStateSave);
 
     function applyLineageTypeFilters() {{
       // Compatibility hook for older integrations. The top control locates a
@@ -12202,6 +12568,7 @@ def _lineage_detail_html(anchor_type, anchor_id):
         function draw() {{
             svg.innerHTML = '';
             const flowRect = flow.getBoundingClientRect();
+            const scale = window.__lineageViewport ? window.__lineageViewport.getScale() : 1;
             const edges = window.__linEdges || [];
             edges.forEach(([childId, parentId]) => {{
                 const c = nodeEl(childId), p = nodeEl(parentId);
@@ -12209,8 +12576,8 @@ def _lineage_detail_html(anchor_type, anchor_id):
                 if (c.classList.contains('lineage-filtered') || p.classList.contains('lineage-filtered')) return;
                 const cr = c.getBoundingClientRect(), pr = p.getBoundingClientRect();
                 // 从父卡片右缘中点 → 子卡片左缘中点
-                const x1 = pr.right - flowRect.left, y1 = pr.top + pr.height/2 - flowRect.top;
-                const x2 = cr.left - flowRect.left, y2 = cr.top + cr.height/2 - flowRect.top;
+                const x1 = (pr.right - flowRect.left) / scale, y1 = (pr.top + pr.height/2 - flowRect.top) / scale;
+                const x2 = (cr.left - flowRect.left) / scale, y2 = (cr.top + cr.height/2 - flowRect.top) / scale;
                 const dx = Math.max(24, (x2 - x1) / 2);
                 const path = document.createElementNS('http://www.w3.org/2000/svg','path');
                 path.setAttribute('d', `M ${{x1}} ${{y1}} C ${{x1+dx}} ${{y1}}, ${{x2-dx}} ${{y2}}, ${{x2}} ${{y2}}`);
@@ -12393,7 +12760,14 @@ def _lineage_detail_html(anchor_type, anchor_id):
 
     function navToCheckpoint(id) {
       closeCkptHistoryModal();
-      window.location.href = '/model/lineage/checkpoint/' + id;
+      var url = '/model/lineage/checkpoint/' + encodeURIComponent(id);
+      linNavigate(url, {
+        type:'checkpoint',
+        typeLabel:'Checkpoint',
+        id:String(id),
+        label:String(id),
+        path:new URL(url, location.origin).pathname
+      });
     }
 
     function closeCkptHistoryModal() {
