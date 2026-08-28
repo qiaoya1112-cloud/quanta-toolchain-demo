@@ -142,7 +142,67 @@ def test_lineage_legend_and_filter_counts_cover_empty_states():
     assert 'data-lineage-count="eval"' in html
     assert 'data-lineage-empty="source"' in html
     assert 'data-lineage-empty="eval"' in html
+    assert ".lineage-hint .hint-dot.blue { background:#EFFAFC; border:2px solid #149DAA; }" in html
+    assert ".lineage-hint .hint-dot.gray { background:#fff; border:1px solid #DDE5E9; }" in html
     assert "updateLineageFilterState" in html
+
+
+def test_lineage_exploration_uses_canvas_history_cursor_without_page_return():
+    response = toolchain_demo.app.test_client().get("/model/lineage/dataset/ds1")
+
+    assert response.status_code == 200
+    html = response.get_data(as_text=True)
+    assert "返回任务详情" not in html
+    assert "&#8249; 返回</a>" not in html
+    assert 'class="lineage-page-shell"' in html
+    assert "document.body.classList.add('lineage-canvas-page')" in html
+    assert 'id="linBackView"' in html
+    assert "返回上一个视图" in html
+    assert 'id="linForwardView"' in html
+    assert "window.history.forward()" in html
+    assert html.split('id="linBackView"', 1)[1].split('>', 1)[0].endswith(" disabled")
+    assert html.split('id="linForwardView"', 1)[1].split('>', 1)[0].endswith(" disabled")
+    assert 'id="linHistoryToggle"' in html
+    assert 'id="linHistoryPopover"' in html
+    assert 'id="linTrail"' in html
+    assert 'id="linClearHistory"' in html
+    assert "清除血缘浏览记录" in html
+    assert "function linClearHistory()" in html
+    assert "navigation.items.length <= 1" in html
+    assert "当前节点已设为起始视图" in html
+    assert "quanta.lineage.pending.v1" in html
+    assert "quanta.lineage.navigation.v1" in html
+    assert "lineageTrail" in html
+    assert "lineageIndex" in html
+    assert "lineageView" in html
+    assert "window.history.back()" in html
+    assert "window.history.go(delta)" in html
+    assert "当前视图" in html
+    assert "步后退" in html
+    assert "步前进" in html
+
+
+def test_lineage_canvas_supports_zoom_pan_fit_and_view_restoration():
+    response = toolchain_demo.app.test_client().get("/model/lineage/checkpoint/7757")
+
+    assert response.status_code == 200
+    html = response.get_data(as_text=True)
+    assert 'id="linViewport"' in html
+    assert 'id="linStage"' in html
+    assert 'id="linZoomValue"' in html
+    assert 'id="linLegendFloat"' in html
+    assert 'class="lineage-floating-ui lineage-zoom-dock lineage-floating-group"' in html
+    assert ".lineage-legend-float { top:14px; left:14px; }" in html
+    assert "浏览历史" in html
+    assert "当前浏览器会话" in html
+    assert "适应画板" in html
+    assert "重置" in html
+    assert "pointerdown" in html
+    assert "pointermove" in html
+    assert "Ctrl + 滚轮缩放" in html
+    assert "window.__lineageViewport" in html
+    assert "getScale:function()" in html
+    assert "restore(savedView.canvas)" in html
 
 
 def test_dataset_detail_lists_related_training_tasks_by_dataset_ids():
@@ -397,11 +457,31 @@ def test_dataset_progress_supports_validation_status_and_legacy_redirect():
     response = client.get('/model/data/ds_progress')
     assert response.status_code == 200
     html = response.get_data(as_text=True)
-    assert '核验中' in html
+    assert '校验中' in html
     assert '进行中' in html
     assert 'data-value="todo"' not in html
     assert '未开始</button>' not in html
     assert 'data-value="verify"' in html
+    assert '<h3 id="dpErrorTitle">异常原因</h3>' in html
+    assert '数据格式不一致' in html
+    assert '格式组 1' in html
+    assert '视频文件缺失' in html
+    assert 'TaskID' in html
+    assert 'RecordingID' in html
+    assert '还有 2 个' in html
+    assert 'toggleDsErrorIds' in html
+    assert 'title="查看异常原因"' in html
+    assert '查看失败日志' not in html
+    assert '>返回数据查询</a>' in html
+    format_failure = html.split('id="dpErrorTemplate80"', 1)[1].split('</template>', 1)[0]
+    assert '数据格式不一致' in format_failure
+    assert '格式组 2' in format_failure
+    assert 'task_11092' in format_failure
+    assert 'rec_0012' in format_failure
+    assert '视频文件缺失' not in format_failure
+    video_failure = html.split('id="dpErrorTemplate79"', 1)[1].split('</template>', 1)[0]
+    assert '视频文件缺失' in video_failure
+    assert '数据格式不一致' not in video_failure
     legacy = client.get('/ds_progress')
     assert legacy.status_code in (301, 302)
     assert legacy.headers['Location'].endswith('/model/data/ds_progress')
