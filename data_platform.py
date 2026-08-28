@@ -966,13 +966,15 @@ select option:disabled { color:rgba(0,0,0,0.32); }
 .ds-error-body { max-height:56vh; padding:22px 24px 26px; overflow:auto; }
 .ds-error-section + .ds-error-section { margin-top:22px; padding-top:22px; border-top:1px solid #f0f0f0; }
 .ds-error-section h4 { margin:0 0 16px; color:rgba(0,0,0,0.88); font-size:14px; font-weight:600; }
-.ds-error-group { display:grid; grid-template-columns:72px minmax(0,1fr); gap:12px; align-items:start; }
-.ds-error-group + .ds-error-group { margin-top:14px; }
-.ds-error-group-label,.ds-error-recording-label { color:rgba(0,0,0,0.45); font-size:12px; line-height:22px; }
-.ds-error-id-line { color:rgba(0,0,0,0.78); font-family:'SFMono-Regular',Consolas,Menlo,monospace; font-size:12.5px; line-height:22px; overflow-wrap:anywhere; }
+.ds-error-format-group + .ds-error-format-group { margin-top:18px; padding-top:18px; border-top:1px solid #f3f3f3; }
+.ds-error-format-label { margin-bottom:12px; color:rgba(0,0,0,0.65); font-size:13px; font-weight:600; }
+.ds-error-task { display:grid; grid-template-columns:88px minmax(0,1fr); gap:5px 10px; align-items:start; }
 .ds-error-task + .ds-error-task { margin-top:16px; }
-.ds-error-task-id { margin-bottom:5px; color:rgba(0,0,0,0.85); font-family:'SFMono-Regular',Consolas,Menlo,monospace; font-size:12.5px; font-weight:600; }
-.ds-error-recording-row { display:grid; grid-template-columns:88px minmax(0,1fr); gap:10px; align-items:start; }
+.ds-error-field-label { color:rgba(0,0,0,0.45); font-size:12px; line-height:22px; }
+.ds-error-id-line { color:rgba(0,0,0,0.78); font-family:'SFMono-Regular',Consolas,Menlo,monospace; font-size:12.5px; line-height:22px; overflow-wrap:anywhere; }
+.ds-error-task-id { color:rgba(0,0,0,0.85); font-family:'SFMono-Regular',Consolas,Menlo,monospace; font-size:12.5px; font-weight:600; line-height:22px; }
+.ds-error-more { margin-left:8px; padding:0; border:0; background:transparent; color:#1F80A0; font-size:12px; line-height:22px; cursor:pointer; }
+.ds-error-more:hover { color:#176a88; text-decoration:underline; }
 
 /* ── Tags / status ── */
 .tag { display:inline-block; padding:1px 8px; border-radius:4px; font-size:12px; line-height:20px; border:1px solid transparent; }
@@ -2871,10 +2873,25 @@ def ds_progress():
     st_map = {"done": ("tag-green", "成功"), "fail": ("imp-fail", "失败"), "running": ("tag-orange", "进行中"), "verify": ("tag-blue", "校验中")}
 
     def failure_reason(did):
-        feature_groups = {
-            80: [["task_11092", "task_11095"], ["task_11103", "task_11108"]],
-            76: [["task_11061", "task_11066"], ["task_11073"]],
-            73: [["task_10984", "task_10991"], ["task_11002", "task_11005"]],
+        format_groups = {
+            80: [
+                {
+                    "task_11092": ["rec_0012", "rec_0018", "rec_0021", "rec_0024", "rec_0027", "rec_0030", "rec_0033", "rec_0036", "rec_0039", "rec_0042", "rec_0045", "rec_0048"],
+                    "task_11095": ["rec_0051", "rec_0056"],
+                },
+                {
+                    "task_11103": ["rec_0061", "rec_0066"],
+                    "task_11108": ["rec_0072"],
+                },
+            ],
+            76: [
+                {"task_11061": ["rec_0102", "rec_0108"], "task_11066": ["rec_0114"]},
+                {"task_11061": ["rec_0120"], "task_11073": ["rec_0126", "rec_0131"]},
+            ],
+            73: [
+                {"task_10984": ["rec_0201"], "task_10991": ["rec_0206", "rec_0210"]},
+                {"task_11002": ["rec_0217"], "task_11005": ["rec_0223"]},
+            ],
         }.get(did, [])
         missing_recordings = {
             79: {"task_11092": ["rec_0012", "rec_0018"], "task_11103": ["rec_0041"]},
@@ -2882,41 +2899,57 @@ def ds_progress():
             74: {"task_11031": ["rec_0064"], "task_11038": ["rec_0091", "rec_0095"]},
             72: {"task_10972": ["rec_0023", "rec_0028"]},
         }.get(did, {})
-        if not feature_groups and not missing_recordings:
+        if not format_groups and not missing_recordings:
             missing_recordings = {f"task_{did:05d}": [f"rec_{did:04d}_01", f"rec_{did:04d}_02"]}
-        return feature_groups, missing_recordings
+        return format_groups, missing_recordings
+
+    def recording_ids_html(recording_ids, element_id):
+        visible_ids = recording_ids[:10]
+        hidden_ids = recording_ids[10:]
+        visible_html = "、".join(html.escape(recording_id) for recording_id in visible_ids)
+        if not hidden_ids:
+            return visible_html
+        hidden_html = "、" + "、".join(html.escape(recording_id) for recording_id in hidden_ids)
+        more_label = f"还有 {len(hidden_ids)} 个"
+        return (
+            f'{visible_html}<span id="{element_id}" hidden>{hidden_html}</span>'
+            f'<button type="button" class="ds-error-more" data-more-label="{more_label}" '
+            f'aria-expanded="false" aria-controls="{element_id}" onclick="toggleDsErrorIds(this)">{more_label}</button>'
+        )
+
+    def task_recording_html(tasks, element_prefix):
+        return "".join(
+            '<div class="ds-error-task">'
+            '<div class="ds-error-field-label">TaskID</div>'
+            f'<div class="ds-error-task-id">{html.escape(task_id)}</div>'
+            '<div class="ds-error-field-label">RecordingID</div>'
+            f'<div class="ds-error-id-line">{recording_ids_html(recording_ids, f"{element_prefix}Task{task_index}")}</div>'
+            '</div>'
+            for task_index, (task_id, recording_ids) in enumerate(tasks.items(), 1)
+        )
 
     def failure_template(did):
-        feature_groups, missing_recordings = failure_reason(did)
+        format_groups, missing_recordings = failure_reason(did)
         sections = []
-        if feature_groups:
+        if format_groups:
             groups_html = "".join(
-                '<div class="ds-error-group">'
-                f'<div class="ds-error-group-label">配置组 {index}</div>'
-                f'<div class="ds-error-id-line">{"、".join(html.escape(task_id) for task_id in task_ids)}</div>'
+                '<div class="ds-error-format-group">'
+                f'<div class="ds-error-format-label">格式组 {group_index}</div>'
+                f'{task_recording_html(tasks, f"dpError{did}Format{group_index}")}'
                 '</div>'
-                for index, task_ids in enumerate(feature_groups, 1)
+                for group_index, tasks in enumerate(format_groups, 1)
             )
             sections.append(
                 '<section class="ds-error-section">'
-                '<h4>Task Feature 配置不一致</h4>'
+                '<h4>数据格式不一致</h4>'
                 f'{groups_html}'
                 '</section>'
             )
         if missing_recordings:
-            tasks_html = "".join(
-                '<div class="ds-error-task">'
-                f'<div class="ds-error-task-id">{html.escape(task_id)}</div>'
-                '<div class="ds-error-recording-row">'
-                '<div class="ds-error-recording-label">RecordingID</div>'
-                f'<div class="ds-error-id-line">{"、".join(html.escape(recording_id) for recording_id in recording_ids)}</div>'
-                '</div></div>'
-                for task_id, recording_ids in missing_recordings.items()
-            )
             sections.append(
                 '<section class="ds-error-section">'
                 '<h4>视频文件缺失</h4>'
-                f'{tasks_html}'
+                f'{task_recording_html(missing_recordings, f"dpError{did}Video")}'
                 '</section>'
             )
         return f'<template id="dpErrorTemplate{did}">{"".join(sections)}</template>'
@@ -3040,6 +3073,14 @@ def ds_progress():
         var body=document.getElementById('dpErrorBody');
         if(body) body.innerHTML=template ? template.innerHTML : '';
         openDrawerById('dpErrorModal');
+      }}
+      function toggleDsErrorIds(button){{
+        var extra=document.getElementById(button.getAttribute('aria-controls'));
+        if(!extra) return;
+        var expanding=extra.hidden;
+        extra.hidden=!expanding;
+        button.textContent=expanding ? '收起' : button.getAttribute('data-more-label');
+        button.setAttribute('aria-expanded', expanding ? 'true' : 'false');
       }}
       document.addEventListener('click', function(e){{
         document.querySelectorAll('.status-head-filter.open').forEach(function(wrap){{

@@ -1144,13 +1144,13 @@ select option:disabled { color:rgba(0,0,0,0.32); }
 .lin-node[data-lineage-tip] { cursor:default; }
 .lin-node.muted { background:#fafafa; border-style:dashed; }
 /* 图例 */
-.lineage-hint { display:flex; gap:24px; margin-bottom:12px; padding:8px 12px; background:#FAFBFC; border-radius:6px; font-size:12px; color:#64748B; align-items:center; }
+.lineage-hint { display:flex; gap:24px; margin:0; padding:10px 12px; background:#fff; border-radius:6px; font-size:12px; color:#64748B; align-items:center; }
 .lineage-hint .hint-section { display:flex; align-items:center; gap:12px; }
 .lineage-hint .hint-label { font-weight:600; color:#475569; }
 .lineage-hint .hint-item { display:flex; align-items:center; gap:6px; }
 .lineage-hint .hint-dot { width:10px; height:10px; border-radius:2px; display:inline-block; }
-.lineage-hint .hint-dot.blue { background:#EFF6FF; border:2px solid #3B82F6; }
-.lineage-hint .hint-dot.gray { background:#F8FAFC; border:1px solid #E2E8F0; }
+.lineage-hint .hint-dot.blue { background:#EFFAFC; border:2px solid #149DAA; }
+.lineage-hint .hint-dot.gray { background:#fff; border:1px solid #DDE5E9; }
 .lineage-hint .hint-bar { width:3px; height:16px; border-radius:1px; display:inline-block; }
 .lineage-hint .hint-bar.normal { background:#149DAA; }
 .lineage-hint .hint-bar.dagger { background:#ff9500; }
@@ -1205,41 +1205,71 @@ select option:disabled { color:rgba(0,0,0,0.32); }
 .lineage-type-filter select:focus { border-color:#149DAA; box-shadow:0 0 0 2px rgba(20,157,170,0.10); }
 .lin-node.lineage-filtered { display:none; }
 .lineage-empty { display:none; padding:18px 10px; border:1px dashed #CBD5E1; border-radius:6px; color:#94A3B8; font-size:12px; text-align:center; background:#FAFBFC; }
-.lineage-workspace { position:relative; overflow:hidden; border:1px solid #E2E8F0; border-radius:10px; background:#fff; box-shadow:0 6px 20px rgba(29,78,86,.06); }
-.lineage-canvas-head { min-height:54px; padding:9px 12px; border-bottom:1px solid #E8EDF1; display:flex; align-items:center; justify-content:space-between; gap:12px; background:#FBFCFD; }
-.lineage-canvas-nav { min-width:0; display:flex; align-items:center; gap:12px; }
-.lineage-back-view { height:32px; padding:0 11px; border:1px solid #D8E1E6; border-radius:6px; background:#fff; color:#24434A; font:inherit; font-size:12px; font-weight:600; cursor:pointer; white-space:nowrap; transition:border-color .16s ease, color .16s ease, background .16s ease, transform .16s ease; }
-.lineage-back-view:hover:not(:disabled) { border-color:#149DAA; color:#0F8793; background:#F2FBFC; }
-.lineage-back-view:active:not(:disabled) { transform:translateY(1px); }
-.lineage-back-view:focus-visible, .lineage-control-btn:focus-visible, .lineage-trail-btn:focus-visible { outline:2px solid rgba(20,157,170,.34); outline-offset:2px; }
-.lineage-back-view:disabled { cursor:not-allowed; color:#A7B1B7; background:#F4F6F7; border-color:#E3E8EB; }
-.lineage-trail { min-width:0; display:flex; align-items:center; gap:5px; color:#738087; font-size:12px; white-space:nowrap; overflow:hidden; }
-.lineage-trail-btn { min-width:0; max-width:210px; padding:3px 4px; border:0; border-radius:4px; background:transparent; color:#53666D; font:inherit; font-size:12px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; cursor:pointer; transition:color .16s ease, background .16s ease; }
-.lineage-trail-btn:hover:not(:disabled) { color:#0F8793; background:#EAF8F8; }
-.lineage-trail-btn.current { color:#183B42; font-weight:600; cursor:default; }
-.lineage-trail-sep, .lineage-trail-ellipsis { flex:none; color:#A2ADB2; }
-.lineage-canvas-tools { flex:none; display:flex; align-items:center; gap:4px; }
-.lineage-control-group { display:flex; align-items:center; overflow:hidden; border:1px solid #D8E1E6; border-radius:6px; background:#fff; }
-.lineage-control-btn { height:30px; min-width:30px; padding:0 8px; border:0; border-right:1px solid #E4E9EC; background:#fff; color:#40565D; font:inherit; font-size:12px; cursor:pointer; transition:color .16s ease, background .16s ease; }
+.lineage-page-shell { display:flex; flex-direction:column; min-height:0; }
+.lineage-workspace { position:relative; flex:1; min-height:0; overflow:hidden; border:1px solid #DCE5E9; border-radius:8px; background:#F7F9FA; box-shadow:0 4px 16px rgba(29,78,86,.05); }
+.lineage-trail { display:flex; flex-direction:column; gap:4px; max-height:292px; padding:0 12px 12px; overflow:auto; color:#53666D; }
+.lineage-trail-btn { display:block; width:100%; padding:11px 13px; border:0; border-radius:9px; background:transparent; color:#334A52; font:inherit; text-align:left; cursor:pointer; transition:color .16s ease, background .16s ease, transform .16s ease; }
+.lineage-trail-btn:hover:not(:disabled) { color:#0F8793; background:#EEF8F9; }
+.lineage-trail-btn:active:not(:disabled) { transform:translateY(1px); }
+.lineage-trail-btn.current { background:#F1F4F6; color:#1E343B; cursor:default; }
+.lineage-trail-label { display:block; overflow:hidden; font-size:13px; font-weight:600; line-height:1.45; text-overflow:ellipsis; white-space:nowrap; }
+.lineage-trail-step { display:block; margin-top:3px; color:#839097; font-size:11px; line-height:1.35; }
+.lineage-floating-ui { position:absolute; z-index:30; }
+.lineage-floating-group { display:flex; align-items:center; overflow:visible; border:1px solid rgba(210,220,225,.96); border-radius:8px; background:rgba(255,255,255,.96); box-shadow:0 4px 14px rgba(35,60,68,.10); backdrop-filter:blur(10px); }
+.lineage-control-btn { height:34px; min-width:36px; padding:0 10px; border:0; border-right:1px solid #E4E9EC; background:transparent; color:#40565D; font:inherit; font-size:13px; cursor:pointer; transition:color .16s ease, background .16s ease; }
 .lineage-control-btn:last-child { border-right:0; }
 .lineage-control-btn:hover { color:#0F8793; background:#F2FBFC; }
 .lineage-control-btn:active { background:#E5F6F7; }
-.lineage-zoom-value { min-width:50px; color:#40565D; font-variant-numeric:tabular-nums; cursor:default; }
+.lineage-control-btn:disabled { cursor:not-allowed; color:#B3BDC2; background:#F6F8F9; }
+.lineage-control-btn:focus-visible, .lineage-trail-btn:focus-visible, .lineage-legend-toggle:focus-visible { outline:2px solid rgba(20,157,170,.34); outline-offset:2px; }
+.lineage-control-divider { width:1px; height:20px; background:#E4E9EC; }
+.lineage-history-dock { left:14px; bottom:14px; }
+.lineage-history-popover { display:none; position:absolute; left:0; bottom:46px; width:min(390px, calc(100vw - 300px)); overflow:hidden; border:1px solid #DCE5E9; border-radius:16px; background:rgba(255,255,255,.98); box-shadow:0 14px 36px rgba(35,60,68,.16); backdrop-filter:blur(14px); }
+.lineage-history-popover.open { display:block; }
+.lineage-history-header { display:flex; align-items:center; justify-content:space-between; padding:18px 18px 12px; }
+.lineage-history-title { color:#263E46; font-size:17px; font-weight:600; letter-spacing:-.01em; }
+.lineage-history-close { width:30px; height:30px; border:0; border-radius:7px; background:transparent; color:#52666D; font:inherit; font-size:20px; line-height:1; cursor:pointer; transition:color .16s ease, background .16s ease; }
+.lineage-history-close:hover { color:#0F8793; background:#EEF8F9; }
+.lineage-history-actions { padding:5px 10px; border-top:1px solid #E8EDF0; }
+.lineage-history-clear { width:100%; padding:10px 8px; border:0; border-radius:8px; background:transparent; color:#334A52; font:inherit; font-size:13px; font-weight:600; text-align:left; cursor:pointer; transition:color .16s ease, background .16s ease, transform .16s ease; }
+.lineage-history-clear:hover:not(:disabled) { color:#0F8793; background:#EEF8F9; }
+.lineage-history-clear:active:not(:disabled) { transform:translateY(1px); }
+.lineage-history-clear:disabled { color:#B2BCC1; cursor:not-allowed; }
+.lineage-history-footer { padding:14px 18px 18px; border-top:1px solid #E8EDF0; }
+.lineage-history-hint-title { margin-bottom:7px; color:#566A72; font-size:12px; font-weight:600; }
+.lineage-history-hint { margin:0; color:#89969C; font-size:11px; line-height:1.6; }
+.lineage-history-trigger[aria-expanded="true"] { color:#0F8793; background:#EAF8F8; }
+.lineage-zoom-dock { right:14px; bottom:14px; }
+.lineage-zoom-value { min-width:56px; color:#40565D; font-variant-numeric:tabular-nums; }
+.lineage-fit-btn { min-width:48px; font-size:12px; }
+.lineage-legend-float { top:14px; left:14px; }
+.lineage-legend-toggle { display:flex; align-items:center; justify-content:space-between; width:100%; min-width:86px; height:32px; padding:0 10px; border:0; background:transparent; color:#52656C; font:inherit; font-size:12px; font-weight:600; cursor:pointer; }
+.lineage-legend-chevron { margin-left:10px; color:#8B989E; transition:transform .16s ease; }
+.lineage-legend-float.collapsed .lineage-legend-chevron { transform:rotate(180deg); }
+.lineage-legend-panel { border-top:1px solid #E9EEF0; }
+.lineage-legend-float.collapsed .lineage-legend-panel { display:none; }
 .lineage-viewport { position:relative; height:clamp(520px, 66vh, 760px); overflow:hidden; background-color:#F7F9FA; background-image:radial-gradient(circle, rgba(99,121,128,.20) 1px, transparent 1px); background-size:20px 20px; cursor:grab; touch-action:none; }
 .lineage-viewport.dragging { cursor:grabbing; }
 .lineage-stage { position:absolute; top:0; left:0; width:calc(100% - 32px); min-width:1180px; padding:16px; box-sizing:border-box; transform-origin:0 0; will-change:transform; }
-.lineage-stage .lin-flow { width:100%; min-width:1148px; box-sizing:border-box; border:0; box-shadow:0 1px 0 rgba(18,54,62,.04); }
-.lineage-canvas-help { position:absolute; right:12px; bottom:10px; z-index:20; padding:5px 8px; border:1px solid rgba(203,213,225,.8); border-radius:5px; background:rgba(255,255,255,.88); color:#7B898F; font-size:11px; pointer-events:none; backdrop-filter:blur(6px); }
+.lineage-stage .lin-flow { width:100%; min-width:1148px; min-height:100%; padding:42px 24px 78px; box-sizing:border-box; border:0; border-radius:0; background:transparent; box-shadow:none; }
+.lineage-workspace .lin-node, .lineage-workspace .lin-node.teal, .lineage-workspace .lin-node.purple, .lineage-workspace .lin-node.coral, .lineage-workspace .lin-node.blue, .lineage-workspace .lin-node.amber, .lineage-workspace .lin-node.green { background:#fff; border-color:#DDE5E9; box-shadow:0 2px 6px rgba(41,65,72,.05); }
+.lineage-workspace .lin-node.anchor { background:#EFFAFC; border-color:#149DAA; box-shadow:0 0 0 3px rgba(20,157,170,.12), 0 4px 12px rgba(41,65,72,.08); }
+.lineage-canvas-help { position:absolute; left:50%; bottom:16px; z-index:20; padding:5px 9px; border:1px solid rgba(203,213,225,.75); border-radius:6px; background:rgba(255,255,255,.84); color:#7B898F; font-size:11px; pointer-events:none; transform:translateX(-50%); backdrop-filter:blur(6px); }
+body.lineage-canvas-page { overflow:hidden; }
+body.lineage-canvas-page .q-layout { height:100dvh; min-height:100dvh; overflow:hidden; box-sizing:border-box; }
+body.lineage-canvas-page .q-main { height:calc(100dvh - 52px); min-height:0; overflow:hidden; }
+body.lineage-canvas-page .q-content { display:flex; height:100%; min-height:0; padding:16px 20px 20px; box-sizing:border-box; overflow:hidden; }
+body.lineage-canvas-page .lineage-page-shell { flex:1; height:100%; }
+body.lineage-canvas-page .lin-filter { flex:none; margin:0 0 12px; border-color:#E3E9EC; box-shadow:0 1px 3px rgba(29,78,86,.03); }
+body.lineage-canvas-page .lineage-viewport { height:100%; min-height:0; }
 @media (max-width:640px) {
   .lin-filter .lf-input-group { flex-wrap:wrap; }
   .lin-dimension-picker { flex:1 1 100%; min-width:0; }
   .lin-dimension-menu { width:min(540px, calc(100vw - 48px)); grid-template-columns:minmax(148px, .85fr) minmax(170px, 1fr); }
   .lin-filter input { min-width:0; }
-  .lineage-canvas-head { align-items:flex-start; flex-direction:column; }
-  .lineage-canvas-nav { width:100%; align-items:flex-start; flex-direction:column; gap:6px; }
-  .lineage-trail { width:100%; }
-  .lineage-canvas-tools { width:100%; justify-content:flex-end; }
-  .lineage-viewport { height:560px; }
+  .lineage-history-popover { width:calc(100vw - 76px); }
+  .lineage-canvas-help { display:none; }
+  body.lineage-canvas-page .q-content { padding:12px; }
 }
 
 /* Checkpoint History Modal */
@@ -11960,25 +11990,8 @@ def _lineage_detail_html(anchor_type, anchor_id):
     </div>
     """
 
-    return filter_html + legend_html + f"""
+    return filter_html + f"""
     <section class="lineage-workspace" aria-label="血缘关系画板">
-      <header class="lineage-canvas-head">
-        <div class="lineage-canvas-nav">
-          <button type="button" class="lineage-back-view" id="linBackView" onclick="linGoBackView()">&#8249; 返回上一个视图</button>
-          <nav class="lineage-trail" id="linTrail" aria-label="血缘浏览路径"></nav>
-        </div>
-        <div class="lineage-canvas-tools" aria-label="画板控制">
-          <div class="lineage-control-group">
-            <button type="button" class="lineage-control-btn" onclick="linZoomBy(-0.1)" aria-label="缩小" title="缩小">&#8722;</button>
-            <button type="button" class="lineage-control-btn lineage-zoom-value" id="linZoomValue" onclick="linResetView()" title="恢复到 100%">100%</button>
-            <button type="button" class="lineage-control-btn" onclick="linZoomBy(0.1)" aria-label="放大" title="放大">+</button>
-          </div>
-          <div class="lineage-control-group">
-            <button type="button" class="lineage-control-btn" onclick="linFitView()" title="完整显示当前血缘图">适应画板</button>
-            <button type="button" class="lineage-control-btn" onclick="linResetView()" title="恢复缩放和位置">重置</button>
-          </div>
-        </div>
-      </header>
       <div class="lineage-viewport" id="linViewport" tabindex="0" aria-label="可缩放和拖动的血缘关系图">
         <div class="lineage-stage" id="linStage">
           <div class="lin-flow lin-flow-5" id="linFlow" style="position:relative;">
@@ -11990,6 +12003,42 @@ def _lineage_detail_html(anchor_type, anchor_id):
             <div class="lin-col"><h4 class="lin-col-title">评测任务 (<span data-lineage-count="eval" data-lineage-count-value="eval">{len(evals)}</span>)</h4><div class="lin-col-body">{eval_html}<div class="lineage-empty" data-lineage-empty="eval" aria-live="polite">暂无匹配的评测任务</div></div></div>
           </div>
         </div>
+        <div class="lineage-floating-ui lineage-legend-float lineage-floating-group" id="linLegendFloat">
+          <div>
+            <button type="button" class="lineage-legend-toggle" onclick="linToggleLegend()" aria-expanded="true" aria-controls="linLegendPanel">
+              <span>图例</span><span class="lineage-legend-chevron" aria-hidden="true">⌄</span>
+            </button>
+            <div class="lineage-legend-panel" id="linLegendPanel">{legend_html}</div>
+          </div>
+        </div>
+        <div class="lineage-floating-ui lineage-history-dock">
+          <div class="lineage-floating-group" aria-label="浏览历史控制">
+            <button type="button" class="lineage-control-btn" id="linBackView" onclick="linGoBackView()" aria-label="返回上一个视图" title="返回上一个视图" disabled>&#8592;</button>
+            <button type="button" class="lineage-control-btn" id="linForwardView" onclick="linGoForwardView()" aria-label="前进到下一个视图" title="前进到下一个视图" disabled>&#8594;</button>
+            <span class="lineage-control-divider" aria-hidden="true"></span>
+            <button type="button" class="lineage-control-btn lineage-history-trigger" id="linHistoryToggle" onclick="linToggleHistory(event)" aria-label="查看浏览历史" aria-expanded="false" aria-controls="linHistoryPopover" title="查看浏览历史">&#8634;</button>
+          </div>
+          <div class="lineage-history-popover lineage-floating-ui" id="linHistoryPopover">
+            <div class="lineage-history-header">
+              <div class="lineage-history-title">浏览历史</div>
+              <button type="button" class="lineage-history-close" onclick="linToggleHistory(event, false)" aria-label="关闭浏览历史">&#215;</button>
+            </div>
+            <nav class="lineage-trail" id="linTrail" aria-label="血缘浏览路径"></nav>
+            <div class="lineage-history-actions">
+              <button type="button" class="lineage-history-clear" id="linClearHistory" onclick="linClearHistory()" disabled>清除血缘浏览记录</button>
+            </div>
+            <div class="lineage-history-footer">
+              <div class="lineage-history-hint-title">提示</div>
+              <p class="lineage-history-hint">血缘浏览记录仅保存在当前浏览器会话中，关闭页面后会自动清除。</p>
+            </div>
+          </div>
+        </div>
+        <div class="lineage-floating-ui lineage-zoom-dock lineage-floating-group" aria-label="画板缩放控制">
+          <button type="button" class="lineage-control-btn" onclick="linZoomBy(-0.1)" aria-label="缩小" title="缩小">&#8722;</button>
+          <button type="button" class="lineage-control-btn lineage-zoom-value" id="linZoomValue" onclick="linResetView()" title="恢复到 100%">100%</button>
+          <button type="button" class="lineage-control-btn" onclick="linZoomBy(0.1)" aria-label="放大" title="放大">+</button>
+          <button type="button" class="lineage-control-btn lineage-fit-btn" onclick="linFitView()" aria-label="适应画板" title="完整显示当前血缘图">适应</button>
+        </div>
         <div class="lineage-canvas-help">拖动空白区域移动 · 滚轮平移 · Ctrl + 滚轮缩放</div>
       </div>
     </section>
@@ -11999,29 +12048,67 @@ def _lineage_detail_html(anchor_type, anchor_id):
     var __linSuggestions = {suggestions_json};
     window.__linCurrent = {current_anchor_json};
     var __linPendingKey = 'quanta.lineage.pending.v1';
+    var __linNavigationKey = 'quanta.lineage.navigation.v1';
     var __linStateSaveTimer = null;
 
-    function linReadPendingTrail() {{
+    function linReadPendingNavigation() {{
       try {{
         var raw = sessionStorage.getItem(__linPendingKey);
         if (!raw) return null;
         var pending = JSON.parse(raw);
         if (!pending || pending.path !== location.pathname || !Array.isArray(pending.trail)) return null;
         sessionStorage.removeItem(__linPendingKey);
-        return pending.trail;
+        return pending;
       }} catch (error) {{
         return null;
       }}
     }}
 
+    function linReadNavigation() {{
+      try {{
+        var navigation = JSON.parse(sessionStorage.getItem(__linNavigationKey) || 'null');
+        if (!navigation || !Array.isArray(navigation.items) || !navigation.items.length) return null;
+        if (!Number.isInteger(navigation.index)) return null;
+        return navigation;
+      }} catch (error) {{
+        return null;
+      }}
+    }}
+
+    function linWriteNavigation(navigation) {{
+      try {{ sessionStorage.setItem(__linNavigationKey, JSON.stringify(navigation)); }} catch (error) {{}}
+    }}
+
     function linInitialiseHistory() {{
       var state = window.history.state || {{}};
-      var trail = linReadPendingTrail() || state.lineageTrail;
+      var pending = linReadPendingNavigation();
+      var trail = pending ? pending.trail : state.lineageTrail;
       if (!Array.isArray(trail) || !trail.length) trail = [window.__linCurrent];
-      var last = trail[trail.length - 1];
-      if (!last || last.path !== location.pathname) trail = trail.concat([window.__linCurrent]);
-      window.__linTrail = trail;
-      window.history.replaceState(Object.assign({{}}, state, {{ lineageTrail: trail }}), '', location.href);
+      var savedNavigation = linReadNavigation();
+      var stateIndex = Number.isInteger(state.lineageIndex) ? state.lineageIndex : null;
+      var index = pending && Number.isInteger(pending.historyIndex)
+        ? pending.historyIndex
+        : stateIndex;
+      var items = pending
+        ? trail.slice()
+        : (stateIndex !== null && savedNavigation ? savedNavigation.items.slice() : trail.slice());
+      if (!Number.isInteger(index)) index = items.length - 1;
+      index = Math.max(0, Math.min(index, items.length - 1));
+      if (!items[index] || items[index].path !== location.pathname) {{
+        var matchingIndex = items.map(function(item) {{ return item.path; }}).lastIndexOf(location.pathname);
+        if (matchingIndex >= 0) index = matchingIndex;
+        else {{
+          items = items.slice(0, index + 1).concat([window.__linCurrent]);
+          index = items.length - 1;
+        }}
+      }}
+      window.__linNavigation = {{ items:items, index:index }};
+      window.__linTrail = items.slice(0, index + 1);
+      linWriteNavigation(window.__linNavigation);
+      window.history.replaceState(Object.assign({{}}, state, {{
+        lineageTrail: window.__linTrail,
+        lineageIndex: index
+      }}), '', location.href);
       linRenderTrail();
     }}
 
@@ -12030,43 +12117,40 @@ def _lineage_detail_html(anchor_type, anchor_id):
     }}
 
     function linRenderTrail() {{
-      var trail = window.__linTrail || [window.__linCurrent];
+      var navigation = window.__linNavigation || {{ items:[window.__linCurrent], index:0 }};
+      var items = navigation.items;
+      var currentIndex = navigation.index;
       var nav = document.getElementById('linTrail');
       var back = document.getElementById('linBackView');
-      if (back) back.disabled = trail.length <= 1;
+      var forward = document.getElementById('linForwardView');
+      var clearHistory = document.getElementById('linClearHistory');
+      if (back) back.disabled = currentIndex <= 0;
+      if (forward) forward.disabled = currentIndex >= items.length - 1;
+      if (clearHistory) clearHistory.disabled = items.length <= 1;
       if (!nav) return;
       nav.innerHTML = '';
-      var visible = [];
-      if (trail.length <= 3) {{
-        trail.forEach(function(item, index) {{ visible.push({{ item: item, index: index }}); }});
-      }} else {{
-        visible.push({{ item: trail[0], index: 0 }});
-        visible.push({{ ellipsis: true }});
-        visible.push({{ item: trail[trail.length - 2], index: trail.length - 2 }});
-        visible.push({{ item: trail[trail.length - 1], index: trail.length - 1 }});
-      }}
-      visible.forEach(function(entry, visibleIndex) {{
-        if (visibleIndex) {{
-          var separator = document.createElement('span');
-          separator.className = 'lineage-trail-sep';
-          separator.textContent = '›';
-          nav.appendChild(separator);
-        }}
-        if (entry.ellipsis) {{
-          var ellipsis = document.createElement('span');
-          ellipsis.className = 'lineage-trail-ellipsis';
-          ellipsis.textContent = '…';
-          nav.appendChild(ellipsis);
-          return;
-        }}
+      var orderedIndices = [currentIndex];
+      for (var previousIndex = currentIndex - 1; previousIndex >= 0; previousIndex -= 1) orderedIndices.push(previousIndex);
+      for (var nextIndex = currentIndex + 1; nextIndex < items.length; nextIndex += 1) orderedIndices.push(nextIndex);
+      orderedIndices.forEach(function(index) {{
+        var item = items[index];
         var button = document.createElement('button');
-        var isCurrent = entry.index === trail.length - 1;
+        var isCurrent = index === currentIndex;
+        var label = document.createElement('span');
+        var step = document.createElement('span');
         button.type = 'button';
         button.className = 'lineage-trail-btn' + (isCurrent ? ' current' : '');
-        button.textContent = linTrailText(entry.item);
-        button.title = linTrailText(entry.item);
+        button.title = linTrailText(item);
         button.disabled = isCurrent;
-        if (!isCurrent) button.onclick = function() {{ linJumpToHistory(entry.index); }};
+        label.className = 'lineage-trail-label';
+        label.textContent = linTrailText(item);
+        step.className = 'lineage-trail-step';
+        step.textContent = isCurrent
+          ? '当前视图'
+          : (index < currentIndex ? (currentIndex - index) + ' 步后退' : (index - currentIndex) + ' 步前进');
+        button.appendChild(label);
+        button.appendChild(step);
+        if (!isCurrent) button.onclick = function() {{ linJumpToHistory(index); }};
         nav.appendChild(button);
       }});
     }}
@@ -12083,8 +12167,10 @@ def _lineage_detail_html(anchor_type, anchor_id):
 
     function linPersistCurrentView() {{
       var state = window.history.state || {{}};
+      var navigation = window.__linNavigation || {{ items:[window.__linCurrent], index:0 }};
       window.history.replaceState(Object.assign({{}}, state, {{
-        lineageTrail: window.__linTrail || [window.__linCurrent],
+        lineageTrail: navigation.items.slice(0, navigation.index + 1),
+        lineageIndex: navigation.index,
         lineageView: linGetViewSnapshot()
       }}), '', location.href);
     }}
@@ -12119,29 +12205,89 @@ def _lineage_detail_html(anchor_type, anchor_id):
       }}
       linPersistCurrentView();
       var targetMeta = meta || linMetaFromUrl(target.href, null);
-      var trail = (window.__linTrail || [window.__linCurrent]).slice();
+      var navigation = window.__linNavigation || {{ items:[window.__linCurrent], index:0 }};
+      var trail = navigation.items.slice(0, navigation.index + 1);
       if (targetMeta) trail.push(targetMeta);
+      var nextNavigation = {{ items:trail, index:trail.length - 1 }};
+      linWriteNavigation(nextNavigation);
       try {{
-        sessionStorage.setItem(__linPendingKey, JSON.stringify({{ path: target.pathname, trail: trail }}));
+        sessionStorage.setItem(__linPendingKey, JSON.stringify({{
+          path: target.pathname,
+          trail: trail,
+          historyIndex: nextNavigation.index
+        }}));
       }} catch (error) {{}}
       location.assign(target.href);
     }}
 
     function linGoBackView() {{
-      if (!window.__linTrail || window.__linTrail.length <= 1) return;
+      var navigation = window.__linNavigation || {{ index:0 }};
+      if (navigation.index <= 0) return;
       linPersistCurrentView();
       window.history.back();
     }}
 
+    function linGoForwardView() {{
+      var navigation = window.__linNavigation || {{ items:[], index:0 }};
+      if (navigation.index >= navigation.items.length - 1) return;
+      linPersistCurrentView();
+      window.history.forward();
+    }}
+
+    function linToggleHistory(event, forceOpen) {{
+      if (event) event.stopPropagation();
+      var popover = document.getElementById('linHistoryPopover');
+      var trigger = document.getElementById('linHistoryToggle');
+      if (!popover || !trigger) return;
+      var isOpen = typeof forceOpen === 'boolean'
+        ? forceOpen
+        : !popover.classList.contains('open');
+      popover.classList.toggle('open', isOpen);
+      trigger.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+    }}
+
+    function linClearHistory() {{
+      var navigation = window.__linNavigation || {{ items:[window.__linCurrent], index:0 }};
+      if (navigation.items.length <= 1) return;
+      var currentItem = navigation.items[navigation.index] || window.__linCurrent;
+      window.__linNavigation = {{ items:[currentItem], index:0 }};
+      window.__linTrail = [currentItem];
+      linWriteNavigation(window.__linNavigation);
+      try {{ sessionStorage.removeItem(__linPendingKey); }} catch (error) {{}}
+      var state = window.history.state || {{}};
+      window.history.replaceState(Object.assign({{}}, state, {{
+        lineageTrail: [currentItem],
+        lineageIndex: 0,
+        lineageView: linGetViewSnapshot()
+      }}), '', location.href);
+      linRenderTrail();
+      toast('血缘浏览记录已清除，当前节点已设为起始视图');
+    }}
+
+    function linToggleLegend() {{
+      var legend = document.getElementById('linLegendFloat');
+      var trigger = legend ? legend.querySelector('.lineage-legend-toggle') : null;
+      if (!legend || !trigger) return;
+      var isCollapsed = legend.classList.toggle('collapsed');
+      trigger.setAttribute('aria-expanded', isCollapsed ? 'false' : 'true');
+    }}
+
     function linJumpToHistory(index) {{
-      var trail = window.__linTrail || [];
-      var delta = index - (trail.length - 1);
-      if (delta >= 0) return;
+      var navigation = window.__linNavigation || {{ items:[], index:0 }};
+      var delta = index - navigation.index;
+      if (!delta || index < 0 || index >= navigation.items.length) return;
       linPersistCurrentView();
       window.history.go(delta);
     }}
 
     document.addEventListener('click', function(event) {{
+      var historyPopover = document.getElementById('linHistoryPopover');
+      var historyDock = document.querySelector('.lineage-history-dock');
+      var historyTrigger = document.getElementById('linHistoryToggle');
+      if (historyPopover && historyDock && !historyDock.contains(event.target)) {{
+        historyPopover.classList.remove('open');
+        if (historyTrigger) historyTrigger.setAttribute('aria-expanded', 'false');
+      }}
       if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
       var link = event.target.closest('a[href^="/model/lineage/"]');
       if (!link || link.target === '_blank') return;
@@ -12224,7 +12370,7 @@ def _lineage_detail_html(anchor_type, anchor_id):
       }};
 
       viewport.addEventListener('pointerdown', function(event) {{
-        if (event.button !== 0 || event.target.closest('a,button,input,select,.lin-node')) return;
+        if (event.button !== 0 || event.target.closest('a,button,input,select,.lin-node,.lineage-floating-ui')) return;
         drag = {{ pointerId:event.pointerId, startX:event.clientX, startY:event.clientY, x:view.x, y:view.y }};
         viewport.classList.add('dragging');
         viewport.setPointerCapture(event.pointerId);
@@ -12904,15 +13050,11 @@ def _lineage_page(anchor_type, anchor_id):
         """
         return render_page(cfg['title'], empty_content, active=cfg['list_path'], module="model")
 
-    content = page_header(
-        cfg['title'],
-        cfg['subtitle'],
-        "采集任务 · 训练数据集 · 训练任务 · checkpoint · 评测任务",
-    ) + f"""
-    <div style="display:flex;align-items:center;gap:12px;margin-bottom:18px;">
-      <a href="{cfg['detail_url_fn'](anchor)}" class="btn">&#8249; 返回</a>
+    content = f"""
+    <script>document.body.classList.add('lineage-canvas-page');</script>
+    <div class="lineage-page-shell">
+      {_lineage_detail_html(anchor_type, anchor_id)}
     </div>
-    {_lineage_detail_html(anchor_type, anchor_id)}
     """
 
     return render_page(
