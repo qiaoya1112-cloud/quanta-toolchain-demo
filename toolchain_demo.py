@@ -1326,6 +1326,25 @@ body.lineage-canvas-page .lineage-viewport { height:100%; min-height:0; }
 .fb-labeled .ff .rf-control input { height:26px; min-width:82px; padding:0 2px; border:0; border-radius:0; box-shadow:none !important; background:transparent; }
 .fb-labeled .ff input::placeholder { color:rgba(0,0,0,0.32); }
 .fb-labeled .ff input:focus, .fb-labeled .ff select:focus { border-color:#149DAA; box-shadow:0 0 0 2px rgba(20,157,170,0.12); }
+/* 常规筛选 + 列表页面：桌面端统一一行六列，操作按钮作为末列内容。 */
+.fb-labeled { display:grid; grid-template-columns:repeat(6,minmax(0,1fr)); gap:12px 14px; align-items:end; }
+.fb-labeled > .ff { min-width:0; width:auto; }
+.fb-labeled > .ff input, .fb-labeled > .ff select, .fb-labeled > .ff .remote-filter,
+.fb-labeled > .ff .ts-wrap, .fb-labeled > .ff .prompt-filter-select { width:100%; min-width:0; box-sizing:border-box; }
+.fb-labeled > .filter-actions { display:flex; align-items:center; gap:8px; white-space:nowrap; }
+.fb-labeled > [style*="flex:1"] { display:none !important; }
+.filter-bar:not(.deploy-filters):not(.er-result-filter-bar) { display:grid; grid-template-columns:repeat(6,minmax(0,1fr)); gap:12px 14px; align-items:end; }
+.filter-bar:not(.deploy-filters):not(.er-result-filter-bar) > input,
+.filter-bar:not(.deploy-filters):not(.er-result-filter-bar) > select { width:100%; min-width:0; box-sizing:border-box; }
+.filter-bar:not(.deploy-filters):not(.er-result-filter-bar) > .grow { min-width:0; width:auto; }
+.filter-bar:not(.deploy-filters):not(.er-result-filter-bar) > .right { margin-left:0; }
+@media (max-width: 1000px) {
+  .fb-labeled, .filter-bar:not(.deploy-filters):not(.er-result-filter-bar) { grid-template-columns:repeat(3,minmax(0,1fr)); }
+}
+@media (max-width: 640px) {
+  .fb-labeled, .filter-bar:not(.deploy-filters):not(.er-result-filter-bar) { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .fb-labeled > .filter-actions, .filter-bar:not(.deploy-filters):not(.er-result-filter-bar) > .filter-actions { grid-column:1/-1; justify-content:flex-end; }
+}
 .list-summarybar { display:flex; align-items:center; justify-content:space-between; gap:16px; margin:0 2px 14px; }
 .list-summarybar .txt { font-size:13.5px; color:rgba(0,0,0,0.62); }
 .list-summarybar .txt b { color:rgba(0,0,0,0.85); font-family:'SF Mono',Menlo,monospace; font-weight:600; }
@@ -1998,11 +2017,16 @@ button.tm-subtab { border:0; background:transparent; font-family:inherit; cursor
 .queue-select[multiple] { height:auto; min-height:88px; padding:8px 12px; }
 .queue-textarea { min-height:64px; padding:10px 12px; resize:vertical; font-family:inherit; }
 .queue-input:focus, .queue-select:focus, .queue-textarea:focus { border-color:#149DAA; box-shadow:0 0 0 2px rgba(20,157,170,0.10); }
-.remote-picker { border:1px solid #dfe3e8; border-radius:6px; background:#fff; min-height:38px; padding:5px 8px; display:flex; align-items:center; gap:6px; flex-wrap:wrap; box-sizing:border-box; }
+.remote-picker { position:relative; border:1px solid #dfe3e8; border-radius:6px; background:#fff; min-height:38px; padding:5px 8px; display:flex; align-items:center; gap:6px; flex-wrap:wrap; box-sizing:border-box; cursor:text; }
 .remote-picker:focus-within { border-color:#149DAA; box-shadow:0 0 0 2px rgba(20,157,170,0.10); }
 .remote-picker .picked { display:inline-flex; align-items:center; gap:6px; height:26px; padding:0 8px; border:1px solid #dfe3e8; border-radius:5px; background:#f7f8fa; color:rgba(0,0,0,0.70); font-size:12.5px; }
-.remote-picker .picked i { font-style:normal; color:rgba(0,0,0,0.35); cursor:pointer; }
+.remote-picker .picked button { padding:0; border:0; background:transparent; color:rgba(0,0,0,0.35); cursor:pointer; font-size:14px; line-height:1; }
 .remote-picker input { flex:1; min-width:150px; height:26px; border:0; outline:none; padding:0 4px; font-size:13px; font-family:inherit; }
+.remote-picker-menu { display:none; position:absolute; z-index:200; top:calc(100% + 5px); right:0; left:0; max-height:200px; overflow:auto; padding:5px; border:1px solid #e1e5e8; border-radius:7px; background:#fff; box-shadow:0 8px 22px rgba(0,0,0,.12); }
+.remote-picker.open .remote-picker-menu { display:block; }
+.remote-picker-option { display:block; width:100%; padding:8px 10px; border:0; border-radius:5px; background:#fff; color:rgba(0,0,0,.72); text-align:left; cursor:pointer; }
+.remote-picker-option:hover { background:#EBF8FA; color:#149DAA; }
+.remote-picker-empty { padding:14px; color:rgba(0,0,0,.38); font-size:12px; text-align:center; }
 .queue-chip { display:inline-flex; align-items:center; gap:6px; height:28px; padding:0 9px; border:1px solid #e5e7eb; border-radius:6px; background:#f7f8fa; color:rgba(0,0,0,0.68); font-size:13px; }
 .queue-table { border:1px solid #f0f0f0; border-radius:8px; overflow:hidden; }
 .queue-table table { width:100%; border-collapse:collapse; font-size:13.5px; }
@@ -2154,12 +2178,13 @@ button.tm-subtab { border:0; background:transparent; font-family:inherit; cursor
 .wbx-log-item { display:grid; grid-template-columns:128px 82px 1fr; gap:12px; padding:11px 0; border-bottom:1px solid #f0f0f0; color:rgba(0,0,0,.68); font-size:12.5px; }
 .wbx-semantic-log-item { grid-template-columns:150px 120px 90px 110px minmax(180px,1fr); }
 .wbx-log-columns { display:grid; grid-template-columns:150px 120px 90px 110px minmax(180px,1fr); gap:12px; padding:8px 0; color:rgba(0,0,0,.42); font-size:11px; border-bottom:1px solid #f0f0f0; }
-.wbx-flow-note { display:grid; grid-template-columns:minmax(180px,.8fr) minmax(0,3.2fr); min-height:38px; margin:-2px 0 12px; overflow:hidden; border:1px solid #f0c873; border-left:4px solid #eda62d; border-radius:8px; background:#fff8e8; color:#6f6551; box-sizing:border-box; }
+.wbx-flow-note { display:grid; grid-template-columns:minmax(180px,.8fr) minmax(0,4fr); min-height:38px; margin:-2px 0 12px; overflow:hidden; border:1px solid #f0c873; border-left:4px solid #eda62d; border-radius:8px; background:#fff8e8; color:#6f6551; box-sizing:border-box; }
 .wbx-flow-note-item { display:flex; align-items:center; gap:8px; min-width:0; padding:8px 14px; border-right:1px solid #f0d79f; font-size:12px; line-height:20px; }
 .wbx-flow-note-item:last-child { border-right:0; }
 .wbx-flow-note-label { flex:none; color:#9a7c42; font-size:11px; font-weight:600; white-space:nowrap; }
 .wbx-flow-note-value { min-width:0; overflow:hidden; color:#5b6163; font-weight:600; text-overflow:ellipsis; white-space:nowrap; }
 .wbx-flow-note-current .wbx-flow-note-value { padding:1px 10px; border-radius:5px; background:#eeaa37; color:#fff; }
+.wbx-flow-note-current .wbx-flow-note-operator { margin-left:8px; color:#9a7c42; font-size:11px; font-weight:400; }
 .wbx-flow-note-summary { border-right:0; gap:12px; flex-wrap:nowrap; }
 .wbx-flow-note-summary .wbx-flow-note-value { display:flex; flex:1; align-items:center; gap:8px; min-width:0; font-weight:500; white-space:normal; }
 .wbx-flow-part { display:inline-flex; align-items:center; min-height:22px; padding:1px 8px; border:1px solid #ead39d; border-radius:5px; background:rgba(255,255,255,.62); color:#6e6049; font-weight:600; white-space:nowrap; }
@@ -2615,6 +2640,25 @@ BASE_TEMPLATE = """<!DOCTYPE html>
 </div>
 <script>
 function toast(msg){ var t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); setTimeout(function(){t.classList.remove('show');},1500); }
+var REMOTE_PERSON_OPTIONS=['joanna.qiao','包媛桐','Wei Zhang','Lance Li','刘素粉','tao.wang','hannah.wang','供应商 A-017'];
+function remotePersonSearch(input){
+  var picker=input.closest('.remote-picker'); if(!picker)return;
+  var keyword=(input.value||'').trim().toLowerCase(),menu=picker.querySelector('.remote-picker-menu');
+  if(!keyword){picker.classList.remove('open');menu.innerHTML='';return;}
+  var selected=Array.from(picker.querySelectorAll('.picked')).map(function(chip){return chip.dataset.value||'';});
+  var matches=REMOTE_PERSON_OPTIONS.filter(function(person){return selected.indexOf(person)<0&&person.toLowerCase().indexOf(keyword)>=0;});
+  menu.innerHTML=matches.length?matches.map(function(person){return '<button type="button" class="remote-picker-option" data-value="'+person+'" onclick="remotePersonSelect(this,event)">'+person+'</button>';}).join(''):'<div class="remote-picker-empty">没有搜索到可选择的人员</div>';
+  picker.classList.add('open');
+}
+function remotePersonSelect(option,event){
+  if(event)event.stopPropagation(); var picker=option.closest('.remote-picker'),input=picker.querySelector('input'),value=option.dataset.value||'';
+  if(picker.dataset.single==='true')picker.querySelectorAll('.picked').forEach(function(chip){chip.remove();});
+  var chip=document.createElement('span');chip.className='picked';chip.dataset.value=value;
+  var label=document.createElement('span');label.textContent=value;var remove=document.createElement('button');remove.type='button';remove.innerHTML='&times;';remove.onclick=function(ev){remotePersonRemove(remove,ev);};
+  chip.appendChild(label);chip.appendChild(remove);picker.insertBefore(chip,input);input.value='';picker.classList.remove('open');picker.querySelector('.remote-picker-menu').innerHTML='';input.focus();
+}
+function remotePersonRemove(button,event){if(event)event.stopPropagation();var chip=button.closest('.picked'),picker=button.closest('.remote-picker');if(chip)chip.remove();var input=picker&&picker.querySelector('input');if(input)input.focus();}
+document.addEventListener('click',function(event){if(!event.target.closest('.remote-picker'))document.querySelectorAll('.remote-picker.open').forEach(function(picker){picker.classList.remove('open');});});
 function resetFilters(btn){
   var root = btn.closest('.filter-bar,.fb-labeled,.lin-filter,.q-filters');
   if(!root){ toast('Demo: 已重置'); return; }
@@ -5124,42 +5168,11 @@ def data_workbench_task_home(task_id):
 
 # ── 工作台 · 质检 / 标注 / 详情共用组件 ──
 def _workbench_meta_html(task, status="待处理"):
-    style_preview = request.args.get("style_preview") == "1"
     recording_id = task.get("recording_id", "3298698")
     device = task.get("recording_device", "UDAS-00002-2983")
     collector = task.get("recording_collector", "柳少龙")
     display_task_id = task.get("processing_task", "—")
     processing_task_name = task.get("task_name", "—")
-    flow_versions = task.get("flow_versions", [])
-    selected_flow_version = task.get(
-        "selected_flow_version",
-        flow_versions[0] if flow_versions else "",
-    )
-    if style_preview:
-        version_control = ""
-    elif flow_versions:
-        version_options = "".join(
-            f'<option value="{html.escape(version)}"'
-            f'{" selected" if version == selected_flow_version else ""}>'
-            f'{html.escape(version)}</option>'
-            for version in flow_versions
-        )
-        version_control = f"""
-        <label class="flow-version-select">
-          <span>流程版本:</span>
-          <select id="wbxRecordFlowVersion"
-            onchange="wbSwitchRecordFlowVersion(this)">{version_options}</select>
-        </label>
-        """
-    else:
-        version_control = """
-        <div class="ver" onclick="toast('Demo: 切换版本')">
-          第1版<span class="caret">&#9662;</span>
-        </div>
-        """
-    status_control = "" if style_preview else f"""
-      <div class="lf"><span class="lbl">状态:</span><span class="status-pass">{html.escape(status)}</span></div>
-    """
     return f"""
     <div class="lab-meta" data-component="basic_info">
       <div class="lf mono"><span class="lbl">任务ID:</span><span class="val">{html.escape(str(display_task_id))}</span></div>
@@ -5168,8 +5181,6 @@ def _workbench_meta_html(task, status="待处理"):
       <div class="lf mono"><span class="lbl">序列号:</span><span class="val">{html.escape(device)}</span></div>
       <div class="lf"><span class="lbl">采集员:</span><span class="val">{html.escape(collector)}</span></div>
       <div class="lf mono"><span class="lbl">数据 ID:</span><span class="val">{html.escape(recording_id)}</span></div>
-      {version_control}
-      {status_control}
     </div>
     """
 
@@ -5209,7 +5220,9 @@ WORKBENCH_FLOW_NOTE_RECORDS = {
 
 def _workbench_flow_note_html(task, show_log=False, style_id=""):
     current_node = task.get("node", "—")
+    current_processor = task.get("current_processor") or task.get("user_group") or "—"
     recording_id = task.get("recording_id", "")
+    no_processing_task = bool(task.get("_no_processing_task"))
     fallback_sources = {
         "完整性质检": "自动质检",
         "质检抽检": "自动质检",
@@ -5220,23 +5233,27 @@ def _workbench_flow_note_html(task, show_log=False, style_id=""):
         "供应商复核": "供应商抽验",
         "内部验收": "供应商验收",
     }
-    source_node, operator, operation, description = WORKBENCH_FLOW_NOTE_RECORDS.get(
-        recording_id,
-        (
-            task.get("source_node") or fallback_sources.get(current_node, "—"),
-            task.get("source_operator") or task.get("user_group") or "系统",
-            task.get("source_operation") or "提交",
-            task.get("source_description") or "前序节点处理完成，已流转至当前节点",
-        ),
-    )
+    if no_processing_task:
+        source_node, operator, operation, description = ("—", "—", "—", "—")
+    else:
+        source_node, operator, operation, description = WORKBENCH_FLOW_NOTE_RECORDS.get(
+            recording_id,
+            (
+                task.get("source_node") or fallback_sources.get(current_node, "—"),
+                task.get("source_operator") or task.get("user_group") or "系统",
+                task.get("source_operation") or "提交",
+                task.get("source_description") or "前序节点处理完成，已流转至当前节点",
+            ),
+        )
     style_overrides = {
         "one": ("端到端切分标注", "系统", "提交", ""),
         "five": (source_node, operator, "驳回", description),
     }
-    source_node, operator, operation, description = style_overrides.get(
-        style_id,
-        (source_node, operator, operation, description),
-    )
+    if not no_processing_task:
+        source_node, operator, operation, description = style_overrides.get(
+            style_id,
+            (source_node, operator, operation, description),
+        )
     action_class = "wbx-flow-part-action-submit" if operation == "提交" else "wbx-flow-part-action-reject"
     summary = (
         f'<span class="wbx-flow-part wbx-flow-part-source">{html.escape(source_node)}节点</span>'
@@ -5247,7 +5264,8 @@ def _workbench_flow_note_html(task, show_log=False, style_id=""):
     cells = (
         f'<div class="wbx-flow-note-item wbx-flow-note-current">'
         f'<span class="wbx-flow-note-label">当前节点:</span>'
-        f'<span class="wbx-flow-note-value" title="{html.escape(str(current_node), quote=True)}">{html.escape(str(current_node))}</span></div>'
+        f'<span class="wbx-flow-note-value" title="当前节点：{html.escape(str(current_node), quote=True)}">{html.escape(str(current_node))}</span>'
+        f'<span class="wbx-flow-note-operator">处理人：{html.escape(str(current_processor))}</span></div>'
         f'<div class="wbx-flow-note-item wbx-flow-note-summary"><span class="wbx-flow-note-value">{summary}</span>'
         + ('<button type="button" class="wbx-flow-log-link" onclick="wbOpenLogDialog()">查看日志</button>' if show_log else '')
         + '</div>'
@@ -5405,6 +5423,65 @@ def _workbench_quality_result_panel_html():
       </tbody>
     </table>
     """
+
+
+def _workbench_basic_info_panel_html(task):
+    """基础信息页签：以紧凑列表展示数据、任务和处理上下文。"""
+    task_id = task.get("processing_task") or "—"
+    task_name = task.get("task_name") or "—"
+    project = task.get("project") or "—"
+    recording_id = task.get("recording_id") or "—"
+    device = task.get("recording_device") or "—"
+    collector = task.get("recording_collector") or "—"
+    source_task_id = task.get("source_task_id") or "COL-2026-0718"
+    source_task_name = task.get("source_task_name") or (
+        "家居动作采集任务" if project == "demo 项目" else "厨房采集任务"
+    )
+    command = task.get("collection_command") or (
+        "按照采集指令完成家居动作三路视频采集"
+        if project == "demo 项目"
+        else "按任务要求完成三路视频采集"
+    )
+    flow = task.get("flow") or "—"
+    node = task.get("node") or "—"
+    stage = task.get("stage") or "—"
+    user_group = task.get("user_group") or "—"
+    current_processor = task.get("current_processor") or user_group
+    task_pool = task.get("task_pool") or WB_POOL_META.get(task.get("pool"), {}).get("name") or "—"
+    processing_status = task.get("processing_status") or "处理中"
+    esc = lambda value: html.escape(str(value))
+    rows = [
+        ("数据 ID", recording_id),
+        ("设备序列号", device),
+        ("采集任务 ID", source_task_id),
+        ("采集任务名称", source_task_name),
+        ("所属项目", project),
+        ("采集人", collector),
+        ("处理任务 ID", task_id),
+        ("处理任务名称", task_name),
+        ("处理环节", stage),
+        ("当前节点", node),
+        ("当前处理人", current_processor),
+        ("所属任务池", task_pool),
+        ("流程名称", flow),
+        ("处理人群组", user_group),
+        ("采集指令", command),
+    ]
+    row_html = "".join(
+        f'<div class="wbx-basic-info-row"><span>{esc(label)}</span><b>{esc(value)}</b></div>'
+        for label, value in rows
+    )
+    notice = (
+        '<div class="wbx-basic-info-notice">当前为待处理状态，如本次处理被驳回，将驳回给当前处理人。</div>'
+        if processing_status == "待处理"
+        else ""
+    )
+    return f'''
+    <div class="wbx-basic-info" data-component="basic_info">
+      <div class="wbx-basic-info-list">{row_html}</div>
+      {notice}
+    </div>
+    '''
 
 
 def _workbench_tabs_script_html():
@@ -6278,12 +6355,74 @@ def _render_detail_workbench(task, management_preview=False):
         <div class="wbx-data-detail-return">
           <a href="/data/recordings">&larr; 返回数据管理</a>
           <b>Recording {html.escape(recording_id)}</b>
-          <span>当前流程版本
-            <b data-record-flow-version-value>{html.escape(selected_flow_version)}</b>
-          </span>
         </div>
         """
         if from_data_management and recording_id
+        else ""
+    )
+    has_processing_task = bool(
+        task.get("processing_task") or task.get("instance_id")
+    )
+    takeover_execution = (
+        """
+        <div class="wbx-execution wbx-takeover-execution" id="wbxTakeoverExecution">
+          <button type="button" class="btn" onclick="toast('Demo: 已切换到上一条数据')">上一条</button>
+          <button type="button" class="btn btn-primary" id="wbxReassignButton" onclick="wbxOpenDetailReassign()">重新分配</button>
+          <button type="button" class="btn" onclick="toast('Demo: 已切换到下一条数据')">下一条</button>
+        </div>
+        """
+        if from_data_management and recording_id and has_processing_task
+        else (
+            """
+            <div class="wbx-execution wbx-takeover-execution" id="wbxTakeoverExecution">
+              <button type="button" class="btn" onclick="toast('Demo: 已切换到上一条数据')">上一条</button>
+              <button type="button" class="btn" onclick="toast('Demo: 已切换到下一条数据')">下一条</button>
+            </div>
+            """
+            if from_data_management and recording_id
+            else ""
+        )
+    )
+    current_processor = task.get("current_processor") or task.get("user_group") or "当前处理人"
+    reassign_dialog = (
+        f"""
+        <div class="drawer-mask" id="wbxReassignMask" onclick="if(event.target===this)wbxCloseDetailReassign()">
+          <div class="drawer wbx-reassign-drawer" role="dialog" aria-modal="true" onclick="event.stopPropagation()">
+            <div class="drawer-head"><h3>重新分配</h3><button class="drawer-close" onclick="wbxCloseDetailReassign()">&times;</button></div>
+            <div class="drawer-body">
+              <div class="wbx-reassign-context">数据 <code>{html.escape(str(recording_id))}</code> · 当前节点 <b>{html.escape(str(task.get('node') or '—'))}</b><br>当前处理人：<span id="wbxReassignCurrent">{html.escape(str(current_processor))}</span></div>
+              <label class="wbx-reassign-label">分配给
+                <select id="wbxReassignTarget"><option value="包媛桐">包媛桐</option><option value="joanna.qiao">joanna.qiao</option><option value="供应商 A">供应商 A</option><option value="质检复核用户组">质检复核用户组</option><option value="标注员用户组">标注员用户组</option></select>
+              </label>
+              <label class="wbx-reassign-label">分配原因<textarea id="wbxReassignReason" placeholder="请输入重新分配原因（可选）"></textarea></label>
+            </div>
+            <div class="drawer-foot"><button class="btn" onclick="wbxCloseDetailReassign()">取消</button><button class="btn btn-primary" onclick="wbxConfirmDetailReassign()">确认分配</button></div>
+          </div>
+        </div>
+        <style>
+          .wbx-reassign-drawer{{position:absolute;top:50%;left:50%;width:480px;max-width:calc(100vw - 32px);transform:translate(-50%,-50%);border-radius:8px}}
+          .wbx-reassign-context{{margin-bottom:18px;padding:12px;border-radius:6px;background:#f5f8f8;color:#52676e;font-size:12px;line-height:1.8}}
+          .wbx-reassign-label{{display:block;margin-bottom:16px;color:#52676e;font-size:12px}}
+          .wbx-reassign-label select,.wbx-reassign-label textarea{{display:block;width:100%;box-sizing:border-box;margin-top:7px;padding:9px;border:1px solid #d9e0e2;border-radius:6px;background:#fff;color:#344b53}}
+          .wbx-reassign-label textarea{{min-height:72px;resize:vertical}}
+        </style>
+        <script>
+        function wbxOpenDetailReassign(){{
+          var mask=document.getElementById('wbxReassignMask');
+          if(mask){{document.getElementById('wbxReassignReason').value='';mask.classList.add('active');}}
+        }}
+        function wbxCloseDetailReassign(){{var mask=document.getElementById('wbxReassignMask');if(mask)mask.classList.remove('active');}}
+        function wbxConfirmDetailReassign(){{
+          var target=document.getElementById('wbxReassignTarget').value;
+          if(!target){{toast('请选择重新分配对象');return;}}
+          var operator=document.querySelector('.wbx-flow-note-operator');
+          if(operator)operator.textContent='处理人：'+target;
+          var current=document.getElementById('wbxReassignCurrent');if(current)current.textContent=target;
+          wbxCloseDetailReassign();toast('已重新分配给 '+target);
+        }}
+        </script>
+        """
+        if from_data_management and recording_id and has_processing_task
         else ""
     )
     content = (
@@ -6305,6 +6444,8 @@ def _render_detail_workbench(task, management_preview=False):
               onclick="switchWorkbenchDetailTab(this,'tag')">标签</button>
             <button class="wbx-detail-tab" data-detail-tab="log"
               onclick="switchWorkbenchDetailTab(this,'log')">日志</button>
+            <button class="wbx-detail-tab" data-detail-tab="basic-info"
+              onclick="switchWorkbenchDetailTab(this,'basic-info')">基础信息</button>
           </div>
           <div class="wbx-detail-pane active" data-detail-pane="trajectory" data-component="trajectory_viewer">
             {_workbench_trajectory_panel_html()}
@@ -6333,9 +6474,28 @@ def _render_detail_workbench(task, management_preview=False):
           <div class="wbx-detail-pane" data-detail-pane="log" data-component="workbench_log">
             {_workbench_log_panel_html()}
           </div>
+          <div class="wbx-detail-pane" data-detail-pane="basic-info" data-component="basic_info">
+            {_workbench_basic_info_panel_html(task)}
+          </div>
         </div>
         """
         + _workbench_tabs_script_html()
+        + (
+            """
+            <style>
+            .wbx-detail-readonly .wbx-execution:not(#wbxTakeoverExecution){display:none}.wbx-takeover-execution{align-items:center!important;justify-content:center!important;pointer-events:auto!important;filter:none!important;opacity:1!important}.wbx-takeover-execution .btn{display:inline-flex;min-width:104px;align-items:center;justify-content:center;text-align:center}.wbx-detail-readonly .wbx-detail-pane input,.wbx-detail-readonly .wbx-detail-pane textarea,.wbx-detail-readonly .wbx-detail-pane select{pointer-events:none;background:#f5f6f6!important;color:#78868b!important}body:not(.wbx-detail-readonly) #wbxTakeoverExecution{display:none}.wbx-basic-info{display:block}.wbx-basic-info-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));border-top:1px solid #e6ebed;border-left:1px solid #e6ebed;border-radius:8px;overflow:hidden;background:#fff}.wbx-basic-info-row{display:flex;align-items:flex-start;gap:16px;min-width:0;padding:12px 16px;border-right:1px solid #e6ebed;border-bottom:1px solid #e6ebed}.wbx-basic-info-row span{flex:0 0 88px;color:#879397;font-size:11px}.wbx-basic-info-row b{min-width:0;color:#3d5054;font-size:12.5px;font-weight:500;word-break:break-word}.wbx-basic-info-notice{margin-top:12px;padding:10px 12px;border:1px solid #f1d9a9;border-left:3px solid #e5a43b;border-radius:6px;background:#fff9ec;color:#795d27;font-size:12px;line-height:1.6}@media(max-width:700px){.wbx-basic-info-list{grid-template-columns:1fr}.wbx-basic-info-row span{flex-basis:82px}}
+            </style>
+            <script>
+            document.body.classList.add('wbx-detail-readonly');
+            function wbxEnableTakeover(){
+              document.body.classList.remove('wbx-detail-readonly');
+              toast('已进入代处理模式，操作将写入审计日志');
+            }
+            </script>
+            """
+            if from_data_management and recording_id
+            else ""
+        )
         + """
         <script>
         function wbSwitchRecordFlowVersion(select) {
@@ -6346,6 +6506,8 @@ def _render_detail_workbench(task, management_preview=False):
         }
         </script>
         """
+        + takeover_execution
+        + reassign_dialog
         + _workbench_execution_html()
     )
     active_path = (
@@ -6391,6 +6553,23 @@ def data_workbench_edit(preview_mode=None):
         WB_TASKS[0],
     )
     recording_id = request.args.get("recording_id", "")
+    instance_id = request.args.get("instance_id", "")
+    instance_context = {
+        # 数据管理列表中的流程实例，以及早期详情链接的兼容 ID。
+        "QC405708": {"processor": "包媛桐", "pool": "质检复核任务池", "status": "处理中"},
+        "AN405709": {"processor": "joanna.qiao", "pool": "动作标注任务池", "status": "已完成"},
+        "QC405761": {"processor": "质检复核用户组", "pool": "质检复核任务池", "status": "处理中"},
+        "AN405711": {"processor": "供应商 A", "pool": "端到端切分标注 · 供应商 A 任务池", "status": "待处理"},
+        "QC406006": {"processor": "光轮智能", "pool": "端到端切分标注 · 光轮智能任务池", "status": "处理中"},
+        "QC412001": {"processor": "—", "pool": "—", "status": "已归档"},
+        "DPI-4057808-QC": {"processor": "包媛桐", "pool": "质检复核任务池", "status": "处理中"},
+        "DPI-4057808-ANN": {"processor": "joanna.qiao", "pool": "动作标注任务池", "status": "处理中"},
+        "DPI-4057761-QC": {"processor": "质检复核用户组", "pool": "质检复核任务池", "status": "处理中"},
+        "DPI-4057711-ANN": {"processor": "供应商 A", "pool": "端到端切分标注 · 供应商 A 任务池", "status": "待处理"},
+        "DPI-E2E-006": {"processor": "光轮智能", "pool": "端到端切分标注 · 光轮智能任务池", "status": "处理中"},
+        "DPI-V12-001": {"processor": "—", "pool": "—", "status": "处理中"},
+    }
+    context = instance_context.get(instance_id, {})
     if recording_id:
         recording = next(
             (
@@ -6402,19 +6581,52 @@ def data_workbench_edit(preview_mode=None):
         )
         if recording:
             workbench_task = dict(workbench_task)
-            primary_flow = recording["flows"][0]
+            flows = recording.get("flows") or []
+            primary_flow = flows[0] if flows else {}
+            # 没有任何处理任务的数据仍可查看采集信息，但不应继承默认工作台的处理上下文。
+            has_processing_task = bool(flows and (instance_id or request.args.get("task")))
             workbench_task.update(
                 {
                     "recording_id": recording["id"],
                     "recording_device": recording["device"],
                     "recording_collector": recording["operator"],
-                    "flow": primary_flow["name"],
-                    "node": primary_flow["node"],
-                    "flow_versions": [
-                        version
-                        for version, *_ in recording["versions"]
-                    ],
-                    "selected_flow_version": recording["versions"][0][0],
+                    "flow": primary_flow.get("name", "—"),
+                    "node": primary_flow.get("node", "—"),
+                    "flow_versions": [version for version, *_ in recording["versions"]] if has_processing_task else [],
+                    "selected_flow_version": recording["versions"][0][0] if has_processing_task else "—",
+                    "instance_id": instance_id if has_processing_task else "",
+                    "processing_task": workbench_task.get("processing_task", "") if has_processing_task else "",
+                    "task_name": workbench_task.get("task_name", "") if has_processing_task else "",
+                    "task_pool": context.get(
+                        "pool",
+                        WB_POOL_META.get(workbench_task.get("pool"), {}).get("name", "—"),
+                    ) if has_processing_task else "—",
+                    "current_processor": context.get("processor", recording.get("operator", "—")) if has_processing_task else "—",
+                    "processing_status": context.get("status", "处理中") if has_processing_task else "—",
+                    "_no_processing_task": not has_processing_task,
+                }
+            )
+        else:
+            # 数据管理实例列表使用的是流程实例 ID（如 QC405708），不一定能在
+            # DATA_MANAGEMENT_RECORDS 中找到对应的 recording。仍补齐详情页上下文，
+            # 避免基础信息回退成默认任务和默认处理人。
+            workbench_task = dict(workbench_task)
+            has_processing_task = bool(instance_id)
+            workbench_task.update(
+                {
+                    "recording_id": recording_id or "—",
+                    "instance_id": instance_id,
+                    "processing_task": workbench_task.get("processing_task", "") if has_processing_task else "",
+                    "task_name": workbench_task.get("task_name", "") if has_processing_task else "",
+                    "flow": workbench_task.get("flow", "—") if has_processing_task else "—",
+                    "node": workbench_task.get("node", "—") if has_processing_task else "—",
+                    "task_pool": context.get(
+                        "pool",
+                        WB_POOL_META.get(workbench_task.get("pool"), {}).get("name", "—"),
+                    ) if has_processing_task else "—",
+                    "current_processor": context.get("processor", "—") if has_processing_task else "—",
+                    "processing_status": context.get("status", "处理中") if has_processing_task else "—",
+                    "_no_processing_task": not has_processing_task,
                 }
             )
     workbench_mode = preview_mode or request.args.get("mode") or {
@@ -6997,6 +7209,12 @@ RULES = [
         "created": "2026-08-03",
         "enabled": True,
         "desc": "仅切分 High-level 与 Low-level 时间片段，不配置动作元素和动作描述",
+        "semantic_mode": "link",
+        "semantic_rich_text": "",
+        "error_reasons": [
+            {"name": "片段边界不准确"},
+            {"name": "语义层级错误"},
+        ],
     },
 ]
 RULES.sort(key=lambda item: item["name"] != "端到端切分标注规则")
@@ -7073,56 +7291,170 @@ def data_rules():
           </td>
         </tr>"""
 
+    rule_detail_data = {
+        rule["id"]: {
+            "semantic_mode": rule.get("semantic_mode", "link" if rule.get("rule_config") else "none"),
+            "document_link": rule.get("rule_config", ""),
+            "semantic_rich_text": rule.get("semantic_rich_text", ""),
+            "quality_mistakes": rule.get("quality_mistakes", []),
+            "quality_unqualified": rule.get("quality_unqualified", []),
+            "action_elements": rule.get("action_elements", []),
+            "action_descriptions": rule.get("action_descriptions", []),
+            "error_reasons": rule.get("error_reasons", []),
+        }
+        for rule in RULES
+    }
+    rule_detail_json = json.dumps(rule_detail_data, ensure_ascii=False).replace("</", "<\\/")
+
     rule_drawer = """
     <style>
       #drawerRuleCreate{left:auto;right:0;width:min(1120px,calc(100vw - 24px));max-width:none}
+      .rule-action-name-stack{display:block;min-width:0;flex:1}.rule-action-name-stack input{min-width:0}
       #drawerRuleCreate .fg{width:100%;max-width:none}
       #drawerRuleCreate .fg input,#drawerRuleCreate .fg select,#drawerRuleCreate .fg textarea{width:100%;box-sizing:border-box}
-      .rule-create-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}.rule-config-block{margin-top:18px;padding-top:18px;border-top:1px solid #edf1f2}.rule-config-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:9px}.rule-config-head b{color:#30474f;font-size:13px}.rule-config-table{width:100%;border-collapse:collapse;border:1px solid #e2e8ea}.rule-config-table th,.rule-config-table td{padding:8px 10px;border-bottom:1px solid #e8edef;text-align:left;font-size:12px}.rule-config-table th{background:#f5f7f8;color:#6c7d83;font-weight:500}.rule-config-table input{width:100%;height:32px;padding:0 8px;border:1px solid #d8e0e3;border-radius:5px;box-sizing:border-box}.rule-config-empty{padding:38px 20px;border:1px dashed #d9e1e3;border-radius:8px;background:#fafcfc;color:#9aa5a9;text-align:center;font-size:13px}.rule-section-label{display:block;margin:0 0 9px;color:#52666d;font-size:13px}.rule-section-label.required:before{content:"*";margin-right:4px;color:#d4504e}.rule-document-config .fg{margin:0}.rule-document-config input{font-family:'SF Mono',Menlo,monospace}@media(max-width:700px){#drawerRuleCreate{left:auto;right:0;width:calc(100vw - 24px)}}
+      .rule-basic-grid{display:grid;grid-template-columns:1.5fr .75fr .75fr;gap:14px}.rule-form-module{margin-top:22px;padding-top:20px;border-top:1px solid #e5eaec}.rule-form-module-head{display:flex;align-items:flex-start;justify-content:space-between;gap:18px;margin-bottom:14px}.rule-form-module-head h4{margin:0;color:#243d45;font-size:16px}.rule-form-module-head p{margin:5px 0 0;color:#849298;font-size:11.5px;line-height:1.5}.rule-config-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:9px}.rule-config-head b{color:#30474f;font-size:13px}.rule-config-head span{color:#879499;font-size:11px}.rule-link-action{padding:0;border:0;background:transparent;color:#149DAA;font-size:12px;cursor:pointer}.rule-list-add{display:flex;justify-content:flex-end;margin-top:8px}.rule-list-add-inner{margin-top:9px}.rule-repeat-section+.rule-repeat-section{margin-top:18px}.rule-config-table{width:100%;border-collapse:collapse;border:1px solid #e2e8ea}.rule-config-table th,.rule-config-table td{padding:8px 10px;border-bottom:1px solid #e8edef;text-align:left;font-size:12px}.rule-config-table th{background:#f5f7f8;color:#6c7d83;font-weight:500}.rule-config-table input{width:100%;height:32px;padding:0 8px;border:1px solid #d8e0e3;border-radius:5px;box-sizing:border-box}.rule-config-table .rule-row-index{width:46px;color:#849298;text-align:center}.rule-remove-row{width:28px;height:28px;padding:0;border:0;background:transparent;color:#9aa6aa;font-size:18px;cursor:pointer}.rule-remove-row:hover{color:#cf584e}.rule-semantic-modes{display:inline-flex;gap:3px;padding:3px;border:1px solid #dfe7e9;border-radius:7px;background:#f5f7f8}.rule-semantic-modes label{position:relative;margin:0;cursor:pointer}.rule-semantic-modes input{position:absolute;opacity:0;pointer-events:none}.rule-semantic-modes span{display:block;padding:7px 15px;border-radius:5px;color:#64767c;font-size:12px}.rule-semantic-modes input:checked+span{background:#fff;color:#117a83;box-shadow:0 1px 4px rgba(37,73,87,.12);font-weight:600}.rule-semantic-panel{margin-top:14px}.rule-document-config .fg{margin:0}.rule-document-config input{font-family:'SF Mono',Menlo,monospace}.rule-rich-editor{min-height:150px;padding:11px 12px;border:1px solid #d8e0e3;border-radius:0 0 6px 6px;background:#fff;color:#344c54;line-height:1.65;outline:none}.rule-rich-editor:empty:before{content:attr(data-placeholder);color:#a2adb0}.rule-rich-toolbar{display:flex;gap:4px;padding:6px 8px;border:1px solid #d8e0e3;border-bottom:0;border-radius:6px 6px 0 0;background:#f7f9fa}.rule-rich-toolbar button{width:28px;height:26px;padding:0;border:0;border-radius:4px;background:transparent;color:#536970;cursor:pointer}.rule-rich-toolbar button:hover{background:#e8f4f5;color:#149DAA}.rule-enum-card{margin-bottom:12px;border:1px solid #dfe7e9;border-radius:7px;background:#fff;overflow:hidden}.rule-enum-card-head{display:flex;align-items:center;justify-content:space-between;padding:10px 13px;border-bottom:1px solid #e8edef;background:#f7f9fa}.rule-enum-card-head b{color:#30474f;font-size:12px}.rule-enum-card-body{padding:13px}.rule-element-meta{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:15px}.rule-element-meta label{display:flex;flex-direction:column;gap:6px;color:#60737a;font-size:11px}.rule-element-meta input{height:34px;padding:0 9px;border:1px solid #d8e0e3;border-radius:5px}.rule-key{font-family:'SF Mono',Menlo,monospace}.rule-placeholder-guide{margin:14px 0 9px;padding:10px 12px;border-left:3px solid #149DAA;border-radius:5px;background:#f2fafa;color:#597179;font-size:11.5px;line-height:1.6}.rule-placeholder-guide code{color:#117a83}.rule-placeholder-list{display:flex;flex-wrap:wrap;gap:6px;margin-top:7px}.rule-placeholder-chip{padding:3px 8px;border:1px solid #b9dde0;border-radius:10px;background:#fff;color:#117a83;font:11px 'SF Mono',Menlo,monospace;cursor:pointer}.rule-placeholder-empty{color:#98a4a8}.rule-error-config{padding:14px;border:1px solid #e2e8ea;border-radius:7px;background:#fafcfc}.rule-form-module input:disabled,.rule-form-module textarea:disabled,.rule-form-module select:disabled{background:#f2f4f5;color:#89959a}.rule-form-module button:disabled{opacity:.4;cursor:not-allowed}.rule-rich-editor[contenteditable="false"]{background:#f2f4f5;color:#89959a}@media(max-width:760px){#drawerRuleCreate{left:auto;right:0;width:calc(100vw - 24px)}.rule-basic-grid,.rule-element-meta{grid-template-columns:1fr}}
+      .rule-list-add{justify-content:flex-start}.rule-action-enum-editor{display:grid;grid-template-columns:250px minmax(0,1fr);min-height:330px;border:1px solid #dfe7e9;border-radius:7px;background:#fff;overflow:hidden}.rule-enum-directory{display:flex;min-width:0;flex-direction:column;padding:14px;border-right:1px solid #e5eaec;background:#f7f9fa}.rule-enum-directory-head{margin-bottom:10px}.rule-enum-directory-head b{display:block;color:#30474f;font-size:13px}.rule-enum-directory-head span{display:block;margin-top:4px;color:#8a979c;font-size:11px}.rule-enum-nav{display:flex;flex:1;flex-direction:column;gap:6px}.rule-enum-nav-item{display:block;width:100%;min-height:50px;padding:8px 10px;border:1px solid transparent;border-radius:5px;background:transparent;text-align:left;cursor:pointer}.rule-enum-nav-item:hover{background:#eef4f4}.rule-enum-nav-item.active{border-color:#b9dadd;background:#fff;box-shadow:0 1px 3px rgba(38,70,79,.07)}.rule-enum-nav-name{display:block;overflow:hidden;color:#344c54;font-size:12px;font-weight:600;text-overflow:ellipsis;white-space:nowrap}.rule-enum-nav-key{display:block;overflow:hidden;margin-top:3px;color:#8a979c;font:10.5px 'SF Mono',Menlo,monospace;text-overflow:ellipsis;white-space:nowrap}.rule-enum-directory .rule-list-add{margin-top:12px;padding-top:10px;border-top:1px solid #e0e6e8}.rule-enum-detail{min-width:0;padding:16px}.rule-enum-card{display:none;margin:0;border:0;border-radius:0;overflow:visible}.rule-enum-card.active{display:block}.rule-enum-card-head{padding:0 0 12px;border-bottom:1px solid #e8edef;background:transparent}.rule-enum-card-head b{font-size:13px}.rule-enum-card-body{padding:14px 0 0}.rule-enum-empty{display:none;height:100%;min-height:290px;align-items:center;justify-content:center;color:#8a979c;font-size:12px}.rule-enum-empty.visible{display:flex}@media(max-width:760px){.rule-action-enum-editor{grid-template-columns:1fr}.rule-enum-directory{border-right:0;border-bottom:1px solid #e5eaec}.rule-enum-nav{max-height:180px}.rule-enum-detail{padding:14px}}
+      .rule-desc-field{display:grid;grid-template-columns:minmax(140px,1fr) 124px;gap:6px;align-items:center}.rule-config-table .rule-desc-token-select{width:124px;height:32px;padding:0 28px 0 9px;border:1px solid #d8e0e3;border-radius:5px;background-color:#fff;color:#536970;font-size:11px;box-sizing:border-box}@media(max-width:760px){.rule-desc-field{grid-template-columns:1fr}.rule-config-table .rule-desc-token-select{width:100%}}
+      .rule-action-tree{overflow-x:auto;border:1px solid #dfe7e9;border-radius:7px;background:#fff}.rule-action-tree-head,.rule-action-parent-row,.rule-action-value-row{display:grid;grid-template-columns:minmax(280px,1fr) minmax(240px,1fr) 62px;gap:12px;align-items:center;min-width:680px}.rule-action-tree-head{padding:9px 12px;background:#f5f7f8;color:#6c7d83;font-size:12px}.rule-action-tree-group+.rule-action-tree-group{border-top:1px solid #dfe7e9}.rule-action-parent-row{padding:10px 12px;background:#fafcfc}.rule-action-name-cell{display:flex;min-width:0;align-items:center;gap:7px}.rule-action-tree-toggle{flex:0 0 26px;width:26px;height:30px;padding:0;border:0;background:transparent;color:#5e737a;font-size:15px;cursor:pointer}.rule-action-parent-row input,.rule-action-value-row input{width:100%;height:32px;padding:0 9px;border:1px solid #d8e0e3;border-radius:5px;box-sizing:border-box}.rule-action-parent-row .rule-action-element-name{min-width:0}.rule-action-children{padding:0 12px 10px;background:#fff}.rule-action-tree-group.collapsed .rule-action-children{display:none}.rule-action-value-row{padding:8px 0;border-top:1px solid #edf1f2}.rule-action-value-name{padding-left:33px;border-left:1px solid #d8e1e3}.rule-action-children .rule-list-add{margin:2px 0 0 34px}.rule-action-tree-empty{display:none;padding:30px;color:#8a979c;text-align:center;font-size:12px}.rule-action-tree-empty.visible{display:block}.rule-action-parent-row .rule-link-action,.rule-action-value-row .rule-link-action{justify-self:start}@media(max-width:760px){.rule-action-tree-head,.rule-action-parent-row,.rule-action-value-row{min-width:620px;grid-template-columns:minmax(250px,1fr) minmax(210px,1fr) 58px}}
     </style>
     <div class="drawer" id="drawerRuleCreate">
       <div class="drawer-head"><h3>新增规则</h3><span class="dismiss" onclick="closeDrawer()">&times;</span></div>
       <div class="drawer-body">
-        <div class="fg"><label>规则名称</label><input id="ruleCreateName" placeholder="请输入规则名称"></div>
-        <div class="fg"><label>业务环节</label><select id="ruleCreateStage" onchange="ruleCreateStageChanged(this.value)"><option value="质检">质检</option><option value="标注">标注</option></select></div>
-        <div class="fg"><label>类型</label><select id="ruleCreateType" onchange="ruleCreateTypeChanged(this.value)"></select></div>
-        <section class="rule-config-block">
-          <span class="rule-section-label required">规则配置</span>
-          <div id="ruleActionConfig" style="display:none;">
-            <div class="rule-config-head"><b>动作元素</b><button class="btn btn-sm" type="button" onclick="toast('Demo: 添加动作元素')">+ 添加</button></div>
-            <table class="rule-config-table"><thead><tr><th style="width:52px;">序号</th><th>动作元素名称</th><th>英文名称</th><th style="width:70px;">操作</th></tr></thead><tbody><tr><td>1</td><td><input placeholder="请输入动作元素名称"></td><td><input placeholder="请输入英文名称"></td><td><a href="#" onclick="toast('Demo: 确定');return false;">确定</a></td></tr></tbody></table>
-            <div class="rule-config-head" style="margin-top:18px;"><b>动作描述</b><button class="btn btn-sm" type="button" onclick="toast('Demo: 添加动作描述')">+ 添加</button></div>
-            <table class="rule-config-table"><thead><tr><th style="width:52px;">序号</th><th>中文</th><th>英文</th><th style="width:70px;">操作</th></tr></thead><tbody><tr><td>1</td><td><input placeholder="请输入中文动作描述"></td><td><input placeholder="请输入英文动作描述"></td><td><a href="#" onclick="toast('Demo: 确定');return false;">确定</a></td></tr></tbody></table>
+        <div class="rule-basic-grid">
+          <div class="fg"><label>规则名称</label><input id="ruleCreateName" placeholder="请输入规则名称"></div>
+          <div class="fg"><label>业务环节</label><select id="ruleCreateStage" onchange="ruleCreateStageChanged(this.value)"><option value="质检">质检</option><option value="标注">标注</option></select></div>
+          <div class="fg"><label>规则类型</label><select id="ruleCreateType" onchange="ruleCreateTypeChanged(this.value)"></select></div>
+          <div class="fg"><label class="fg-req">管理员</label><select id="ruleCreateAdmins" multiple size="3"><option>joanna.qiao</option><option>包媛桐</option><option>Wei Zhang</option><option>刘素粉</option></select><small>可多选，至少选择一位管理员。</small></div>
+        </div>
+
+        <section class="rule-form-module" id="ruleFormRuleModule">
+          <div class="rule-form-module-head"><div><h4>规则</h4></div></div>
+          <div id="ruleQualityConfig" style="display:none;">
+            <div class="rule-repeat-section">
+              <div class="rule-config-head"><div><b>失误标准</b></div></div>
+              <table class="rule-config-table"><thead><tr><th style="width:52px;">序号</th><th>标准内容</th><th style="width:52px;"></th></tr></thead><tbody id="ruleMistakeRows"></tbody></table>
+              <div class="rule-list-add"><button class="rule-link-action" type="button" onclick="ruleAddQualityCriterion('mistake')">添加标准</button></div>
+            </div>
+            <div class="rule-repeat-section">
+              <div class="rule-config-head"><div><b>不合格标准</b></div></div>
+              <table class="rule-config-table"><thead><tr><th style="width:52px;">序号</th><th>标准内容</th><th style="width:52px;"></th></tr></thead><tbody id="ruleUnqualifiedRows"></tbody></table>
+              <div class="rule-list-add"><button class="rule-link-action" type="button" onclick="ruleAddQualityCriterion('unqualified')">添加标准</button></div>
+            </div>
           </div>
-          <div class="rule-document-config" id="ruleDocumentConfig" style="display:none;">
-            <div class="fg"><label>文档链接</label><input id="ruleDocumentLink" type="url" placeholder="请输入规则说明文档链接"></div>
+
+          <div id="ruleDocumentConfig" class="rule-document-config" style="display:none;">
+            <div class="rule-semantic-modes" role="radiogroup" aria-label="语义标注规则说明方式">
+              <label><input type="radio" name="ruleSemanticMode" value="link" checked onchange="ruleSetSemanticMode(this.value)"><span>文档链接</span></label>
+              <label><input type="radio" name="ruleSemanticMode" value="richtext" onchange="ruleSetSemanticMode(this.value)"><span>富文本说明</span></label>
+            </div>
+            <div class="rule-semantic-panel" id="ruleSemanticLink"><div class="fg"><label>文档链接</label><input id="ruleDocumentLink" type="url" placeholder="请输入规则说明文档链接"></div></div>
+            <div class="rule-semantic-panel" id="ruleSemanticRichText" style="display:none;">
+              <div class="rule-rich-toolbar"><button type="button" title="加粗" onclick="ruleFormatRichText('bold')"><b>B</b></button><button type="button" title="斜体" onclick="ruleFormatRichText('italic')"><i>I</i></button><button type="button" title="无序列表" onclick="ruleFormatRichText('insertUnorderedList')">≡</button></div>
+              <div id="ruleRichTextEditor" class="rule-rich-editor" contenteditable="true" data-placeholder="请输入语义标注规则说明"></div>
+            </div>
           </div>
-          <div class="rule-config-empty" id="ruleEmptyConfig">当前类型无需配置</div>
+
+          <div id="ruleActionConfig" data-placeholder-format="{元素名称/元素Key}" style="display:none;">
+            <div class="rule-config-head"><div><b>动作元素</b></div></div>
+            <div class="rule-action-tree">
+              <div class="rule-action-tree-head"><span>动作元素 / 枚举值</span><span>Key（英文名）</span><span>操作</span></div>
+              <div id="ruleActionElements"></div>
+              <div class="rule-action-tree-empty" id="ruleActionElementEmpty">暂无动作元素</div>
+            </div>
+            <div class="rule-list-add"><button class="rule-link-action" type="button" onclick="ruleAddActionElement()">添加动作元素</button></div>
+            <div class="rule-config-head" style="margin-top:18px;"><div><b>动作表述</b></div></div>
+            <table class="rule-config-table"><thead><tr><th style="width:52px;">序号</th><th>中文动作表述</th><th>英文动作表述</th><th style="width:52px;"></th></tr></thead><tbody id="ruleActionDescriptionRows"></tbody></table>
+            <div class="rule-list-add"><button class="rule-link-action" type="button" onclick="ruleAddActionDescription()">添加动作表述</button></div>
+          </div>
+        </section>
+
+        <section class="rule-form-module" id="ruleFormErrorModule">
+          <div class="rule-form-module-head"><div><h4>错误原因</h4></div></div>
+          <table class="rule-config-table"><thead><tr><th style="width:52px;">序号</th><th>枚举值</th><th style="width:52px;"></th></tr></thead><tbody id="ruleErrorReasonRows"></tbody></table>
+          <div class="rule-list-add"><button class="rule-link-action" type="button" onclick="ruleAddErrorReason()">添加枚举值</button></div>
         </section>
       </div>
-      <div class="drawer-foot"><button class="btn" type="button" onclick="closeDrawer()">取消</button><button class="btn btn-primary" type="button" onclick="toast('Demo: 规则已创建');closeDrawer()">创建</button></div>
+      <div class="drawer-foot"><button class="btn" type="button" onclick="closeDrawer()">取消</button><button class="btn btn-primary" type="button" id="ruleDrawerSubmit" onclick="ruleSave()">创建</button></div>
     </div>
     <script>
+    var RULE_DETAIL_DATA=__RULE_DETAIL_DATA__;
+    var ruleElementSequence=0;
+    function ruleEscape(value){return String(value||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+    function ruleRefreshIndexes(selector){document.querySelectorAll(selector+' tr').forEach(function(row,index){var cell=row.querySelector('.rule-row-index');if(cell)cell.textContent=index+1})}
+    function ruleRefreshTableIndexes(body){Array.from(body.children).forEach(function(row,index){var cell=row.querySelector('.rule-row-index');if(cell)cell.textContent=index+1})}
+    function ruleRemoveTableRow(button){var body=button.closest('tbody');button.closest('tr').remove();ruleRefreshTableIndexes(body)}
+    function ruleQualitySelector(kind){return kind==='mistake'?'#ruleMistakeRows':'#ruleUnqualifiedRows'}
+    function ruleAddQualityCriterion(kind,value){
+      var selector=ruleQualitySelector(kind),body=document.querySelector(selector);
+      body.insertAdjacentHTML('beforeend','<tr><td class="rule-row-index"></td><td><input class="rule-quality-value" placeholder="请输入标准内容" value="'+ruleEscape(value)+'"></td><td><button class="rule-remove-row" type="button" aria-label="删除" onclick="ruleRemoveTableRow(this)">×</button></td></tr>');
+      ruleRefreshIndexes(selector);
+    }
+    function ruleAddErrorReason(value){
+      var name=typeof value==='string'?value:(value&&value.name)||'',body=document.getElementById('ruleErrorReasonRows');
+      body.insertAdjacentHTML('beforeend','<tr><td class="rule-row-index"></td><td><input class="rule-error-name" placeholder="例如：片段边界不准确" value="'+ruleEscape(name)+'"></td><td><button class="rule-remove-row" type="button" aria-label="删除" onclick="ruleRemoveTableRow(this)">×</button></td></tr>');
+      ruleRefreshIndexes('#ruleErrorReasonRows');
+    }
+    function ruleAddActionElement(value){
+      var userAdded=arguments.length===0;value=value||{};var id='ruleActionElement'+(++ruleElementSequence),host=document.getElementById('ruleActionElements');
+      var nameZh=value.name||value.name_zh||value.zh||'',nameEn=value.name_en||value.nameEn||value.en||'';
+      host.insertAdjacentHTML('beforeend','<section class="rule-action-tree-group" id="'+id+'"><div class="rule-action-parent-row"><div class="rule-action-name-cell"><button class="rule-action-tree-toggle" type="button" aria-label="收起枚举值" aria-expanded="true" onclick="ruleToggleActionElement(this)">▾</button><div class="rule-action-name-stack"><input class="rule-action-element-name" placeholder="中文元素名称" value="'+ruleEscape(nameZh)+'" oninput="ruleRefreshPlaceholders()"></div></div><input class="rule-action-element-key rule-key" placeholder="请输入 Key（英文名）" value="'+ruleEscape(value.key||nameEn)+'" oninput="ruleRefreshPlaceholders()"><button class="rule-link-action" type="button" onclick="ruleRemoveActionElement(this)">删除</button></div><div class="rule-action-children"><div class="rule-action-enum-values"></div><div class="rule-list-add rule-list-add-inner"><button class="rule-link-action" type="button" onclick="ruleAddActionEnumFromButton(this)">添加枚举值</button></div></div></section>');
+      var values=value.values&&value.values.length?value.values:[{}];values.forEach(function(item){ruleAddActionEnumValue(id,item)});ruleRefreshActionTree();ruleRefreshPlaceholders();if(userAdded){var group=document.getElementById(id);group.scrollIntoView({block:'nearest'});group.querySelector('.rule-action-element-name').focus()}
+    }
+    function ruleAddActionEnumValue(elementId,value){
+      var userAdded=arguments.length===1;value=value||{};var group=document.getElementById(elementId),body=group.querySelector('.rule-action-enum-values');
+      body.insertAdjacentHTML('beforeend','<div class="rule-action-value-row"><div class="rule-action-value-name"><input class="rule-enum-value-name" placeholder="请输入枚举值" value="'+ruleEscape(value.name)+'"></div><input class="rule-enum-value-key rule-key" placeholder="请输入 Key" value="'+ruleEscape(value.key)+'"><button class="rule-link-action" type="button" onclick="ruleRemoveEnumValue(this)">删除</button></div>');
+      if(userAdded){group.classList.remove('collapsed');var toggle=group.querySelector('.rule-action-tree-toggle');toggle.textContent='▾';toggle.setAttribute('aria-expanded','true');toggle.setAttribute('aria-label','收起枚举值');body.lastElementChild.querySelector('.rule-enum-value-name').focus()}
+    }
+    function ruleAddActionEnumFromButton(button){ruleAddActionEnumValue(button.closest('.rule-action-tree-group').id)}
+    function ruleRemoveEnumValue(button){button.closest('.rule-action-value-row').remove()}
+    function ruleToggleActionElement(button){var group=button.closest('.rule-action-tree-group'),collapsed=group.classList.toggle('collapsed');button.textContent=collapsed?'▸':'▾';button.setAttribute('aria-expanded',collapsed?'false':'true');button.setAttribute('aria-label',collapsed?'展开枚举值':'收起枚举值')}
+    function ruleRemoveActionElement(button){button.closest('.rule-action-tree-group').remove();ruleRefreshActionTree();ruleRefreshPlaceholders()}
+    function ruleRefreshActionTree(){var groups=document.querySelectorAll('#ruleActionElements .rule-action-tree-group');document.getElementById('ruleActionElementEmpty').classList.toggle('visible',!groups.length)}
+    function ruleAddActionDescription(value){
+      value=value||{};var body=document.getElementById('ruleActionDescriptionRows');
+      body.insertAdjacentHTML('beforeend','<tr><td class="rule-row-index"></td><td><div class="rule-desc-field"><input class="rule-action-desc-zh" placeholder="例如：拿起目标物体" value="'+ruleEscape(value.zh)+'"><select class="rule-desc-token-select" data-token-placeholder="插入元素" data-description-language="zh" aria-label="向中文动作表述插入中文元素" onchange="ruleInsertDescriptionToken(this)"></select></div></td><td><div class="rule-desc-field"><input class="rule-action-desc-en" placeholder="e.g. Pick up the target object" value="'+ruleEscape(value.en)+'"><select class="rule-desc-token-select" data-token-placeholder="插入元素" data-description-language="en" aria-label="向英文动作表述插入英文元素" onchange="ruleInsertDescriptionToken(this)"></select></div></td><td><button class="rule-remove-row" type="button" aria-label="删除" onclick="ruleRemoveTableRow(this)">×</button></td></tr>');
+      ruleRefreshIndexes('#ruleActionDescriptionRows');ruleRefreshPlaceholders();
+    }
+    function ruleActionElementTokens(language){var tokens=[];language=language||'zh';document.querySelectorAll('#ruleActionElements .rule-action-tree-group').forEach(function(group){var name=group.querySelector('.rule-action-element-name').value.trim(),key=group.querySelector('.rule-action-element-key').value.trim();if(language==='en'&&key)tokens.push(key);else if(name&&key)tokens.push(name+'/'+key)});return tokens}
+    function ruleRefreshPlaceholders(){
+      document.querySelectorAll('#ruleActionDescriptionRows .rule-desc-token-select').forEach(function(select){var language=select.dataset.descriptionLanguage||'zh',tokens=ruleActionElementTokens(language),options=tokens.length?'<option value="">插入'+(language==='en'?'英文':'中文')+'元素</option>'+tokens.map(function(token){return '<option value="'+ruleEscape(token)+'">{'+ruleEscape(token)+'}</option>'}).join(''):'<option value="">暂无'+(language==='en'?'英文':'中文')+'元素</option>';select.innerHTML=options;select.disabled=!tokens.length});
+    }
+    function ruleInsertDescriptionToken(select){
+      if(!select.value)return;var input=select.closest('.rule-desc-field').querySelector('input');if(input.disabled)return;var token='{'+select.value+'}',start=input.selectionStart==null?input.value.length:input.selectionStart,end=input.selectionEnd==null?start:input.selectionEnd;input.value=input.value.slice(0,start)+token+input.value.slice(end);input.focus();input.setSelectionRange(start+token.length,start+token.length);select.value='';
+    }
+    function ruleSetSemanticMode(mode){
+      mode=mode==='richtext'?'richtext':'link';
+      var radio=document.querySelector('input[name="ruleSemanticMode"][value="'+mode+'"]');if(radio)radio.checked=true;
+      document.getElementById('ruleSemanticLink').style.display=mode==='link'?'':'none';document.getElementById('ruleSemanticRichText').style.display=mode==='richtext'?'':'none';
+    }
+    function ruleFormatRichText(command){var editor=document.getElementById('ruleRichTextEditor');if(editor.contentEditable==='false')return;editor.focus();document.execCommand(command,false,null)}
     function ruleCreateStageChanged(stage){
       var type=document.getElementById('ruleCreateType');
       type.innerHTML=stage==='标注'
         ? '<option value="语义标注">语义标注</option><option value="动作标注">动作标注</option>'
-        : '<option value="质检规则">质检规则</option>';
+        : '<option value="质检">质检</option>';
       ruleCreateTypeChanged(type.value);
     }
-    function ruleCreateTypeChanged(ruleType){
-      ruleRefreshConfig();
-    }
+    function ruleCreateTypeChanged(ruleType){ruleRefreshConfig()}
     function ruleRefreshConfig(){
       var stage=document.getElementById('ruleCreateStage').value;
       var ruleType=document.getElementById('ruleCreateType').value;
       var action=stage==='标注'&&ruleType==='动作标注';
       var semantic=stage==='标注'&&ruleType==='语义标注';
+      var quality=stage==='质检';
+      document.getElementById('ruleQualityConfig').style.display=quality?'block':'none';
       document.getElementById('ruleActionConfig').style.display=action?'block':'none';
       document.getElementById('ruleDocumentConfig').style.display=semantic?'block':'none';
-      document.getElementById('ruleEmptyConfig').style.display=action||semantic?'none':'block';
     }
-    ruleCreateStageChanged('质检');
+    function ruleResetDynamicConfig(data){
+      data=data||{};document.getElementById('ruleMistakeRows').innerHTML='';document.getElementById('ruleUnqualifiedRows').innerHTML='';document.getElementById('ruleActionElements').innerHTML='';document.getElementById('ruleActionDescriptionRows').innerHTML='';document.getElementById('ruleErrorReasonRows').innerHTML='';ruleElementSequence=0;
+      (data.quality_mistakes&&data.quality_mistakes.length?data.quality_mistakes:['']).forEach(function(value){ruleAddQualityCriterion('mistake',value)});(data.quality_unqualified&&data.quality_unqualified.length?data.quality_unqualified:['']).forEach(function(value){ruleAddQualityCriterion('unqualified',value)});
+      (data.action_elements&&data.action_elements.length?data.action_elements:[{}]).forEach(ruleAddActionElement);(data.action_descriptions&&data.action_descriptions.length?data.action_descriptions:[{}]).forEach(ruleAddActionDescription);(data.error_reasons&&data.error_reasons.length?data.error_reasons:[{}]).forEach(ruleAddErrorReason);
+      document.getElementById('ruleDocumentLink').value=data.document_link||'';document.getElementById('ruleRichTextEditor').innerHTML=data.semantic_rich_text||'';ruleSetSemanticMode(data.semantic_mode||'link');ruleRefreshPlaceholders();
+    }
+    function ruleSetReadonly(readonly){
+      var drawer=document.getElementById('drawerRuleCreate');drawer.querySelectorAll('.drawer-body input,.drawer-body select,.drawer-body textarea,.drawer-body button').forEach(function(control){control.disabled=readonly});if(!readonly)ruleRefreshPlaceholders();document.getElementById('ruleRichTextEditor').contentEditable=readonly?'false':'true';drawer.querySelector('.drawer-foot').style.display=readonly?'none':'';
+    }
     function openRuleDetail(trigger, editable){
       var drawer=document.getElementById('drawerRuleCreate');
       drawer.dataset.mode=editable===false?'edit':'detail';
@@ -7132,11 +7464,7 @@ def data_rules():
       ruleCreateStageChanged(document.getElementById('ruleCreateStage').value);
       var ruleType=trigger.dataset.ruleType||'';
       if(ruleType){ document.getElementById('ruleCreateType').value=ruleType; ruleCreateTypeChanged(ruleType); }
-      document.getElementById('ruleDocumentLink').value=trigger.dataset.ruleConfig||'';
-      drawer.querySelectorAll('input,select,button').forEach(function(control){
-        control.disabled=editable===false?false:true;
-      });
-      drawer.querySelector('.drawer-foot').style.display=editable===false?'':'none';
+      var data=RULE_DETAIL_DATA[trigger.dataset.ruleId]||{};if(!data.document_link)data.document_link=trigger.dataset.ruleConfig||'';ruleResetDynamicConfig(data);ruleSetReadonly(editable!==false);document.getElementById('ruleDrawerSubmit').textContent='保存';
       openDrawer('drawerRuleCreate');
     }
     function openRuleCreate(){
@@ -7145,14 +7473,32 @@ def data_rules():
       document.querySelector('#drawerRuleCreate .drawer-head h3').textContent='新增规则';
       document.getElementById('ruleCreateName').value='';
       document.getElementById('ruleCreateStage').value='质检';
-      document.getElementById('ruleDocumentLink').value='';
       ruleCreateStageChanged('质检');
-      drawer.querySelectorAll('input,select,button').forEach(function(control){ control.disabled=false; });
-      drawer.querySelector('.drawer-foot').style.display='';
+      ruleResetDynamicConfig({});ruleSetReadonly(false);document.getElementById('ruleDrawerSubmit').textContent='创建';
       openDrawer('drawerRuleCreate');
     }
+    function ruleSave(){
+      if(!document.getElementById('ruleCreateName').value.trim()){toast('请输入规则名称');return}
+      if(!document.querySelector('#ruleCreateAdmins option:checked')){toast('请至少选择一位管理员');return}
+      var stage=document.getElementById('ruleCreateStage').value,ruleType=document.getElementById('ruleCreateType').value;
+      if(stage==='质检'){
+        var mistakes=Array.from(document.querySelectorAll('#ruleMistakeRows .rule-quality-value')).filter(function(input){return input.value.trim()});var unqualified=Array.from(document.querySelectorAll('#ruleUnqualifiedRows .rule-quality-value')).filter(function(input){return input.value.trim()});if(!mistakes.length||!unqualified.length){toast('失误标准和不合格标准至少各填写一条');return}
+      }
+      if(ruleType==='语义标注'){
+        var semanticMode=document.querySelector('input[name="ruleSemanticMode"]:checked').value;if(semanticMode==='link'&&!document.getElementById('ruleDocumentLink').value.trim()){toast('请输入文档链接');return}if(semanticMode==='richtext'&&!document.getElementById('ruleRichTextEditor').textContent.trim()){toast('请输入富文本说明');return}
+      }
+      if(ruleType==='动作标注'){
+        var cards=Array.from(document.querySelectorAll('#ruleActionElements .rule-action-tree-group')),zhTokens=[],enTokens=[];if(!cards.length){toast('请至少添加一个动作元素');return}
+        for(var card of cards){var enumName=card.querySelector('.rule-action-element-name').value.trim(),enumKey=card.querySelector('.rule-action-element-key').value.trim(),valueRows=Array.from(card.querySelectorAll('.rule-action-value-row'));if(!enumName||!enumKey){toast('请完整填写动作元素名称和 Key（英文名）');return}if(!valueRows.length||valueRows.some(function(row){return !row.querySelector('.rule-enum-value-name').value.trim()||!row.querySelector('.rule-enum-value-key').value.trim()})){toast('每个动作元素至少需要一个完整的枚举值');return}zhTokens.push(enumName+'/'+enumKey);enTokens.push(enumKey)}
+        var zhDescriptions=Array.from(document.querySelectorAll('#ruleActionDescriptionRows .rule-action-desc-zh')).filter(function(input){return input.value.trim()}),enDescriptions=Array.from(document.querySelectorAll('#ruleActionDescriptionRows .rule-action-desc-en')).filter(function(input){return input.value.trim()});if(!zhDescriptions.length&&!enDescriptions.length){toast('请至少填写一条动作描述');return}var invalidPlaceholder=false;zhDescriptions.concat(enDescriptions).forEach(function(input){var tokens=input.classList.contains('rule-action-desc-en')?enTokens:zhTokens,matches=input.value.matchAll(/\{([^{}]+)\}/g);for(var match of matches){if(tokens.indexOf(match[1])<0)invalidPlaceholder=true}});if(invalidPlaceholder){toast('中文动作表述只能使用中文元素，英文动作表述只能使用英文元素');return}
+      }
+      var reasons=Array.from(document.querySelectorAll('#ruleErrorReasonRows .rule-error-name')).filter(function(input){return input.value.trim()});if(!reasons.length){toast('请至少添加一个错误原因');return}
+      var drawer=document.getElementById('drawerRuleCreate');toast(drawer.dataset.mode==='edit'?'Demo: 规则已保存':'Demo: 规则已创建');closeDrawer();
+    }
+    ruleCreateStageChanged('质检');ruleResetDynamicConfig({});
     </script>
     """
+    rule_drawer = rule_drawer.replace("__RULE_DETAIL_DATA__", rule_detail_json)
 
     content = f"""
     <div class="dpr-intro dpr-intro-inline-action">
@@ -7594,19 +7940,16 @@ def model_queues():
       document.querySelectorAll('.model-queue-member-picker.open').forEach(function (other) {{
         if (other !== picker) other.classList.remove('open');
       }});
-      picker.classList.toggle('open');
-      if (picker.classList.contains('open')) {{
-        var search = picker.querySelector('.model-queue-member-search');
-        if (search) search.focus();
-      }}
+      var search = picker.querySelector('.model-queue-member-search');
+      if (search) {{ search.focus(); modelQueueMemberSearch(search); }}
     }}
     function modelQueueMemberSearch(input) {{
       var picker = input.closest('.model-queue-member-picker');
       if (!picker) return;
-      picker.classList.add('open');
       var query = (input.value || '').trim().toLowerCase();
+      picker.classList.toggle('open', !!query);
       picker.querySelectorAll('.model-queue-member-option').forEach(function (option) {{
-        option.style.display = !query || (option.dataset.search || '').indexOf(query) >= 0 ? '' : 'none';
+        option.style.display = query && !option.classList.contains('selected') && (option.dataset.search || '').indexOf(query) >= 0 ? '' : 'none';
       }});
     }}
     function modelQueueMemberToggle(option, event) {{
@@ -10686,8 +11029,9 @@ def tenant_resources():
                 <label>管理员</label>
                 <div>
                   <div class="remote-picker">
-                    <span class="picked">joanna.qiao <i>&times;</i></span>
-                    <input placeholder="请搜索用户名">
+                    <span class="picked" data-value="joanna.qiao"><span>joanna.qiao</span><button type="button" onclick="remotePersonRemove(this,event)">&times;</button></span>
+                    <input type="search" placeholder="搜索并选择管理员" autocomplete="off" oninput="remotePersonSearch(this)">
+                    <div class="remote-picker-menu"></div>
                   </div>
                 </div>
               </div>
@@ -10792,8 +11136,9 @@ def tenant_queues():
               <div class="queue-detail-section">
                 <h3>成员</h3>
                 <div class="queue-member-add">
-                  <div class="remote-picker">
-                    <input placeholder="请搜索用户名">
+                  <div class="remote-picker" data-single="true">
+                    <input type="search" placeholder="搜索并选择成员" autocomplete="off" oninput="remotePersonSearch(this)">
+                    <div class="remote-picker-menu"></div>
                   </div>
                   <select class="queue-select"><option>成员</option><option>管理员</option></select>
                   <button class="btn btn-secondary" onclick="toast('Demo: 成员已添加')">添加</button>
@@ -10867,8 +11212,9 @@ def tenant_queues():
             <label>管理员</label>
             <div>
               <div class="remote-picker">
-                <span class="picked">joanna.qiao <i>&times;</i></span>
-                <input placeholder="请搜索用户名">
+                <span class="picked" data-value="joanna.qiao"><span>joanna.qiao</span><button type="button" onclick="remotePersonRemove(this,event)">&times;</button></span>
+                <input type="search" placeholder="搜索并选择管理员" autocomplete="off" oninput="remotePersonSearch(this)">
+                <div class="remote-picker-menu"></div>
               </div>
             </div>
           </div>

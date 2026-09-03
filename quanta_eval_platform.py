@@ -931,7 +931,15 @@ a:hover { color: #176a88; }
 .stat-card .stat-sub { font-size: 12px; color: rgba(0,0,0,0.45); margin-top: 4px; }
 
 /* ── Filter bar ── */
-.filter-bar { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; align-items: center; }
+.filter-bar { display:grid; grid-template-columns:repeat(6,minmax(0,1fr)); gap:12px 14px; margin-bottom:16px; align-items:end; }
+.filter-bar > .ff { min-width:0; width:auto; }
+.filter-bar > .ff input, .filter-bar > .ff select, .filter-bar > .ff .ts-wrap,
+.filter-bar > .ff .benchmark-remote-select, .filter-bar > .ff .prompt-filter-select { width:100%; min-width:0; box-sizing:border-box; }
+.filter-bar > .filter-actions { display:flex; align-items:center; gap:8px; white-space:nowrap; }
+.filter-bar > [style*="flex:1"] { display:none !important; }
+.filter-bar > input, .filter-bar > select { width:100%; min-width:0; box-sizing:border-box; }
+@media (max-width:1000px) { .filter-bar { grid-template-columns:repeat(3,minmax(0,1fr)); } }
+@media (max-width:640px) { .filter-bar { grid-template-columns:repeat(2,minmax(0,1fr)); } .filter-bar > .filter-actions { grid-column:1/-1; justify-content:flex-end; } }
 
 /* ── Form layout ── */
 .form-group { margin-bottom: 16px; }
@@ -2980,11 +2988,9 @@ def tags_page():
             <label class="req">负责人</label>
             <div class="tag-owner-editor" onclick="document.getElementById('newTagGroupOwner').focus()">
               <span id="tagGroupOwnerChips"></span>
-              <input type="text" id="newTagGroupOwner" placeholder="输入负责人后按回车"
-                onkeydown="tagOwnerInputKeydown(event)" oninput="tagOwnerInputChanged(this)"
-                onblur="tagCommitOwnerInput()">
+              <input type="search" id="newTagGroupOwner" placeholder="搜索并选择负责人" autocomplete="off" oninput="tagSearchOwners()">
+              <div class="tag-owner-search-panel" id="tagOwnerSearchPanel"><div id="tagOwnerSearchChoices"></div></div>
             </div>
-            <div class="tag-form-hint">支持添加多个负责人，按回车或逗号确认</div>
           </div>
           <div class="form-group">
             <label>启用状态</label>
@@ -3038,13 +3044,19 @@ def tags_page():
       .tag-status-switch input:checked + .tag-status-track {{ background:#1F80A0; }}
       .tag-status-switch input:checked + .tag-status-track::before {{ transform:translateX(18px); }}
       .tag-form-status {{ min-height:32px; }}
-      .tag-owner-editor {{ min-height:36px; display:flex; flex-wrap:wrap; align-items:center; gap:6px; padding:4px 8px; border:1px solid #d9d9d9; border-radius:8px; background:#fff; box-sizing:border-box; cursor:text; transition:border-color .15s,box-shadow .15s; }}
+      .tag-owner-editor {{ position:relative; min-height:36px; display:flex; flex-wrap:wrap; align-items:center; gap:6px; padding:4px 8px; border:1px solid #d9d9d9; border-radius:8px; background:#fff; box-sizing:border-box; cursor:text; transition:border-color .15s,box-shadow .15s; }}
       .tag-owner-editor:focus-within {{ border-color:#1F80A0; box-shadow:0 0 0 2px rgba(31,128,160,.12); }}
       #tagGroupOwnerChips {{ display:contents; }}
       .tag-owner-edit-chip {{ display:inline-flex; align-items:center; gap:5px; padding:2px 6px 2px 8px; border-radius:5px; background:#eef7f8; color:#176a88; font-size:12px; line-height:22px; }}
       .tag-owner-edit-chip button {{ appearance:none; border:0; padding:0; background:transparent; color:rgba(0,0,0,.35); cursor:pointer; font-size:14px; line-height:1; }}
       .tag-owner-edit-chip button:hover {{ color:#ff4d4f; }}
       #newTagGroupOwner {{ flex:1; min-width:150px; width:auto; height:26px; padding:0; border:0; outline:0; box-shadow:none; }}
+      .tag-owner-search-panel {{ display:none; position:absolute; z-index:30; top:calc(100% + 5px); right:0; left:0; padding:4px 0; border:1px solid #e1e5e8; border-radius:7px; background:#fff; box-shadow:0 8px 22px rgba(0,0,0,.12); }}
+      .tag-owner-search-panel.active {{ display:block; }}
+      .tag-owner-search-panel>div {{ max-height:190px; overflow:auto; }}
+      .tag-owner-search-choice {{ display:block; width:100%; padding:8px 12px; border:0; background:#fff; color:rgba(0,0,0,.72); text-align:left; cursor:pointer; }}
+      .tag-owner-search-choice:hover {{ background:#f1f8f8; color:#1F80A0; }}
+      .tag-owner-search-empty {{ padding:15px; color:rgba(0,0,0,.38); font-size:12px; text-align:center; }}
       #newTagGroupIdentifier:disabled {{ background:#f5f5f5; color:rgba(0,0,0,.38); cursor:not-allowed; }}
       .tag-form-hint {{ margin-top:6px; font-size:12px; color:rgba(0,0,0,.38); }}
       .tag-main-panel {{ min-width:0; }}
@@ -3110,6 +3122,7 @@ def tags_page():
     var currentTagUser = '{current_user}';
     var tagEditingGroup = null;
     var tagGroupOwners = [];
+    var tagGroupOwnerOptions = ['joanna.qiao','tao.wang','包媛桐','Lance Li','Joanna Qiao','Alan Li','Dream','Raleigh','Oasis','Joanna','Wei Zhang'];
     function tagRowsInCurrentGroup() {{
       return Array.prototype.slice.call(document.querySelectorAll('#tag-tree-tbl tbody tr[data-group="' + currentTagGroup + '"]'));
     }}
@@ -3205,32 +3218,27 @@ def tags_page():
         box.appendChild(chip);
       }});
     }}
-    function tagAddOwners(raw) {{
-      String(raw || '').split(/[,，]/).forEach(function(item) {{
-        var owner = item.trim();
-        if (owner && tagGroupOwners.indexOf(owner) < 0) tagGroupOwners.push(owner);
-      }});
-      tagRenderOwnerChips();
-    }}
-    function tagCommitOwnerInput() {{
+    function tagSearchOwners() {{
       var input = document.getElementById('newTagGroupOwner');
-      if (!input) return;
-      tagAddOwners(input.value);
-      input.value = '';
+      var keyword = input.value.trim().toLowerCase();
+      var panel = document.getElementById('tagOwnerSearchPanel');
+      if (!keyword) {{ panel.classList.remove('active'); document.getElementById('tagOwnerSearchChoices').innerHTML = ''; return; }}
+      var matches = tagGroupOwnerOptions.filter(function(owner) {{ return tagGroupOwners.indexOf(owner) < 0 && owner.toLowerCase().indexOf(keyword) >= 0; }});
+      document.getElementById('tagOwnerSearchChoices').innerHTML = matches.length ? matches.map(function(owner) {{ return '<button type="button" class="tag-owner-search-choice" onclick="tagSelectOwner(this.textContent)">' + owner + '</button>'; }}).join('') : '<div class="tag-owner-search-empty">没有搜索到可选择的负责人</div>';
+      panel.classList.add('active');
     }}
-    function tagOwnerInputKeydown(event) {{
-      if (event.key === 'Enter' || event.key === ',' || event.key === '，') {{
-        event.preventDefault();
-        tagCommitOwnerInput();
-      }}
-      if (event.key === 'Backspace' && !event.currentTarget.value && tagGroupOwners.length) {{
-        tagGroupOwners.pop();
-        tagRenderOwnerChips();
-      }}
+    function tagSelectOwner(owner) {{
+      if (tagGroupOwners.indexOf(owner) < 0) tagGroupOwners.push(owner);
+      document.getElementById('newTagGroupOwner').value = '';
+      document.getElementById('tagOwnerSearchPanel').classList.remove('active');
+      document.getElementById('tagOwnerSearchPanel').classList.remove('active');
+      tagRenderOwnerChips();
+      document.getElementById('newTagGroupOwner').focus();
     }}
-    function tagOwnerInputChanged(input) {{
-      if (input.value.indexOf(',') >= 0 || input.value.indexOf('，') >= 0) tagCommitOwnerInput();
-    }}
+    document.addEventListener('click', function(event) {{
+      var editor = document.querySelector('.tag-owner-editor');
+      if (editor && !editor.contains(event.target)) document.getElementById('tagOwnerSearchPanel').classList.remove('active');
+    }});
     function tagResetGroupForm() {{
       tagEditingGroup = null;
       tagGroupOwners = [];
@@ -3241,6 +3249,7 @@ def tags_page():
       document.getElementById('newTagGroupIdentifier').disabled = false;
       document.getElementById('newTagGroupDescription').value = '';
       document.getElementById('newTagGroupOwner').value = '';
+      document.getElementById('tagOwnerSearchPanel').classList.remove('active');
       document.getElementById('newTagGroupEnabled').checked = true;
       tagSyncCreateStatus(document.getElementById('newTagGroupEnabled'));
       tagRenderOwnerChips();
@@ -3359,7 +3368,6 @@ def tags_page():
       }});
     }}
     function tagSaveGroup() {{
-      tagCommitOwnerInput();
       var name = document.getElementById('newTagGroupName').value.trim();
       var identifier = document.getElementById('newTagGroupIdentifier').value.trim();
       var description = document.getElementById('newTagGroupDescription').value.trim();
@@ -8925,7 +8933,7 @@ def _render_eval_records_replacement(task_id=None):
       .er-task-context .er-export-button {{ margin-left:auto; }}
       .er-page-head {{ display:flex;align-items:center;justify-content:space-between;margin-bottom:14px; }} .er-page-head h1 {{ margin:0;font-size:20px;font-weight:600;color:rgba(0,0,0,.85); }}
       .er-task-context b {{ font-size:15px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap; }} .er-task-context-id {{ font-family:'SF Mono',Menlo,Consolas,monospace;font-size:13px !important;color:rgba(0,0,0,.72); }}
-      .er-result-filter-bar {{ display:grid; grid-template-columns:repeat(5,minmax(130px,1fr)) auto; gap:12px; align-items:end; padding:16px; background:#fff; border:1px solid #f0f0f0; border-radius:8px; margin-bottom:12px; }}
+      .er-result-filter-bar {{ display:grid; grid-template-columns:repeat(6,minmax(0,1fr)); gap:12px 14px; align-items:end; padding:16px; background:#fff; border:1px solid #f0f0f0; border-radius:8px; margin-bottom:12px; }}
       .er-result-filter-bar .ff {{ min-width:0; }} .er-conclusion-filter {{ position:relative; }} .er-conclusion-filter .er-dd-trigger {{ min-height:32px; }} .er-conclusion-filter .er-chips {{ min-height:22px; }}
       .er-result-filter-bar .ff label {{ display:block; margin-bottom:5px; color:rgba(0,0,0,.55); font-size:12px; }}
       .er-result-filter-bar input, .er-result-filter-bar select {{ width:100%; }}
