@@ -185,10 +185,10 @@ PAGE_SPECS = {
 }
 
 NAV_GROUPS = [
+    ("数据采集", ["collection_tasks"]),
     (
-        "任务管理",
+        "数据处理",
         [
-            "collection_tasks",
             "processing_tasks",
             "allocation_management_v2",
             "data_management",
