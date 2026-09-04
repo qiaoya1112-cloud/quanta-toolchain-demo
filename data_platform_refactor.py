@@ -27,7 +27,7 @@ PAGE_SPECS = {
         "title": "处理任务",
         "subtitle": "用筛选条件接收数据，并编排多个独立处理流程",
         "icon": "&#9776;",
-        "nav_badge": "S025",
+        "nav_badge": "S026",
     },
     "allocation_management": {
         "path": "/data/allocations",
@@ -41,7 +41,6 @@ PAGE_SPECS = {
         "title": "分配管理",
         "subtitle": "按供应商与用户组统筹进行中的人工处理任务",
         "icon": "&#8646;",
-        "nav_badge": "S025",
     },
     "allocation_management_old": {
         "path": "/data/allocations-legacy",
@@ -55,6 +54,7 @@ PAGE_SPECS = {
         "title": "数据管理",
         "subtitle": "查看所有数据处理实例并干预运行流程",
         "icon": "&#9783;",
+        "nav_badge": "S026",
     },
     "workbench": {
         "path": "/data/workbench",
@@ -70,7 +70,7 @@ PAGE_SPECS = {
         "nav_title": "标注工作台",
         "subtitle": "领取用户组或供应商任务，并处理被驳回的数据",
         "icon": "&#9881;",
-        "nav_badge": "S025",
+        "nav_badge": "S026",
     },
     "personal_dashboard": {
         "path": "/data/dashboard",
@@ -87,13 +87,14 @@ PAGE_SPECS = {
         "subtitle": "配置并管理数据处理工作流",
         "icon": "&#8644;",
         "legacy": True,
+        "nav_badge": "S026",
     },
     "user_group_management": {
         "path": "/data/user-groups",
         "title": "用户组管理",
         "subtitle": "管理人工节点的领取范围与共享任务池",
         "icon": "&#9786;",
-        "nav_badge": "S025",
+        "nav_badge": "S026",
     },
     "execution_records": {
         "path": "/data/runs",
@@ -110,6 +111,7 @@ PAGE_SPECS = {
         "subtitle": "管理工作流可复用处理算子",
         "icon": "&#9881;",
         "badge": "草稿",
+        "nav_badge": "S026",
         "legacy": True,
     },
     "workbench_management": {
@@ -123,6 +125,7 @@ PAGE_SPECS = {
         "title": "项目管理",
         "subtitle": "维护任务所属项目及负责人",
         "icon": "&#9635;",
+        "nav_badge": "S026",
     },
     "rule_management": {
         "path": "/data/rules",
@@ -130,6 +133,7 @@ PAGE_SPECS = {
         "subtitle": "配置数据处理与人工执行规则",
         "icon": "&#9745;",
         "legacy": True,
+        "nav_badge": "S026",
     },
     "scene_management": {
         "path": "/data/scenes",
@@ -162,6 +166,7 @@ PAGE_SPECS = {
         "subtitle": "管理外部供应商、协议与交付状态",
         "icon": "&#9635;",
         "badge": "草稿",
+        "nav_badge": "S026",
     },
     "personnel_management": {
         "path": "/data/personnel",
