@@ -123,7 +123,7 @@ def test_lineage_type_cards_have_distinct_visual_tokens():
     assert '[data-lineage-group="eval"][data-lineage-kind="dagger"]' in html
     assert '[data-lineage-group="eval"][data-lineage-kind="assets"]' in html
     assert "TEST" in html
-    assert "Assets" in html
+    assert "Assess" in html
     assert '.lin-node[data-lineage-group="source"][data-lineage-kind="normal"] { border-left:3px solid #149DAA; }' in html
     assert '.lin-node[data-lineage-group="eval"][data-lineage-kind="test"] { border-left:3px solid #2563EB; }' in html
     assert '.lineage-hint .hint-bar.test { background:#2563EB; }' in html
@@ -514,6 +514,10 @@ def test_image_management_page_and_recommended_image_options_share_catalog():
     assert 'id="trainRecommendedImage"' in html
     assert 'data-image-path=' in html
     assert 'id="trainImagePath"' in html
+    assert 'class="train-recommended-description"' in html
+    for image in toolchain_demo.TRAIN_IMAGE_CATALOG:
+        assert image['description'] in config_html
+        assert image['description'] in html
 
 
 def test_train_detail_basic_info_contains_drawer_fields_and_id_column():
@@ -629,7 +633,7 @@ def test_lineage_task_type_is_a_horizontal_badge_above_the_card_name():
     assert '<span class="lin-type-badge normal">NORMAL</span><div class="ln-ttl"' in html
     assert '<span class="lin-type-badge dagger">DAGGER</span><div class="ln-ttl"' in html
     assert '<span class="lin-type-badge test">TEST</span><div class="ln-ttl"' in html
-    assert '<span class="lin-type-badge assets">ASSETS</span><div class="ln-ttl"' in html
+    assert '<span class="lin-type-badge assets">ASSESS</span><div class="ln-ttl"' in html
     assert 'lin-type-label' not in html
     assert 'writing-mode:vertical-rl' not in html
     assert 'class="ln-ttl" title=' in html

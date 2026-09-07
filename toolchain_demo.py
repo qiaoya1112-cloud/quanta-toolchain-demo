@@ -1216,7 +1216,8 @@ select option:disabled { color:rgba(0,0,0,0.32); }
 .lineage-trail-step { display:block; margin-top:3px; color:#839097; font-size:11px; line-height:1.35; }
 .lineage-floating-ui { position:absolute; z-index:30; }
 .lineage-floating-group { display:flex; align-items:center; overflow:visible; border:1px solid rgba(210,220,225,.96); border-radius:8px; background:rgba(255,255,255,.96); box-shadow:0 4px 14px rgba(35,60,68,.10); backdrop-filter:blur(10px); }
-.lineage-control-btn { height:34px; min-width:36px; padding:0 10px; border:0; border-right:1px solid #E4E9EC; background:transparent; color:#40565D; font:inherit; font-size:13px; cursor:pointer; transition:color .16s ease, background .16s ease; }
+.lineage-control-btn { display:inline-flex; align-items:center; justify-content:center; height:34px; min-width:36px; padding:0 10px; border:0; border-right:1px solid #E4E9EC; background:transparent; color:#40565D; font:inherit; font-size:13px; cursor:pointer; transition:color .16s ease, background .16s ease; }
+.lineage-control-icon { width:22px; height:22px; fill:none; stroke:currentColor; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
 .lineage-control-btn:last-child { border-right:0; }
 .lineage-control-btn:hover { color:#0F8793; background:#F2FBFC; }
 .lineage-control-btn:active { background:#E5F6F7; }
@@ -1363,7 +1364,24 @@ body.lineage-canvas-page .lineage-viewport { height:100%; min-height:0; }
 .train-notify-title { width:max-content; text-align:center; }
 .train-notify-title label { display:block; }
 .train-notify-toggle { margin-top:14px; }
-.train-recommended-image { width:100%; min-height:36px; }
+.train-recommended-picker { position:relative; width:100%; }
+.train-recommended-image { display:none; }
+.train-recommended-trigger { width:100%; min-height:54px; padding:7px 34px 7px 11px; border:1px solid #d9d9d9; border-radius:6px; background:#fff; color:rgba(0,0,0,0.88); cursor:pointer; text-align:left; position:relative; }
+.train-recommended-trigger:hover,
+.train-recommended-picker.open .train-recommended-trigger { border-color:var(--primary); }
+.train-recommended-picker.open .train-recommended-trigger { box-shadow:0 0 0 2px rgba(20,157,170,0.12); }
+.train-recommended-title { display:flex; align-items:center; gap:8px; font-size:13px; line-height:20px; }
+.train-recommended-name { font-weight:500; }
+.train-recommended-version { color:rgba(0,0,0,0.58); font-family:'SF Mono',Menlo,monospace; }
+.train-recommended-description { display:block; margin-top:1px; color:rgba(0,0,0,0.45); font-size:11px; line-height:18px; }
+.train-recommended-chevron { position:absolute; right:12px; top:50%; color:rgba(0,0,0,0.45); font-size:12px; transform:translateY(-50%); transition:transform .16s ease; }
+.train-recommended-picker.open .train-recommended-chevron { transform:translateY(-50%) rotate(180deg); }
+.train-recommended-menu { display:none; position:absolute; z-index:40; top:calc(100% + 4px); left:0; right:0; padding:4px; border:1px solid #e5e7eb; border-radius:8px; background:#fff; box-shadow:0 6px 18px rgba(0,0,0,0.12); }
+.train-recommended-picker.open .train-recommended-menu { display:block; }
+.train-recommended-option { display:block; width:100%; padding:7px 28px 7px 9px; border:0; border-radius:5px; background:#fff; color:rgba(0,0,0,0.88); cursor:pointer; text-align:left; position:relative; }
+.train-recommended-option:hover { background:#f5fafa; }
+.train-recommended-option.selected { background:#eaf7f8; }
+.train-recommended-option.selected::after { content:'✓'; position:absolute; right:10px; top:50%; color:var(--primary); font-weight:600; transform:translateY(-50%); }
 .train-section .fg:last-child { margin-bottom:0; }
 .train-name-control { position:relative; }
 .train-name-control input { padding-right:55px; }
@@ -2979,6 +2997,8 @@ function trainTagRemove(button){
 document.addEventListener('click', function(event){
   var picker = document.getElementById('trainTagPicker');
   if (picker && picker.classList.contains('open') && !picker.contains(event.target)) closeTrainTagPicker();
+  var imagePicker = document.getElementById('trainRecommendedPicker');
+  if (imagePicker && imagePicker.classList.contains('open') && !imagePicker.contains(event.target)) closeTrainRecommendedImage();
 });
 function openTrainDrawer(){
   openDrawer('drawerNewTrain');
@@ -3303,7 +3323,7 @@ function switchTrainImageMode(el, mode){
 }
 function updateRecommendedImageVersions(){
   var curated = document.getElementById('trainRecommendedImage');
-  if (curated){ updateTrainImagePath(); return; }
+  if (curated){ syncTrainRecommendedImagePicker(); updateTrainImagePath(); return; }
   var nameSel = document.getElementById('trainRecommendedName');
   var versionSel = document.getElementById('trainRecommendedVersion');
   if (!nameSel || !versionSel) return;
@@ -3314,6 +3334,45 @@ function updateRecommendedImageVersions(){
   refreshSelectPlaceholderState(nameSel);
   refreshSelectPlaceholderState(versionSel);
   updateTrainImagePath();
+}
+function toggleTrainRecommendedImage(event){
+  if (event) event.stopPropagation();
+  var picker = document.getElementById('trainRecommendedPicker');
+  var trigger = document.getElementById('trainRecommendedTrigger');
+  if (!picker || !trigger) return;
+  var isOpen = picker.classList.toggle('open');
+  trigger.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+}
+function closeTrainRecommendedImage(){
+  var picker = document.getElementById('trainRecommendedPicker');
+  var trigger = document.getElementById('trainRecommendedTrigger');
+  if (picker) picker.classList.remove('open');
+  if (trigger) trigger.setAttribute('aria-expanded', 'false');
+}
+function selectTrainRecommendedImage(index, event){
+  if (event) event.stopPropagation();
+  var select = document.getElementById('trainRecommendedImage');
+  if (!select || !select.options[index]) return;
+  select.selectedIndex = index;
+  syncTrainRecommendedImagePicker();
+  closeTrainRecommendedImage();
+  updateTrainImagePath();
+}
+function syncTrainRecommendedImagePicker(){
+  var select = document.getElementById('trainRecommendedImage');
+  if (!select || select.selectedIndex < 0) return;
+  var selected = select.options[select.selectedIndex];
+  var name = document.getElementById('trainRecommendedSelectedName');
+  var version = document.getElementById('trainRecommendedSelectedVersion');
+  var description = document.getElementById('trainRecommendedSelectedDescription');
+  if (name) name.textContent = selected.dataset.name || '';
+  if (version) version.textContent = selected.dataset.version || '';
+  if (description) description.textContent = selected.dataset.description || '';
+  document.querySelectorAll('#trainRecommendedMenu .train-recommended-option').forEach(function(option, index){
+    var isSelected = index === select.selectedIndex;
+    option.classList.toggle('selected', isSelected);
+    option.setAttribute('aria-selected', isSelected ? 'true' : 'false');
+  });
 }
 function updateTrainImageVersions(){
   var nameSel = document.getElementById('trainImageName');
@@ -8691,9 +8750,29 @@ def experiments():
     train_yaml_json = json.dumps(TRAIN_YAML_TEMPLATES, ensure_ascii=False)
     train_code_json = json.dumps(TRAIN_CODE_REFS, ensure_ascii=False)
     train_image_catalog_json = json.dumps([
-        {"name": i["name"], "version": i["version"], "path": _train_image_path(i)}
+        {"name": i["name"], "version": i["version"], "description": i["description"], "path": _train_image_path(i)}
         for i in TRAIN_IMAGE_CATALOG
     ], ensure_ascii=False)
+    recommended_image_options = "".join(
+        f'<option value="{html.escape(_train_image_path(i), quote=True)}" '
+        f'data-path="{html.escape(_train_image_path(i), quote=True)}" '
+        f'data-image-path="{html.escape(_train_image_path(i), quote=True)}" '
+        f'data-name="{html.escape(i["name"], quote=True)}" '
+        f'data-version="{html.escape(i["version"], quote=True)}" '
+        f'data-description="{html.escape(i["description"], quote=True)}">'
+        f'{html.escape(i["name"])}　{html.escape(i["version"])}</option>'
+        for i in TRAIN_IMAGE_CATALOG
+    )
+    recommended_image_items = "".join(
+        f'<button type="button" class="train-recommended-option{" selected" if index == 0 else ""}" '
+        f'role="option" aria-selected="{"true" if index == 0 else "false"}" '
+        f'onclick="selectTrainRecommendedImage({index},event)">'
+        f'<span class="train-recommended-title"><span class="train-recommended-name">{html.escape(i["name"])}</span>'
+        f'<span class="train-recommended-version">{html.escape(i["version"])}</span></span>'
+        f'<span class="train-recommended-description">{html.escape(i["description"])}</span></button>'
+        for index, i in enumerate(TRAIN_IMAGE_CATALOG)
+    )
+    default_recommended_image = TRAIN_IMAGE_CATALOG[0]
     content = page_header(
         "训练任务",
         "数据集挂载 · 实验管理 · 超参 · Checkpoint",
@@ -8814,9 +8893,15 @@ def experiments():
                 <button type="button" class="tm-subtab" onclick="switchTrainImageMode(this,'custom')">自定义镜像</button>
               </div>
               <div id="trainImageDefault" class="image-mode-panel active">
-                <select id="trainRecommendedImage" class="train-recommended-image" onchange="updateTrainImagePath()">
-                  {''.join(f'<option value="{html.escape(_train_image_path(i), quote=True)}" data-path="{html.escape(_train_image_path(i), quote=True)}" data-image-path="{html.escape(_train_image_path(i), quote=True)}">{html.escape(i["name"])}　{html.escape(i["version"])}</option>' for i in TRAIN_IMAGE_CATALOG)}
-                </select>
+                <div class="train-recommended-picker" id="trainRecommendedPicker">
+                  <button type="button" class="train-recommended-trigger" id="trainRecommendedTrigger" aria-haspopup="listbox" aria-expanded="false" onclick="toggleTrainRecommendedImage(event)">
+                    <span class="train-recommended-title"><span class="train-recommended-name" id="trainRecommendedSelectedName">{html.escape(default_recommended_image['name'])}</span><span class="train-recommended-version" id="trainRecommendedSelectedVersion">{html.escape(default_recommended_image['version'])}</span></span>
+                    <span class="train-recommended-description" id="trainRecommendedSelectedDescription">{html.escape(default_recommended_image['description'])}</span>
+                    <span class="train-recommended-chevron" aria-hidden="true">&#9662;</span>
+                  </button>
+                  <div class="train-recommended-menu" id="trainRecommendedMenu" role="listbox" aria-label="推荐镜像">{recommended_image_items}</div>
+                  <select id="trainRecommendedImage" class="train-recommended-image" tabindex="-1" aria-hidden="true" onchange="syncTrainRecommendedImagePicker();updateTrainImagePath()">{recommended_image_options}</select>
+                </div>
                 <div style="display:none"><select id="trainRecommendedName"><option value="mozbrain_release">mozbrain_release</option></select><select id="trainRecommendedVersion"><option value="thor-v1.0.0">thor-v1.0.0</option></select></div>
               </div>
               <div id="trainImageCustom" class="image-mode-panel">
@@ -11833,7 +11918,7 @@ def _lineage_detail_html(anchor_type, anchor_id):
             eval_kind = "test"
         return (
             f'<div class="{cls("eval","lin-node green")}" data-chain-id="{get_chains(eval_node_id)}" data-node-id="{eval_node_id}" data-lineage-group="eval" data-lineage-kind="{eval_kind}" data-lineage-tip="{tip}">'
-            f'<span class="lin-type-badge {eval_kind}">{"TEST" if eval_kind == "test" else ("DAGGER" if eval_kind == "dagger" else "ASSETS")}</span><div class="ln-ttl" title="{task_name_attr}">{task_name_html}</div>'
+            f'<span class="lin-type-badge {eval_kind}">{"TEST" if eval_kind == "test" else ("DAGGER" if eval_kind == "dagger" else "ASSESS")}</span><div class="ln-ttl" title="{task_name_attr}">{task_name_html}</div>'
             f'<div class="ln-footer">'
             f'<div class="ln-meta">ID {task_no}</div>'
             f'</div>'
@@ -11937,7 +12022,7 @@ def _lineage_detail_html(anchor_type, anchor_id):
               <div class="lin-dimension-submenu" data-for="eval">
                 <button type="button" class="lin-dimension-option" data-value="eval:test">TEST评测</button>
                 <button type="button" class="lin-dimension-option" data-value="eval:dagger">DAgger评测</button>
-                <button type="button" class="lin-dimension-option" data-value="eval:assets">Assets评测</button>
+                <button type="button" class="lin-dimension-option" data-value="eval:assets">Assess评测</button>
               </div>
             </div>
           </div>
@@ -11955,7 +12040,7 @@ def _lineage_detail_html(anchor_type, anchor_id):
             <option value="eval" {'selected' if anchor_type == 'eval' else ''}>评测任务</option>
             <option value="eval:test">TEST评测</option>
             <option value="eval:dagger">DAgger评测</option>
-            <option value="eval:assets">Assets评测</option>
+            <option value="eval:assets">Assess评测</option>
           </optgroup>
         </select>
         <input id="linInput" value="{input_value}" placeholder="输入名称或 ID" list="linInputSuggestions">
@@ -12013,10 +12098,10 @@ def _lineage_detail_html(anchor_type, anchor_id):
         </div>
         <div class="lineage-floating-ui lineage-history-dock">
           <div class="lineage-floating-group" aria-label="浏览历史控制">
-            <button type="button" class="lineage-control-btn" id="linBackView" onclick="linGoBackView()" aria-label="返回上一个视图" title="返回上一个视图" disabled>&#8592;</button>
-            <button type="button" class="lineage-control-btn" id="linForwardView" onclick="linGoForwardView()" aria-label="前进到下一个视图" title="前进到下一个视图" disabled>&#8594;</button>
+            <button type="button" class="lineage-control-btn" id="linBackView" onclick="linGoBackView()" aria-label="返回上一个视图" title="返回上一个视图" disabled><svg class="lineage-control-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 14 4 9l5-5"></path><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"></path></svg></button>
+            <button type="button" class="lineage-control-btn" id="linForwardView" onclick="linGoForwardView()" aria-label="前进到下一个视图" title="前进到下一个视图" disabled><svg class="lineage-control-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m15 14 5-5-5-5"></path><path d="M20 9H9.5a5.5 5.5 0 0 0 0 11H13"></path></svg></button>
             <span class="lineage-control-divider" aria-hidden="true"></span>
-            <button type="button" class="lineage-control-btn lineage-history-trigger" id="linHistoryToggle" onclick="linToggleHistory(event)" aria-label="查看浏览历史" aria-expanded="false" aria-controls="linHistoryPopover" title="查看浏览历史">&#8634;</button>
+            <button type="button" class="lineage-control-btn lineage-history-trigger" id="linHistoryToggle" onclick="linToggleHistory(event)" aria-label="查看浏览历史" aria-expanded="false" aria-controls="linHistoryPopover" title="查看浏览历史"><svg class="lineage-control-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"></path><path d="M3 3v5h5"></path><path d="M12 7v5l4 2"></path></svg></button>
           </div>
           <div class="lineage-history-popover lineage-floating-ui" id="linHistoryPopover">
             <div class="lineage-history-header">
@@ -12463,7 +12548,7 @@ def _lineage_detail_html(anchor_type, anchor_id):
       eval: '评测任务',
       'eval:test': 'TEST评测',
       'eval:dagger': 'DAgger评测',
-      'eval:assets': 'Assets评测'
+      'eval:assets': 'Assess评测'
     }};
 
     function linShowDimensionSubmenu(dimension) {{
