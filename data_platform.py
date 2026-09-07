@@ -289,12 +289,41 @@ MANAGED_OPERATORS = [
         "id": "op_e2e_segment_annotation",
         "name": "端到端切分标注处理算子",
         "ident": "e2e_segment_annotation",
+        "current_version": "v1.2.0",
+        "updated": "2026-08-28 16:40",
         "script": "e2e_segment_annotation.py",
         "cat": "标注",
         "creator": "joanna.qiao",
         "desc": "完成端到端数据切分、动作片段标注与结构化结果输出。",
         "params": "--recording-id / --flow-version / --annotation-schema",
         "returns": "切分片段、动作标注与处理结果 JSON",
+        "versions": [
+            {
+                "version": "v1.2.0", "status": "已发布",
+                "creator": "joanna.qiao", "created": "2026-08-28 16:40",
+                "image": "frontdesk-py3.10:latest", "script": "e2e_segment_annotation.py",
+                "params": "--recording-id / --flow-version / --annotation-schema",
+                "returns": "切分片段、动作标注与处理结果 JSON",
+                "references": ["端到端切分标注流程", "多级复核数据处理流程"],
+                "note": "补充标注结构校验，支持按流程版本输出处理结果。",
+            },
+            {
+                "version": "v1.1.0", "status": "已发布",
+                "creator": "joanna.qiao", "created": "2026-08-12 10:18",
+                "image": "frontdesk-py3.10:latest", "script": "e2e_segment_annotation.py",
+                "params": "--recording-id / --annotation-schema",
+                "returns": "切分片段与动作标注 JSON",
+                "references": ["端到端切分标注流程（历史版本）"],
+                "note": "增加动作片段标注结果输出。",
+            },
+            {
+                "version": "v1.0.0", "status": "已停用",
+                "creator": "joanna.qiao", "created": "2026-07-26 14:05",
+                "image": "frontdesk-py3.10:1.0", "script": "e2e_segment_annotation.py",
+                "params": "--recording-id", "returns": "切分片段 JSON",
+                "references": [], "note": "首个发布版本。",
+            },
+        ],
     }
 ]
 
@@ -763,7 +792,12 @@ body.sider-collapsed .sc-exp { display:inline; }
 .muted { color:rgba(0,0,0,0.45); font-size:13px; }
 
 /* ── Filter bar ── */
-.filter-bar { display:flex; gap:8px; margin-bottom:16px; flex-wrap:wrap; align-items:center; }
+.filter-bar { display:grid; grid-template-columns:repeat(6,minmax(0,1fr)); gap:12px 14px; margin-bottom:16px; align-items:end; }
+.filter-bar > input, .filter-bar > select { width:100%; min-width:0; box-sizing:border-box; }
+.filter-bar > .filter-actions { display:flex; align-items:center; gap:8px; white-space:nowrap; }
+.filter-bar > [style*="flex:1"] { display:none !important; }
+@media(max-width:1000px){.filter-bar{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:640px){.filter-bar{grid-template-columns:repeat(2,minmax(0,1fr))}.filter-bar>.filter-actions{grid-column:1/-1;justify-content:flex-end}}
 .filter-bar input,.filter-bar select { padding:5px 12px; height:34px; border:1px solid #d9d9d9; border-radius:8px; font-size:14px; color:rgba(0,0,0,0.85); outline:none; background:#fff; }
 .filter-bar input:focus,.filter-bar select:focus { border-color:#1F80A0; box-shadow:0 0 0 2px rgba(31,128,160,0.12); }
 input::placeholder, textarea::placeholder { color:rgba(0,0,0,0.32); opacity:1; }
@@ -989,6 +1023,9 @@ select option:disabled { color:rgba(0,0,0,0.32); }
 .qa-pass { color:#389e0d; } .qa-pass::before { background:#52c41a; }
 .qa-warn { color:#d48806; } .qa-warn::before { background:#faad14; }
 .qa-fail { color:#cf1322; } .qa-fail::before { background:#ff4d4f; }
+.dpr-instance-table th .dpr-header-filter-control { font-size: inherit; }
+.dpr-instance-metric-card { cursor:pointer; transition:box-shadow .15s, border-color .15s; }
+.dpr-instance-metric-card:hover, .dpr-instance-metric-card.selected { border-left-color:#149DAA !important; box-shadow:0 0 0 2px rgba(20,157,170,.18); }
 
 /* ── Tree + Tab split layout (左树右Tab, 两面板各自独立滚动) ── */
 .split { display:flex; gap:16px; align-items:stretch; height:calc(100vh - 96px); }
@@ -4438,17 +4475,19 @@ def operators():
     rows = ""
     for cat in cat_order:
         for op in [o for o in displayed_operators if o["cat"] == cat]:
-            rows += f"""<tr>
-              <td><b>{op['name']}</b></td>
-              <td><span class="op-script">{op['ident']}</span></td>
-              <td class="muted" style="max-width:460px;"><span class="desc-clamp">{op['desc']}</span></td>
+            versions = op.get("versions", [])
+            current_version = op.get("current_version", versions[0]["version"] if versions else "-")
+            rows += f"""<tr class="op-main-row" data-operator-row="{op['id']}">
+              <td><div class="op-name-cell"><div><button type="button" class="op-name-link" onclick="openOpDetail('{op['id']}')">{op['name']}</button><span class="op-ident">{op['ident']}</span></div></div></td>
+              <td><span class="tag tag-blue">{current_version}</span></td>
+              <td><button type="button" class="op-version-count" onclick="openOpDetail('{op['id']}')">{len(versions)} 个版本</button></td>
+              <td class="muted" style="max-width:360px;"><span class="desc-clamp">{op['desc']}</span></td>
               <td>{op['creator']}</td>
-              <td class="actions-cell"><a href="/pipelines?op={op['id']}">关联工作流</a></td>
+              <td class="muted">{op.get('updated', '-')}</td>
+              <td class="actions-cell"><a href="#" onclick="openOpDetail('{op['id']}');return false;">详情</a></td>
             </tr>"""
 
-    ops_js = json.dumps({o["id"]: {"name": o["name"], "ident": o["ident"], "script": o["script"],
-                                   "cat": o["cat"], "creator": o["creator"], "desc": o["desc"],
-                                   "params": o["params"], "returns": o["returns"]} for o in displayed_operators})
+    ops_js = json.dumps({o["id"]: o for o in displayed_operators}, ensure_ascii=False)
 
     creator_checks = "".join(
         f'<label><input type="checkbox" value="{c}" onchange="msUpdate(this)">{c}</label>'
@@ -4474,10 +4513,10 @@ def operators():
         </div>
       </div>
     </div>
-    <div class="muted" style="margin-bottom:12px;">每个算子 = 一个「原子处理能力」的封装, 可被编排到工作流。</div>
     <div class="table-wrap">
-      <table class="ant-table">
-        <thead><tr><th>名称</th><th>标识</th><th>描述</th><th>创建人</th><th>操作</th></tr></thead>
+      <table class="ant-table op-main-table">
+        <colgroup><col style="width:24%"><col style="width:9%"><col style="width:9%"><col style="width:22%"><col style="width:10%"><col style="width:13%"><col style="width:13%"></colgroup>
+        <thead><tr><th>算子</th><th>当前版本</th><th>版本数</th><th>描述</th><th>创建人</th><th>更新时间</th><th>操作</th></tr></thead>
         <tbody>{rows}</tbody>
       </table>
     </div>
@@ -4491,7 +4530,13 @@ def operators():
           <div class="fg"><label><span class="req">*</span>名称</label><input id="of_name" placeholder="如: 通用导出 Export"></div>
           <div class="fg"><label><span class="req">*</span>标识</label><input id="of_ident" placeholder="英文唯一标识, 如 export_dataset"><div class="hint">编排/调用时引用, 全局唯一</div></div>
           <div class="fg"><label>描述</label><textarea id="of_desc" placeholder="算子做什么 / 核心逻辑"></textarea></div>
-          <div class="fg"><label>是否启用</label><select id="of_enabled"><option>启用</option><option>停用</option></select></div>
+
+          <div class="section-label">版本信息</div>
+          <div class="fg-row op-version-form-row">
+            <div class="fg"><label>基于版本</label><input id="of_baseVersion" disabled></div>
+            <div class="fg"><label><span class="req">*</span>新版本号</label><input id="of_version" placeholder="如: v1.3.0"></div>
+          </div>
+          <div class="fg"><label>版本说明</label><textarea id="of_note" placeholder="请说明本版本的主要变更"></textarea></div>
 
           <div class="section-label">执行配置</div>
           <div class="fg"><label>运行镜像</label><select id="of_image"><option>frontdesk-py3.10:latest</option><option>lerobot-base:v2.1</option><option>自定义...</option></select></div>
@@ -4504,23 +4549,42 @@ def operators():
         <div class="drawer-foot">
           <label id="of_syncTaskWrap" class="foot-check"><input type="checkbox" id="of_syncTask" checked> 同步创建工作流</label>
           <button class="btn" onclick="document.getElementById('opFormDrawer').classList.remove('active')">取消</button>
-          <button class="btn btn-secondary" onclick="document.getElementById('opFormDrawer').classList.remove('active');toast('Demo: 已保存')">保存</button>
-          <button class="btn-primary btn" id="of_saveNewVer" onclick="document.getElementById('opFormDrawer').classList.remove('active');toast('Demo: 已保存为新版本')">保存为新版本</button>
+          <button class="btn-primary btn" id="of_saveNewVer" onclick="document.getElementById('opFormDrawer').classList.remove('active');toast('Demo: 已创建算子版本')">创建版本</button>
         </div>
       </div>
     </div>
 
     <!-- 算子详情 抽屉 -->
     <div class="drawer-mask" id="opDetailDrawer" onclick="if(event.target===this)this.classList.remove('active')">
-      <div class="drawer op-drawer">
+      <div class="drawer op-drawer op-detail-drawer">
         <div class="drawer-head"><h3 id="opDetailTitle">算子详情</h3><button class="drawer-close" onclick="document.getElementById('opDetailDrawer').classList.remove('active')">&times;</button></div>
         <div class="drawer-body" id="opDetailBody"></div>
-        <div class="drawer-foot">
-          <button class="btn" onclick="toast('Demo: 运行算子')">运行</button>
-          <button class="btn-primary btn" id="opDetailEdit">编辑</button>
-        </div>
       </div>
     </div>
+    <style>
+    .op-main-table{{table-layout:fixed;min-width:920px}}
+    .op-name-cell{{display:flex;align-items:center;min-width:0}}
+    .op-name-link,.op-version-count{{padding:0;border:0;background:transparent;color:#149DAA;font:inherit;cursor:pointer;text-align:left}}
+    .op-name-link{{color:rgba(0,0,0,.85);font-weight:600}}
+    .op-ident{{display:block;max-width:190px;margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:rgba(0,0,0,.42);font-family:monospace;font-size:12px}}
+    .op-name-link:hover,.op-version-count:hover{{color:#0F8190}}
+    .op-detail-drawer{{width:860px}}
+    .op-detail-summary{{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px 28px;padding-bottom:20px;border-bottom:1px solid #edf0f2}}
+    .op-detail-summary-item.op-detail-description{{grid-column:1/-1}}
+    .op-detail-summary-item span{{display:block;margin-bottom:5px;color:rgba(0,0,0,.42);font-size:12px}}
+    .op-detail-summary-item strong{{color:rgba(0,0,0,.82);font-size:14px;font-weight:500}}
+    .op-detail-section-head{{display:flex;align-items:center;justify-content:space-between;margin:22px 0 10px}}
+    .op-detail-section-head strong{{color:rgba(0,0,0,.85);font-size:14px}}
+    .op-detail-section-head span{{color:rgba(0,0,0,.42);font-size:12px}}
+    .op-detail-version-table{{width:100%;border-collapse:collapse;border:1px solid #e8ebed;font-size:13px}}
+    .op-detail-version-table th{{padding:10px 12px;background:#f6f8f9;color:rgba(0,0,0,.55);font-weight:500;text-align:left;border-bottom:1px solid #e8ebed}}
+    .op-detail-version-table td{{padding:11px 12px;border-bottom:1px solid #edf0f2}}
+    .op-detail-version-table tbody tr:hover{{background:#f6fbfb}}
+    .op-detail-version-table tbody tr:last-child td{{border-bottom:0}}
+    .op-version-number{{color:#304850;font-weight:500}}
+    .op-version-time{{color:rgba(0,0,0,.45);font-size:12px;white-space:nowrap}}
+    .op-version-form-row{{grid-template-columns:1fr 1fr!important}}
+    </style>
     <script>
     window.OPS = {ops_js};
     function msUpdate(cb){{
@@ -4530,16 +4594,24 @@ def operators():
     document.addEventListener('click', function(e){{
       document.querySelectorAll('.ms-wrap.open').forEach(function(w){{ if(!w.contains(e.target)) w.classList.remove('open'); }});
     }});
-    function openOpForm(id){{
+    function getOpVersion(o,version){{
+      var versions=(o&&o.versions)||[];
+      return versions.find(function(v){{return v.version===version;}})||versions.find(function(v){{return v.version===o.current_version;}})||versions[0]||null;
+    }}
+    function nextOpVersion(version){{
+      var match=String(version||'v0.0.0').match(/v?(\d+)\.(\d+)\.(\d+)/);
+      return match ? 'v'+match[1]+'.'+match[2]+'.'+(Number(match[3])+1) : '';
+    }}
+    function openOpForm(id,version){{
       var o = id ? window.OPS[id] : null;
-      document.getElementById('opFormTitle').textContent = o ? '编辑算子' : '新建算子';
-      var set=function(k,v){{ document.getElementById(k).value = v||''; }};
-      set('of_name', o&&o.name); set('of_ident', o&&o.ident); set('of_desc', o&&o.desc);
-      // 脚本/参数/返回结果 格式化为多行
-      document.getElementById('of_script').value = o ? ('python ' + o.script) : '';
-      document.getElementById('of_params').value = o ? o.params.split(' / ').join('\\n') : '';
-      document.getElementById('of_returns').value = o ? o.returns.split(/ \\+ | \\/ /).join('\\n') : '';
-      // 「保存为新版本」仅编辑时显示; 「同步创建工作流」仅新建时显示, 默认勾选
+      var v = o ? getOpVersion(o,version) : null;
+      document.getElementById('opFormTitle').textContent = o ? '新建算子版本' : '新建算子';
+      var set=function(k,value){{ document.getElementById(k).value = value||''; }};
+      set('of_name',o&&o.name); set('of_ident',o&&o.ident); set('of_desc',o&&o.desc);
+      set('of_baseVersion',v&&v.version); set('of_version',v&&nextOpVersion(v.version)); set('of_note','');
+      document.getElementById('of_script').value = v ? ('python ' + v.script) : '';
+      document.getElementById('of_params').value = v ? v.params.split(' / ').join('\\n') : '';
+      document.getElementById('of_returns').value = v ? v.returns.split(/ \\+ | \\/ /).join('\\n') : '';
       document.getElementById('of_saveNewVer').style.display = o ? '' : 'none';
       document.getElementById('of_syncTaskWrap').style.display = o ? 'none' : '';
       document.getElementById('of_syncTask').checked = true;
@@ -4548,12 +4620,18 @@ def operators():
     }}
     function openOpDetail(id){{
       var o=window.OPS[id]; if(!o) return;
-      document.getElementById('opDetailTitle').textContent = o.name;
-      var rows=[['标识',o.ident],['脚本',o.script],['创建人',o.creator],
-                ['描述',o.desc],['请求参数',o.params],['返回结果',o.returns]];
+      document.getElementById('opDetailTitle').textContent=o.name;
+      var versionRows=(o.versions||[]).map(function(v){{
+        return '<tr><td><span class="op-version-number">'+v.version+'</span></td><td>'+v.creator+'</td><td class="op-version-time">'+v.created+'</td><td>'+(v.references||[]).length+' 个工作流</td><td class="muted">'+v.note+'</td></tr>';
+      }}).join('');
       document.getElementById('opDetailBody').innerHTML =
-        '<div class="desc-grid">'+rows.map(function(r){{ return '<div class="dk">'+r[0]+'</div><div class="dv">'+r[1]+'</div>'; }}).join('')+'</div>';
-      document.getElementById('opDetailEdit').onclick=function(){{ openOpForm(id); }};
+        '<div class="op-detail-summary">'+
+          '<div class="op-detail-summary-item"><span>算子标识</span><strong>'+o.ident+'</strong></div>'+
+          '<div class="op-detail-summary-item"><span>当前版本</span><strong>'+o.current_version+'</strong></div>'+
+          '<div class="op-detail-summary-item"><span>创建人</span><strong>'+o.creator+'</strong></div>'+
+          '<div class="op-detail-summary-item op-detail-description"><span>描述</span><strong>'+o.desc+'</strong></div>'+
+        '</div><div class="op-detail-section-head"><strong>版本记录</strong><span>共 '+o.versions.length+' 个版本</span></div>'+
+        '<table class="op-detail-version-table" id="opDetailVersionTable"><thead><tr><th>版本号</th><th>创建人</th><th>创建时间</th><th>工作流引用</th><th>版本说明</th></tr></thead><tbody>'+versionRows+'</tbody></table>';
       document.getElementById('opDetailDrawer').classList.add('active');
     }}
     </script>
@@ -4578,8 +4656,8 @@ def pipelines():
         "updated": "2026-08-04 11:30",
     }
     def pipeline_status(pl):
-        status = pl.get("status", "草稿")
-        return status if status in {"草稿", "启用", "停用"} else "草稿"
+        """列表仅展示未发布/已发布两种状态，兼容存量启用/草稿/停用数据。"""
+        return "已发布" if pl.get("status") == "启用" else "未发布"
 
     pls = [
         pl
@@ -4609,31 +4687,26 @@ def pipelines():
     rows = ""
     for pl in pls:
         flow_status = pipeline_status(pl)
-        status_class = {
-            "草稿": "qa-pend",
-            "启用": "qa-pass",
-            "停用": "qa-fail",
-        }[flow_status]
-        if flow_status == "启用":
-            actions = (
-                '<a href="#" onclick="toast(\'Demo: 流程已停用\');return false;">停用</a> '
-                f'<a href="/pipelines/{pl["id"]}?mode=view">详情</a> '
-                '<a href="#" onclick="toast(\'Demo: 已复制流程\');return false;">复制</a>'
-            )
-        else:
-            actions = (
-                '<a href="#" onclick="toast(\'Demo: 流程已启用\');return false;">启用</a> '
-                f'<a href="/pipelines/{pl["id"]}?version=draft">编辑</a> '
-                f'<a href="/pipelines/{pl["id"]}?mode=view&amp;version=draft">详情</a> '
-                '<a href="#" onclick="toast(\'Demo: 已复制流程\');return false;">复制</a>'
-            )
+        # 与处理任务列表统一使用 dpr-state 胶囊标签样式。
+        status_tone = "green" if flow_status == "已发布" else "gray"
+        publish_action = (
+            '<span class="muted" aria-disabled="true" title="已发布">发布</span>'
+            if flow_status == "已发布" else
+            '<a href="#" onclick="toast(\'Demo: 流程已发布\');return false;">发布</a>'
+        )
+        actions = (
+            f'<a href="/pipelines/{pl["id"]}?mode=view">详情</a> '
+            f'<a href="/pipelines/{pl["id"]}?version=draft">编辑</a> '
+            '<a href="#" onclick="toast(\'Demo: 已复制流程\');return false;">复制</a> '
+            + publish_action
+        )
         rows += f"""<tr>
           <td><code>{html.escape(pl.get('ident', pl['id']))}</code></td>
           <td><b>{pl['name']}</b></td>
           <td><span class="tag tag-cyan">{pl.get('business_stage', '通用')}</span></td>
           <td class="muted pipeline-desc-cell" style="max-width:380px;"><span class="wf-desc-clamp" title="{html.escape(pl['desc'], quote=True)}">{pl['desc']}</span></td>
           <td>{pl['creator']}</td>
-          <td><span class="qa {status_class}">{flow_status}</span></td>
+          <td><span class="dpr-state {status_tone}">{flow_status}</span></td>
           <td class="muted">{pl['updated']}</td>
           <td class="actions-cell">{actions}</td>
         </tr>"""
@@ -4661,7 +4734,7 @@ def pipelines():
     status_header_options = pipeline_header_options(
         "status",
         status_filter,
-        [("", "全部"), ("启用", "启用"), ("草稿", "草稿"), ("停用", "停用")],
+        [("", "全部"), ("已发布", "已发布"), ("未发布", "未发布")],
     )
     content = f"""
     <div class="dpr-intro dpr-intro-inline-action">
@@ -4716,8 +4789,8 @@ def pipelines():
       <div class="drawer pipeline-create-drawer">
         <div class="drawer-head"><h3>新增流程</h3><button type="button" class="drawer-close" onclick="closePipelineCreateDrawer()">&times;</button></div>
         <div class="drawer-body">
-          <div class="fg"><label><span class="req">*</span>流程标识</label><input id="pipelineCreateIdent" placeholder="请输入英文流程标识，如 e2e-split-annotation"></div>
           <div class="fg"><label><span class="req">*</span>流程名称</label><input id="pipelineCreateName" placeholder="请输入流程名称"></div>
+          <div class="fg"><label><span class="req">*</span>流程标识</label><input id="pipelineCreateIdent" placeholder="请输入英文流程标识，如 e2e-split-annotation"></div>
           <div class="fg"><label><span class="req">*</span>业务环节</label><select id="pipelineCreateStage"><option value="质检">质检</option><option value="标注">标注</option><option value="验收">验收</option></select></div>
           <div class="fg"><label>描述</label><textarea id="pipelineCreateDesc" rows="4" placeholder="请输入流程描述"></textarea></div>
         </div>
@@ -4728,7 +4801,7 @@ def pipelines():
     <script>
     function openPipelineCreateDrawer(){{
       document.getElementById('pipelineCreateDrawer').classList.add('active');
-      document.getElementById('pipelineCreateIdent').focus();
+      document.getElementById('pipelineCreateName').focus();
     }}
     function closePipelineCreateDrawer(){{ document.getElementById('pipelineCreateDrawer').classList.remove('active'); }}
     function submitPipelineCreate(){{
