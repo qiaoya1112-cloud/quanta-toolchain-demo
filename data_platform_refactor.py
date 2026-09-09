@@ -9,17 +9,136 @@ boundaries in ``Quanta-数据平台产品架构调整方案-完善版.md`` execu
 import json
 from html import escape
 
+from instruction_collection_demo import (
+    render_collection_plan_detail,
+    render_collection_plan_package_detail,
+    render_collection_plans,
+    render_supplier_collection_plan_detail,
+    render_supplier_collection_plans,
+    render_collection_strategy_management,
+    render_collection_supplier_management,
+    render_edge_collection_app,
+    render_edge_collection_package_detail,
+    render_instruction_approval_detail,
+    render_instruction_approval_tasks,
+    render_instruction_management,
+    render_instruction_package_detail,
+    render_instruction_packages,
+)
+
 
 # ---------------------------------------------------------------------------
 # Product information architecture
 # ---------------------------------------------------------------------------
 
 PAGE_SPECS = {
-    "collection_tasks": {
-        "path": "/data/collection-tasks",
-        "title": "采集任务",
-        "subtitle": "管理指令采集、自由采集、DAgger 采集和数据导入任务",
+    "instruction_management": {
+        "path": "/data/instruction-management",
+        "title": "指令管理",
+        "subtitle": "上传、校验、审批并版本化管理采集指令",
         "icon": "&#9776;",
+        "nav_badge": "S026",
+    },
+    "instruction_approval_tasks": {
+        "path": "/data/instruction-management/approval-tasks",
+        "title": "指令管理 / 指令审批",
+        "subtitle": "查看并处理指令版本审批任务",
+        "icon": "&#9776;",
+        "hidden": True,
+        "active_path": "/data/instruction-management",
+    },
+    "instruction_approval_detail": {
+        "path": "/data/instruction-management/approval-detail",
+        "title": "指令管理 / 指令审批",
+        "subtitle": "查看或审批任务中的指令版本",
+        "icon": "&#9776;",
+        "hidden": True,
+        "active_path": "/data/instruction-management",
+    },
+    "instruction_packages": {
+        "path": "/data/instruction-packages",
+        "title": "指令包管理",
+        "subtitle": "创建、发布并维护可供采集方案导入的指令包",
+        "icon": "&#9638;",
+        "nav_badge": "S026",
+    },
+    "instruction_package_detail": {
+        "path": "/data/instruction-packages/detail",
+        "title": "指令包管理 / 指令包详情",
+        "subtitle": "导入、排序并管理指令包内的指令版本",
+        "icon": "&#9638;",
+        "hidden": True,
+        "active_path": "/data/instruction-packages",
+    },
+    "collection_tasks": {
+        "path": "/data/collection-plans",
+        "title": "方案管理",
+        "subtitle": "创建并管理指令包采集方案",
+        "icon": "&#9776;",
+        "nav_badge": "S026",
+    },
+    "supplier_collection_plans": {
+        "path": "/data/collection-plans/assigned",
+        "title": "采集方案",
+        "subtitle": "查看供应商已分配的采集方案",
+        "icon": "&#9636;",
+        "nav_badge": "S026",
+    },
+    "supplier_collection_plan_detail": {
+        "path": "/data/collection-plans/assigned/detail",
+        "title": "采集方案详情",
+        "subtitle": "查看已发布的指令包",
+        "icon": "&#9636;",
+        "hidden": True,
+        "active_path": "/data/collection-plans/assigned",
+    },
+    "collection_project_detail": {
+        "path": "/data/collection-plans/detail",
+        "title": "采集方案详情",
+        "subtitle": "导入并管理采集方案内的指令包",
+        "icon": "&#9776;",
+        "hidden": True,
+        "active_path": "/data/collection-plans",
+    },
+    "collection_strategy_management": {
+        "path": "/data/collection-plans/strategies",
+        "title": "采集方案 / 策略配置",
+        "subtitle": "配置并发布采集策略版本",
+        "icon": "&#9776;",
+        "hidden": True,
+        "active_path": "/data/collection-plans",
+    },
+    "collection_supplier_management": {
+        "path": "/data/collection-plans/suppliers",
+        "title": "采集方案 / 供应商配置",
+        "subtitle": "导入并管理方案内供应商",
+        "icon": "&#9776;",
+        "hidden": True,
+        "active_path": "/data/collection-plans",
+    },
+    "collection_plan_package_detail": {
+        "path": "/data/collection-plans/package-detail",
+        "title": "采集方案 / 指令包详情",
+        "subtitle": "查看方案内指令版本状态与采集时长",
+        "icon": "&#9776;",
+        "hidden": True,
+        "active_path": "/data/collection-plans",
+    },
+    "edge_collection_app": {
+        "path": "/data/edge-collection",
+        "title": "端侧采集 / 指令包列表",
+        "subtitle": "查看、领取任务指令包并持续确认设备连接状态",
+        "icon": "&#9635;",
+        "hidden": True,
+        "active_path": "/data/collection-plans",
+    },
+    "edge_collection_package_detail": {
+        "path": "/data/edge-collection/package-detail",
+        "title": "端侧采集 / 指令包详情",
+        "subtitle": "按指令包顺序执行采集、记录跳过原因并提交任务指令包",
+        "icon": "&#9635;",
+        "hidden": True,
+        "active_path": "/data/collection-plans",
     },
     "processing_tasks": {
         "path": "/data/processing-tasks",
@@ -185,7 +304,15 @@ PAGE_SPECS = {
 }
 
 NAV_GROUPS = [
-    ("数据采集", ["collection_tasks"]),
+    (
+        "数据采集",
+        [
+            "instruction_management",
+            "instruction_packages",
+            "collection_tasks",
+            "supplier_collection_plans",
+        ],
+    ),
     (
         "数据处理",
         [
@@ -6061,11 +6188,11 @@ def render_task_detail(task_id):
         raise KeyError(f"unknown task: {task_id}")
     records = TASK_DETAIL_RECORDS.get(task_id, [])
     back_path = (
-        "/data/collection-tasks"
+        "/data/collection-plans"
         if task["type"] == "data_collection_task"
         else "/data/processing-tasks"
     )
-    back_label = "采集任务" if task["type"] == "data_collection_task" else "处理任务"
+    back_label = "采集方案" if task["type"] == "data_collection_task" else "处理任务"
     is_collection_task = task["type"] == "data_collection_task"
     rows = ""
     for record_index, record in enumerate(records):
@@ -8851,7 +8978,20 @@ def render_data_management_instances():
 
 # Keep filtered data-table headers aligned with regular table header typography.
 PAGE_RENDERERS = {
-    "collection_tasks": render_collection_tasks,
+    "instruction_management": render_instruction_management,
+    "instruction_approval_tasks": render_instruction_approval_tasks,
+    "instruction_approval_detail": render_instruction_approval_detail,
+    "instruction_packages": render_instruction_packages,
+    "instruction_package_detail": render_instruction_package_detail,
+    "collection_tasks": render_collection_plans,
+    "supplier_collection_plans": render_supplier_collection_plans,
+    "supplier_collection_plan_detail": render_supplier_collection_plan_detail,
+    "collection_project_detail": render_collection_plan_detail,
+    "collection_strategy_management": render_collection_strategy_management,
+    "collection_supplier_management": render_collection_supplier_management,
+    "collection_plan_package_detail": render_collection_plan_package_detail,
+    "edge_collection_app": render_edge_collection_app,
+    "edge_collection_package_detail": render_edge_collection_package_detail,
     "processing_tasks": render_processing_tasks,
     "allocation_management": render_allocation_management,
     "allocation_management_v2": render_allocation_management_v2,

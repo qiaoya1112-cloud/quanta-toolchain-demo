@@ -42,7 +42,16 @@ class DataPlatformArchitectureTests(unittest.TestCase):
     def test_navigation_matches_target_information_architecture(self):
         expected_groups = [
             (
-                "任务管理",
+                "数据采集",
+                [
+                    "instruction_management",
+                    "instruction_packages",
+                    "collection_tasks",
+                    "supplier_collection_plans",
+                ],
+            ),
+            (
+                "数据处理",
                 [
                     "processing_tasks",
                     "allocation_management_v2",
@@ -92,7 +101,7 @@ class DataPlatformArchitectureTests(unittest.TestCase):
             },
             set(nav_keys),
         )
-        self.assertEqual(12, len(nav_keys))
+        self.assertEqual(16, len(nav_keys))
         self.assertEqual(len(nav_keys), len(set(nav_keys)))
         paths = [item["path"] for item in architecture.PAGE_SPECS.values()]
         self.assertEqual(len(paths), len(set(paths)))
@@ -275,132 +284,64 @@ class DataPlatformArchitectureTests(unittest.TestCase):
         )
 
     def test_collection_tasks_match_table_definition(self):
-        html = self.client.get("/data/collection-tasks").get_data(as_text=True)
-        self.assertIn("<h1>采集任务</h1>", html)
-        self.assertRegex(
-            html,
-            re.compile(
-                r'<div class="dpr-intro-title-row">.*?<h1>采集任务</h1>'
-                r'.*?id="newCollectionTaskButton".*?</div>',
-                flags=re.S,
-            ),
-        )
-        self.assertEqual(
-            4,
-            len(
-                re.findall(
-                    r'class="det-tab dpr-collection-tab(?: active)?"',
-                    html,
-                )
-            ),
-        )
-        self.assertIn(
-            'class="det-tab dpr-collection-tab active" role="tab" tabindex="0" '
-            'data-task-mode="instruction"',
-            html,
-        )
-        self.assertIn(
-            'class="det-tabs dpr-allocation-tabs dpr-collection-tabs" role="tablist"',
-            html,
-        )
-        self.assertIn(
-            "document.querySelectorAll('.dpr-collection-tab')",
-            html,
-        )
+        instruction_html = self.client.get("/data/instruction-management").get_data(as_text=True)
+        project_html = self.client.get("/data/collection-plans").get_data(as_text=True)
+        package_html = self.client.get("/data/instruction-packages").get_data(as_text=True)
+        project_detail_html = self.client.get(
+            "/data/collection-plans/detail?id=CP260001"
+        ).get_data(as_text=True)
+        edge_html = self.client.get("/data/edge-collection").get_data(as_text=True)
+        edge_detail_html = self.client.get(
+            "/data/edge-collection/package-detail?project=CP260001&package=CIP2609070001"
+        ).get_data(as_text=True)
+        html = instruction_html + package_html + project_html + project_detail_html + edge_html + edge_detail_html
+        self.assertIn("<h1>指令管理</h1>", instruction_html)
+        self.assertIn("<h1>指令包管理</h1>", package_html)
+        self.assertIn("<h1>采集方案管理</h1>", project_html)
+        self.assertIn("<h1>采集方案详情</h1>", project_detail_html)
+        self.assertIn("<h1>端侧采集 / 指令包列表</h1>", edge_html)
+        self.assertIn("<h1>端侧采集 / 指令包详情</h1>", edge_detail_html)
         for expected in (
-            "指令采集 <b>2</b>",
-            "自由采集 <b>2</b>",
-            "DAgger 采集 <b>1</b>",
-            "数据导入 <b>1</b>",
-            "<label>任务 ID</label>",
-            "<label>名称</label>",
-            "<label>类型</label>",
-            "<label>操作人</label>",
-            "<th>任务 ID</th>",
-            "<th>名称</th>",
-            "<th>类型</th>",
-            "<th>进度</th>",
-            "<th>优先级</th>",
-            "<th>创建人</th>",
-            "<th>创建时间</th>",
-            'href="/data/tasks/COL-2026-0718"',
-            'href="/data/recordings?source=import&task=IMP-2026-0042"',
-            ">数据</a>",
-            "dprOpenCollectionTaskDrawer('detail', this)",
-            "dprOpenCollectionTaskDrawer('edit', this)",
-            ">详情</button>",
-            ">编辑</button>",
-            'class="dpr-priority wb-priority priority-high">9</span>',
-            'class="dpr-priority wb-priority priority-medium">6</span>',
-            'class="dpr-task-progress-line dpr-collection-progress-line"',
-            "1,240 / 1,500 · 83%",
+            "指令管理",
+            "指令包管理",
+            "采集方案",
+            "端侧采集 / 指令包列表",
+            "端侧采集 / 指令包详情",
+            "上传批次",
+            "审批任务",
+            "指令包",
+            "策略配置",
+            "供应商配置",
+            "离线采集",
+            "本地 Mock 数据",
+            "s026RenderBatches",
+            "s026RenderPlanSurfaces",
+            "s026RenderEdge",
         ):
             self.assertIn(expected, html)
-        self.assertNotIn("<th>操作人</th>", html)
-        self.assertIn(
-            ".dpr-intro-title-row .dpr-intro-actions{position:absolute;right:0;top:50%;transform:translateY(-50%);margin:0}",
-            html,
-        )
-        task_table = re.search(
-            r'<table class="ant-table" id="dpr-collection-task-table">.*?</table>',
-            html,
-            flags=re.S,
-        )
-        self.assertIsNotNone(task_table)
-        self.assertNotIn("20453", task_table.group(0))
-        for task in (
-            item for item in architecture.BUSINESS_TASKS
-            if item["type"] in ("data_collection_task", "data_import_task")
-        ):
-            self.assertIn(task["priority"], ("P0", "P1", "P2"))
+        self.assertNotIn("fetch(", html)
+        self.assertNotIn("XMLHttpRequest", html)
 
     def test_new_collection_task_uses_required_side_drawer_fields(self):
-        html = self.client.get("/data/collection-tasks").get_data(as_text=True)
+        html = (
+            self.client.get("/data/collection-plans").get_data(as_text=True)
+            + self.client.get("/data/edge-collection").get_data(as_text=True)
+        )
         for expected in (
-            "dprOpenCollectionTaskDrawer('new')",
-            'class="drawer dpr-collection-drawer" id="drawerCollectionTaskForm"',
-            'id="collectionTaskDrawerTitle">新建采集任务</h3>',
-            "'采集任务详情'",
-            "'编辑采集任务'",
-            ">任务名称</label>",
-            ">采集类型</label>",
-            ">所属项目</label>",
-            ">优先级</label>",
-            "<option>指令采集</option>",
-            "<option>自由采集</option>",
-            "<option>DAgger 采集</option>",
-            "<option>数据导入</option>",
-            "<option>P1</option>",
-            "<option>P0</option>",
-            "<option>P2</option>",
-            "<option>预训练采集</option>",
-            "<option>demo 项目</option>",
-            "<option>宁德项目</option>",
-            "采集结果统一写入数据湖",
-            "处理任务将根据数据来源、来源任务 ID、项目及质量状态等条件持续筛选数据",
-            "DPR_COLLECTION_ACTIVE_MODE",
-            "taskMode === 'import' ? '新增导入任务' : '新增采集任务'",
-            "'新建数据导入任务'",
-            "'数据导入任务详情'",
-            "'编辑数据导入任务'",
+            "s026OpenPlanCreate",
+            "采集方案名称",
+            "s026OpenStrategyCreate",
+            "s026OpenPlanPackageImport",
+            "s026OpenSupplierImport",
+            "s026EdgeZoneTabs",
+            "s026SetEdgeZone",
+            "s026ClaimPackage",
+            "s026WithdrawInstance",
+            "已执行数据",
         ):
             self.assertIn(expected, html)
-        self.assertNotIn('name="processing_task"', html)
-        self.assertNotIn("选择则流式流转", html)
-        self.assertNotIn("预期交付日期</label>", html)
-        self.assertNotIn("采集 SOP 说明</label>", html)
-        drawer_start = html.index('id="drawerCollectionTaskForm"')
-        drawer_html = html[drawer_start:]
-        field_positions = [
-            drawer_html.index(f'name="{field}"')
-            for field in (
-                "task_name",
-                "collection_type",
-                "project",
-                "priority",
-            )
-        ]
-        self.assertEqual(sorted(field_positions), field_positions)
+        self.assertNotIn('<div class="s026-device-bar">', html)
+        self.assertIn("localStorage", html)
 
     def test_processing_tasks_match_table_definition(self):
         html = self.client.get("/data/processing-tasks").get_data(as_text=True)
@@ -3946,7 +3887,8 @@ class DataPlatformArchitectureTests(unittest.TestCase):
     def test_retired_architecture_and_old_refactor_paths_redirect(self):
         redirects = {
             "/data/architecture": "/data/dashboard",
-            "/data/tasks": "/data/collection-tasks",
+            "/data/tasks": "/data/instruction-management",
+            "/data/collection-tasks": "/data/instruction-management",
             "/data/pipeline-definitions": "/data/pipelines",
             "/data/pipeline-runs": "/data/runs",
             "/data/assets": "/data/recordings",
