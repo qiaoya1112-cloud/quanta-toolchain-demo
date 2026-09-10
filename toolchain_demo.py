@@ -27,6 +27,7 @@ import json
 import os
 import re
 import sys
+from datetime import datetime
 from urllib.parse import quote, urlencode
 from flask import Flask, render_template_string, request, redirect, jsonify
 
@@ -499,6 +500,8 @@ CHECKPOINTS = [
      "status": "cached", "owner": "—", "created": "2026-06-15 22:10:00", "exp_id": "exp_7466",
      "parent_checkpoint_id": None, "parent_type": None},
 ]
+
+CKPT_CACHE_OPERATIONS = []
 
 # ── 部署 · 模型转换 / 推理服务 ──
 
@@ -1011,6 +1014,13 @@ select option:disabled { color:rgba(0,0,0,0.32); }
 .ckpt-table-wrap { overflow-x:auto; overflow-y:hidden; }
 .ckpt-name-cell { display:block; max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:#149DAA; text-decoration:none; }
 .ckpt-name-cell:hover { color:#0F8190; }
+.ckpt-asset-tag { margin:0; }
+.ckpt-asset-form { display:inline; margin:0; }
+.ckpt-asset-trigger { gap:4px !important; white-space:nowrap; }
+.ckpt-asset-trigger svg { color:#999; }
+.ckpt-asset-trigger.is-filtered svg { color:#149DAA; }
+.ckpt-asset-menu[popover] { position:fixed; inset:auto; margin:0; }
+.ckpt-asset-menu:popover-open { display:block; }
 .ckpt-status-filter { position:relative; display:inline-flex; align-items:center; height:26px; }
 .ckpt-status-trigger { display:inline-flex; align-items:center; gap:6px; border:0; background:transparent; padding:0; color:rgba(0,0,0,0.85); font:inherit; font-weight:600; cursor:pointer; }
 .ckpt-status-trigger .caret { font-size:15px; line-height:1; transform:translateY(-1px); color:rgba(0,0,0,0.78); }
@@ -1086,9 +1096,42 @@ select option:disabled { color:rgba(0,0,0,0.32); }
 .modal-body { padding:20px 22px; }
 .modal-foot { padding:13px 22px; border-top:1px solid #f0f0f0; display:flex; justify-content:flex-end; gap:8px; }
 .cache-state { display:flex; gap:12px; align-items:flex-start; }
+#cacheModalBox { width:640px; max-height:calc(100vh - 40px); display:flex; flex-direction:column; }
+#cacheModalBox .modal-head { padding:22px 28px; flex:none; }
+#cacheModalBox .modal-head h3 { font-size:20px; font-weight:600; }
+#cacheModalBox .modal-body { padding:26px 28px; overflow-y:auto; }
+#cacheModalBox .modal-foot { padding:18px 28px; flex:none; gap:14px; }
+#cacheModalBox .fg { margin-bottom:18px; }
+#cacheModalBox .fg>label { margin-bottom:10px; font-size:14px; }
+.cache-intro { margin:0 0 24px; color:#606266; font-size:15px; line-height:1.7; }
+.cache-name-input { position:relative; }
+#cacheName { width:100%; padding-right:76px; height:38px; }
+.cache-name-count { position:absolute; right:12px; top:50%; transform:translateY(-50%); color:#909399; font-size:13px; pointer-events:none; }
+#cacheDesc { min-height:88px; }
+#cacheModalBox [aria-invalid="true"] { border-color:#ff4d4f; }
+.cache-field-error { margin-top:4px; color:#ff4d4f; font-size:13px; }
+#cacheModalBox .cache-notify-row { padding-top:0; border-top:0; align-items:center; }
 .cache-hourglass { width:32px; height:32px; border-radius:50%; background:#DEF6F9; color:#149DAA; display:inline-flex; align-items:center; justify-content:center; font-size:18px; line-height:1; flex:none; }
 .cache-state h4 { margin:1px 0 6px; font-size:15px; color:rgba(0,0,0,0.86); font-weight:500; }
 .cache-state p { margin:0; font-size:13px; color:rgba(0,0,0,0.55); line-height:1.7; }
+.cache-submit-error { margin:12px 0 0; padding:10px 12px; border:1px solid #ffccc7; border-radius:6px; background:#fff2f0; color:#cf1322; font-size:13px; }
+#cacheSubmitButton:disabled { opacity:.65; cursor:wait; }
+.cache-notify-row { display:flex; align-items:flex-start; justify-content:space-between; gap:20px; padding:14px 0 2px; border-top:1px solid #f0f0f0; }
+.cache-notify-copy label { display:block; margin-bottom:4px; color:rgba(0,0,0,.72); font-size:13px; }
+.cache-notify-copy p { max-width:360px; margin:0; color:rgba(0,0,0,.45); font-size:12px; line-height:1.6; }
+.cache-demo-panel { margin-top:18px; padding-top:14px; border-top:1px solid #f0f0f0; }
+.cache-demo-panel>span { display:block; margin-bottom:8px; color:rgba(0,0,0,.55); font-size:12px; }
+.cache-demo-actions { display:flex; flex-wrap:wrap; gap:8px; }
+.cache-notification-preview { margin-top:14px; }
+.cache-notification-card { border:1px solid #dfe6e9; border-radius:8px; background:#fff; overflow:hidden; }
+.cache-notification-head { padding:12px 14px; border-bottom:1px solid #edf0f2; color:#149DAA; background:#f3fbfc; font-size:14px; font-weight:600; }
+.cache-notification-card.failed .cache-notification-head { color:#cf3f3f; background:#fff5f5; }
+.cache-notification-body { display:grid; grid-template-columns:104px minmax(0,1fr); gap:8px 12px; padding:14px; font-size:12px; }
+.cache-notification-body span { color:rgba(0,0,0,.45); }
+.cache-notification-body b { overflow:hidden; color:rgba(0,0,0,.78); font-weight:500; text-overflow:ellipsis; white-space:nowrap; }
+.cache-notification-foot { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:10px 14px; border-top:1px solid #edf0f2; background:#fafafa; }
+.cache-notification-foot small { color:rgba(0,0,0,.38); }
+.cache-notify-off { padding:12px 14px; border-radius:8px; color:rgba(0,0,0,.55); background:#fafafa; font-size:12px; }
 
 /* ── Lineage (asset page) ── */
 .lin-pick { display:flex; gap:10px; align-items:center; margin-bottom:18px; }
@@ -1383,6 +1426,9 @@ body.lineage-canvas-page .lineage-viewport { height:100%; min-height:0; }
 .train-notify-title { width:max-content; text-align:center; }
 .train-notify-title label { display:block; }
 .train-notify-toggle { margin-top:14px; }
+.train-queue-label { display:flex; align-items:center; justify-content:space-between; gap:12px; font-size:13px; color:rgba(0,0,0,0.65); }
+.train-queue-label a { color:#149DAA; font-size:12px; font-weight:400; text-decoration:none; white-space:nowrap; }
+.train-queue-label a:hover { color:#0F8190; }
 .train-recommended-picker { position:relative; width:100%; }
 .train-recommended-image { display:none; }
 .train-recommended-trigger { width:100%; min-height:54px; padding:7px 34px 7px 11px; border:1px solid #d9d9d9; border-radius:6px; background:#fff; color:rgba(0,0,0,0.88); cursor:pointer; text-align:left; position:relative; }
@@ -2863,23 +2909,104 @@ document.addEventListener('change', function(e){
 }, true);
 function openDrawer(id){ document.getElementById('drawerMask').classList.add('active'); var d=document.getElementById(id); if(d) d.classList.add('active'); }
 function closeDrawer(){ document.getElementById('drawerMask').classList.remove('active'); document.querySelectorAll('.drawer.active').forEach(function(d){d.classList.remove('active');}); }
+var currentCacheStep='';
+var currentCacheLocation='';
+var currentCacheOperationId='';
+var cacheSubmitting=false;
 function openCacheModal(step, location){
+  if(cacheSubmitting) return;
   var m=document.getElementById('cacheModalMask'); if(!m) return;
+  currentCacheStep=String(step || ''); currentCacheLocation=location || '';
+  currentCacheOperationId='';
   var head=document.getElementById('cacheModalHead'); if(head) head.style.display='flex';
   var stepEl=document.getElementById('cacheStepText'); if(stepEl) stepEl.textContent=step;
   var locEl=document.getElementById('cacheLocText'); if(locEl) locEl.textContent=location || '-';
   var desc=document.getElementById('cacheDesc'); if(desc) desc.value='';
+  var name=document.getElementById('cacheName');
+  if(name){ name.value=((window.CKPT_CACHE_CONTEXT || {}).experimentName || 'checkpoint').slice(0,99-currentCacheStep.length)+'_'+currentCacheStep; }
+  ['cacheName','cacheDesc'].forEach(function(id){
+    var field=document.getElementById(id); if(field) field.removeAttribute('aria-invalid');
+    var hint=document.getElementById(id+'Error'); if(hint) hint.hidden=true;
+  });
+  updateCacheNameCount();
+  var notify=document.getElementById('cacheFeishuNotify'); if(notify) notify.checked=true;
+  var preview=document.getElementById('cacheNotificationPreview'); if(preview) preview.innerHTML='';
+  var demo=document.getElementById('cacheDemoPanel'); if(demo) demo.style.display='none';
+  var error=document.getElementById('cacheSubmitError'); if(error){ error.textContent=''; error.hidden=true; }
+  var state=document.querySelector('#cacheModalDoing .cache-state h4'); if(state) state.textContent='缓存任务已提交';
+  var copy=document.querySelector('#cacheModalDoing .cache-state p'); if(copy) copy.textContent='缓存任务已提交，可在缓存记录中查看进度。';
   var form=document.getElementById('cacheModalForm'); if(form) form.style.display='block';
   var doing=document.getElementById('cacheModalDoing'); if(doing) doing.style.display='none';
   var footForm=document.getElementById('cacheModalFootForm'); if(footForm) footForm.style.display='flex';
   var footDoing=document.getElementById('cacheModalFootDoing'); if(footDoing) footDoing.style.display='none';
   m.classList.add('active');
 }
+function updateCacheNameCount(){
+  var name=document.getElementById('cacheName'), count=document.getElementById('cacheNameCount');
+  if(name && count) count.textContent=name.value.length+' / 100';
+}
 function confirmCacheModal(){
-  var form=document.getElementById('cacheModalForm'); if(form) form.style.display='none';
-  var doing=document.getElementById('cacheModalDoing'); if(doing) doing.style.display='block';
-  var footForm=document.getElementById('cacheModalFootForm'); if(footForm) footForm.style.display='none';
-  var footDoing=document.getElementById('cacheModalFootDoing'); if(footDoing) footDoing.style.display='flex';
+  if(cacheSubmitting || currentCacheOperationId) return;
+  var invalid=false;
+  ['cacheName','cacheDesc'].forEach(function(id){
+    var field=document.getElementById(id), hint=document.getElementById(id+'Error');
+    var empty=!field.value.trim();
+    field.setAttribute('aria-invalid',String(empty)); hint.hidden=!empty;
+    if(empty && !invalid) field.focus();
+    invalid=invalid || empty;
+  });
+  if(invalid) return;
+  cacheSubmitting=true;
+  var button=document.getElementById('cacheSubmitButton');
+  if(button){ button.disabled=true; button.textContent='提交中…'; }
+  var errorBox=document.getElementById('cacheSubmitError');
+  if(errorBox){ errorBox.textContent=''; errorBox.hidden=true; }
+  var context=window.CKPT_CACHE_CONTEXT || {};
+  fetch('/model/experiments/'+encodeURIComponent(context.experimentId || '')+'/cache-checkpoints', {
+    method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({
+      step:currentCacheStep, location:currentCacheLocation,
+      name:document.getElementById('cacheName').value.trim(),
+      description:(document.getElementById('cacheDesc') || {value:''}).value.trim(),
+      notify:!!(document.getElementById('cacheFeishuNotify') || {checked:false}).checked,
+      operator:context.operator || 'joanna.qiao'
+    })
+  }).then(function(response){ return response.json().catch(function(){ throw new Error('提交缓存失败，服务响应异常，请稍后重试。'); }).then(function(data){ return {ok:response.ok,data:data}; }); }).then(function(result){
+    if(!result.ok) throw new Error(result.data.error || '提交缓存失败');
+    currentCacheOperationId=result.data.operation_id;
+    updateCacheRow(result.data);
+    var form=document.getElementById('cacheModalForm'); if(form) form.style.display='none';
+    var doing=document.getElementById('cacheModalDoing'); if(doing) doing.style.display='block';
+    var demo=document.getElementById('cacheDemoPanel'); if(demo) demo.style.display='block';
+    var footForm=document.getElementById('cacheModalFootForm'); if(footForm) footForm.style.display='none';
+    var footDoing=document.getElementById('cacheModalFootDoing'); if(footDoing) footDoing.style.display='flex';
+    var link=document.getElementById('cacheRecordLink'); if(link) link.href=result.data.record_url;
+  }).catch(function(error){
+    if(errorBox){ errorBox.textContent=error instanceof TypeError ? '提交缓存失败，网络连接异常，请检查网络后重试。' : (error.message || '提交缓存失败，请稍后重试。'); errorBox.hidden=false; }
+  }).finally(function(){
+    cacheSubmitting=false;
+    if(button){ button.disabled=false; button.textContent='确认缓存'; }
+  });
+}
+function previewCacheResult(result){
+  if(!currentCacheOperationId){ toast('请先提交缓存操作'); return; }
+  fetch('/model/checkpoints/cache-operations/'+encodeURIComponent(currentCacheOperationId)+'/result', {
+    method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({result:result})
+  }).then(function(response){ return response.json().then(function(data){ return {ok:response.ok,data:data}; }); }).then(function(response){
+    if(!response.ok) throw new Error(response.data.error || '结果预览失败');
+    var data=response.data;
+    updateCacheRow(data);
+    var preview=document.getElementById('cacheNotificationPreview'); if(preview) preview.innerHTML=data.card_html;
+    var state=document.querySelector('#cacheModalDoing .cache-state h4'); if(state) state.textContent=data.result_label;
+    var copy=document.querySelector('#cacheModalDoing .cache-state p'); if(copy) copy.textContent='缓存记录已更新，可查看本次操作结果';
+    var link=document.getElementById('cacheRecordLink'); if(link) link.href=data.record_url;
+    toast(data.duplicate ? '同一结果已生成过通知，本次不重复' : data.message);
+  }).catch(function(error){ toast(error.message || '结果预览失败'); });
+}
+function updateCacheRow(data){
+  var row=document.getElementById('taskCkpt'+data.step); if(!row) return;
+  row.querySelector('.task-ckpt-state').innerHTML=data.status_html;
+  var action=row.querySelector('.actions-cell a');
+  action.textContent='查看'; action.href=data.record_url; action.removeAttribute('onclick');
 }
 function closeCacheModal(){ var m=document.getElementById('cacheModalMask'); if(m) m.classList.remove('active'); }
 function toggleModSwitch(){ var p=document.getElementById('modSwitch'); var smh=document.querySelector('.smh-wrap .smh'); if(p&&smh){ var open=p.classList.toggle('open'); smh.classList.toggle('open', open); } }
@@ -3081,6 +3208,11 @@ function validateTrainForm(){
     name.setCustomValidity('请输入任务名称'); name.reportValidity(); return false;
   }
   if (name) name.setCustomValidity('');
+  var queue = document.getElementById('trainQueueSelect');
+  if (!queue || queue.disabled || !queue.value){
+    toast('暂无训练队列使用权限，请联系队列管理员申请。');
+    return false;
+  }
   if (TRAIN_CONFIG_MODE === 'custom' && !validateCustomYaml()) return false;
   var input = document.getElementById('trainInstanceCount');
   if (input) validateTrainInstanceCount(input);
@@ -7904,30 +8036,36 @@ def model_home():
 
 
 # 模型平台 · 队列管理
+MODEL_QUEUES = [
+    {
+        "id": "queue-default-eval",
+        "name": "默认评测队列",
+        "admins": ["Joanna Qiao", "Lance Li"],
+        "members": ["Joanna Qiao", "Lance Li", "Rick Guo"],
+    },
+    {
+        "id": "queue-regression",
+        "name": "回归测试队列",
+        "admins": ["Lance Li", "Tao Wang"],
+        "members": ["Lance Li", "Tao Wang", "Hannah Wang"],
+    },
+    {
+        "id": "queue-edge-special",
+        "name": "端侧专项队列",
+        "admins": ["Rick Guo"],
+        "members": ["Rick Guo", "Hannah Wang", "Tao Wang"],
+    },
+]
+
+
 @app.route("/model/queues")
 def model_queues():
     current_user = "Joanna Qiao"
-    queues = [
-        {
-            "name": "默认评测队列",
-            "admins": ["Joanna Qiao", "Lance Li"],
-            "members": ["Joanna Qiao", "Lance Li", "Rick Guo"],
-        },
-        {
-            "name": "回归测试队列",
-            "admins": ["Lance Li", "Tao Wang"],
-            "members": ["Lance Li", "Tao Wang", "Hannah Wang"],
-        },
-        {
-            "name": "端侧专项队列",
-            "admins": ["Rick Guo"],
-            "members": ["Rick Guo", "Hannah Wang", "Tao Wang"],
-        },
-    ]
+    readonly = request.args.get("view") == "readonly"
     people = ["Joanna Qiao", "Lance Li", "Rick Guo", "Tao Wang", "Hannah Wang", "Min Chen"]
     rows = ""
     drawers = ""
-    for index, queue in enumerate(queues):
+    for index, queue in enumerate(MODEL_QUEUES):
         drawer_id = f"model-queue-drawer-{index}"
         picker_id = f"model-queue-member-picker-{index}"
         admin_chips = "".join(
@@ -7951,7 +8089,7 @@ def model_queues():
             f'<span>{html.escape(person)}</span><span class="check">&#10003;</span></button>'
             for person in people
         )
-        can_edit = current_user in queue["admins"]
+        can_edit = not readonly and current_user in queue["admins"]
         edit_action = (
             f'<a href="#" onclick="openModelQueueDrawer(\'{drawer_id}\', true);return false;">编辑</a>'
             if can_edit else
@@ -7984,7 +8122,14 @@ def model_queues():
             <button class="btn btn-primary model-queue-save" type="button" onclick="toast('Demo: 队列已保存');closeDrawer()">保存</button>
           </div>
         </div>'''
+    readonly_notice = (
+        '<div style="margin-bottom:14px;padding:10px 12px;border:1px solid #d8eef0;border-radius:6px;'
+        'background:#f3fbfc;color:rgba(0,0,0,.65);font-size:13px;">'
+        '当前为只读视图，可查看队列及管理员信息。</div>'
+        if readonly else ""
+    )
     content = f'''
+    {readonly_notice}
     <div class="table-wrap">
       <table class="ant-table">
         <thead><tr><th>队列名称</th><th>管理员</th><th>成员</th><th>操作</th></tr></thead>
@@ -9019,6 +9164,12 @@ def experiments():
     filter_name = request.args.get("name", "").strip()
     filter_tag = request.args.get("tag", "").strip()
     filter_dataset = request.args.get("dataset", "").strip()
+    has_queue_access = request.args.get("queue_access") != "none"
+    queue_options = "".join(
+        f'<option value="{html.escape(queue["id"], quote=True)}">{html.escape(queue["name"])}</option>'
+        for queue in MODEL_QUEUES
+    ) if has_queue_access else '<option value="" selected hidden>请选择训练队列</option><option value="" disabled>暂无可用训练队列</option>'
+    queue_help = '仅展示你有使用权限的训练队列。如需使用其他队列，请点击右上角「申请队列权限」，联系对应的队列管理员申请开通。'
     visible_experiments = [
         e for e in EXPERIMENTS
         if _experiment_resource_key(e) == selected_resource
@@ -9258,7 +9409,10 @@ def experiments():
             <div class="fg train-runtime-code-row"><label>训练代码</label><div style="position:relative;"><input type="text" id="trainCodeInput" placeholder="输入 Commit ID 搜索（可选）" oninput="filterTrainCode(this)" onblur="hideTrainCodeMenu()" autocomplete="off" data-branch="" data-commit=""><div id="trainCodeMenu" class="tc-menu"></div></div></div>
             <div class="fg-row train-runtime-queue-row">
               <div class="fg"><label class="fg-req">优先级 <span class="qi" data-tooltip="数值越大，优先级越大" tabindex="0" aria-label="数值越大，优先级越大">i</span></label><select id="trainPriority"><option value="2">2</option><option value="4" selected>4</option><option value="6">6</option></select></div>
-              <div class="fg"><label class="fg-req">训练队列</label><select><option>CPU</option><option>GPU-A100</option><option>GPU-H100</option></select></div>
+              <div class="fg">
+                <div class="train-queue-label"><label for="trainQueueSelect" class="fg-req">训练队列 <span class="qi" data-tooltip="{queue_help}" tabindex="0" aria-label="{queue_help}">i</span></label><a href="/model/queues?view=readonly" target="_blank" rel="noopener">申请队列权限</a></div>
+                <select id="trainQueueSelect">{queue_options}</select>
+              </div>
             </div>
             <div class="fg-row train-runtime-priority-row">
               <div class="fg"><label class="fg-req">实例数</label><input id="trainInstanceCount" type="number" min="1" max="4" step="1" value="1" inputmode="numeric" oninput="validateTrainInstanceCount(this)"></div>
@@ -9289,7 +9443,7 @@ def experiments():
             </div>
             <div class="adv-sub" id="advConfigBox">
               <div class="adv-sub-head" onclick="document.getElementById('advConfigBox').classList.toggle('collapsed')"><span class="caret">&#9660;</span><label>高级配置</label></div>
-              <div class="adv-sub-body"><div class="adv-tabs"><span class="at active" onclick="switchAdvTab(this,'default')">默认配置</span><span class="at" onclick="switchAdvTab(this,'override')">参数覆盖</span><button class="at-reset" onclick="resetTrainConfig()">恢复默认</button></div><textarea id="yamlEditor" class="yaml-area" spellcheck="false" readonly></textarea><textarea id="yamlOverride" class="yaml-area" spellcheck="false" style="display:none;" placeholder="# 只填写需要覆盖的参数, 例如:&#10;batch_size: 64&#10;steps: 300000&#10;&#10;# 这些值会覆盖到左侧「默认配置」中" oninput="applyOverride()"></textarea></div>
+              <div class="adv-sub-body"><div class="adv-tabs"><span class="at active" onclick="switchAdvTab(this,'default')">默认参数</span><span class="at" onclick="switchAdvTab(this,'override')">参数覆盖</span><button class="at-reset" onclick="resetTrainConfig()">恢复默认</button></div><textarea id="yamlEditor" class="yaml-area" spellcheck="false" readonly></textarea><textarea id="yamlOverride" class="yaml-area" spellcheck="false" style="display:none;" placeholder="# 只填写需要覆盖的参数, 例如:&#10;batch_size: 64&#10;steps: 300000&#10;&#10;# 这些值会覆盖到左侧「默认参数」中" oninput="applyOverride()"></textarea></div>
             </div>
             </div>
             <div class="train-config-panel" id="trainCustomConfig">
@@ -9498,20 +9652,35 @@ def experiment_detail(exp_id):
 
     owner = e["owner"] if e["owner"] != "—" else "tao.wang"
     resource_key = _experiment_resource_key(e)
+    cache_operator = request.args.get("user", "joanna.qiao").strip() or "joanna.qiao"
+    cache_context_json = json.dumps({
+        "experimentId": e["id"],
+        "experimentName": e["name"],
+        "operator": cache_operator,
+        "resource": resource_key,
+    }, ensure_ascii=False).replace("</", "<\\/")
     show_experiment_dashboard = resource_key != "kingsoft"
 
     # ──── Tab 1: Checkpoint ────
     ckpts = _task_ckpts(e)
     ckpt_rows = ""
+    cache_operations = {item["step"]: item for item in CKPT_CACHE_OPERATIONS if item["experiment_id"] == e["id"]}
     for c in ckpts:
-        ckpt_rows += f"""<tr>
+        operation = cache_operations.get(str(c["step"]))
+        cache_state = CKPT_STATUS_LABEL[operation["status"] if operation else "not_cached"]
+        cache_action = (
+            f'<a href="{html.escape(_cache_operation_record_url(operation), quote=True)}" style="color:#149DAA">查看</a>'
+            if operation else
+            f'<a href="#" style="color:#149DAA" onclick="openCacheModal(\'{c["step"]}\', \'{c["location"]}\');return false;">缓存</a>'
+        )
+        ckpt_rows += f"""<tr id="taskCkpt{c['step']}">
           <td class="mono">{c['step']}</td>
           <td class="mono">{c['storage']}</td>
           <td class="mono">{c['training_loss']}</td>
           <td class="mono">{c['validation_loss']}</td>
-          <td><span class="tag tag-gray">未缓存</span></td>
+          <td class="task-ckpt-state">{cache_state}</td>
           <td><a class="ckpt-loc" href="#" onclick="toast('Demo: 已复制 TOS 路径');return false;"><span class="ll-ic">&#10697;</span>{c['location']}</a></td>
-          <td class="actions-cell"><a href="#" style="color:#149DAA" onclick="openCacheModal('{c['step']}', '{c['location']}');return false;">缓存</a></td>
+          <td class="actions-cell">{cache_action}</td>
         </tr>"""
     tab_ckpt = f"""
     <h3 class="sec-title">Check point 列表</h3>
@@ -9675,6 +9844,7 @@ dataset:
           <div class="bi-field-item"><div class="bi-field-label">是否新感知</div><div class="bi-field-value">是</div></div>
         </div>
         <div class="bi-field-row"><div class="bi-field-item"><div class="bi-field-label">机器人结构</div><div class="bi-field-value">wholebody</div></div></div>
+      </div>
 
       <!-- 高级配置 - 可折叠 -->
       <div class="bi-subsection bi-collapsible">
@@ -9686,7 +9856,7 @@ dataset:
         </h4>
         <div class="bi-collapse-content">
           <div class="adv-tabs">
-            <span class="at active" onclick="switchDetAdv(this,'default')">默认配置</span>
+            <span class="at active" onclick="switchDetAdv(this,'default')">默认参数</span>
             <span class="at" onclick="switchDetAdv(this,'override')">参数覆盖</span>
           </div>
           <pre class="yaml-readonly" data-adv="default">{yaml_text}</pre>
@@ -9723,6 +9893,7 @@ bash lerobot/scripts/train_unified.sh /mnt/vepfs01/output/quanta/experiments/con
           <div class="env-head"><span>变量名</span><span>变量值</span><span></span></div>
           <div class="env-line"><span class="ek">WANDB_BASE_URL</span><span class="ev">https://api.wandb.ai</span><span></span></div>
           <div class="env-line"><span class="ek">WANDB_API_KEY</span><span class="ev secret" data-real="wb_a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6">••••••••••••••••</span><span class="env-eye" onclick="toggleEnvSecret(this)">&#128065;</span></div>
+        </div>
         </div>
       </div>
 
@@ -9777,42 +9948,189 @@ bash lerobot/scripts/train_unified.sh /mnt/vepfs01/output/quanta/experiments/con
     {detail_tabs}
     {detail_panes}
 
+    <script>window.CKPT_CACHE_CONTEXT = {cache_context_json};</script>
+
     <div class="modal-mask" id="cacheModalMask" onclick="closeCacheModal()">
       <div class="modal" id="cacheModalBox" onclick="event.stopPropagation()">
         <div class="modal-head" id="cacheModalHead">
-          <h3>缓存 Checkpoint</h3>
+          <h3>缓存</h3>
           <span class="dismiss" onclick="closeCacheModal()">&times;</span>
         </div>
         <div class="modal-body">
           <div id="cacheModalForm">
+            <p class="cache-intro">是否要缓存至本地服务器，缓存后采集端将在30分钟后完成加载</p>
             <div class="fg">
-              <label class="fg-req">描述</label>
-              <textarea id="cacheDesc" rows="4" placeholder="请输入本次缓存说明，例如候选版本用途、关联评测或保留原因"></textarea>
+              <label for="cacheName" class="fg-req">名称</label>
+              <div class="cache-name-input">
+                <input id="cacheName" type="text" maxlength="100" required placeholder="请输入名称" aria-describedby="cacheNameError" oninput="updateCacheNameCount()">
+                <span id="cacheNameCount" class="cache-name-count">0 / 100</span>
+              </div>
+              <div id="cacheNameError" class="cache-field-error" role="alert" hidden>请输入名称</div>
             </div>
+            <div class="fg">
+              <label for="cacheDesc" class="fg-req">描述</label>
+              <textarea id="cacheDesc" rows="4" required placeholder="请输入描述" aria-describedby="cacheDescError"></textarea>
+              <div id="cacheDescError" class="cache-field-error" role="alert" hidden>请输入描述</div>
+            </div>
+            <div class="cache-notify-row">
+              <div class="cache-notify-copy">
+                <label for="cacheFeishuNotify">飞书通知</label>
+                <p>缓存成功或失败时，通过飞书通知本次操作人。</p>
+              </div>
+              <label class="toggle-sw" title="飞书通知">
+                <input id="cacheFeishuNotify" type="checkbox" checked><span class="slider"></span>
+              </label>
+            </div>
+            <div id="cacheSubmitError" class="cache-submit-error" role="alert" hidden></div>
           </div>
           <div id="cacheModalDoing" style="display:none;">
             <div class="cache-state">
               <span class="cache-hourglass">&#8987;</span>
               <div>
-                <h4>缓存中</h4>
-                <p>可在「缓存进度列表」查看</p>
+                <h4>缓存任务已提交</h4>
+                <p>缓存任务已提交，可在缓存记录中查看进度。</p>
               </div>
             </div>
+            <div class="cache-demo-panel" id="cacheDemoPanel" style="display:none;">
+              <span>Mock 结果预览（选择结果后更新对应缓存记录）</span>
+              <div class="cache-demo-actions">
+                <button type="button" class="btn btn-secondary" onclick="previewCacheResult('cached')">演示缓存成功</button>
+                <button type="button" class="btn btn-secondary" onclick="previewCacheResult('merge_failed')">演示合并失败</button>
+                <button type="button" class="btn btn-secondary" onclick="previewCacheResult('cache_failed')">演示缓存失败</button>
+              </div>
+            </div>
+            <div class="cache-notification-preview" id="cacheNotificationPreview"></div>
           </div>
         </div>
         <div class="modal-foot" id="cacheModalFootForm">
           <button class="btn btn-tertiary" onclick="closeCacheModal()">取消</button>
-          <button class="btn btn-primary" onclick="confirmCacheModal()">确认</button>
+          <button class="btn btn-primary" id="cacheSubmitButton" onclick="confirmCacheModal()">确认缓存</button>
         </div>
         <div class="modal-foot" id="cacheModalFootDoing" style="display:none;">
           <button class="btn btn-secondary" onclick="closeCacheModal()">关闭</button>
-          <a class="btn btn-primary" href="/model/checkpoints/cache-records">查看进度</a>
+          <a class="btn btn-primary" id="cacheRecordLink" href="/model/checkpoints/cache-records">查看缓存记录</a>
         </div>
       </div>
     </div>
     """
     return render_page(e["name"], content, active="/model/experiments", module="model",
                        breadcrumb=f'模型平台 / 训练任务 / <b>{e["name"]}</b>', mvp_note="MVP 一期")
+
+
+def _cache_operation_record_url(operation):
+    return "/model/checkpoints/cache-records?" + urlencode({
+        "resource": operation["source"],
+        "name": operation["name"],
+        "operation_id": operation["operation_id"],
+    })
+
+
+def _cache_notification_card(operation, result_label):
+    failed = operation["status"] in {"merge_failed", "cache_failed"}
+    failure_row = (
+        f'<span>失败原因</span><b>{html.escape(operation["failure_reason"])}</b>'
+        if failed else ""
+    )
+    return f'''
+    <div class="cache-notification-card{' failed' if failed else ''}" data-result="{operation['status']}">
+      <div class="cache-notification-head">飞书通知 · {result_label}</div>
+      <div class="cache-notification-body">
+        <span>训练任务名称</span><b>{html.escape(operation['experiment_name'])}</b>
+        <span>Checkpoint / Step</span><b>{html.escape(operation['name'])} / {html.escape(operation['step'])}</b>
+        {failure_row}
+      </div>
+      <div class="cache-notification-foot"><small>Mock 卡片预览，不发送真实飞书消息</small><a class="btn btn-primary" href="{_cache_operation_record_url(operation)}">查看缓存记录</a></div>
+    </div>'''
+
+
+@app.route("/model/experiments/<exp_id>/cache-checkpoints", methods=["POST"])
+def create_checkpoint_cache_operation(exp_id):
+    experiment = next((item for item in EXPERIMENTS if item["id"] == exp_id), None)
+    if experiment is None:
+        return jsonify({"error": "训练任务不存在"}), 404
+    payload = request.get_json(silent=True) or {}
+    step = str(payload.get("step", "")).strip()
+    checkpoint = next((item for item in _task_ckpts(experiment) if str(item["step"]) == step), None)
+    if checkpoint is None:
+        return jsonify({"error": "Checkpoint / Step 不存在"}), 400
+
+    name = str(payload.get("name", f"{experiment['name']}_{step}")).strip()
+    description = str(payload.get("description") or "").strip()
+    if not name or len(name) > 100:
+        return jsonify({"error": "请输入名称，且不超过100个字符"}), 400
+    if not description:
+        return jsonify({"error": "请输入描述"}), 400
+
+    number = len(CKPT_CACHE_OPERATIONS) + 1
+    used_ids = {item["operation_id"] for item in CKPT_CACHE_OPERATIONS}
+    while f"cache-op-{number}" in used_ids:
+        number += 1
+    created_at = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    operator = str(payload.get("operator") or "joanna.qiao").strip()[:80] or "joanna.qiao"
+    operation = {
+        "operation_id": f"cache-op-{number}",
+        "id": f"op-{number}",
+        "name": name,
+        "description": description,
+        "status": "merging",
+        "source": _experiment_resource_key(experiment),
+        "owner": experiment.get("owner", "—"),
+        "created": created_at,
+        "cached_by": operator,
+        "cached_at": created_at,
+        "experiment_id": experiment["id"],
+        "experiment_name": experiment["name"],
+        "step": step,
+        "location": checkpoint["location"],
+        "notify_enabled": bool(payload.get("notify", True)),
+        "notified_results": [],
+    }
+    CKPT_CACHE_OPERATIONS.append(operation)
+    return jsonify({
+        "operation_id": operation["operation_id"],
+        "record_url": _cache_operation_record_url(operation),
+        "step": step,
+        "status_html": CKPT_STATUS_LABEL[operation["status"]],
+    })
+
+
+@app.route("/model/checkpoints/cache-operations/<operation_id>/result", methods=["POST"])
+def preview_checkpoint_cache_result(operation_id):
+    operation = next((item for item in CKPT_CACHE_OPERATIONS if item["operation_id"] == operation_id), None)
+    if operation is None:
+        return jsonify({"error": "缓存操作不存在"}), 404
+    result = str((request.get_json(silent=True) or {}).get("result", "")).strip()
+    result_config = {
+        "cached": ("缓存成功", ""),
+        "merge_failed": ("合并失败", "Checkpoint 分片索引不一致，合并产物校验失败"),
+        "cache_failed": ("缓存失败", "缓存卷拉取源文件超时，请检查源路径权限与对象完整性"),
+    }
+    if result not in result_config:
+        return jsonify({"error": "不支持的演示结果"}), 400
+
+    result_label, failure_reason = result_config[result]
+    duplicate = result in operation["notified_results"]
+    operation.update({
+        "status": result,
+        "completed_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "failure_reason": failure_reason,
+    })
+    if operation["notify_enabled"] and not duplicate:
+        operation["notified_results"].append(result)
+    card_html = (
+        _cache_notification_card(operation, result_label)
+        if operation["notify_enabled"] else
+        '<div class="cache-notify-off">本次缓存已关闭飞书通知，不生成结果通知。</div>'
+    )
+    return jsonify({
+        "card_html": card_html,
+        "duplicate": duplicate and operation["notify_enabled"],
+        "message": "已生成飞书通知卡片预览" if operation["notify_enabled"] else "本次缓存未开启飞书通知",
+        "record_url": _cache_operation_record_url(operation),
+        "result_label": result_label,
+        "step": operation["step"],
+        "status_html": CKPT_STATUS_LABEL[operation["status"]],
+    })
 
 
 @app.route("/model/deploy")
@@ -10220,15 +10538,22 @@ def _ckpt_rows_html(items, show_actions=True, show_status=True, status_logs=Fals
         desc = _ckpt_desc(c)
         status_cell = f"<td>{_ckpt_status_cell_html(c, status_logs)}</td>" if show_status else ""
         actions_cell = ""
+        asset_badge = '<span class="tag tag-teal ckpt-asset-tag">资产</span>' if c.get("is_asset") else '<span class="muted">—</span>'
+        asset_cell = f'<td class="ckpt-asset-cell">{asset_badge}</td>' if show_actions else ""
         if show_actions:
+            asset_action = "取消标记" if c.get("is_asset") else "标记为资产"
             actions_cell = f"""<td class="actions-cell">
             <a href="#" onclick="openTaskCapabilityModal();return false;">TEST</a>
             <a href="#" onclick="openTaskCapabilityModal();return false;">DAgger</a>
             <a href="/model/lineage/checkpoint/{c['id']}">血缘</a>
+            <form class="ckpt-asset-form" method="post" action="/model/checkpoints/{c['id']}/asset?{html.escape(urlencode(request.args))}">
+              <button class="tbtn" name="is_asset" value="{0 if c.get('is_asset') else 1}">{asset_action}</button>
+            </form>
           </td>"""
         rows += f"""<tr data-status="{c['status']}">
           <td class="mono">{c['id']}</td>
           <td><a class="ckpt-name-cell" href="#" onclick="openDrawer('drawerCkpt{c['id']}');return false;" title="{c['name']}">{c['name']}</a></td>
+          {asset_cell}
           <td class="muted">{desc}</td>
           {status_cell}
           <td>{c['owner']}</td>
@@ -10237,10 +10562,10 @@ def _ckpt_rows_html(items, show_actions=True, show_status=True, status_logs=Fals
           <td class="muted mono">{_ckpt_cache_time(c)}</td>
           {actions_cell}
         </tr>"""
-    return rows
+    return rows or f'<tr><td colspan="{7 + int(show_status) + 2 * int(show_actions)}" style="text-align:center;padding:40px;color:#999;">暂无符合条件的 Checkpoint</td></tr>'
 
 
-def _ckpt_table_html(items, show_actions=True, show_status=True, status_filter=False, status_logs=False):
+def _ckpt_table_html(items, show_actions=True, show_status=True, status_filter=False, status_logs=False, asset_mark=""):
     status_col = '<col style="width:150px;">' if show_status and status_filter else ('<col style="width:110px;">' if show_status else "")
     if show_status and status_filter:
         status_head = """<th>
@@ -10260,14 +10585,32 @@ def _ckpt_table_html(items, show_actions=True, show_status=True, status_filter=F
           </th>"""
     else:
         status_head = "<th>状态 &#9662;</th>" if show_status else ""
-    actions_col = '<col style="width:200px;">' if show_actions else ""
+    actions_col = '<col style="width:280px;">' if show_actions else ""
     actions_head = "<th>操作</th>" if show_actions else ""
+    asset_head = ""
+    if show_actions:
+        options = "".join(
+            f'<button type="button" class="ckpt-status-option {"active" if asset_mark == value else ""}" '
+            f'aria-pressed="{str(asset_mark == value).lower()}" '
+            f'onclick="var field=document.getElementById(\'filterCheckpointAsset\');field.value=\'{value}\';field.form.requestSubmit()">{label}</button>'
+            for value, label in (("", "全部"), ("1", "已标记"), ("0", "未标记"))
+        )
+        asset_head = f"""<th>
+          <button type="button" id="checkpointAssetTrigger" class="ckpt-status-trigger ckpt-asset-trigger {'is-filtered' if asset_mark else ''}" popovertarget="checkpointAssetMenu" aria-label="筛选资产标记">
+            资产标记<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="m4 6 4 4 4-4"/></svg>
+          </button>
+          <div id="checkpointAssetMenu" class="ckpt-status-menu ckpt-asset-menu" popover
+            onbeforetoggle="if(event.newState==='open'){{var rect=document.getElementById('checkpointAssetTrigger').getBoundingClientRect();this.style.left=rect.left+'px';this.style.top=(rect.bottom+9)+'px';}}">
+            {options}
+          </div>
+        </th>"""
     return f"""
     <div class="table-wrap ckpt-table-wrap">
       <table class="ant-table ckpt-table">
         <colgroup>
           <col style="width:82px;">
           <col style="width:220px;">
+          {'<col style="width:110px;">' if show_actions else ''}
           <col>
           {status_col}
           <col style="width:100px;">
@@ -10279,6 +10622,7 @@ def _ckpt_table_html(items, show_actions=True, show_status=True, status_filter=F
         <thead><tr>
           <th>ID</th>
           <th>checkpoint</th>
+          {asset_head}
           <th>描述</th>
           {status_head}
           <th>创建人</th>
@@ -10366,12 +10710,28 @@ def _new_checkpoint_drawer_html():
     """
 
 
+@app.post("/model/checkpoints/<checkpoint_id>/asset")
+def checkpoint_asset(checkpoint_id):
+    checkpoint = _ckpt_by_id(checkpoint_id)
+    if checkpoint is None:
+        return jsonify(error="Checkpoint 不存在"), 404
+    value = request.form.get("is_asset")
+    if value not in ("0", "1"):
+        return jsonify(error="资产标记值无效"), 400
+    # ponytail: shared in-memory demo state; use persistent storage for production.
+    checkpoint["is_asset"] = value == "1"
+    return redirect("/model/checkpoints?" + urlencode(request.args), code=303)
+
+
 @app.route("/model/checkpoints")
 def checkpoints():
     # 获取 URL 参数
     filter_name = request.args.get("name", "")
     filter_owner = request.args.get("owner", "")
     filter_cache_owner = request.args.get("cache_owner", "")
+    asset_mark = request.args.get("asset_mark", "")
+    if asset_mark not in ("", "1", "0"):
+        asset_mark = ""
     selected_resource = request.args.get("resource", "volcano")
     if selected_resource not in RESOURCE_TAB_LABELS:
         selected_resource = "volcano"
@@ -10380,6 +10740,7 @@ def checkpoints():
         c for c in CHECKPOINTS
         if c["status"] == "cached"
         and _checkpoint_resource_key(c) == selected_resource
+        and (not asset_mark or bool(c.get("is_asset")) == (asset_mark == "1"))
         and (not filter_name or filter_name.lower() in c.get("name", "").lower())
         and (not filter_owner or filter_owner.lower() in c.get("owner", "").lower())
         and (not filter_cache_owner or filter_cache_owner.lower() in _ckpt_cache_operator(c).lower())
@@ -10388,17 +10749,19 @@ def checkpoints():
     <a href="/model/checkpoints/cache-records?resource={selected_resource}" class="btn btn-secondary ckpt-cache-action">查看缓存记录</a>
     <a href="/model/deploy?open=deploy" class="btn btn-primary ckpt-deploy-action">去部署</a>
     {_resource_tabs('/model/checkpoints', selected_resource)}
-    <div class="fb-labeled">
-      <div class="ff"><label>checkpoint</label><input id="filterCheckpointName" value="{filter_name}" placeholder="请输入 checkpoint"></div>
-      <div class="ff"><label>创建人</label><input id="filterCheckpointOwner" value="{filter_owner}" placeholder="请输入创建人"></div>
-      <div class="ff"><label>缓存人</label><input id="filterCheckpointCacheOwner" value="{filter_cache_owner}" placeholder="请输入缓存人"></div>
+    <form class="fb-labeled" method="get" action="/model/checkpoints">
+      <input type="hidden" name="resource" value="{selected_resource}">
+      <div class="ff"><label for="filterCheckpointName">checkpoint</label><input id="filterCheckpointName" name="name" value="{html.escape(filter_name)}" placeholder="请输入 checkpoint"></div>
+      <div class="ff"><label for="filterCheckpointOwner">创建人</label><input id="filterCheckpointOwner" name="owner" value="{html.escape(filter_owner)}" placeholder="请输入创建人"></div>
+      <div class="ff"><label for="filterCheckpointCacheOwner">缓存人</label><input id="filterCheckpointCacheOwner" name="cache_owner" value="{html.escape(filter_cache_owner)}" placeholder="请输入缓存人"></div>
+      <input type="hidden" id="filterCheckpointAsset" name="asset_mark" value="{asset_mark}">
       <div class="filter-actions">
-        <button class="btn btn-tertiary" onclick="resetFilters(this)">重置</button>
-        <button class="btn btn-primary" onclick="queryFilters(this)">查询</button>
+        <a class="btn btn-tertiary" href="/model/checkpoints?resource={selected_resource}">清空</a>
+        <button class="btn btn-primary" type="submit">查询</button>
       </div>
-    </div>
+    </form>
 
-    {_ckpt_table_html(visible_checkpoints, show_status=False)}
+    {_ckpt_table_html(visible_checkpoints, show_status=False, asset_mark=asset_mark)}
 
     {_ckpt_pager_html()}
 
@@ -10415,6 +10778,7 @@ def checkpoint_cache_records():
     filter_name = request.args.get("name", "").strip()
     filter_owner = request.args.get("owner", "").strip()
     filter_cache_owner = request.args.get("cache_owner", "").strip()
+    operation_id = request.args.get("operation_id", "").strip()
     all_cache_items = [
         {"id": "8032", "name": "20260701_opd_taskC_raw_shards",
          "description": "训练产物已登记, 尚未触发 checkpoint 合并。",
@@ -10432,10 +10796,11 @@ def checkpoint_cache_records():
          "description": "缓存任务拉取源文件失败, 待确认 TOS 路径与权限后重试。",
          "status": "cache_failed", "source": "火山", "owner": "Hannah Wang", "created": "2026-06-15 16:12:09",
          "cached_by": "Hannah Wang", "cached_at": "2026-06-15 16:12:09"},
-    ] + CHECKPOINTS
+    ] + list(reversed(CKPT_CACHE_OPERATIONS)) + CHECKPOINTS
     cache_items = [
         c for c in all_cache_items
         if _checkpoint_resource_key(c) == selected_resource
+        and (not operation_id or c.get("operation_id") == operation_id)
         and (not filter_name or filter_name.lower() in c.get("name", "").lower())
         and (not filter_owner or filter_owner.lower() in c.get("owner", "").lower())
         and (not filter_cache_owner or filter_cache_owner.lower() in _ckpt_cache_operator(c).lower())

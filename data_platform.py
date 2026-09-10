@@ -37,6 +37,19 @@ TASKS = [
     {"id": "t3", "name": "water_the_plant", "zh": "浇花"},
 ]
 
+# Demo segment weights; displayed ratios and counts are aggregated from annotations.
+LOWLEVEL_PROMPTS = [
+    {"id": "ll_align", "name": "接近/对准目标", "ratio": 0.18},
+    {"id": "ll_grasp", "name": "抓取物体", "ratio": 0.22},
+    {"id": "ll_move", "name": "移动/搬运", "ratio": 0.20},
+    {"id": "ll_place", "name": "放置/对位", "ratio": 0.16},
+    {"id": "ll_operate", "name": "擦拭/操作", "ratio": 0.14},
+    {"id": "ll_reset", "name": "复位/收回", "ratio": 0.10},
+]
+MOCK_DATASET_HIGHLEVEL_COUNTS = {
+    "ds9": (("t1", 24), ("t2", 16)),
+}
+
 # recording: 1 条采集 ≈ 1 episode (parquet + 3 路 mp4)
 RECORDINGS = [
     # task t1
@@ -1277,6 +1290,8 @@ select option:disabled { color:rgba(0,0,0,0.32); }
 .recipe-row .rname { width:160px; color:rgba(0,0,0,0.85); }
 .recipe-row .rbar { flex:1; height:22px; background:#f5f5f5; border-radius:4px; overflow:hidden; position:relative; }
 .recipe-row .rbar .fill { height:100%; background:#1F80A0; display:flex; align-items:center; padding-left:8px; color:#fff; font-size:12px; }
+.recipe-row .recipe-count { width:52px; text-align:right; white-space:nowrap; }
+.recipe-row .recipe-frames { width:72px; text-align:right; white-space:nowrap; }
 
 /* ── 标签构成 饼图 (一行三个) ── */
 .lvl-sel { float:right; height:28px; font-size:12px; border:1px solid #e2e4e8; border-radius:6px; padding:0 28px 0 10px; color:rgba(0,0,0,0.7); background:#fff; cursor:pointer; -webkit-appearance:none; appearance:none; background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'><path d='M1 1l4 4 4-4' stroke='%23999' stroke-width='1.4' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>"); background-repeat:no-repeat; background-position:right 10px center; }
@@ -1936,8 +1951,102 @@ def _dataset_recs(d):
     return [r for r in (get_rec(i) for i in d["recordings"]) if r]
 
 
+def _mock_lowlevel_prompt_segments(task_id, episode_index):
+    """Return deterministic segment-level prompt IDs for one demo episode."""
+    prompt_ids = ["ll_align"]
+    if episode_index % 2 == 0:
+        prompt_ids.append("ll_move")
+    if episode_index % 3 != 0:
+        prompt_ids.append("ll_reset")
+    if task_id == "t1":
+        prompt_ids.extend(("ll_operate", "ll_operate"))
+        if episode_index % 2 == 0:
+            prompt_ids.extend(("ll_grasp", "ll_place"))
+    elif task_id == "t2":
+        prompt_ids.extend(("ll_grasp", "ll_grasp"))
+        if episode_index % 2 == 0:
+            prompt_ids.append("ll_place")
+        if episode_index % 3 == 0:
+            prompt_ids.append("ll_operate")
+    else:
+        prompt_ids.extend(("ll_grasp", "ll_operate"))
+        if episode_index % 4 == 0:
+            prompt_ids.append("ll_place")
+    return prompt_ids
+
+
+def dataset_episode_prompt_annotations(d):
+    """Build stable per-episode mock prompt annotations for a dataset."""
+    recs = _dataset_recs(d)
+    if not recs:
+        return []
+
+    highlevel_ids = []
+    configured_counts = MOCK_DATASET_HIGHLEVEL_COUNTS.get(d.get("id"), ())
+    if sum(count for _, count in configured_counts) == d["episodes"]:
+        for prompt_id, count in configured_counts:
+            highlevel_ids.extend([prompt_id] * count)
+    else:
+        highlevel_ids = [recs[index % len(recs)]["task"] for index in range(d["episodes"])]
+
+    recording_ids_by_task = {}
+    for recording in recs:
+        recording_ids_by_task.setdefault(recording["task"], []).append(recording["id"])
+
+    annotations = []
+    weights = {prompt["id"]: prompt["ratio"] for prompt in LOWLEVEL_PROMPTS}
+    episode_frames, remainder = divmod(d["frames"], len(highlevel_ids)) if highlevel_ids else (0, 0)
+    for episode_index, highlevel_id in enumerate(highlevel_ids):
+        source_recordings = recording_ids_by_task.get(highlevel_id, [])
+        recording_id = source_recordings[episode_index % len(source_recordings)] if source_recordings else None
+        prompt_ids = _mock_lowlevel_prompt_segments(highlevel_id, episode_index)
+        frame_count = episode_frames + (episode_index < remainder)
+        segment_weights = [weights[prompt_id] / prompt_ids.count(prompt_id) for prompt_id in prompt_ids]
+        total_weight = sum(segment_weights)
+        segments = []
+        cumulative_weight = 0
+        start_frame = 0
+        for prompt_id, weight in zip(prompt_ids, segment_weights):
+            cumulative_weight += weight
+            end_frame = round(frame_count * cumulative_weight / total_weight)
+            segments.append({"prompt_id": prompt_id, "start_frame": start_frame, "end_frame": end_frame})
+            start_frame = end_frame
+        annotations.append({
+            "episode_id": f'{d.get("id", "dataset")}:{d.get("version", "current")}:episode_{episode_index:06d}',
+            "recording_id": recording_id,
+            "highlevel_prompt_id": highlevel_id,
+            "lowlevel_prompt_segment_ids": [segment["prompt_id"] for segment in segments
+                                            if segment["end_frame"] > segment["start_frame"]],
+            "lowlevel_segments": segments,
+        })
+    return annotations
+
+
+def prompt_episode_counts(annotations):
+    """Count unique episode IDs for each stable prompt ID."""
+    episode_ids_by_prompt = {"highlevel": {}, "lowlevel": {}}
+    for annotation in annotations:
+        episode_id = annotation["episode_id"]
+        highlevel_id = annotation.get("highlevel_prompt_id")
+        if highlevel_id:
+            episode_ids_by_prompt["highlevel"].setdefault(highlevel_id, set()).add(episode_id)
+        for lowlevel_id in set(annotation.get("lowlevel_prompt_segment_ids", [])):
+            episode_ids_by_prompt["lowlevel"].setdefault(lowlevel_id, set()).add(episode_id)
+    return {
+        level: {prompt_id: len(episode_ids) for prompt_id, episode_ids in prompts.items()}
+        for level, prompts in episode_ids_by_prompt.items()
+    }
+
+
+def dataset_episode_prompt_counts(d):
+    """Count distinct dataset episodes containing each stable prompt ID."""
+    return prompt_episode_counts(dataset_episode_prompt_annotations(d))
+
+
 def dataset_label_names(d):
     """Return the distinct business labels attached to a dataset's recordings."""
+    if "labels" in d:
+        return d["labels"]
     return sorted({
         DATASET_TAG_PATH_BY_ID.get(tag_id, TAG_LABEL.get(tag_id, tag_id))
         for r in _dataset_recs(d)
@@ -1996,13 +2105,43 @@ def dataset_tag_picker_html(element_id, selected_paths=None, editable=True, inpu
 
 
 def dataset_prompt_composition(d):
-    """数据集按 prompt(任务指令) 的帧数构成。"""
+    """Return high-level prompt frame ratios and distinct episode counts."""
     recs = _dataset_recs(d)
     total = sum(r["frames"] for r in recs) or 1
+    episode_counts = dataset_episode_prompt_counts(d)["highlevel"]
     by = {}
     for r in recs:
         by[r["task"]] = by.get(r["task"], 0) + r["frames"]
-    return [{"name": task_instr(t), "ratio": fr / total} for t, fr in sorted(by.items(), key=lambda x: -x[1])]
+    return [
+        {
+            "id": task_id,
+            "name": task_instr(task_id),
+            "ratio": frames / total,
+            "episode_count": episode_counts.get(task_id, 0),
+        }
+        for task_id, frames in sorted(by.items(), key=lambda item: -item[1])
+    ]
+
+
+def dataset_lowlevel_prompt_composition(d):
+    """Return low-level prompt frame ratios and distinct episode counts."""
+    annotations = dataset_episode_prompt_annotations(d)
+    episode_counts = prompt_episode_counts(annotations)["lowlevel"]
+    frames_by_prompt = {}
+    for annotation in annotations:
+        for segment in annotation["lowlevel_segments"]:
+            prompt_id = segment["prompt_id"]
+            frames_by_prompt[prompt_id] = frames_by_prompt.get(prompt_id, 0) + segment["end_frame"] - segment["start_frame"]
+    return [
+        {
+            **prompt,
+            "frames": frames_by_prompt[prompt["id"]],
+            "ratio": frames_by_prompt[prompt["id"]] / (d["frames"] or 1),
+            "episode_count": episode_counts.get(prompt["id"], 0),
+        }
+        for prompt in LOWLEVEL_PROMPTS
+        if frames_by_prompt.get(prompt["id"], 0) > 0
+    ]
 
 def dataset_tag_composition(d):
     """数据集按标签(场景/技能/质量) 的帧数构成 (标签可重叠, 占比可 >100%)。"""
@@ -2015,14 +2154,16 @@ def dataset_tag_composition(d):
     return [{"name": lab, "ratio": fr / total} for lab, fr in sorted(by.items(), key=lambda x: -x[1])]
 
 def comp_rows_html(items, total_frames):
-    html = ""
+    rows_html = ""
     for it in items:
         pct = round(it["ratio"] * 100)
-        fr = int(it["ratio"] * total_frames)
-        html += (f'<div class="recipe-row"><div class="rname">{it["name"]}</div>'
-                 f'<div class="rbar"><div class="fill" style="width:{min(max(pct,4),100)}%">{pct}%</div></div>'
-                 f'<div class="muted">{fr:,}f</div></div>')
-    return html or '<div class="muted">—</div>'
+        fr = it.get("frames", int(it["ratio"] * total_frames))
+        prompt_id = html.escape(it.get("id", ""), quote=True)
+        rows_html += (f'<div class="recipe-row" data-prompt-id="{prompt_id}"><div class="rname">{it["name"]}</div>'
+                      f'<div class="rbar"><div class="fill" style="width:{min(max(pct,4),100)}%">{pct}%</div></div>'
+                      f'<div class="muted recipe-frames">{fr:,}f</div>'
+                      f'<div class="muted recipe-count">{it.get("episode_count", 0):,} 条</div></div>')
+    return rows_html or '<div class="muted">—</div>'
 
 _TAG_GROUP = {tid: grp for tid, lab, grp in TAG_DEFS}
 
@@ -4154,12 +4295,11 @@ def dataset_detail_panel_v2(d, viewed_ver=""):
                 '<option value="l2">展示层级：二级</option>'
                 '<option value="l3">展示层级：三级</option></select>')
     # Lowlevel(子动作)维度 prompt 构成 (demo)
-    _low_defs = [("接近/对准目标", 0.18), ("抓取物体", 0.22), ("移动/搬运", 0.20),
-                 ("放置/对位", 0.16), ("擦拭/操作", 0.14), ("复位/收回", 0.10)]
-    low_prompt_rows = comp_rows_html([{"name": n, "ratio": r} for n, r in _low_defs], d["frames"])
+    _low_items = dataset_lowlevel_prompt_composition(d)
+    low_prompt_rows = comp_rows_html(_low_items, d["frames"])
     compose = f"""
     <div class="tab-pane" id="pane-compose">
-      <div class="muted" style="margin-bottom:14px;">数据集共 {d['episodes']} episode · {len(_hl_items)} highlevel · {len(_low_defs)} lowlevel <span style="color:rgba(0,0,0,0.3);">(highlevel / lowlevel 按去重计数)</span></div>
+      <div class="muted" style="margin-bottom:14px;">数据集共 {d['episodes']} episode · {len(_hl_items)} highlevel · {len(_low_items)} lowlevel <span style="color:rgba(0,0,0,0.3);">(highlevel / lowlevel 按去重计数)</span></div>
       <div class="ep-tabs">
         <button class="ep-tab active" onclick="cmpTab(this,'high')">HighLevel 维度</button>
         <button class="ep-tab" onclick="cmpTab(this,'low')">Lowlevel 维度</button>
