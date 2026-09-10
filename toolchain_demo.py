@@ -3795,7 +3795,7 @@ def _render_data_refactor_page(page_key):
     return render_page(
         spec["title"],
         data_refactor.render_product_page(page_key),
-        active=spec["path"],
+        active=spec.get("active_path", spec["path"]),
         module="data",
         breadcrumb=f'数据平台 / <b>{spec["title"]}</b>',
         mvp_note=None,
@@ -3817,7 +3817,11 @@ for _data_page_key, _data_page_spec in data_refactor.PAGE_SPECS.items():
 
 
 _DATA_COMPAT_REDIRECTS = {
-    "/data/tasks": "/data/collection-tasks",
+    "/data/tasks": "/data/instruction-management",
+    "/data/collection-tasks": "/data/instruction-management",
+    "/data/instruction-management/upload-batches": "/data/instruction-management/approval-tasks",
+    "/data/collection-projects": "/data/collection-plans",
+    "/data/collection-projects/detail": "/data/collection-plans/detail",
     "/data/pipeline-definitions": "/data/pipelines",
     "/data/pipeline-runs": "/data/runs",
     "/data/assets": "/data/recordings",
@@ -3833,7 +3837,8 @@ _DATA_COMPAT_REDIRECTS = {
 
 for _compat_path, _compat_target in _DATA_COMPAT_REDIRECTS.items():
     def _compat_view(target=_compat_target):
-        return redirect(target)
+        query = request.query_string.decode("utf-8")
+        return redirect(f"{target}?{query}" if query else target)
 
     app.add_url_rule(
         _compat_path,
@@ -3851,10 +3856,10 @@ def data_task_detail(task_id):
     try:
         content = data_refactor.render_task_detail(task_id)
     except KeyError:
-        return redirect("/data/collection-tasks")
+        return redirect("/data/collection-plans")
     collection_task = task and task["type"] == "data_collection_task"
-    active_path = "/data/collection-tasks" if collection_task else "/data/processing-tasks"
-    menu_title = "采集任务" if collection_task else "处理任务"
+    active_path = "/data/collection-plans" if collection_task else "/data/processing-tasks"
+    menu_title = "采集方案" if collection_task else "处理任务"
     return render_page(
         "任务详情",
         content,
@@ -4102,7 +4107,7 @@ def data_home():
 
 @app.route("/data/collect")
 def collect():
-    return redirect("/data/collection-tasks")
+    return redirect("/data/instruction-management")
 
     stage = request.args.get("stage", "all")
     substage = request.args.get("sub", "all")

@@ -7,6 +7,8 @@
 - **应用编排平台** — 模型服务 · 编排 · 资产
 - **设备管理平台** — 设备 · 监测 · OTA
 
+S026 指令采集交互演示拆分为 `/data/instruction-management`（指令管理）、`/data/instruction-packages`（指令包管理）和 `/data/collection-plans`（采集方案）三个并列侧栏入口；采集方案从独立指令包管理中导入指令包，并通过独立页面配置采集策略与供应商。上传与审批使用独立子页面，审批详情支持筛选、分页和逐条审批。采集方案中的“端侧采集”按钮会进入 `/data/edge-collection` 手机 App 模拟页。演示数据均为虚构的浏览器本地 Mock，不连接生产接口。
+
 Flask 门户集成 `data_platform.py` / `quanta_eval_platform.py` 作为模型平台数据 / 评测子模块。
 
 数据平台重构由 `data_platform_refactor.py` 统一维护页面注册、导航、领域对象、节点类型、算子、工作台 Schema 和演示事实，`toolchain_demo.py` 只负责共享门户与路由承载。核心入口包括：
