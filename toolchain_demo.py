@@ -27,7 +27,8 @@ import json
 import os
 import re
 import sys
-from datetime import datetime
+from decimal import Decimal
+from datetime import date, datetime, timedelta
 from urllib.parse import quote, urlencode
 from flask import Flask, render_template_string, request, redirect, jsonify
 
@@ -628,6 +629,7 @@ PLATFORMS = {
                 ("/model/config/images",     "镜像管理",      "&#9881;", ""),
             ]),
             ("管理", [
+                ("/model/resources",         "资源管理",     "&#9784;", "saas 专属"),
                 ("/model/queues",             "队列管理",     "&#9783;", ""),
             ]),
         ],
@@ -1493,6 +1495,8 @@ body.lineage-canvas-page .lineage-viewport { height:100%; min-height:0; }
 /* ── Drawer form: row 2-col ── */
 .fg-row { display:flex; gap:14px; }
 .fg-row > .fg { flex:1; }
+.train-runtime-priority-row > .fg { min-width:0; }
+#trainInstanceSpec { width:100%; min-width:0; box-sizing:border-box; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .fg-hint { font-size:11px; color:rgba(0,0,0,0.4); margin-top:2px; }
 .fg-req::before { content:'*'; color:#cf1322; margin-right:4px; }
 .image-path-hint { margin-top:8px; padding:9px 11px; border:1px solid #f0f0f0; border-radius:6px; background:#fafbfc; color:rgba(0,0,0,0.45); font-size:12px; line-height:1.5; }
@@ -3178,8 +3182,14 @@ document.addEventListener('click', function(event){
   var imagePicker = document.getElementById('trainRecommendedPicker');
   if (imagePicker && imagePicker.classList.contains('open') && !imagePicker.contains(event.target)) closeTrainRecommendedImage();
 });
+function updateTrainQueueBalance(){
+  var queue = document.getElementById('trainQueueSelect');
+  var hint = document.getElementById('trainQueueBalanceHint');
+  if (queue && hint) hint.hidden = queue.value !== 'gpu-shared';
+}
 function openTrainDrawer(){
   openDrawer('drawerNewTrain');
+  updateTrainQueueBalance();
   updateRecommendedImageVersions();
   updateTrainImagePath();
   var instanceCount = document.getElementById('trainInstanceCount');
@@ -8047,6 +8057,351 @@ def model_home():
     return redirect("/model/data/query")
 
 
+# 模型平台 · 资源管理
+MODEL_RESOURCE_RECHARGES = [("2026-08-01", "3500"), ("2026-08-21", "1000"), ("2026-09-09", "500")]
+MODEL_RESOURCE_USAGE = [
+    ("2026-08-05", ("100", "40", "20")),
+    ("2026-08-21", ("150", "50", "20")),
+    ("2026-09-05", ("100", "40", "20")),
+    ("2026-09-10", ("25", "12.5", "8")),
+]
+MODEL_RESOURCE_RATES = [("Tesla-A100-80G", Decimal("5.00")), ("Tesla-A800-80G", Decimal("6.00")), ("H800-80G", Decimal("10.00"))]
+MODEL_RESOURCE_QUEUE_FIELDS = ("名称", "状态", "GPU", "vCPU", "云盘", "MEM", "极速型SSD flexPL", "极速型SSD PL0")
+MODEL_SHARED_QUEUE = ("gpu-shared", "运行中", "8 Tesla-A100-80G", "112 vCPU", "-", "1960 GiB", "-", "-")
+MODEL_EXCLUSIVE_QUEUES = [
+    ("gpu-quanta", "运行中", "8 Tesla-A100-80G", "112 vCPU", "-", "1960 GiB", "-", "-"),
+    ("pi05-train-a100", "运行中", "4 Tesla-A100-80G", "56 vCPU", "500 GiB", "960 GiB", "8 TiB", "-"),
+    ("eval-shared-l40s", "空闲", "4 L40S-48G", "48 vCPU", "200 GiB", "512 GiB", "-", "2 TiB"),
+]
+
+
+def _model_resource_balance(end):
+    return sum((Decimal(amount) for day, amount in MODEL_RESOURCE_RECHARGES if date.fromisoformat(day) <= end), Decimal("0")) - sum(
+        (sum(Decimal(hours[index]) * rate for index, (_, rate) in enumerate(MODEL_RESOURCE_RATES))
+         for day, hours in MODEL_RESOURCE_USAGE if date.fromisoformat(day) <= end), Decimal("0")
+    )
+
+
+@app.route("/model/resources")
+def model_resources():
+    today = date.today()
+    period = request.args.get("period", "all")
+    if period not in {"all", "today", "7", "30", "custom"}:
+        period = "all"
+    start, end = None, today
+    filter_error = ""
+    if period == "custom":
+        try:
+            start = date.fromisoformat(request.args.get("start", ""))
+            end = date.fromisoformat(request.args.get("end", ""))
+            if start > end or end > today:
+                raise ValueError
+        except ValueError:
+            filter_error = "请选择有效的时间范围，开始日期不能晚于结束日期，结束日期不能晚于今日。"
+            period, start, end = "all", None, today
+    elif period != "all":
+        start = today - timedelta(days=(1 if period == "today" else int(period)) - 1)
+
+    # Demo ledger: range totals use both bounds; balance includes prior transactions.
+    recharges = MODEL_RESOURCE_RECHARGES
+    usage = MODEL_RESOURCE_USAGE
+    rates = MODEL_RESOURCE_RATES
+    def in_range(day):
+        return (start is None or start <= date.fromisoformat(day)) and date.fromisoformat(day) <= end
+
+    gpu_rows = [
+        (name, rate, sum((Decimal(hours[index]) for day, hours in usage if in_range(day)), Decimal("0")))
+        for index, (name, rate) in enumerate(rates)
+    ]
+    total_recharge = sum((Decimal(amount) for day, amount in recharges if in_range(day)), Decimal("0"))
+    consumed_hours = sum(hours for _, _, hours in gpu_rows)
+    account_balance = _model_resource_balance(end)
+    selected_gpu = request.args.get("gpu", rates[0][0])
+    if selected_gpu not in dict(rates):
+        selected_gpu = rates[0][0]
+    remaining_hours = (max(account_balance, Decimal("0")) / dict(rates)[selected_gpu]).quantize(Decimal("0.1"), rounding="ROUND_DOWN")
+    gpu_labels = {"Tesla-A100-80G": "A100", "Tesla-A800-80G": "A800", "H800-80G": "H800"}
+    gpu_options = "".join(f'<option value="{name}"{" selected" if name == selected_gpu else ""}>{gpu_labels[name]}</option>' for name, _ in rates)
+    period_options = "".join(
+        f'<label><input type="radio" name="period" value="{value}"{" checked" if period == value else ""} onchange="modelResourcePeriodChange(this)"><span>{label}</span></label>'
+        for value, label in [("all", "全部"), ("today", "今日"), ("7", "7天"), ("30", "30天"), ("custom", "自定义")]
+    )
+    queue_rows = MODEL_EXCLUSIVE_QUEUES
+    shared_queue_details = "".join(
+        f'<dt>{html.escape(field)}</dt><dd>{html.escape(value)}</dd>'
+        for field, value in zip(MODEL_RESOURCE_QUEUE_FIELDS, MODEL_SHARED_QUEUE)
+    )
+    gpu_table = "".join(
+        f"""<tr>
+          <td><b>{html.escape(name)}</b></td>
+          <td class=\"mono\">{rate:,.2f}</td>
+          <td class=\"mono\">{hours:,.1f}</td><td class=\"mono\">{rate * hours:,.2f}</td>
+        </tr>"""
+        for name, rate, hours in gpu_rows
+    )
+    queue_table = "".join(
+        f"""<tr>
+          <td><b>{html.escape(name)}</b></td>
+          <td><span class=\"rm-resource-status {'idle' if status == '空闲' else 'running'}\"><i></i>{status}</span></td>
+          <td>{html.escape(gpu)}</td><td>{html.escape(vcpu)}</td><td>{html.escape(disk)}</td>
+          <td>{html.escape(mem)}</td><td>{html.escape(flex)}</td><td>{html.escape(pl0)}</td>
+        </tr>"""
+        for name, status, gpu, vcpu, disk, mem, flex, pl0 in queue_rows
+    )
+    content = f"""
+    <style>
+      .model-resource-page{{width:100%;max-width:none;box-sizing:border-box}}
+      .model-resource-tabs{{display:flex;align-items:center;gap:4px;margin:0;border-bottom:1px solid #edf0f2}}
+      .model-resource-tab{{padding:11px 18px 12px;border:0;border-bottom:2px solid transparent;background:transparent;color:#718087;font-size:13px;cursor:pointer}}
+      .model-resource-tab.active{{border-bottom-color:#149DAA;color:#0f7b84;font-weight:650}}
+      .model-resource-panel{{display:none}}.model-resource-panel.active{{display:block}}
+      .model-resource-description{{margin:14px 0 18px;padding:11px 14px;border:1px solid #cde8ea;border-radius:7px;background:#f3fbfb;color:#41656b;font-size:12px;line-height:1.6}}
+      .model-resource-description b{{margin-left:10px;color:#275a62;font-weight:600}}
+      .model-resource-description ul{{margin:0;padding-left:18px}}
+      .model-resource-description li+li{{margin-top:4px}}
+      .model-resource-description li b{{margin-left:0}}
+      .model-shared-queue-trigger{{border:0;border-bottom:1px dashed #149daa;padding:0 2px;background:transparent;color:#0f7b84;font:inherit;cursor:pointer}}
+      .model-shared-queue-trigger:focus-visible{{outline:2px solid #149daa;outline-offset:3px}}
+      .model-shared-queue-popover{{position:fixed;inset:auto;margin:0;box-sizing:border-box;width:350px;max-width:calc(100vw - 24px);max-height:calc(100dvh - 24px);overflow:auto;padding:16px;border:1px solid #dce4e6;border-radius:8px;background:#fff;color:#41545b;box-shadow:0 6px 24px rgba(0,0,0,.12)}}
+      .model-shared-queue-popover h3{{margin:0 0 12px;font-size:14px}}
+      .model-shared-queue-popover dl{{display:grid;grid-template-columns:minmax(110px,1fr) minmax(0,1.4fr);gap:10px 16px;margin:0;font-size:12px;line-height:1.5}}
+      .model-shared-queue-popover dt{{color:#74848a}}.model-shared-queue-popover dd{{margin:0;overflow-wrap:anywhere}}
+      .model-resource-overview{{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-bottom:18px}}
+      .model-resource-stat{{padding:16px 18px;border:1px solid #e6ebed;border-radius:8px;background:#fff}}
+      .model-resource-stat span{{display:block;color:#74848a;font-size:12px}}.model-resource-stat b{{display:block;margin-top:8px;color:#273f47;font-size:24px;font-family:SFMono-Regular,Consolas,monospace}}
+      .model-resource-stat small{{display:block;margin-top:6px;color:#9aa5a9;font-size:11px}}
+      .model-resource-section{{padding:18px;border:1px solid #e6ebed;border-radius:8px;background:#fff}}
+      [data-resource-panel="usage"] .model-resource-section{{padding:0;border:0;border-radius:0;background:transparent}}
+      [data-resource-panel="usage"] .table-wrap{{overflow-x:auto}}
+      .model-resource-time-filter{{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:0 0 18px;color:#65777d;font-size:12px}}
+      .model-resource-periods{{display:flex;flex-wrap:wrap;gap:4px}}
+      .model-resource-periods label{{position:relative;cursor:pointer}}
+      .model-resource-periods input{{position:absolute;opacity:0;width:1px;height:1px}}
+      .model-resource-periods span{{display:block;padding:7px 12px;border:1px solid #dce4e6;border-radius:4px;background:#fff}}
+      .model-resource-periods input:checked+span{{background:#eaf7f8;border-color:#149daa;color:#0f7b84}}
+      .model-resource-periods input:focus-visible+span{{outline:2px solid #149daa;outline-offset:2px}}
+      .model-resource-custom{{display:flex;gap:8px;align-items:center;flex-wrap:wrap}}
+      .model-resource-custom[hidden]{{display:none}}
+      .model-resource-custom label{{display:flex;align-items:center;gap:6px}}
+      .model-resource-custom input{{height:32px;max-width:100%;box-sizing:border-box;border:1px solid #dce4e6;border-radius:4px;background:#fff;color:#52676e;padding:0 8px;font-size:12px}}
+      .model-resource-stat[data-gpu-estimate]{{position:relative}}
+      .model-resource-stat[data-gpu-estimate]>span{{padding-right:80px}}
+      .model-resource-gpu-select{{position:absolute;top:13px;right:14px;width:76px;height:24px;box-sizing:border-box;padding:0 3px;border:0;border-radius:4px;background:transparent;color:#0f7b84;font-size:11px;cursor:pointer}}
+      .model-resource-gpu-select:hover{{background:#eaf7f8}}
+      .model-resource-gpu-select:focus-visible{{outline:2px solid #149daa;outline-offset:2px}}
+      .model-resource-filter-error{{color:#c43b35;font-size:12px}}
+      .model-resource-section-head{{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-bottom:14px}}
+      .model-resource-section-head h2{{margin:0;color:#2c444b;font-size:16px}}.model-resource-section-head p{{margin:4px 0 0;color:#89979b;font-size:11px}}
+      .model-resource-toolbar{{display:flex;align-items:flex-end;gap:10px;flex-wrap:wrap;margin:0}}
+      .model-resource-toolbar label{{display:flex;flex-direction:column;gap:6px;color:#65777d;font-size:11px}}
+      .model-resource-toolbar input{{width:235px;height:34px;box-sizing:border-box;padding:0 10px;border:1px solid #dce4e6;border-radius:6px;background:#fff;outline:none}}
+      .model-resource-table{{width:100%;min-width:760px}}
+      .model-resource-table th{{background:#f4f6f9;color:#41545b;font-weight:600}}
+      .model-resource-table td,.model-resource-table th{{padding:12px 14px;white-space:nowrap}}
+      .rm-resource-tag{{display:inline-flex;padding:3px 8px;border-radius:4px;background:#eaf7f8;color:#13808a;font-size:11px}}
+      .rm-resource-status{{display:inline-flex;align-items:center;gap:6px;color:#4f6268;font-size:12px}}.rm-resource-status i{{width:7px;height:7px;border-radius:50%;background:#52c41a}}.rm-resource-status.idle i{{background:#b7c0c3}}.rm-resource-status.idle{{color:#89969a}}
+      .model-resource-buy{{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:14px;padding:13px 15px;border:1px solid #cde8ea;border-radius:7px;background:#f3fbfb;color:#41656b;font-size:12px}}
+      .model-resource-buy b{{display:block;margin-bottom:4px;color:#275a62;font-size:13px}}.model-resource-buy span{{color:#6d858a}}
+      .model-resource-section-head>div:last-child{{display:flex;gap:8px;flex-wrap:wrap}}
+      .model-recharge-modal{{width:440px;max-width:calc(100vw - 32px);max-height:calc(100dvh - 32px);box-sizing:border-box;margin:auto;padding:0;border:0;border-radius:8px;background:#fff;color:#273f47;box-shadow:0 16px 48px rgba(0,0,0,.18);overflow:auto}}
+      .model-recharge-modal::backdrop{{background:rgba(0,0,0,.45)}}
+      .model-recharge-modal [hidden]{{display:none}}
+      .model-recharge-close{{display:flex;align-items:center;justify-content:center;width:32px;height:32px;padding:0;border:0;border-radius:4px;background:transparent;font-size:24px;cursor:pointer;color:#74848a}}
+      .model-recharge-close:hover{{background:#f4f6f9}}
+      .model-recharge-label{{display:block;margin-bottom:8px;font-size:13px}}
+      .model-recharge-amount{{display:flex;align-items:center;gap:10px;color:#52676e;font-size:13px}}
+      .model-recharge-amount input{{flex:1;min-width:0;height:38px;box-sizing:border-box;padding:0 10px;border:1px solid #d9e0e2;border-radius:4px;font:inherit}}
+      .model-recharge-amount span{{flex:none}}
+      .model-recharge-amount input:focus{{outline:2px solid #149daa;outline-offset:1px}}
+      .model-recharge-amount input[aria-invalid="true"]{{border-color:#c43b35}}
+      .model-recharge-error{{min-height:20px;margin:6px 0 0;color:#c43b35;font-size:12px}}
+      .model-recharge-payment{{text-align:center}}
+      .model-recharge-payment p{{margin:0;color:#65777d;font-size:13px}}
+      .model-recharge-payment strong{{display:block;margin-top:8px;font-size:24px;overflow-wrap:anywhere}}
+      .model-recharge-payment strong span{{font-size:13px;font-weight:400}}
+      .model-recharge-qr{{display:block;width:200px;height:200px;max-width:100%;object-fit:contain;margin:16px auto;image-rendering:pixelated}}
+      @media(max-width:640px){{.model-resource-overview{{grid-template-columns:1fr}}.model-resource-toolbar{{width:100%}}.model-resource-toolbar label{{flex:1;min-width:180px}}.model-resource-toolbar input{{width:100%;max-width:none}}}}
+    </style>
+    <div class=\"model-resource-page\">
+      <div class="model-list-title"><h1>资源管理</h1></div>
+      <div class=\"model-resource-tabs\" role=\"tablist\">
+        <button type=\"button\" class=\"model-resource-tab active\" data-resource-tab=\"usage\" onclick=\"modelResourceSwitch(this,'usage')\">计量付费</button>
+        <button type=\"button\" class=\"model-resource-tab\" data-resource-tab=\"exclusive\" onclick=\"modelResourceSwitch(this,'exclusive')\">独占资源</button>
+      </div>
+      <section class=\"model-resource-panel active\" data-resource-panel=\"usage\">
+        <div class=\"model-resource-description\"><ul>
+          <li>计量付费适合按需使用 GPU 的训练场景，按实际占用的 GPU 卡时计费；提交训练任务时请选择 <button id="modelSharedQueueTrigger" class="model-shared-queue-trigger" type="button" aria-expanded="false" aria-controls="modelSharedQueuePopover" onmouseenter="modelSharedQueueShow()" onmouseleave="modelSharedQueueScheduleHide()" onfocus="modelSharedQueueShow()" onblur="modelSharedQueueScheduleHide()" onclick="modelSharedQueueShow()"><code>gpu-shared</code></button> 队列。</li>
+          <li>采用预付费模式，余额不足时训练任务将自动停止；充值请联系销售人员。</li>
+        </ul></div>
+        <div id="modelSharedQueuePopover" class="model-shared-queue-popover" popover="auto" aria-labelledby="modelSharedQueueTitle" onmouseenter="clearTimeout(modelSharedQueueHideTimer)" onmouseleave="modelSharedQueueScheduleHide()"><h3 id="modelSharedQueueTitle">队列基本信息</h3><dl>{shared_queue_details}</dl></div>
+        <form id="modelResourceTimeFilter" class="model-resource-time-filter" method="get">
+          <span>时间范围</span><div class="model-resource-periods" role="group" aria-label="时间范围">{period_options}</div>
+          <div id="modelResourceCustomRange" class="model-resource-custom"{' hidden' if period != 'custom' else ''}>
+            <label>开始日期<input type="date" name="start" aria-label="开始日期" max="{today.isoformat()}" value="{(start or today - timedelta(days=6)).isoformat()}" required{' disabled' if period != 'custom' else ''}></label>
+            <label>结束日期<input type="date" name="end" aria-label="结束日期" max="{today.isoformat()}" value="{end.isoformat()}" required{' disabled' if period != 'custom' else ''}></label>
+            <button class="btn btn-primary" type="submit">查询</button>
+          </div>
+        </form>
+        {f'<p class="model-resource-filter-error" role="alert">{filter_error}</p>' if filter_error else ''}
+        <div class=\"model-resource-overview\">
+          <div class=\"model-resource-stat\" title="截至筛选结束日期的账户余额，包含区间前的结余"><span>余额（元）</span><b>{account_balance:,.2f}</b><small>可用金额</small></div>
+          <div class=\"model-resource-stat\"><span>累计充值（元）</span><b>{total_recharge:,.2f}</b><small>已到账金额</small></div>
+          <div class=\"model-resource-stat\" data-gpu-estimate><span>剩余卡时（卡时）</span><b>{remaining_hours:,.1f}</b><small>按 {gpu_labels[selected_gpu]} 单价估算</small><select class="model-resource-gpu-select" name="gpu" form="modelResourceTimeFilter" aria-label="剩余卡时折算 GPU 型号" title="切换折算型号：{selected_gpu}" onchange="this.form.requestSubmit()">{gpu_options}</select></div>
+          <div class=\"model-resource-stat\"><span>已消耗卡时（卡时）</span><b>{consumed_hours:,.1f}</b><small>各 GPU 型号用量合计</small></div>
+        </div>
+        <section class=\"model-resource-section\"><div class=\"model-resource-section-head\"><div><h2>训练用量与费用</h2><p>按 GPU 型号汇总</p></div></div>
+          <div class=\"table-wrap\"><table class=\"ant-table model-resource-table\"><thead><tr><th>GPU 型号</th><th>参考价格（元/卡时）<small style="display:block;margin-top:4px;color:#65777d;font-size:11px;font-weight:400">价格可能调整，以使用时生效价格为准</small></th><th>训练用量（卡时）</th><th>训练费用（元）</th></tr></thead><tbody>{gpu_table}</tbody></table></div>
+        </section>
+      </section>
+      <section class=\"model-resource-panel\" data-resource-panel=\"exclusive\">
+        <p class=\"model-resource-description\">独占资源支持直接购买专属队列，购买后队列及其中的计算资源仅供当前账号使用。购买队列资源，请联系销售人员。</p>
+        <section class=\"model-resource-section\"><div class=\"model-resource-section-head\"><div><h2>队列资源</h2></div></div>
+          <div class=\"table-wrap\"><table class=\"ant-table model-resource-table\" id=\"modelResourceQueueTable\"><thead><tr>{''.join(f'<th>{html.escape(field)}</th>' for field in MODEL_RESOURCE_QUEUE_FIELDS)}</tr></thead><tbody>{queue_table}</tbody></table></div>
+        </section>
+      </section>
+    </div>
+    <dialog id="modelRechargeDialog" class="model-recharge-modal" aria-labelledby="modelRechargeTitle" onclick="if(event.target===this){{var r=this.getBoundingClientRect();if(event.clientX<r.left||event.clientX>r.right||event.clientY<r.top||event.clientY>r.bottom)this.close();}}">
+      <div class="modal-head"><h3 id="modelRechargeTitle">在线充值</h3><button class="model-recharge-close" type="button" aria-label="关闭充值弹窗" title="关闭" onclick="document.getElementById('modelRechargeDialog').close()">&times;</button></div>
+      <form id="modelRechargeForm" novalidate onsubmit="modelRechargeSubmit(event)">
+        <div class="modal-body">
+          <label class="model-recharge-label" for="modelRechargeAmount">充值金额（元）</label>
+          <div class="model-recharge-amount"><input id="modelRechargeAmount" name="amount" type="text" inputmode="numeric" pattern="[0-9]+" maxlength="16" required autocomplete="off" placeholder="请输入正整数金额" aria-describedby="modelRechargeError" oninput="modelRechargeClearError()"></div>
+          <p class="model-recharge-error" id="modelRechargeError" role="alert"></p>
+        </div>
+        <div class="modal-foot"><button class="btn" type="button" onclick="document.getElementById('modelRechargeDialog').close()">取消</button><button class="btn btn-primary" type="submit">下一步</button></div>
+      </form>
+      <div id="modelRechargePayment" hidden>
+        <div class="modal-body model-recharge-payment">
+          <p>充值金额</p><strong>¥<b id="modelRechargeTotal"></b></strong>
+          <img class="model-recharge-qr" src="/static/model-recharge-demo.png" width="200" height="200" alt="演示支付二维码">
+          <p>演示二维码，不支持真实付款</p>
+        </div>
+        <div class="modal-foot"><button id="modelRechargeBack" class="btn" type="button" onclick="modelRechargeEdit()">修改金额</button><button class="btn btn-primary" type="button" onclick="document.getElementById('modelRechargeDialog').close()">关闭</button></div>
+      </div>
+    </dialog>
+    <script>
+      var modelSharedQueueHideTimer;
+      function modelSharedQueueShow(){{
+        clearTimeout(modelSharedQueueHideTimer);
+        var trigger = document.getElementById('modelSharedQueueTrigger');
+        var panel = document.getElementById('modelSharedQueuePopover');
+        if (!panel.matches(':popover-open')) panel.showPopover();
+        var rect = trigger.getBoundingClientRect();
+        panel.style.left = Math.max(12, Math.min(rect.left, window.innerWidth - panel.offsetWidth - 12)) + 'px';
+        var top = rect.bottom + 8;
+        if (top + panel.offsetHeight > window.innerHeight - 12) top = rect.top - panel.offsetHeight - 8;
+        panel.style.top = Math.max(12, top) + 'px';
+        trigger.setAttribute('aria-expanded', 'true');
+      }}
+      function modelSharedQueueScheduleHide(){{
+        clearTimeout(modelSharedQueueHideTimer);
+        modelSharedQueueHideTimer = setTimeout(function(){{document.getElementById('modelSharedQueuePopover').hidePopover();}}, 180);
+      }}
+      document.getElementById('modelSharedQueuePopover').addEventListener('toggle', function(event){{
+        document.getElementById('modelSharedQueueTrigger').setAttribute('aria-expanded', String(event.newState === 'open'));
+      }});
+      window.addEventListener('resize', function(){{
+        if (document.getElementById('modelSharedQueuePopover').matches(':popover-open')) modelSharedQueueShow();
+      }});
+      function modelRechargeOpen(){{
+        var dialog = document.getElementById('modelRechargeDialog');
+        document.getElementById('modelRechargeForm').reset();
+        modelRechargeEdit();
+        dialog.showModal();
+        document.getElementById('modelRechargeAmount').focus();
+      }}
+      function modelRechargeClearError(){{
+        document.getElementById('modelRechargeAmount').removeAttribute('aria-invalid');
+        document.getElementById('modelRechargeError').textContent = '';
+      }}
+      function modelRechargeEdit(){{
+        document.getElementById('modelRechargeForm').hidden = false;
+        document.getElementById('modelRechargePayment').hidden = true;
+        document.getElementById('modelRechargeTitle').textContent = '在线充值';
+        modelRechargeClearError();
+        document.getElementById('modelRechargeAmount').focus();
+      }}
+      function modelRechargeSubmit(event){{
+        event.preventDefault();
+        var input = document.getElementById('modelRechargeAmount');
+        var amount = Number(input.value);
+        if (!/^[0-9]+$/.test(input.value) || !Number.isSafeInteger(amount) || amount <= 0){{
+          input.setAttribute('aria-invalid', 'true');
+          document.getElementById('modelRechargeError').textContent = '请输入有效的正整数金额';
+          input.focus();
+          return;
+        }}
+        document.getElementById('modelRechargeTotal').textContent = amount.toLocaleString('zh-CN', {{minimumFractionDigits: 2, maximumFractionDigits: 2}});
+        document.getElementById('modelRechargeForm').hidden = true;
+        document.getElementById('modelRechargePayment').hidden = false;
+        document.getElementById('modelRechargeTitle').textContent = '扫码支付';
+        document.getElementById('modelRechargeBack').focus();
+      }}
+      function modelResourcePeriodChange(input){{
+        var custom = input.value === 'custom';
+        document.getElementById('modelResourceCustomRange').hidden = !custom;
+        input.form.querySelectorAll('input[type="date"]').forEach(function(field){{field.disabled = !custom;}});
+        if (!custom) input.form.requestSubmit();
+      }}
+      document.getElementById('modelResourceTimeFilter').addEventListener('submit', function(event){{
+        var start = this.elements.start, end = this.elements.end;
+        end.setCustomValidity('');
+        if (!start.disabled && start.value > end.value){{event.preventDefault();end.setCustomValidity('结束日期不能早于开始日期');end.reportValidity();}}
+      }});
+      document.querySelectorAll('#modelResourceCustomRange input').forEach(function(input){{input.addEventListener('input',function(){{document.getElementById('modelResourceTimeFilter').elements.end.setCustomValidity('');}});}});
+      function modelResourceSwitch(button, panel){{document.querySelectorAll('.model-resource-tab').forEach(function(item){{item.classList.toggle('active',item===button)}});document.querySelectorAll('.model-resource-panel').forEach(function(item){{item.classList.toggle('active',item.dataset.resourcePanel===panel)}});}}
+      function modelResourceFilterQueues(value){{var query=(value||'').trim().toLowerCase();document.querySelectorAll('#modelResourceQueueTable tbody tr').forEach(function(row){{row.style.display=!query||row.textContent.toLowerCase().indexOf(query)>=0?'':'none';}});}}
+    </script>
+    """
+    return render_page("资源管理", content, active="/model/resources", module="model",
+                       breadcrumb='模型平台 / <b>资源管理</b>')
+
+
+@app.route("/model/resources/recharge-records")
+def model_resource_recharge_records():
+    rows = [
+        ("RC202609091420001", "算力充值", "¥500.00", "已支付", "2026-09-09 14:20", "2026-09-09 14:21", "joanna.qiao"),
+        ("RC202608211005002", "算力充值", "¥1,000.00", "已支付", "2026-08-21 10:05", "2026-08-21 10:06", "joanna.qiao"),
+        ("RC202608101630003", "算力充值", "¥500.00", "支付失败", "2026-08-10 16:30", "—", "Lance Li"),
+        ("RC202609101015004", "算力充值", "¥2,000.00", "支付中", "2026-09-10 10:15", "—", "joanna.qiao"),
+    ]
+    start_value = request.args.get("start", "")
+    end_value = request.args.get("end", "")
+    creator_value = request.args.get("creator", "").strip()
+    filter_error = ""
+    try:
+        start = date.fromisoformat(start_value) if start_value else None
+        end = date.fromisoformat(end_value) if end_value else None
+        if bool(start) != bool(end) or (start and end and start > end):
+            raise ValueError
+        rows = [row for row in rows if
+                (not start or start <= date.fromisoformat(row[4][:10]) <= end)
+                and creator_value.casefold() in row[6].casefold()]
+    except ValueError:
+        filter_error = "请选择完整且有效的创建时间区间，开始日期不能晚于结束日期。"
+        rows = []
+    status_classes = {"已支付": "tag-green", "支付中": "tag-blue", "支付失败": "tag-red"}
+    body = "".join(f'<tr><td><code>{i}</code></td><td>{item}</td><td>{amount}</td><td><span class="tag {status_classes[status]}">{status}</span></td><td>{created}</td><td>{paid}</td><td>{creator}</td></tr>' for i,item,amount,status,created,paid,creator in rows)
+    if not body:
+        body = '<tr><td colspan="7" style="text-align:center;padding:32px;color:#89979b">暂无符合条件的充值记录</td></tr>'
+    content = f"""
+    <div class=\"model-resource-records\">
+      <style>.model-resource-records .tag-blue{{color:#1677ff;background:#e6f4ff;border-color:#91caff}}</style>
+      <div class=\"model-resource-section-head\"><a class=\"btn\" href=\"/model/resources\"><span aria-hidden="true">&#8592;</span> 返回</a><h2>充值记录</h2></div>
+      <form class=\"model-resource-toolbar model-records-filter\" method="get">
+        <div class="model-records-date-field"><span id="modelRecordsDateLabel">创建时间</span><div class="model-records-date-range" role="group" aria-labelledby="modelRecordsDateLabel">
+          <input type="date" name="start" aria-label="创建开始日期" value="{html.escape(start_value, quote=True)}"><span>至</span><input type="date" name="end" aria-label="创建结束日期" value="{html.escape(end_value, quote=True)}">
+        </div></div>
+        <label>创建人<input name="creator" placeholder=\"请输入创建人\" value="{html.escape(creator_value, quote=True)}"></label><a class=\"btn btn-tertiary\" href="/model/resources/recharge-records">清空</a><button class=\"btn btn-primary\" type="submit">查询</button>
+      </form>
+      {f'<p role="alert" style="color:#c43b35;font-size:12px">{filter_error}</p>' if filter_error else ''}
+      <div class=\"table-wrap\"><table class=\"ant-table model-resource-table\"><thead><tr><th>订单 ID</th><th>充值项目</th><th>金额</th><th>状态</th><th>创建时间</th><th>支付时间</th><th>创建人</th></tr></thead><tbody>{body}</tbody></table></div>
+    </div>
+    <style>.model-resource-records{{width:100%;box-sizing:border-box;padding:0 2px}}.model-resource-records .model-resource-section-head{{display:flex;align-items:center;gap:12px;padding:0 0 14px;border-bottom:1px solid #edf1f2}}.model-resource-section-head h2{{margin:0;color:#2c444b;font-size:18px}}.model-records-filter{{display:flex;align-items:flex-end;flex-wrap:wrap;gap:12px;margin:16px 0}}.model-records-filter label,.model-records-date-field{{display:flex;flex-direction:column;gap:6px;min-width:0;color:#65777d;font-size:11px}}.model-records-filter input{{height:34px;box-sizing:border-box;padding:0 9px;border:1px solid #d9e0e2;border-radius:6px;max-width:100%;min-width:0}}.model-records-date-range{{display:flex;align-items:center;gap:8px;border:1px solid #d9e0e2;border-radius:6px;background:#fff;padding:0 4px}}.model-records-date-range input{{width:145px;border:0;background:transparent}}.model-records-date-range:focus-within{{outline:1px solid #149daa}}.model-records-date-field{{max-width:100%}}.model-resource-records .table-wrap{{width:100%;overflow-x:auto;background:#fff;border:1px solid #e6ebed;border-radius:8px}}.model-resource-records .model-resource-table{{min-width:980px;margin:0}}@media(max-width:640px){{.model-records-date-field{{width:100%}}.model-records-date-range input{{flex:1;width:0}}}}</style>
+    """
+    return render_page("充值记录", content, active="/model/resources", module="model", breadcrumb='模型平台 / 资源管理 / <b>充值记录</b>')
+
+
 # 模型平台 · 队列管理
 MODEL_QUEUES = [
     {
@@ -9181,6 +9536,12 @@ def experiments():
         f'<option value="{html.escape(queue["id"], quote=True)}">{html.escape(queue["name"])}</option>'
         for queue in MODEL_QUEUES
     ) if has_queue_access else '<option value="" selected hidden>请选择训练队列</option><option value="" disabled>暂无可用训练队列</option>'
+    if has_queue_access:
+        resource_queue_options = '<option value="gpu-shared">gpu-shared</option>' + "".join(
+            f'<option value="{html.escape(queue[0], quote=True)}">{html.escape(queue[0])}</option>'
+            for queue in MODEL_EXCLUSIVE_QUEUES
+        )
+        queue_options = resource_queue_options + queue_options
     queue_help = '仅展示你有使用权限的训练队列。如需使用其他队列，请点击右上角「申请队列权限」，联系对应的队列管理员申请开通。'
     visible_experiments = [
         e for e in EXPERIMENTS
@@ -9423,12 +9784,19 @@ def experiments():
               <div class="fg"><label class="fg-req">优先级 <span class="qi" data-tooltip="数值越大，优先级越大" tabindex="0" aria-label="数值越大，优先级越大">i</span></label><select id="trainPriority"><option value="2">2</option><option value="4" selected>4</option><option value="6">6</option></select></div>
               <div class="fg">
                 <div class="train-queue-label"><label for="trainQueueSelect" class="fg-req">训练队列 <span class="qi" data-tooltip="{queue_help}" tabindex="0" aria-label="{queue_help}">i</span></label><a href="/model/queues?view=readonly" target="_blank" rel="noopener">申请队列权限</a></div>
-                <select id="trainQueueSelect">{queue_options}</select>
+                <select id="trainQueueSelect" aria-describedby="trainQueueBalanceHint" onchange="updateTrainQueueBalance()">{queue_options}</select>
+                <p id="trainQueueBalanceHint" role="status" hidden style="margin:8px 0 0;color:#ad6800;font-size:12px;line-height:1.6;overflow-wrap:anywhere">当前可用余额为 <strong>¥{_model_resource_balance(date.today()):,.2f}</strong>，余额耗尽后训练任务将自动停止。</p>
               </div>
             </div>
             <div class="fg-row train-runtime-priority-row">
               <div class="fg"><label class="fg-req">实例数</label><input id="trainInstanceCount" type="number" min="1" max="4" step="1" value="1" inputmode="numeric" oninput="validateTrainInstanceCount(this)"></div>
-              <div class="fg"><label class="fg-req">实例规格</label><select><option>请选择实例规格</option><option>2 × A100 80GB</option><option>4 × A100 80GB</option><option>8 × H100 80GB</option></select></div>
+              <div class="fg"><label class="fg-req" for="trainInstanceSpec">实例规格</label><select id="trainInstanceSpec" onchange="this.title=this.options[this.selectedIndex].text" title="请选择实例规格">
+                <option value="" selected disabled>请选择实例规格</option>
+                <option value="ml.hpcpni2.28xlarge">ml.hpcpni2.28xlarge | 112 vCPU | 1960 GiB | Tesla-A100-80G × 8</option>
+                <option value="A100-2x-80G">A100-2x-80G | 24 vCPU | 192 GB | Tesla-A100-80G × 2</option>
+                <option value="A100-4x-80G">A100-4x-80G | 48 vCPU | 384 GB | Tesla-A100-80G × 4</option>
+                <option value="H100-8x-80G">H100-8x-80G | 96 vCPU | 768 GB | Tesla-H100-80G × 8</option>
+              </select></div>
             </div>
           </div>
         </section>
