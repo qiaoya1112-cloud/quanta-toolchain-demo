@@ -736,6 +736,9 @@ a { color:#149DAA; text-decoration:none; } a:hover { color:#0F8190; }
 .tn-right { display:flex; align-items:center; gap:16px; margin-left:auto; }
 .tn-link { color:rgba(255,255,255,0.65); font-size:14px; cursor:pointer; }
 .tn-link:hover { color:#fff; }
+.tn-edge-entry { display:inline-flex; align-items:center; gap:6px; flex:none; margin-left:auto; margin-right:16px; padding:5px 9px; border-radius:6px; white-space:nowrap; }
+.tn-edge-entry:hover,.tn-edge-entry:focus-visible { background:rgba(255,255,255,0.08); color:#fff; }
+.tn-edge-entry + .tn-right { margin-left:0; }
 .tn-divider { width:1px; height:18px; background:rgba(255,255,255,0.14); margin:0 4px; flex:none; }
 .tn-tenant-admin { display:inline-flex; align-items:center; gap:6px; padding:5px 9px; border-radius:6px; }
 .tn-tenant-admin svg { color:rgba(255,255,255,0.65); }
@@ -2537,6 +2540,10 @@ BASE_TEMPLATE = """<!DOCTYPE html>
   </div>
   <a class="tn-overview {% if portal %}active{% endif %}" href="/">
     <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="3.5" width="7" height="7" rx="1"/><rect x="13.5" y="3.5" width="7" height="7" rx="1"/><rect x="3.5" y="13.5" width="7" height="7" rx="1"/><rect x="13.5" y="13.5" width="7" height="7" rx="1"/></svg></span>总览
+  </a>
+  <a class="tn-link tn-edge-entry" href="/data/edge-collection" onclick="if(typeof s026OpenEdgeApp==='function'){s026OpenEdgeApp();return false;}" title="端侧采集">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" width="16" height="16" aria-hidden="true"><rect x="6" y="2.5" width="12" height="19" rx="2.5"/><path d="M10 5h4M11 18.5h2"/></svg>
+    <span>端侧采集</span>
   </a>
   <div class="tn-right">
     <a class="tn-link" href="#" onclick="toast('Demo: 文档');return false;">文档</a>
