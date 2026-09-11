@@ -434,7 +434,7 @@ class InstructionCollectionDemoTests(unittest.TestCase):
             "/data/collection-plans/detail?id=",
         ):
             self.assertIn(expected, self.project_html)
-        self.assertNotIn("自动暂停", self.project_html + self.strategy_html)
+        self.assertIn("达到阈值后，指令自动暂停。", self.project_html)
         self.assertNotIn(
             "无上线采集策略、无上线指令包或无启用供应商",
             self.project_html,
@@ -575,8 +575,12 @@ class InstructionCollectionDemoTests(unittest.TestCase):
         for expected in (
             "var S026_PAGE_MODE='plan-package-detail'",
             "<th>序号</th><th>指令 ID</th><th>指令名称</th><th>指令迭代</th><th>指令版本号</th><th>指令描述</th><th>难度</th><th>镜像</th><th>道具</th><th>指令版本状态</th>",
-            '<th class="s026-plan-duration-cell">采集时长</th>',
-            '<th class="s026-plan-threshold-cell">暂停阈值</th>',
+            '<th class="s026-plan-duration-cell">采集进度 ',
+            '<th class="s026-plan-collected-cell">采集时长 ',
+            'data-s026-tip="目标采集时长/总已采集时长"',
+            'data-s026-tip="本方案内的已采集时长"',
+            'data-s026-tip="总采集时长达到暂停阈值时，该指令将暂停采集"',
+            '<th class="s026-plan-threshold-cell">暂停阈值 ',
             '<th class="s026-plan-operation-cell">操作</th>',
             "s026PlanVersionState",
             "s026OpenThresholdAdjust",
@@ -724,7 +728,7 @@ class InstructionCollectionDemoTests(unittest.TestCase):
             "CIP2609090001",
             "CIP2609090002",
             "已完成的指令包不可查看",
-            "道具（20）",
+            "packageProps.length",
             "s026EdgePackageProps",
             "s026-edge-identity-line",
         ):
