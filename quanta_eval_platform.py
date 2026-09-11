@@ -1098,6 +1098,11 @@ a:hover { color: #176a88; }
 .ant-drawer-close:hover { color: rgba(0,0,0,0.85); }
 .ant-drawer-body { padding: 24px; flex: 1; overflow-y: auto; }
 .ant-drawer-footer { padding: 10px 24px; border-top: 1px solid #f0f0f0; display: flex; justify-content: flex-end; gap: 8px; flex-shrink:0; background:#fff; }
+.ant-drawer-mask.ant-centered-modal { align-items:center; justify-content:center; padding:24px; box-sizing:border-box; }
+.ant-drawer-mask.ant-centered-modal.active { display:flex; }
+.ant-centered-modal .ant-drawer-content { position:relative; inset:auto; width:560px; max-width:100%; height:auto; max-height:calc(100vh - 48px); border-radius:8px; transform:translateY(12px) scale(.98); box-shadow:0 12px 36px rgba(0,0,0,.18); overflow:hidden; }
+.ant-centered-modal.active .ant-drawer-content { transform:none; }
+.ant-centered-modal .ant-drawer-body { min-height:0; overflow-y:auto; }
 
 /* ── Action icons (bare, no border) ── */
 .act-icon { display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; cursor: pointer; transition: all 0.2s; text-decoration: none; background: none; border: none; padding: 0; }
@@ -1158,7 +1163,6 @@ a:hover { color: #176a88; }
 .q-toast.q-toast-warning::before { background:#faad14; content:'!'; }
 .q-toast.q-toast-error { border-left:4px solid #ff4d4f; padding-left:14px; }
 .q-toast.q-toast-error::before { background:#ff4d4f; content:'\2715'; }
-
 /* ── Media gallery (images & videos) ── */
 .media-grid { display: flex; flex-wrap: wrap; gap: 8px; }
 .media-card { width: 140px; border: 1px solid #f0f0f0; border-radius: 8px; background: #fff; overflow: hidden; cursor: pointer; transition: all 0.15s; }
@@ -1328,8 +1332,8 @@ document.querySelectorAll('input[type="range"]').forEach(s => {
   const d = document.getElementById(s.id+'-val');
   if (d) s.addEventListener('input', () => { d.textContent = Math.round(s.value); });
 });
-function openModal(id) { const e=document.getElementById(id); e.style.display='block'; requestAnimationFrame(()=>e.classList.add('active')); }
-function closeModal(id) { const e=document.getElementById(id); e.classList.remove('active'); setTimeout(()=>{e.style.display='none';},300); }
+function openModal(id) { const e=document.getElementById(id); e.style.display=e.classList.contains('ant-centered-modal')?'flex':'block'; requestAnimationFrame(()=>e.classList.add('active')); }
+function closeModal(id) { const e=document.getElementById(id); e.style.display='none'; e.classList.remove('active'); }
 document.querySelectorAll('.ant-drawer-mask').forEach(m => { m.addEventListener('click',(e)=>{ if(e.target===m) closeModal(m.id); }); });
 
 // Click anywhere on a date/time input opens its native picker (Chrome/Edge/Safari)
@@ -1607,6 +1611,10 @@ def get_model_name(mid):
 def get_prompt(pid):
     return next((p for p in PROMPTS if p["id"] == pid), None)
 
+def get_task(task_id):
+    return next((task for task in EVAL_TASKS if task["id"] == task_id), None)
+
+
 def get_benchmark(bid):
     return next((b for b in BENCHMARKS if b["id"] == bid), None)
 
@@ -1834,12 +1842,19 @@ def prompts_page():
                 + more_menu
             )
 
-        rows += f'<tr class="row-parent prompt-parent-row" data-id="{pid}">'
+        filter_data = html.escape(json.dumps({
+            "id": " ".join([str(pid), *[str(ll.get("id", "")) for ll in p.get("low_levels", [])]]),
+            "zh": " ".join([p["high_level"], *[ll.get("zh", "") for ll in p.get("low_levels", [])]]),
+            "en": " ".join([p.get("high_level_en", ""), *[ll.get("en", "") for ll in p.get("low_levels", [])]]),
+            "creator": p["creator"],
+            "tags": [TAG_INDEX.get(tid, {}).get("path", tid) for tid in agg_labels],
+        }, ensure_ascii=False), quote=True)
+        rows += f'<tr class="row-parent prompt-parent-row" data-id="{pid}" data-filter="{filter_data}">'
         rows += f'<td class="prompt-tree-cell"><button class="expand-btn" data-target="sub-{pid}">&#9654;</button></td>'
+        rows += f'<td class="prompt-id-cell">{html.escape(str(pid))}</td>'
         rows += td_tip(p["high_level"], 'style="font-weight:600;"')
         rows += td_tip(p["high_level_en"])
         rows += f'<td class="prompt-scene-cell">{scene_image_entry(p)}</td>'
-        rows += f'<td class="prompt-id-cell">{html.escape(str(pid))}</td>'
         rows += '<td class="prompt-seq prompt-seq-parent prompt-seq-col">—</td>'
         rows += f'<td>{difficulty_html(p.get("difficulty", 3))}</td>'
         rows += td_tip(labels_html, tip_text=labels_tip)
@@ -1859,12 +1874,13 @@ def prompts_page():
                 f'<tr class="sub-row sub-{pid} row-child prompt-child-row" '
                 f'data-parent="{pid}" data-child-id="{ll["id"]}" draggable="true">'
             )
-            rows += '<td class="prompt-drag-cell"><span class="prompt-drag-handle" title="拖拽调整顺序">&#8942;&#8942;</span></td>'
+            rows += ('<td class="prompt-drag-cell"><span class="prompt-drag-handle" title="拖拽调整顺序">&#8942;&#8942;</span></td>'
+                     if not enabled else '<td class="prompt-drag-cell"><span class="prompt-drag-placeholder"></span></td>')
+            child_id = str(ll.get("id") or f"{pid}-{index}")
+            rows += f'<td class="prompt-id-cell">{html.escape(child_id)}</td>'
             rows += td_tip(ll["zh"])
             rows += td_tip(ll["en"])
             rows += '<td class="prompt-scene-cell"><span class="prompt-scene-inherited">继承上级</span></td>'
-            child_id = str(ll.get("id") or f"{pid}-{index}")
-            rows += f'<td class="prompt-id-cell">{html.escape(child_id)}</td>'
             rows += f'<td class="prompt-seq prompt-seq-col">{index}</td>'
             rows += f'<td>{difficulty_html(ll.get("difficulty", 3))}</td>'
             rows += td_tip(render_tags_html(ll.get("labels", [])), tip_text=_build_tip_text(ll.get("labels", [])))
@@ -1880,10 +1896,10 @@ def prompts_page():
         rows += f'''
         <tr class="row-child row-inline-child prompt-add-child-row" id="add-child-{pid}" data-parent="{pid}" style="display:none;">
           <td class="prompt-drag-cell"><span class="prompt-drag-placeholder"></span></td>
+          <td class="prompt-id-cell">{html.escape(next_child_id)}</td>
           <td><input type="text" form="form-child-{pid}" name="zh" placeholder="输入 Low level" {INLINE_INPUT}></td>
           <td><input type="text" form="form-child-{pid}" name="en" placeholder="输入 Task-Prompt" {INLINE_INPUT}></td>
           <td class="prompt-scene-cell"><span class="prompt-scene-inherited">继承上级</span></td>
-          <td class="prompt-id-cell">{html.escape(next_child_id)}</td>
           <td class="prompt-seq prompt-seq-col">{len(p["low_levels"]) + 1}</td>
           <td>
             <div class="prompt-difficulty-stepper">
@@ -1908,10 +1924,10 @@ def prompts_page():
     content = f'''
     {f'<div class="ant-alert ant-alert-error ant-alert-no-icon" style="margin-bottom:16px;"><div class="ant-alert-message">{html.escape(prompt_error)}</div></div>' if prompt_error else ''}
     <form id="inline-add" method="POST" action="/prompts/create" style="display:none;"></form>
-    <div class="filter-bar fb-labeled prompt-filter-bar">
-      <div class="ff"><label>任务提示词</label><input type="text" placeholder="搜索任务提示词"></div>
-      <div class="ff"><label>Task-Prompt</label><input type="text" placeholder="搜索 Task-Prompt"></div>
-      <div class="ff"><label>id</label><input type="text" placeholder="搜索 id"></div>
+    <div class="filter-bar fb-labeled prompt-filter-bar" id="prompt-filter-bar">
+      <div class="ff"><label>用例 ID</label><input id="prompt-filter-id" type="text" placeholder="搜索用例 ID" oninput="searchPromptPage(false)"></div>
+      <div class="ff"><label>任务提示词</label><input id="prompt-filter-zh" type="text" placeholder="搜索任务提示词" oninput="searchPromptPage(false)"></div>
+      <div class="ff"><label>Task-Prompt</label><input id="prompt-filter-en" type="text" placeholder="搜索 Task-Prompt" oninput="searchPromptPage(false)"></div>
       <div class="ff"><label>标签</label>
         <div class="ts-wrap prompt-filter-select" id="ts-filter">
           <div class="ts-trigger" onclick="tsToggle('ts-filter')"><span class="ts-placeholder">选择标签</span></div>
@@ -1919,12 +1935,10 @@ def prompts_page():
           <input type="hidden" name="filter_tags" value="">
         </div>
       </div>
-      <div class="ff"><label>创建人</label><select><option value="">请选择创建人</option>{creator_options}</select></div>
+      <div class="ff"><label>创建人</label><select id="prompt-filter-creator" onchange="searchPromptPage(false)"><option value="">请选择创建人</option>{creator_options}</select></div>
       <div class="filter-actions">
-        <button class="ant-btn" type="button" onclick="clearFilters()">清空</button>
-        <button class="ant-btn ant-btn-primary" type="button" onclick="doSearch()">搜索</button>
+        <button class="ant-btn prompt-filter-reset" type="button" aria-label="重置筛选" title="重置筛选" onclick="searchPromptPage(true)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 7v5h-5M4 17v-5h5M6.1 6.1A8 8 0 0 1 19.5 10M4.5 14A8 8 0 0 0 17.9 17.9"/></svg></button>
       </div>
-      <div style="flex:1;"></div>
       <input id="prompt-json-file" type="file" accept="application/json,.json" hidden onchange="promptImportJson(this)">
       <button class="ant-btn" type="button" onclick="document.getElementById('prompt-json-file').click()">导入 JSON</button>
       <button class="ant-btn ant-btn-primary" type="button" onclick="showNewParent()">+ 新增任务提示词</button>
@@ -1935,10 +1949,10 @@ def prompts_page():
       <table class="ant-table" id="prompt-table">
         <thead><tr>
           <th></th>
+          <th>用例 ID</th>
           <th>任务提示词</th>
           <th>Task-Prompt</th>
           <th>场景示意图</th>
-          <th>id</th>
           <th class="prompt-seq-col">序号</th>
           <th>难度</th>
           <th>标签</th>
@@ -1949,12 +1963,13 @@ def prompts_page():
         </tr></thead>
         <tbody>
           {rows}
+          <tr id="prompt-filter-empty" hidden><td colspan="12" class="prompt-group-empty">没有符合筛选条件的 Highlevel</td></tr>
           <tr class="row-new-parent" id="new-parent-row" style="display:none;">
             <td></td>
+            <td><input type="text" form="inline-add" name="prompt_id" placeholder="输入用例 ID" required {INLINE_INPUT}></td>
             <td><input type="text" form="inline-add" name="high_level" placeholder="输入任务提示词" {INLINE_INPUT}></td>
             <td><input type="text" form="inline-add" name="high_level_en" placeholder="输入 Task-Prompt" {INLINE_INPUT}></td>
             <td class="prompt-scene-cell"><span class="prompt-scene-after-save">保存后添加</span></td>
-            <td><input type="text" form="inline-add" name="prompt_id" placeholder="输入 id" required {INLINE_INPUT}></td>
             <td class="prompt-seq prompt-seq-col">—</td>
             <td>
               <div class="prompt-difficulty-stepper">
@@ -1987,9 +2002,11 @@ def prompts_page():
     </div>
 
     <div class="prompt-pagination">
-      <select><option>10条/页</option><option>20条/页</option></select>
-      <button disabled>&lsaquo;</button><button class="active">1</button><button>2</button><button>3</button><button>4</button><button>&rsaquo;</button>
-      <input aria-label="跳转页码"><span>go</span>
+      <span id="prompt-page-summary"></span>
+      <select id="prompt-page-size" aria-label="每页条数" onchange="promptPage=1;renderPromptPage()"><option value="10">10条/页</option><option value="20">20条/页</option></select>
+      <button id="prompt-page-prev" aria-label="上一页" onclick="promptPage--;renderPromptPage()">&lsaquo;</button>
+      <input id="prompt-page-number" type="number" min="1" value="1" aria-label="跳转页码" onchange="promptPage=Number(this.value)||1;renderPromptPage()">
+      <button id="prompt-page-next" aria-label="下一页" onclick="promptPage++;renderPromptPage()">&rsaquo;</button>
     </div>
 
     <div class="prompt-scene-mask" id="prompt-scene-modal" aria-hidden="true">
@@ -2033,15 +2050,28 @@ def prompts_page():
       .prompt-filter-bar {{ position:relative; z-index:30; overflow:visible; }}
       .prompt-filter-bar .ff, .prompt-filter-bar .ts-wrap {{ overflow:visible; }}
       .prompt-filter-bar .ts-panel {{ z-index:1200; }}
-      .prompt-filter-bar .ff {{ flex:1 1 180px; min-width:180px; }}
+      #prompt-filter-bar {{ display:flex; flex-wrap:nowrap; align-items:flex-end; }}
+      #prompt-filter-bar > .ff {{ flex:0 1 160px; min-width:0; }}
+      #prompt-filter-bar > .filter-actions {{ flex:0 0 auto; grid-column:auto; }}
+      .prompt-filter-reset {{ width:34px; padding:0; display:inline-flex; align-items:center; justify-content:center; }}
+      .prompt-highlevel-action {{ margin-left:auto; flex-shrink:0; }}
+      .prompt-highlevel-button {{ color:#149DAA; border-color:#149DAA; background:#fff; }}
+      .prompt-highlevel-button:disabled {{ color:rgba(0,0,0,.25); border-color:#d9d9d9; background:#fafafa; }}
       .prompt-filter-bar .ff input, .prompt-filter-bar .ff select {{ width:100%; min-width:0; }}
       .prompt-filter-bar .ff .prompt-filter-select {{ width:100%; min-width:0; }}
-      #prompt-table {{ table-layout:fixed; min-width:1530px; }}
-      #prompt-table th:nth-child(1) {{ width:42px; }}
-      #prompt-table th:nth-child(2) {{ width:15%; }}
-      #prompt-table th:nth-child(3) {{ width:18%; }}
-      #prompt-table th:nth-child(4) {{ width:126px; }}
-      #prompt-table th:nth-child(5), #prompt-table td:nth-child(5) {{ width:110px; }}
+      #prompt-table {{ table-layout:fixed; min-width:1360px; }}
+      #prompt-table th:nth-child(1) {{ width:72px; }}
+      #prompt-table th:nth-child(1), #prompt-table td:nth-child(1) {{ padding-left:8px; padding-right:8px; }}
+      #prompt-table td.prompt-tree-cell {{ max-width:none; overflow:visible; text-overflow:clip; }}
+      #prompt-table th:nth-child(6), #prompt-table td:nth-child(6),
+      #prompt-table th:nth-child(7), #prompt-table td:nth-child(7) {{ display:none; }}
+      #prompt-table tr[hidden] {{ display:none !important; }}
+      #prompt-filter-bar .ts-placeholder {{ white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }}
+      #prompt-filter-bar > .ff > label {{ white-space:nowrap; }}
+      #prompt-table th:nth-child(2), #prompt-table td:nth-child(2) {{ width:110px; }}
+      #prompt-table th:nth-child(3) {{ width:15%; }}
+      #prompt-table th:nth-child(4) {{ width:18%; }}
+      #prompt-table th:nth-child(5) {{ width:126px; }}
       #prompt-table th:nth-child(6), #prompt-table td:nth-child(6) {{ width:56px; }}
       #prompt-table th:nth-child(7) {{ width:112px; }}
       #prompt-table th:nth-child(8) {{ width:18%; }}
@@ -2152,6 +2182,48 @@ def prompts_page():
     const promptSceneRoles = ['初始状态','目标状态','关键步骤','其他'];
     let promptScenePid = '';
     let promptSceneDraft = [];
+    let promptPage = 1;
+    function renderPromptPage() {{
+      const parents = Array.from(document.querySelectorAll('.prompt-parent-row'));
+      const matching = parents.filter(row => row.dataset.filtered !== 'true');
+      const size = Number(document.getElementById('prompt-page-size').value);
+      const pages = Math.max(1, Math.ceil(matching.length / size));
+      promptPage = Math.max(1, Math.min(pages, promptPage));
+      const shown = new Set(matching.slice((promptPage-1)*size, promptPage*size).map(row => row.dataset.id));
+      parents.forEach(row => row.hidden = !shown.has(row.dataset.id));
+      document.querySelectorAll('#prompt-table tr[data-parent]').forEach(row => row.hidden = !shown.has(row.dataset.parent));
+      document.getElementById('prompt-page-summary').textContent = '共 ' + matching.length + ' 个';
+      document.getElementById('prompt-page-number').value = promptPage;
+      document.getElementById('prompt-page-number').max = pages;
+      document.getElementById('prompt-page-prev').disabled = promptPage <= 1;
+      document.getElementById('prompt-page-next').disabled = promptPage >= pages;
+      const empty = document.getElementById('prompt-filter-empty');
+      if (empty) empty.hidden = matching.length > 0 || parents.length === 0;
+    }}
+    function searchPromptPage(clear) {{
+      const fields = ['id', 'zh', 'en', 'creator'];
+      const tagWrap = document.getElementById('ts-filter');
+      if (clear) {{
+        fields.forEach(field => {{
+          const input = document.getElementById('prompt-filter-' + field);
+          input.value = ''; input.classList.remove('has-value');
+        }});
+        tagWrap.querySelectorAll('.ts-row.selected').forEach(row => row.classList.remove('selected'));
+        tagWrap.querySelector('input[type="hidden"]').value = '';
+        tagWrap.querySelector('.ts-trigger').innerHTML = '<span class="ts-placeholder">选择标签</span>';
+        tagWrap.classList.remove('open');
+      }}
+      const filters = Object.fromEntries(fields.map(field => [field, document.getElementById('prompt-filter-' + field).value.trim().toLowerCase()]));
+      const tags = Array.from(tagWrap.querySelectorAll('.ts-row.selected')).map(row => row.dataset.path);
+      document.querySelectorAll('.prompt-parent-row').forEach(row => {{
+        const data = JSON.parse(row.dataset.filter);
+        const matches = fields.every(field => !filters[field] || (field === 'manager' ? data[field].toLowerCase() === filters[field] : data[field].toLowerCase().includes(filters[field])))
+          && (!tags.length || tags.some(tag => data.tags.some(path => path === tag || path.startsWith(tag + ' / '))));
+        row.dataset.filtered = String(!matches);
+      }});
+      promptPage = 1; renderPromptPage();
+    }}
+    renderPromptPage();
 
     function promptSceneCloneImages(images) {{
       return (images || []).map(image => ({{...image}}));
@@ -2287,10 +2359,10 @@ def prompts_page():
       tr.className = 'row-new-child';
       tr.innerHTML = `
         <td class="prompt-drag-cell"><span class="prompt-drag-placeholder"></span></td>
+        <td class="prompt-id-cell">保存后生成</td>
         <td><input type="text" form="inline-add" name="child_zh_${{idx}}" placeholder="输入任务提示词" {INLINE_INPUT}></td>
         <td><input type="text" form="inline-add" name="child_en_${{idx}}" placeholder="输入 Task-Prompt" {INLINE_INPUT}></td>
         <td class="prompt-scene-cell"><span class="prompt-scene-inherited">继承上级</span></td>
-        <td class="prompt-id-cell">保存后生成</td>
         <td class="prompt-seq prompt-seq-col">${{idx + 1}}</td>
         <td><div class="prompt-difficulty-stepper"><button type="button" onclick="stepPromptDifficulty(this,-1)">−</button><input type="number" form="inline-add" name="child_difficulty_${{idx}}" min="1" max="5" value="3" readonly><button type="button" onclick="stepPromptDifficulty(this,1)">＋</button></div></td>
         <td>
@@ -2418,6 +2490,7 @@ def prompts_page():
       }});
       trigger.innerHTML = chips || '<span class="ts-placeholder">选择标签</span>';
       if (hidden) hidden.value = ids.join(',');
+      if (wrap.id === 'ts-filter') searchPromptPage(false);
     }}
     function tsRemove(closeBtn) {{
       const wrap = closeBtn.closest('.ts-wrap');
@@ -2974,8 +3047,8 @@ def tags_page():
       </div>
     </div>
 
-    <div class="ant-drawer-mask" id="create-tag-group-drawer">
-      <div class="ant-drawer-content" style="width:480px;">
+    <div class="ant-drawer-mask ant-centered-modal" id="create-tag-group-drawer">
+      <div class="ant-drawer-content" role="dialog" aria-modal="true" aria-labelledby="tagGroupDrawerTitle">
         <div class="ant-drawer-header">
           <h3 id="tagGroupDrawerTitle">新建标签组</h3>
           <button class="ant-drawer-close" onclick="closeModal('create-tag-group-drawer')">&times;</button>
@@ -3011,6 +3084,11 @@ def tags_page():
     </div>
 
     <style>
+      #create-tag-group-drawer {{ align-items:center; justify-content:center; padding:24px; box-sizing:border-box; }}
+      #create-tag-group-drawer.active {{ display:flex!important; }}
+      #create-tag-group-drawer .ant-drawer-content {{ position:relative; inset:auto; width:560px; max-width:100%; height:auto; max-height:calc(100vh - 48px); border-radius:8px; transform:translateY(12px) scale(.98); box-shadow:0 12px 36px rgba(0,0,0,.18); overflow:hidden; }}
+      #create-tag-group-drawer.active .ant-drawer-content {{ transform:none; }}
+      #create-tag-group-drawer .ant-drawer-body {{ min-height:0; overflow-y:auto; }}
       .tag-layout {{ display:grid; grid-template-columns:320px minmax(0,1fr); gap:16px; align-items:start; }}
       .tag-group-panel {{ position:sticky; top:68px; max-height:calc(100vh - 84px); min-height:600px; align-self:start; background:#f4fbfd; border:1px solid #dfecef; border-radius:8px; overflow:auto; }}
       .tag-group-head {{ display:flex; align-items:center; justify-content:space-between; gap:8px; padding:14px 16px; border-bottom:1px solid #dfecef; background:#f8fcfd; font-size:13px; font-weight:600; color:rgba(0,0,0,0.78); }}
@@ -3471,7 +3549,7 @@ def criteria_page():
         actions_html = view_btn + copy_btn + publish_btn + more_btn
 
         rows += f'''<tr>
-            <td style="font-weight:500;">{c["name"]}</td>
+            <td style="font-weight:500;">{html.escape(c["name"])}</td>
             <td title="{c['description']}">{c["description"][:40]}...</td>
             <td><span class="tag {status_class}">{status_label}</span></td>
             <td>{c["creator"]}</td>
@@ -3815,9 +3893,10 @@ def criteria_page():
         }}
       }});
       drawer.querySelectorAll('.criteria-add-result, .criteria-add-metric').forEach(function(el) {{ el.style.display = readonly ? 'none' : ''; }});
+      drawer.querySelectorAll('.criteria-result-row').forEach(function(row) {{ row.draggable = !readonly; }});
       drawer.querySelectorAll('.criteria-result-row .action-link, .criteria-metric-row .action-link').forEach(function(el) {{ el.style.display = readonly ? 'none' : ''; }});
       var submit = drawer.querySelector('button[type="submit"]'); if (submit) submit.style.display = readonly ? 'none' : '';
-      var cancel = drawer.querySelector('.ant-drawer-footer button[type="button"]'); if (cancel) cancel.textContent = '关闭';
+      var cancel = drawer.querySelector('.ant-drawer-footer button[type="button"]'); if (cancel) cancel.textContent = readonly ? '关闭' : '取消';
     }}
     function openCriteriaCreate() {{
       var drawer = document.getElementById('create-criteria-drawer');
@@ -3953,7 +4032,10 @@ def criteria_create():
     elif edit_id:
         flash("仅未发布状态的评价标准支持编辑", "error")
     else:
-        new_id = f"c{len(CRITERIA)+1}"
+        number = len(CRITERIA) + 1
+        while get_criterion(f"c{number}"):
+            number += 1
+        new_id = f"c{number}"
         CRITERIA.append({
             "id": new_id,
             "creator": "Joanna Qiao",
@@ -4373,14 +4455,7 @@ def benchmarks_page():
             continue
         if publish_status_filter and publish_status_filter != b.get("publish_status", "已发布"):
             continue
-        prompt_count = len(b.get("prompt_ids", []))
-        prompt_tags = ""
-        for pid in b.get("prompt_ids", [])[:3]:
-            p = get_prompt(pid)
-            if p:
-                prompt_tags += f'<span class="ant-tag" style="margin-right:2px;">{p["high_level"][:8]}</span>'
-        if prompt_count > 3:
-            prompt_tags += f'<span class="ant-tag">+{prompt_count-3}</span>'
+        description = html.escape(b.get("description", "") or "—")
 
         publish_status = b.get("publish_status", "已发布")
         is_unpublished = publish_status == "未发布"
@@ -4396,7 +4471,7 @@ def benchmarks_page():
         rows += (
             "<tr>"
             f'<td style="font-weight:500;">{b["name"]}</td>'
-            f"<td>{prompt_tags}</td>"
+            f"<td>{description}</td>"
             f'<td><span class="tag {status_class}">{publish_status}</span></td>'
             f"<td>{b['creator']}</td>"
             f"<td>{b['created_at']}</td>"
@@ -4454,7 +4529,7 @@ def benchmarks_page():
     <div class="ant-card ant-card-bordered benchmark-list-card">
       <table class="ant-table">
         <thead><tr>
-          <th>\u540d\u79f0</th><th>\u63d0\u793a\u8bcd</th><th>状态</th><th>\u521b\u5efa\u4eba</th><th>\u521b\u5efa\u65f6\u95f4</th><th>\u64cd\u4f5c</th>
+          <th>\u540d\u79f0</th><th>描述</th><th>状态</th><th>\u521b\u5efa\u4eba</th><th>\u521b\u5efa\u65f6\u95f4</th><th>\u64cd\u4f5c</th>
         </tr></thead>
         <tbody>{rows}</tbody>
       </table>
@@ -4605,7 +4680,7 @@ def benchmarks_page():
           var items = data.items || [];
           if (!items.length) {{ panel.innerHTML = '<div class="benchmark-remote-state">未找到匹配的提示词组</div>'; return; }}
           panel.innerHTML = items.map(function(item) {{
-            return '<button type="button" class="benchmark-remote-option" data-id="' + benchmarkPromptEscape(item.id) + '" data-name="' + benchmarkPromptEscape(item.name) + '" onclick="benchmarkPromptRemoteSelect(this)"><span class="benchmark-remote-name">' + benchmarkPromptEscape(item.name) + '</span><span class="benchmark-remote-meta">' + benchmarkPromptEscape(item.name_en) + ' · ' + item.step_count + ' 个 lowlevel</span></button>';
+            return '<button type="button" class="benchmark-remote-option" data-id="' + benchmarkPromptEscape(item.id) + '" data-name="' + benchmarkPromptEscape(item.name) + '" onclick="benchmarkPromptRemoteSelect(this)"><span class="benchmark-remote-name">' + benchmarkPromptEscape(item.name) + '</span><span class="benchmark-remote-meta">' + benchmarkPromptEscape(item.id) + ' · ' + benchmarkPromptEscape(item.name_en) + ' · ' + item.step_count + ' 个 lowlevel</span></button>';
           }}).join('');
         }})
         .catch(function(error) {{ if (error.name !== 'AbortError') panel.innerHTML = '<div class="benchmark-remote-state">搜索失败，请重试</div>'; }});
@@ -4637,10 +4712,10 @@ def benchmarks_page():
         }});
         benchmarkInitializedGroups.add(group.id);
         html += '<div class="bm-prompt-execution-group" data-group-id="' + benchmarkPromptEscape(group.id) + '">';
-        html += '<div class="bm-prompt-execution-group-head"><span>' + benchmarkPromptEscape(group.name) + '</span></div>';
+        html += '<div class="bm-prompt-execution-group-head"><span>' + benchmarkPromptEscape(group.name) + ' · ' + benchmarkPromptEscape(group.id) + '</span></div>';
         html += '<div class="bm-prompt-execution-steps">';
         children.forEach(function(child, index) {{
-          html += '<div class="bm-prompt-execution-child"><span>' + (index + 1) + '. ' + benchmarkPromptEscape(child.zh) + '<span class="bm-prompt-execution-en">' + benchmarkPromptEscape(child.en) + '</span></span></div>';
+          html += '<div class="bm-prompt-execution-child"><span>' + (index + 1) + '. ' + benchmarkPromptEscape(child.zh) + '<span class="bm-prompt-execution-en">' + benchmarkPromptEscape(child.id) + ' · ' + benchmarkPromptEscape(child.en) + '</span></span></div>';
         }});
         html += '</div></div>';
       }});
@@ -5623,9 +5698,9 @@ def tasks_page():
       d.prompts.forEach(function(p) {{
         var lowLevels = (p.low_levels || []).map(function(ll, index) {{
           var checked = selectedIds.indexOf(ll.id) >= 0 ? ' checked' : '';
-          return '<label class="task-prompt-child"><input class="task-prompt-checkbox" type="checkbox" value="' + ll.id + '" data-prompt-id="' + p.id + '"' + checked + ' onchange="taskPromptSync()"><span>' + (index + 1) + '</span><span>' + ll.zh + '</span><small>' + ll.en + '</small></label>';
+          return '<label class="task-prompt-child"><input class="task-prompt-checkbox" type="checkbox" value="' + ll.id + '" data-prompt-id="' + p.id + '"' + checked + ' onchange="taskPromptSync()"><span>' + (index + 1) + '</span><span>' + ll.zh + '</span><small>' + ll.id + ' · ' + ll.en + '</small></label>';
         }}).join('');
-        ph += '<div class="task-prompt-node"><div class="task-prompt-parent"><button type="button" class="task-prompt-expand" onclick="taskPromptToggleNode(this)">\u25bc</button><span class="task-prompt-parent-copy"><b>' + p.name + '</b><small>' + p.steps + ' \u4e2a Task-Prompt</small></span></div><div class="task-prompt-children">' + lowLevels + '</div></div>';
+        ph += '<div class="task-prompt-node"><div class="task-prompt-parent"><button type="button" class="task-prompt-expand" onclick="taskPromptToggleNode(this)">\u25bc</button><span class="task-prompt-parent-copy"><b>' + p.name + '</b><small>' + p.id + ' · ' + p.steps + ' \u4e2a Task-Prompt</small></span></div><div class="task-prompt-children">' + lowLevels + '</div></div>';
       }});
       document.getElementById('bm-pv-prompts').innerHTML = ph;
       taskPromptSync();
@@ -6187,8 +6262,6 @@ def task_statistics(tid):
         if not low_levels:
             continue
         prompt_rows.append((prompt, low_levels))
-    if not prompt_rows:
-        prompt_rows = [(PROMPTS[0], PROMPTS[0].get("low_levels", []) or [{"zh": "--", "en": ""}])]
     secondary_values = result_types
     lowlevel_total = sum(max(len(low_levels), 1) for _, low_levels in prompt_rows)
 
@@ -6204,17 +6277,33 @@ def task_statistics(tid):
             pattern.append(value)
         return pattern
 
-    def render_result_cells(statuses):
+    records_by_round = {
+        (record["prompt_id"], record["lowlevel_id"], record["round"]): record
+        for record in _mock_eval_records()
+        if record["task_id"] == tid and record["checkpoint_id"] == selected_checkpoint_id
+    }
+
+    def render_result_cells(statuses, round_records=None):
         result_counts = {}
         status_cells = []
-        for status in statuses:
+        for trial, status in enumerate(statuses):
             if status is None:
-                status_cells.append('<td class="stat-result-empty"></td>')
+                status_cells.append('<td class="stat-result-empty">—</td>')
                 continue
             value = status
             result_counts[value] = result_counts.get(value, 0) + 1
             css_class = "fail" if result_type_is_failure(value) else "ok"
-            status_cells.append(f'<td><span class="stat-result {css_class}">{html.escape(value)}</span></td>')
+            if round_records is not None:
+                record = round_records[trial]
+                detail_url = url_for("eval_record_detail", record_id=record["id"])
+                status_cells.append(
+                    f'<td><a class="stat-result stat-result-link {css_class}" '
+                    f'href="{html.escape(detail_url, quote=True)}" target="_blank" rel="noopener" '
+                    f'aria-label="查看 {html.escape(record["lowlevel_id"], quote=True)} T{trial + 1} 数据详情">'
+                    f'{html.escape(value)}</a></td>'
+                )
+            else:
+                status_cells.append(f'<td><span class="stat-result {css_class}">{html.escape(value)}</span></td>')
         executed_count = sum(result_counts.values())
         detail_html = "".join(
             f'<div class="stat-secondary-item"><span class="stat-result {"fail" if result_type_is_failure(value) else "ok"}">{html.escape(value)}</span><b>{count} 次</b><em>{count / executed_count * 100:.1f}%</em></div>'
@@ -6229,28 +6318,29 @@ def task_statistics(tid):
     for row_index, (prompt, low_levels) in enumerate(prompt_rows):
         prompt_text = prompt.get("high_level") or prompt.get("high_level_en") or "--"
         prompt_id = prompt.get("id", "")
-        prompt_label = f"{prompt_text} #{prompt_id}" if prompt_id else prompt_text
+        prompt_label = prompt_text
         prompt_en = prompt.get("high_level_en", "")
-        statuses = make_statuses(row_index + selected_checkpoint_index * 11)
+        statuses = make_statuses(list(selected_prompt_ids).index(prompt_id) + selected_checkpoint_index * 11)
         status_cells, secondary_html = render_result_cells(statuses)
         group_id = f'stat-group-{row_index}'
         prompt_tree_html = f'<div class="stat-tree-row stat-tree-parent-row"><button type="button" class="stat-tree-toggle" aria-label="展开 Prompt" aria-expanded="false" onclick="toggleStatPrompt(\'{group_id}\', this)">›</button><span><b>{html.escape(prompt_label)}</b>{("<em>" + html.escape(prompt_en) + "</em>") if prompt_en else ""}</span></div>'
         matrix_rows.append(
-            f'<tr class="stat-highlevel-row"><td class="stat-prompt-tree-cell">{prompt_tree_html}</td>'
+            f'<tr class="stat-highlevel-row"><td class="stat-case-id">{html.escape(prompt_id)}</td><td class="stat-prompt-tree-cell">{prompt_tree_html}</td>'
             + "".join(status_cells)
             + f'<td class="stat-secondary-cell">{secondary_html}</td></tr>'
         )
         for low_index, low in enumerate(low_levels):
             low_text = low.get("zh") or low.get("en") or "--"
             low_id = low.get("id", "")
-            low_label = f"{low_text} #{low_id}" if low_id else low_text
+            low_label = low_text
             low_en = low.get("en", "")
-            child_statuses = make_statuses(row_index * 7 + low_index + 1 + selected_checkpoint_index * 11, include_unexecuted=True)
+            round_records = [records_by_round.get((prompt_id, low_id, trial)) for trial in range(1, 11)]
+            child_statuses = [record["conclusion"] if record else None for record in round_records]
             total_runs += sum(status is not None for status in child_statuses)
-            child_cells, child_secondary = render_result_cells(child_statuses)
+            child_cells, child_secondary = render_result_cells(child_statuses, round_records)
             child_html = f'<div class="stat-tree-row stat-tree-child-row"><span class="stat-tree-branch" aria-hidden="true"></span><span><b>{html.escape(low_label)}</b>{("<em>" + html.escape(low_en) + "</em>") if low_en and low_text != low_en else ""}</span></div>'
             matrix_rows.append(
-                f'<tr class="stat-lowlevel-row" data-stat-group="{group_id}" style="display:none;"><td class="stat-prompt-tree-cell">{child_html}</td>'
+                f'<tr class="stat-lowlevel-row" data-stat-group="{group_id}" style="display:none;"><td class="stat-case-id">{html.escape(low_id)}</td><td class="stat-prompt-tree-cell">{child_html}</td>'
                 + child_cells
                 + f'<td class="stat-secondary-cell">{child_secondary}</td></tr>'
             )
@@ -6264,16 +6354,59 @@ def task_statistics(tid):
         <div><span>Prompt 总数</span><b>{lowlevel_total}</b></div>
         <div><span>执行次数</span><b>{total_runs}</b></div>
       </div>
-      <div class="stat-table-wrap"><table class="stat-matrix"><thead><tr><th class="stat-prompt-head">prompt</th>{headers}<th class="stat-secondary-head"><div class="stat-secondary-head-inner"><span>结果统计</span><a href="javascript:;" id="stat-detail-toggle" class="stat-detail-toggle" onclick="toggleStatDetails()">展开详情</a></div></th></tr></thead><tbody>{rows}</tbody></table></div>
+      <div class="filter-bar fb-labeled stat-filter-bar">
+        <div class="ff"><label for="stat-filter-id">用例 ID</label><input id="stat-filter-id" placeholder="请输入用例 ID"></div>
+        <div class="ff"><label for="stat-filter-prompt">提示词</label><input id="stat-filter-prompt" placeholder="请输入提示词"></div>
+        <div class="filter-actions"><button class="ant-btn stat-filter-reset" type="button" aria-label="重置筛选" title="重置筛选" onclick="filterStatPrompts(true)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 7v5h-5M4 17v-5h5M6.1 6.1A8 8 0 0 1 19.5 10M4.5 14A8 8 0 0 0 17.9 17.9"/></svg></button></div>
+      </div>
+      <div class="stat-table-wrap"><table class="stat-matrix"><thead><tr><th class="stat-case-id">用例 ID</th><th class="stat-prompt-head">提示词</th>{headers}<th class="stat-secondary-head"><div class="stat-secondary-head-inner"><span>结果统计</span><a href="javascript:;" id="stat-detail-toggle" class="stat-detail-toggle" onclick="toggleStatDetails()">展开详情</a></div></th></tr></thead><tbody>{rows}</tbody></table></div>
+      <p id="stat-filter-empty" role="status" hidden>暂无符合条件的用例</p>
     </div>
     <script>
       function toggleStatPrompt(groupId, button) {{
         var rows = document.querySelectorAll('[data-stat-group="' + groupId + '"]');
         var open = button.getAttribute('aria-expanded') !== 'true';
-        rows.forEach(function(row) {{ row.style.display = open ? '' : 'none'; }});
+        rows.forEach(function(row) {{ row.style.display = open && row.dataset.filterExcluded !== 'true' ? '' : 'none'; }});
         button.setAttribute('aria-expanded', open ? 'true' : 'false');
         button.textContent = open ? '⌄' : '›';
       }}
+      function filterStatPrompts(reset) {{
+        var idInput = document.getElementById('stat-filter-id');
+        var promptInput = document.getElementById('stat-filter-prompt');
+        if (reset) {{ idInput.value = ''; promptInput.value = ''; }}
+        var id = idInput.value.trim().toLowerCase();
+        var prompt = promptInput.value.trim().toLowerCase();
+        var filtering = Boolean(id || prompt);
+        var matches = function(row) {{
+          return (!id || row.cells[0].textContent.toLowerCase().includes(id))
+            && (!prompt || row.cells[1].textContent.toLowerCase().includes(prompt));
+        }};
+        var visibleGroups = 0;
+        document.querySelectorAll('.stat-highlevel-row').forEach(function(parent) {{
+          var children = [];
+          for (var row = parent.nextElementSibling; row && row.classList.contains('stat-lowlevel-row'); row = row.nextElementSibling) children.push(row);
+          var parentMatch = matches(parent);
+          children.forEach(function(child) {{
+            var match = parentMatch || matches(child);
+            child.dataset.filterExcluded = String(!match);
+            child.style.display = filtering && match ? '' : 'none';
+          }});
+          var visible = parentMatch || children.some(function(child) {{ return child.dataset.filterExcluded !== 'true'; }});
+          parent.dataset.filterExcluded = String(!visible);
+          parent.style.display = visible ? '' : 'none';
+          if (visible) visibleGroups++;
+          var button = parent.querySelector('.stat-tree-toggle');
+          button.setAttribute('aria-expanded', String(filtering && visible));
+          button.textContent = filtering && visible ? '⌄' : '›';
+        }});
+        document.getElementById('stat-filter-empty').hidden = visibleGroups > 0;
+      }}
+      document.querySelectorAll('.stat-filter-bar input').forEach(function(input) {{
+        var composing = false;
+        input.addEventListener('compositionstart', function() {{ composing = true; }});
+        input.addEventListener('compositionend', function() {{ composing = false; filterStatPrompts(false); }});
+        input.addEventListener('input', function(event) {{ if (!composing && !event.isComposing) filterStatPrompts(false); }});
+      }});
       function setStatDetails(show) {{
         document.querySelectorAll('.stat-secondary-details').forEach(function(details) {{ details.hidden = !show; }});
         document.querySelectorAll('.stat-secondary-summary').forEach(function(summary) {{ summary.hidden = show; }});
@@ -6291,7 +6424,7 @@ def task_statistics(tid):
         var headerCells = table.querySelectorAll('thead th');
         rows.push(Array.from(headerCells).map(function(cell) {{ return (cell.textContent || '').replace(/\\s+/g, ' ').trim(); }}));
         table.querySelectorAll('tbody tr').forEach(function(tr) {{
-          if (tr.cells.length < 2) return;
+          if (tr.cells.length < 2 || tr.dataset.filterExcluded === 'true') return;
           rows.push(Array.from(tr.cells).map(function(cell) {{ return (cell.textContent || '').replace(/\\s+/g, ' ').trim(); }}));
         }});
         if (rows.length <= 1) {{
@@ -6315,6 +6448,11 @@ def task_statistics(tid):
       .stat-page {{ background:#fff;border:1px solid #e6ebef;border-radius:8px;padding:22px 24px 24px; }}
       .stat-head {{ display:flex;align-items:center;justify-content:space-between;margin-bottom:20px; }}
       .stat-head h1 {{ margin:0;font-size:20px; }}
+      .stat-filter-bar {{ display:flex;flex-wrap:wrap;align-items:flex-end;gap:12px; }}
+      .stat-filter-bar > .ff {{ flex:0 1 220px;min-width:0; }} .stat-filter-bar .ff input {{ width:100%; }}
+      .stat-filter-bar > .filter-actions {{ flex:0 0 auto;grid-column:auto; }}
+      .stat-filter-reset {{ width:34px;padding:0;display:inline-flex;align-items:center;justify-content:center; }}
+      #stat-filter-empty {{ text-align:center;padding:24px;color:rgba(0,0,0,.45); }}
       .stat-summary {{ display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:20px;padding:14px 16px;background:#f8fafb;border:1px solid #edf0f2;border-radius:8px; }}
       .stat-summary>div {{ display:flex;flex-direction:column;gap:6px;min-width:0;padding-right:16px;border-right:1px solid #e7ebef; }} .stat-summary>div:last-child {{ border-right:0; }}
       .stat-summary span {{ color:rgba(0,0,0,.45);font-size:12px; }} .stat-summary b {{ overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:15px; }}
@@ -6324,6 +6462,9 @@ def task_statistics(tid):
       .stat-matrix th,.stat-matrix td {{ border-right:1px solid #edf0f2;border-bottom:1px solid #edf0f2;padding:12px;white-space:nowrap;text-align:center;height:56px;box-sizing:border-box; }}
       .stat-matrix th {{ height:44px;background:#f5f7f9;color:rgba(0,0,0,.55);font-weight:600;position:sticky;top:0;z-index:3; }} .stat-matrix tr:last-child td {{ border-bottom:0; }} .stat-matrix th:last-child,.stat-matrix td:last-child {{ border-right:0; }} .stat-matrix tbody tr:hover td {{ background:#f8fbfc; }}
       .stat-matrix th:first-child,.stat-matrix td:first-child {{ text-align:left;position:sticky;left:0;z-index:2; }} .stat-matrix th:first-child {{ background:#f5f7f9;z-index:4; }} .stat-matrix td:first-child {{ background:#fff; }}
+      .stat-case-id {{ min-width:120px;width:120px;max-width:120px;white-space:normal !important;overflow-wrap:anywhere; }}
+      .stat-matrix th:nth-child(2),.stat-matrix td:nth-child(2) {{ position:sticky;left:120px;z-index:2;background:#fff; }} .stat-matrix th:nth-child(2) {{ background:#f5f7f9;z-index:4; }}
+      .stat-result-link {{ text-decoration:none;cursor:pointer; }} .stat-result-link:hover {{ text-decoration:underline; }} .stat-result-link:focus-visible {{ outline:2px solid #149DAA;outline-offset:2px; }}
       .stat-prompt-head {{ min-width:420px; }} .stat-prompt-tree-cell {{ min-width:420px;max-width:520px;text-align:left !important;white-space:normal !important;vertical-align:top; }}
       .stat-tree-row {{ position:relative;display:flex;align-items:flex-start;gap:8px;min-height:42px;padding:3px 0 3px 2px;color:rgba(0,0,0,.72);font-size:12px;line-height:1.5; }} .stat-tree-row b {{ font-weight:500; }} .stat-tree-row em {{ display:block;color:rgba(0,0,0,.42);font-size:11px;font-style:normal;line-height:1.4;margin-top:2px; }} .stat-tree-parent-row {{ padding-bottom:7px;margin-bottom:3px;border-bottom:1px solid #edf0f2; }} .stat-tree-parent-row b {{ font-weight:600;color:rgba(0,0,0,.84); }} .stat-tree-child-row {{ margin-left:24px;padding-left:14px;border-left:1px solid #d9e5e8; }} .stat-tree-toggle {{ display:inline-flex;align-items:center;justify-content:center;width:18px;height:20px;padding:0;border:0;background:transparent;color:#1F80A0;font-size:16px;line-height:1;cursor:pointer;flex:none; }} .stat-tree-branch {{ position:absolute;left:-1px;top:20px;width:10px;border-top:1px solid #d9e5e8; }}
       .stat-result {{ display:inline-flex;align-items:center;justify-content:center;min-width:54px;border:1px solid transparent;border-radius:4px;padding:4px 8px;font-size:11px;line-height:1.2; }} .stat-result.ok {{ color:#237b3b;background:#f0f9f1;border-color:#b7e1bd; }} .stat-result.fail {{ color:#c9362b;background:#fff1f0;border-color:#ffccc7; }}
@@ -8101,7 +8242,7 @@ def evaluate2_setup():
             ]
             lowlevel_html = ''.join(
                 f'<div class="wb-prompt-tree-child"><span class="wb-lowlevel-index">{index}</span>'
-                f'<span>{html.escape(item.get("zh", ""))}<small>{html.escape(item.get("en", ""))}</small></span></div>'
+                f'<span><span class="wb-lowlevel-main"><span>{html.escape(item.get("zh", ""))}</span><b>{html.escape(item.get("id", ""))}</b></span><small>{html.escape(item.get("en", ""))}</small></span></div>'
                 for index, item in enumerate(lowlevels, 1)
             ) or '<div class="wb-prompt-tree-empty">暂无 lowlevel</div>'
             scene_images = prompt.get("scene_images", [])
@@ -8129,8 +8270,8 @@ def evaluate2_setup():
             prompt_groups.append(
                 f'<section class="wb-prompt-tree-group" data-prompt-id="{html.escape(prompt_id, quote=True)}">'
                 f'<div class="wb-prompt-tree-parent-row"><button type="button" class="wb-prompt-tree-parent" onclick="toggleEndpointPromptGroup(this)" aria-expanded="true">'
-                f'<span class="wb-prompt-caret">▾</span><span class="wb-prompt-parent-copy"><b>{html.escape(prompt.get("high_level", ""))}</b>'
-                f'<small>{html.escape(prompt.get("high_level_en", ""))}</small></span></button></div>'
+                f'<span class="wb-prompt-caret">▾</span><span class="wb-prompt-parent-copy"><span class="wb-prompt-parent-main"><b>{html.escape(prompt.get("high_level", ""))}</b>'
+                f'<span class="wb-prompt-parent-meta">{html.escape(prompt_id)}</span></span><small>{html.escape(prompt.get("high_level_en", ""))}</small></span></button></div>'
                 f'<div class="wb-prompt-tree-children"><div class="wb-prompt-group-content{" has-scenes" if scene_cards else " no-scenes"}">'
                 f'<div class="wb-prompt-lowlevel-column"><div class="wb-lowlevel-title">lowlevel 执行项</div><div class="wb-lowlevel-list">{lowlevel_html}</div></div>'
                 f'{scene_column}</div></div></section>'
@@ -8143,9 +8284,10 @@ def evaluate2_setup():
         execution_prompt_ids = active_task.get("selected_prompt_ids", []) or active_benchmark.get("prompt_ids", [])
         execution_prompt_items = [get_prompt(pid) for pid in execution_prompt_ids]
         execution_prompt_items = [item for item in execution_prompt_items if item]
+        execution_lowlevel_ids = set(active_task.get("selected_lowlevel_ids", []))
         prompt_group_count = len(execution_prompt_items) or 1
         execution_prompt_options = "".join(
-            f'<option value="{html.escape(item.get("id", ""), quote=True)}">{html.escape(item.get("high_level", "提示词组"))}</option>'
+            f'<option value="{html.escape(item.get("id", ""), quote=True)}">{html.escape(item.get("high_level", "提示词组"))} · {html.escape(item.get("id", ""))}</option>'
             for item in execution_prompt_items
         ) or '<option value="">暂无提示词组</option>'
         execution_scene_data_json = json.dumps(
@@ -8153,6 +8295,11 @@ def evaluate2_setup():
                 item.get("id", ""): {
                     "name": item.get("high_level", "提示词组"),
                     "images": item.get("scene_images", [])[:3],
+                    "steps": [
+                        {"id": lowlevel.get("id", ""), "text": lowlevel.get("zh", "")}
+                        for lowlevel in item.get("low_levels", [])
+                        if not execution_lowlevel_ids or lowlevel.get("id") in execution_lowlevel_ids
+                    ],
                 }
                 for item in execution_prompt_items
             },
@@ -8171,10 +8318,39 @@ def evaluate2_setup():
     style += '<style>.hmi-exec{height:100%;min-height:100%;overflow:auto;box-sizing:border-box;background:#f7f8fa;padding:14px}.hmi-exec-top{display:flex;align-items:center;gap:10px;background:#fff;border:1px solid #edf0f3;padding:10px 14px;margin-bottom:14px;font-size:13px}.hmi-exec-top span{color:#7e8792}.hmi-back{background:#1F80A0;color:#fff;padding:6px 12px;border-radius:5px;text-decoration:none}.hmi-top-status{margin-left:auto;color:#1F80A0}.hmi-camera-row{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:14px}.hmi-camera-card{background:#fff;border:1px solid #edf0f3;padding:10px;font-size:14px}.hmi-camera-card>span{float:right;color:#2eaf68;font-size:12px}.hmi-camera-view{height:260px;background:#101317;color:#75808d;margin-top:8px;display:flex;align-items:center;justify-content:center;text-align:center;line-height:2}.hmi-camera-view small{display:block}.hmi-exec-grid{display:grid;grid-template-columns:2fr 1fr;gap:14px}.hmi-task-panel,.hmi-control-panel{background:#fff;border:1px solid #edf0f3;padding:14px}.hmi-panel-title{font-weight:600;margin-bottom:12px;display:flex;justify-content:flex-start;align-items:center;flex-wrap:wrap;gap:10px}.hmi-panel-title select{border:1px solid #d9dde3;border-radius:5px;padding:5px}.hmi-task-row{padding:14px 10px;border:1px solid #edf0f3;margin-bottom:8px;display:flex;align-items:center;gap:10px}.hmi-task-row.active{border-color:#1F80A0;background:#e6f4f8}.hmi-task-row b{width:22px;height:22px;background:#edf1f7;display:inline-flex;align-items:center;justify-content:center}.hmi-task-row button{margin-left:auto;border:0;background:transparent;color:#2eaf68;font-size:18px}.hmi-control-panel h3{font-size:15px;margin:4px 0 14px}.hmi-switches{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px}.hmi-switches label{font-size:12px;display:flex;justify-content:space-between}.hmi-switches i{font-style:normal;color:#1F80A0;background:#e6f4f8;border:1px solid #b8dce8;border-radius:10px;padding:2px 8px}.hmi-control-panel p{font-size:12px;color:#69717c;margin:8px 0}.hmi-control-panel p span{color:#2eaf68}.hmi-control-actions{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:20px}.hmi-control-actions button{height:42px;border:1px solid #b8dce8;background:#fff;border-radius:5px;color:#1F80A0}.hmi-control-actions .hmi-stop-action{color:#e54863;border-color:#ff9c9c}.hmi-control-actions button:disabled{color:#aaa;background:#f0f1f3}.hmi-submit-group{width:100%;height:46px;margin-top:10px;border:0;border-radius:7px;background:#1F80A0;color:#fff;font-size:16px;cursor:pointer}@media(max-width:800px){.hmi-camera-row,.hmi-exec-grid{grid-template-columns:1fr}.hmi-camera-view{height:200px}}</style>'
     style += '<style>.hmi-task-row.running{border-color:#2463eb;background:#f3f7ff}.hmi-task-row.running button{color:#2463eb;font-weight:600}.hmi-task-row.completed{background:#f3fbf6;color:#2e8b57}.hmi-task-row button{font-size:16px}.hmi-panel-title{justify-content:flex-start;gap:10px}.hmi-panel-title select{min-width:220px}.hmi-ckpt-select{min-width:180px!important}.hmi-progress{margin-left:auto;color:#2463eb;font-size:12px}.hmi-icon-action{width:28px;height:28px;border:0;background:transparent;cursor:pointer}.hmi-result-mask[hidden]{display:none}.hmi-result-mask{position:fixed;inset:0;z-index:1200;background:rgba(0,0,0,.38);display:flex;align-items:center;justify-content:center}.hmi-result-dialog{width:560px;max-width:calc(100vw - 32px);background:#fff;border-radius:9px;padding:24px;box-shadow:0 12px 40px rgba(0,0,0,.2)}.hmi-result-dialog h3{margin:0 0 20px}.hmi-result-section,.hmi-metric-section{padding:14px 16px;border:1px solid #edf0f3;border-radius:7px;margin-bottom:14px}.hmi-result-section{background:#f6f9ff}.hmi-metric-section{background:#fafafa}.hmi-result-dialog h4{margin:0 0 12px;font-size:14px}.hmi-result-radios{display:flex;gap:18px;flex-wrap:wrap}.hmi-result-radios label{display:flex;align-items:center;gap:5px;color:#3f4752;font-size:13px}.hmi-metric-section label{display:flex;flex-direction:column;gap:7px;margin-bottom:12px;color:#5f6670;font-size:13px}.hmi-metric-label{display:flex;align-items:center;gap:6px}.hmi-metric-tip{display:inline-flex;align-items:center;justify-content:center;width:15px;height:15px;border:1px solid #a9cbd4;border-radius:50%;color:#1F80A0;font-size:10px;line-height:1;cursor:help}.hmi-result-dialog select,.hmi-result-dialog input{height:38px;border:1px solid #d9dde3;border-radius:6px;padding:0 10px;background:#fff}.hmi-result-dialog>div{display:flex;justify-content:flex-end;gap:8px;margin-top:20px}.hmi-result-dialog button{padding:8px 18px;border:1px solid #d9dde3;background:#fff;border-radius:6px}.hmi-result-dialog button.primary{background:#2463eb;border-color:#2463eb;color:#fff}</style>'
     style += '<style>.hmi-task-row{display:grid;grid-template-columns:28px minmax(0,1fr) minmax(150px,auto) 32px;align-items:center;gap:10px}.hmi-task-row.result-submitted{grid-template-columns:28px minmax(0,1fr) minmax(150px,auto)}.hmi-prompt-text{min-width:0}.hmi-result-summary{justify-self:end;text-align:right;color:#2eaf68;font-size:13px;white-space:nowrap}.hmi-result-summary.failed{color:#e54863}.hmi-result-summary.passed{color:#2eaf68}.hmi-icon-action{justify-self:end;margin-left:0!important}.hmi-task-row.result-failed{background:#fff1f0!important;border-color:#ffccc7!important}.hmi-task-row.result-passed{background:#f3fbf6!important}</style>'
+    style += '<style>.hmi-prompt-text{display:flex;flex-direction:column;gap:3px}.hmi-prompt-text small{color:#78848c;font-size:11px}.hmi-result-case{margin:-12px 0 18px;color:#69717c;font-size:12px}.hmi-result-case b{color:#1F80A0;font-family:SFMono-Regular,Menlo,Monaco,Consolas,monospace}.hmi-task-empty{padding:26px;color:#8a9499;text-align:center}</style>'
     style += '<style>.hmi-result-edit{justify-self:end;margin-left:0!important;padding:0!important;border:0!important;background:transparent!important;color:#1F80A0!important;font-size:12px!important;cursor:pointer}.hmi-result-edit:hover{text-decoration:underline}.hmi-result-edit[hidden]{display:none!important}.hmi-task-row{grid-template-columns:28px minmax(0,1fr) minmax(150px,auto) 44px 32px}.hmi-task-row.result-submitted{grid-template-columns:28px minmax(0,1fr) minmax(150px,auto) 44px}</style>'
     style += '<style>.wb-scene{grid-template-columns:1fr}.wb-scene-description{display:flex;align-items:center;gap:14px;white-space:nowrap}.wb-scene-description span{color:#69717c;overflow:hidden;text-overflow:ellipsis}.hmi-panel-title{flex-wrap:nowrap;align-items:center;gap:8px;white-space:nowrap;overflow:hidden}.hmi-select-control{display:flex;align-items:center;gap:7px;min-width:0;flex:0 1 auto;padding:5px 8px;border:1px solid #d9dde3;border-radius:6px;background:#fff}.hmi-select-prefix{color:#1F80A0;font-size:12px;font-weight:600;flex-shrink:0}.hmi-select-control select{min-width:120px;max-width:260px;border:0!important;padding:4px 22px 4px 0!important;outline:0;overflow:hidden;text-overflow:ellipsis}.hmi-select-control em{color:#8a9099;font-size:11px;font-style:normal;white-space:nowrap}.hmi-progress{margin-left:auto;flex-shrink:0;padding:9px 13px;border-radius:7px;background:#e6f4f8;color:#5f6670!important;white-space:nowrap}.hmi-progress strong{color:#1F80A0;font-size:16px}.hmi-task-row button{color:#1F80A0}.hmi-switches i{color:#1F80A0!important;background:#e6f4f8!important;border:1px solid #b8dce8}.hmi-control-actions{grid-template-columns:repeat(3,1fr)!important}.hmi-control-actions button{height:42px!important;color:#1F80A0;border-color:#b8dce8!important;background:#fff!important}.hmi-control-actions .hmi-stop-action{color:#e54863;border-color:#ff9c9c!important}.hmi-submit-group{width:100%;height:46px;margin-top:10px;border:0;border-radius:7px;background:#1F80A0;color:#fff;font-size:16px;cursor:pointer}.hmi-submit-group:hover{background:#167b98}@media(max-width:800px){.hmi-select-control{flex:1;min-width:0}.hmi-progress{order:initial;width:auto;text-align:left;margin-left:auto}.wb-scene-description{white-space:normal;align-items:flex-start;flex-direction:column;gap:4px}}</style>'
     style += '<style>.wb-task-info-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:20px}.wb-task-info-head h1{margin-bottom:4px!important}.wb-task-info-head p{margin:0;color:#69717c;font-size:13px}.wb-task-info-head>span{padding:5px 10px;border-radius:12px;background:#e6f4f8;color:#1F80A0;font-size:12px;white-space:nowrap}.wb-task-section{margin-bottom:22px}.wb-task-section h2{display:flex;align-items:baseline;gap:8px;font-size:16px;margin:0 0 12px;color:#26323d}.wb-task-section h2 small{color:#8a9099;font-size:11px;font-weight:400}.wb-scene-task-only{display:grid!important;grid-template-columns:minmax(0,1fr) 300px!important;align-items:stretch}.wb-scene-task-only .wb-scene-description{align-items:flex-start;flex-direction:column;gap:6px;white-space:normal}.wb-scene-task-only .wb-scene-description span{line-height:1.7;white-space:normal}.wb-scene-video{display:flex;align-items:center;gap:12px;padding:12px 14px;border:1px solid #dce7ea;border-radius:7px;background:#fff}.wb-scene-video-icon{display:flex;align-items:center;justify-content:center;width:38px;height:38px;flex:none;border-radius:50%;background:#e6f4f8;color:#1F80A0;font-size:15px;padding-left:2px}.wb-scene-video>div{display:flex;flex-direction:column;gap:4px;min-width:0}.wb-scene-video b{color:#3f4b55;font-size:13px}.wb-scene-video small{color:#7a838c;font-size:11px;line-height:1.5}.wb-prompt-tree{border:1px solid #dfe8eb;border-radius:8px;overflow:hidden;background:#fff}.wb-prompt-tree-group{border-bottom:1px solid #dfe8eb}.wb-prompt-tree-group:last-child{border-bottom:0}.wb-prompt-tree-parent{width:100%;display:grid;grid-template-columns:18px minmax(0,1fr) auto;align-items:center;gap:9px;padding:13px 16px;border:0;background:#f7fbfc;color:#1F80A0;text-align:left;cursor:pointer}.wb-prompt-caret{font-size:16px;line-height:1}.wb-prompt-parent-copy{display:flex;flex-direction:column;gap:2px;min-width:0}.wb-prompt-parent-copy b{overflow:hidden;color:#2d5965;font-size:14px;text-overflow:ellipsis;white-space:nowrap}.wb-prompt-parent-copy small{overflow:hidden;color:#7a8b91;font-size:11px;text-overflow:ellipsis;white-space:nowrap}.wb-prompt-parent-meta{color:#6d7b80;font-size:11px;font-weight:400;white-space:nowrap}.wb-prompt-tree-children{padding:14px 16px 16px 43px;background:#fff}.wb-prompt-group-content{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(320px,.95fr);gap:18px;align-items:start}.wb-prompt-group-content.no-scenes{grid-template-columns:minmax(0,1.05fr) minmax(320px,.95fr)}.wb-prompt-scene-column,.wb-prompt-lowlevel-column{min-width:0}.wb-prompt-scene-column{padding-left:18px;border-left:1px solid #e3ecef}.wb-highlevel-scene-title,.wb-lowlevel-title{display:flex;align-items:baseline;gap:7px;margin-bottom:9px;color:#43525a;font-size:12px;font-weight:600}.wb-highlevel-scene-title small{color:#8a969b;font-size:10px;font-weight:400}.wb-highlevel-scenes{display:grid;grid-template-columns:minmax(0,1fr);gap:10px;margin-bottom:0}.wb-highlevel-scene-card{display:grid;grid-template-columns:80px minmax(0,1fr);gap:9px;min-width:0;padding:6px;border:1px solid #e1e8eb;border-radius:7px;background:#fafcfc}.wb-highlevel-scene-preview{position:relative;height:62px;overflow:hidden;border-radius:5px;background:linear-gradient(145deg,#d9ecef,#f3f9fa)}.wb-highlevel-scene-preview img{width:100%;height:100%;display:block;object-fit:cover}.wb-highlevel-scene-preview i{position:absolute;left:5px;top:5px;padding:1px 5px;border-radius:8px;background:#1F80A0;color:#fff;font-size:9px;font-style:normal}.wb-highlevel-scene-placeholder{display:flex;width:100%;height:100%;align-items:center;justify-content:center;color:#1F80A0;font-size:22px}.wb-highlevel-scene-card>div:last-child{display:flex;flex-direction:column;justify-content:center;gap:5px;min-width:0}.wb-highlevel-scene-card b{color:#40515a;font-size:11px}.wb-highlevel-scene-card small{overflow:hidden;color:#7a868c;font-size:10px;text-overflow:ellipsis;white-space:nowrap}.wb-highlevel-scene-empty{display:flex;min-height:72px;margin:0;align-items:center;justify-content:center;gap:8px;border:1px dashed #d5e0e3;border-radius:7px;color:#8a9499;background:#fafbfc}.wb-highlevel-scene-empty span{color:#9aabb0;font-size:20px}.wb-highlevel-scene-empty small{font-size:11px}.wb-lowlevel-list{border-left:1px solid #d9edf1;margin-left:10px}.wb-prompt-tree-child{display:grid;grid-template-columns:24px minmax(0,1fr);align-items:start;gap:7px;position:relative;padding:7px 0 7px 14px;color:#4f5964;font-size:12px}.wb-prompt-tree-child:before{content:"";position:absolute;left:0;top:17px;width:10px;height:1px;background:#d9edf1}.wb-prompt-tree-child>span:last-child{display:flex;flex-direction:column;gap:2px}.wb-prompt-tree-child small{display:block;margin:0;color:#8b969c;font-size:10px}.wb-lowlevel-index{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:4px;background:#edf5f6;color:#1F80A0;font-size:10px}.wb-prompt-tree-empty{padding:22px;color:#8a9499;text-align:center;font-size:12px}@media(max-width:760px){.wb-scene-task-only{grid-template-columns:1fr!important}.wb-prompt-tree-parent{grid-template-columns:18px minmax(0,1fr)}.wb-prompt-parent-meta{grid-column:2}.wb-prompt-tree-children{padding-left:24px}.wb-prompt-group-content,.wb-prompt-group-content.no-scenes{grid-template-columns:1fr}.wb-prompt-scene-column{padding-left:0;border-left:0}.wb-highlevel-scenes{grid-template-columns:1fr}}</style>'
     style += f'''<script>
+      var hmiOriginalPromptChanged = hmiPromptChanged;
+      var hmiOriginalTogglePrompt = hmiTogglePrompt;
+      var hmiOriginalEditResult = hmiEditResult;
+      function hmiSetResultCase(button) {{
+        var row = button && button.closest('.hmi-task-row');
+        var target = document.getElementById('hmi-result-case-id');
+        if (target) target.textContent = row ? row.dataset.caseId || '--' : '--';
+      }}
+      function hmiRenderPromptRows(select) {{
+        var panel = document.querySelector('.hmi-task-panel');
+        var data = hmiSceneData[(select && select.value) || ''] || {{steps:[]}};
+        if (!panel) return;
+        panel.querySelectorAll('.hmi-task-row,.hmi-task-empty').forEach(function(row) {{ row.remove(); }});
+        var rows = (data.steps || []).map(function(step, index) {{
+          return '<div class="hmi-task-row" data-case-id="' + hmiSceneEscape(step.id) + '"><b>' + (index + 1) + '</b>'
+            + '<span class="hmi-prompt-text"><span>' + hmiSceneEscape(step.text) + '</span><small>' + hmiSceneEscape(step.id) + '</small></span>'
+            + '<span class="hmi-result-summary"></span><button class="hmi-result-edit" type="button" hidden aria-label="编辑评测结果" title="编辑评测结果" onclick="hmiEditResult(this)"><span class="hmi-edit-glyph" aria-hidden="true">✎</span></button>'
+            + '<button class="hmi-icon-action" type="button" title="开始执行" aria-label="开始执行" onclick="hmiTogglePrompt(this)">▶</button></div>';
+        }}).join('');
+        panel.insertAdjacentHTML('beforeend', rows || '<div class="hmi-task-empty">当前提示词组暂无用例</div>');
+        var progress = document.querySelector('.hmi-progress');
+        if (progress) progress.innerHTML = '本组进度：<strong>0/' + (data.steps || []).length + '</strong>';
+        hmiActiveButton = null;
+        hmiEditing = false;
+      }}
+      hmiPromptChanged = function(select) {{ hmiOriginalPromptChanged(select); hmiRenderPromptRows(select); }};
+      hmiTogglePrompt = function(button) {{ hmiSetResultCase(button); hmiOriginalTogglePrompt(button); }};
+      hmiEditResult = function(button) {{ hmiSetResultCase(button); hmiOriginalEditResult(button); }};
       document.addEventListener('DOMContentLoaded', function() {{
         var title = document.querySelector('.hmi-panel-title');
         if (!title) return;
@@ -8186,6 +8362,8 @@ def evaluate2_setup():
             + '<span class="hmi-progress">执行进度：已提交任务数 / 全部任务数&nbsp;&nbsp;<strong>20/30</strong></span>';
           hmiPromptChanged(document.getElementById('hmi-prompt-select'));
         }}
+        var resultTitle = document.getElementById('hmi-result-title');
+        if (resultTitle) resultTitle.insertAdjacentHTML('afterend', '<p class="hmi-result-case"><b id="hmi-result-case-id">--</b></p>');
         var actions = document.querySelector('.hmi-control-actions');
         if (actions) {{
           actions.innerHTML = '<button type="button">复位</button><button type="button">重置</button><button type="button" class="hmi-stop-action">停止</button>';
@@ -8201,6 +8379,7 @@ def evaluate2_setup():
     style += '<style>.hmi-edit-glyph{display:block;width:15px;height:15px}.hmi-result-edit:hover{color:#166f88!important;text-decoration:none}</style>'
     style += '<style>.hmi-scene-link{flex:0 0 auto;color:#1F80A0;font-size:12px;text-decoration:none;white-space:nowrap}.hmi-scene-link:hover{text-decoration:underline}.hmi-scene-link.is-empty{color:#9aa3aa}.hmi-scene-mask[hidden]{display:none}.hmi-scene-mask{position:fixed;inset:0;z-index:1250;background:rgba(0,0,0,.38);display:flex;align-items:center;justify-content:center;padding:20px}.hmi-scene-dialog{width:720px;max-width:calc(100vw - 32px);max-height:calc(100vh - 40px);overflow:auto;background:#fff;border-radius:9px;box-shadow:0 12px 40px rgba(0,0,0,.2)}.hmi-scene-dialog-head{display:flex;align-items:center;justify-content:space-between;padding:18px 22px;border-bottom:1px solid #edf0f3}.hmi-scene-dialog-head h3{margin:0;font-size:17px;color:#26323d}.hmi-scene-dialog-head button{border:0;background:transparent;color:#7f8993;font-size:24px;line-height:1;cursor:pointer}.hmi-scene-dialog-body{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;padding:20px}.hmi-scene-card{overflow:hidden;border:1px solid #e2eaec;border-radius:8px;background:#fff}.hmi-scene-preview{height:150px;background:linear-gradient(145deg,#d9ecef,#f4fafb);display:flex;align-items:center;justify-content:center}.hmi-scene-preview img{width:100%;height:100%;object-fit:cover;display:block}.hmi-scene-placeholder{color:#1F80A0;font-size:36px}.hmi-scene-card>div:last-child{display:flex;flex-direction:column;gap:5px;padding:10px 12px}.hmi-scene-card b{color:#40515a;font-size:12px}.hmi-scene-card small{overflow:hidden;color:#7a868c;font-size:11px;text-overflow:ellipsis;white-space:nowrap}.hmi-scene-empty{grid-column:1/-1;padding:42px 12px;color:#8a9499;text-align:center}@media(max-width:680px){.hmi-scene-dialog-body{grid-template-columns:1fr 1fr}}@media(max-width:460px){.hmi-scene-dialog-body{grid-template-columns:1fr}}</style>'
     style += '<style>.wb-prompt-tree-parent-row{display:flex;align-items:stretch;background:#f7fbfc;border-bottom:1px solid #dfe8eb}.wb-prompt-tree-parent-row .wb-prompt-tree-parent{flex:1;width:auto}.wb-prompt-group-content.has-scenes{grid-template-columns:minmax(0,1.05fr) minmax(320px,.95fr)}.wb-prompt-group-content.no-scenes{grid-template-columns:minmax(0,1fr)}@media(max-width:760px){.wb-prompt-group-content.has-scenes{grid-template-columns:1fr}}</style>'
+    style += '<style>.wb-prompt-tree-parent{grid-template-columns:18px minmax(0,1fr)}.wb-prompt-parent-main,.wb-lowlevel-main{display:flex;align-items:baseline;gap:8px;min-width:0;flex-wrap:wrap}.wb-prompt-parent-main b{overflow:visible;white-space:normal;text-overflow:clip}.wb-prompt-parent-meta,.wb-lowlevel-main b{flex:none;white-space:nowrap;font:500 11px SFMono-Regular,Menlo,Consolas,monospace}.hmi-prompt-text{flex-direction:row;align-items:baseline;flex-wrap:wrap}.hmi-prompt-text>span{min-width:0;white-space:normal}.hmi-prompt-text small{flex:none;white-space:nowrap}</style>'
     style += ENDPOINT_MODE_STYLE + ENDPOINT_SETUP_MODE_SCRIPT
     return render_page("端侧示意", body + style, active="evaluate2")
 
@@ -8221,13 +8400,15 @@ def evaluate2_run(task_id):
 
     # Flatten all steps across all prompt groups
     flat_steps = []
+    selected_lowlevel_ids = set(task.get("selected_lowlevel_ids", []))
     if bm and bm.get("prompt_ids"):
         for pid in bm["prompt_ids"]:
             p = get_prompt(pid)
             if not p:
                 continue
             for ll in p.get("low_levels", []):
-                flat_steps.append({"hl": p["high_level"], "zh": ll["zh"], "en": ll["en"], "pid": pid})
+                if not selected_lowlevel_ids or ll.get("id") in selected_lowlevel_ids:
+                    flat_steps.append({"hl": p["high_level"], "zh": ll["zh"], "en": ll["en"], "pid": pid, "case_id": ll.get("id", "")})
 
     total_steps = len(flat_steps)
     current_step = int(request.args.get("step", 0))
@@ -8260,6 +8441,8 @@ def evaluate2_run(task_id):
         <span style="font-size:12px;color:rgba(0,0,0,0.45);">Low Level:</span>
         <span style="font-weight:600;">{step["zh"]}</span>
         <span style="color:rgba(0,0,0,0.35);font-size:13px;">{step["en"]}</span>
+        <span style="width:1px;height:16px;background:#b8dce8;"></span>
+        <span style="font:600 12px SFMono-Regular,Menlo,Consolas,monospace;color:#1F80A0;">{html.escape(step["case_id"])}</span>
       </div>
       <div style="display:flex;align-items:center;gap:10px;">
         <span style="font-size:13px;color:rgba(0,0,0,0.45);">\u5f53\u524d\u8bc4\u5206\u8fdb\u5ea6:</span>
@@ -8314,7 +8497,7 @@ def evaluate2_run(task_id):
       </div>
     </div>
 
-    <div id="eval2-result-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:1000;align-items:center;justify-content:center;"><div style="background:#fff;width:560px;max-width:calc(100vw - 32px);border-radius:10px;padding:24px;"><h3 style="margin:0 0 18px;">填写评测结果</h3><div class="form-group"><label>评测结果</label><select id="eval2-result"><option>成功</option><option>失败</option><option>重试1次成功</option><option>重试2次成功</option><option>重试3次成功</option></select></div><div class="form-group"><label>评测指标</label><input class="ant-input" placeholder="填写本条评测指标"></div><div style="display:flex;justify-content:flex-end;gap:8px;margin-top:22px;"><button type="button" class="ant-btn" onclick="eval2CloseResult()">取消</button><button type="button" class="ant-btn ant-btn-primary" onclick="eval2ConfirmResult()">提交并进入下一条</button></div></div></div>
+    <div id="eval2-result-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:1000;align-items:center;justify-content:center;"><div style="background:#fff;width:560px;max-width:calc(100vw - 32px);border-radius:10px;padding:24px;"><h3 style="margin:0 0 6px;">填写评测结果</h3><p style="margin:0 0 18px;color:#1F80A0;font:600 12px SFMono-Regular,Menlo,Consolas,monospace;">{html.escape(step["case_id"])}</p><div class="form-group"><label>评测结果</label><select id="eval2-result"><option>成功</option><option>失败</option><option>重试1次成功</option><option>重试2次成功</option><option>重试3次成功</option></select></div><div class="form-group"><label>评测指标</label><input class="ant-input" placeholder="填写本条评测指标"></div><div style="display:flex;justify-content:flex-end;gap:8px;margin-top:22px;"><button type="button" class="ant-btn" onclick="eval2CloseResult()">取消</button><button type="button" class="ant-btn ant-btn-primary" onclick="eval2ConfirmResult()">提交并进入下一条</button></div></div></div>
     <!-- Bottom white card: progress + note + buttons -->
     <div style="background:#fff;border-radius:8px;padding:20px;border:1px solid #f0f0f0;">
       <!-- Progress scores (1-5) -->
@@ -8515,6 +8698,7 @@ def _mock_eval_records():
                 records.append({
                     "id": record_id,
                     "recording_id": recording_id,
+                    "round": 1,
                     "group": f"1:2:{row_index + 3}",
                     "task_id": task.get("id", ""),
                     "task_no": str(task.get("task_no", "")),
@@ -8541,6 +8725,29 @@ def _mock_eval_records():
                         {"label": "左臂相机", "url": "/static/eval-left.mp4"},
                         {"label": "右臂相机", "url": "/static/eval-right.mp4"},
                     ],
+                })
+    # ponytail: retain the ten-round demo; use execution records when a backend exists.
+    # Preserve existing first-round IDs so bookmarked detail links remain valid.
+    for index, base in enumerate(list(records)):
+        task = get_task(base["task_id"])
+        criterion = get_criterion(task.get("criteria_id", "")) or {}
+        result_types = [item["type"] for item in normalize_result_definitions(criterion.get("result_definitions", {}))] or ["成功", "失败"]
+        for checkpoint_index, checkpoint_id in enumerate(task.get("model_ids") or [base["checkpoint_id"]]):
+            for trial in range(1, 11):
+                if checkpoint_index == 0 and trial == 1:
+                    continue
+                if trial > 1 and (index * 5 + checkpoint_index + trial * 3) % 17 == 0:
+                    continue
+                result = result_types[(index + checkpoint_index + trial) % len(result_types)]
+                records.append({
+                    **base,
+                    "id": f'{base["id"]}-C{checkpoint_index + 1}-T{trial}',
+                    "recording_id": str(600001 + len(records)),
+                    "round": trial,
+                    "checkpoint_id": checkpoint_id,
+                    "checkpoint": get_model_name(checkpoint_id),
+                    "conclusion": result,
+                    "conclusion_parent": "失败" if result_type_is_failure(result) else "成功",
                 })
     return records
 
@@ -8804,6 +9011,7 @@ def _render_eval_records_replacement(task_id=None):
             f'data-conclusion="{html.escape(record.get("conclusion", ""), quote=True)}">'
             f'<td class="er-record-group">{html.escape(record["group"])}</td>'
             f'<td class="er-record-id">{html.escape(record["recording_id"])}</td>'
+            f'<td class="er-record-case-id">{html.escape(record.get("lowlevel_id", ""))}</td>'
             f'<td>{_eval_record_video_html(record, compact=True)}</td>'
             f'<td class="er-record-serial">{html.escape(record["serial"])}</td>'
             f'<td>{html.escape(record["checkpoint"])}</td>'
@@ -8813,7 +9021,7 @@ def _render_eval_records_replacement(task_id=None):
             f'<td class="actions-cell"><a href="/eval-records/{rid}" class="action-link">详情</a></td>'
             '</tr>'
         )
-    row_html = ''.join(rows) or '<tr><td colspan="9" class="er-empty">暂无数据</td></tr>'
+    row_html = ''.join(rows) or '<tr><td colspan="10" class="er-empty">暂无数据</td></tr>'
     task_context = (
         f'<div class="er-task-context"><a href="/tasks">← 返回评测任务</a><div><b class="er-task-context-id">{html.escape(task.get("task_no", "") and str(task.get("task_no")) or "--")}</b></div><div class="er-task-context-name"><b title="{html.escape(task.get("name", "--"), quote=True)}">{html.escape(task.get("name", "--"))}</b></div><button class="ant-btn er-export-button" type="button" onclick="exportEvalRecords()">导出</button></div>'
         if task else '<div class="er-page-head"><h1>评测数据</h1><button class="ant-btn" type="button" onclick="exportEvalRecords()">导出</button></div>'
@@ -8823,16 +9031,16 @@ def _render_eval_records_replacement(task_id=None):
       {task_context}
       <div class="filter-bar er-result-filter-bar">
         <div class="ff"><label>数据 ID</label><input id="er-filter-data-id" type="text" placeholder="请输入数据 ID"></div>
+        <div class="ff"><label>用例 ID</label><input id="er-filter-lowlevel-id" type="text" placeholder="请输入用例 ID"></div>
         <div class="ff"><label>highlevel</label><input id="er-filter-highlevel" type="text" placeholder="请输入 highlevel"></div>
         <div class="ff"><label>lowlevel</label><input id="er-filter-lowlevel" type="text" placeholder="请输入 lowlevel"></div>
-        <div class="ff"><label>lowlevel_id</label><input id="er-filter-lowlevel-id" type="text" placeholder="请输入 lowlevel_id"></div>
         <div class="ff er-conclusion-filter"><label>评测结果（多选）</label><div class="er-dd-trigger" id="er-filter-conclusion-btn" onclick="mselToggle('er-filter-conclusion', event)" aria-label="评测结果（多选）"><div id="er-filter-conclusion-chips" class="er-chips"></div><span aria-hidden="true" style="color:rgba(0,0,0,.35);font-size:11px;margin-left:6px;">▼</span></div><div class="er-dd-panel" id="er-filter-conclusion-panel" style="width:100%;max-height:220px;overflow:auto;">{conclusion_opts}<div style="display:flex;justify-content:flex-end;gap:12px;padding:8px 14px;border-top:1px solid #f0f0f0;"><a href="javascript:;" onclick="mselToggleAll('er-filter-conclusion', true)" style="font-size:12px;color:#1F80A0;">全选</a><a href="javascript:;" onclick="mselToggleAll('er-filter-conclusion', false)" style="font-size:12px;color:rgba(0,0,0,.45);">清空</a></div></div><input type="hidden" id="er-filter-conclusion-hidden" value=""></div>
         <div class="filter-actions"><button type="button" class="ant-btn" onclick="erResultClear()">清空</button><button type="button" class="ant-btn ant-btn-primary" onclick="erResultApply()">搜索</button></div>
       </div>
       <div class="er-result-summary">共 <b id="er-result-count">{len(records)}</b> 条评测记录</div>
       <div class="ant-card ant-card-bordered er-result-card">
         <div class="er-result-table-wrap"><table class="ant-table er-result-table" id="er-result-table">
-          <thead><tr><th style="width:90px;">分组</th><th style="width:120px;">数据 ID</th><th style="width:520px;">视频</th><th style="width:130px;">设备序列号</th><th style="width:130px;">checkpoint</th><th style="width:140px;">评测结果</th><th style="width:100px;">操作人</th><th style="width:145px;">操作时间</th><th style="width:60px;">操作</th></tr></thead>
+          <thead><tr><th style="width:90px;">分组</th><th style="width:120px;">数据 ID</th><th style="width:120px;">用例 ID</th><th style="width:520px;">视频</th><th style="width:130px;">设备序列号</th><th style="width:130px;">checkpoint</th><th style="width:140px;">评测结果</th><th style="width:100px;">操作人</th><th style="width:145px;">操作时间</th><th style="width:60px;">操作</th></tr></thead>
           <tbody>{row_html}</tbody>
         </table></div>
         <div class="er-result-pagination"><span id="er-result-page-copy">1 / 12</span><button type="button" id="er-result-prev" onclick="erResultPageChange(-1)" aria-label="上一页">‹</button><button type="button" id="er-result-current" class="active">1</button><button type="button" id="er-result-next" onclick="erResultPageChange(1)" aria-label="下一页">›</button></div>
@@ -8941,10 +9149,10 @@ def _render_eval_records_replacement(task_id=None):
       .er-result-summary {{ color:rgba(0,0,0,.55); font-size:13px; margin:0 0 10px 2px; }}
       .er-result-card {{ overflow:hidden; }}
       .er-result-table-wrap {{ overflow-x:auto; }}
-      .er-result-table {{ min-width:1335px; table-layout:fixed; }}
+      .er-result-table {{ min-width:1455px; table-layout:fixed; }}
       .er-result-table thead th {{ background:#f7f8fa; }}
       .er-result-table tbody td {{ height:156px; padding:10px 12px; }}
-      .er-record-group, .er-record-id, .er-record-serial {{ font-family:'SF Mono',Menlo,Consolas,monospace; font-size:12px; color:rgba(0,0,0,.65); }}
+      .er-record-group, .er-record-id, .er-record-case-id, .er-record-serial {{ font-family:'SF Mono',Menlo,Consolas,monospace; font-size:12px; color:rgba(0,0,0,.65); }}
       .er-record-video-strip {{ display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:5px; min-width:0; }}
       .er-record-video-strip-compact {{ grid-template-rows:28px 120px; gap:0; min-width:500px; background:#050505; border-radius:8px; overflow:hidden; }}
       .er-record-video-prompt {{ grid-column:1/-1; display:flex; align-items:center; justify-content:center; padding:0 12px; background:#050505; color:rgba(255,255,255,.88); font-size:12px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }}
@@ -8971,19 +9179,20 @@ def _render_eval_records_replacement(task_id=None):
       .er-result-pagination button:disabled {{ color:#d9d9d9; cursor:not-allowed; }}
       .er-empty {{ text-align:center; padding:52px !important; color:rgba(0,0,0,.35) !important; }}
       @media (max-width:1400px) {{
-        .er-result-table {{ min-width:1335px; }}
+        .er-result-table {{ min-width:1455px; }}
         .er-result-table th:nth-child(1) {{ width:90px !important; }}
         .er-result-table th:nth-child(2) {{ width:120px !important; }}
-        .er-result-table th:nth-child(3) {{ width:520px !important; }}
-        .er-result-table th:nth-child(4) {{ width:130px !important; }}
+        .er-result-table th:nth-child(3) {{ width:120px !important; }}
+        .er-result-table th:nth-child(4) {{ width:520px !important; }}
         .er-result-table th:nth-child(5) {{ width:130px !important; }}
-        .er-result-table th:nth-child(6) {{ width:140px !important; }}
-        .er-result-table th:nth-child(7) {{ width:100px !important; }}
-        .er-result-table th:nth-child(8) {{ width:145px !important; }}
-        .er-result-table th:nth-child(9) {{ width:60px !important; }}
+        .er-result-table th:nth-child(6) {{ width:130px !important; }}
+        .er-result-table th:nth-child(7) {{ width:140px !important; }}
+        .er-result-table th:nth-child(8) {{ width:100px !important; }}
+        .er-result-table th:nth-child(9) {{ width:145px !important; }}
+        .er-result-table th:nth-child(10) {{ width:60px !important; }}
         .er-record-video-strip-compact {{ min-width:500px; }}
         .er-result-table tbody td {{ padding:8px 7px; font-size:12px; }}
-        .er-result-table tbody td:nth-child(5), .er-result-table tbody td:nth-child(7), .er-result-table tbody td:nth-child(8) {{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }}
+        .er-result-table tbody td:nth-child(6), .er-result-table tbody td:nth-child(8), .er-result-table tbody td:nth-child(9) {{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }}
         .er-record-video-compact.vid-thumb {{ width:auto; height:120px; }}
       }}
       @media (max-width:1000px) {{ .er-result-filter-bar {{ grid-template-columns:repeat(2,minmax(150px,1fr)); }} .er-result-filter-bar .filter-actions {{ grid-column:1/-1; }} }}
@@ -9534,6 +9743,8 @@ def eval_record_detail(record_id):
     record_id_html = html.escape(record.get("id", ""))
     recording_id_html = html.escape(record.get("recording_id", "--"))
     checkpoint_html = html.escape(record.get("checkpoint", "--"))
+    highlevel_case_id_html = html.escape(record.get("prompt_id", ""))
+    lowlevel_case_id_html = html.escape(record.get("lowlevel_id", ""))
     moztrace_html = _render_moztrace_detail(record)
     trajectory_html = _render_eval_trajectory_detail()
     prev_record = all_records[record_index - 1] if record_index > 0 else None
@@ -9547,7 +9758,10 @@ def eval_record_detail(record_id):
         <span class="er-detail-title">评测记录</span>
         <div class="er-detail-inline-meta" aria-label="记录基本信息">
           <span><em>数据 ID</em><b class="mono">{recording_id_html}</b></span>
+          <span><em>Highlevel 用例 ID</em><b>{highlevel_case_id_html}</b></span>
+          <span><em>Lowlevel 用例 ID</em><b>{lowlevel_case_id_html}</b></span>
           <span><em>checkpoint</em><b>{checkpoint_html}</b></span>
+          <span><em>轮次</em><b>T{record["round"]}</b></span>
         </div>
       </div>
       <section class="er-detail-prompt">
@@ -9735,11 +9949,11 @@ def eval_record_detail(record_id):
     </script>
     <style>
       .er-detail-page {{ min-width:0; min-height:calc(100vh - 108px); display:flex; flex-direction:column; padding-bottom:0; }}
-      .er-detail-head {{ display:flex; align-items:center; gap:12px; margin-bottom:10px; min-height:30px; }}
+      .er-detail-head {{ display:flex; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:10px; min-height:30px; }}
       .er-detail-back {{ color:#1F80A0; text-decoration:none; font-size:13px; }}
       .er-detail-back:hover {{ text-decoration:underline; }}
       .er-detail-title {{ font-size:18px; font-weight:600; color:rgba(0,0,0,.85); }}
-      .er-detail-inline-meta {{ display:flex; align-items:center; gap:18px; min-width:0; margin-left:8px; padding-left:14px; border-left:1px solid #e8ecee; }}
+      .er-detail-inline-meta {{ display:flex; align-items:center; flex-wrap:wrap; gap:6px 18px; min-width:0; margin-left:8px; padding-left:14px; border-left:1px solid #e8ecee; }}
       .er-detail-inline-meta span {{ display:inline-flex; align-items:baseline; gap:6px; min-width:0; }}
       .er-detail-inline-meta em {{ color:rgba(0,0,0,.42); font-size:11px; font-style:normal; }}
       .er-detail-inline-meta b {{ color:rgba(0,0,0,.78); font-size:12px; font-weight:500; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:260px; }}

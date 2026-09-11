@@ -27,6 +27,8 @@ import json
 import os
 import re
 import sys
+from decimal import Decimal
+from datetime import date, datetime, timedelta
 from urllib.parse import quote, urlencode
 from flask import Flask, render_template_string, request, redirect, jsonify
 
@@ -500,6 +502,8 @@ CHECKPOINTS = [
      "parent_checkpoint_id": None, "parent_type": None},
 ]
 
+CKPT_CACHE_OPERATIONS = []
+
 # ── 部署 · 模型转换 / 推理服务 ──
 
 CONVERT_JOBS = [
@@ -625,6 +629,7 @@ PLATFORMS = {
                 ("/model/config/images",     "镜像管理",      "&#9881;", ""),
             ]),
             ("管理", [
+                ("/model/resources",         "资源管理",     "&#9784;", "saas 专属"),
                 ("/model/queues",             "队列管理",     "&#9783;", ""),
             ]),
         ],
@@ -1014,6 +1019,13 @@ select option:disabled { color:rgba(0,0,0,0.32); }
 .ckpt-table-wrap { overflow-x:auto; overflow-y:hidden; }
 .ckpt-name-cell { display:block; max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:#149DAA; text-decoration:none; }
 .ckpt-name-cell:hover { color:#0F8190; }
+.ckpt-asset-tag { margin:0; }
+.ckpt-asset-form { display:inline; margin:0; }
+.ckpt-asset-trigger { gap:4px !important; white-space:nowrap; }
+.ckpt-asset-trigger svg { color:#999; }
+.ckpt-asset-trigger.is-filtered svg { color:#149DAA; }
+.ckpt-asset-menu[popover] { position:fixed; inset:auto; margin:0; }
+.ckpt-asset-menu:popover-open { display:block; }
 .ckpt-status-filter { position:relative; display:inline-flex; align-items:center; height:26px; }
 .ckpt-status-trigger { display:inline-flex; align-items:center; gap:6px; border:0; background:transparent; padding:0; color:rgba(0,0,0,0.85); font:inherit; font-weight:600; cursor:pointer; }
 .ckpt-status-trigger .caret { font-size:15px; line-height:1; transform:translateY(-1px); color:rgba(0,0,0,0.78); }
@@ -1089,9 +1101,42 @@ select option:disabled { color:rgba(0,0,0,0.32); }
 .modal-body { padding:20px 22px; }
 .modal-foot { padding:13px 22px; border-top:1px solid #f0f0f0; display:flex; justify-content:flex-end; gap:8px; }
 .cache-state { display:flex; gap:12px; align-items:flex-start; }
+#cacheModalBox { width:640px; max-height:calc(100vh - 40px); display:flex; flex-direction:column; }
+#cacheModalBox .modal-head { padding:22px 28px; flex:none; }
+#cacheModalBox .modal-head h3 { font-size:20px; font-weight:600; }
+#cacheModalBox .modal-body { padding:26px 28px; overflow-y:auto; }
+#cacheModalBox .modal-foot { padding:18px 28px; flex:none; gap:14px; }
+#cacheModalBox .fg { margin-bottom:18px; }
+#cacheModalBox .fg>label { margin-bottom:10px; font-size:14px; }
+.cache-intro { margin:0 0 24px; color:#606266; font-size:15px; line-height:1.7; }
+.cache-name-input { position:relative; }
+#cacheName { width:100%; padding-right:76px; height:38px; }
+.cache-name-count { position:absolute; right:12px; top:50%; transform:translateY(-50%); color:#909399; font-size:13px; pointer-events:none; }
+#cacheDesc { min-height:88px; }
+#cacheModalBox [aria-invalid="true"] { border-color:#ff4d4f; }
+.cache-field-error { margin-top:4px; color:#ff4d4f; font-size:13px; }
+#cacheModalBox .cache-notify-row { padding-top:0; border-top:0; align-items:center; }
 .cache-hourglass { width:32px; height:32px; border-radius:50%; background:#DEF6F9; color:#149DAA; display:inline-flex; align-items:center; justify-content:center; font-size:18px; line-height:1; flex:none; }
 .cache-state h4 { margin:1px 0 6px; font-size:15px; color:rgba(0,0,0,0.86); font-weight:500; }
 .cache-state p { margin:0; font-size:13px; color:rgba(0,0,0,0.55); line-height:1.7; }
+.cache-submit-error { margin:12px 0 0; padding:10px 12px; border:1px solid #ffccc7; border-radius:6px; background:#fff2f0; color:#cf1322; font-size:13px; }
+#cacheSubmitButton:disabled { opacity:.65; cursor:wait; }
+.cache-notify-row { display:flex; align-items:flex-start; justify-content:space-between; gap:20px; padding:14px 0 2px; border-top:1px solid #f0f0f0; }
+.cache-notify-copy label { display:block; margin-bottom:4px; color:rgba(0,0,0,.72); font-size:13px; }
+.cache-notify-copy p { max-width:360px; margin:0; color:rgba(0,0,0,.45); font-size:12px; line-height:1.6; }
+.cache-demo-panel { margin-top:18px; padding-top:14px; border-top:1px solid #f0f0f0; }
+.cache-demo-panel>span { display:block; margin-bottom:8px; color:rgba(0,0,0,.55); font-size:12px; }
+.cache-demo-actions { display:flex; flex-wrap:wrap; gap:8px; }
+.cache-notification-preview { margin-top:14px; }
+.cache-notification-card { border:1px solid #dfe6e9; border-radius:8px; background:#fff; overflow:hidden; }
+.cache-notification-head { padding:12px 14px; border-bottom:1px solid #edf0f2; color:#149DAA; background:#f3fbfc; font-size:14px; font-weight:600; }
+.cache-notification-card.failed .cache-notification-head { color:#cf3f3f; background:#fff5f5; }
+.cache-notification-body { display:grid; grid-template-columns:104px minmax(0,1fr); gap:8px 12px; padding:14px; font-size:12px; }
+.cache-notification-body span { color:rgba(0,0,0,.45); }
+.cache-notification-body b { overflow:hidden; color:rgba(0,0,0,.78); font-weight:500; text-overflow:ellipsis; white-space:nowrap; }
+.cache-notification-foot { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:10px 14px; border-top:1px solid #edf0f2; background:#fafafa; }
+.cache-notification-foot small { color:rgba(0,0,0,.38); }
+.cache-notify-off { padding:12px 14px; border-radius:8px; color:rgba(0,0,0,.55); background:#fafafa; font-size:12px; }
 
 /* ── Lineage (asset page) ── */
 .lin-pick { display:flex; gap:10px; align-items:center; margin-bottom:18px; }
@@ -1386,6 +1431,9 @@ body.lineage-canvas-page .lineage-viewport { height:100%; min-height:0; }
 .train-notify-title { width:max-content; text-align:center; }
 .train-notify-title label { display:block; }
 .train-notify-toggle { margin-top:14px; }
+.train-queue-label { display:flex; align-items:center; justify-content:space-between; gap:12px; font-size:13px; color:rgba(0,0,0,0.65); }
+.train-queue-label a { color:#149DAA; font-size:12px; font-weight:400; text-decoration:none; white-space:nowrap; }
+.train-queue-label a:hover { color:#0F8190; }
 .train-recommended-picker { position:relative; width:100%; }
 .train-recommended-image { display:none; }
 .train-recommended-trigger { width:100%; min-height:54px; padding:7px 34px 7px 11px; border:1px solid #d9d9d9; border-radius:6px; background:#fff; color:rgba(0,0,0,0.88); cursor:pointer; text-align:left; position:relative; }
@@ -1447,6 +1495,8 @@ body.lineage-canvas-page .lineage-viewport { height:100%; min-height:0; }
 /* ── Drawer form: row 2-col ── */
 .fg-row { display:flex; gap:14px; }
 .fg-row > .fg { flex:1; }
+.train-runtime-priority-row > .fg { min-width:0; }
+#trainInstanceSpec { width:100%; min-width:0; box-sizing:border-box; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .fg-hint { font-size:11px; color:rgba(0,0,0,0.4); margin-top:2px; }
 .fg-req::before { content:'*'; color:#cf1322; margin-right:4px; }
 .image-path-hint { margin-top:8px; padding:9px 11px; border:1px solid #f0f0f0; border-radius:6px; background:#fafbfc; color:rgba(0,0,0,0.45); font-size:12px; line-height:1.5; }
@@ -2870,23 +2920,104 @@ document.addEventListener('change', function(e){
 }, true);
 function openDrawer(id){ document.getElementById('drawerMask').classList.add('active'); var d=document.getElementById(id); if(d) d.classList.add('active'); }
 function closeDrawer(){ document.getElementById('drawerMask').classList.remove('active'); document.querySelectorAll('.drawer.active').forEach(function(d){d.classList.remove('active');}); }
+var currentCacheStep='';
+var currentCacheLocation='';
+var currentCacheOperationId='';
+var cacheSubmitting=false;
 function openCacheModal(step, location){
+  if(cacheSubmitting) return;
   var m=document.getElementById('cacheModalMask'); if(!m) return;
+  currentCacheStep=String(step || ''); currentCacheLocation=location || '';
+  currentCacheOperationId='';
   var head=document.getElementById('cacheModalHead'); if(head) head.style.display='flex';
   var stepEl=document.getElementById('cacheStepText'); if(stepEl) stepEl.textContent=step;
   var locEl=document.getElementById('cacheLocText'); if(locEl) locEl.textContent=location || '-';
   var desc=document.getElementById('cacheDesc'); if(desc) desc.value='';
+  var name=document.getElementById('cacheName');
+  if(name){ name.value=((window.CKPT_CACHE_CONTEXT || {}).experimentName || 'checkpoint').slice(0,99-currentCacheStep.length)+'_'+currentCacheStep; }
+  ['cacheName','cacheDesc'].forEach(function(id){
+    var field=document.getElementById(id); if(field) field.removeAttribute('aria-invalid');
+    var hint=document.getElementById(id+'Error'); if(hint) hint.hidden=true;
+  });
+  updateCacheNameCount();
+  var notify=document.getElementById('cacheFeishuNotify'); if(notify) notify.checked=true;
+  var preview=document.getElementById('cacheNotificationPreview'); if(preview) preview.innerHTML='';
+  var demo=document.getElementById('cacheDemoPanel'); if(demo) demo.style.display='none';
+  var error=document.getElementById('cacheSubmitError'); if(error){ error.textContent=''; error.hidden=true; }
+  var state=document.querySelector('#cacheModalDoing .cache-state h4'); if(state) state.textContent='缓存任务已提交';
+  var copy=document.querySelector('#cacheModalDoing .cache-state p'); if(copy) copy.textContent='缓存任务已提交，可在缓存记录中查看进度。';
   var form=document.getElementById('cacheModalForm'); if(form) form.style.display='block';
   var doing=document.getElementById('cacheModalDoing'); if(doing) doing.style.display='none';
   var footForm=document.getElementById('cacheModalFootForm'); if(footForm) footForm.style.display='flex';
   var footDoing=document.getElementById('cacheModalFootDoing'); if(footDoing) footDoing.style.display='none';
   m.classList.add('active');
 }
+function updateCacheNameCount(){
+  var name=document.getElementById('cacheName'), count=document.getElementById('cacheNameCount');
+  if(name && count) count.textContent=name.value.length+' / 100';
+}
 function confirmCacheModal(){
-  var form=document.getElementById('cacheModalForm'); if(form) form.style.display='none';
-  var doing=document.getElementById('cacheModalDoing'); if(doing) doing.style.display='block';
-  var footForm=document.getElementById('cacheModalFootForm'); if(footForm) footForm.style.display='none';
-  var footDoing=document.getElementById('cacheModalFootDoing'); if(footDoing) footDoing.style.display='flex';
+  if(cacheSubmitting || currentCacheOperationId) return;
+  var invalid=false;
+  ['cacheName','cacheDesc'].forEach(function(id){
+    var field=document.getElementById(id), hint=document.getElementById(id+'Error');
+    var empty=!field.value.trim();
+    field.setAttribute('aria-invalid',String(empty)); hint.hidden=!empty;
+    if(empty && !invalid) field.focus();
+    invalid=invalid || empty;
+  });
+  if(invalid) return;
+  cacheSubmitting=true;
+  var button=document.getElementById('cacheSubmitButton');
+  if(button){ button.disabled=true; button.textContent='提交中…'; }
+  var errorBox=document.getElementById('cacheSubmitError');
+  if(errorBox){ errorBox.textContent=''; errorBox.hidden=true; }
+  var context=window.CKPT_CACHE_CONTEXT || {};
+  fetch('/model/experiments/'+encodeURIComponent(context.experimentId || '')+'/cache-checkpoints', {
+    method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({
+      step:currentCacheStep, location:currentCacheLocation,
+      name:document.getElementById('cacheName').value.trim(),
+      description:(document.getElementById('cacheDesc') || {value:''}).value.trim(),
+      notify:!!(document.getElementById('cacheFeishuNotify') || {checked:false}).checked,
+      operator:context.operator || 'joanna.qiao'
+    })
+  }).then(function(response){ return response.json().catch(function(){ throw new Error('提交缓存失败，服务响应异常，请稍后重试。'); }).then(function(data){ return {ok:response.ok,data:data}; }); }).then(function(result){
+    if(!result.ok) throw new Error(result.data.error || '提交缓存失败');
+    currentCacheOperationId=result.data.operation_id;
+    updateCacheRow(result.data);
+    var form=document.getElementById('cacheModalForm'); if(form) form.style.display='none';
+    var doing=document.getElementById('cacheModalDoing'); if(doing) doing.style.display='block';
+    var demo=document.getElementById('cacheDemoPanel'); if(demo) demo.style.display='block';
+    var footForm=document.getElementById('cacheModalFootForm'); if(footForm) footForm.style.display='none';
+    var footDoing=document.getElementById('cacheModalFootDoing'); if(footDoing) footDoing.style.display='flex';
+    var link=document.getElementById('cacheRecordLink'); if(link) link.href=result.data.record_url;
+  }).catch(function(error){
+    if(errorBox){ errorBox.textContent=error instanceof TypeError ? '提交缓存失败，网络连接异常，请检查网络后重试。' : (error.message || '提交缓存失败，请稍后重试。'); errorBox.hidden=false; }
+  }).finally(function(){
+    cacheSubmitting=false;
+    if(button){ button.disabled=false; button.textContent='确认缓存'; }
+  });
+}
+function previewCacheResult(result){
+  if(!currentCacheOperationId){ toast('请先提交缓存操作'); return; }
+  fetch('/model/checkpoints/cache-operations/'+encodeURIComponent(currentCacheOperationId)+'/result', {
+    method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({result:result})
+  }).then(function(response){ return response.json().then(function(data){ return {ok:response.ok,data:data}; }); }).then(function(response){
+    if(!response.ok) throw new Error(response.data.error || '结果预览失败');
+    var data=response.data;
+    updateCacheRow(data);
+    var preview=document.getElementById('cacheNotificationPreview'); if(preview) preview.innerHTML=data.card_html;
+    var state=document.querySelector('#cacheModalDoing .cache-state h4'); if(state) state.textContent=data.result_label;
+    var copy=document.querySelector('#cacheModalDoing .cache-state p'); if(copy) copy.textContent='缓存记录已更新，可查看本次操作结果';
+    var link=document.getElementById('cacheRecordLink'); if(link) link.href=data.record_url;
+    toast(data.duplicate ? '同一结果已生成过通知，本次不重复' : data.message);
+  }).catch(function(error){ toast(error.message || '结果预览失败'); });
+}
+function updateCacheRow(data){
+  var row=document.getElementById('taskCkpt'+data.step); if(!row) return;
+  row.querySelector('.task-ckpt-state').innerHTML=data.status_html;
+  var action=row.querySelector('.actions-cell a');
+  action.textContent='查看'; action.href=data.record_url; action.removeAttribute('onclick');
 }
 function closeCacheModal(){ var m=document.getElementById('cacheModalMask'); if(m) m.classList.remove('active'); }
 function toggleModSwitch(){ var p=document.getElementById('modSwitch'); var smh=document.querySelector('.smh-wrap .smh'); if(p&&smh){ var open=p.classList.toggle('open'); smh.classList.toggle('open', open); } }
@@ -3051,8 +3182,14 @@ document.addEventListener('click', function(event){
   var imagePicker = document.getElementById('trainRecommendedPicker');
   if (imagePicker && imagePicker.classList.contains('open') && !imagePicker.contains(event.target)) closeTrainRecommendedImage();
 });
+function updateTrainQueueBalance(){
+  var queue = document.getElementById('trainQueueSelect');
+  var hint = document.getElementById('trainQueueBalanceHint');
+  if (queue && hint) hint.hidden = queue.value !== 'gpu-shared';
+}
 function openTrainDrawer(){
   openDrawer('drawerNewTrain');
+  updateTrainQueueBalance();
   updateRecommendedImageVersions();
   updateTrainImagePath();
   var instanceCount = document.getElementById('trainInstanceCount');
@@ -3088,6 +3225,11 @@ function validateTrainForm(){
     name.setCustomValidity('请输入任务名称'); name.reportValidity(); return false;
   }
   if (name) name.setCustomValidity('');
+  var queue = document.getElementById('trainQueueSelect');
+  if (!queue || queue.disabled || !queue.value){
+    toast('暂无训练队列使用权限，请联系队列管理员申请。');
+    return false;
+  }
   if (TRAIN_CONFIG_MODE === 'custom' && !validateCustomYaml()) return false;
   var input = document.getElementById('trainInstanceCount');
   if (input) validateTrainInstanceCount(input);
@@ -7915,31 +8057,382 @@ def model_home():
     return redirect("/model/data/query")
 
 
+# 模型平台 · 资源管理
+MODEL_RESOURCE_RECHARGES = [("2026-08-01", "3500"), ("2026-08-21", "1000"), ("2026-09-09", "500")]
+MODEL_RESOURCE_USAGE = [
+    ("2026-08-05", ("100", "40", "20")),
+    ("2026-08-21", ("150", "50", "20")),
+    ("2026-09-05", ("100", "40", "20")),
+    ("2026-09-10", ("25", "12.5", "8")),
+]
+MODEL_RESOURCE_RATES = [("Tesla-A100-80G", Decimal("5.00")), ("Tesla-A800-80G", Decimal("6.00")), ("H800-80G", Decimal("10.00"))]
+MODEL_RESOURCE_QUEUE_FIELDS = ("名称", "状态", "GPU", "vCPU", "云盘", "MEM", "极速型SSD flexPL", "极速型SSD PL0")
+MODEL_SHARED_QUEUE = ("gpu-shared", "运行中", "8 Tesla-A100-80G", "112 vCPU", "-", "1960 GiB", "-", "-")
+MODEL_EXCLUSIVE_QUEUES = [
+    ("gpu-quanta", "运行中", "8 Tesla-A100-80G", "112 vCPU", "-", "1960 GiB", "-", "-"),
+    ("pi05-train-a100", "运行中", "4 Tesla-A100-80G", "56 vCPU", "500 GiB", "960 GiB", "8 TiB", "-"),
+    ("eval-shared-l40s", "空闲", "4 L40S-48G", "48 vCPU", "200 GiB", "512 GiB", "-", "2 TiB"),
+]
+
+
+def _model_resource_balance(end):
+    return sum((Decimal(amount) for day, amount in MODEL_RESOURCE_RECHARGES if date.fromisoformat(day) <= end), Decimal("0")) - sum(
+        (sum(Decimal(hours[index]) * rate for index, (_, rate) in enumerate(MODEL_RESOURCE_RATES))
+         for day, hours in MODEL_RESOURCE_USAGE if date.fromisoformat(day) <= end), Decimal("0")
+    )
+
+
+@app.route("/model/resources")
+def model_resources():
+    today = date.today()
+    period = request.args.get("period", "all")
+    if period not in {"all", "today", "7", "30", "custom"}:
+        period = "all"
+    start, end = None, today
+    filter_error = ""
+    if period == "custom":
+        try:
+            start = date.fromisoformat(request.args.get("start", ""))
+            end = date.fromisoformat(request.args.get("end", ""))
+            if start > end or end > today:
+                raise ValueError
+        except ValueError:
+            filter_error = "请选择有效的时间范围，开始日期不能晚于结束日期，结束日期不能晚于今日。"
+            period, start, end = "all", None, today
+    elif period != "all":
+        start = today - timedelta(days=(1 if period == "today" else int(period)) - 1)
+
+    # Demo ledger: range totals use both bounds; balance includes prior transactions.
+    recharges = MODEL_RESOURCE_RECHARGES
+    usage = MODEL_RESOURCE_USAGE
+    rates = MODEL_RESOURCE_RATES
+    def in_range(day):
+        return (start is None or start <= date.fromisoformat(day)) and date.fromisoformat(day) <= end
+
+    gpu_rows = [
+        (name, rate, sum((Decimal(hours[index]) for day, hours in usage if in_range(day)), Decimal("0")))
+        for index, (name, rate) in enumerate(rates)
+    ]
+    total_recharge = sum((Decimal(amount) for day, amount in recharges if in_range(day)), Decimal("0"))
+    consumed_hours = sum(hours for _, _, hours in gpu_rows)
+    account_balance = _model_resource_balance(end)
+    selected_gpu = request.args.get("gpu", rates[0][0])
+    if selected_gpu not in dict(rates):
+        selected_gpu = rates[0][0]
+    remaining_hours = (max(account_balance, Decimal("0")) / dict(rates)[selected_gpu]).quantize(Decimal("0.1"), rounding="ROUND_DOWN")
+    gpu_labels = {"Tesla-A100-80G": "A100", "Tesla-A800-80G": "A800", "H800-80G": "H800"}
+    gpu_options = "".join(f'<option value="{name}"{" selected" if name == selected_gpu else ""}>{gpu_labels[name]}</option>' for name, _ in rates)
+    period_options = "".join(
+        f'<label><input type="radio" name="period" value="{value}"{" checked" if period == value else ""} onchange="modelResourcePeriodChange(this)"><span>{label}</span></label>'
+        for value, label in [("all", "全部"), ("today", "今日"), ("7", "7天"), ("30", "30天"), ("custom", "自定义")]
+    )
+    queue_rows = MODEL_EXCLUSIVE_QUEUES
+    shared_queue_details = "".join(
+        f'<dt>{html.escape(field)}</dt><dd>{html.escape(value)}</dd>'
+        for field, value in zip(MODEL_RESOURCE_QUEUE_FIELDS, MODEL_SHARED_QUEUE)
+    )
+    gpu_table = "".join(
+        f"""<tr>
+          <td><b>{html.escape(name)}</b></td>
+          <td class=\"mono\">{rate:,.2f}</td>
+          <td class=\"mono\">{hours:,.1f}</td><td class=\"mono\">{rate * hours:,.2f}</td>
+        </tr>"""
+        for name, rate, hours in gpu_rows
+    )
+    queue_table = "".join(
+        f"""<tr>
+          <td><b>{html.escape(name)}</b></td>
+          <td><span class=\"rm-resource-status {'idle' if status == '空闲' else 'running'}\"><i></i>{status}</span></td>
+          <td>{html.escape(gpu)}</td><td>{html.escape(vcpu)}</td><td>{html.escape(disk)}</td>
+          <td>{html.escape(mem)}</td><td>{html.escape(flex)}</td><td>{html.escape(pl0)}</td>
+        </tr>"""
+        for name, status, gpu, vcpu, disk, mem, flex, pl0 in queue_rows
+    )
+    content = f"""
+    <style>
+      .model-resource-page{{width:100%;max-width:none;box-sizing:border-box}}
+      .model-resource-tabs{{display:flex;align-items:center;gap:4px;margin:0;border-bottom:1px solid #edf0f2}}
+      .model-resource-tab{{padding:11px 18px 12px;border:0;border-bottom:2px solid transparent;background:transparent;color:#718087;font-size:13px;cursor:pointer}}
+      .model-resource-tab.active{{border-bottom-color:#149DAA;color:#0f7b84;font-weight:650}}
+      .model-resource-panel{{display:none}}.model-resource-panel.active{{display:block}}
+      .model-resource-description{{margin:14px 0 18px;padding:11px 14px;border:1px solid #cde8ea;border-radius:7px;background:#f3fbfb;color:#41656b;font-size:12px;line-height:1.6}}
+      .model-resource-description b{{margin-left:10px;color:#275a62;font-weight:600}}
+      .model-resource-description ul{{margin:0;padding-left:18px}}
+      .model-resource-description li+li{{margin-top:4px}}
+      .model-resource-description li b{{margin-left:0}}
+      .model-shared-queue-trigger{{border:0;border-bottom:1px dashed #149daa;padding:0 2px;background:transparent;color:#0f7b84;font:inherit;cursor:pointer}}
+      .model-shared-queue-trigger:focus-visible{{outline:2px solid #149daa;outline-offset:3px}}
+      .model-shared-queue-popover{{position:fixed;inset:auto;margin:0;box-sizing:border-box;width:350px;max-width:calc(100vw - 24px);max-height:calc(100dvh - 24px);overflow:auto;padding:16px;border:1px solid #dce4e6;border-radius:8px;background:#fff;color:#41545b;box-shadow:0 6px 24px rgba(0,0,0,.12)}}
+      .model-shared-queue-popover h3{{margin:0 0 12px;font-size:14px}}
+      .model-shared-queue-popover dl{{display:grid;grid-template-columns:minmax(110px,1fr) minmax(0,1.4fr);gap:10px 16px;margin:0;font-size:12px;line-height:1.5}}
+      .model-shared-queue-popover dt{{color:#74848a}}.model-shared-queue-popover dd{{margin:0;overflow-wrap:anywhere}}
+      .model-resource-overview{{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-bottom:18px}}
+      .model-resource-stat{{padding:16px 18px;border:1px solid #e6ebed;border-radius:8px;background:#fff}}
+      .model-resource-stat span{{display:block;color:#74848a;font-size:12px}}.model-resource-stat b{{display:block;margin-top:8px;color:#273f47;font-size:24px;font-family:SFMono-Regular,Consolas,monospace}}
+      .model-resource-stat small{{display:block;margin-top:6px;color:#9aa5a9;font-size:11px}}
+      .model-resource-section{{padding:18px;border:1px solid #e6ebed;border-radius:8px;background:#fff}}
+      [data-resource-panel="usage"] .model-resource-section{{padding:0;border:0;border-radius:0;background:transparent}}
+      [data-resource-panel="usage"] .table-wrap{{overflow-x:auto}}
+      .model-resource-time-filter{{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:0 0 18px;color:#65777d;font-size:12px}}
+      .model-resource-periods{{display:flex;flex-wrap:wrap;gap:4px}}
+      .model-resource-periods label{{position:relative;cursor:pointer}}
+      .model-resource-periods input{{position:absolute;opacity:0;width:1px;height:1px}}
+      .model-resource-periods span{{display:block;padding:7px 12px;border:1px solid #dce4e6;border-radius:4px;background:#fff}}
+      .model-resource-periods input:checked+span{{background:#eaf7f8;border-color:#149daa;color:#0f7b84}}
+      .model-resource-periods input:focus-visible+span{{outline:2px solid #149daa;outline-offset:2px}}
+      .model-resource-custom{{display:flex;gap:8px;align-items:center;flex-wrap:wrap}}
+      .model-resource-custom[hidden]{{display:none}}
+      .model-resource-custom label{{display:flex;align-items:center;gap:6px}}
+      .model-resource-custom input{{height:32px;max-width:100%;box-sizing:border-box;border:1px solid #dce4e6;border-radius:4px;background:#fff;color:#52676e;padding:0 8px;font-size:12px}}
+      .model-resource-stat[data-gpu-estimate]{{position:relative}}
+      .model-resource-stat[data-gpu-estimate]>span{{padding-right:80px}}
+      .model-resource-gpu-select{{position:absolute;top:13px;right:14px;width:76px;height:24px;box-sizing:border-box;padding:0 3px;border:0;border-radius:4px;background:transparent;color:#0f7b84;font-size:11px;cursor:pointer}}
+      .model-resource-gpu-select:hover{{background:#eaf7f8}}
+      .model-resource-gpu-select:focus-visible{{outline:2px solid #149daa;outline-offset:2px}}
+      .model-resource-filter-error{{color:#c43b35;font-size:12px}}
+      .model-resource-section-head{{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-bottom:14px}}
+      .model-resource-section-head h2{{margin:0;color:#2c444b;font-size:16px}}.model-resource-section-head p{{margin:4px 0 0;color:#89979b;font-size:11px}}
+      .model-resource-toolbar{{display:flex;align-items:flex-end;gap:10px;flex-wrap:wrap;margin:0}}
+      .model-resource-toolbar label{{display:flex;flex-direction:column;gap:6px;color:#65777d;font-size:11px}}
+      .model-resource-toolbar input{{width:235px;height:34px;box-sizing:border-box;padding:0 10px;border:1px solid #dce4e6;border-radius:6px;background:#fff;outline:none}}
+      .model-resource-table{{width:100%;min-width:760px}}
+      .model-resource-table th{{background:#f4f6f9;color:#41545b;font-weight:600}}
+      .model-resource-table td,.model-resource-table th{{padding:12px 14px;white-space:nowrap}}
+      .rm-resource-tag{{display:inline-flex;padding:3px 8px;border-radius:4px;background:#eaf7f8;color:#13808a;font-size:11px}}
+      .rm-resource-status{{display:inline-flex;align-items:center;gap:6px;color:#4f6268;font-size:12px}}.rm-resource-status i{{width:7px;height:7px;border-radius:50%;background:#52c41a}}.rm-resource-status.idle i{{background:#b7c0c3}}.rm-resource-status.idle{{color:#89969a}}
+      .model-resource-buy{{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:14px;padding:13px 15px;border:1px solid #cde8ea;border-radius:7px;background:#f3fbfb;color:#41656b;font-size:12px}}
+      .model-resource-buy b{{display:block;margin-bottom:4px;color:#275a62;font-size:13px}}.model-resource-buy span{{color:#6d858a}}
+      .model-resource-section-head>div:last-child{{display:flex;gap:8px;flex-wrap:wrap}}
+      .model-recharge-modal{{width:440px;max-width:calc(100vw - 32px);max-height:calc(100dvh - 32px);box-sizing:border-box;margin:auto;padding:0;border:0;border-radius:8px;background:#fff;color:#273f47;box-shadow:0 16px 48px rgba(0,0,0,.18);overflow:auto}}
+      .model-recharge-modal::backdrop{{background:rgba(0,0,0,.45)}}
+      .model-recharge-modal [hidden]{{display:none}}
+      .model-recharge-close{{display:flex;align-items:center;justify-content:center;width:32px;height:32px;padding:0;border:0;border-radius:4px;background:transparent;font-size:24px;cursor:pointer;color:#74848a}}
+      .model-recharge-close:hover{{background:#f4f6f9}}
+      .model-recharge-label{{display:block;margin-bottom:8px;font-size:13px}}
+      .model-recharge-amount{{display:flex;align-items:center;gap:10px;color:#52676e;font-size:13px}}
+      .model-recharge-amount input{{flex:1;min-width:0;height:38px;box-sizing:border-box;padding:0 10px;border:1px solid #d9e0e2;border-radius:4px;font:inherit}}
+      .model-recharge-amount span{{flex:none}}
+      .model-recharge-amount input:focus{{outline:2px solid #149daa;outline-offset:1px}}
+      .model-recharge-amount input[aria-invalid="true"]{{border-color:#c43b35}}
+      .model-recharge-error{{min-height:20px;margin:6px 0 0;color:#c43b35;font-size:12px}}
+      .model-recharge-payment{{text-align:center}}
+      .model-recharge-payment p{{margin:0;color:#65777d;font-size:13px}}
+      .model-recharge-payment strong{{display:block;margin-top:8px;font-size:24px;overflow-wrap:anywhere}}
+      .model-recharge-payment strong span{{font-size:13px;font-weight:400}}
+      .model-recharge-qr{{display:block;width:200px;height:200px;max-width:100%;object-fit:contain;margin:16px auto;image-rendering:pixelated}}
+      @media(max-width:640px){{.model-resource-overview{{grid-template-columns:1fr}}.model-resource-toolbar{{width:100%}}.model-resource-toolbar label{{flex:1;min-width:180px}}.model-resource-toolbar input{{width:100%;max-width:none}}}}
+    </style>
+    <div class=\"model-resource-page\">
+      <div class="model-list-title"><h1>资源管理</h1></div>
+      <div class=\"model-resource-tabs\" role=\"tablist\">
+        <button type=\"button\" class=\"model-resource-tab active\" data-resource-tab=\"usage\" onclick=\"modelResourceSwitch(this,'usage')\">计量付费</button>
+        <button type=\"button\" class=\"model-resource-tab\" data-resource-tab=\"exclusive\" onclick=\"modelResourceSwitch(this,'exclusive')\">独占资源</button>
+      </div>
+      <section class=\"model-resource-panel active\" data-resource-panel=\"usage\">
+        <div class=\"model-resource-description\"><ul>
+          <li>计量付费适合按需使用 GPU 的训练场景，按实际占用的 GPU 卡时计费；提交训练任务时请选择 <button id="modelSharedQueueTrigger" class="model-shared-queue-trigger" type="button" aria-expanded="false" aria-controls="modelSharedQueuePopover" onmouseenter="modelSharedQueueShow()" onmouseleave="modelSharedQueueScheduleHide()" onfocus="modelSharedQueueShow()" onblur="modelSharedQueueScheduleHide()" onclick="modelSharedQueueShow()"><code>gpu-shared</code></button> 队列。</li>
+          <li>采用预付费模式，余额不足时训练任务将自动停止；充值请联系销售人员。</li>
+        </ul></div>
+        <div id="modelSharedQueuePopover" class="model-shared-queue-popover" popover="auto" aria-labelledby="modelSharedQueueTitle" onmouseenter="clearTimeout(modelSharedQueueHideTimer)" onmouseleave="modelSharedQueueScheduleHide()"><h3 id="modelSharedQueueTitle">队列基本信息</h3><dl>{shared_queue_details}</dl></div>
+        <div class=\"model-resource-overview\">
+          <div class=\"model-resource-stat\" title="截至筛选结束日期的账户余额，包含区间前的结余"><span>余额（元）</span><b>{account_balance:,.2f}</b><small>可用金额</small></div>
+          <div class=\"model-resource-stat\"><span>累计充值（元）</span><b>{total_recharge:,.2f}</b><small>已到账金额</small></div>
+          <div class=\"model-resource-stat\" data-gpu-estimate><span>剩余卡时（卡时）</span><b>{remaining_hours:,.1f}</b><small>按 {gpu_labels[selected_gpu]} 单价估算</small><select class="model-resource-gpu-select" name="gpu" form="modelResourceTimeFilter" aria-label="剩余卡时折算 GPU 型号" title="切换折算型号：{selected_gpu}" onchange="this.form.requestSubmit()">{gpu_options}</select></div>
+          <div class=\"model-resource-stat\"><span>已消耗卡时（卡时）</span><b>{consumed_hours:,.1f}</b><small>各 GPU 型号用量合计</small></div>
+        </div>
+        <section class=\"model-resource-section\"><div class=\"model-resource-section-head\"><div><h2>训练用量与费用</h2><p>按 GPU 型号汇总</p></div></div>
+          <form id="modelResourceTimeFilter" class="model-resource-time-filter" method="get">
+            <span>时间范围</span><div class="model-resource-periods" role="group" aria-label="时间范围">{period_options}</div>
+            <div id="modelResourceCustomRange" class="model-resource-custom"{' hidden' if period != 'custom' else ''}>
+              <label>开始日期<input type="date" name="start" aria-label="开始日期" max="{today.isoformat()}" value="{(start or today - timedelta(days=6)).isoformat()}" required{' disabled' if period != 'custom' else ''}></label>
+              <label>结束日期<input type="date" name="end" aria-label="结束日期" max="{today.isoformat()}" value="{end.isoformat()}" required{' disabled' if period != 'custom' else ''}></label>
+              <button class="btn btn-primary" type="submit">查询</button>
+            </div>
+          </form>
+          {f'<p class="model-resource-filter-error" role="alert">{filter_error}</p>' if filter_error else ''}
+          <div class=\"table-wrap\"><table class=\"ant-table model-resource-table\"><thead><tr><th>GPU 型号</th><th>参考价格（元/卡时）<small style="display:block;margin-top:4px;color:#65777d;font-size:11px;font-weight:400">当前生效的单价，后续可能调整</small></th><th>训练用量（卡时）</th><th>训练费用（元）<small style="display:block;margin-top:4px;color:#65777d;font-size:11px;font-weight:400">按资源使用时生效的单价计费，不按当前价格计算</small></th></tr></thead><tbody>{gpu_table}</tbody></table></div>
+        </section>
+      </section>
+      <section class=\"model-resource-panel\" data-resource-panel=\"exclusive\">
+        <p class=\"model-resource-description\">独占资源支持直接购买专属队列，购买后队列及其中的计算资源仅供当前账号使用。购买队列资源，请联系销售人员。</p>
+        <section class=\"model-resource-section\"><div class=\"model-resource-section-head\"><div><h2>队列资源</h2></div></div>
+          <div class=\"table-wrap\"><table class=\"ant-table model-resource-table\" id=\"modelResourceQueueTable\"><thead><tr>{''.join(f'<th>{html.escape(field)}</th>' for field in MODEL_RESOURCE_QUEUE_FIELDS)}</tr></thead><tbody>{queue_table}</tbody></table></div>
+        </section>
+      </section>
+    </div>
+    <dialog id="modelRechargeDialog" class="model-recharge-modal" aria-labelledby="modelRechargeTitle" onclick="if(event.target===this){{var r=this.getBoundingClientRect();if(event.clientX<r.left||event.clientX>r.right||event.clientY<r.top||event.clientY>r.bottom)this.close();}}">
+      <div class="modal-head"><h3 id="modelRechargeTitle">在线充值</h3><button class="model-recharge-close" type="button" aria-label="关闭充值弹窗" title="关闭" onclick="document.getElementById('modelRechargeDialog').close()">&times;</button></div>
+      <form id="modelRechargeForm" novalidate onsubmit="modelRechargeSubmit(event)">
+        <div class="modal-body">
+          <label class="model-recharge-label" for="modelRechargeAmount">充值金额（元）</label>
+          <div class="model-recharge-amount"><input id="modelRechargeAmount" name="amount" type="text" inputmode="numeric" pattern="[0-9]+" maxlength="16" required autocomplete="off" placeholder="请输入正整数金额" aria-describedby="modelRechargeError" oninput="modelRechargeClearError()"></div>
+          <p class="model-recharge-error" id="modelRechargeError" role="alert"></p>
+        </div>
+        <div class="modal-foot"><button class="btn" type="button" onclick="document.getElementById('modelRechargeDialog').close()">取消</button><button class="btn btn-primary" type="submit">下一步</button></div>
+      </form>
+      <div id="modelRechargePayment" hidden>
+        <div class="modal-body model-recharge-payment">
+          <p>充值金额</p><strong>¥<b id="modelRechargeTotal"></b></strong>
+          <img class="model-recharge-qr" src="/static/model-recharge-demo.png" width="200" height="200" alt="演示支付二维码">
+          <p>演示二维码，不支持真实付款</p>
+        </div>
+        <div class="modal-foot"><button id="modelRechargeBack" class="btn" type="button" onclick="modelRechargeEdit()">修改金额</button><button class="btn btn-primary" type="button" onclick="document.getElementById('modelRechargeDialog').close()">关闭</button></div>
+      </div>
+    </dialog>
+    <script>
+      var modelSharedQueueHideTimer;
+      function modelSharedQueueShow(){{
+        clearTimeout(modelSharedQueueHideTimer);
+        var trigger = document.getElementById('modelSharedQueueTrigger');
+        var panel = document.getElementById('modelSharedQueuePopover');
+        if (!panel.matches(':popover-open')) panel.showPopover();
+        var rect = trigger.getBoundingClientRect();
+        panel.style.left = Math.max(12, Math.min(rect.left, window.innerWidth - panel.offsetWidth - 12)) + 'px';
+        var top = rect.bottom + 8;
+        if (top + panel.offsetHeight > window.innerHeight - 12) top = rect.top - panel.offsetHeight - 8;
+        panel.style.top = Math.max(12, top) + 'px';
+        trigger.setAttribute('aria-expanded', 'true');
+      }}
+      function modelSharedQueueScheduleHide(){{
+        clearTimeout(modelSharedQueueHideTimer);
+        modelSharedQueueHideTimer = setTimeout(function(){{document.getElementById('modelSharedQueuePopover').hidePopover();}}, 180);
+      }}
+      document.getElementById('modelSharedQueuePopover').addEventListener('toggle', function(event){{
+        document.getElementById('modelSharedQueueTrigger').setAttribute('aria-expanded', String(event.newState === 'open'));
+      }});
+      window.addEventListener('resize', function(){{
+        if (document.getElementById('modelSharedQueuePopover').matches(':popover-open')) modelSharedQueueShow();
+      }});
+      function modelRechargeOpen(){{
+        var dialog = document.getElementById('modelRechargeDialog');
+        document.getElementById('modelRechargeForm').reset();
+        modelRechargeEdit();
+        dialog.showModal();
+        document.getElementById('modelRechargeAmount').focus();
+      }}
+      function modelRechargeClearError(){{
+        document.getElementById('modelRechargeAmount').removeAttribute('aria-invalid');
+        document.getElementById('modelRechargeError').textContent = '';
+      }}
+      function modelRechargeEdit(){{
+        document.getElementById('modelRechargeForm').hidden = false;
+        document.getElementById('modelRechargePayment').hidden = true;
+        document.getElementById('modelRechargeTitle').textContent = '在线充值';
+        modelRechargeClearError();
+        document.getElementById('modelRechargeAmount').focus();
+      }}
+      function modelRechargeSubmit(event){{
+        event.preventDefault();
+        var input = document.getElementById('modelRechargeAmount');
+        var amount = Number(input.value);
+        if (!/^[0-9]+$/.test(input.value) || !Number.isSafeInteger(amount) || amount <= 0){{
+          input.setAttribute('aria-invalid', 'true');
+          document.getElementById('modelRechargeError').textContent = '请输入有效的正整数金额';
+          input.focus();
+          return;
+        }}
+        document.getElementById('modelRechargeTotal').textContent = amount.toLocaleString('zh-CN', {{minimumFractionDigits: 2, maximumFractionDigits: 2}});
+        document.getElementById('modelRechargeForm').hidden = true;
+        document.getElementById('modelRechargePayment').hidden = false;
+        document.getElementById('modelRechargeTitle').textContent = '扫码支付';
+        document.getElementById('modelRechargeBack').focus();
+      }}
+      function modelResourcePeriodChange(input){{
+        var custom = input.value === 'custom';
+        document.getElementById('modelResourceCustomRange').hidden = !custom;
+        input.form.querySelectorAll('input[type="date"]').forEach(function(field){{field.disabled = !custom;}});
+        if (!custom) input.form.requestSubmit();
+      }}
+      document.getElementById('modelResourceTimeFilter').addEventListener('submit', function(event){{
+        var start = this.elements.start, end = this.elements.end;
+        end.setCustomValidity('');
+        if (!start.disabled && start.value > end.value){{event.preventDefault();end.setCustomValidity('结束日期不能早于开始日期');end.reportValidity();}}
+      }});
+      document.querySelectorAll('#modelResourceCustomRange input').forEach(function(input){{input.addEventListener('input',function(){{document.getElementById('modelResourceTimeFilter').elements.end.setCustomValidity('');}});}});
+      function modelResourceSwitch(button, panel){{document.querySelectorAll('.model-resource-tab').forEach(function(item){{item.classList.toggle('active',item===button)}});document.querySelectorAll('.model-resource-panel').forEach(function(item){{item.classList.toggle('active',item.dataset.resourcePanel===panel)}});}}
+      function modelResourceFilterQueues(value){{var query=(value||'').trim().toLowerCase();document.querySelectorAll('#modelResourceQueueTable tbody tr').forEach(function(row){{row.style.display=!query||row.textContent.toLowerCase().indexOf(query)>=0?'':'none';}});}}
+    </script>
+    """
+    return render_page("资源管理", content, active="/model/resources", module="model",
+                       breadcrumb='模型平台 / <b>资源管理</b>')
+
+
+@app.route("/model/resources/recharge-records")
+def model_resource_recharge_records():
+    rows = [
+        ("RC202609091420001", "算力充值", "¥500.00", "已支付", "2026-09-09 14:20", "2026-09-09 14:21", "joanna.qiao"),
+        ("RC202608211005002", "算力充值", "¥1,000.00", "已支付", "2026-08-21 10:05", "2026-08-21 10:06", "joanna.qiao"),
+        ("RC202608101630003", "算力充值", "¥500.00", "支付失败", "2026-08-10 16:30", "—", "Lance Li"),
+        ("RC202609101015004", "算力充值", "¥2,000.00", "支付中", "2026-09-10 10:15", "—", "joanna.qiao"),
+    ]
+    start_value = request.args.get("start", "")
+    end_value = request.args.get("end", "")
+    creator_value = request.args.get("creator", "").strip()
+    filter_error = ""
+    try:
+        start = date.fromisoformat(start_value) if start_value else None
+        end = date.fromisoformat(end_value) if end_value else None
+        if bool(start) != bool(end) or (start and end and start > end):
+            raise ValueError
+        rows = [row for row in rows if
+                (not start or start <= date.fromisoformat(row[4][:10]) <= end)
+                and creator_value.casefold() in row[6].casefold()]
+    except ValueError:
+        filter_error = "请选择完整且有效的创建时间区间，开始日期不能晚于结束日期。"
+        rows = []
+    status_classes = {"已支付": "tag-green", "支付中": "tag-blue", "支付失败": "tag-red"}
+    body = "".join(f'<tr><td><code>{i}</code></td><td>{item}</td><td>{amount}</td><td><span class="tag {status_classes[status]}">{status}</span></td><td>{created}</td><td>{paid}</td><td>{creator}</td></tr>' for i,item,amount,status,created,paid,creator in rows)
+    if not body:
+        body = '<tr><td colspan="7" style="text-align:center;padding:32px;color:#89979b">暂无符合条件的充值记录</td></tr>'
+    content = f"""
+    <div class=\"model-resource-records\">
+      <style>.model-resource-records .tag-blue{{color:#1677ff;background:#e6f4ff;border-color:#91caff}}</style>
+      <div class=\"model-resource-section-head\"><a class=\"btn\" href=\"/model/resources\"><span aria-hidden="true">&#8592;</span> 返回</a><h2>充值记录</h2></div>
+      <form class=\"model-resource-toolbar model-records-filter\" method="get">
+        <div class="model-records-date-field"><span id="modelRecordsDateLabel">创建时间</span><div class="model-records-date-range" role="group" aria-labelledby="modelRecordsDateLabel">
+          <input type="date" name="start" aria-label="创建开始日期" value="{html.escape(start_value, quote=True)}"><span>至</span><input type="date" name="end" aria-label="创建结束日期" value="{html.escape(end_value, quote=True)}">
+        </div></div>
+        <label>创建人<input name="creator" placeholder=\"请输入创建人\" value="{html.escape(creator_value, quote=True)}"></label><a class=\"btn btn-tertiary\" href="/model/resources/recharge-records">清空</a><button class=\"btn btn-primary\" type="submit">查询</button>
+      </form>
+      {f'<p role="alert" style="color:#c43b35;font-size:12px">{filter_error}</p>' if filter_error else ''}
+      <div class=\"table-wrap\"><table class=\"ant-table model-resource-table\"><thead><tr><th>订单 ID</th><th>充值项目</th><th>金额</th><th>状态</th><th>创建时间</th><th>支付时间</th><th>创建人</th></tr></thead><tbody>{body}</tbody></table></div>
+    </div>
+    <style>.model-resource-records{{width:100%;box-sizing:border-box;padding:0 2px}}.model-resource-records .model-resource-section-head{{display:flex;align-items:center;gap:12px;padding:0 0 14px;border-bottom:1px solid #edf1f2}}.model-resource-section-head h2{{margin:0;color:#2c444b;font-size:18px}}.model-records-filter{{display:flex;align-items:flex-end;flex-wrap:wrap;gap:12px;margin:16px 0}}.model-records-filter label,.model-records-date-field{{display:flex;flex-direction:column;gap:6px;min-width:0;color:#65777d;font-size:11px}}.model-records-filter input{{height:34px;box-sizing:border-box;padding:0 9px;border:1px solid #d9e0e2;border-radius:6px;max-width:100%;min-width:0}}.model-records-date-range{{display:flex;align-items:center;gap:8px;border:1px solid #d9e0e2;border-radius:6px;background:#fff;padding:0 4px}}.model-records-date-range input{{width:145px;border:0;background:transparent}}.model-records-date-range:focus-within{{outline:1px solid #149daa}}.model-records-date-field{{max-width:100%}}.model-resource-records .table-wrap{{width:100%;overflow-x:auto;background:#fff;border:1px solid #e6ebed;border-radius:8px}}.model-resource-records .model-resource-table{{min-width:980px;margin:0}}@media(max-width:640px){{.model-records-date-field{{width:100%}}.model-records-date-range input{{flex:1;width:0}}}}</style>
+    """
+    return render_page("充值记录", content, active="/model/resources", module="model", breadcrumb='模型平台 / 资源管理 / <b>充值记录</b>')
+
+
 # 模型平台 · 队列管理
+MODEL_QUEUES = [
+    {
+        "id": "queue-default-eval",
+        "name": "默认评测队列",
+        "admins": ["Joanna Qiao", "Lance Li"],
+        "members": ["Joanna Qiao", "Lance Li", "Rick Guo"],
+    },
+    {
+        "id": "queue-regression",
+        "name": "回归测试队列",
+        "admins": ["Lance Li", "Tao Wang"],
+        "members": ["Lance Li", "Tao Wang", "Hannah Wang"],
+    },
+    {
+        "id": "queue-edge-special",
+        "name": "端侧专项队列",
+        "admins": ["Rick Guo"],
+        "members": ["Rick Guo", "Hannah Wang", "Tao Wang"],
+    },
+]
+
+
 @app.route("/model/queues")
 def model_queues():
     current_user = "Joanna Qiao"
-    queues = [
-        {
-            "name": "默认评测队列",
-            "admins": ["Joanna Qiao", "Lance Li"],
-            "members": ["Joanna Qiao", "Lance Li", "Rick Guo"],
-        },
-        {
-            "name": "回归测试队列",
-            "admins": ["Lance Li", "Tao Wang"],
-            "members": ["Lance Li", "Tao Wang", "Hannah Wang"],
-        },
-        {
-            "name": "端侧专项队列",
-            "admins": ["Rick Guo"],
-            "members": ["Rick Guo", "Hannah Wang", "Tao Wang"],
-        },
-    ]
+    readonly = request.args.get("view") == "readonly"
     people = ["Joanna Qiao", "Lance Li", "Rick Guo", "Tao Wang", "Hannah Wang", "Min Chen"]
     rows = ""
     drawers = ""
-    for index, queue in enumerate(queues):
+    for index, queue in enumerate(MODEL_QUEUES):
         drawer_id = f"model-queue-drawer-{index}"
         picker_id = f"model-queue-member-picker-{index}"
         admin_chips = "".join(
@@ -7963,7 +8456,7 @@ def model_queues():
             f'<span>{html.escape(person)}</span><span class="check">&#10003;</span></button>'
             for person in people
         )
-        can_edit = current_user in queue["admins"]
+        can_edit = not readonly and current_user in queue["admins"]
         edit_action = (
             f'<a href="#" onclick="openModelQueueDrawer(\'{drawer_id}\', true);return false;">编辑</a>'
             if can_edit else
@@ -7996,7 +8489,14 @@ def model_queues():
             <button class="btn btn-primary model-queue-save" type="button" onclick="toast('Demo: 队列已保存');closeDrawer()">保存</button>
           </div>
         </div>'''
+    readonly_notice = (
+        '<div style="margin-bottom:14px;padding:10px 12px;border:1px solid #d8eef0;border-radius:6px;'
+        'background:#f3fbfc;color:rgba(0,0,0,.65);font-size:13px;">'
+        '当前为只读视图，可查看队列及管理员信息。</div>'
+        if readonly else ""
+    )
     content = f'''
+    {readonly_notice}
     <div class="table-wrap">
       <table class="ant-table">
         <thead><tr><th>队列名称</th><th>管理员</th><th>成员</th><th>操作</th></tr></thead>
@@ -9031,6 +9531,18 @@ def experiments():
     filter_name = request.args.get("name", "").strip()
     filter_tag = request.args.get("tag", "").strip()
     filter_dataset = request.args.get("dataset", "").strip()
+    has_queue_access = request.args.get("queue_access") != "none"
+    queue_options = "".join(
+        f'<option value="{html.escape(queue["id"], quote=True)}">{html.escape(queue["name"])}</option>'
+        for queue in MODEL_QUEUES
+    ) if has_queue_access else '<option value="" selected hidden>请选择训练队列</option><option value="" disabled>暂无可用训练队列</option>'
+    if has_queue_access:
+        resource_queue_options = '<option value="gpu-shared">gpu-shared</option>' + "".join(
+            f'<option value="{html.escape(queue[0], quote=True)}">{html.escape(queue[0])}</option>'
+            for queue in MODEL_EXCLUSIVE_QUEUES
+        )
+        queue_options = resource_queue_options + queue_options
+    queue_help = '仅展示你有使用权限的训练队列。如需使用其他队列，请点击右上角「申请队列权限」，联系对应的队列管理员申请开通。'
     visible_experiments = [
         e for e in EXPERIMENTS
         if _experiment_resource_key(e) == selected_resource
@@ -9270,11 +9782,21 @@ def experiments():
             <div class="fg train-runtime-code-row"><label>训练代码</label><div style="position:relative;"><input type="text" id="trainCodeInput" placeholder="输入 Commit ID 搜索（可选）" oninput="filterTrainCode(this)" onblur="hideTrainCodeMenu()" autocomplete="off" data-branch="" data-commit=""><div id="trainCodeMenu" class="tc-menu"></div></div></div>
             <div class="fg-row train-runtime-queue-row">
               <div class="fg"><label class="fg-req">优先级 <span class="qi" data-tooltip="数值越大，优先级越大" tabindex="0" aria-label="数值越大，优先级越大">i</span></label><select id="trainPriority"><option value="2">2</option><option value="4" selected>4</option><option value="6">6</option></select></div>
-              <div class="fg"><label class="fg-req">训练队列</label><select><option>CPU</option><option>GPU-A100</option><option>GPU-H100</option></select></div>
+              <div class="fg">
+                <div class="train-queue-label"><label for="trainQueueSelect" class="fg-req">训练队列 <span class="qi" data-tooltip="{queue_help}" tabindex="0" aria-label="{queue_help}">i</span></label><a href="/model/queues?view=readonly" target="_blank" rel="noopener">申请队列权限</a></div>
+                <select id="trainQueueSelect" aria-describedby="trainQueueBalanceHint" onchange="updateTrainQueueBalance()">{queue_options}</select>
+                <p id="trainQueueBalanceHint" role="status" hidden style="margin:8px 0 0;color:#ad6800;font-size:12px;line-height:1.6;overflow-wrap:anywhere">当前可用余额为 <strong>¥{_model_resource_balance(date.today()):,.2f}</strong>，余额耗尽后训练任务将自动停止。</p>
+              </div>
             </div>
             <div class="fg-row train-runtime-priority-row">
               <div class="fg"><label class="fg-req">实例数</label><input id="trainInstanceCount" type="number" min="1" max="4" step="1" value="1" inputmode="numeric" oninput="validateTrainInstanceCount(this)"></div>
-              <div class="fg"><label class="fg-req">实例规格</label><select><option>请选择实例规格</option><option>2 × A100 80GB</option><option>4 × A100 80GB</option><option>8 × H100 80GB</option></select></div>
+              <div class="fg"><label class="fg-req" for="trainInstanceSpec">实例规格</label><select id="trainInstanceSpec" onchange="this.title=this.options[this.selectedIndex].text" title="请选择实例规格">
+                <option value="" selected disabled>请选择实例规格</option>
+                <option value="ml.hpcpni2.28xlarge">ml.hpcpni2.28xlarge | 112 vCPU | 1960 GiB | Tesla-A100-80G × 8</option>
+                <option value="A100-2x-80G">A100-2x-80G | 24 vCPU | 192 GB | Tesla-A100-80G × 2</option>
+                <option value="A100-4x-80G">A100-4x-80G | 48 vCPU | 384 GB | Tesla-A100-80G × 4</option>
+                <option value="H100-8x-80G">H100-8x-80G | 96 vCPU | 768 GB | Tesla-H100-80G × 8</option>
+              </select></div>
             </div>
           </div>
         </section>
@@ -9301,7 +9823,7 @@ def experiments():
             </div>
             <div class="adv-sub" id="advConfigBox">
               <div class="adv-sub-head" onclick="document.getElementById('advConfigBox').classList.toggle('collapsed')"><span class="caret">&#9660;</span><label>高级配置</label></div>
-              <div class="adv-sub-body"><div class="adv-tabs"><span class="at active" onclick="switchAdvTab(this,'default')">默认配置</span><span class="at" onclick="switchAdvTab(this,'override')">参数覆盖</span><button class="at-reset" onclick="resetTrainConfig()">恢复默认</button></div><textarea id="yamlEditor" class="yaml-area" spellcheck="false" readonly></textarea><textarea id="yamlOverride" class="yaml-area" spellcheck="false" style="display:none;" placeholder="# 只填写需要覆盖的参数, 例如:&#10;batch_size: 64&#10;steps: 300000&#10;&#10;# 这些值会覆盖到左侧「默认配置」中" oninput="applyOverride()"></textarea></div>
+              <div class="adv-sub-body"><div class="adv-tabs"><span class="at active" onclick="switchAdvTab(this,'default')">默认参数</span><span class="at" onclick="switchAdvTab(this,'override')">参数覆盖</span><button class="at-reset" onclick="resetTrainConfig()">恢复默认</button></div><textarea id="yamlEditor" class="yaml-area" spellcheck="false" readonly></textarea><textarea id="yamlOverride" class="yaml-area" spellcheck="false" style="display:none;" placeholder="# 只填写需要覆盖的参数, 例如:&#10;batch_size: 64&#10;steps: 300000&#10;&#10;# 这些值会覆盖到左侧「默认参数」中" oninput="applyOverride()"></textarea></div>
             </div>
             </div>
             <div class="train-config-panel" id="trainCustomConfig">
@@ -9510,20 +10032,35 @@ def experiment_detail(exp_id):
 
     owner = e["owner"] if e["owner"] != "—" else "tao.wang"
     resource_key = _experiment_resource_key(e)
+    cache_operator = request.args.get("user", "joanna.qiao").strip() or "joanna.qiao"
+    cache_context_json = json.dumps({
+        "experimentId": e["id"],
+        "experimentName": e["name"],
+        "operator": cache_operator,
+        "resource": resource_key,
+    }, ensure_ascii=False).replace("</", "<\\/")
     show_experiment_dashboard = resource_key != "kingsoft"
 
     # ──── Tab 1: Checkpoint ────
     ckpts = _task_ckpts(e)
     ckpt_rows = ""
+    cache_operations = {item["step"]: item for item in CKPT_CACHE_OPERATIONS if item["experiment_id"] == e["id"]}
     for c in ckpts:
-        ckpt_rows += f"""<tr>
+        operation = cache_operations.get(str(c["step"]))
+        cache_state = CKPT_STATUS_LABEL[operation["status"] if operation else "not_cached"]
+        cache_action = (
+            f'<a href="{html.escape(_cache_operation_record_url(operation), quote=True)}" style="color:#149DAA">查看</a>'
+            if operation else
+            f'<a href="#" style="color:#149DAA" onclick="openCacheModal(\'{c["step"]}\', \'{c["location"]}\');return false;">缓存</a>'
+        )
+        ckpt_rows += f"""<tr id="taskCkpt{c['step']}">
           <td class="mono">{c['step']}</td>
           <td class="mono">{c['storage']}</td>
           <td class="mono">{c['training_loss']}</td>
           <td class="mono">{c['validation_loss']}</td>
-          <td><span class="tag tag-gray">未缓存</span></td>
+          <td class="task-ckpt-state">{cache_state}</td>
           <td><a class="ckpt-loc" href="#" onclick="toast('Demo: 已复制 TOS 路径');return false;"><span class="ll-ic">&#10697;</span>{c['location']}</a></td>
-          <td class="actions-cell"><a href="#" style="color:#149DAA" onclick="openCacheModal('{c['step']}', '{c['location']}');return false;">缓存</a></td>
+          <td class="actions-cell">{cache_action}</td>
         </tr>"""
     tab_ckpt = f"""
     <h3 class="sec-title">Check point 列表</h3>
@@ -9687,6 +10224,7 @@ dataset:
           <div class="bi-field-item"><div class="bi-field-label">是否新感知</div><div class="bi-field-value">是</div></div>
         </div>
         <div class="bi-field-row"><div class="bi-field-item"><div class="bi-field-label">机器人结构</div><div class="bi-field-value">wholebody</div></div></div>
+      </div>
 
       <!-- 高级配置 - 可折叠 -->
       <div class="bi-subsection bi-collapsible">
@@ -9698,7 +10236,7 @@ dataset:
         </h4>
         <div class="bi-collapse-content">
           <div class="adv-tabs">
-            <span class="at active" onclick="switchDetAdv(this,'default')">默认配置</span>
+            <span class="at active" onclick="switchDetAdv(this,'default')">默认参数</span>
             <span class="at" onclick="switchDetAdv(this,'override')">参数覆盖</span>
           </div>
           <pre class="yaml-readonly" data-adv="default">{yaml_text}</pre>
@@ -9735,6 +10273,7 @@ bash lerobot/scripts/train_unified.sh /mnt/vepfs01/output/quanta/experiments/con
           <div class="env-head"><span>变量名</span><span>变量值</span><span></span></div>
           <div class="env-line"><span class="ek">WANDB_BASE_URL</span><span class="ev">https://api.wandb.ai</span><span></span></div>
           <div class="env-line"><span class="ek">WANDB_API_KEY</span><span class="ev secret" data-real="wb_a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6">••••••••••••••••</span><span class="env-eye" onclick="toggleEnvSecret(this)">&#128065;</span></div>
+        </div>
         </div>
       </div>
 
@@ -9789,42 +10328,189 @@ bash lerobot/scripts/train_unified.sh /mnt/vepfs01/output/quanta/experiments/con
     {detail_tabs}
     {detail_panes}
 
+    <script>window.CKPT_CACHE_CONTEXT = {cache_context_json};</script>
+
     <div class="modal-mask" id="cacheModalMask" onclick="closeCacheModal()">
       <div class="modal" id="cacheModalBox" onclick="event.stopPropagation()">
         <div class="modal-head" id="cacheModalHead">
-          <h3>缓存 Checkpoint</h3>
+          <h3>缓存</h3>
           <span class="dismiss" onclick="closeCacheModal()">&times;</span>
         </div>
         <div class="modal-body">
           <div id="cacheModalForm">
+            <p class="cache-intro">是否要缓存至本地服务器，缓存后采集端将在30分钟后完成加载</p>
             <div class="fg">
-              <label class="fg-req">描述</label>
-              <textarea id="cacheDesc" rows="4" placeholder="请输入本次缓存说明，例如候选版本用途、关联评测或保留原因"></textarea>
+              <label for="cacheName" class="fg-req">名称</label>
+              <div class="cache-name-input">
+                <input id="cacheName" type="text" maxlength="100" required placeholder="请输入名称" aria-describedby="cacheNameError" oninput="updateCacheNameCount()">
+                <span id="cacheNameCount" class="cache-name-count">0 / 100</span>
+              </div>
+              <div id="cacheNameError" class="cache-field-error" role="alert" hidden>请输入名称</div>
             </div>
+            <div class="fg">
+              <label for="cacheDesc" class="fg-req">描述</label>
+              <textarea id="cacheDesc" rows="4" required placeholder="请输入描述" aria-describedby="cacheDescError"></textarea>
+              <div id="cacheDescError" class="cache-field-error" role="alert" hidden>请输入描述</div>
+            </div>
+            <div class="cache-notify-row">
+              <div class="cache-notify-copy">
+                <label for="cacheFeishuNotify">飞书通知</label>
+                <p>缓存成功或失败时，通过飞书通知本次操作人。</p>
+              </div>
+              <label class="toggle-sw" title="飞书通知">
+                <input id="cacheFeishuNotify" type="checkbox" checked><span class="slider"></span>
+              </label>
+            </div>
+            <div id="cacheSubmitError" class="cache-submit-error" role="alert" hidden></div>
           </div>
           <div id="cacheModalDoing" style="display:none;">
             <div class="cache-state">
               <span class="cache-hourglass">&#8987;</span>
               <div>
-                <h4>缓存中</h4>
-                <p>可在「缓存进度列表」查看</p>
+                <h4>缓存任务已提交</h4>
+                <p>缓存任务已提交，可在缓存记录中查看进度。</p>
               </div>
             </div>
+            <div class="cache-demo-panel" id="cacheDemoPanel" style="display:none;">
+              <span>Mock 结果预览（选择结果后更新对应缓存记录）</span>
+              <div class="cache-demo-actions">
+                <button type="button" class="btn btn-secondary" onclick="previewCacheResult('cached')">演示缓存成功</button>
+                <button type="button" class="btn btn-secondary" onclick="previewCacheResult('merge_failed')">演示合并失败</button>
+                <button type="button" class="btn btn-secondary" onclick="previewCacheResult('cache_failed')">演示缓存失败</button>
+              </div>
+            </div>
+            <div class="cache-notification-preview" id="cacheNotificationPreview"></div>
           </div>
         </div>
         <div class="modal-foot" id="cacheModalFootForm">
           <button class="btn btn-tertiary" onclick="closeCacheModal()">取消</button>
-          <button class="btn btn-primary" onclick="confirmCacheModal()">确认</button>
+          <button class="btn btn-primary" id="cacheSubmitButton" onclick="confirmCacheModal()">确认缓存</button>
         </div>
         <div class="modal-foot" id="cacheModalFootDoing" style="display:none;">
           <button class="btn btn-secondary" onclick="closeCacheModal()">关闭</button>
-          <a class="btn btn-primary" href="/model/checkpoints/cache-records">查看进度</a>
+          <a class="btn btn-primary" id="cacheRecordLink" href="/model/checkpoints/cache-records">查看缓存记录</a>
         </div>
       </div>
     </div>
     """
     return render_page(e["name"], content, active="/model/experiments", module="model",
                        breadcrumb=f'模型平台 / 训练任务 / <b>{e["name"]}</b>', mvp_note="MVP 一期")
+
+
+def _cache_operation_record_url(operation):
+    return "/model/checkpoints/cache-records?" + urlencode({
+        "resource": operation["source"],
+        "name": operation["name"],
+        "operation_id": operation["operation_id"],
+    })
+
+
+def _cache_notification_card(operation, result_label):
+    failed = operation["status"] in {"merge_failed", "cache_failed"}
+    failure_row = (
+        f'<span>失败原因</span><b>{html.escape(operation["failure_reason"])}</b>'
+        if failed else ""
+    )
+    return f'''
+    <div class="cache-notification-card{' failed' if failed else ''}" data-result="{operation['status']}">
+      <div class="cache-notification-head">飞书通知 · {result_label}</div>
+      <div class="cache-notification-body">
+        <span>训练任务名称</span><b>{html.escape(operation['experiment_name'])}</b>
+        <span>Checkpoint / Step</span><b>{html.escape(operation['name'])} / {html.escape(operation['step'])}</b>
+        {failure_row}
+      </div>
+      <div class="cache-notification-foot"><small>Mock 卡片预览，不发送真实飞书消息</small><a class="btn btn-primary" href="{_cache_operation_record_url(operation)}">查看缓存记录</a></div>
+    </div>'''
+
+
+@app.route("/model/experiments/<exp_id>/cache-checkpoints", methods=["POST"])
+def create_checkpoint_cache_operation(exp_id):
+    experiment = next((item for item in EXPERIMENTS if item["id"] == exp_id), None)
+    if experiment is None:
+        return jsonify({"error": "训练任务不存在"}), 404
+    payload = request.get_json(silent=True) or {}
+    step = str(payload.get("step", "")).strip()
+    checkpoint = next((item for item in _task_ckpts(experiment) if str(item["step"]) == step), None)
+    if checkpoint is None:
+        return jsonify({"error": "Checkpoint / Step 不存在"}), 400
+
+    name = str(payload.get("name", f"{experiment['name']}_{step}")).strip()
+    description = str(payload.get("description") or "").strip()
+    if not name or len(name) > 100:
+        return jsonify({"error": "请输入名称，且不超过100个字符"}), 400
+    if not description:
+        return jsonify({"error": "请输入描述"}), 400
+
+    number = len(CKPT_CACHE_OPERATIONS) + 1
+    used_ids = {item["operation_id"] for item in CKPT_CACHE_OPERATIONS}
+    while f"cache-op-{number}" in used_ids:
+        number += 1
+    created_at = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    operator = str(payload.get("operator") or "joanna.qiao").strip()[:80] or "joanna.qiao"
+    operation = {
+        "operation_id": f"cache-op-{number}",
+        "id": f"op-{number}",
+        "name": name,
+        "description": description,
+        "status": "merging",
+        "source": _experiment_resource_key(experiment),
+        "owner": experiment.get("owner", "—"),
+        "created": created_at,
+        "cached_by": operator,
+        "cached_at": created_at,
+        "experiment_id": experiment["id"],
+        "experiment_name": experiment["name"],
+        "step": step,
+        "location": checkpoint["location"],
+        "notify_enabled": bool(payload.get("notify", True)),
+        "notified_results": [],
+    }
+    CKPT_CACHE_OPERATIONS.append(operation)
+    return jsonify({
+        "operation_id": operation["operation_id"],
+        "record_url": _cache_operation_record_url(operation),
+        "step": step,
+        "status_html": CKPT_STATUS_LABEL[operation["status"]],
+    })
+
+
+@app.route("/model/checkpoints/cache-operations/<operation_id>/result", methods=["POST"])
+def preview_checkpoint_cache_result(operation_id):
+    operation = next((item for item in CKPT_CACHE_OPERATIONS if item["operation_id"] == operation_id), None)
+    if operation is None:
+        return jsonify({"error": "缓存操作不存在"}), 404
+    result = str((request.get_json(silent=True) or {}).get("result", "")).strip()
+    result_config = {
+        "cached": ("缓存成功", ""),
+        "merge_failed": ("合并失败", "Checkpoint 分片索引不一致，合并产物校验失败"),
+        "cache_failed": ("缓存失败", "缓存卷拉取源文件超时，请检查源路径权限与对象完整性"),
+    }
+    if result not in result_config:
+        return jsonify({"error": "不支持的演示结果"}), 400
+
+    result_label, failure_reason = result_config[result]
+    duplicate = result in operation["notified_results"]
+    operation.update({
+        "status": result,
+        "completed_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "failure_reason": failure_reason,
+    })
+    if operation["notify_enabled"] and not duplicate:
+        operation["notified_results"].append(result)
+    card_html = (
+        _cache_notification_card(operation, result_label)
+        if operation["notify_enabled"] else
+        '<div class="cache-notify-off">本次缓存已关闭飞书通知，不生成结果通知。</div>'
+    )
+    return jsonify({
+        "card_html": card_html,
+        "duplicate": duplicate and operation["notify_enabled"],
+        "message": "已生成飞书通知卡片预览" if operation["notify_enabled"] else "本次缓存未开启飞书通知",
+        "record_url": _cache_operation_record_url(operation),
+        "result_label": result_label,
+        "step": operation["step"],
+        "status_html": CKPT_STATUS_LABEL[operation["status"]],
+    })
 
 
 @app.route("/model/deploy")
@@ -10232,15 +10918,22 @@ def _ckpt_rows_html(items, show_actions=True, show_status=True, status_logs=Fals
         desc = _ckpt_desc(c)
         status_cell = f"<td>{_ckpt_status_cell_html(c, status_logs)}</td>" if show_status else ""
         actions_cell = ""
+        asset_badge = '<span class="tag tag-teal ckpt-asset-tag">资产</span>' if c.get("is_asset") else '<span class="muted">—</span>'
+        asset_cell = f'<td class="ckpt-asset-cell">{asset_badge}</td>' if show_actions else ""
         if show_actions:
+            asset_action = "取消标记" if c.get("is_asset") else "标记为资产"
             actions_cell = f"""<td class="actions-cell">
             <a href="#" onclick="openTaskCapabilityModal();return false;">TEST</a>
             <a href="#" onclick="openTaskCapabilityModal();return false;">DAgger</a>
             <a href="/model/lineage/checkpoint/{c['id']}">血缘</a>
+            <form class="ckpt-asset-form" method="post" action="/model/checkpoints/{c['id']}/asset?{html.escape(urlencode(request.args))}">
+              <button class="tbtn" name="is_asset" value="{0 if c.get('is_asset') else 1}">{asset_action}</button>
+            </form>
           </td>"""
         rows += f"""<tr data-status="{c['status']}">
           <td class="mono">{c['id']}</td>
           <td><a class="ckpt-name-cell" href="#" onclick="openDrawer('drawerCkpt{c['id']}');return false;" title="{c['name']}">{c['name']}</a></td>
+          {asset_cell}
           <td class="muted">{desc}</td>
           {status_cell}
           <td>{c['owner']}</td>
@@ -10249,10 +10942,10 @@ def _ckpt_rows_html(items, show_actions=True, show_status=True, status_logs=Fals
           <td class="muted mono">{_ckpt_cache_time(c)}</td>
           {actions_cell}
         </tr>"""
-    return rows
+    return rows or f'<tr><td colspan="{7 + int(show_status) + 2 * int(show_actions)}" style="text-align:center;padding:40px;color:#999;">暂无符合条件的 Checkpoint</td></tr>'
 
 
-def _ckpt_table_html(items, show_actions=True, show_status=True, status_filter=False, status_logs=False):
+def _ckpt_table_html(items, show_actions=True, show_status=True, status_filter=False, status_logs=False, asset_mark=""):
     status_col = '<col style="width:150px;">' if show_status and status_filter else ('<col style="width:110px;">' if show_status else "")
     if show_status and status_filter:
         status_head = """<th>
@@ -10272,14 +10965,32 @@ def _ckpt_table_html(items, show_actions=True, show_status=True, status_filter=F
           </th>"""
     else:
         status_head = "<th>状态 &#9662;</th>" if show_status else ""
-    actions_col = '<col style="width:200px;">' if show_actions else ""
+    actions_col = '<col style="width:280px;">' if show_actions else ""
     actions_head = "<th>操作</th>" if show_actions else ""
+    asset_head = ""
+    if show_actions:
+        options = "".join(
+            f'<button type="button" class="ckpt-status-option {"active" if asset_mark == value else ""}" '
+            f'aria-pressed="{str(asset_mark == value).lower()}" '
+            f'onclick="var field=document.getElementById(\'filterCheckpointAsset\');field.value=\'{value}\';field.form.requestSubmit()">{label}</button>'
+            for value, label in (("", "全部"), ("1", "已标记"), ("0", "未标记"))
+        )
+        asset_head = f"""<th>
+          <button type="button" id="checkpointAssetTrigger" class="ckpt-status-trigger ckpt-asset-trigger {'is-filtered' if asset_mark else ''}" popovertarget="checkpointAssetMenu" aria-label="筛选资产标记">
+            资产标记<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="m4 6 4 4 4-4"/></svg>
+          </button>
+          <div id="checkpointAssetMenu" class="ckpt-status-menu ckpt-asset-menu" popover
+            onbeforetoggle="if(event.newState==='open'){{var rect=document.getElementById('checkpointAssetTrigger').getBoundingClientRect();this.style.left=rect.left+'px';this.style.top=(rect.bottom+9)+'px';}}">
+            {options}
+          </div>
+        </th>"""
     return f"""
     <div class="table-wrap ckpt-table-wrap">
       <table class="ant-table ckpt-table">
         <colgroup>
           <col style="width:82px;">
           <col style="width:220px;">
+          {'<col style="width:110px;">' if show_actions else ''}
           <col>
           {status_col}
           <col style="width:100px;">
@@ -10291,6 +11002,7 @@ def _ckpt_table_html(items, show_actions=True, show_status=True, status_filter=F
         <thead><tr>
           <th>ID</th>
           <th>checkpoint</th>
+          {asset_head}
           <th>描述</th>
           {status_head}
           <th>创建人</th>
@@ -10378,12 +11090,28 @@ def _new_checkpoint_drawer_html():
     """
 
 
+@app.post("/model/checkpoints/<checkpoint_id>/asset")
+def checkpoint_asset(checkpoint_id):
+    checkpoint = _ckpt_by_id(checkpoint_id)
+    if checkpoint is None:
+        return jsonify(error="Checkpoint 不存在"), 404
+    value = request.form.get("is_asset")
+    if value not in ("0", "1"):
+        return jsonify(error="资产标记值无效"), 400
+    # ponytail: shared in-memory demo state; use persistent storage for production.
+    checkpoint["is_asset"] = value == "1"
+    return redirect("/model/checkpoints?" + urlencode(request.args), code=303)
+
+
 @app.route("/model/checkpoints")
 def checkpoints():
     # 获取 URL 参数
     filter_name = request.args.get("name", "")
     filter_owner = request.args.get("owner", "")
     filter_cache_owner = request.args.get("cache_owner", "")
+    asset_mark = request.args.get("asset_mark", "")
+    if asset_mark not in ("", "1", "0"):
+        asset_mark = ""
     selected_resource = request.args.get("resource", "volcano")
     if selected_resource not in RESOURCE_TAB_LABELS:
         selected_resource = "volcano"
@@ -10392,6 +11120,7 @@ def checkpoints():
         c for c in CHECKPOINTS
         if c["status"] == "cached"
         and _checkpoint_resource_key(c) == selected_resource
+        and (not asset_mark or bool(c.get("is_asset")) == (asset_mark == "1"))
         and (not filter_name or filter_name.lower() in c.get("name", "").lower())
         and (not filter_owner or filter_owner.lower() in c.get("owner", "").lower())
         and (not filter_cache_owner or filter_cache_owner.lower() in _ckpt_cache_operator(c).lower())
@@ -10400,17 +11129,19 @@ def checkpoints():
     <a href="/model/checkpoints/cache-records?resource={selected_resource}" class="btn btn-secondary ckpt-cache-action">查看缓存记录</a>
     <a href="/model/deploy?open=deploy" class="btn btn-primary ckpt-deploy-action">去部署</a>
     {_resource_tabs('/model/checkpoints', selected_resource)}
-    <div class="fb-labeled">
-      <div class="ff"><label>checkpoint</label><input id="filterCheckpointName" value="{filter_name}" placeholder="请输入 checkpoint"></div>
-      <div class="ff"><label>创建人</label><input id="filterCheckpointOwner" value="{filter_owner}" placeholder="请输入创建人"></div>
-      <div class="ff"><label>缓存人</label><input id="filterCheckpointCacheOwner" value="{filter_cache_owner}" placeholder="请输入缓存人"></div>
+    <form class="fb-labeled" method="get" action="/model/checkpoints">
+      <input type="hidden" name="resource" value="{selected_resource}">
+      <div class="ff"><label for="filterCheckpointName">checkpoint</label><input id="filterCheckpointName" name="name" value="{html.escape(filter_name)}" placeholder="请输入 checkpoint"></div>
+      <div class="ff"><label for="filterCheckpointOwner">创建人</label><input id="filterCheckpointOwner" name="owner" value="{html.escape(filter_owner)}" placeholder="请输入创建人"></div>
+      <div class="ff"><label for="filterCheckpointCacheOwner">缓存人</label><input id="filterCheckpointCacheOwner" name="cache_owner" value="{html.escape(filter_cache_owner)}" placeholder="请输入缓存人"></div>
+      <input type="hidden" id="filterCheckpointAsset" name="asset_mark" value="{asset_mark}">
       <div class="filter-actions">
-        <button class="btn btn-tertiary" onclick="resetFilters(this)">重置</button>
-        <button class="btn btn-primary" onclick="queryFilters(this)">查询</button>
+        <a class="btn btn-tertiary" href="/model/checkpoints?resource={selected_resource}">清空</a>
+        <button class="btn btn-primary" type="submit">查询</button>
       </div>
-    </div>
+    </form>
 
-    {_ckpt_table_html(visible_checkpoints, show_status=False)}
+    {_ckpt_table_html(visible_checkpoints, show_status=False, asset_mark=asset_mark)}
 
     {_ckpt_pager_html()}
 
@@ -10427,6 +11158,7 @@ def checkpoint_cache_records():
     filter_name = request.args.get("name", "").strip()
     filter_owner = request.args.get("owner", "").strip()
     filter_cache_owner = request.args.get("cache_owner", "").strip()
+    operation_id = request.args.get("operation_id", "").strip()
     all_cache_items = [
         {"id": "8032", "name": "20260701_opd_taskC_raw_shards",
          "description": "训练产物已登记, 尚未触发 checkpoint 合并。",
@@ -10444,10 +11176,11 @@ def checkpoint_cache_records():
          "description": "缓存任务拉取源文件失败, 待确认 TOS 路径与权限后重试。",
          "status": "cache_failed", "source": "火山", "owner": "Hannah Wang", "created": "2026-06-15 16:12:09",
          "cached_by": "Hannah Wang", "cached_at": "2026-06-15 16:12:09"},
-    ] + CHECKPOINTS
+    ] + list(reversed(CKPT_CACHE_OPERATIONS)) + CHECKPOINTS
     cache_items = [
         c for c in all_cache_items
         if _checkpoint_resource_key(c) == selected_resource
+        and (not operation_id or c.get("operation_id") == operation_id)
         and (not filter_name or filter_name.lower() in c.get("name", "").lower())
         and (not filter_owner or filter_owner.lower() in c.get("owner", "").lower())
         and (not filter_cache_owner or filter_cache_owner.lower() in _ckpt_cache_operator(c).lower())
