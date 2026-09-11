@@ -8234,15 +8234,6 @@ def model_resources():
           <li>采用预付费模式，余额不足时训练任务将自动停止；充值请联系销售人员。</li>
         </ul></div>
         <div id="modelSharedQueuePopover" class="model-shared-queue-popover" popover="auto" aria-labelledby="modelSharedQueueTitle" onmouseenter="clearTimeout(modelSharedQueueHideTimer)" onmouseleave="modelSharedQueueScheduleHide()"><h3 id="modelSharedQueueTitle">队列基本信息</h3><dl>{shared_queue_details}</dl></div>
-        <form id="modelResourceTimeFilter" class="model-resource-time-filter" method="get">
-          <span>时间范围</span><div class="model-resource-periods" role="group" aria-label="时间范围">{period_options}</div>
-          <div id="modelResourceCustomRange" class="model-resource-custom"{' hidden' if period != 'custom' else ''}>
-            <label>开始日期<input type="date" name="start" aria-label="开始日期" max="{today.isoformat()}" value="{(start or today - timedelta(days=6)).isoformat()}" required{' disabled' if period != 'custom' else ''}></label>
-            <label>结束日期<input type="date" name="end" aria-label="结束日期" max="{today.isoformat()}" value="{end.isoformat()}" required{' disabled' if period != 'custom' else ''}></label>
-            <button class="btn btn-primary" type="submit">查询</button>
-          </div>
-        </form>
-        {f'<p class="model-resource-filter-error" role="alert">{filter_error}</p>' if filter_error else ''}
         <div class=\"model-resource-overview\">
           <div class=\"model-resource-stat\" title="截至筛选结束日期的账户余额，包含区间前的结余"><span>余额（元）</span><b>{account_balance:,.2f}</b><small>可用金额</small></div>
           <div class=\"model-resource-stat\"><span>累计充值（元）</span><b>{total_recharge:,.2f}</b><small>已到账金额</small></div>
@@ -8250,7 +8241,16 @@ def model_resources():
           <div class=\"model-resource-stat\"><span>已消耗卡时（卡时）</span><b>{consumed_hours:,.1f}</b><small>各 GPU 型号用量合计</small></div>
         </div>
         <section class=\"model-resource-section\"><div class=\"model-resource-section-head\"><div><h2>训练用量与费用</h2><p>按 GPU 型号汇总</p></div></div>
-          <div class=\"table-wrap\"><table class=\"ant-table model-resource-table\"><thead><tr><th>GPU 型号</th><th>参考价格（元/卡时）<small style="display:block;margin-top:4px;color:#65777d;font-size:11px;font-weight:400">价格可能调整，以使用时生效价格为准</small></th><th>训练用量（卡时）</th><th>训练费用（元）</th></tr></thead><tbody>{gpu_table}</tbody></table></div>
+          <form id="modelResourceTimeFilter" class="model-resource-time-filter" method="get">
+            <span>时间范围</span><div class="model-resource-periods" role="group" aria-label="时间范围">{period_options}</div>
+            <div id="modelResourceCustomRange" class="model-resource-custom"{' hidden' if period != 'custom' else ''}>
+              <label>开始日期<input type="date" name="start" aria-label="开始日期" max="{today.isoformat()}" value="{(start or today - timedelta(days=6)).isoformat()}" required{' disabled' if period != 'custom' else ''}></label>
+              <label>结束日期<input type="date" name="end" aria-label="结束日期" max="{today.isoformat()}" value="{end.isoformat()}" required{' disabled' if period != 'custom' else ''}></label>
+              <button class="btn btn-primary" type="submit">查询</button>
+            </div>
+          </form>
+          {f'<p class="model-resource-filter-error" role="alert">{filter_error}</p>' if filter_error else ''}
+          <div class=\"table-wrap\"><table class=\"ant-table model-resource-table\"><thead><tr><th>GPU 型号</th><th>参考价格（元/卡时）<small style="display:block;margin-top:4px;color:#65777d;font-size:11px;font-weight:400">当前生效的单价，后续可能调整</small></th><th>训练用量（卡时）</th><th>训练费用（元）<small style="display:block;margin-top:4px;color:#65777d;font-size:11px;font-weight:400">按资源使用时生效的单价计费，不按当前价格计算</small></th></tr></thead><tbody>{gpu_table}</tbody></table></div>
         </section>
       </section>
       <section class=\"model-resource-panel\" data-resource-panel=\"exclusive\">
