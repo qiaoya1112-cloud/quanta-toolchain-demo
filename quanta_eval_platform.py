@@ -8898,7 +8898,7 @@ def _render_moztrace_reference_panels():
           const x=value=>55+(value-xmin)/(xmax-xmin||1)*780;
           const ranges=series.map(s=>{const values=s.y.filter(Number.isFinite);return [Math.min(...values),Math.max(...values)];});
           const y=(value,i)=>{const [lo,hi]=dual?ranges[i]:[ymin,ymax];return 225-(value-lo)/(hi-lo||1)*190;};
-          host.innerHTML='<h3>'+esc(title)+'</h3><svg viewBox="0 0 900 280" role="img" aria-label="'+esc(title)+'">'+
+          host.innerHTML='<h3>'+esc(title)+'</h3><svg viewBox="0 0 900 280" preserveAspectRatio="none" role="img" aria-label="'+esc(title)+'">'+
             [0,1,2,3,4].map(n=>'<line x1="55" x2="835" y1="'+(35+n*47.5)+'" y2="'+(35+n*47.5)+'" stroke="#e3ebee"/>').join('')+
             series.map((s,i)=>'<polyline data-mt-series="'+i+'" fill="none" stroke="'+colors[i%colors.length]+'" stroke-width="1.5" points="'+s.x.map((v,j)=>Number.isFinite(s.y[j])?x(v).toFixed(2)+','+y(s.y[j],i).toFixed(2):'').join(' ')+'"/>'+s.x.map((v,j)=>Number.isFinite(s.y[j])?'<circle data-mt-series="'+i+'" cx="'+x(v)+'" cy="'+y(s.y[j],i)+'" r="2" fill="'+colors[i%colors.length]+'"><title>'+esc(s.name)+' · '+v.toFixed(3)+' · '+s.y[j].toFixed(4)+'</title></circle>':'').join('')).join('')+
             '<line class="moztrace-frame-line" data-frame-left="55" data-frame-width="780" x1="55" x2="55" y1="35" y2="225" stroke="#d46b36" stroke-dasharray="4 3"/><text x="55" y="250">'+xmin.toFixed(3)+'</text><text x="780" y="250">'+xmax.toFixed(3)+'</text><text x="410" y="273">'+esc(xLabel)+'</text><text x="2" y="35">'+(dual?ranges[0][1]:ymax).toFixed(2)+'</text><text x="2" y="225">'+(dual?ranges[0][0]:ymin).toFixed(2)+'</text>'+
@@ -8913,7 +8913,7 @@ def _render_moztrace_reference_panels():
         roots.overview.innerHTML='<h3>概览</h3>'+stats([['任务',overview.task_count],['动作块',overview.chunk_count],['动作步',overview.step_count],['图像',overview.image_count]])+'<details open><summary>元数据</summary><pre id="mt-meta"></pre></details>';
         el('meta').textContent=JSON.stringify(overview.meta,null,2);
         roots.schema.innerHTML='<h3>Schema</h3><div class="mt-schema">'+data.schema.tables.map(table=>'<section><h3>'+esc(table.name)+'</h3><table><thead><tr><th>字段</th><th>类型</th><th>非空</th><th>主键</th></tr></thead><tbody>'+table.columns.map(c=>'<tr><td>'+esc(c.name)+'</td><td>'+esc(c.type)+'</td><td>'+(c.not_null?'是':'否')+'</td><td>'+(c.primary_key?'是':'否')+'</td></tr>').join('')+'</tbody></table></section>').join('')+'</div>';
-        roots.player.innerHTML='<details class="er-collapsible" open><summary>Obs</summary><div class="er-collapsible-body"><div class="mt-tools"><span id="mt-frame-context"></span><span id="mt-frame-time"></span></div><details class="er-collapsible er-obs-camera-collapse" open><summary>Obs 相机（3 路）</summary><div class="er-collapsible-body"><div class="mt-images">'+[['image_left_wrist','左腕相机'],['image_high','头部相机'],['image_right_wrist','右腕相机']].map(([key,label])=>'<figure><figcaption>'+label+'</figcaption><img id="mt-'+key+'" alt="'+label+'"><span id="mt-'+key+'-error"></span></figure>').join('')+'</div></div></details><div class="mt-tools mt-local-controls"><button id="mt-prev" aria-label="上一观测帧">◀</button><button id="mt-play" aria-label="播放观测">▶</button><button id="mt-next" aria-label="下一观测帧">▶|</button><input id="mt-frame" type="range" min="0" max="'+Math.max(0,frames.length-1)+'" value="0" aria-label="观测帧进度"><span id="mt-count"></span><select id="mt-speed" aria-label="观测播放速度">'+[.25,.5,1,2,4].map(speed=>'<option '+(speed===1?'selected':'')+' value="'+speed+'">'+speed+'x</option>').join('')+'</select></div><div id="mt-player-chart"></div></div></details>';
+        roots.player.innerHTML='<details class="er-collapsible" open><summary>Obs</summary><div class="er-collapsible-body"><div class="mt-tools"><span id="mt-frame-context"></span><span id="mt-frame-time"></span></div><details class="er-collapsible er-obs-camera-collapse" open><summary>Obs 相机（3 路）</summary><div class="er-collapsible-body"><div class="mt-images">'+[['image_left_wrist','左腕相机'],['image_high','头部相机'],['image_right_wrist','右腕相机']].map(([key,label])=>'<figure><figcaption>'+label+'</figcaption><img id="mt-'+key+'" alt="'+label+'"><span id="mt-'+key+'-error"></span></figure>').join('')+'</div></div></details><div class="mt-tools mt-local-controls"><button id="mt-prev" aria-label="上一观测帧">◀</button><button id="mt-play" aria-label="播放观测">▶</button><button id="mt-next" aria-label="下一观测帧">▶|</button><input id="mt-frame" type="range" min="0" max="'+Math.max(0,frames.length-1)+'" value="0" aria-label="观测帧进度"><span id="mt-count"></span><select id="mt-speed" aria-label="观测播放速度">'+[.25,.5,1,2,4].map(speed=>'<option '+(speed===1?'selected':'')+' value="'+speed+'">'+speed+'x</option>').join('')+'</select></div><div class="er-analysis-line-controls" role="group" aria-label="Obs 曲线"><button type="button" data-obs-line="cmd" aria-pressed="true" onclick="toggleObsLine(\'cmd\')"><i class="cmd"></i>Action Chunk</button><button type="button" data-obs-line="state" aria-pressed="true" onclick="toggleObsLine(\'state\')"><i class="state"></i>Action Step</button></div><div id="mt-player-chart"></div></div></details>';
         function renderPlayerChart() {
           renderEvalMetricPanel('mt-player-chart');
         }
@@ -9108,6 +9108,10 @@ def _render_eval_trajectory_detail():
             <button type="button" id="er-trajectory-play" onclick="toggleEvalPlayback()" aria-label="播放视频">▶</button>
             <button type="button" onclick="setEvalPlaybackFrame(0)" aria-label="重置播放">↻</button>
           </div>
+        <div class="er-analysis-line-controls" role="group" aria-label="轨迹曲线">
+          <button type="button" data-eval-line="cmd" aria-pressed="true" onclick="toggleEvalLine('cmd')"><i class="cmd"></i>CMD</button>
+          <button type="button" data-eval-line="state" aria-pressed="true" onclick="toggleEvalLine('state')"><i class="state"></i>State</button>
+        </div>
         </div>
         <div class="er-trajectory-views">
           <div id="er-trajectory-arm-view" data-trajectory-view="arm"></div>
@@ -10009,11 +10013,6 @@ def eval_record_detail(record_id):
               <button type="button" data-trajectory-arm="Torso" onclick="toggleEvalTrajectoryArm(this, 'Torso')">Torso</button>
               <button type="button" data-trajectory-arm="RightArm" onclick="toggleEvalTrajectoryArm(this, 'RightArm')">RightArm</button>
             </div>
-            <i aria-hidden="true"></i><span>显示曲线</span>
-            <div class="er-analysis-line-controls" role="group" aria-label="轨迹与 Obs 曲线">
-              <button type="button" data-eval-line="cmd" aria-pressed="true" onclick="toggleEvalLine('cmd')"><i class="cmd"></i>CMD</button>
-              <button type="button" data-eval-line="state" aria-pressed="true" onclick="toggleEvalLine('state')"><i class="state"></i>State</button>
-            </div>
           </div>
           <details class="er-collapsible" open><summary>轨迹分析</summary><div class="er-collapsible-body" id="er-custom-trajectory">
           {trajectory_html}
@@ -10100,6 +10099,7 @@ def eval_record_detail(record_id):
     var evalTrajectoryMode = 'arm';
     var evalTrajectoryArms = new Set(['LeftArm']);
     var evalVisibleLines = {{cmd:true, state:true}};
+    var obsVisibleLines = {{cmd:true, state:true}};
     var evalExpandedMetric = {{}};
     function evalLegendHtml() {{
       return ['cmd','state'].map(kind => '<button type="button" data-eval-line="'+kind+'" aria-pressed="'+evalVisibleLines[kind]+'" onclick="toggleEvalLine(\\''+kind+'\\')"><i class="'+kind+'"></i>'+ (kind==='cmd'?'CMD':'State')+'</button>').join('');
@@ -10109,7 +10109,12 @@ def eval_record_detail(record_id):
       document.querySelectorAll('[data-eval-series="'+kind+'"]').forEach(line => line.style.display=evalVisibleLines[kind]?'':'none');
       document.querySelectorAll('[data-eval-line="'+kind+'"]').forEach(button => {{button.setAttribute('aria-pressed',evalVisibleLines[kind]);button.classList.toggle('is-muted',!evalVisibleLines[kind]);}});
     }}
-    function evalTrajectorySpark(seed, armIndex, rowIndex) {{
+    function toggleObsLine(kind) {{
+      obsVisibleLines[kind] = !obsVisibleLines[kind];
+      document.querySelectorAll('[data-obs-series="'+kind+'"]').forEach(line => line.style.display=obsVisibleLines[kind]?'':'none');
+      document.querySelectorAll('[data-obs-line="'+kind+'"]').forEach(button => button.setAttribute('aria-pressed',obsVisibleLines[kind]));
+    }}
+    function evalTrajectorySpark(seed, armIndex, rowIndex, obs) {{
       var series={{cmd:[],state:[]}};
       for(var index=0;index<72;index++) {{
         ['cmd','state'].forEach(function(kind) {{
@@ -10121,7 +10126,7 @@ def eval_record_detail(record_id):
       return '<svg class="er-trajectory-spark" viewBox="0 0 400 115" preserveAspectRatio="none" role="img" aria-label="时间与数值曲线">'
         + '<path d="M42 14V92H372 M42 54H372" fill="none" stroke="#dce6e9"/>'
         + '<g fill="#829197" font-size="9"><text x="12" y="20">1</text><text x="12" y="57">0</text><text x="8" y="92">−1</text><text x="42" y="108">0</text><text x="180" y="108">6.39</text><text x="325" y="108">12.78 s</text></g>'
-        + ['cmd','state'].map(kind=>'<polyline data-eval-series="'+kind+'" style="display:'+(evalVisibleLines[kind]?'':'none')+'" points="'+series[kind].join(' ')+'" fill="none" stroke="'+(kind==='cmd'?'#1F80A0':'#52c41a')+'" stroke-width="1.4"/>').join('')
+        + ['cmd','state'].map(kind=>'<polyline data-'+(obs?'obs':'eval')+'-series="'+kind+'" style="display:'+((obs?obsVisibleLines:evalVisibleLines)[kind]?'':'none')+'" points="'+series[kind].join(' ')+'" fill="none" stroke="'+(kind==='cmd'?'#1F80A0':'#52c41a')+'" stroke-width="1.4"/>').join('')
         + '<line class="er-trajectory-frame-line" data-frame-left="42" data-frame-width="330" x1="42" x2="42" y1="14" y2="92"/></svg>';
     }}
     function renderEvalMetricPanel(target) {{
@@ -10133,7 +10138,7 @@ def eval_record_detail(record_id):
       var rows=expanded?[expanded.row]:[0,1,2,3,4,5,6];
       view.innerHTML='<div class="er-metric-table-head" style="--arms:'+arms.length+'"><span></span>'+arms.map(arm=>'<b>'+arm+(expanded?' · '+['X','Y','Z','r','p','y','G'][expanded.row]:'')+'</b>').join('')+'</div><div class="er-six-metrics'+(expanded?' is-expanded':'')+'">'+rows.map(row=>{{
         var metric=['X','Y','Z','r','p','y','G'][row];
-        return '<section class="er-metric" data-metric="'+metric+'"><header><b>'+metric+'</b></header><div class="er-metric-plots" style="--arms:'+arms.length+'">'+arms.map(arm=>'<div class="er-metric-plot"><button type="button" data-metric-target="'+target+'" data-metric-row="'+row+'" data-metric-arm="'+arm+'" aria-label="'+(expanded?'缩回':'放大')+' '+(target==='mt-player-chart'?'Moztrace':'轨迹')+' '+arm+' '+metric+'" onclick="expandEvalMetric(this.dataset.metricTarget,Number(this.dataset.metricRow),this.dataset.metricArm)">'+(expanded?'↙':'⛶')+'</button>'+evalTrajectorySpark(1,['LeftArm','Torso','RightArm'].indexOf(arm),row)+'</div>').join('')+'</div></section>';
+        return '<section class="er-metric" data-metric="'+metric+'"><header><b>'+metric+'</b></header><div class="er-metric-plots" style="--arms:'+arms.length+'">'+arms.map(arm=>'<div class="er-metric-plot"><button type="button" data-metric-target="'+target+'" data-metric-row="'+row+'" data-metric-arm="'+arm+'" aria-label="'+(expanded?'缩回':'放大')+' '+(target==='mt-player-chart'?'Moztrace':'轨迹')+' '+arm+' '+metric+'" onclick="expandEvalMetric(this.dataset.metricTarget,Number(this.dataset.metricRow),this.dataset.metricArm)">'+(expanded?'↙':'⛶')+'</button>'+evalTrajectorySpark(1,['LeftArm','Torso','RightArm'].indexOf(arm),row,target==='mt-player-chart')+'</div>').join('')+'</div></section>';
       }}).join('')+'</div>';
     }}
     function renderEvalTrajectoryArms() {{
@@ -10393,7 +10398,7 @@ def eval_record_detail(record_id):
       .er-analysis-line-controls i {{ display:inline-block; width:8px; height:8px; border-radius:2px; }}
       .er-analysis-line-controls .cmd {{ background:#1F80A0; }}
       .er-analysis-line-controls .state {{ background:#52c41a; }}
-      .er-trajectory-toolbar {{ display:grid; grid-template-columns:minmax(0,1fr) auto minmax(120px,1fr); align-items:center; gap:12px; min-height:34px; padding-bottom:8px; border-bottom:1px solid #edf0f2; }}
+      .er-trajectory-toolbar {{ display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:center; gap:12px; min-height:34px; padding-bottom:8px; border-bottom:1px solid #edf0f2; }}
       .er-trajectory-tabs {{ display:flex; align-items:center; gap:6px; min-width:0; overflow-x:auto; }}
       .er-trajectory-tabs button {{ flex:none; min-height:28px; padding:4px 11px; border:1px solid #d8e0e3; border-radius:5px; background:#fff; color:rgba(0,0,0,.58); font-size:11.5px; cursor:pointer; }}
       .er-trajectory-tabs button:hover {{ border-color:#1F80A0; color:#1F80A0; }}
@@ -10407,13 +10412,22 @@ def eval_record_detail(record_id):
       .er-trajectory-legend i {{ display:inline-block; width:8px; height:8px; border-radius:2px; }}
       .er-trajectory-legend .cmd {{ background:#1F80A0; }}
       .er-trajectory-legend .state {{ background:#52c41a; }}
-      .er-trajectory-views {{ height:auto; overflow:visible; }}
+      .er-trajectory-views {{ height:300px; overflow:hidden; }}
+      #mt-player-chart {{ height:300px; overflow:hidden; }}
+      .er-trajectory-views .er-trajectory-replay {{ height:300px; margin-top:0; box-sizing:border-box; }}
+      .er-detail-page {{ --eval-camera-height:150px; }}
+      .er-detail-page .er-detail-video-card .lab-vid.er-record-video,
+      .er-detail-page .mt-import .mt-images img {{ height:var(--eval-camera-height); min-height:0; aspect-ratio:auto; object-fit:contain; }}
+      .er-analysis-line-controls {{ justify-content:flex-end; padding:4px 0; font-size:11px; }}
+      [data-obs-line] {{ display:inline-flex; align-items:center; gap:5px; border:0!important; padding:5px; background:none; color:#52666d; cursor:pointer; }}
+      [data-obs-line][aria-pressed=false] {{ opacity:.4; text-decoration:line-through; }}
+      #mt-latency-chart svg {{ height:280px; width:100%; }}
       .er-metric {{ border:1px solid #e1e9ec; border-radius:5px; padding:4px 6px; margin-bottom:6px; }}
       .er-metric header {{ display:flex; align-items:center; justify-content:space-between; font-size:11px; }}
       .er-metric header button {{ border:0; background:none; cursor:pointer; color:#617c88; }}
       .er-metric-table-head {{ display:grid;grid-template-columns:56px repeat(var(--arms),minmax(0,1fr));background:#edf0f6;height:20px;align-items:center;text-align:center;font-size:10px;border:1px solid #e8ebef; }}
       .er-six-metrics {{ height:280px; display:grid; grid-template-rows:repeat(7,minmax(0,1fr)); gap:0; border-left:1px solid #e8ebef; }}
-      .er-six-metrics.is-expanded {{ height:450px;grid-template-rows:minmax(0,1fr); }}
+      .er-six-metrics.is-expanded {{ height:280px;grid-template-rows:minmax(0,1fr); }}
       .er-six-metrics .er-metric {{ position:relative;min-height:0;margin:0;padding:0;border:0;border-right:1px solid #e8ebef;border-bottom:1px solid #e8ebef;border-radius:0;display:grid;grid-template-columns:56px minmax(0,1fr); }}
       .er-six-metrics .er-metric header {{ border-right:1px solid #e8ebef;padding-left:8px;font-size:10px; }}
       .er-six-metrics .er-metric header b {{ font-weight:400; }}
@@ -10439,10 +10453,10 @@ def eval_record_detail(record_id):
       .er-trajectory-grid tr:last-child td {{ border-bottom:0; }}
       .er-trajectory-spark {{ display:block; width:100%; height:19px; }}
       .er-trajectory-frame-line {{ stroke:#d46b36; stroke-width:1.4; stroke-dasharray:3 2; vector-effect:non-scaling-stroke; pointer-events:none; }}
-      .er-trajectory-base-grid {{ display:grid; grid-template-columns:1fr 1fr; gap:12px; height:100%; padding:8px 0 2px; box-sizing:border-box; }}
+      .er-trajectory-base-grid {{ display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); grid-template-rows:minmax(0,1fr); gap:12px; height:300px; overflow:hidden; padding:8px 0 2px; box-sizing:border-box; }}
       .er-trajectory-base-grid > div {{ display:flex; flex-direction:column; min-width:0; padding:10px 12px 7px; border:1px solid #e5eaec; border-radius:6px; background:#fbfcfc; }}
       .er-trajectory-base-grid b {{ margin-bottom:6px; color:rgba(0,0,0,.68); font-size:11px; font-weight:500; }}
-      .er-trajectory-base-grid .er-trajectory-spark, .er-trajectory-xy {{ flex:1; width:100%; height:110px; }}
+      .er-trajectory-base-grid .er-trajectory-spark, .er-trajectory-xy {{ flex:1; min-height:0; width:100%; height:0; }}
       .er-trajectory-replay {{ position:relative; height:166px; margin-top:8px; overflow:hidden; border:1px solid #e5eaec; border-radius:6px; background:#fbfcfd; }}
       .er-trajectory-floor {{ position:absolute; inset:45% 0 -50%; background-size:28px 28px; background-image:linear-gradient(#e7edef 1px,transparent 1px),linear-gradient(90deg,#e7edef 1px,transparent 1px); transform:perspective(420px) rotateX(55deg); transform-origin:bottom; }}
       .er-trajectory-robot {{ position:absolute; left:45%; top:51px; display:flex; flex-direction:column; align-items:center; gap:3px; transition:transform .12s linear; }}
