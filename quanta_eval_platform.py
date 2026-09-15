@@ -8913,7 +8913,7 @@ def _render_moztrace_reference_panels():
         roots.overview.innerHTML='<h3>概览</h3>'+stats([['任务',overview.task_count],['动作块',overview.chunk_count],['动作步',overview.step_count],['图像',overview.image_count]])+'<details open><summary>元数据</summary><pre id="mt-meta"></pre></details>';
         el('meta').textContent=JSON.stringify(overview.meta,null,2);
         roots.schema.innerHTML='<h3>Schema</h3><div class="mt-schema">'+data.schema.tables.map(table=>'<section><h3>'+esc(table.name)+'</h3><table><thead><tr><th>字段</th><th>类型</th><th>非空</th><th>主键</th></tr></thead><tbody>'+table.columns.map(c=>'<tr><td>'+esc(c.name)+'</td><td>'+esc(c.type)+'</td><td>'+(c.not_null?'是':'否')+'</td><td>'+(c.primary_key?'是':'否')+'</td></tr>').join('')+'</tbody></table></section>').join('')+'</div>';
-        roots.player.innerHTML='<section class="er-analysis-module"><header class="er-module-heading"><h3>Moztrace</h3></header><div class="er-collapsible-body"><div class="mt-tools"><span id="mt-frame-context"></span><span id="mt-frame-time"></span></div><details class="er-collapsible er-obs-camera-collapse" open><summary>Moztrace 相机（3 路）</summary><div class="er-collapsible-body"><div class="mt-images">'+[['image_left_wrist','左腕相机'],['image_high','头部相机'],['image_right_wrist','右腕相机']].map(([key,label])=>'<figure><figcaption>'+label+'</figcaption><img id="mt-'+key+'" alt="'+label+'"><span id="mt-'+key+'-error"></span></figure>').join('')+'</div></div></details><div class="mt-tools mt-local-controls"><button id="mt-prev" aria-label="上一观测帧">◀</button><button id="mt-play" aria-label="播放观测">▶</button><button id="mt-next" aria-label="下一观测帧">▶|</button><input id="mt-frame" type="range" min="0" max="'+Math.max(0,frames.length-1)+'" value="0" aria-label="观测帧进度"><span id="mt-count"></span><select id="mt-speed" aria-label="观测播放速度">'+[.25,.5,1,2,4].map(speed=>'<option '+(speed===1?'selected':'')+' value="'+speed+'">'+speed+'x</option>').join('')+'</select></div><div class="er-analysis-line-controls" role="group" aria-label="Moztrace 曲线"><button type="button" data-obs-line="cmd" aria-pressed="true" onclick="toggleObsLine(\'cmd\')"><i class="cmd"></i>Action Chunk</button><button type="button" data-obs-line="state" aria-pressed="true" onclick="toggleObsLine(\'state\')"><i class="state"></i>Action Step</button></div><div id="mt-player-chart"></div></div></section>';
+        roots.player.innerHTML='<section class="er-analysis-module"><header class="er-module-heading"><h3>Observation Player</h3></header><div class="er-collapsible-body"><div class="mt-tools"><span id="mt-frame-context"></span><span id="mt-frame-time"></span></div><details class="er-collapsible er-obs-camera-collapse" open><summary>Observation Player 相机（3 路）</summary><div class="er-collapsible-body"><div class="mt-images">'+[['image_left_wrist','左腕相机'],['image_high','头部相机'],['image_right_wrist','右腕相机']].map(([key,label])=>'<figure><figcaption>'+label+'</figcaption><img id="mt-'+key+'" alt="'+label+'"><span id="mt-'+key+'-error"></span></figure>').join('')+'</div></div></details><div class="mt-tools mt-local-controls"><button id="mt-prev" aria-label="上一观测帧">◀</button><button id="mt-play" aria-label="播放观测">▶</button><button id="mt-next" aria-label="下一观测帧">▶|</button><input id="mt-frame" type="range" min="0" max="'+Math.max(0,frames.length-1)+'" value="0" aria-label="观测帧进度"><span id="mt-count"></span><select id="mt-speed" aria-label="观测播放速度">'+[.25,.5,1,2,4].map(speed=>'<option '+(speed===1?'selected':'')+' value="'+speed+'">'+speed+'x</option>').join('')+'</select></div><div class="er-observation-toolbar"><div class="er-analysis-arm-controls" role="group" aria-label="Observation Player 部位"><button type="button" data-observation-arm="LeftArm" aria-pressed="true" class="active" onclick="toggleObservationArm(\'LeftArm\')">LeftArm</button><button type="button" data-observation-arm="Torso" aria-pressed="false" class="" onclick="toggleObservationArm(\'Torso\')">Torso</button><button type="button" data-observation-arm="RightArm" aria-pressed="false" class="" onclick="toggleObservationArm(\'RightArm\')">RightArm</button></div><div class="er-analysis-line-controls" role="group" aria-label="Observation Player 曲线"><button type="button" data-obs-line="cmd" aria-pressed="true" onclick="toggleObsLine(\'cmd\')"><i class="cmd"></i>Action Chunk</button><button type="button" data-obs-line="state" aria-pressed="true" onclick="toggleObsLine(\'state\')"><i class="state"></i>Action Step</button></div></div><div id="mt-player-chart"></div></div></section>';
         function renderPlayerChart() {
           renderEvalMetricPanel('mt-player-chart');
         }
@@ -8937,7 +8937,7 @@ def _render_moztrace_reference_panels():
         el('speed').value=String(evalPlaybackRate);
         el('speed').onchange=()=>setEvalPlaybackRate(el('speed').value);
         for(const key of ['image_left_wrist','image_high','image_right_wrist'])el(key).onerror=()=>{el(key).hidden=true;el(key+'-error').textContent='图片加载失败，请刷新重试';};
-        roots.latency.innerHTML='<section class="er-analysis-module"><h3>Moztrace推理延迟</h3><div class="er-collapsible-body"><div class="mt-tools mt-local-controls"><button type="button" data-eval-play onclick="toggleEvalPlayback()">▶</button><button type="button" onclick="setEvalPlaybackFrame(0)">重置</button><span id="mt-latency-time"></span></div>'+stats([['平均延迟','inference_avg_ms'],['最小延迟','inference_min_ms'],['最大延迟','inference_max_ms'],['P50','inference_p50_ms'],['P95','inference_p95_ms'],['P99','inference_p99_ms'],['下发与观测平均时间差','dispatch_to_observation_avg_ms']].map(([label,key])=>[label,number(data.latency[key])+' ms']).concat([['样本数',data.latency.samples]]))+'<div id="mt-latency-chart"></div></div></section>';
+        roots.latency.innerHTML='<section class="er-analysis-module"><h3>推理延迟</h3><div class="er-collapsible-body"><div class="mt-tools mt-local-controls"><button type="button" data-eval-play onclick="toggleEvalPlayback()">▶</button><button type="button" onclick="setEvalPlaybackFrame(0)">重置</button><span id="mt-latency-time"></span></div>'+stats([['平均延迟','inference_avg_ms'],['最小延迟','inference_min_ms'],['最大延迟','inference_max_ms'],['P50','inference_p50_ms'],['P95','inference_p95_ms'],['P99','inference_p99_ms'],['下发与观测平均时间差','dispatch_to_observation_avg_ms']].map(([label,key])=>[label,number(data.latency[key])+' ms']).concat([['样本数',data.latency.samples]]))+'<div id="mt-latency-chart"></div></div></section>';
         chart('latency-chart',[{name:'Inference latency · 左轴 (ms)',x:latency.map(p=>p.chunk_seq),y:latency.map(p=>p.inference_latency_ms)},{name:'Inference interval · 右轴 (ms)',x:latency.slice(1).map(p=>p.chunk_seq),y:latency.slice(1).map((p,i)=>p.task_id===latency[i].task_id?(p.inference_start_ts-latency[i].inference_start_ts)*1000:null)}],'Inference Latency and Interval','Chunk Index',latency,true);
         renderFrame();renderPlayerChart();
         window.addEventListener('eval-series-change',renderPlayerChart);
@@ -9102,6 +9102,9 @@ def _render_eval_trajectory_detail():
         <div class="er-trajectory-toolbar">
           <div class="er-trajectory-tabs" role="tablist" aria-label="轨迹视图">
             <h3>轨迹分析</h3>
+            <button type="button" class="active" data-trajectory-arm="LeftArm" onclick="toggleEvalTrajectoryArm(this, 'LeftArm')">LeftArm</button>
+            <button type="button" data-trajectory-arm="Torso" onclick="toggleEvalTrajectoryArm(this, 'Torso')">Torso</button>
+            <button type="button" data-trajectory-arm="RightArm" onclick="toggleEvalTrajectoryArm(this, 'RightArm')">RightArm</button>
             <button type="button" data-trajectory-mode="base" onclick="setEvalTrajectoryMode(this, 'base')">Base</button>
             <button type="button" data-trajectory-mode="replay" onclick="setEvalTrajectoryMode(this, 'replay')">3D Replay</button>
           </div>
@@ -10008,15 +10011,11 @@ def eval_record_detail(record_id):
       <section id="er-detail-moztrace-pane" class="er-detail-pane" style="display:none;">
         <div class="er-trajectory-obs-zone">
           <div class="er-analysis-toolbar" aria-label="轨迹与 Moztrace 设置">
+            <div class="er-analysis-setting-group" role="group" aria-label="展示模块">
             <b>展示</b>
             <label><input type="checkbox" data-analysis-module="trajectory" checked onchange="saveAnalysisModules()">轨迹分析</label>
-            <label><input type="checkbox" data-analysis-module="moztrace" checked onchange="saveAnalysisModules()">Moztrace</label>
-            <label><input type="checkbox" data-analysis-module="latency" checked onchange="saveAnalysisModules()">Moztrace推理延迟</label>
-            <b id="er-arm-label" class="er-arm-help" tabindex="0" aria-describedby="er-arm-tooltip">查看部位<span id="er-arm-tooltip" role="tooltip">作用于轨迹与 Moztrace</span></b>
-            <div class="er-analysis-arm-controls" role="group" aria-label="轨迹与 Moztrace 查看部位">
-              <button type="button" class="active" data-trajectory-arm="LeftArm" onclick="toggleEvalTrajectoryArm(this, 'LeftArm')">LeftArm</button>
-              <button type="button" data-trajectory-arm="Torso" onclick="toggleEvalTrajectoryArm(this, 'Torso')">Torso</button>
-              <button type="button" data-trajectory-arm="RightArm" onclick="toggleEvalTrajectoryArm(this, 'RightArm')">RightArm</button>
+            <label><input type="checkbox" data-analysis-module="moztrace" checked onchange="saveAnalysisModules()">Observation Player</label>
+            <label><input type="checkbox" data-analysis-module="latency" checked onchange="saveAnalysisModules()">推理延迟</label>
             </div>
           </div>
           <section id="er-analysis-trajectory" class="er-analysis-module"><div class="er-collapsible-body" id="er-custom-trajectory">
@@ -10053,9 +10052,6 @@ def eval_record_detail(record_id):
         var panel=document.getElementById(targets[input.dataset.analysisModule]);
         if(panel)panel.hidden=!input.checked;
       }});
-      var armsDisabled=!document.querySelector('[data-analysis-module="trajectory"]').checked && !document.querySelector('[data-analysis-module="moztrace"]').checked;
-      document.querySelectorAll('[data-trajectory-arm]').forEach(button=>button.disabled=armsDisabled);
-      document.getElementById('er-arm-label').classList.toggle('is-disabled',armsDisabled);
     }}
     function saveAnalysisModules() {{
       var selection={{}};
@@ -10126,6 +10122,19 @@ def eval_record_detail(record_id):
     }}
     var evalTrajectoryMode = 'arm';
     var evalTrajectoryArms = new Set(['LeftArm']);
+    var observationArms = new Set(['LeftArm']);
+    function toggleObservationArm(arm) {{
+      if(observationArms.has(arm)) {{
+        if(observationArms.size>1)observationArms.delete(arm);
+      }} else observationArms.add(arm);
+      delete evalExpandedMetric['mt-player-chart'];
+      document.querySelectorAll('[data-observation-arm]').forEach(button=>{{
+        var selected=observationArms.has(button.dataset.observationArm);
+        button.classList.toggle('active',selected); button.setAttribute('aria-pressed',selected);
+      }});
+      renderEvalMetricPanel('mt-player-chart');
+      setEvalPlaybackFrame(evalPlaybackFrame);
+    }}
     var evalVisibleLines = {{cmd:true, state:true}};
     var obsVisibleLines = {{cmd:true, state:true}};
     var evalExpandedMetric = {{}};
@@ -10161,7 +10170,7 @@ def eval_record_detail(record_id):
       var view=document.getElementById(target);
       if(!view)return;
       var expanded=evalExpandedMetric[target];
-      var selectedArms=['LeftArm','Torso','RightArm'].filter(arm=>evalTrajectoryArms.has(arm));
+      var selectedArms=['LeftArm','Torso','RightArm'].filter(arm=>(target==='mt-player-chart'?observationArms:evalTrajectoryArms).has(arm));
       var arms=expanded?[expanded.arm]:selectedArms;
       var rows=expanded?[expanded.row]:[0,1,2,3,4,5,6];
       view.innerHTML='<div class="er-metric-table-head" style="--arms:'+arms.length+'"><span></span>'+arms.map(arm=>'<b>'+arm+(expanded?' · '+['X','Y','Z','r','p','y','G'][expanded.row]:'')+'</b>').join('')+'</div><div class="er-six-metrics'+(expanded?' is-expanded':'')+'">'+rows.map(row=>{{
@@ -10172,7 +10181,6 @@ def eval_record_detail(record_id):
     function renderEvalTrajectoryArms() {{
       renderEvalMetricPanel('er-trajectory-arm-view');
       document.querySelectorAll('[data-trajectory-arm]').forEach(button=>button.setAttribute('aria-pressed',evalTrajectoryArms.has(button.dataset.trajectoryArm)));
-      window.dispatchEvent(new Event('eval-series-change'));
       setEvalPlaybackFrame(evalPlaybackFrame);
     }}
     function expandEvalMetric(target,row,arm) {{
@@ -10203,6 +10211,7 @@ def eval_record_detail(record_id):
       if (evalTrajectoryMode === 'base') renderEvalTrajectoryBase();
     }}
     function toggleEvalTrajectoryArm(button, arm) {{
+      delete evalExpandedMetric['er-trajectory-arm-view'];
       if (evalTrajectoryMode !== 'arm') {{
         evalTrajectoryMode = 'arm';
         evalTrajectoryArms = new Set([arm]);
@@ -10418,6 +10427,9 @@ def eval_record_detail(record_id):
       .er-trajectory-obs-zone {{ position:relative; }}
       .er-analysis-toolbar {{ position:sticky; top:56px; z-index:4; display:flex; align-items:center; flex-wrap:wrap; gap:8px; margin:0 0 10px; padding:8px 10px; border:1px solid #e1e9ec; border-radius:7px; background:#f8fbfb; color:#52666d; font-size:11.5px; box-shadow:0 2px 8px #0000000a; }}
       .er-analysis-toolbar b {{ color:#344b53; font-size:12px; }}
+      .er-analysis-setting-group {{ display:flex; align-items:center; gap:12px; flex-wrap:wrap; }}
+      .er-observation-toolbar {{ display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; }}
+      .er-analysis-part-group {{ margin-left:8px; padding-left:16px; border-left:1px solid #dce6e9; }}
       .er-analysis-toolbar label {{ display:inline-flex; align-items:center; gap:4px; cursor:pointer; white-space:nowrap; }}
       .er-analysis-toolbar input {{ accent-color:#1F80A0; }}
       #er-detail-moztrace-pane .er-analysis-module h3 {{ font-size:12px; font-weight:600; line-height:22px; margin:0; padding:4px 8px; color:#344b53; }}
