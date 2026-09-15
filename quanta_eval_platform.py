@@ -8913,7 +8913,7 @@ def _render_moztrace_reference_panels():
         roots.overview.innerHTML='<h3>概览</h3>'+stats([['任务',overview.task_count],['动作块',overview.chunk_count],['动作步',overview.step_count],['图像',overview.image_count]])+'<details open><summary>元数据</summary><pre id="mt-meta"></pre></details>';
         el('meta').textContent=JSON.stringify(overview.meta,null,2);
         roots.schema.innerHTML='<h3>Schema</h3><div class="mt-schema">'+data.schema.tables.map(table=>'<section><h3>'+esc(table.name)+'</h3><table><thead><tr><th>字段</th><th>类型</th><th>非空</th><th>主键</th></tr></thead><tbody>'+table.columns.map(c=>'<tr><td>'+esc(c.name)+'</td><td>'+esc(c.type)+'</td><td>'+(c.not_null?'是':'否')+'</td><td>'+(c.primary_key?'是':'否')+'</td></tr>').join('')+'</tbody></table></section>').join('')+'</div>';
-        roots.player.innerHTML='<details class="er-collapsible" open><summary>Obs</summary><div class="er-collapsible-body"><div class="mt-tools"><span id="mt-frame-context"></span><span id="mt-frame-time"></span></div><details class="er-collapsible er-obs-camera-collapse" open><summary>Obs 相机（3 路）</summary><div class="er-collapsible-body"><div class="mt-images">'+[['image_left_wrist','左腕相机'],['image_high','头部相机'],['image_right_wrist','右腕相机']].map(([key,label])=>'<figure><figcaption>'+label+'</figcaption><img id="mt-'+key+'" alt="'+label+'"><span id="mt-'+key+'-error"></span></figure>').join('')+'</div></div></details><div class="mt-tools mt-local-controls"><button id="mt-prev" aria-label="上一观测帧">◀</button><button id="mt-play" aria-label="播放观测">▶</button><button id="mt-next" aria-label="下一观测帧">▶|</button><input id="mt-frame" type="range" min="0" max="'+Math.max(0,frames.length-1)+'" value="0" aria-label="观测帧进度"><span id="mt-count"></span><select id="mt-speed" aria-label="观测播放速度">'+[.25,.5,1,2,4].map(speed=>'<option '+(speed===1?'selected':'')+' value="'+speed+'">'+speed+'x</option>').join('')+'</select></div><div class="er-analysis-line-controls" role="group" aria-label="Obs 曲线"><button type="button" data-obs-line="cmd" aria-pressed="true" onclick="toggleObsLine(\'cmd\')"><i class="cmd"></i>Action Chunk</button><button type="button" data-obs-line="state" aria-pressed="true" onclick="toggleObsLine(\'state\')"><i class="state"></i>Action Step</button></div><div id="mt-player-chart"></div></div></details>';
+        roots.player.innerHTML='<section class="er-analysis-module"><header class="er-module-heading"><h3>Moztrace</h3></header><div class="er-collapsible-body"><div class="mt-tools"><span id="mt-frame-context"></span><span id="mt-frame-time"></span></div><details class="er-collapsible er-obs-camera-collapse" open><summary>Moztrace 相机（3 路）</summary><div class="er-collapsible-body"><div class="mt-images">'+[['image_left_wrist','左腕相机'],['image_high','头部相机'],['image_right_wrist','右腕相机']].map(([key,label])=>'<figure><figcaption>'+label+'</figcaption><img id="mt-'+key+'" alt="'+label+'"><span id="mt-'+key+'-error"></span></figure>').join('')+'</div></div></details><div class="mt-tools mt-local-controls"><button id="mt-prev" aria-label="上一观测帧">◀</button><button id="mt-play" aria-label="播放观测">▶</button><button id="mt-next" aria-label="下一观测帧">▶|</button><input id="mt-frame" type="range" min="0" max="'+Math.max(0,frames.length-1)+'" value="0" aria-label="观测帧进度"><span id="mt-count"></span><select id="mt-speed" aria-label="观测播放速度">'+[.25,.5,1,2,4].map(speed=>'<option '+(speed===1?'selected':'')+' value="'+speed+'">'+speed+'x</option>').join('')+'</select></div><div class="er-analysis-line-controls" role="group" aria-label="Moztrace 曲线"><button type="button" data-obs-line="cmd" aria-pressed="true" onclick="toggleObsLine(\'cmd\')"><i class="cmd"></i>Action Chunk</button><button type="button" data-obs-line="state" aria-pressed="true" onclick="toggleObsLine(\'state\')"><i class="state"></i>Action Step</button></div><div id="mt-player-chart"></div></div></section>';
         function renderPlayerChart() {
           renderEvalMetricPanel('mt-player-chart');
         }
@@ -8937,7 +8937,7 @@ def _render_moztrace_reference_panels():
         el('speed').value=String(evalPlaybackRate);
         el('speed').onchange=()=>setEvalPlaybackRate(el('speed').value);
         for(const key of ['image_left_wrist','image_high','image_right_wrist'])el(key).onerror=()=>{el(key).hidden=true;el(key+'-error').textContent='图片加载失败，请刷新重试';};
-        roots.latency.innerHTML='<details class="er-collapsible" open><summary>延迟</summary><div class="er-collapsible-body"><div class="mt-tools mt-local-controls"><button type="button" data-eval-play onclick="toggleEvalPlayback()">▶</button><button type="button" onclick="setEvalPlaybackFrame(0)">重置</button><span id="mt-latency-time"></span></div>'+stats([['平均延迟','inference_avg_ms'],['最小延迟','inference_min_ms'],['最大延迟','inference_max_ms'],['P50','inference_p50_ms'],['P95','inference_p95_ms'],['P99','inference_p99_ms'],['下发与观测平均时间差','dispatch_to_observation_avg_ms']].map(([label,key])=>[label,number(data.latency[key])+' ms']).concat([['样本数',data.latency.samples]]))+'<div id="mt-latency-chart"></div></div></details>';
+        roots.latency.innerHTML='<section class="er-analysis-module"><h3>Moztrace推理延迟</h3><div class="er-collapsible-body"><div class="mt-tools mt-local-controls"><button type="button" data-eval-play onclick="toggleEvalPlayback()">▶</button><button type="button" onclick="setEvalPlaybackFrame(0)">重置</button><span id="mt-latency-time"></span></div>'+stats([['平均延迟','inference_avg_ms'],['最小延迟','inference_min_ms'],['最大延迟','inference_max_ms'],['P50','inference_p50_ms'],['P95','inference_p95_ms'],['P99','inference_p99_ms'],['下发与观测平均时间差','dispatch_to_observation_avg_ms']].map(([label,key])=>[label,number(data.latency[key])+' ms']).concat([['样本数',data.latency.samples]]))+'<div id="mt-latency-chart"></div></div></section>';
         chart('latency-chart',[{name:'Inference latency · 左轴 (ms)',x:latency.map(p=>p.chunk_seq),y:latency.map(p=>p.inference_latency_ms)},{name:'Inference interval · 右轴 (ms)',x:latency.slice(1).map(p=>p.chunk_seq),y:latency.slice(1).map((p,i)=>p.task_id===latency[i].task_id?(p.inference_start_ts-latency[i].inference_start_ts)*1000:null)}],'Inference Latency and Interval','Chunk Index',latency,true);
         renderFrame();renderPlayerChart();
         window.addEventListener('eval-series-change',renderPlayerChart);
@@ -9074,7 +9074,7 @@ def _render_moztrace_detail(record):
     analysis = f'''
       <div class="moztrace-shell">
         <div class="moztrace-tabs" role="tablist">
-          <button class="moztrace-tab active" role="tab" aria-selected="true" type="button" onclick="switchMoztracePane('obs-player', this)">Obs Player</button>
+          <button class="moztrace-tab active" role="tab" aria-selected="true" type="button" onclick="switchMoztracePane('obs-player', this)">Moztrace</button>
           <button class="moztrace-tab" role="tab" aria-selected="false" type="button" onclick="switchMoztracePane('latency', this)">延迟</button>
         </div>
 
@@ -9101,6 +9101,7 @@ def _render_eval_trajectory_detail():
       <div class="er-trajectory-shell">
         <div class="er-trajectory-toolbar">
           <div class="er-trajectory-tabs" role="tablist" aria-label="轨迹视图">
+            <h3>轨迹分析</h3>
             <button type="button" data-trajectory-mode="base" onclick="setEvalTrajectoryMode(this, 'base')">Base</button>
             <button type="button" data-trajectory-mode="replay" onclick="setEvalTrajectoryMode(this, 'replay')">3D Replay</button>
           </div>
@@ -10006,17 +10007,21 @@ def eval_record_detail(record_id):
       </section>
       <section id="er-detail-moztrace-pane" class="er-detail-pane" style="display:none;">
         <div class="er-trajectory-obs-zone">
-          <div class="er-analysis-toolbar" aria-label="轨迹与 Obs 设置">
-            <b>轨迹与 Obs 设置</b><span>查看部位</span>
-            <div class="er-analysis-arm-controls" role="group" aria-label="轨迹与 Obs 查看部位">
+          <div class="er-analysis-toolbar" aria-label="轨迹与 Moztrace 设置">
+            <b>展示</b>
+            <label><input type="checkbox" data-analysis-module="trajectory" checked onchange="saveAnalysisModules()">轨迹分析</label>
+            <label><input type="checkbox" data-analysis-module="moztrace" checked onchange="saveAnalysisModules()">Moztrace</label>
+            <label><input type="checkbox" data-analysis-module="latency" checked onchange="saveAnalysisModules()">Moztrace推理延迟</label>
+            <b id="er-arm-label" class="er-arm-help" tabindex="0" aria-describedby="er-arm-tooltip">查看部位<span id="er-arm-tooltip" role="tooltip">作用于轨迹与 Moztrace</span></b>
+            <div class="er-analysis-arm-controls" role="group" aria-label="轨迹与 Moztrace 查看部位">
               <button type="button" class="active" data-trajectory-arm="LeftArm" onclick="toggleEvalTrajectoryArm(this, 'LeftArm')">LeftArm</button>
               <button type="button" data-trajectory-arm="Torso" onclick="toggleEvalTrajectoryArm(this, 'Torso')">Torso</button>
               <button type="button" data-trajectory-arm="RightArm" onclick="toggleEvalTrajectoryArm(this, 'RightArm')">RightArm</button>
             </div>
           </div>
-          <details class="er-collapsible" open><summary>轨迹分析</summary><div class="er-collapsible-body" id="er-custom-trajectory">
+          <section id="er-analysis-trajectory" class="er-analysis-module"><div class="er-collapsible-body" id="er-custom-trajectory">
           {trajectory_html}
-          </div></details>
+          </div></section>
           <div id="eval-shared-obs-slot"></div>
         </div>
         {moztrace_html['analysis']}
@@ -10042,6 +10047,29 @@ def eval_record_detail(record_id):
     <script>
     var recordInitial = {json.dumps({'conclusion': selected_conclusion, 'completion': str(record['metrics']['任务完成度']).rstrip('%'), 'quality': record['metrics']['执行质量']}, ensure_ascii=False)};
     var recordSaving = false;
+    function applyAnalysisModules() {{
+      var targets = {{trajectory:'er-analysis-trajectory',moztrace:'moztrace-pane-obs-player',latency:'moztrace-pane-latency'}};
+      document.querySelectorAll('[data-analysis-module]').forEach(function(input) {{
+        var panel=document.getElementById(targets[input.dataset.analysisModule]);
+        if(panel)panel.hidden=!input.checked;
+      }});
+      var armsDisabled=!document.querySelector('[data-analysis-module="trajectory"]').checked && !document.querySelector('[data-analysis-module="moztrace"]').checked;
+      document.querySelectorAll('[data-trajectory-arm]').forEach(button=>button.disabled=armsDisabled);
+      document.getElementById('er-arm-label').classList.toggle('is-disabled',armsDisabled);
+    }}
+    function saveAnalysisModules() {{
+      var selection={{}};
+      document.querySelectorAll('[data-analysis-module]').forEach(input=>selection[input.dataset.analysisModule]=input.checked);
+      try {{ localStorage.setItem('eval-analysis-modules',JSON.stringify(selection)); }} catch(e) {{}}
+      applyAnalysisModules();
+    }}
+    try {{
+      var savedModules=JSON.parse(localStorage.getItem('eval-analysis-modules')||'null');
+      if(savedModules&&typeof savedModules==='object')document.querySelectorAll('[data-analysis-module]').forEach(input=>{{
+        if(typeof savedModules[input.dataset.analysisModule]==='boolean')input.checked=savedModules[input.dataset.analysisModule];
+      }});
+    }} catch(e) {{}}
+    applyAnalysisModules();
     function recordChanged() {{
       var form = document.getElementById('er-record-edit');
       return !form.hidden && (form.elements.conclusion.value !== recordInitial.conclusion || Number(form.elements.completion.value) !== Number(recordInitial.completion) || form.elements.quality.value !== recordInitial.quality || form.elements.completion.value === '');
@@ -10310,8 +10338,8 @@ def eval_record_detail(record_id):
       .er-video-collapse .er-detail-video-card {{ margin:0; border:0; padding:0; }}
       .er-video-collapse .er-detail-playback,.mt-local-controls,.er-trajectory-playback,.er-record-video [data-eval-play] {{ display:none!important; }}
       #er-detail-moztrace-pane .moztrace-tabs {{ display:none; }}
-      #er-detail-moztrace-pane .moztrace-subpane {{ margin-top:20px; }}
-      #er-detail-moztrace-pane #moztrace-pane-latency {{ display:block!important; }}
+      #er-detail-moztrace-pane .moztrace-subpane {{ margin-top:8px; }}
+      #er-detail-moztrace-pane #moztrace-pane-latency:not([hidden]) {{ display:block!important; }}
       .er-detail-footer {{ position:sticky; bottom:0; z-index:6; margin-top:16px; background:rgba(255,255,255,.98); border-top:1px solid #dce6e9; box-shadow:0 -2px 10px #0000000d; }}
       .er-detail-footer .moztrace-playback {{ display:flex; align-items:center; gap:8px; margin:0; padding:8px 2px; border:0; }}
       @media(max-width:700px) {{ .er-detail-footer .moztrace-playback {{ flex-wrap:wrap; }} }}
@@ -10390,15 +10418,26 @@ def eval_record_detail(record_id):
       .er-trajectory-obs-zone {{ position:relative; }}
       .er-analysis-toolbar {{ position:sticky; top:56px; z-index:4; display:flex; align-items:center; flex-wrap:wrap; gap:8px; margin:0 0 10px; padding:8px 10px; border:1px solid #e1e9ec; border-radius:7px; background:#f8fbfb; color:#52666d; font-size:11.5px; box-shadow:0 2px 8px #0000000a; }}
       .er-analysis-toolbar b {{ color:#344b53; font-size:12px; }}
+      .er-analysis-toolbar label {{ display:inline-flex; align-items:center; gap:4px; cursor:pointer; white-space:nowrap; }}
+      .er-analysis-toolbar input {{ accent-color:#1F80A0; }}
+      #er-detail-moztrace-pane .er-analysis-module h3 {{ font-size:12px; font-weight:600; line-height:22px; margin:0; padding:4px 8px; color:#344b53; }}
+      .er-module-heading {{ display:flex; align-items:center; justify-content:space-between; gap:8px; padding-right:8px; min-height:30px; }}
+      #er-detail-moztrace-pane .er-trajectory-tabs h3 {{ padding:4px 0; margin-right:6px; white-space:nowrap; }}
+      #er-detail-moztrace-pane [hidden] {{ display:none!important; }}
       .er-analysis-toolbar > i {{ width:1px; height:18px; margin:0 2px; background:#dce6e9; }}
       .er-analysis-arm-controls,.er-analysis-line-controls {{ display:flex; align-items:center; gap:6px; }}
       .er-analysis-arm-controls button {{ min-height:28px; padding:4px 11px; border:1px solid #d8e0e3; border-radius:5px; background:#fff; color:rgba(0,0,0,.58); font-size:11.5px; cursor:pointer; }}
       .er-analysis-arm-controls button:hover {{ border-color:#1F80A0; color:#1F80A0; }}
       .er-analysis-arm-controls button.active {{ border-color:#1F80A0; background:#1F80A0; color:#fff; }}
+      .er-analysis-arm-controls button:disabled {{ background:#f3f4f5; border-color:#e1e5e8; color:#a3adb2; cursor:not-allowed; }}
+      .er-arm-help {{ position:relative; cursor:help; }}
+      .er-arm-help.is-disabled {{ color:#a3adb2; }}
+      .er-arm-help [role=tooltip] {{ display:none; position:absolute; bottom:calc(100% + 8px); left:0; padding:6px 9px; border-radius:4px; background:#25343a; color:#fff; white-space:nowrap; font-size:12px; font-weight:400; z-index:1; }}
+      .er-arm-help:hover [role=tooltip],.er-arm-help:focus [role=tooltip] {{ display:block; }}
       .er-analysis-line-controls i {{ display:inline-block; width:8px; height:8px; border-radius:2px; }}
       .er-analysis-line-controls .cmd {{ background:#1F80A0; }}
       .er-analysis-line-controls .state {{ background:#52c41a; }}
-      .er-trajectory-toolbar {{ display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:center; gap:12px; min-height:34px; padding-bottom:8px; border-bottom:1px solid #edf0f2; }}
+      .er-trajectory-toolbar {{ display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:center; gap:12px; min-height:30px; padding-bottom:4px; border-bottom:1px solid #edf0f2; }}
       .er-trajectory-tabs {{ display:flex; align-items:center; gap:6px; min-width:0; overflow-x:auto; }}
       .er-trajectory-tabs button {{ flex:none; min-height:28px; padding:4px 11px; border:1px solid #d8e0e3; border-radius:5px; background:#fff; color:rgba(0,0,0,.58); font-size:11.5px; cursor:pointer; }}
       .er-trajectory-tabs button:hover {{ border-color:#1F80A0; color:#1F80A0; }}
@@ -10422,6 +10461,13 @@ def eval_record_detail(record_id):
       [data-obs-line] {{ display:inline-flex; align-items:center; gap:5px; border:0!important; padding:5px; background:none; color:#52666d; cursor:pointer; }}
       [data-obs-line][aria-pressed=false] {{ opacity:.4; text-decoration:line-through; }}
       #mt-latency-chart svg {{ height:280px; width:100%; }}
+      #moztrace-pane-latency {{ font-family:inherit; font-size:12px; line-height:1.5; color:#52666d; }}
+      #moztrace-pane-latency .mt-stats {{ margin:6px 0 8px; }}
+      #moztrace-pane-latency .mt-stats div {{ font-size:12px; font-weight:400; padding:8px 10px; }}
+      #moztrace-pane-latency .mt-stats b {{ font-size:14px; font-weight:600; line-height:1.5; margin-top:4px; color:#344b53; font-variant-numeric:tabular-nums; }}
+      #moztrace-pane-latency #mt-latency-chart h3 {{ font-size:12px; font-weight:500; padding:4px 0; color:#52666d; }}
+      #moztrace-pane-latency svg text {{ font-family:inherit; font-size:11px; font-weight:400; fill:#64777d; }}
+      #moztrace-pane-latency .mt-legend button {{ font-family:inherit; font-size:11px; font-weight:400; line-height:1.5; }}
       .er-metric {{ border:1px solid #e1e9ec; border-radius:5px; padding:4px 6px; margin-bottom:6px; }}
       .er-metric header {{ display:flex; align-items:center; justify-content:space-between; font-size:11px; }}
       .er-metric header button {{ border:0; background:none; cursor:pointer; color:#617c88; }}
