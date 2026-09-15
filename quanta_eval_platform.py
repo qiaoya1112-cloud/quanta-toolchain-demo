@@ -8868,6 +8868,8 @@ def _render_moztrace_reference_panels():
         latency:document.getElementById('moztrace-pane-latency'),
         schema:document.getElementById('er-detail-schema-pane')
       };
+      const obsSlot=document.getElementById('eval-shared-obs-slot');
+      if(obsSlot&&roots.player)obsSlot.append(roots.player);
       const el=id=>document.getElementById('mt-'+id);
       const esc=value=>String(value??'—').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
       const number=value=>Number.isFinite(value)?value.toFixed(2):'—';
@@ -9099,10 +9101,6 @@ def _render_eval_trajectory_detail():
       <div class="er-trajectory-shell">
         <div class="er-trajectory-toolbar">
           <div class="er-trajectory-tabs" role="tablist" aria-label="轨迹视图">
-            <button type="button" class="active" data-trajectory-arm="LeftArm" onclick="toggleEvalTrajectoryArm(this, 'LeftArm')">LeftArm</button>
-            <button type="button" data-trajectory-arm="Torso" onclick="toggleEvalTrajectoryArm(this, 'Torso')">Torso</button>
-            <button type="button" data-trajectory-arm="RightArm" onclick="toggleEvalTrajectoryArm(this, 'RightArm')">RightArm</button>
-            <i aria-hidden="true"></i>
             <button type="button" data-trajectory-mode="base" onclick="setEvalTrajectoryMode(this, 'base')">Base</button>
             <button type="button" data-trajectory-mode="replay" onclick="setEvalTrajectoryMode(this, 'replay')">3D Replay</button>
           </div>
@@ -9110,7 +9108,6 @@ def _render_eval_trajectory_detail():
             <button type="button" id="er-trajectory-play" onclick="toggleEvalPlayback()" aria-label="播放视频">▶</button>
             <button type="button" onclick="setEvalPlaybackFrame(0)" aria-label="重置播放">↻</button>
           </div>
-          <div class="er-trajectory-legend"><button type="button" data-eval-line="cmd" aria-pressed="true" onclick="toggleEvalLine('cmd')"><i class="cmd"></i>CMD</button><button type="button" data-eval-line="state" aria-pressed="true" onclick="toggleEvalLine('state')"><i class="state"></i>State</button></div>
         </div>
         <div class="er-trajectory-views">
           <div id="er-trajectory-arm-view" data-trajectory-view="arm"></div>
@@ -10004,10 +10001,30 @@ def eval_record_detail(record_id):
         </form>
       </section>
       <section id="er-detail-moztrace-pane" class="er-detail-pane" style="display:none;">
-        <details class="er-collapsible" open><summary>轨迹分析</summary><div class="er-collapsible-body" id="er-custom-trajectory">
-        {trajectory_html}
-        </div></details>
+        <div class="er-trajectory-obs-zone">
+          <div class="er-analysis-toolbar" aria-label="轨迹与 Obs 设置">
+            <b>轨迹与 Obs 设置</b><span>查看部位</span>
+            <div class="er-analysis-arm-controls" role="group" aria-label="轨迹与 Obs 查看部位">
+              <button type="button" class="active" data-trajectory-arm="LeftArm" onclick="toggleEvalTrajectoryArm(this, 'LeftArm')">LeftArm</button>
+              <button type="button" data-trajectory-arm="Torso" onclick="toggleEvalTrajectoryArm(this, 'Torso')">Torso</button>
+              <button type="button" data-trajectory-arm="RightArm" onclick="toggleEvalTrajectoryArm(this, 'RightArm')">RightArm</button>
+            </div>
+            <i aria-hidden="true"></i><span>显示曲线</span>
+            <div class="er-analysis-line-controls" role="group" aria-label="轨迹与 Obs 曲线">
+              <button type="button" data-eval-line="cmd" aria-pressed="true" onclick="toggleEvalLine('cmd')"><i class="cmd"></i>CMD</button>
+              <button type="button" data-eval-line="state" aria-pressed="true" onclick="toggleEvalLine('state')"><i class="state"></i>State</button>
+            </div>
+          </div>
+          <details class="er-collapsible" open><summary>轨迹分析</summary><div class="er-collapsible-body" id="er-custom-trajectory">
+          {trajectory_html}
+          </div></details>
+          <div id="eval-shared-obs-slot"></div>
+        </div>
         {moztrace_html['analysis']}
+      </section>
+      <section id="er-detail-overview-pane" class="er-detail-pane" style="display:none;">{moztrace_html['overview']}</section>
+      <section id="er-detail-schema-pane" class="er-detail-pane" style="display:none;">{moztrace_html['schema']}</section>
+      <footer class="er-detail-footer">
         <div class="er-detail-playback moztrace-playback" aria-label="统一时间控制">
           <button type="button" class="er-playback-btn" onclick="setEvalPlaybackFrame(evalPlaybackFrame - 1)" aria-label="上一帧">◀</button>
           <button type="button" class="er-playback-btn" id="moztrace-playback-toggle" onclick="toggleEvalPlayback()" aria-label="播放">▶</button>
@@ -10016,10 +10033,8 @@ def eval_record_detail(record_id):
           <span id="moztrace-playback-time">00:00.000 / 00:12.780</span>
           <select id="er-unified-speed" aria-label="统一播放倍速" onchange="setEvalPlaybackRate(this.value)"><option value="0.25">0.25x</option><option value="0.5">0.5x</option><option value="1" selected>1x</option><option value="2">2x</option><option value="4">4x</option></select>
         </div>
-      </section>
-      <section id="er-detail-overview-pane" class="er-detail-pane" style="display:none;">{moztrace_html['overview']}</section>
-      <section id="er-detail-schema-pane" class="er-detail-pane" style="display:none;">{moztrace_html['schema']}</section>
-      <div class="er-detail-nav">{prev_link}<span class="er-detail-nav-count">{record_index + 1} / {len(all_records)}</span>{next_link}</div>
+        <div class="er-detail-nav">{prev_link}<span class="er-detail-nav-count">{record_index + 1} / {len(all_records)}</span>{next_link}</div>
+      </footer>
     </div>
     <dialog id="er-history-drawer" aria-labelledby="er-history-title" onclick="if(event.target === this && event.clientX < this.getBoundingClientRect().left) this.close()">
       <header><h2 id="er-history-title">修改记录（{len(saved['history'])}）</h2><button type="button" aria-label="关闭修改记录" onclick="document.getElementById('er-history-drawer').close()" autofocus>×</button></header>
@@ -10152,8 +10167,6 @@ def eval_record_detail(record_id):
       document.querySelectorAll('[data-trajectory-view]').forEach(function(view) {{ view.style.display = view.dataset.trajectoryView === evalTrajectoryMode ? '' : 'none'; }});
       document.querySelectorAll('[data-trajectory-arm]').forEach(function(button) {{ button.classList.toggle('active', evalTrajectoryMode === 'arm' && evalTrajectoryArms.has(button.dataset.trajectoryArm)); }});
       document.querySelectorAll('[data-trajectory-mode]').forEach(function(button) {{ button.classList.toggle('active', button.dataset.trajectoryMode === evalTrajectoryMode); }});
-      var legend = document.querySelector('.er-trajectory-legend');
-      if (legend) legend.style.visibility = evalTrajectoryMode === 'replay' ? 'hidden' : 'visible';
       if (evalTrajectoryMode === 'base') renderEvalTrajectoryBase();
     }}
     function toggleEvalTrajectoryArm(button, arm) {{
@@ -10294,8 +10307,9 @@ def eval_record_detail(record_id):
       #er-detail-moztrace-pane .moztrace-tabs {{ display:none; }}
       #er-detail-moztrace-pane .moztrace-subpane {{ margin-top:20px; }}
       #er-detail-moztrace-pane #moztrace-pane-latency {{ display:block!important; }}
-      #er-detail-moztrace-pane .moztrace-playback {{ position:fixed;bottom:48px;left:220px;right:16px;z-index:6;background:#fff;border:1px solid #dce6e9;box-shadow:0 -2px 10px #0000000d;padding:10px;margin:0; }}
-      @media(max-width:700px) {{ #er-detail-moztrace-pane .moztrace-playback {{ left:8px;right:8px;flex-wrap:wrap; }} }}
+      .er-detail-footer {{ position:sticky; bottom:0; z-index:6; margin-top:16px; background:rgba(255,255,255,.98); border-top:1px solid #dce6e9; box-shadow:0 -2px 10px #0000000d; }}
+      .er-detail-footer .moztrace-playback {{ display:flex; align-items:center; gap:8px; margin:0; padding:8px 2px; border:0; }}
+      @media(max-width:700px) {{ .er-detail-footer .moztrace-playback {{ flex-wrap:wrap; }} }}
       #er-record-edit[hidden], #er-record-readonly[hidden], #er-edit-button[hidden] {{ display:none; }}
       .er-edit-toolbar, .er-edit-actions {{ display:flex; justify-content:space-between; align-items:flex-start; gap:12px; margin-bottom:12px; }}
       .er-edit-toolbar {{ justify-content:flex-end; align-items:center; margin:0 0 0 auto; flex-shrink:0; }}
@@ -10368,6 +10382,17 @@ def eval_record_detail(record_id):
       .moztrace-trajectory-heading small {{ font-size:11px; font-weight:400; color:#74858a; }}
       .moztrace-playback {{ margin:12px 0; padding:10px 0; border-top:1px solid #e7eeee; border-bottom:1px solid #e7eeee; flex-wrap:wrap; }}
       .er-trajectory-shell {{ min-width:0; }}
+      .er-trajectory-obs-zone {{ position:relative; }}
+      .er-analysis-toolbar {{ position:sticky; top:56px; z-index:4; display:flex; align-items:center; flex-wrap:wrap; gap:8px; margin:0 0 10px; padding:8px 10px; border:1px solid #e1e9ec; border-radius:7px; background:#f8fbfb; color:#52666d; font-size:11.5px; box-shadow:0 2px 8px #0000000a; }}
+      .er-analysis-toolbar b {{ color:#344b53; font-size:12px; }}
+      .er-analysis-toolbar > i {{ width:1px; height:18px; margin:0 2px; background:#dce6e9; }}
+      .er-analysis-arm-controls,.er-analysis-line-controls {{ display:flex; align-items:center; gap:6px; }}
+      .er-analysis-arm-controls button {{ min-height:28px; padding:4px 11px; border:1px solid #d8e0e3; border-radius:5px; background:#fff; color:rgba(0,0,0,.58); font-size:11.5px; cursor:pointer; }}
+      .er-analysis-arm-controls button:hover {{ border-color:#1F80A0; color:#1F80A0; }}
+      .er-analysis-arm-controls button.active {{ border-color:#1F80A0; background:#1F80A0; color:#fff; }}
+      .er-analysis-line-controls i {{ display:inline-block; width:8px; height:8px; border-radius:2px; }}
+      .er-analysis-line-controls .cmd {{ background:#1F80A0; }}
+      .er-analysis-line-controls .state {{ background:#52c41a; }}
       .er-trajectory-toolbar {{ display:grid; grid-template-columns:minmax(0,1fr) auto minmax(120px,1fr); align-items:center; gap:12px; min-height:34px; padding-bottom:8px; border-bottom:1px solid #edf0f2; }}
       .er-trajectory-tabs {{ display:flex; align-items:center; gap:6px; min-width:0; overflow-x:auto; }}
       .er-trajectory-tabs button {{ flex:none; min-height:28px; padding:4px 11px; border:1px solid #d8e0e3; border-radius:5px; background:#fff; color:rgba(0,0,0,.58); font-size:11.5px; cursor:pointer; }}
@@ -10515,7 +10540,7 @@ def eval_record_detail(record_id):
       .moztrace-latency-table th:nth-child(2), .moztrace-latency-table td:nth-child(2) {{ width:18%; }}
       .moztrace-bar {{ display:block; height:6px; border-radius:3px; background:#eef1f4; overflow:hidden; }}
       .moztrace-bar i {{ display:block; height:100%; background:#1F80A0; border-radius:3px; }}
-      .er-detail-nav {{ display:flex; align-items:center; justify-content:space-between; margin-top:auto; padding:10px 2px 0; min-height:40px; position:sticky; bottom:0; z-index:5; background:rgba(255,255,255,.96); border-top:1px solid #edf0f2; }}
+      .er-detail-nav {{ display:flex; align-items:center; justify-content:space-between; padding:7px 2px; min-height:34px; border-top:1px solid #edf0f2; }}
       .er-detail-nav-link {{ color:#1F80A0; text-decoration:none; font-size:13px; }}
       .er-detail-nav-link:hover {{ text-decoration:underline; }}
       .er-detail-nav-link.is-disabled {{ color:rgba(0,0,0,.25); }}
