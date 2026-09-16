@@ -578,6 +578,19 @@ assert.equal(context.s026EdgeEntries(submittedPackage, 'CP260001', false).filter
 const fixture = context.s026EdgeEntries(previewPackage, 'CP260001', false).find(entry => entry.record.key === '100021-V2');
 assert.equal(fixture.instance.status, '已采集');
 
+// Assigned plans omit assignment time while retaining assignment relationships.
+const assignmentsBefore = JSON.stringify(context.s026State.supplierPlanAssignments);
+context.s026RenderSupplierPlans();
+const assignedRows = element('s026SupplierPlanRows').innerHTML;
+assert.ok(assignedRows.includes('查看'));
+assert.ok([...assignedRows.matchAll(/<tr>([\s\S]*?)<\/tr>/g)].every(row => (row[1].match(/<td>/g) || []).length === 6));
+assert.equal(JSON.stringify(context.s026State.supplierPlanAssignments), assignmentsBefore);
+assert.ok(!html.includes('<th>分配时间</th>'));
+context.s026SupplierPlanFilters.idQuery = 'no-matching-plan';
+context.s026RenderSupplierPlans();
+assert.ok(element('s026SupplierPlanRows').innerHTML.includes('colspan="6"'));
+context.s026SupplierPlanFilters.idQuery = '';
+
 // The instruction list omits aggregate duration columns without deleting the data.
 const libraryBefore = JSON.stringify(context.s026State.library);
 context.s026RenderLibrary();
