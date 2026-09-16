@@ -1036,6 +1036,7 @@ select option:disabled { color:rgba(0,0,0,0.32); }
 .ckpt-status-option.active { background:#238da3; color:#fff; }
 .qi { position:relative; display:inline-flex; align-items:center; justify-content:center; width:16px; height:16px; margin-left:3px; border:1.5px solid #71858d; border-radius:50%; color:#526971; font-size:11px; font-weight:700; line-height:1; cursor:help; vertical-align:-2px; outline:none; }
 .qi::after { content:attr(data-tooltip); position:absolute; left:0; top:calc(100% + 8px); z-index:260; width:220px; padding:8px 10px; border:1px solid rgba(31,45,51,.12); border-radius:6px; background:#25343a; color:#fff; font-size:12px; font-weight:400; line-height:1.5; text-align:left; white-space:normal; opacity:0; pointer-events:none; transform:translateY(4px); transition:opacity .16s ease, transform .16s ease; box-shadow:0 6px 16px rgba(17,31,36,.18); }
+.qi.robot-structure-tip::after { width:300px; white-space:pre-line; }
 .qi:hover::after, .qi:focus-visible::after { opacity:1; transform:translateY(0); }
 .status-with-log { display:inline-flex; align-items:center; gap:6px; white-space:nowrap; }
 .status-log-icon { width:18px; height:18px; padding:0; border:1px solid #f3d6d5; border-radius:50%; background:#fff; color:#d4504e; font-size:12px; line-height:16px; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; }
@@ -9819,7 +9820,7 @@ def experiments():
             <div class="fg-row">
               <div class="fg"><label class="fg-req">模型</label><select id="trainModelSel" onchange="regenDefaultConfig()"><option value="pi05">pi0.5</option><option value="spiritv1_6">spiritv1.6</option></select></div>
               <div class="fg"><label class="fg-req">是否使用新感知</label><select id="trainRobotSel" onchange="regenDefaultConfig()"><option value="new">是</option><option value="old">否</option></select></div>
-              <div class="fg"><label class="fg-req">机器人结构</label><select id="trainBaseSel" onchange="regenDefaultConfig()"><option value="wholebody">wholebody</option><option value="wholebody_without_base">wholebody_without_base</option></select></div>
+              <div class="fg"><label class="fg-req">机器人结构 <span class="qi robot-structure-tip" data-tooltip="是否由 VLA 控制底盘移动&#10;控制底盘：wholebody&#10;仅控制双臂：wholebody_without_base" tabindex="0" aria-label="是否由 VLA 控制底盘移动；控制底盘选择 wholebody；仅控制双臂选择 wholebody_without_base。">i</span></label><select id="trainBaseSel" onchange="regenDefaultConfig()"><option value="wholebody">wholebody</option><option value="wholebody_without_base">wholebody_without_base</option></select></div>
             </div>
             <div class="adv-sub" id="advConfigBox">
               <div class="adv-sub-head" onclick="document.getElementById('advConfigBox').classList.toggle('collapsed')"><span class="caret">&#9660;</span><label>高级配置</label></div>
