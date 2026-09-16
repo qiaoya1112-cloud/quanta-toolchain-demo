@@ -13220,6 +13220,12 @@ def _lineage_detail_html(anchor_type, anchor_id):
       </div>
     </section>
     """ + modal_html + f"""
+    <dialog id="linClearHistoryDialog" class="modal" style="padding:0;border:0;" aria-labelledby="linClearHistoryTitle" aria-describedby="linClearHistoryDescription">
+      <div class="modal-head"><h3 id="linClearHistoryTitle">清除血缘浏览记录</h3><button type="button" class="btn btn-tertiary" aria-label="关闭" onclick="document.getElementById('linClearHistoryDialog').close()">&times;</button></div>
+      <div class="modal-body" id="linClearHistoryDescription">确认清除血缘浏览记录？清除后，当前节点将作为起始视图，历史浏览记录无法恢复。</div>
+      <div class="modal-foot"><button type="button" class="btn btn-tertiary" autofocus onclick="document.getElementById('linClearHistoryDialog').close()">取消</button><button type="button" class="btn btn-primary" onclick="linConfirmClearHistory()">确认清除</button></div>
+    </dialog>
+    <style>#linClearHistoryDialog::backdrop {{ background:rgba(0,0,0,0.42); }}</style>
     <script>
     window.__linEdges = {edges_json};
     var __linSuggestions = {suggestions_json};
@@ -13424,6 +13430,15 @@ def _lineage_detail_html(anchor_type, anchor_id):
     }}
 
     function linClearHistory() {{
+      var navigation = window.__linNavigation || {{ items:[window.__linCurrent], index:0 }};
+      if (navigation.items.length <= 1) return;
+      document.getElementById('linClearHistoryDialog').showModal();
+    }}
+
+    function linConfirmClearHistory() {{
+      var dialog = document.getElementById('linClearHistoryDialog');
+      if (!dialog.open) return;
+      dialog.close();
       var navigation = window.__linNavigation || {{ items:[window.__linCurrent], index:0 }};
       if (navigation.items.length <= 1) return;
       var currentItem = navigation.items[navigation.index] || window.__linCurrent;
