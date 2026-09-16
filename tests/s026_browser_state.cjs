@@ -321,7 +321,7 @@ context.s026RenderPlanPackageDetail();
 const detailRows = element('s026PlanPackageDetailRows').innerHTML;
 assert.ok(!/draggable|ondrag|ondrop|⋮/.test(detailRows));
 assert.equal(typeof context.s026DropPlanPackageVersion, 'undefined');
-assert.ok(html.includes('<th>目标时长</th><th>已采时长</th>'));
+assert.ok(!html.includes('<th>目标时长</th><th>已采时长</th>'));
 
 // Threshold hint uses the exact collected lower bound, and saves reject lower values.
 let modalBody = '';
@@ -577,6 +577,32 @@ context.s026State = context.s026PrepareEdgeWorkflow(clone(state));
 assert.equal(context.s026EdgeEntries(submittedPackage, 'CP260001', false).filter(entry => entry.instance.status === '已采集').length, 2);
 const fixture = context.s026EdgeEntries(previewPackage, 'CP260001', false).find(entry => entry.record.key === '100021-V2');
 assert.equal(fixture.instance.status, '已采集');
+
+// Assigned plans omit assignment time while retaining assignment relationships.
+const assignmentsBefore = JSON.stringify(context.s026State.supplierPlanAssignments);
+context.s026RenderSupplierPlans();
+const assignedRows = element('s026SupplierPlanRows').innerHTML;
+assert.ok(assignedRows.includes('查看'));
+assert.ok([...assignedRows.matchAll(/<tr>([\s\S]*?)<\/tr>/g)].every(row => (row[1].match(/<td>/g) || []).length === 6));
+assert.equal(JSON.stringify(context.s026State.supplierPlanAssignments), assignmentsBefore);
+assert.ok(!html.includes('<th>分配时间</th>'));
+context.s026SupplierPlanFilters.idQuery = 'no-matching-plan';
+context.s026RenderSupplierPlans();
+assert.ok(element('s026SupplierPlanRows').innerHTML.includes('colspan="6"'));
+context.s026SupplierPlanFilters.idQuery = '';
+
+// The instruction list omits aggregate duration columns without deleting the data.
+const libraryBefore = JSON.stringify(context.s026State.library);
+context.s026RenderLibrary();
+const libraryRows = element('s026LibraryRows').innerHTML;
+assert.ok([...libraryRows.matchAll(/<tr>([\s\S]*?)<\/tr>/g)].every(row => (row[1].match(/<td>/g) || []).length === 9));
+assert.equal(JSON.stringify(context.s026State.library), libraryBefore);
+const libraryTable = html.match(/<table\b[^>]*>(?:(?!<\/table>)[\s\S])*?<tbody id="s026LibraryRows">/)[0];
+assert.ok(!libraryTable.includes('目标时长') && !libraryTable.includes('已采时长'));
+context.s026LibraryFilters.idQuery = 'no-matching-instruction';
+context.s026RenderLibrary();
+assert.ok(element('s026LibraryRows').innerHTML.includes('colspan="9"'));
+context.s026LibraryFilters.idQuery = '';
 
 // Upload failures share a label; content errors retain their detailed error action.
 let pendingTimers = new Map(), timerId = 0;
