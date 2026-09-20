@@ -9203,6 +9203,7 @@ def render_workbench_v2():
         ("recording_e2e_008", "flow.annotation.e2e-review@2", "端到端切分标注流程", "内部验收", "供应商验收", "提交", "第 2 轮", "动作片段描述与切分范围不匹配", "2026-08-02 14:10", "WB-E2E-ACCEPTANCE"),
         ("recording_e2e_009", "flow.annotation.e2e-review@2", "端到端切分标注流程", "内部验收", "供应商验收", "提交", "第 3 轮", "存在一条待确认的异常片段", "2026-08-01 19:25", "WB-E2E-ACCEPTANCE"),
         ("recording_e2e_011", "flow.annotation.e2e-review@2", "端到端切分标注流程", "供应商复核", "供应商抽验", "分配", "第 2 轮", "修正任务已重新分配，等待继续处理", "2026-08-01 16:40", "WB-E2E-REVIEW"),
+        ("recording_e2e_012", "flow.annotation.e2e-review@2", "端到端切分标注流程", "供应商抽验", "—", "分配", "第 1 轮", "其他定向分配任务，等待开始处理", "2026-08-01 10:20", "WB-E2E-GUAN"),
     ]
     todo_items = [
         {
@@ -9224,7 +9225,10 @@ def render_workbench_v2():
             "current_node": current_node,
             "source_node": source_node,
             "source_operation": source_operation,
-            "todo_type": "其他分配任务" if source_operation == "分配" else ("驳回待处理" if source_operation == "驳回" else "修正待审核"),
+            "todo_type": {"recording_e2e_010": "驳回待处理", "recording_e2e_011": "修正待审核"}.get(
+                recording_id,
+                "其他分配任务" if source_operation == "分配" else ("驳回待处理" if source_operation == "驳回" else "修正待审核"),
+            ),
             "current_round": current_round,
             "description": description,
             "updated_at": updated_at,
