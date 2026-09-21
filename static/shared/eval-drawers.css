@@ -1,0 +1,19 @@
+.ant-drawer-body h4,
+.ant-drawer-body .eval-drawer-section-title,
+.criteria-readonly-body .eval-drawer-section-title {
+  position: relative;
+  padding-left: 11px;
+}
+
+.ant-drawer-body h4::before,
+.ant-drawer-body .eval-drawer-section-title::before,
+.criteria-readonly-body .eval-drawer-section-title::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.2em;
+  width: 3px;
+  height: 1em;
+  border-radius: 2px;
+  background: #149DAA;
+}

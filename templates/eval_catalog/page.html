@@ -1,0 +1,119 @@
+<link rel="stylesheet" href="/static/shared/scene-images.css">
+<section id="catalog" data-kind="{{kind}}" data-section="{{section}}">
+  <div class="model-list-title"><h1>{{page_title}}</h1><div class="model-list-actions">{% if kind == 'test-cases' %}<div class="ts-wrap" id="ec-benchmark-actions" style="display:inline-flex;width:auto">
+    <button type="button" class="ant-btn" id="ec-create-benchmark" style="border-radius:6px 0 0 6px" disabled>批量新建评测集</button><button type="button" class="ant-btn" id="ec-benchmark-menu-trigger" style="border-radius:0 6px 6px 0;margin-left:-1px;padding:0 10px" aria-label="评测集批量操作" aria-haspopup="menu" aria-expanded="false" aria-controls="ec-benchmark-menu" disabled>▾</button>
+    <div class="ts-panel" id="ec-benchmark-menu" role="menu" style="left:auto;right:0;width:220px;min-width:0">
+      <button type="button" class="ts-row" id="ec-benchmark-menu-create" role="menuitem" style="width:100%;border:0;background:none;text-align:left">批量新建评测集</button>
+      <button type="button" class="ts-row" id="ec-benchmark-menu-add" role="menuitem" style="width:100%;border:0;background:none;text-align:left">批量添加至已有评测集</button>
+    </div>
+  </div>{% endif %}<button class="ant-btn ant-btn-primary" id="ec-create">{{ '批量新增场景' if section == 'scenario' else '新增' + title.replace(' 定义','') }}</button></div></div>
+  {% if kind != 'test-cases' %}
+  <div class="tm-bar"><div class="tm-tabs" id="ec-top-tabs" role="tablist" aria-label="场景库分类">
+    <a class="tm-tab{{ ' active' if section == 'scenario' else '' }}" href="/model/eval/catalog?section=scenario" role="tab" aria-selected="{{ 'true' if section == 'scenario' else 'false' }}">场景库定义</a>
+    <a class="tm-tab{{ ' active' if section == 'elements' else '' }}" href="/model/eval/catalog?section=elements&amp;tab={{ 'stages' if section == 'scenario' else kind }}" role="tab" aria-selected="{{ 'true' if section == 'elements' else 'false' }}">要素定义</a>
+  </div>
+  </div>
+  {% if section == 'elements' %}
+  <div class="stat-grid" id="ec-element-stats" aria-label="要素数量" style="margin-bottom:16px">
+    {% for key, label in [('stages','Stage'),('stories','Story'),('skills','Skill'),('factors','Factor')] %}
+    <div class="stat-card" style="padding:10px 16px"><div class="stat-label">{{label}}</div><div class="stat-value" style="font-size:24px;line-height:28px" id="ec-total-{{key}}">{{seed[key]|length}}</div></div>
+    {% endfor %}
+  </div>
+  <div class="tm-subtabs" id="ec-tabs" role="tablist" aria-label="要素类型">{% for key in ['stages','stories','skills','factors'] %}<a class="tm-subtab{{ ' active' if key == kind else '' }}" href="/model/eval/catalog?section=elements&amp;tab={{key}}" role="tab" aria-selected="{{ 'true' if key == kind else 'false' }}">{{entities[key][0].replace(' 定义','')}}</a>{% endfor %}</div>
+  {% endif %}
+  {% endif %}
+  <form class="filter-bar fb-labeled" id="ec-filter">
+    {% if kind == 'test-cases' %}
+    <div class="ff"><label for="ec-search">用例 ID</label><input type="text" id="ec-search" placeholder="输入用例 ID 模糊搜索"></div>
+    {% endif %}
+    {% if section == 'scenario' or kind == 'test-cases' %}
+    {% for key, label in [('stages','Stage'),('stories','Story'),('skills','Skill'),('factors','Factor')] %}
+    <div class="ff"><label id="ec-filter-{{key}}-label" for="ec-filter-{{key}}">{{label}}</label>{% if kind == 'test-cases' and key != 'skills' %}<select id="ec-filter-{{key}}" data-filter-single="{{key}}" aria-labelledby="ec-filter-{{key}}-label"><option value="">全部 {{label}}</option></select>{% else %}<div class="ts-wrap" data-filter-kind="{{key}}"><button type="button" class="ts-trigger" id="ec-filter-{{key}}" aria-labelledby="ec-filter-{{key}}-label" aria-expanded="false" aria-controls="ec-options-{{key}}"><span class="ts-placeholder">全部 {{label}}</span></button><div class="ts-panel" id="ec-options-{{key}}" role="group" aria-label="{{label}}选项"></div></div>{% endif %}</div>
+    {% endfor %}
+    {% else %}
+    {% set search_label = {'stages':'Stage 场域','stories':'Story 任务','skills':'Skill','factors':'Factor'}.get(kind, '关键词') %}
+    <div class="ff"><label for="ec-search">{{search_label}}</label><input type="text" id="ec-search" placeholder="{{ '搜索' + search_label }}"></div>
+    {% endif %}
+    {% if kind == 'test-cases' %}
+    <div class="ff"><label for="ec-data-owner">数据归属</label><select id="ec-data-owner"><option value="">全部数据归属</option></select></div>
+    {% endif %}
+    <div class="ff"><label for="ec-project">所属项目</label><select id="ec-project"><option value="">全部项目</option><option>预训练评测</option><option>后训练评测</option></select></div>
+    {% if section != 'scenario' %}
+    <div class="ff"><label for="ec-status">发布状态</label><select id="ec-status"><option value="">全部发布状态</option><option>已发布</option><option>未发布</option></select></div>
+    <div class="ff"><label for="ec-enabled">启用状态</label><select id="ec-enabled"><option value="">全部启用状态</option><option value="true">启用</option><option value="false">停用</option></select></div>
+    {% endif %}
+    <div class="filter-actions"><button class="ant-btn" type="button" id="ec-clear">重置</button><button class="ant-btn ant-btn-primary" type="submit">查询</button></div>
+  </form>
+  {% if kind == 'test-cases' %}
+  <div class="model-list-actions" style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
+    <span id="ec-selected-count" aria-live="polite" hidden></span>
+    <button type="button" class="action-link" id="ec-clear-selection" style="border:0;background:none;padding:0" hidden>清空选择</button>
+  </div>
+  <div class="ts-panel" id="ec-selection-menu" style="position:fixed;width:96px;min-width:0;box-sizing:border-box;z-index:1400" role="group" aria-label="选择范围">
+    <button type="button" class="ts-row" data-select-scope="all" style="width:100%;border:0;background:none;text-align:left">选择全部</button>
+    <button type="button" class="ts-row" data-select-scope="page" style="width:100%;border:0;background:none;text-align:left">选择本页</button>
+  </div>
+  {% endif %}
+  <div class="ant-card ant-card-bordered"><div style="overflow-x:auto"><table class="ant-table" id="ec-table" style="white-space:nowrap"><colgroup id="ec-columns"></colgroup><thead id="ec-thead"></thead><tbody id="ec-tbody"></tbody></table></div></div>
+  <div class="ant-drawer-footer" style="position:static"><span class="muted" id="ec-count"></span><span class="muted" id="ec-page-label"></span><button class="ant-btn" id="ec-prev">上一页</button><button class="ant-btn" id="ec-next">下一页</button></div>
+</section>
+<style>
+  #catalog[data-section="scenario"] [data-filter-kind] input[type="checkbox"] { appearance:auto; -webkit-appearance:checkbox; border-radius:2px; accent-color:#1F80A0; cursor:pointer; }
+  #catalog[data-section="scenario"] [data-filter-kind] .ts-trigger { height:36px; flex-wrap:nowrap; text-align:left; }
+  .skill-filter-values { display:flex; align-items:center; gap:3px; width:100%; min-width:0; height:28px; overflow-x:auto; scrollbar-width:none; }
+  .skill-filter-values::-webkit-scrollbar { display:none; }
+  .skill-filter-values .ts-chip { flex-shrink:0; max-width:none; }
+</style>
+{% if kind == 'test-cases' %}
+<style>
+  #ec-benchmark-actions > #ec-create-benchmark { border-radius:8px 0 0 8px !important; }
+  #ec-benchmark-actions > #ec-benchmark-menu-trigger { border-radius:0 8px 8px 0 !important; }
+  #ec-benchmark-add-retry[hidden] { display:none; }
+  .case-picker-group-title { padding:8px 12px 4px; color:rgba(0,0,0,.45); font-size:12px; line-height:20px; cursor:default; }
+  .case-picker-group + .case-picker-group { margin-top:4px; padding-top:4px; border-top:1px solid #f0f0f0; }
+  .case-picker-group > .ts-row { padding-left:20px; }
+  .case-picker-empty { padding:24px 12px; color:rgba(0,0,0,.35); font-size:14px; text-align:center; cursor:default; }
+  #catalog[data-kind="test-cases"] [data-filter-kind="skills"] input[type="checkbox"], #ec-fields [data-case-picker] input[type="checkbox"] { appearance:auto; -webkit-appearance:checkbox; border-radius:2px; accent-color:#1F80A0; cursor:pointer; }
+  #catalog[data-kind="test-cases"] [data-filter-kind="skills"] .ts-row { white-space:normal; overflow-wrap:anywhere; }
+  #catalog[data-kind="test-cases"] [data-filter-kind="skills"] .ts-trigger { height:36px; flex-wrap:nowrap; text-align:left; }
+  .case-single-option { display:block; width:100%; border:0; background:#fff; text-align:left; cursor:pointer; white-space:normal; overflow-wrap:anywhere; }
+  .case-single-option:hover,.case-single-option.selected { background:#e6f7f8; color:#0f8190; }
+  [data-case-picker]:has(> select) > .ts-trigger { flex-wrap:nowrap; }
+  .ts-single-value { flex:1; min-width:0; overflow:hidden; padding:0 7px; text-overflow:ellipsis; white-space:nowrap; line-height:28px; }
+  .ts-single-remove { flex-shrink:0; width:24px; height:24px; border:0; background:none; color:rgba(0,0,0,.35); cursor:pointer; padding:0; }
+  .ts-single-remove:hover { color:rgba(0,0,0,.85); }
+  #ec-dialog #ec-fields input[name="id"]:disabled { background:#f5f5f5; border-color:#d9d9d9; color:rgba(0,0,0,.65); -webkit-text-fill-color:rgba(0,0,0,.65); cursor:not-allowed; opacity:1; }
+  #ec-dialog.ec-case-readonly #ec-fields input:disabled,
+  #ec-dialog.ec-case-readonly #ec-fields select:disabled,
+  #ec-dialog.ec-case-readonly #ec-fields textarea:disabled,
+  #ec-dialog.ec-case-readonly #ec-fields .ts-trigger { background-color:#f5f5f5; border-color:#d9d9d9; color:rgba(0,0,0,.65); -webkit-text-fill-color:rgba(0,0,0,.65); cursor:not-allowed; opacity:1; box-shadow:none; }
+  #ec-dialog.ec-case-readonly .ts-trigger::after { opacity:.4; }
+  #ec-dialog.ec-case-readonly .ts-panel,
+  #ec-dialog.ec-case-readonly #ec-add-factor,
+  #ec-dialog.ec-case-readonly #ec-factors > tr > td:last-child,
+  #ec-dialog.ec-case-readonly table:has(#ec-factors) > thead > tr > th:last-child,
+  #ec-dialog.ec-case-readonly #ec-images-section .prompt-scene-guidance,
+  #ec-dialog.ec-case-readonly #ec-save { display:none; }
+</style>
+{% endif %}
+<div class="ant-drawer-mask" id="ec-dialog" role="dialog" aria-modal="true" aria-labelledby="ec-dialog-title"><div class="ant-drawer-content benchmark-drawer-content">
+  <div class="ant-drawer-header"><h3 id="ec-dialog-title"></h3><button type="button" class="ant-drawer-close" id="ec-close" aria-label="关闭">×</button></div>
+  <form id="ec-form"><div class="ant-drawer-body"><div class="prompt-scene-guidance" id="ec-batch-notice" role="note" style="display:none"><span class="prompt-scene-guidance-icon" aria-hidden="true">i</span><span id="ec-dialog-subtitle"></span></div><div id="ec-fields"></div></div><div class="ant-drawer-footer"><span role="alert" style="color:#cf1322;flex:1" id="ec-error"></span><button type="button" class="ant-btn" id="ec-cancel">取消</button><button type="submit" class="ant-btn ant-btn-primary" id="ec-save">保存</button></div></form>
+</div></div>
+<div class="ant-drawer-mask ant-centered-modal" id="ec-confirm" role="alertdialog" aria-modal="true" aria-labelledby="ec-confirm-title"><div class="ant-drawer-content"><div class="ant-drawer-header"><h3 id="ec-confirm-title">删除记录</h3></div><div class="ant-drawer-body"><p id="ec-confirm-text"></p></div><div class="ant-drawer-footer"><button class="ant-btn" id="ec-confirm-cancel">取消</button><button class="ant-btn ant-btn-primary" id="ec-confirm-delete">确认删除</button></div></div></div>
+{% if kind == 'test-cases' %}
+<div class="ant-drawer-mask ant-centered-modal" id="ec-benchmark-add-dialog" role="dialog" aria-modal="true" aria-labelledby="ec-benchmark-add-title"><div class="ant-drawer-content">
+  <div class="ant-drawer-header"><h3 id="ec-benchmark-add-title">批量添加至已有评测集</h3><button type="button" class="ant-drawer-close" id="ec-benchmark-add-close" aria-label="关闭">×</button></div>
+  <form id="ec-benchmark-add-form"><div class="ant-drawer-body">
+    <p class="muted" id="ec-benchmark-add-count"></p>
+    <div class="form-group"><label for="ec-benchmark-target">评测集 <span style="color:#cf1322">*</span></label><select id="ec-benchmark-target" required disabled><option value="">加载中…</option></select></div>
+    <p class="muted">仅可添加至未发布的评测集，已存在的用例会自动跳过。</p>
+    <div id="ec-benchmark-add-error" role="alert" style="color:#cf1322"></div><button type="button" class="action-link" id="ec-benchmark-add-retry" style="border:0;background:none;padding:0" hidden>重新加载</button>
+  </div><div class="ant-drawer-footer"><button type="button" class="ant-btn" id="ec-benchmark-add-cancel">取消</button><button type="submit" class="ant-btn ant-btn-primary" id="ec-benchmark-add-submit" disabled>确认添加</button></div></form>
+</div></div>
+{% endif %}
+<script id="ec-seed" type="application/json">{{seed|tojson}}</script>
+<script id="ec-user-groups" type="application/json">{{user_groups|tojson}}</script>
+<script id="ec-tag-options" type="application/json">{{tag_options|tojson}}</script>
+<script id="ec-tag-tree" type="application/json">{{tag_tree|tojson}}</script>
+<script src="/static/eval_catalog/catalog.js"></script>

@@ -1,0 +1,34 @@
+/* Shared upload and image cards from the task-prompt module. */
+.prompt-scene-guidance { display:flex; align-items:flex-start; gap:10px; margin-bottom:16px; padding:10px 12px; border-radius:6px; color:#276677; background:#edf7f9; font-size:13px; line-height:20px; }
+.prompt-scene-guidance-icon { display:inline-flex; flex:0 0 auto; align-items:center; justify-content:center; width:18px; height:18px; margin-top:1px; border-radius:50%; color:#fff; background:#1F80A0; font-size:12px; font-weight:700; }
+.prompt-scene-upload { display:flex; min-height:116px; box-sizing:border-box; flex-direction:column; align-items:center; justify-content:center; gap:5px; border:1px dashed #86bccb; border-radius:8px; color:rgba(0,0,0,.65); background:#fbfefe; cursor:pointer; transition:.18s ease; }
+.prompt-scene-upload:hover, .prompt-scene-upload.dragover { border-color:#1F80A0; background:#f1f9fa; }
+.prompt-scene-upload-icon { color:#1F80A0; font-size:25px; line-height:24px; }
+.prompt-scene-upload strong { font-size:14px; font-weight:500; }
+.prompt-scene-upload small { color:rgba(0,0,0,.42); font-size:12px; }
+.prompt-scene-toolbar { display:flex; align-items:center; justify-content:space-between; margin:20px 0 12px; }
+.prompt-scene-toolbar strong { color:rgba(0,0,0,.78); font-size:14px; }
+.prompt-scene-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:14px; }
+.prompt-scene-card { position:relative; overflow:hidden; border:1px solid #e7e7e7; border-radius:8px; background:#fff; transition:.18s ease; }
+.prompt-scene-preview { position:relative; height:118px; overflow:hidden; background:linear-gradient(145deg,#dbeef1,#f6fbfc); }
+.prompt-scene-preview img { width:100%; height:100%; object-fit:cover; display:block; }
+.prompt-scene-preview-fallback { display:flex; width:100%; height:100%; align-items:center; justify-content:center; color:#2c7d92; font-size:32px; }
+.prompt-scene-card-body { padding:10px 12px 12px; }
+.prompt-scene-name { overflow:hidden; margin-bottom:9px; color:rgba(0,0,0,.75); font-size:13px; font-weight:500; text-overflow:ellipsis; white-space:nowrap; }
+.prompt-scene-role { width:100%; height:30px; padding:0 28px 0 9px; border:1px solid #d9d9d9; border-radius:6px; color:rgba(0,0,0,.68); background:#fff; font-size:12px; }
+.prompt-scene-card-actions { display:flex; align-items:center; gap:12px; min-height:24px; margin-top:8px; }
+.prompt-scene-card-actions button { padding:0; border:0; color:#1F80A0; background:transparent; font-size:12px; line-height:24px; cursor:pointer; }
+.prompt-scene-card-actions button.danger { color:#d4380d; }
+.prompt-scene-card-actions button:disabled { color:rgba(0,0,0,.25); cursor:not-allowed; }
+.prompt-scene-empty-state { display:none; flex-direction:column; align-items:center; justify-content:center; min-height:190px; color:rgba(0,0,0,.32); }
+.prompt-scene-empty-state span { display:flex; align-items:center; justify-content:center; width:48px; height:48px; margin-bottom:10px; border-radius:10px; background:#f1f5f6; font-size:20px; }
+.prompt-scene-empty-state strong { color:rgba(0,0,0,.45); font-size:14px; font-weight:500; }
+.prompt-scene-empty-state small { margin-top:4px; font-size:12px; }
+@media (max-width:900px) { .prompt-scene-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } }
+
+.prompt-scene-upload[hidden] { display:none; }
+
+.prompt-scene-entry { display:inline-flex; align-items:center; gap:7px; height:32px; padding:0; border:0; background:transparent; color:#1F80A0; cursor:pointer; }
+.prompt-scene-thumbs { display:flex; align-items:center; padding-left:8px; }
+.prompt-scene-thumb { width:28px; height:28px; margin-left:-8px; overflow:hidden; border:2px solid #fff; border-radius:6px; background:#e8f4f6; box-shadow:0 1px 4px rgba(25,96,116,.16); }
+.prompt-scene-thumb img { width:100%; height:100%; object-fit:cover; display:block; }

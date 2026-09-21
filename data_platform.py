@@ -965,6 +965,15 @@ select option:disabled { color:rgba(0,0,0,0.32); }
 .ms-panel label { display:flex; align-items:center; gap:8px; padding:6px 14px; font-size:13px; cursor:pointer; color:rgba(0,0,0,0.8); }
 .ms-panel label:hover { background:#fafafa; }
 .ms-panel input { accent-color:#1F80A0; }
+.visibility-picker { position:relative; width:100%; }
+.visibility-picker-control { min-height:36px; display:flex; align-items:center; flex-wrap:wrap; gap:5px; padding:4px 32px 4px 9px; border:1px solid #d9d9d9; border-radius:8px; background:#fff; cursor:pointer; position:relative; box-sizing:border-box; text-align:left; }
+.visibility-picker-control::after { content:''; position:absolute; right:11px; top:50%; border:5px solid transparent; border-top-color:#bfbfbf; transform:translateY(-2px); }
+.visibility-picker-placeholder { color:rgba(0,0,0,.32); font-size:13px; line-height:26px; }
+.visibility-picker-chips { display:flex; flex-wrap:wrap; gap:5px; min-width:0; }
+.visibility-chip { display:inline-flex; align-items:center; gap:4px; padding:2px 7px 2px 9px; border-radius:5px; background:#eef9fa; border:1px solid #b8e2e8; color:#176a88; font-size:12px; line-height:20px; }
+.visibility-chip button { border:0; background:transparent; color:#1F80A0; cursor:pointer; padding:0 2px; font-size:15px; line-height:18px; }
+.visibility-picker-panel { display:none; position:absolute; z-index:190; top:calc(100% + 4px); left:0; right:0; max-height:180px; overflow:auto; padding:4px 0; border:1px solid #e2e4e8; border-radius:8px; background:#fff; box-shadow:0 8px 24px rgba(0,0,0,.12); }
+.visibility-picker.open .visibility-picker-panel { display:block; }
 
 /* 数据集标签：单一多选框内展示完整层级路径 */
 .dataset-tag-picker { position:relative; width:100%; }
@@ -978,9 +987,62 @@ select option:disabled { color:rgba(0,0,0,0.32); }
 .dataset-tag-chip-remove { width:18px; height:18px; padding:0; border:0; background:transparent; color:#1F80A0; font-size:16px; line-height:18px; cursor:pointer; }
 .dataset-tag-picker-arrow { position:absolute; right:13px; top:50%; width:8px; height:8px; border-right:1.5px solid #9ca3af; border-bottom:1.5px solid #9ca3af; transform:translateY(-65%) rotate(45deg); transition:transform .15s; }
 .dataset-tag-picker.open .dataset-tag-picker-arrow { transform:translateY(-20%) rotate(225deg); }
-.dataset-tag-picker-panel { display:none; position:absolute; z-index:180; top:calc(100% + 5px); left:0; right:0; max-height:290px; overflow-y:auto; padding:6px; border:1px solid #e2e4e8; border-radius:8px; background:#fff; box-shadow:0 10px 28px rgba(0,0,0,0.12); }
-.dataset-tag-picker.open .dataset-tag-picker-panel { display:block; }
-.dataset-tag-picker-group { padding:7px 9px 4px; color:rgba(0,0,0,0.42); font-size:11px; font-weight:600; }
+.dataset-tag-picker-panel { display:none; position:absolute; z-index:180; top:calc(100% + 5px); left:0; right:0; max-height:230px; overflow-y:auto; padding:6px; border:1px solid #e2e4e8; border-radius:8px; background:#fff; box-shadow:0 10px 28px rgba(0,0,0,0.12); }
+.dataset-tag-picker.open .dataset-tag-picker-panel { display:flex; overflow:hidden; padding:0; }
+.dataset-tag-column { flex:1; min-width:0; overflow-y:auto; padding:4px; border-right:1px solid #edf0f2; }
+.dataset-tag-column:last-child { border-right:0; }
+.dataset-tag-column[hidden] { display:none; }
+.dataset-tag-branch { display:flex; align-items:center; justify-content:space-between; width:100%; min-height:34px; padding:7px 9px; border:0; border-radius:4px; background:transparent; color:rgba(0,0,0,.75); font:inherit; font-size:13px; text-align:left; cursor:pointer; }
+.dataset-tag-branch::after { content:'›'; color:#999; }
+.dataset-tag-branch:hover,.dataset-tag-branch.active { background:#f3f9fb; color:#176a88; }
+.dataset-tag-picker .dataset-tag-picker-panel label,
+.visibility-picker .visibility-picker-panel label {
+  display:flex !important;
+  flex-direction:row !important;
+  align-items:center !important;
+  justify-content:flex-start !important;
+  width:100% !important;
+  min-height:34px;
+  margin:0 !important;
+  padding:7px 9px;
+  box-sizing:border-box;
+  font-size:13px;
+  line-height:20px;
+  font-weight:400;
+  text-align:left !important;
+  cursor:pointer;
+}
+.dataset-tag-picker .dataset-tag-picker-panel label > input[type="checkbox"],
+.visibility-picker .visibility-picker-panel label > input[type="checkbox"] {
+  display:block !important;
+  flex:0 0 14px !important;
+  width:14px !important;
+  min-width:14px !important;
+  height:14px !important;
+  margin:0 !important;
+  padding:0 !important;
+  box-shadow:none;
+  accent-color:#1F80A0;
+}
+.dataset-tag-picker .dataset-tag-picker-panel label > span,
+.visibility-picker .visibility-picker-panel label > span {
+  display:block;
+  flex:1 1 auto;
+  min-width:0;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  text-align:left;
+}
+.dataset-tag-picker-panel label:has(input:checked),.visibility-picker-panel label:has(input:checked) { background:#eef9fa; color:#176a88; }
+.visibility-picker-panel label:hover { background:#f3f9fb; }
+.dataset-tag-picker-control,.visibility-picker-control { min-height:38px; padding:5px 32px 5px 9px; text-align:left; }
+.visibility-picker-chips { flex:1; }
+.visibility-chip { max-width:100%; }
+.visibility-chip span { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.visibility-chip button,.dataset-tag-chip-remove { flex:none; }
+.visibility-picker-control:hover,.visibility-picker.open .visibility-picker-control { border-color:#1F80A0; }
+.dataset-tag-picker-panel,.visibility-picker-panel { position:fixed; z-index:1600; box-sizing:border-box; right:auto; }
 .dataset-tag-picker-option { display:flex; align-items:flex-start; gap:8px; padding:7px 9px; border-radius:6px; color:rgba(0,0,0,0.75); font-size:12.5px; line-height:20px; cursor:pointer; }
 .dataset-tag-picker-option:hover { background:#f3f9fb; }
 .dataset-tag-picker-option input { width:auto; margin:3px 0 0; padding:0; accent-color:#1F80A0; box-shadow:none; }
@@ -1609,11 +1671,15 @@ textarea.wf-edit-field { min-height:64px; height:auto; resize:vertical; line-hei
 .drawer-close { cursor:pointer; color:rgba(0,0,0,0.45); font-size:18px; background:none; border:none; line-height:1; }
 .drawer-close:hover { color:rgba(0,0,0,0.85); }
 .drawer-body { padding:20px 24px; flex:1; overflow-y:auto; }
+.modal-box:has(.dataset-tag-picker.open) .drawer-body,
+.modal-box:has(.visibility-picker.open) .drawer-body { overflow:visible; }
 .drawer-foot { padding:12px 24px; border-top:1px solid #f0f0f0; display:flex; justify-content:flex-end; gap:8px; }
 /* ── Modal (居中弹窗) ── */
 .modal-mask { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.45); z-index:1500; align-items:center; justify-content:center; }
 .modal-mask.active { display:flex; }
 .modal-box { background:#fff; border-radius:12px; max-height:86vh; display:flex; flex-direction:column; box-shadow:0 16px 56px rgba(0,0,0,0.2); overflow:hidden; }
+.modal-box:has(.dataset-tag-picker.open),
+.modal-box:has(.visibility-picker.open) { overflow:visible; }
 .q-pager { display:flex; align-items:center; justify-content:space-between; margin-top:14px; }
 .q-pager .pg-btns { display:flex; gap:6px; }
 .pg-btn { min-width:30px; height:30px; padding:0 8px; border:1px solid #e2e4e8; background:#fff; border-radius:6px; font-size:13px; cursor:pointer; color:rgba(0,0,0,0.7); }
@@ -1627,6 +1693,8 @@ textarea.wf-edit-field { min-height:64px; height:auto; resize:vertical; line-hei
 .fg textarea { min-height:60px; resize:vertical; }
 .fg .hint { font-size:12px; color:rgba(0,0,0,0.35); margin-top:3px; }
 .fg-row { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+.fg .ms-panel label { display:flex; align-items:center; margin-bottom:0; }
+.fg .ms-panel input[type="checkbox"] { width:auto; padding:0; flex:none; }
 /* 新建算子抽屉: 加宽 + 表单一行一列 */
 .op-drawer { width:680px; }
 .op-drawer .fg-row { grid-template-columns:1fr; }
@@ -1777,15 +1845,74 @@ function datasetTagTogglePicker(event,picker){
   if(!picker || picker.classList.contains('readonly')) return;
   var opening=!picker.classList.contains('open');
   document.querySelectorAll('.dataset-tag-picker.open').forEach(function(item){ item.classList.remove('open'); });
+  document.querySelectorAll('.visibility-picker.open').forEach(function(item){ item.classList.remove('open'); });
   picker.classList.toggle('open',opening);
+  if(opening) datasetPickerPosition(picker);
 }
-function datasetTagToggleOption(checkbox){ datasetTagSyncPicker(checkbox.closest('.dataset-tag-picker')); }
+function datasetTagToggleOption(checkbox){
+  var picker=checkbox.closest('.dataset-tag-picker');
+  datasetTagSyncPicker(picker);
+  datasetPickerPosition(picker);
+}
+function datasetTagBranch(button){
+  var picker=button.closest('.dataset-tag-picker'), level=Number(button.dataset.level);
+  picker.querySelectorAll('.dataset-tag-column').forEach(function(column){
+    if(Number(column.dataset.level)>level) column.hidden=column.dataset.parent!==button.dataset.path;
+  });
+  button.parentNode.querySelectorAll('.dataset-tag-branch').forEach(function(item){ item.classList.toggle('active',item===button); });
+  datasetPickerPosition(picker);
+}
+function datasetPickerPosition(picker){
+  var panel=picker.querySelector('.dataset-tag-picker-panel,.visibility-picker-panel');
+  var control=picker.querySelector('.dataset-tag-picker-control,.visibility-picker-control');
+  var rect=control.getBoundingClientRect(), width=Math.min(rect.width,window.innerWidth-16);
+  panel.style.width=width+'px';
+  panel.style.left=Math.max(8,Math.min(rect.left,window.innerWidth-width-8))+'px';
+  var below=window.innerHeight-rect.bottom-12, above=rect.top-12;
+  var upward=below<220&&above>below, available=Math.max(80,upward?above:below);
+  panel.style.maxHeight=Math.min(230,available)+'px';
+  panel.style.height=picker.classList.contains('dataset-tag-picker')?Math.min(200,available)+'px':'auto';
+  panel.style.top=(upward?rect.top-panel.getBoundingClientRect().height-5:rect.bottom+5)+'px';
+}
+function visibilityTogglePicker(picker){
+  var opening=!picker.classList.contains('open');
+  document.querySelectorAll('.dataset-tag-picker.open,.visibility-picker.open').forEach(function(item){ item.classList.remove('open'); });
+  picker.classList.toggle('open',opening);
+  if(opening) datasetPickerPosition(picker);
+}
+function visibilitySyncPicker(input){
+  var picker=input.closest('.visibility-picker'), chips=picker.querySelector('.visibility-picker-chips');
+  chips.innerHTML='';
+  picker.querySelectorAll('input:checked').forEach(function(cb){
+    var chip=document.createElement('span'); chip.className='visibility-chip'; chip.setAttribute('data-v',cb.value);
+    var name=cb.parentNode.textContent.trim(), label=document.createElement('span');
+    label.textContent=name; chip.appendChild(label);
+    var remove=document.createElement('button'); remove.type='button'; remove.textContent='×';
+    remove.setAttribute('aria-label','移除 '+name);
+    remove.onclick=function(e){e.stopPropagation();cb.checked=false;visibilitySyncPicker(cb);};
+    chip.appendChild(remove); chips.appendChild(chip);
+  });
+  if(!picker.querySelector('input:checked')){ var p=document.createElement('span'); p.className='visibility-picker-placeholder'; p.textContent='请选择用户组'; chips.appendChild(p); }
+  if(picker.classList.contains('open')) datasetPickerPosition(picker);
+}
+function openBuildDsDrawer(){
+  var drawer=document.getElementById('buildDsDrawer');
+  if(!drawer) return;
+  var visibility=document.getElementById('buildDsVisibility');
+  if(visibility) visibility.value='公开';
+  document.querySelectorAll('#buildDsGroups input').forEach(function(input){ input.checked=false; });
+  var first=document.querySelector('#buildDsGroups input'); if(first) visibilitySyncPicker(first);
+  datasetVisibilityToggle('buildDs');
+  closeDatasetPickers();
+  drawer.classList.add('active');
+}
 function datasetTagRemove(event,button){
   event.stopPropagation();
   var picker=button.closest('.dataset-tag-picker');
   var path=button.closest('.dataset-tag-chip').getAttribute('data-path');
   picker.querySelectorAll('.dataset-tag-picker-panel input').forEach(function(cb){ if(cb.value===path) cb.checked=false; });
   datasetTagSyncPicker(picker);
+  if(picker.classList.contains('open')) datasetPickerPosition(picker);
 }
 function datasetTagSetValues(id,values){
   var picker=document.getElementById(id);
@@ -1818,16 +1945,27 @@ function psSelect(opt){
   var inp=w.querySelector('.ps-input'); inp.value=''; psSearch(inp); inp.focus();
 }
 function psRemove(e, x){ e.stopPropagation(); x.closest('.ps-chip').remove(); }
+function closeDatasetPickers(){
+  document.querySelectorAll('.dataset-tag-picker.open,.visibility-picker.open').forEach(function(picker){ picker.classList.remove('open'); });
+}
+document.addEventListener('keydown',function(e){ if(e.key==='Escape') closeDatasetPickers(); });
+window.addEventListener('resize',closeDatasetPickers);
+document.addEventListener('scroll',function(e){
+  if(e.target instanceof Element && e.target.closest('.dataset-tag-picker-panel,.visibility-picker-panel')) return;
+  closeDatasetPickers();
+},true);
 document.addEventListener('click', function(e){
   document.querySelectorAll('.ps-wrap.open').forEach(function(w){ if(!w.contains(e.target)) w.classList.remove('open'); });
   document.querySelectorAll('.ms-wrap.open').forEach(function(w){ if(!w.contains(e.target)) w.classList.remove('open'); });
   document.querySelectorAll('.dataset-tag-picker.open').forEach(function(w){ if(!w.contains(e.target)) w.classList.remove('open'); });
+  document.querySelectorAll('.visibility-picker.open').forEach(function(w){ if(!w.contains(e.target)) w.classList.remove('open'); });
   document.querySelectorAll('.row-act-wrap.open').forEach(function(w){ if(!w.contains(e.target)) w.classList.remove('open'); });
 });
 function openDrawerById(id){ document.getElementById(id).classList.add('active'); }
 function closeDrawerById(id){ document.getElementById(id).classList.remove('active'); }
 function qfDep(id, val){ var el=document.getElementById(id); if(el) el.classList.toggle('qf-off', val!=='yes'); }
 function dsCreating(modalId){
+  if(modalId==='buildDsDrawer' && !datasetVisibilitySave('buildDs',document.getElementById('buildDsIdent').value.trim())) return;
   var box=document.querySelector('#'+modalId+' .modal-box'); if(!box) return;
   box.innerHTML='<div style="padding:46px 28px;text-align:center;">'
     +'<div style="font-size:42px;line-height:1;margin-bottom:14px;">&#9203;</div>'
@@ -1856,7 +1994,31 @@ function openDsEdit(id){
   var idn=document.getElementById('dsEditIdent'); if(idn)idn.value=m.ident||'';
   var f=document.getElementById('dsEditFolder'); if(f&&m.folder)f.value=m.folder;
   datasetTagSetValues('dsEditTags',m.tags||[]);
+  var visibility=m;
+  try{ visibility=JSON.parse(localStorage.getItem('datasetVisibility:'+id))||m; }catch(e){}
+  document.getElementById('dsEditVisibility').value=visibility.visibility||'公开';
+  document.querySelectorAll('#dsEditGroups input').forEach(function(input){ input.checked=(visibility.visible_group_ids||[]).indexOf(input.value)>=0; });
+  datasetVisibilityToggle('dsEdit');
+  var first=document.querySelector('#dsEditGroups input'); if(first) visibilitySyncPicker(first);
   openDrawerById('dsEditModal');
+}
+function datasetVisibilityToggle(prefix){
+  var field=document.getElementById(prefix+'Groups');
+  field.hidden=document.getElementById(prefix+'Visibility').value!=='受限';
+  var picker=field.querySelector('.visibility-picker'); if(picker) picker.classList.remove('open');
+}
+function datasetVisibilitySave(prefix,id){
+  var visibility=document.getElementById(prefix+'Visibility').value;
+  var groups=visibility==='受限'?Array.from(document.querySelectorAll('#'+prefix+'Groups input:checked')).map(function(input){return input.value;}):[];
+  if(visibility==='受限'&&!groups.length){toast('请选择至少一个可见用户组');return false;}
+  if(!id){toast('请填写数据集标识');return false;}
+  try{localStorage.setItem('datasetVisibility:'+id,JSON.stringify({visibility:visibility,visible_group_ids:groups}));}
+  catch(e){toast('配置保存失败，请检查浏览器存储设置');return false;}
+  return true;
+}
+function saveDsEdit(){
+  if(!datasetVisibilitySave('dsEdit',document.getElementById('dsEditIdent').value)) return;
+  closeDrawerById('dsEditModal');toast('Demo: 已保存');
 }
 function switchTab(el, pane){
   var tabs=el.parentNode.querySelectorAll('.tab'); tabs.forEach(function(t){t.classList.remove('active');}); el.classList.add('active');
@@ -2054,6 +2216,22 @@ def dataset_label_names(d):
     })
 
 
+def dataset_visibility_fields(prefix):
+    from data_platform_refactor import USER_GROUPS
+
+    options = "".join(
+        f'<label><input type="checkbox" value="{html.escape(group["id"], quote=True)}" '
+        f'onchange="visibilitySyncPicker(this)"><span>{html.escape(group["name"])}</span></label>'
+        for group in USER_GROUPS
+    )
+    return f'''<div class="fg"><label for="{prefix}Visibility">可见性</label>
+      <select id="{prefix}Visibility" onchange="datasetVisibilityToggle('{prefix}')"><option>公开</option><option>受限</option></select></div>
+      <div class="fg" id="{prefix}Groups" hidden><label>可见用户组</label>
+      <div class="visibility-picker"><div class="visibility-picker-control" onclick="visibilityTogglePicker(this.parentNode)">
+      <div class="visibility-picker-chips"><span class="visibility-picker-placeholder">请选择用户组</span></div></div>
+      <div class="visibility-picker-panel">{options}</div></div></div>'''
+
+
 def dataset_tag_picker_html(element_id, selected_paths=None, editable=True, input_name=""):
     """Render a reusable full-path multi-select for dataset labels."""
     selected_paths = [path for path in (selected_paths or []) if path]
@@ -2078,21 +2256,42 @@ def dataset_tag_picker_html(element_id, selected_paths=None, editable=True, inpu
     arrow = '<span class="dataset-tag-picker-arrow"></span>' if editable else ""
     panel = ""
     if editable:
-        option_groups = {}
+        tree = {}
         for path in DATASET_TAG_PATH_OPTIONS:
-            option_groups.setdefault(path.split(" > ", 1)[0], []).append(path)
-        options_html = ""
-        for group_name, paths in option_groups.items():
-            options_html += f'<div class="dataset-tag-picker-group">{html.escape(group_name)}</div>'
-            for path in paths:
-                checked = " checked" if path in selected_set else ""
-                name_attr = f' name="{html.escape(input_name, quote=True)}"' if input_name else ""
-                options_html += (
-                    f'<label class="dataset-tag-picker-option"><input type="checkbox"{name_attr} '
-                    f'value="{html.escape(path, quote=True)}"{checked} onchange="datasetTagToggleOption(this)">'
-                    f'<span>{html.escape(path)}</span></label>'
-                )
-        panel = f'<div class="dataset-tag-picker-panel">{options_html}</div>'
+            node = tree
+            for part in path.split(" > "):
+                node = node.setdefault(part, {})
+        columns = []
+
+        def add_column(nodes, parents):
+            parent = html.escape(" > ".join(parents), quote=True)
+            items = []
+            for name, children in nodes.items():
+                path = " > ".join([*parents, name])
+                escaped = html.escape(path, quote=True)
+                if children:
+                    items.append(
+                        f'<button type="button" class="dataset-tag-branch" data-level="{len(parents)}" '
+                        f'data-path="{escaped}" onclick="datasetTagBranch(this)">{html.escape(name)}</button>'
+                    )
+                else:
+                    checked = " checked" if path in selected_set else ""
+                    name_attr = f' name="{html.escape(input_name, quote=True)}"' if input_name else ""
+                    items.append(
+                        f'<label class="dataset-tag-picker-option"><input type="checkbox"{name_attr} '
+                        f'value="{escaped}"{checked} onchange="datasetTagToggleOption(this)">'
+                        f'<span title="{escaped}">{html.escape(name)}</span></label>'
+                    )
+            columns.append(
+                f'<div class="dataset-tag-column" data-level="{len(parents)}" data-parent="{parent}"'
+                f'{" hidden" if parents else ""}>{"".join(items)}</div>'
+            )
+            for name, children in nodes.items():
+                if children:
+                    add_column(children, [*parents, name])
+
+        add_column(tree, [])
+        panel = f'<div class="dataset-tag-picker-panel">{"".join(columns)}</div>'
     click = (
         ' onclick="datasetTagTogglePicker(event,this.closest(\'.dataset-tag-picker\'))"'
         if editable else ""
@@ -3580,7 +3779,7 @@ def query():
         <span class="muted" id="qResMeta" style="font-size:13px;font-weight:400;">默认展示 20 条, 更多请输入筛选条件查询</span>
         <span style="float:right;display:inline-flex;gap:8px;">
           <a href="/model/data/ds_progress" class="btn">查看数据集创建进度</a>
-          <button class="btn btn-secondary" onclick="document.getElementById('buildDsDrawer').classList.add('active')">用结果新建数据集</button>
+          <button class="btn btn-secondary" onclick="openBuildDsDrawer()">用结果新建数据集</button>
         </span>
       </h3>
       <div class="q-table-scroll">
@@ -3614,7 +3813,7 @@ def query():
     )
     build_ds_drawer = f"""
     <div class="modal-mask" id="buildDsDrawer" onclick="if(event.target===this)this.classList.remove('active')">
-      <div class="modal-box" style="width:460px;">
+      <div class="modal-box" style="width:520px;max-width:calc(100vw - 32px);">
         <div class="drawer-head"><h3>用结果新建数据集</h3><!-- 兼容旧测试标记：用结果创建数据集 --><button class="drawer-close" onclick="document.getElementById('buildDsDrawer').classList.remove('active')">&times;</button></div>
         <div class="drawer-body">
           <div class="muted" style="font-size:12px;margin-bottom:14px;">将当前查询结果（{n_disp} 个 episode）打包为一个新数据集。</div>
@@ -3623,6 +3822,7 @@ def query():
           <div class="fg"><label>生成格式</label><select><option>LeRobot</option><option>Mozdataset</option></select></div>
           <div class="fg"><label>选择目录</label><select>{build_folder_opts}</select></div>
           <div class="fg"><label>标签</label>{build_tag_selector}</div>
+          {dataset_visibility_fields("buildDs")}
         </div>
         <div class="drawer-foot">
           <button class="btn" onclick="document.getElementById('buildDsDrawer').classList.remove('active')">取消</button>
@@ -3939,6 +4139,8 @@ def datasets():
             "ident": d["id"],
             "folder": ds_folder_of.get(d["id"], ""),
             "tags": dataset_label_names(d),
+            "visibility": d.get("visibility", "公开"),
+            "visible_group_ids": d.get("visible_group_ids", []),
         }
         for d in DATASETS
     }
@@ -3984,10 +4186,11 @@ def datasets():
           <div class="fg"><label>标识</label><input id="dsEditIdent" disabled><div class="hint">标识创建后不可修改</div></div>
           <div class="fg"><label>目录</label><select id="dsEditFolder">{folder_opts}</select></div>
           <div class="fg"><label>标签</label>{edit_tag_selector}</div>
+          {dataset_visibility_fields("dsEdit")}
         </div>
         <div class="drawer-foot">
           <button class="btn" onclick="closeDrawerById('dsEditModal')">取消</button>
-          <button class="btn-primary btn" onclick="closeDrawerById('dsEditModal');toast('Demo: 已保存')">确认</button>
+          <button class="btn-primary btn" onclick="saveDsEdit()">确认</button>
         </div>
       </div>
     </div>

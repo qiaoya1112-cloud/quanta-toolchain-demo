@@ -35,6 +35,8 @@ from flask import Flask, render_template_string, request, redirect, jsonify
 import data_platform_refactor as data_refactor
 
 app = Flask(__name__)
+# Keep local prototype previews current when templates change without debug mode.
+app.config["TEMPLATES_AUTO_RELOAD"] = True
 app.secret_key = "embodied-toolchain-mvp-demo"
 
 # ── 引入 data_platform 模块, 作为模型平台 -> 数据子模块的实现 ──
@@ -620,6 +622,8 @@ PLATFORMS = {
             ("评测", [
                 ("/model/eval/tasks",        "评测任务", "&#9881;", ""),
                 ("/model/eval/benchmarks",   "评测集",   "&#9776;", ""),
+                ("/model/eval/test-cases", "评测用例", "&#9776;", ""),
+                ("/model/eval/catalog", "场景库", "&#9776;", ""),
                 ("/model/eval/criteria",     "评价标准", "&#9745;", ""),
                 ("/model/eval/evaluate2",    "端侧示意",   "&#9878;", ""),
             ]),
@@ -3923,6 +3927,8 @@ def render_page(title, content, active="", breadcrumb=None, extra_script=None,
         content = f'<div class="model-list-title"><h1>{html.escape(title)}</h1><div class="model-list-actions">{title_action}</div></div>' + content
     if module == "model":
         content = content.replace('>+ 新增', '>新增').replace('>&#43; 新增', '>新增')
+        if request.path.startswith('/model/eval/'):
+            content = '<link rel="stylesheet" href="/static/shared/eval-drawers.css">' + content
     content = content.replace('class="btn btn-tertiary" onclick="resetFilters(this)">重置</button>',
                               'class="btn btn-tertiary" onclick="resetFilters(this)">清空</button>')
     content = content.replace('class="btn btn-tertiary" onclick="resetDeployFilters()">重置</button>',
@@ -14304,6 +14310,11 @@ def checkpoint_history(ckpt_id):
     chain.reverse()
 
     return jsonify(chain)
+
+
+# 场景库维护与测试用例组合
+from eval_catalog import register_catalog
+register_catalog(app, render_page)
 
 
 # ════════════════════════════════════════════════════════════════
