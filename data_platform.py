@@ -22,6 +22,7 @@ import datetime
 import re
 import html
 from flask import Flask, render_template_string, request, redirect
+from prototype_filters import CURRENT_USER, filter_url, ownership_tabs
 
 app = Flask(__name__)
 app.secret_key = "embodied-data-platform-demo"
@@ -3863,12 +3864,30 @@ def ds_versions(d):
         DS_VERSIONS[d["id"]] = vers
     return DS_VERSIONS[d["id"]]
 
+def visible_datasets():
+    mine = request.args.get("scope") == "mine"
+    keyword = request.args.get("keyword", "").strip().lower()
+    tag = request.args.get("tag", "")
+    return [d for d in DATASETS
+            if (not mine or d.get("owner") == CURRENT_USER)
+            and (not keyword or keyword in d["name"].lower()
+                 or any(keyword in t.lower() for t in dataset_label_names(d)))
+            and (not tag or tag in dataset_label_names(d))]
+
+
 @app.route("/datasets")
 def datasets():
+    visible = visible_datasets()
+    visible_ids = {d["id"] for d in visible}
+    scope = "mine" if request.args.get("scope") == "mine" else "all"
+    keyword = request.args.get("keyword", "")
+    tag = request.args.get("tag", "")
+    filtering = bool(scope == "mine" or keyword or tag)
     sel = request.args.get("sel", "")
+    if sel != "new" and sel not in visible_ids:
+        sel = visible[0]["id"] if visible else ""
     # 默认选中第一个数据集 (在建树前确定, 保证树高亮与详情一致)
-    if not sel:
-        sel = DATASETS[0]["id"]
+
     # 业务语义目录 (用户可自建管理), 而非按 train/eval 分
     tree = ('<div class="tree-head">'
             '<span class="th-left"><span class="tp-toggle" onclick="toggleTP(this)" title="折叠/展开目录"><span class="sc-col">&laquo;</span><span class="sc-exp">&raquo;</span></span><span class="th-title">数据集目录</span></span>'
@@ -3877,20 +3896,25 @@ def datasets():
             '<a href="#" onclick="openDrawerById(\'newDsDrawer\');return false;" style="font-size:12px;">+ 数据集</a></span></div>')
     all_dataset_tags = sorted({tag for d in DATASETS for tag in dataset_label_names(d)})
     dataset_tag_options = "".join(
-        f'<option value="{html.escape(tag, quote=True)}">{html.escape(tag)}</option>'
-        for tag in all_dataset_tags
+        f'<option value="{html.escape(t, quote=True)}" {"selected" if t == tag else ""}>{html.escape(t)}</option>'
+        for t in all_dataset_tags
     )
+    tree += ownership_tabs()
     tree += (
-        '<div class="tree-search"><input id="datasetTreeKeyword" placeholder="搜索数据集 / 目录..." '
-        'oninput="filterDatasetTree()"></div>'
+        f'<form id="datasetFilters" method="get"><input type="hidden" name="scope" value="{scope}">'
+        f'<div class="tree-search"><input id="datasetTreeKeyword" name="keyword" value="{html.escape(keyword, quote=True)}" placeholder="搜索数据集..." '
+        'onchange="filterDatasetTree()"></div>'
         '<div class="tree-tag-search">'
-        f'<select id="datasetTreeTagFilter" aria-label="标签筛选" onchange="filterDatasetTree()">'
+        f'<select id="datasetTreeTagFilter" name="tag" aria-label="标签筛选" onchange="filterDatasetTree()">'
         f'<option value="">请选择标签</option>{dataset_tag_options}</select></div>'
+        '</form>'
         '<div class="tree-body dataset-tree-body">'
     )
     for folder in V2_FOLDERS:
-        dss = [get_ds(i) for i in V2_FOLDER_MAP.get(folder, []) if get_ds(i)]
-        empty = len(dss) == 0
+        dss = [get_ds(i) for i in V2_FOLDER_MAP.get(folder, []) if i in visible_ids]
+        if filtering and not dss:
+            continue
+        empty = not V2_FOLDER_MAP.get(folder, [])
         del_item = (f'<div class="rm-item danger" onclick="rmClose();delFolder(\'{folder}\')">删除</div>'
                     if empty else
                     '<div class="rm-item disabled" title="目录不为空, 不可删除">删除</div>')
@@ -3910,7 +3934,7 @@ def datasets():
                 name_attr = html.escape(d["name"].lower(), quote=True)
                 tree += (f'<div class="tree-leaf-wrap row-act-wrap dataset-tree-item" '
                          f'data-dataset-name="{name_attr}" data-dataset-tags="{tags_attr}">'
-                         f'<a class="tree-leaf {cls}" href="/datasets?sel={d["id"]}">{d["name"]} <span class="sub">· {d["version"]}</span></a>'
+                         f'<a class="tree-leaf {cls}" href="/datasets{filter_url(sel=d["id"], ver="")}">{d["name"]} <span class="sub">· {d["version"]}</span></a>'
                          f'<span class="leaf-act" onclick="event.stopPropagation();toggleRowMenu(this)">&#8943;</span>'
                          f'<div class="row-menu">'
                          f'<div class="rm-item" onclick="rmClose();openDsEdit(\'{d["id"]}\')">编辑</div>'
@@ -3918,14 +3942,16 @@ def datasets():
         else:
             tree += '<div class="tree-leaf muted dataset-empty-folder" style="cursor:default;">（空目录）</div>'
         tree += '</div>'
+    if not visible:
+        tree += '<div class="muted" style="padding:24px;text-align:center;">暂无匹配的数据集</div>'
     tree += '</div>'
 
     if sel == "new":
         right = dataset_new_panel_v2()
+    elif visible:
+        right = dataset_detail_panel_v2(get_ds(sel), request.args.get("ver", ""))
     else:
-        if not sel:
-            sel = DATASETS[0]["id"]
-        right = dataset_detail_panel_v2(get_ds(sel) or DATASETS[0], request.args.get("ver", ""))
+        right = '<div class="muted" style="padding:64px;text-align:center;">暂无匹配的数据集，请调整筛选条件</div>'
 
     folder_opts = "".join(f"<option>{f}</option>" for f in V2_FOLDERS)
     # 数据集 → {名称, 所属目录} 映射 (供编辑/移动弹窗回填)
@@ -4014,7 +4040,7 @@ def datasets():
       </div>
     </div>
     """
-    content = (f'<div class="split"><div class="tree-panel">{tree}</div><div class="detail-panel">{right}</div></div>'
+    content = (f'<div class="split dataset-workspace"><div class="tree-panel">{tree}</div><div class="detail-panel">{right}</div></div>'
                + new_folder_drawer + new_ds_drawer + ds_meta_js)
     # 处理数据后跳到「版本」Tab 并提示
     landed = request.args.get("tab", "")
@@ -4025,41 +4051,7 @@ def datasets():
     """ if landed == "version" else "")
     script = """<script>
     function filterDatasetTree(){
-      var keyword=(document.getElementById('datasetTreeKeyword').value||'').trim().toLowerCase();
-      var tag=document.getElementById('datasetTreeTagFilter').value||'';
-      var filtering=Boolean(keyword||tag), anyVisible=false;
-      document.querySelectorAll('.dataset-tree-body .tree-children').forEach(function(children){
-        var visibleInFolder=0;
-        children.querySelectorAll('.dataset-tree-item').forEach(function(item){
-          var name=item.getAttribute('data-dataset-name')||'';
-          var tags=(item.getAttribute('data-dataset-tags')||'').split('|').filter(Boolean);
-          var show=(!keyword||name.indexOf(keyword)>=0||tags.some(function(x){return x.toLowerCase().indexOf(keyword)>=0;}))
-            &&(!tag||tags.indexOf(tag)>=0);
-          item.style.display=show?'':'none';
-          if(show){ visibleInFolder+=1; anyVisible=true; }
-        });
-        var empty=children.querySelector('.dataset-empty-folder');
-        var showEmpty=Boolean(empty&&!filtering);
-        if(empty) empty.style.display=showEmpty?'':'none';
-        var group=children.previousElementSibling;
-        var showGroup=visibleInFolder>0||showEmpty;
-        if(group) group.style.display=showGroup?'':'none';
-        children.style.display=showGroup?'':'none';
-        if(filtering&&showGroup){
-          children.classList.remove('collapsed');
-          if(group) group.classList.remove('collapsed');
-        }
-      });
-      var emptyState=document.getElementById('datasetTreeFilterEmpty');
-      if(!emptyState){
-        emptyState=document.createElement('div');
-        emptyState.id='datasetTreeFilterEmpty';
-        emptyState.className='muted';
-        emptyState.style.cssText='display:none;padding:22px 14px;text-align:center;font-size:12px;';
-        emptyState.textContent='暂无匹配的数据集';
-        document.querySelector('.dataset-tree-body').appendChild(emptyState);
-      }
-      emptyState.style.display=filtering&&!anyVisible?'':'none';
+      document.getElementById('datasetFilters').requestSubmit();
     }
     window._charts = {
       info: function(){
@@ -4479,7 +4471,7 @@ def dataset_detail_panel_v2(d, viewed_ver=""):
         lab = v["version"]
         s = " selected" if v["version"] == viewed else ""
         _vopts += f'<option value="{v["version"]}"{s}>{lab}</option>'
-    ver_select = (f'<select class="ver-select" onchange="if(this.value)location.href=\'/datasets?sel={d["id"]}&ver=\'+this.value">'
+    ver_select = (f'<select class="ver-select" onchange="if(this.value)location.href=\'/datasets{filter_url(sel=d["id"], ver="")}&amp;ver=\'+this.value">'
                   f'{_vopts}</select>')
     ident_value = html.escape(d.get('ident', ''), quote=True)
     ident_html = f'<span class="dataset-ident-inline">{ident_value}</span>' if ident_value else ''
