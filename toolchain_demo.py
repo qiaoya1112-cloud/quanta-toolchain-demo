@@ -32,6 +32,8 @@ from datetime import date, datetime, timedelta
 from urllib.parse import quote, urlencode
 from flask import Flask, render_template_string, request, redirect, jsonify
 
+from prototype_filters import filter_url
+
 import data_platform_refactor as data_refactor
 
 app = Flask(__name__)
@@ -1040,6 +1042,7 @@ select option:disabled { color:rgba(0,0,0,0.32); }
 .ckpt-status-option.active { background:#238da3; color:#fff; }
 .qi { position:relative; display:inline-flex; align-items:center; justify-content:center; width:16px; height:16px; margin-left:3px; border:1.5px solid #71858d; border-radius:50%; color:#526971; font-size:11px; font-weight:700; line-height:1; cursor:help; vertical-align:-2px; outline:none; }
 .qi::after { content:attr(data-tooltip); position:absolute; left:0; top:calc(100% + 8px); z-index:260; width:220px; padding:8px 10px; border:1px solid rgba(31,45,51,.12); border-radius:6px; background:#25343a; color:#fff; font-size:12px; font-weight:400; line-height:1.5; text-align:left; white-space:normal; opacity:0; pointer-events:none; transform:translateY(4px); transition:opacity .16s ease, transform .16s ease; box-shadow:0 6px 16px rgba(17,31,36,.18); }
+.qi.robot-structure-tip::after { width:300px; white-space:pre-line; }
 .qi:hover::after, .qi:focus-visible::after { opacity:1; transform:translateY(0); }
 .status-with-log { display:inline-flex; align-items:center; gap:6px; white-space:nowrap; }
 .status-log-icon { width:18px; height:18px; padding:0; border:1px solid #f3d6d5; border-radius:50%; background:#fff; color:#d4504e; font-size:12px; line-height:16px; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; }
@@ -8672,7 +8675,9 @@ def _render_shared_dataset_management(active, module, prefix):
     dp.datasets()
     inner = _rewrite_dp_links(_dp_capture.get("content", "") or "", prefix=prefix)
     extra = _dp_capture.get("extra_script")
-    selected_dataset = _resolve_dataset_id(request.args.get("sel") or "ds1")
+    visible = dp.visible_datasets()
+    selected = next((d for d in visible if d["id"] == request.args.get("sel")), None)
+    selected_dataset = _resolve_dataset_id((selected or (visible[0] if visible else {})).get("id", ""))
     action_open = '<div class="dataset-detail-actions">'
     if module == "data":
         lineage_btn = (
@@ -9518,9 +9523,17 @@ def _checkpoint_resource_key(ckpt):
 
 def _resource_tabs(base_path, selected):
     return '<div class="tm-subtabs resource-tabs">' + ''.join(
-        f'<a class="tm-subtab{" active" if key == selected else ""}" href="{base_path}?resource={key}">{label}</a>'
+        f'<a class="tm-subtab{" active" if key == selected else ""}" href="{base_path}{filter_url(resource=key)}">{label}</a>'
         for key, label in RESOURCE_TAB_LABELS.items()
     ) + '</div>'
+
+
+def _experiment_owner(exp):
+    if exp.get("owner") not in (None, "", "—"):
+        return exp["owner"]
+    owners = ["tao.wang", "hannah.wang", "joanna.qiao", "Maple Liu", "Min Chen"]
+    index = next((i for i, item in enumerate(EXPERIMENTS) if item["id"] == exp["id"]), 0)
+    return owners[index % len(owners)]
 
 
 def _experiment_numeric_id(exp):
@@ -9535,6 +9548,7 @@ def experiments():
     if selected_resource not in RESOURCE_TAB_LABELS:
         selected_resource = "volcano"
     filter_name = request.args.get("name", "").strip()
+    filter_owner = request.args.get("owner", "").strip()
     filter_tag = request.args.get("tag", "").strip()
     filter_dataset = request.args.get("dataset", "").strip()
     has_queue_access = request.args.get("queue_access") != "none"
@@ -9552,6 +9566,7 @@ def experiments():
     visible_experiments = [
         e for e in EXPERIMENTS
         if _experiment_resource_key(e) == selected_resource
+        and (not filter_owner or filter_owner.lower() in _experiment_owner(e).lower())
         and (not filter_name or filter_name.lower() in e.get("name", "").lower())
         and (selected_resource != "volcano" or not filter_tag or filter_tag.lower() in e.get("tag", "").lower())
         and (selected_resource != "volcano" or not filter_dataset or filter_dataset.lower() in e.get("dataset", "").lower())
@@ -9559,7 +9574,6 @@ def experiments():
     show_description = selected_resource == "volcano"
     show_actions = selected_resource == "volcano"
     rows = ""
-    owner_fallbacks = ["tao.wang", "hannah.wang", "joanna.qiao", "Maple Liu", "Min Chen"]
     priority_fallbacks = ["高", "中", "低"]
     for e in visible_experiments:
         idx = next((i for i, item in enumerate(EXPERIMENTS) if item["id"] == e["id"]), 0)
@@ -9570,7 +9584,7 @@ def experiments():
             "failed":  '<span class="tag tag-red">失败</span>',
             "queued":  '<span class="tag tag-blue">排队中</span>',
         }.get(e["status"], f'<span class="tag tag-gray">{e["status"]}</span>')
-        owner = e["owner"] if e["owner"] != "—" else owner_fallbacks[idx % len(owner_fallbacks)]
+        owner = _experiment_owner(e)
         priority = e.get("priority", priority_fallbacks[idx % len(priority_fallbacks)])
         priority_html = {
             "高": '<span class="tag tag-red">高</span>',
@@ -9608,7 +9622,7 @@ def experiments():
           </td>""" if show_actions else ""
         rows += f"""<tr>
           <td class="mono muted">{_experiment_numeric_id(e)}</td>
-          <td><a href="/model/experiments/{e['id']}" style="color:#149DAA">{e['name']}</a></td>
+          <td><a href="/model/experiments/{e['id']}{filter_url()}" style="color:#149DAA">{e['name']}</a></td>
           {description_cell}
           <td>{status_html}</td>
           <td>{priority_html}</td>
@@ -9652,14 +9666,16 @@ def experiments():
         "分布式训练 · 训练监控 (loss 曲线)",
     ) + f"""
     {_resource_tabs('/model/experiments', selected_resource)}
-    <div class="fb-labeled">
-      <div class="ff"><label>名称</label><input id="filterExperimentName" value="{html.escape(filter_name, quote=True)}" placeholder="请输入名称"></div>
-      {f'<div class="ff"><label>标签</label><select id="filterExperimentTag"><option>请选择标签</option><option>robotwin</option><option>HouseHold</option><option>pi05</option></select></div><div class="ff"><label>数据集</label><select id="filterExperimentDataset"><option>请选择数据集</option><option>clean_whiteboard_v4</option><option>tidy_desk_v2</option></select></div>' if show_description else ''}
+    <form class="fb-labeled ownership-filters" method="get">
+      <input type="hidden" name="resource" value="{selected_resource}">
+      <div class="ff"><label>名称</label><input id="filterExperimentName" name="name" value="{html.escape(filter_name, quote=True)}" placeholder="请输入名称"></div>
+      {f'<div class="ff"><label>标签</label><select id="filterExperimentTag" name="tag"><option value="">请选择标签</option><option>robotwin</option><option>HouseHold</option><option>pi05</option></select></div><div class="ff"><label>数据集</label><select id="filterExperimentDataset" name="dataset"><option value="">请选择数据集</option><option>clean_whiteboard_v4</option><option>tidy_desk_v2</option></select></div>' if show_description else ''}
+      <div class="ff"><label for="filterExperimentOwner">创建人</label><input id="filterExperimentOwner" name="owner" value="{html.escape(filter_owner, quote=True)}" placeholder="请输入创建人"></div>
       <div class="filter-actions">
-        <button class="btn btn-tertiary" onclick="resetFilters(this)">重置</button>
-        <button class="btn btn-primary" onclick="queryFilters(this)">查询</button>
+        <a class="btn btn-tertiary" href="?resource={selected_resource}">重置</a>
+        <button class="btn btn-primary" type="submit">查询</button>
       </div>
-    </div>
+    </form>
 
     <div class="list-summarybar">
       <div class="txt">运行中任务 <b>{running_count}</b> 条，全部任务 <b>{total_count}</b> 条</div>
@@ -9679,22 +9695,11 @@ def experiments():
           <th>运行时长</th>
           {"<th>操作</th>" if show_actions else ""}
         </tr></thead>
-        <tbody>{rows}</tbody>
+        <tbody>{rows or '<tr><td colspan="9" style="text-align:center;padding:40px;color:#999;">暂无符合条件的训练任务</td></tr>'}</tbody>
       </table>
     </div>
 
-    <div class="mini-pager">
-      <select><option>10条/页</option><option>20条/页</option><option>50条/页</option></select>
-      <span class="pg-btn">&lsaquo;</span>
-      <span class="pg-btn active">1</span>
-      <span class="pg-btn">2</span>
-      <span class="pg-btn">3</span>
-      <span class="pg-btn">4</span>
-      <span class="muted">...</span>
-      <span class="pg-btn">40</span>
-      <span class="pg-btn">&rsaquo;</span>
-      <input class="pg-goto" placeholder=""><span class="pg-go">go</span>
-    </div>
+    <div class="mini-pager"><span class="muted">共 {total_count} 条</span><span class="pg-btn active" aria-current="page">1</span></div>
 
     <script>
       window.TRAIN_YAML_TEMPLATES = {train_yaml_json};
@@ -9825,7 +9830,7 @@ def experiments():
             <div class="fg-row">
               <div class="fg"><label class="fg-req">模型</label><select id="trainModelSel" onchange="regenDefaultConfig()"><option value="pi05">pi0.5</option><option value="spiritv1_6">spiritv1.6</option></select></div>
               <div class="fg"><label class="fg-req">是否使用新感知</label><select id="trainRobotSel" onchange="regenDefaultConfig()"><option value="new">是</option><option value="old">否</option></select></div>
-              <div class="fg"><label class="fg-req">机器人结构</label><select id="trainBaseSel" onchange="regenDefaultConfig()"><option value="wholebody">wholebody</option><option value="wholebody_without_base">wholebody_without_base</option></select></div>
+              <div class="fg"><label class="fg-req">机器人结构 <span class="qi robot-structure-tip" data-tooltip="是否由 VLA 控制底盘移动&#10;控制底盘：wholebody&#10;仅控制双臂：wholebody_without_base" tabindex="0" aria-label="是否由 VLA 控制底盘移动；控制底盘选择 wholebody；仅控制双臂选择 wholebody_without_base。">i</span></label><select id="trainBaseSel" onchange="regenDefaultConfig()"><option value="wholebody">wholebody</option><option value="wholebody_without_base">wholebody_without_base</option></select></div>
             </div>
             <div class="adv-sub" id="advConfigBox">
               <div class="adv-sub-head" onclick="document.getElementById('advConfigBox').classList.toggle('collapsed')"><span class="caret">&#9660;</span><label>高级配置</label></div>
@@ -9866,6 +9871,11 @@ bash lerobot/scripts/train_unified.sh /mnt/vepfs01/output/quanta/experiments/con
       <div class="drawer-foot train-drawer-foot"><button class="btn" onclick="closeDrawer()">取消</button><button class="btn btn-primary" onclick="validateTrainForm()">提交创建</button></div>
     </div>
     """
+    for control, value in (("filterExperimentTag", filter_tag), ("filterExperimentDataset", filter_dataset)):
+        pattern = rf'(<select id="{control}"[^>]*>)(.*?)(</select>)'
+        content = re.sub(pattern, lambda m: m[1] + m[2].replace(
+            f'<option>{html.escape(value)}</option>',
+            f'<option selected>{html.escape(value)}</option>') + m[3], content)
     return render_page("训练任务", content, active="/model/experiments", module="model",
                        breadcrumb='模型平台 / <b>训练任务</b>', mvp_note=None)
 
@@ -10036,7 +10046,7 @@ def experiment_detail(exp_id):
     if e is None:
         return redirect("/model/experiments")
 
-    owner = e["owner"] if e["owner"] != "—" else "tao.wang"
+    owner = _experiment_owner(e)
     resource_key = _experiment_resource_key(e)
     cache_operator = request.args.get("user", "joanna.qiao").strip() or "joanna.qiao"
     cache_context_json = json.dumps({
@@ -11132,10 +11142,10 @@ def checkpoints():
         and (not filter_cache_owner or filter_cache_owner.lower() in _ckpt_cache_operator(c).lower())
     ]
     content = f"""
-    <a href="/model/checkpoints/cache-records?resource={selected_resource}" class="btn btn-secondary ckpt-cache-action">查看缓存记录</a>
+    <a href="/model/checkpoints/cache-records" class="btn btn-secondary ckpt-cache-action">查看缓存记录</a>
     <a href="/model/deploy?open=deploy" class="btn btn-primary ckpt-deploy-action">去部署</a>
     {_resource_tabs('/model/checkpoints', selected_resource)}
-    <form class="fb-labeled" method="get" action="/model/checkpoints">
+    <form class="fb-labeled ownership-filters" method="get" action="/model/checkpoints">
       <input type="hidden" name="resource" value="{selected_resource}">
       <div class="ff"><label for="filterCheckpointName">checkpoint</label><input id="filterCheckpointName" name="name" value="{html.escape(filter_name)}" placeholder="请输入 checkpoint"></div>
       <div class="ff"><label for="filterCheckpointOwner">创建人</label><input id="filterCheckpointOwner" name="owner" value="{html.escape(filter_owner)}" placeholder="请输入创建人"></div>
@@ -11149,7 +11159,7 @@ def checkpoints():
 
     {_ckpt_table_html(visible_checkpoints, show_status=False, asset_mark=asset_mark)}
 
-    {_ckpt_pager_html()}
+    <div class="mini-pager"><span class="muted">共 {len(visible_checkpoints)} 条</span><span class="pg-btn active" aria-current="page">1</span></div>
 
     """
     return render_page("Checkpoint", content, active="/model/checkpoints", module="model",
@@ -11193,20 +11203,22 @@ def checkpoint_cache_records():
     ]
     content = f"""
     <div class="cache-page-head">
-      <a class="btn" href="/model/checkpoints?resource={selected_resource}">&#8249; 返回</a>
+      <a class="btn" href="/model/checkpoints">&#8249; 返回</a>
       <div class="cache-page-title">checkpoint 缓存记录</div>
     </div>
 
     {_resource_tabs('/model/checkpoints/cache-records', selected_resource)}
-    <div class="fb-labeled">
-      <div class="ff"><label>checkpoint</label><input id="filterCheckpointName" value="{html.escape(filter_name, quote=True)}" placeholder="请输入 checkpoint"></div>
-      <div class="ff"><label>创建人</label><input id="filterCheckpointOwner" value="{html.escape(filter_owner, quote=True)}" placeholder="请输入创建人"></div>
-      <div class="ff"><label>缓存人</label><input id="filterCheckpointCacheOwner" value="{html.escape(filter_cache_owner, quote=True)}" placeholder="请输入缓存人"></div>
+    <form class="fb-labeled ownership-filters" method="get">
+      <input type="hidden" name="resource" value="{selected_resource}">
+      <input type="hidden" name="operation_id" value="{html.escape(operation_id, quote=True)}">
+      <div class="ff"><label>checkpoint</label><input id="filterCheckpointName" name="name" value="{html.escape(filter_name, quote=True)}" placeholder="请输入 checkpoint"></div>
+      <div class="ff"><label>创建人</label><input id="filterCheckpointOwner" name="owner" value="{html.escape(filter_owner, quote=True)}" placeholder="请输入创建人"></div>
+      <div class="ff"><label>缓存人</label><input id="filterCheckpointCacheOwner" name="cache_owner" value="{html.escape(filter_cache_owner, quote=True)}" placeholder="请输入缓存人"></div>
       <div class="filter-actions">
-        <button class="btn btn-tertiary" onclick="resetFilters(this)">重置</button>
-        <button class="btn btn-primary" onclick="queryFilters(this)">查询</button>
+        <a class="btn btn-tertiary" href="?resource={selected_resource}">重置</a>
+        <button class="btn btn-primary" type="submit">查询</button>
       </div>
-    </div>
+    </form>
 
     {_ckpt_table_html(cache_items, show_actions=False, status_filter=True, status_logs=True)}
     {_ckpt_pager_html()}
@@ -11221,47 +11233,7 @@ def checkpoint_cache_records():
         </div>
       </div>
     </div>
-    <script>
-    // 自动筛选逻辑（如果有 URL 参数）
-    document.addEventListener('DOMContentLoaded', function() {{
-      var filterName = document.getElementById('filterCheckpointName').value;
-      var filterOwner = document.getElementById('filterCheckpointOwner').value;
-      var filterCacheOwner = document.getElementById('filterCheckpointCacheOwner').value;
 
-      if (filterName || filterOwner || filterCacheOwner) {{
-        // 筛选表格行
-        var rows = document.querySelectorAll('.ckpt-table tbody tr');
-        rows.forEach(function(row) {{
-          var cells = row.querySelectorAll('td');
-          if (cells.length === 0) return;
-
-          var nameCell = cells[1]; // checkpoint 名称列
-          var ownerCell = cells[4]; // 创建人列
-          var cacheOwnerCell = cells[6]; // 缓存人列
-
-          var nameMatch = !filterName || (nameCell && nameCell.textContent.toLowerCase().includes(filterName.toLowerCase()));
-          var ownerMatch = !filterOwner || (ownerCell && ownerCell.textContent.toLowerCase().includes(filterOwner.toLowerCase()));
-          var cacheOwnerMatch = !filterCacheOwner || (cacheOwnerCell && cacheOwnerCell.textContent.toLowerCase().includes(filterCacheOwner.toLowerCase()));
-
-          if (nameMatch && ownerMatch && cacheOwnerMatch) {{
-            row.style.display = '';
-            // 高亮匹配的行
-            if (filterName && nameCell && nameCell.textContent.toLowerCase().includes(filterName.toLowerCase())) {{
-              row.style.background = '#fffbe6';
-            }}
-          }} else {{
-            row.style.display = 'none';
-          }}
-        }});
-
-        // 滚动到第一个匹配的行
-        var firstVisible = document.querySelector('.ckpt-table tbody tr[style=""]');
-        if (firstVisible) {{
-          firstVisible.scrollIntoView({{ behavior: 'smooth', block: 'center' }});
-        }}
-      }}
-    }});
-    </script>
     """
     return render_page("checkpoint 缓存记录", content, active="/model/checkpoints", module="model",
                        breadcrumb='模型平台 / 训练 / Checkpoint / <b>checkpoint 缓存记录</b>', mvp_note="MVP 一期")
@@ -13225,6 +13197,12 @@ def _lineage_detail_html(anchor_type, anchor_id):
       </div>
     </section>
     """ + modal_html + f"""
+    <dialog id="linClearHistoryDialog" class="modal" style="padding:0;border:0;" aria-labelledby="linClearHistoryTitle" aria-describedby="linClearHistoryDescription">
+      <div class="modal-head"><h3 id="linClearHistoryTitle">清除血缘浏览记录</h3><button type="button" class="btn btn-tertiary" aria-label="关闭" onclick="document.getElementById('linClearHistoryDialog').close()">&times;</button></div>
+      <div class="modal-body" id="linClearHistoryDescription">确认清除血缘浏览记录？清除后，当前节点将作为起始视图，历史浏览记录无法恢复。</div>
+      <div class="modal-foot"><button type="button" class="btn btn-tertiary" autofocus onclick="document.getElementById('linClearHistoryDialog').close()">取消</button><button type="button" class="btn btn-primary" onclick="linConfirmClearHistory()">确认清除</button></div>
+    </dialog>
+    <style>#linClearHistoryDialog::backdrop {{ background:rgba(0,0,0,0.42); }}</style>
     <script>
     window.__linEdges = {edges_json};
     var __linSuggestions = {suggestions_json};
@@ -13429,6 +13407,15 @@ def _lineage_detail_html(anchor_type, anchor_id):
     }}
 
     function linClearHistory() {{
+      var navigation = window.__linNavigation || {{ items:[window.__linCurrent], index:0 }};
+      if (navigation.items.length <= 1) return;
+      document.getElementById('linClearHistoryDialog').showModal();
+    }}
+
+    function linConfirmClearHistory() {{
+      var dialog = document.getElementById('linClearHistoryDialog');
+      if (!dialog.open) return;
+      dialog.close();
       var navigation = window.__linNavigation || {{ items:[window.__linCurrent], index:0 }};
       if (navigation.items.length <= 1) return;
       var currentItem = navigation.items[navigation.index] || window.__linCurrent;

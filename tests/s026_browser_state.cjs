@@ -321,7 +321,7 @@ context.s026RenderPlanPackageDetail();
 const detailRows = element('s026PlanPackageDetailRows').innerHTML;
 assert.ok(!/draggable|ondrag|ondrop|⋮/.test(detailRows));
 assert.equal(typeof context.s026DropPlanPackageVersion, 'undefined');
-assert.ok(html.includes('<th>目标时长</th><th>已采时长</th>'));
+assert.ok(!html.includes('<th>目标时长</th><th>已采时长</th>'));
 
 // Threshold hint uses the exact collected lower bound, and saves reject lower values.
 let modalBody = '';
@@ -578,6 +578,32 @@ assert.equal(context.s026EdgeEntries(submittedPackage, 'CP260001', false).filter
 const fixture = context.s026EdgeEntries(previewPackage, 'CP260001', false).find(entry => entry.record.key === '100021-V2');
 assert.equal(fixture.instance.status, '已采集');
 
+// Assigned plans omit assignment time while retaining assignment relationships.
+const assignmentsBefore = JSON.stringify(context.s026State.supplierPlanAssignments);
+context.s026RenderSupplierPlans();
+const assignedRows = element('s026SupplierPlanRows').innerHTML;
+assert.ok(assignedRows.includes('查看'));
+assert.ok([...assignedRows.matchAll(/<tr>([\s\S]*?)<\/tr>/g)].every(row => (row[1].match(/<td>/g) || []).length === 6));
+assert.equal(JSON.stringify(context.s026State.supplierPlanAssignments), assignmentsBefore);
+assert.ok(!html.includes('<th>分配时间</th>'));
+context.s026SupplierPlanFilters.idQuery = 'no-matching-plan';
+context.s026RenderSupplierPlans();
+assert.ok(element('s026SupplierPlanRows').innerHTML.includes('colspan="6"'));
+context.s026SupplierPlanFilters.idQuery = '';
+
+// The instruction list omits aggregate duration columns without deleting the data.
+const libraryBefore = JSON.stringify(context.s026State.library);
+context.s026RenderLibrary();
+const libraryRows = element('s026LibraryRows').innerHTML;
+assert.ok([...libraryRows.matchAll(/<tr>([\s\S]*?)<\/tr>/g)].every(row => (row[1].match(/<td>/g) || []).length === 9));
+assert.equal(JSON.stringify(context.s026State.library), libraryBefore);
+const libraryTable = html.match(/<table\b[^>]*>(?:(?!<\/table>)[\s\S])*?<tbody id="s026LibraryRows">/)[0];
+assert.ok(!libraryTable.includes('目标时长') && !libraryTable.includes('已采时长'));
+context.s026LibraryFilters.idQuery = 'no-matching-instruction';
+context.s026RenderLibrary();
+assert.ok(element('s026LibraryRows').innerHTML.includes('colspan="9"'));
+context.s026LibraryFilters.idQuery = '';
+
 // Upload failures share a label; content errors retain their detailed error action.
 let pendingTimers = new Map(), timerId = 0;
 context.setTimeout = callback => {pendingTimers.set(++timerId, callback); return timerId;};
@@ -605,4 +631,34 @@ context.s026LoadInvalidDemoFile();
 context.s026DeleteUploadFile();
 flushTimers();
 assert.equal(context.s026DemoFileStatus, 'empty');
-console.log('Approval, imports, publication, progress, uploads and submitted collection history checks passed');
+// Supplier deletion is confirmation-gated and scoped to the current plan.
+context.s026State = context.s026PrepareEdgeWorkflow(clone(context.S026_DEFAULT));
+context.s026SelectedProject = 'CP260001';
+context.s026SupplierFilters = {nameQuery:''};
+context.s026RenderPlanSuppliers();
+const suppliersHTML = element('s026PlanSupplierTable').innerHTML;
+assert.ok(!suppliersHTML.includes('方案内状态') && !suppliersHTML.includes('任务数量'));
+assert.ok(suppliersHTML.includes('>删除</button>') && !suppliersHTML.includes('>停用</button>'));
+assert.equal((suppliersHTML.match(/<th>/g)||[]).length, 3);
+const supplierLibraryBefore = JSON.stringify(context.s026State.supplierLibrary);
+const otherSuppliersBefore = JSON.stringify(context.s026State.suppliers.filter(row => row.projectId !== 'CP260001'));
+const otherAssignmentsBefore = JSON.stringify(context.s026State.supplierPlanAssignments.filter(row => row.projectId !== 'CP260001'));
+context.s026RequestDeletePlanSupplier('SUP-DEMO-001');
+assert.ok(modalBody.includes('仅解除方案关联'));
+assert.ok(context.s026State.suppliers.some(row => row.projectId === 'CP260001' && row.id === 'SUP-DEMO-001'));
+context.s026DeletePlanSupplier('CP260003', 'SUP-DEMO-001');
+assert.equal(JSON.stringify(context.s026State.suppliers.filter(row => row.projectId !== 'CP260001')), otherSuppliersBefore);
+context.s026DeletePlanSupplier('CP260001', 'SUP-DEMO-001');
+assert.ok(!context.s026State.suppliers.some(row => row.projectId === 'CP260001' && row.id === 'SUP-DEMO-001'));
+assert.ok(!context.s026State.supplierPlanAssignments.some(row => row.projectId === 'CP260001' && row.supplierId === 'SUP-DEMO-001'));
+assert.equal(JSON.stringify(context.s026State.supplierLibrary), supplierLibraryBefore);
+assert.equal(JSON.stringify(context.s026State.supplierPlanAssignments.filter(row => row.projectId !== 'CP260001')), otherAssignmentsBefore);
+context.document.querySelectorAll = selector => selector === '.s026-supplier-choice:checked' ? [{value:'SUP-DEMO-001'}] : [];
+context.s026ImportPlanSuppliers();
+context.s026ImportPlanSuppliers();
+assert.equal(context.s026State.suppliers.filter(row => row.projectId === 'CP260001' && row.id === 'SUP-DEMO-001').length, 1);
+assert.equal(context.s026State.supplierPlanAssignments.filter(row => row.projectId === 'CP260001' && row.supplierId === 'SUP-DEMO-001').length, 1);
+context.s026SupplierFilters.nameQuery = 'no-matching-supplier';
+context.s026RenderPlanSuppliers();
+assert.ok(element('s026PlanSupplierTable').innerHTML.includes('colspan="3"'));
+console.log('Approval, imports, publication, progress, uploads, supplier deletion and collection history checks passed');
