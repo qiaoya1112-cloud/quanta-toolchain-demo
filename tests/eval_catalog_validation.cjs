@@ -40,6 +40,12 @@ assert.deepEqual(validateCaseSelection(sceneDb,linkedCaseSelection),[]);
 assert.deepEqual(validateCaseSelection(sceneDb,{...linkedCaseSelection,skill_ids:['SK_PICK']}),[]);
 assert.deepEqual(validateCaseSelection(sceneDb,{...linkedCaseSelection,factors:[{factor_id:'FC_COLOR',value:'红色'}]}),[]);
 const grouped=caseOptionGroups(sceneDb,linkedCaseSelection);
+for(const selection of [{},{case_stage:''}]){
+ const stories=caseOptionGroups(sceneDb,selection).stories;
+ assert.deepEqual(stories.scene,[],'Without Stage there are no scene Story options');
+ assert.deepEqual(stories.other.map(row=>row.id),sceneDb.stories.filter(row=>row.enabled!==false).map(row=>row.id),'All enabled Stories remain selectable before Stage');
+}
+assert(grouped.stories.scene.some(row=>row.id==='SR_IDENTIFY'),'Selecting Stage restores linked Story grouping');
 assert(grouped.skills.scene.some(r=>r.id==='SK_TURN'));
 assert(grouped.skills.other.some(r=>r.id==='SK_PICK'));
 assert(!grouped.skills.other.some(r=>r.id==='SK_TURN'));

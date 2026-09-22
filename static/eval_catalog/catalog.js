@@ -275,7 +275,7 @@ function caseOptions(db,selection={}){
  const active=(kind,id)=>db[kind].some(r=>r.id===id&&r.enabled!==false);
  const rows=scenarioValueRows(db).filter(r=>r.enabled!==false&&active('stages',r.stage_id)&&active('stories',r.story_id||r.id)&&(!r.skill_id||active('skills',r.skill_id))&&(!r.factor_id||active('factors',r.factor_id)));
  const select=(kind,ids)=>db[kind].filter(r=>ids.has(r.id));
- const storyRows=rows.filter(r=>r.stage_id===selection.case_stage);
+ const storyRows=selection.case_stage?rows.filter(r=>r.stage_id===selection.case_stage):[];
  const skillRows=storyRows.filter(r=>(r.story_id||r.id)===selection.story_id);
  const factorRows=skillRows.filter(r=>(selection.skill_ids||[]).includes(r.skill_id));
  return {stages:select('stages',new Set(rows.map(r=>r.stage_id))),stories:select('stories',new Set(storyRows.map(r=>r.story_id||r.id))),skills:select('skills',new Set(skillRows.map(r=>r.skill_id))),factors:select('factors',new Set(factorRows.map(r=>r.factor_id)))};
@@ -445,6 +445,7 @@ let valueRowCounter=0,currentValueOwnerPublished=false;
 let db=upgrade(seed,null),page=1,editing=null,viewing=null,readonly=false,pendingDelete=null,returnFocus=null,batchCreating=false,scenarioEditing=false,pendingCollection=null,caseCreating=false;
 let editingScenarioKey=null;
 let pendingScenarioKey=null;
+let pendingCaseStories=[];
 try{db=upgrade(seed,JSON.parse(localStorage.getItem(storageKey)||'null'));dataOwnershipValues=[...db.data_ownership_options];}catch(e){toast('本地存储不可用');}
 const clone=x=>JSON.parse(JSON.stringify(x)),name=(k,id)=>db[k].find(x=>x.id===id)?.name||id||'—';
 function persist(next){try{const updated=recordElementUpdates(db,next,catalogTags);localStorage.setItem(storageKey,JSON.stringify(updated));db=updated;return true;}catch(e){$('ec-error').textContent='保存失败：浏览器存储不可用或空间不足。';toast('保存失败，修改未生效');return false;}}
@@ -717,6 +718,21 @@ function caseSinglePicker(select,label){
  return `<div class="ts-wrap" data-case-picker>${select}<div class="ts-trigger" role="button" tabindex="0" aria-label="${label}" aria-expanded="false"><span class="ts-placeholder">请选择</span></div><div class="ts-panel" style="width:100%;box-sizing:border-box"></div></div>`;
 }
 function editableChoiceOptions(values,selected,attribute){return values.map(value=>`<button type="button" class="ts-row${value===selected?' selected':''}" ${attribute}="${esc(value)}" style="width:100%;border:0;text-align:left;white-space:normal;overflow-wrap:anywhere">${esc(value)}</button>`).join('');}
+function caseStoryFooter(){
+ return `<div style="border-top:1px solid #f0f0f0;padding:8px 12px"><button class="action-link" type="button" id="ec-add-story" style="border:0;background:none;padding:0">+ 添加 Story</button><div id="ec-story-editor" hidden><div style="display:flex;align-items:center;gap:12px"><input type="text" id="ec-story-name" aria-label="新 Story 名称" placeholder="输入 Story 名称"><button type="button" class="action-link" id="ec-save-story" style="border:0;background:none;padding:0;white-space:nowrap">添加</button></div><span id="ec-story-error" role="alert" style="color:#cf1322;font-size:12px"></span></div></div>`;
+}
+function caseStoryCatalog(){return {...db,stories:[...pendingCaseStories,...db.stories]};}
+function addCaseStory(){
+ const value=$('ec-story-name').value.trim(),catalog=caseStoryCatalog();
+ if(!value){$('ec-story-error').textContent='请输入 Story 名称';return;}
+ if(catalog.stories.some(row=>row.name.trim()===value)){$('ec-story-error').textContent='该 Story 已存在，请选择已有选项';return;}
+ const row=prepareElement(catalog,'stories',{name:value,project:$('ec-form').elements.project.value,tag_ids:[]});
+ pendingCaseStories.push({...row,display_id:nextDisplayId(catalog.stories),publish_status:'已发布',enabled:true});
+ const select=$('ec-form').elements.story_id;
+ select.innerHTML=options(caseStoryCatalog().stories,row.id);
+ refreshCaseOptions();
+ const wrap=select.closest('.ts-wrap');wrap.classList.remove('open');wrap.querySelector('.ts-trigger').setAttribute('aria-expanded','false');wrap.querySelector('.ts-trigger').focus();
+}
 function editableChoice(attrs,value,label,prefix,values,attribute){
  return `<div class="ts-wrap" id="${prefix}-wrap"><input type="hidden" ${attrs} value="${esc(value)}"><button type="button" class="ts-trigger" id="${prefix}-trigger" aria-label="${label}" aria-expanded="false"><span>${esc(value)||'请选择'}</span></button><div class="ts-panel" style="width:100%;box-sizing:border-box"><div id="${prefix}-options">${editableChoiceOptions(values,value,attribute)}</div>${readonly?'':`<div style="border-top:1px solid #f0f0f0;padding:8px 12px"><button class="action-link" type="button" id="${prefix==='ec-category'?'ec-add-category':'ec-add-data-ownership'}" style="border:0;background:none;padding:0">+ 添加${label}</button><div id="${prefix}-editor" hidden><div style="display:flex;align-items:center;gap:12px"><input type="text" id="${prefix}-name" aria-label="新${label}名称" placeholder="输入${label}名称" maxlength="50"><button type="button" class="action-link" id="${prefix==='ec-category'?'ec-save-category':'ec-save-data-ownership'}" style="border:0;background:none;padding:0;white-space:nowrap">添加</button></div><span id="${prefix}-error" role="alert" style="color:#cf1322;font-size:12px"></span></div></div>`}</div></div>`;
 }
@@ -848,6 +864,7 @@ function updateHistorySection(row){
  return html+'</tbody></table></div>';
 }
 function open(mode,id,collection=kind,rowKey=null){
+ pendingCaseStories=[];
  caseCreating=kind==='test-cases'&&['create','copy'].includes(mode);
  batchCreating=section==='scenario'&&mode==='create';scenarioEditing=section==='scenario'&&!batchCreating;editingScenarioKey=rowKey;
  const original=scenarioEditing?scenarioValueRows(db).find(x=>x.row_key===rowKey):db[collection].find(x=>x.id===id),r={...emptyRecord(),...(original?clone(original):{})};editing=['edit','edit-values'].includes(mode)?id:null;viewing=id;readonly=mode==='view';
@@ -960,10 +977,10 @@ function refreshCaseOptions(){
  const stageWrap=stage.closest('[data-case-picker]');
  const linkedStages=new Set(caseOptions(db,{}).stages.map(row=>row.id));
  stageWrap.querySelector('.ts-panel').innerHTML=casePickerPanel({scene:caseOptions(db,{}).stages,other:db.stages.filter(row=>row.enabled!==false&&!linkedStages.has(row.id))},[stage.value],false,'case_stage');syncCasePicker(stageWrap);
- let groups=caseOptionGroups(db,{case_stage:stage.value});
- const storyValue=story.value;story.innerHTML=groupedCaseOptions(groups.stories,storyValue);story.disabled=!stage.value;
+ let groups=caseOptionGroups(caseStoryCatalog(),{case_stage:stage.value});
+ const storyValue=story.value;story.innerHTML=groupedCaseOptions(groups.stories,storyValue);story.disabled=false;
  const storyWrap=story.closest('.ts-wrap');
- storyWrap.querySelector('.ts-panel').innerHTML=casePickerPanel(groups.stories,[story.value],false,'story_id');
+ storyWrap.querySelector('.ts-panel').innerHTML=casePickerPanel(groups.stories,[story.value],false,'story_id')+caseStoryFooter();
  storyWrap.querySelector('.ts-trigger').setAttribute('aria-disabled',String(story.disabled));syncCasePicker(storyWrap);
  groups=caseOptionGroups(db,{case_stage:stage.value,story_id:story.value});
  const skills=selectedSkills.filter(id=>db.skills.some(x=>x.id===id&&x.enabled!==false));
@@ -1042,6 +1059,8 @@ async function addImages(files){
  finally{field.dataset.uploading='false';if(field===$('ec-form').elements.attachments)renderImages();}
 }
 $('ec-fields').addEventListener('click',e=>{
+ if(caseCreating&&!readonly&&e.target.id==='ec-add-story'){$('ec-story-editor').hidden=false;e.target.hidden=true;$('ec-story-name').focus();return;}
+ if(caseCreating&&!readonly&&e.target.id==='ec-save-story'){addCaseStory();return;}
  const singleChoice=e.target.closest('[data-case-single]');
  if(singleChoice&&!readonly){
   const wrap=singleChoice.closest('[data-case-picker]'),select=wrap.querySelector('select');
@@ -1082,7 +1101,7 @@ $('ec-fields').addEventListener('click',e=>{
  if(e.target.id==='ec-add-value'&&!readonly){$('ec-values').insertAdjacentHTML('beforeend',valueRow());syncFactorDefault();}
  syncSelects();
 });
- $('ec-fields').addEventListener('keydown',e=>{if(e.target.id==='ec-category-name'&&e.key==='Enter'){e.preventDefault();addCategory();}else if(e.target.id==='ec-data-ownership-name'&&e.key==='Enter'){e.preventDefault();addDataOwnership();}else if(e.target.matches('[data-remove-user-group]')&&['Enter',' '].includes(e.key)){e.preventDefault();e.target.click();}else if(e.target.matches('.ts-trigger')&&['Enter',' '].includes(e.key)){e.preventDefault();e.target.click();}});
+ $('ec-fields').addEventListener('keydown',e=>{if(e.target.id==='ec-story-name'&&e.key==='Enter'){e.preventDefault();addCaseStory();}else if(e.target.id==='ec-category-name'&&e.key==='Enter'){e.preventDefault();addCategory();}else if(e.target.id==='ec-data-ownership-name'&&e.key==='Enter'){e.preventDefault();addDataOwnership();}else if(e.target.matches('[data-remove-user-group]')&&['Enter',' '].includes(e.key)){e.preventDefault();e.target.click();}else if(e.target.matches('.ts-trigger')&&['Enter',' '].includes(e.key)){e.preventDefault();e.target.click();}});
 $('ec-fields').addEventListener('input',e=>{if(!readonly&&e.target.matches('#ec-values [name="value"]'))syncFactorDefault();});
 for(const type of ['dragover','dragleave','drop'])$('ec-fields').addEventListener(type,e=>{
  const zone=e.target.closest('#ec-image-upload');if(!zone||readonly)return;e.preventDefault();
@@ -1111,11 +1130,13 @@ $('ec-form').addEventListener('submit',e=>{
    if(persist(next)){close('ec-dialog');page=1;render();toast(`已新增 ${created.length} 条场景`);}
   }catch(error){$('ec-error').textContent=error.message;}return;
  }
- if($('ec-form').elements.attachments?.dataset.uploading==='true')return toast('请等待图片读取完成');const r=collect(),errors=scenarioEditing?[]:validate(db,kind,r,editing);
- if(caseCreating)errors.push(...validateCaseSelection(db,r));
+ if($('ec-form').elements.attachments?.dataset.uploading==='true')return toast('请等待图片读取完成');const r=collect(),next=clone(db);
+ if(caseCreating)next.stories.unshift(...pendingCaseStories.map(story=>({...story,project:r.project,created_at:r.created_at,updated_at:r.updated_at,created_by:demoActor,updated_by:demoActor})));
+ const errors=scenarioEditing?[]:validate(next,kind,r,editing);
+ if(caseCreating)errors.push(...validateCaseSelection(next,r));
  if(errors.length){$('ec-error').textContent=errors.join('；');return;}
  if(scenarioEditing){try{if(persist(saveScenarioRow(db,r))){close('ec-dialog');render();toast('保存成功');}}catch(error){$('ec-error').textContent=error.message;}return;}
- const next=clone(db),collection=scenarioEditing?'scenarios':kind;if(editing)next[collection][next[collection].findIndex(x=>x.id===editing)]=r;else {if(kind!=='test-cases')r.display_id=nextDisplayId(next[kind]);next[kind].unshift(r);}
+ const collection=scenarioEditing?'scenarios':kind;if(editing)next[collection][next[collection].findIndex(x=>x.id===editing)]=r;else {if(kind!=='test-cases')r.display_id=nextDisplayId(next[kind]);next[kind].unshift(r);}
  if(persist(next)){close('ec-dialog');page=1;render();toast('保存成功');}
 });
 $('ec-tbody').addEventListener('click',e=>{
