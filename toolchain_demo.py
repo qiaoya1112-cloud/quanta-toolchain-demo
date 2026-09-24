@@ -1443,13 +1443,13 @@ body.lineage-canvas-page .lineage-viewport { height:100%; min-height:0; }
 .train-queue-label a:hover { color:#0F8190; }
 .train-recommended-picker { position:relative; width:100%; }
 .train-recommended-image { display:none; }
-.train-recommended-trigger { width:100%; min-height:54px; padding:7px 34px 7px 11px; border:1px solid #d9d9d9; border-radius:6px; background:#fff; color:rgba(0,0,0,0.88); cursor:pointer; text-align:left; position:relative; }
+.train-recommended-trigger { width:100%; min-height:36px; padding:7px 34px 7px 11px; border:1px solid #d9d9d9; border-radius:6px; background:#fff; color:rgba(0,0,0,0.88); cursor:pointer; text-align:left; position:relative; }
 .train-recommended-trigger:hover,
 .train-recommended-picker.open .train-recommended-trigger { border-color:var(--primary); }
 .train-recommended-picker.open .train-recommended-trigger { box-shadow:0 0 0 2px rgba(20,157,170,0.12); }
-.train-recommended-title { display:flex; align-items:center; gap:8px; font-size:13px; line-height:20px; }
-.train-recommended-name { font-weight:500; }
-.train-recommended-version { color:rgba(0,0,0,0.58); font-family:'SF Mono',Menlo,monospace; }
+.train-recommended-title { display:block; color:rgba(0,0,0,0.65); font-size:13px; line-height:20px; overflow-wrap:anywhere; }
+.train-recommended-name { font-weight:400; }
+.train-recommended-version { font:inherit; }
 .train-recommended-description { display:block; margin-top:1px; color:rgba(0,0,0,0.45); font-size:11px; line-height:18px; }
 .train-recommended-chevron { position:absolute; right:12px; top:50%; color:rgba(0,0,0,0.45); font-size:12px; transform:translateY(-50%); transition:transform .16s ease; }
 .train-recommended-picker.open .train-recommended-chevron { transform:translateY(-50%) rotate(180deg); }
@@ -3564,10 +3564,8 @@ function syncTrainRecommendedImagePicker(){
   var selected = select.options[select.selectedIndex];
   var name = document.getElementById('trainRecommendedSelectedName');
   var version = document.getElementById('trainRecommendedSelectedVersion');
-  var description = document.getElementById('trainRecommendedSelectedDescription');
   if (name) name.textContent = selected.dataset.name || '';
   if (version) version.textContent = selected.dataset.version || '';
-  if (description) description.textContent = selected.dataset.description || '';
   document.querySelectorAll('#trainRecommendedMenu .train-recommended-option').forEach(function(option, index){
     var isSelected = index === select.selectedIndex;
     option.classList.toggle('selected', isSelected);
@@ -9647,14 +9645,14 @@ def experiments():
         f'data-name="{html.escape(i["name"], quote=True)}" '
         f'data-version="{html.escape(i["version"], quote=True)}" '
         f'data-description="{html.escape(i["description"], quote=True)}">'
-        f'{html.escape(i["name"])}　{html.escape(i["version"])}</option>'
+        f'{html.escape(i["name"])}:{html.escape(i["version"])}</option>'
         for i in TRAIN_IMAGE_CATALOG
     )
     recommended_image_items = "".join(
         f'<button type="button" class="train-recommended-option{" selected" if index == 0 else ""}" '
         f'role="option" aria-selected="{"true" if index == 0 else "false"}" '
         f'onclick="selectTrainRecommendedImage({index},event)">'
-        f'<span class="train-recommended-title"><span class="train-recommended-name">{html.escape(i["name"])}</span>'
+        f'<span class="train-recommended-title"><span class="train-recommended-name">{html.escape(i["name"])}</span>:'
         f'<span class="train-recommended-version">{html.escape(i["version"])}</span></span>'
         f'<span class="train-recommended-description">{html.escape(i["description"])}</span></button>'
         for index, i in enumerate(TRAIN_IMAGE_CATALOG)
@@ -9773,8 +9771,7 @@ def experiments():
               <div id="trainImageDefault" class="image-mode-panel active">
                 <div class="train-recommended-picker" id="trainRecommendedPicker">
                   <button type="button" class="train-recommended-trigger" id="trainRecommendedTrigger" aria-haspopup="listbox" aria-expanded="false" onclick="toggleTrainRecommendedImage(event)">
-                    <span class="train-recommended-title"><span class="train-recommended-name" id="trainRecommendedSelectedName">{html.escape(default_recommended_image['name'])}</span><span class="train-recommended-version" id="trainRecommendedSelectedVersion">{html.escape(default_recommended_image['version'])}</span></span>
-                    <span class="train-recommended-description" id="trainRecommendedSelectedDescription">{html.escape(default_recommended_image['description'])}</span>
+                    <span class="train-recommended-title"><span class="train-recommended-name" id="trainRecommendedSelectedName">{html.escape(default_recommended_image['name'])}</span>:<span class="train-recommended-version" id="trainRecommendedSelectedVersion">{html.escape(default_recommended_image['version'])}</span></span>
                     <span class="train-recommended-chevron" aria-hidden="true">&#9662;</span>
                   </button>
                   <div class="train-recommended-menu" id="trainRecommendedMenu" role="listbox" aria-label="推荐镜像">{recommended_image_items}</div>
