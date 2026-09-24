@@ -639,7 +639,7 @@
       background: rgba(2, 193, 205, 0.2);
       color: var(--cyan);
     }
-  
+
 
     .topbar {
       height: 64px;
@@ -3048,7 +3048,7 @@
     }
 
 
-  
+
 .main.is-loading{position:relative}
 .main.is-loading > :not(.workbench-loading){visibility:hidden}
 
