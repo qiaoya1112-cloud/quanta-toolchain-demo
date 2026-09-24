@@ -958,8 +958,16 @@ select option:disabled { color:rgba(0,0,0,0.32); }
 .q-field .ps-control .ps-input, .q-field .ps-control .ps-input:hover, .q-field .ps-control .ps-input:focus { border:none; background:transparent; height:28px; min-width:90px; padding:0; box-shadow:none; }
 .ps-panel { display:none; position:absolute; top:calc(100% + 4px); left:0; right:0; min-width:230px; max-height:260px; overflow-y:auto; background:#fff; border:1px solid #f0f0f0; border-radius:8px; box-shadow:0 6px 16px rgba(0,0,0,0.08); z-index:100; padding:4px; }
 .ps-wrap.open .ps-panel { display:block; }
-.ps-opt { padding:8px 10px; border-radius:6px; cursor:pointer; font-size:13px; color:rgba(0,0,0,0.8); }
+.ps-opt { display:block; width:100%; text-align:left; border:0; background:transparent; font-family:inherit; padding:8px 10px; border-radius:6px; cursor:pointer; font-size:13px; color:rgba(0,0,0,0.8); }
 .ps-opt:hover { background:#f3f9fb; color:#1F80A0; }
+.ps-wrap[data-browse="true"] .ps-control { flex-wrap:nowrap; }
+.ps-wrap[data-browse="true"] .ps-chips { display:flex; gap:4px; min-width:0; }
+.ps-wrap[data-browse="true"] .ps-chip { min-width:0; }
+.ps-wrap[data-browse="true"] .ps-chip > span { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.ps-chip[hidden], .ps-more[hidden] { display:none; }
+.ps-more { flex:none; background:#eef3f8; border-radius:4px; padding:1px 6px; color:#1F80A0; cursor:help; }
+.ps-check { display:inline-block; width:14px; height:14px; line-height:14px; border:1px solid #cbd5db; border-radius:3px; margin-right:8px; vertical-align:middle; color:#149DAA; }
+.ps-opt[aria-pressed="true"] { background:#eef8f8; color:#149DAA; }
 .ps-empty { display:none; padding:14px; text-align:center; font-size:12px; color:rgba(0,0,0,0.35); }
 .q-adv-row .q-field .ps-wrap { width:100%; }
 .ms-wrap.open .ms-panel { display:block; }
@@ -1923,29 +1931,43 @@ function datasetTagSetValues(id,values){
   datasetTagSyncPicker(picker);
 }
 function psEsc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
-function psOpen(ctrl){ var i=ctrl.closest('.ps-wrap').querySelector('.ps-input'); if(i) i.focus(); }
+function psOpen(ctrl){ var i=ctrl.closest('.ps-wrap').querySelector('.ps-input'); if(i){ i.focus(); psFocus(i); } }
+function psFocus(i){ if(i.closest('.ps-wrap').dataset.browse==='true') psSearch(i); }
+function psCompact(w){
+  if(w.dataset.browse!=='true') return;
+  var chips=Array.from(w.querySelectorAll('.ps-chip'));
+  chips.forEach(function(c,i){ c.hidden=i>=3; c.title=c.dataset.v; });
+  var more=w.querySelector('.ps-more');
+  if(!more){ more=document.createElement('span'); more.className='ps-more'; more.tabIndex=0; w.querySelector('.ps-chips').appendChild(more); }
+  w.querySelector('.ps-chips').appendChild(more);
+  more.hidden=chips.length<=3; more.textContent='+'+Math.max(0,chips.length-3);
+  more.title=chips.map(function(c){ return c.dataset.v; }).join(String.fromCharCode(10));
+}
 function psSelectedNames(w){ return Array.prototype.map.call(w.querySelectorAll('.ps-chip'), function(c){ return c.getAttribute('data-v'); }); }
 function psSearch(inp){
   var w=inp.closest('.ps-wrap');
   var pool=JSON.parse(w.getAttribute('data-pool'));
   var q=inp.value.trim().toLowerCase();
   var res=w.querySelector('.ps-results'), empty=w.querySelector('.ps-empty');
-  if(!q){ w.classList.remove('open'); res.innerHTML=''; empty.style.display='none'; return; }
+  if(!q && w.dataset.browse!=='true'){ w.classList.remove('open'); res.innerHTML=''; empty.style.display='none'; return; }
   w.classList.add('open');
   var sel=psSelectedNames(w);
-  var hits=pool.filter(function(p){ return sel.indexOf(p.nm)<0 && ((p.nm.toLowerCase().indexOf(q)>=0)||(p.id.toLowerCase().indexOf(q)>=0)); });
-  if(!hits.length){ res.innerHTML=''; empty.style.display='block'; empty.textContent='无匹配人员'; return; }
+  var hits=pool.filter(function(p){ return (w.dataset.browse==='true'||sel.indexOf(p.nm)<0) && ((p.nm.toLowerCase().indexOf(q)>=0)||(p.id.toLowerCase().indexOf(q)>=0)); });
+  if(!hits.length){ res.innerHTML=''; empty.style.display='block'; empty.textContent=w.getAttribute('data-empty')||'无匹配人员'; return; }
   empty.style.display='none';
-  res.innerHTML=hits.map(function(p){ return '<div class="ps-opt" data-nm="'+psEsc(p.nm)+'" onclick="psSelect(this)">'+psEsc(p.nm)+' <span class="ms-uid">#'+p.id+'</span></div>'; }).join('');
+  res.innerHTML=hits.map(function(p){ var checked=sel.indexOf(p.nm)>=0; return '<button type="button" class="ps-opt" aria-pressed="'+checked+'" data-nm="'+psEsc(p.nm)+'" onclick="event.stopPropagation();psSelect(this)">'+(w.dataset.browse==='true'?'<span class="ps-check">'+(checked?'✓':'')+'</span>':'')+psEsc(p.nm)+' <span class="ms-uid">#'+psEsc(p.id)+'</span></button>'; }).join('');
 }
 function psSelect(opt){
   var w=opt.closest('.ps-wrap'); var nm=opt.getAttribute('data-nm'); var name=w.getAttribute('data-name');
+  var existing=Array.from(w.querySelectorAll('.ps-chip')).find(function(c){ return c.dataset.v===nm; });
+  if(existing){ existing.remove(); psCompact(w); psSearch(w.querySelector('.ps-input')); return; }
   var chip=document.createElement('span'); chip.className='ps-chip'; chip.setAttribute('data-v',nm);
   chip.innerHTML='<span>'+psEsc(nm)+'</span><input type="hidden" name="'+name+'" value="'+psEsc(nm)+'"><i class="ps-x" onclick="psRemove(event,this)">&times;</i>';
   w.querySelector('.ps-chips').appendChild(chip);
-  var inp=w.querySelector('.ps-input'); inp.value=''; psSearch(inp); inp.focus();
+  var inp=w.querySelector('.ps-input'); if(w.dataset.browse!=='true') inp.value=''; psCompact(w); inp.focus(); psSearch(inp);
 }
-function psRemove(e, x){ e.stopPropagation(); x.closest('.ps-chip').remove(); }
+function psRemove(e, x){ e.stopPropagation(); var w=x.closest('.ps-wrap'); x.closest('.ps-chip').remove(); psCompact(w); if(w.classList.contains('open')) psSearch(w.querySelector('.ps-input')); }
+document.querySelectorAll('.ps-wrap[data-browse="true"]').forEach(psCompact);
 function closeDatasetPickers(){
   document.querySelectorAll('.dataset-tag-picker.open,.visibility-picker.open').forEach(function(picker){ picker.classList.remove('open'); });
 }
@@ -1955,6 +1977,7 @@ document.addEventListener('scroll',function(e){
   if(e.target instanceof Element && e.target.closest('.dataset-tag-picker-panel,.visibility-picker-panel')) return;
   closeDatasetPickers();
 },true);
+
 document.addEventListener('click', function(e){
   document.querySelectorAll('.ps-wrap.open').forEach(function(w){ if(!w.contains(e.target)) w.classList.remove('open'); });
   document.querySelectorAll('.ms-wrap.open').forEach(function(w){ if(!w.contains(e.target)) w.classList.remove('open'); });
@@ -2989,18 +3012,18 @@ CREATOR_POOL = [
 ]
 
 
-def ms_search_html(name, base, pool, selected=None):
-    """远程搜索式多选: 输入姓名/ID 后选择成 chip。"""
+def ms_search_html(name, base, pool, selected=None, placeholder="搜索姓名 / ID", empty_text="无匹配人员", browse=False):
+    """Render the shared searchable multi-select with configurable copy."""
     selected = selected or []
     pool_json = json.dumps([{"id": uid, "nm": nm} for uid, nm in pool], ensure_ascii=False).replace('"', "&quot;")
     chips = "".join(
-        f'<span class="ps-chip" data-v="{nm}"><span>{nm}</span>'
-        f'<input type="hidden" name="{name}" value="{nm}"><i class="ps-x" onclick="psRemove(event,this)">&times;</i></span>'
+        f'<span class="ps-chip" data-v="{html.escape(nm, quote=True)}"><span>{html.escape(nm)}</span>'
+        f'<input type="hidden" name="{name}" value="{html.escape(nm, quote=True)}"><i class="ps-x" onclick="psRemove(event,this)">&times;</i></span>'
         for nm in selected)
-    return (f'<div class="ps-wrap" data-name="{name}" data-pool="{pool_json}">'
+    return (f'<div class="ps-wrap" data-name="{name}" data-pool="{pool_json}" data-empty="{html.escape(empty_text, quote=True)}" data-browse="{str(browse).lower()}">'
             f'<div class="ps-control" onclick="psOpen(this)">'
             f'<span class="ps-chips">{chips}</span>'
-            f'<input class="ps-input" placeholder="搜索姓名 / ID" oninput="psSearch(this)">'
+            f'<input class="ps-input" placeholder="{html.escape(placeholder, quote=True)}" aria-label="{html.escape(placeholder, quote=True)}" onfocus="psFocus(this)" oninput="psSearch(this)" onkeydown="if(event.key===&quot;Enter&quot;)event.preventDefault()">'
             f'</div>'
             f'<div class="ps-panel"><div class="ps-results"></div>'
             f'<div class="ps-empty">输入姓名 / ID 搜索</div></div>'
@@ -3603,11 +3626,12 @@ def query():
 
     # —— 新增分组字段 (与「新建数据集」弹窗一致; 部分为 demo 展示, 暂不参与后端过滤) ——
     batch_input = '<input name="batch" placeholder="如 B20250612-01">'
-    hl_input = '<input name="hl" placeholder="输入关键词">'
-    ll_input = '<input name="ll" placeholder="输入关键词">'
+    import quanta_eval_platform as prompt_catalog
+    hl_pool = [(p["id"], p["high_level"]) for p in prompt_catalog.PROMPTS]
+    ll_pool = [(p["id"], p["zh"]) for h in prompt_catalog.PROMPTS for p in h["low_levels"]]
+    hl_input = ms_search_html("hl", "全部", hl_pool, request.args.getlist("hl"), placeholder="输入关键词", empty_text="无数据", browse=True)
+    ll_input = ms_search_html("ll", "全部", ll_pool, request.args.getlist("ll"), placeholder="输入关键词", empty_text="无数据", browse=True)
     dagger_ms = ms("dtype", "全部", [("policy", "policy"), ("teleop", "teleop")], [])
-    hltag_ms = ms("hltag", "全部", [("grab", "抓取"), ("place", "放置"), ("pour", "倾倒"), ("wipe", "擦拭")], [])
-    lltag_ms = ms("lltag", "全部", [("reach", "靠近"), ("grip", "夹取"), ("lift", "抬起"), ("release", "松开")], [])
 
     def tri_q(dep):  # 三态: 不限 / 是 / 否; 选「是」才启用依赖字段 dep
         return (f'<select onchange="qfDep(\'{dep}\',this.value)">'
@@ -3658,14 +3682,10 @@ def query():
               <div class="q-field qf-dep qf-off" id="q_dep_anno"><label>标注版本</label>{annover_sel}</div>
             </div>
           </div></div>
-          <div class="qf-group collapsed"><div class="qf-group-title" onclick="qfToggleGroup(this)"><span class="qf-caret">&#9662;</span>指令信息</div><div class="qf-group-body">
+          <div class="qf-group collapsed"><div class="qf-group-title" onclick="qfToggleGroup(this)"><span class="qf-caret">&#9662;</span>提示词</div><div class="qf-group-body">
             <div class="q-filter-row q-adv-row">
               <div class="q-field grow"><label>Highlevel (模糊搜索)</label>{hl_input}</div>
-              <div class="q-field"><label>Highlevel 标签</label>{hltag_ms}</div>
-            </div>
-            <div class="q-filter-row q-adv-row">
               <div class="q-field grow"><label>Lowlevel (模糊搜索)</label>{ll_input}</div>
-              <div class="q-field"><label>Lowlevel 标签</label>{lltag_ms}</div>
             </div>
           </div></div>
           <div class="qf-group collapsed"><div class="qf-group-title" onclick="qfToggleGroup(this)"><span class="qf-caret">&#9662;</span>导出要求</div><div class="qf-group-body">
@@ -3685,7 +3705,7 @@ def query():
         <div id="qSqlAi" class="sql-ai">
           <div class="sql-ai-head"><span class="ic-ai" style="color:#9b59b6;">&#10022;</span> 用自然语言生成 SQL</div>
           <div class="sql-ai-row">
-            <input id="qSqlNl" class="sql-ai-input" placeholder="例如：擦白板任务、近一周、已质检合格的 episode" onkeydown="if(event.key==='Enter'){{event.preventDefault();qSqlAiGen();}}">
+            <input id="qSqlNl" class="sql-ai-input" placeholder="例如：擦白板任务、近一周、已质检合格的 episode" onkeydown="if(event.key===&quot;Enter&quot;){{event.preventDefault();qSqlAiGen();}}">
             <button type="button" class="btn-primary btn" onclick="qSqlAiGen()">生成 SQL</button>
           </div>
           <div id="qSqlAiNote" class="sql-ai-note" style="display:none;"></div>
