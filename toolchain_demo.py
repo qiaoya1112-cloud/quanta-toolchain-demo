@@ -30,7 +30,7 @@ import sys
 from decimal import Decimal
 from datetime import date, datetime, timedelta
 from urllib.parse import quote, urlencode
-from flask import Flask, render_template_string, request, redirect, jsonify
+from flask import Flask, render_template, render_template_string, request, redirect, jsonify
 
 from prototype_filters import filter_url
 
@@ -890,6 +890,12 @@ a { color:#149DAA; text-decoration:none; } a:hover { color:#0F8190; }
 .page-title { font-size:20px; font-weight:600; color:rgba(0,0,0,0.85); margin:0 0 4px; }
 .model-list-title { display:flex; align-items:center; justify-content:space-between; min-height:40px; margin:0 0 16px; }
 .model-list-title h1 { margin:0; font-size:20px; line-height:32px; font-weight:600; color:rgba(0,0,0,0.85); }
+.model-list-title-main { display:flex; align-items:center; gap:16px; min-width:0; }
+.eval-project-switcher { display:inline-flex; align-items:center; height:36px; border:1px solid #b8cbd3; border-radius:8px; background:#fff; box-sizing:border-box; overflow:hidden; }
+.eval-project-switcher-label { padding:0 0 0 14px; color:#4d6a73; font-size:14px; line-height:34px; white-space:nowrap; }
+.eval-project-switcher select { height:34px; min-width:112px; padding:0 28px 0 10px; border:0; outline:none; background:#fff; color:rgba(0,0,0,0.65); font-size:14px; cursor:pointer; }
+.eval-project-switcher select:focus { box-shadow:none; }
+@media (max-width: 720px) { .model-list-title-main { gap:10px; flex-wrap:wrap; } .eval-project-switcher { height:34px; } .eval-project-switcher select { height:32px; } }
 .model-list-actions { display:flex; align-items:center; gap:8px; }
 .page-sub { font-size:13px; color:rgba(0,0,0,0.55); margin-bottom:20px; }
 .page-sub .deferred { color:rgba(0,0,0,0.35); }
@@ -2726,7 +2732,8 @@ var REMOTE_PERSON_OPTIONS=['joanna.qiao','包媛桐','Wei Zhang','Lance Li','刘
 function remotePersonSearch(input){
   var picker=input.closest('.remote-picker'); if(!picker)return;
   var keyword=(input.value||'').trim().toLowerCase(),menu=picker.querySelector('.remote-picker-menu');
-  if(!keyword){picker.classList.remove('open');menu.innerHTML='';return;}
+  if(input.disabled)return;
+  if(!keyword&&picker.dataset.showAll!=='true'){picker.classList.remove('open');menu.innerHTML='';return;}
   var selected=Array.from(picker.querySelectorAll('.picked')).map(function(chip){return chip.dataset.value||'';});
   var matches=REMOTE_PERSON_OPTIONS.filter(function(person){return selected.indexOf(person)<0&&person.toLowerCase().indexOf(keyword)>=0;});
   menu.innerHTML=matches.length?matches.map(function(person){return '<button type="button" class="remote-picker-option" data-value="'+person+'" onclick="remotePersonSelect(this,event)">'+person+'</button>';}).join(''):'<div class="remote-picker-empty">没有搜索到可选择的人员</div>';
@@ -3901,6 +3908,34 @@ def render_page(title, content, active="", breadcrumb=None, extra_script=None,
                    "/model/eval/tasks", "/model/eval/eval-records",
                    "/model/eval/benchmarks", "/model/eval/scenes", "/model/eval/prompts",
                    "/model/eval/criteria")
+    # Evaluation list pages share a compact project switcher beside the title.
+    # Keep it in the page chrome so the five evaluation entries use identical
+    # spacing and controls; the catalog template adds the same control itself
+    # because it owns its title row.
+    _eval_title_paths = ("/model/eval/tasks", "/model/eval/benchmarks",
+                         "/model/eval/test-cases", "/model/eval/catalog",
+                         "/model/eval/criteria")
+    def _eval_project_switcher(path):
+        if path not in _eval_title_paths:
+            return ""
+        current = request.args.get("project", "")
+        options = ["", "预训练评测", "后训练评测"]
+        options_html = "".join(
+            f'<option value="{html.escape(value, quote=True)}"{" selected" if value == current else ""}>'
+            f'{html.escape(value or "全部项目")}</option>'
+            for value in options
+        )
+        # Legacy evaluation pages already use ?project= for their list filter.
+        # The catalog page synchronizes this control with its in-page filter.
+        onchange = (
+            "if(window.syncEvalCatalogProject){window.syncEvalCatalogProject(this.value);}"
+            "else{var u=new URL(location.href);if(this.value)u.searchParams.set('project',this.value);else u.searchParams.delete('project');location.href=u.pathname+u.search+u.hash;}"
+            if path in ("/model/eval/catalog", "/model/eval/test-cases") else
+            "var u=new URL(location.href);if(this.value)u.searchParams.set('project',this.value);else u.searchParams.delete('project');location.href=u.pathname+u.search+u.hash;"
+        )
+        return (f'<div class="eval-project-switcher" role="group" aria-label="所属项目">'
+                f'<span class="eval-project-switcher-label">所属项目</span>'
+                f'<select aria-label="所属项目" onchange="{onchange}">{options_html}</select></div>')
     if request.path in _list_paths:
         # 把列表页的新增/新建动作提升到一级标题行，保证标题和操作按钮同一基线。
         if request.path.endswith('/prompts'):
@@ -3925,7 +3960,10 @@ def render_page(title, content, active="", breadcrumb=None, extra_script=None,
             title_action = action_match.group(0) if action_match else ''
             if action_match:
                 content = content.replace(action_match.group(0), '', 1)
-        content = f'<div class="model-list-title"><h1>{html.escape(title)}</h1><div class="model-list-actions">{title_action}</div></div>' + content
+        project_switcher = _eval_project_switcher(request.path)
+        content = (f'<div class="model-list-title"><div class="model-list-title-main">'
+                   f'<h1>{html.escape(title)}</h1>{project_switcher}</div>'
+                   f'<div class="model-list-actions">{title_action}</div></div>') + content
     if module == "model":
         content = content.replace('>+ 新增', '>新增').replace('>&#43; 新增', '>新增')
         if request.path.startswith('/model/eval/'):
@@ -6319,6 +6357,11 @@ def _workbench_style_example_pane(
     """
 
 
+@app.route("/data/workbench-v2/optimized")
+def data_workbench_v2_optimized():
+    return render_template("annotation_workbench/optimized.html", tag_tree=ep.tag_management_dimensions())
+
+
 @app.route("/data/workbench-v2/style-examples")
 def data_workbench_v2_style_examples():
     variant_urls = {
@@ -7513,6 +7556,8 @@ def data_rules():
 
     rule_detail_data = {
         rule["id"]: {
+            "admins": rule.get("admins", []),
+            "annotation_tags": rule.get("annotation_tags", []),
             "semantic_mode": rule.get("semantic_mode", "link" if rule.get("rule_config") else "none"),
             "document_link": rule.get("rule_config", ""),
             "semantic_rich_text": rule.get("semantic_rich_text", ""),
@@ -7532,19 +7577,49 @@ def data_rules():
       .rule-action-name-stack{display:block;min-width:0;flex:1}.rule-action-name-stack input{min-width:0}
       #drawerRuleCreate .fg{width:100%;max-width:none}
       #drawerRuleCreate .fg input,#drawerRuleCreate .fg select,#drawerRuleCreate .fg textarea{width:100%;box-sizing:border-box}
-      .rule-basic-grid{display:grid;grid-template-columns:1.5fr .75fr .75fr;gap:14px}.rule-form-module{margin-top:22px;padding-top:20px;border-top:1px solid #e5eaec}.rule-form-module-head{display:flex;align-items:flex-start;justify-content:space-between;gap:18px;margin-bottom:14px}.rule-form-module-head h4{margin:0;color:#243d45;font-size:16px}.rule-form-module-head p{margin:5px 0 0;color:#849298;font-size:11.5px;line-height:1.5}.rule-config-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:9px}.rule-config-head b{color:#30474f;font-size:13px}.rule-config-head span{color:#879499;font-size:11px}.rule-link-action{padding:0;border:0;background:transparent;color:#149DAA;font-size:12px;cursor:pointer}.rule-list-add{display:flex;justify-content:flex-end;margin-top:8px}.rule-list-add-inner{margin-top:9px}.rule-repeat-section+.rule-repeat-section{margin-top:18px}.rule-config-table{width:100%;border-collapse:collapse;border:1px solid #e2e8ea}.rule-config-table th,.rule-config-table td{padding:8px 10px;border-bottom:1px solid #e8edef;text-align:left;font-size:12px}.rule-config-table th{background:#f5f7f8;color:#6c7d83;font-weight:500}.rule-config-table input{width:100%;height:32px;padding:0 8px;border:1px solid #d8e0e3;border-radius:5px;box-sizing:border-box}.rule-config-table .rule-row-index{width:46px;color:#849298;text-align:center}.rule-remove-row{width:28px;height:28px;padding:0;border:0;background:transparent;color:#9aa6aa;font-size:18px;cursor:pointer}.rule-remove-row:hover{color:#cf584e}.rule-semantic-modes{display:inline-flex;gap:3px;padding:3px;border:1px solid #dfe7e9;border-radius:7px;background:#f5f7f8}.rule-semantic-modes label{position:relative;margin:0;cursor:pointer}.rule-semantic-modes input{position:absolute;opacity:0;pointer-events:none}.rule-semantic-modes span{display:block;padding:7px 15px;border-radius:5px;color:#64767c;font-size:12px}.rule-semantic-modes input:checked+span{background:#fff;color:#117a83;box-shadow:0 1px 4px rgba(37,73,87,.12);font-weight:600}.rule-semantic-panel{margin-top:14px}.rule-document-config .fg{margin:0}.rule-document-config input{font-family:'SF Mono',Menlo,monospace}.rule-rich-editor{min-height:150px;padding:11px 12px;border:1px solid #d8e0e3;border-radius:0 0 6px 6px;background:#fff;color:#344c54;line-height:1.65;outline:none}.rule-rich-editor:empty:before{content:attr(data-placeholder);color:#a2adb0}.rule-rich-toolbar{display:flex;gap:4px;padding:6px 8px;border:1px solid #d8e0e3;border-bottom:0;border-radius:6px 6px 0 0;background:#f7f9fa}.rule-rich-toolbar button{width:28px;height:26px;padding:0;border:0;border-radius:4px;background:transparent;color:#536970;cursor:pointer}.rule-rich-toolbar button:hover{background:#e8f4f5;color:#149DAA}.rule-enum-card{margin-bottom:12px;border:1px solid #dfe7e9;border-radius:7px;background:#fff;overflow:hidden}.rule-enum-card-head{display:flex;align-items:center;justify-content:space-between;padding:10px 13px;border-bottom:1px solid #e8edef;background:#f7f9fa}.rule-enum-card-head b{color:#30474f;font-size:12px}.rule-enum-card-body{padding:13px}.rule-element-meta{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:15px}.rule-element-meta label{display:flex;flex-direction:column;gap:6px;color:#60737a;font-size:11px}.rule-element-meta input{height:34px;padding:0 9px;border:1px solid #d8e0e3;border-radius:5px}.rule-key{font-family:'SF Mono',Menlo,monospace}.rule-placeholder-guide{margin:14px 0 9px;padding:10px 12px;border-left:3px solid #149DAA;border-radius:5px;background:#f2fafa;color:#597179;font-size:11.5px;line-height:1.6}.rule-placeholder-guide code{color:#117a83}.rule-placeholder-list{display:flex;flex-wrap:wrap;gap:6px;margin-top:7px}.rule-placeholder-chip{padding:3px 8px;border:1px solid #b9dde0;border-radius:10px;background:#fff;color:#117a83;font:11px 'SF Mono',Menlo,monospace;cursor:pointer}.rule-placeholder-empty{color:#98a4a8}.rule-error-config{padding:14px;border:1px solid #e2e8ea;border-radius:7px;background:#fafcfc}.rule-form-module input:disabled,.rule-form-module textarea:disabled,.rule-form-module select:disabled{background:#f2f4f5;color:#89959a}.rule-form-module button:disabled{opacity:.4;cursor:not-allowed}.rule-rich-editor[contenteditable="false"]{background:#f2f4f5;color:#89959a}@media(max-width:760px){#drawerRuleCreate{left:auto;right:0;width:calc(100vw - 24px)}.rule-basic-grid,.rule-element-meta{grid-template-columns:1fr}}
+      #drawerRuleCreate #ruleCreateAdmins input{width:auto;min-width:120px;border:0;box-shadow:none;background:transparent}
+      #ruleCreateAdmins:has(input:disabled){background:#f2f4f5}
+      .rule-basic-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.rule-form-module{margin-top:22px;padding-top:20px;border-top:1px solid #e5eaec}.rule-form-module-head{display:flex;align-items:flex-start;justify-content:space-between;gap:18px;margin-bottom:14px}.rule-form-module-head h4{margin:0;color:#243d45;font-size:16px}.rule-form-module-head p{margin:5px 0 0;color:#849298;font-size:11.5px;line-height:1.5}.rule-config-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:9px}.rule-config-head b{color:#30474f;font-size:13px}.rule-config-head span{color:#879499;font-size:11px}.rule-link-action{padding:0;border:0;background:transparent;color:#149DAA;font-size:12px;cursor:pointer}.rule-list-add{display:flex;justify-content:flex-end;margin-top:8px}.rule-list-add-inner{margin-top:9px}.rule-repeat-section+.rule-repeat-section{margin-top:18px}.rule-config-table{width:100%;border-collapse:collapse;border:1px solid #e2e8ea}.rule-config-table th,.rule-config-table td{padding:8px 10px;border-bottom:1px solid #e8edef;text-align:left;font-size:12px}.rule-config-table th{background:#f5f7f8;color:#6c7d83;font-weight:500}.rule-config-table input{width:100%;height:32px;padding:0 8px;border:1px solid #d8e0e3;border-radius:5px;box-sizing:border-box}.rule-config-table .rule-row-index{width:46px;color:#849298;text-align:center}.rule-remove-row{width:28px;height:28px;padding:0;border:0;background:transparent;color:#9aa6aa;font-size:18px;cursor:pointer}.rule-remove-row:hover{color:#cf584e}.rule-semantic-modes{display:inline-flex;gap:3px;padding:3px;border:1px solid #dfe7e9;border-radius:7px;background:#f5f7f8}.rule-semantic-modes label{position:relative;margin:0;cursor:pointer}.rule-semantic-modes input{position:absolute;opacity:0;pointer-events:none}.rule-semantic-modes span{display:block;padding:7px 15px;border-radius:5px;color:#64767c;font-size:12px}.rule-semantic-modes input:checked+span{background:#fff;color:#117a83;box-shadow:0 1px 4px rgba(37,73,87,.12);font-weight:600}.rule-semantic-panel{margin-top:14px}.rule-document-config .fg{margin:0}.rule-document-config input{font-family:'SF Mono',Menlo,monospace}.rule-rich-editor{min-height:150px;padding:11px 12px;border:1px solid #d8e0e3;border-radius:0 0 6px 6px;background:#fff;color:#344c54;line-height:1.65;outline:none}.rule-rich-editor:empty:before{content:attr(data-placeholder);color:#a2adb0}.rule-rich-toolbar{display:flex;gap:4px;padding:6px 8px;border:1px solid #d8e0e3;border-bottom:0;border-radius:6px 6px 0 0;background:#f7f9fa}.rule-rich-toolbar button{width:28px;height:26px;padding:0;border:0;border-radius:4px;background:transparent;color:#536970;cursor:pointer}.rule-rich-toolbar button:hover{background:#e8f4f5;color:#149DAA}.rule-enum-card{margin-bottom:12px;border:1px solid #dfe7e9;border-radius:7px;background:#fff;overflow:hidden}.rule-enum-card-head{display:flex;align-items:center;justify-content:space-between;padding:10px 13px;border-bottom:1px solid #e8edef;background:#f7f9fa}.rule-enum-card-head b{color:#30474f;font-size:12px}.rule-enum-card-body{padding:13px}.rule-element-meta{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:15px}.rule-element-meta label{display:flex;flex-direction:column;gap:6px;color:#60737a;font-size:11px}.rule-element-meta input{height:34px;padding:0 9px;border:1px solid #d8e0e3;border-radius:5px}.rule-key{font-family:'SF Mono',Menlo,monospace}.rule-placeholder-guide{margin:14px 0 9px;padding:10px 12px;border-left:3px solid #149DAA;border-radius:5px;background:#f2fafa;color:#597179;font-size:11.5px;line-height:1.6}.rule-placeholder-guide code{color:#117a83}.rule-placeholder-list{display:flex;flex-wrap:wrap;gap:6px;margin-top:7px}.rule-placeholder-chip{padding:3px 8px;border:1px solid #b9dde0;border-radius:10px;background:#fff;color:#117a83;font:11px 'SF Mono',Menlo,monospace;cursor:pointer}.rule-placeholder-empty{color:#98a4a8}.rule-error-config{padding:14px;border:1px solid #e2e8ea;border-radius:7px;background:#fafcfc}.rule-form-module input:disabled,.rule-form-module textarea:disabled,.rule-form-module select:disabled{background:#f2f4f5;color:#89959a}.rule-form-module button:disabled{opacity:.4;cursor:not-allowed}.rule-rich-editor[contenteditable="false"]{background:#f2f4f5;color:#89959a}@media(max-width:760px){#drawerRuleCreate{left:auto;right:0;width:calc(100vw - 24px)}.rule-basic-grid,.rule-element-meta{grid-template-columns:1fr}}
       .rule-list-add{justify-content:flex-start}.rule-action-enum-editor{display:grid;grid-template-columns:250px minmax(0,1fr);min-height:330px;border:1px solid #dfe7e9;border-radius:7px;background:#fff;overflow:hidden}.rule-enum-directory{display:flex;min-width:0;flex-direction:column;padding:14px;border-right:1px solid #e5eaec;background:#f7f9fa}.rule-enum-directory-head{margin-bottom:10px}.rule-enum-directory-head b{display:block;color:#30474f;font-size:13px}.rule-enum-directory-head span{display:block;margin-top:4px;color:#8a979c;font-size:11px}.rule-enum-nav{display:flex;flex:1;flex-direction:column;gap:6px}.rule-enum-nav-item{display:block;width:100%;min-height:50px;padding:8px 10px;border:1px solid transparent;border-radius:5px;background:transparent;text-align:left;cursor:pointer}.rule-enum-nav-item:hover{background:#eef4f4}.rule-enum-nav-item.active{border-color:#b9dadd;background:#fff;box-shadow:0 1px 3px rgba(38,70,79,.07)}.rule-enum-nav-name{display:block;overflow:hidden;color:#344c54;font-size:12px;font-weight:600;text-overflow:ellipsis;white-space:nowrap}.rule-enum-nav-key{display:block;overflow:hidden;margin-top:3px;color:#8a979c;font:10.5px 'SF Mono',Menlo,monospace;text-overflow:ellipsis;white-space:nowrap}.rule-enum-directory .rule-list-add{margin-top:12px;padding-top:10px;border-top:1px solid #e0e6e8}.rule-enum-detail{min-width:0;padding:16px}.rule-enum-card{display:none;margin:0;border:0;border-radius:0;overflow:visible}.rule-enum-card.active{display:block}.rule-enum-card-head{padding:0 0 12px;border-bottom:1px solid #e8edef;background:transparent}.rule-enum-card-head b{font-size:13px}.rule-enum-card-body{padding:14px 0 0}.rule-enum-empty{display:none;height:100%;min-height:290px;align-items:center;justify-content:center;color:#8a979c;font-size:12px}.rule-enum-empty.visible{display:flex}@media(max-width:760px){.rule-action-enum-editor{grid-template-columns:1fr}.rule-enum-directory{border-right:0;border-bottom:1px solid #e5eaec}.rule-enum-nav{max-height:180px}.rule-enum-detail{padding:14px}}
       .rule-desc-field{display:grid;grid-template-columns:minmax(140px,1fr) 124px;gap:6px;align-items:center}.rule-config-table .rule-desc-token-select{width:124px;height:32px;padding:0 28px 0 9px;border:1px solid #d8e0e3;border-radius:5px;background-color:#fff;color:#536970;font-size:11px;box-sizing:border-box}@media(max-width:760px){.rule-desc-field{grid-template-columns:1fr}.rule-config-table .rule-desc-token-select{width:100%}}
       .rule-action-tree{overflow-x:auto;border:1px solid #dfe7e9;border-radius:7px;background:#fff}.rule-action-tree-head,.rule-action-parent-row,.rule-action-value-row{display:grid;grid-template-columns:minmax(280px,1fr) minmax(240px,1fr) 62px;gap:12px;align-items:center;min-width:680px}.rule-action-tree-head{padding:9px 12px;background:#f5f7f8;color:#6c7d83;font-size:12px}.rule-action-tree-group+.rule-action-tree-group{border-top:1px solid #dfe7e9}.rule-action-parent-row{padding:10px 12px;background:#fafcfc}.rule-action-name-cell{display:flex;min-width:0;align-items:center;gap:7px}.rule-action-tree-toggle{flex:0 0 26px;width:26px;height:30px;padding:0;border:0;background:transparent;color:#5e737a;font-size:15px;cursor:pointer}.rule-action-parent-row input,.rule-action-value-row input{width:100%;height:32px;padding:0 9px;border:1px solid #d8e0e3;border-radius:5px;box-sizing:border-box}.rule-action-parent-row .rule-action-element-name{min-width:0}.rule-action-children{padding:0 12px 10px;background:#fff}.rule-action-tree-group.collapsed .rule-action-children{display:none}.rule-action-value-row{padding:8px 0;border-top:1px solid #edf1f2}.rule-action-value-name{padding-left:33px;border-left:1px solid #d8e1e3}.rule-action-children .rule-list-add{margin:2px 0 0 34px}.rule-action-tree-empty{display:none;padding:30px;color:#8a979c;text-align:center;font-size:12px}.rule-action-tree-empty.visible{display:block}.rule-action-parent-row .rule-link-action,.rule-action-value-row .rule-link-action{justify-self:start}@media(max-width:760px){.rule-action-tree-head,.rule-action-parent-row,.rule-action-value-row{min-width:620px;grid-template-columns:minmax(250px,1fr) minmax(210px,1fr) 58px}}
+      #ruleTagConfig .rule-tag-summary td{padding:12px 14px;border-bottom:0}
+      #ruleTagConfig .rule-tag-summary .rule-tag-actions{width:110px;text-align:right;white-space:nowrap}
+      #ruleTagConfig .rule-tag-actions button+button{margin-left:16px}
+      #ruleTagConfig [hidden]{display:none!important}
+      #ruleTagModal .modal{width:720px;max-height:calc(100vh - 48px);display:flex;flex-direction:column}
+      #ruleTagModal .modal-body{overflow-y:auto;min-height:240px;flex:1}
+      #ruleTagModal .modal-head,#ruleTagModal .modal-foot{flex:none}
+      #ruleTagModal .ts-row{min-height:34px;box-sizing:border-box;gap:7px;white-space:normal}
+      #ruleTagModal .ts-row label{display:flex;align-items:center;gap:8px;cursor:pointer;flex:1;font-size:13px;color:inherit}
+      #ruleTagModal input[type="checkbox"]{width:14px;height:14px;margin:0;accent-color:#149daa;flex:none}
+      #ruleTagModal .ts-arrow{padding:0;border:0;background:transparent;height:20px}
+      #ruleTagModal .ts-row.rule-tag-context{color:#849298}
+      #ruleTagModal .ts-row.rule-tag-context label{cursor:default}
+      #ruleTagModal .rule-tag-count{margin-right:auto;align-self:center;color:#849298;font-size:12px}
+      #drawerRuleCreate .rule-action-tree{border:0;border-radius:0;background:transparent}
+      #drawerRuleCreate .rule-action-tree-group{min-width:640px;border:1px solid #e2e8ea;border-radius:6px;background:#fff}
+      #drawerRuleCreate .rule-action-tree-group+.rule-action-tree-group{margin-top:12px}
+      #drawerRuleCreate .rule-action-parent-row{min-width:0;padding:14px 16px;background:#fff;align-items:end;grid-template-columns:minmax(0,1fr) minmax(0,1fr) 48px}
+      #drawerRuleCreate .rule-action-parent-row .rule-action-name-cell{align-items:end}
+      #drawerRuleCreate .rule-action-parent-row .rule-action-tree-toggle{height:32px}
+      #drawerRuleCreate .rule-action-field-label{display:block;margin-bottom:6px;color:#60737a;font-size:12px;font-weight:400}
+      #drawerRuleCreate .rule-action-parent-row>.rule-link-action{align-self:end;line-height:32px}
+      #drawerRuleCreate .rule-action-children{margin:0 16px 14px 49px;padding:0;border:1px solid #e2e8ea;border-radius:5px;overflow:hidden;background:#fff}
+      .rule-action-enum-head{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) 48px;gap:12px;padding:8px 10px;color:#6c7d83;font-size:12px;background:#f5f7f8}
+      #drawerRuleCreate .rule-action-value-row{min-width:0;grid-template-columns:minmax(0,1fr) minmax(0,1fr) 48px;padding:8px 10px;border-top:1px solid #e8edef}
+      #drawerRuleCreate .rule-action-value-name{padding:0;border:0}
+      #drawerRuleCreate .rule-action-children .rule-list-add{margin:0;padding:9px 10px;border-top:1px solid #e8edef}
+
     </style>
     <div class="drawer" id="drawerRuleCreate">
       <div class="drawer-head"><h3>新增规则</h3><span class="dismiss" onclick="closeDrawer()">&times;</span></div>
       <div class="drawer-body">
         <div class="rule-basic-grid">
           <div class="fg"><label>规则名称</label><input id="ruleCreateName" placeholder="请输入规则名称"></div>
+          <div class="fg"><label class="fg-req">管理员</label><div id="ruleCreateAdmins" class="remote-picker" data-show-all="true" onclick="this.querySelector('input').focus()"><input type="search" aria-label="管理员" placeholder="搜索并选择管理员" autocomplete="off" onfocus="remotePersonSearch(this)" onclick="remotePersonSearch(this)" oninput="remotePersonSearch(this)"><div class="remote-picker-menu"></div></div></div>
           <div class="fg"><label>业务环节</label><select id="ruleCreateStage" onchange="ruleCreateStageChanged(this.value)"><option value="质检">质检</option><option value="标注">标注</option></select></div>
           <div class="fg"><label>规则类型</label><select id="ruleCreateType" onchange="ruleCreateTypeChanged(this.value)"></select></div>
-          <div class="fg"><label class="fg-req">管理员</label><select id="ruleCreateAdmins" multiple size="3"><option>joanna.qiao</option><option>包媛桐</option><option>Wei Zhang</option><option>刘素粉</option></select><small>可多选，至少选择一位管理员。</small></div>
         </div>
 
         <section class="rule-form-module" id="ruleFormRuleModule">
@@ -7562,6 +7637,16 @@ def data_rules():
             </div>
           </div>
 
+          <div id="ruleTagConfig" style="display:none;">
+            <div class="fg"><label class="fg-req">要打的标签</label>
+              <button class="btn" type="button" id="ruleTagAdd" onclick="ruleOpenTagModal(false)">+ 添加标签</button>
+              <table class="rule-config-table rule-tag-summary" id="ruleTagSummary" hidden><tbody><tr>
+                <td>已选标签 <span class="muted" id="ruleTagCount"></span></td>
+                <td class="rule-tag-actions"><button class="rule-link-action" type="button" id="ruleTagView" aria-label="查看已选标签" onclick="ruleOpenTagModal(true)">查看</button><button class="rule-link-action" type="button" id="ruleTagEdit" onclick="ruleOpenTagModal(false)">编辑</button></td>
+              </tr></tbody></table>
+              <span class="muted" id="ruleTagEmpty" hidden>未配置标签</span>
+            </div>
+          </div>
           <div id="ruleDocumentConfig" class="rule-document-config" style="display:none;">
             <div class="rule-semantic-modes" role="radiogroup" aria-label="语义标注规则说明方式">
               <label><input type="radio" name="ruleSemanticMode" value="link" checked onchange="ruleSetSemanticMode(this.value)"><span>文档链接</span></label>
@@ -7577,14 +7662,13 @@ def data_rules():
           <div id="ruleActionConfig" data-placeholder-format="{元素名称/元素Key}" style="display:none;">
             <div class="rule-config-head"><div><b>动作元素</b></div></div>
             <div class="rule-action-tree">
-              <div class="rule-action-tree-head"><span>动作元素 / 枚举值</span><span>Key（英文名）</span><span>操作</span></div>
               <div id="ruleActionElements"></div>
               <div class="rule-action-tree-empty" id="ruleActionElementEmpty">暂无动作元素</div>
             </div>
             <div class="rule-list-add"><button class="rule-link-action" type="button" onclick="ruleAddActionElement()">添加动作元素</button></div>
-            <div class="rule-config-head" style="margin-top:18px;"><div><b>动作表述</b></div></div>
-            <table class="rule-config-table"><thead><tr><th style="width:52px;">序号</th><th>中文动作表述</th><th>英文动作表述</th><th style="width:52px;"></th></tr></thead><tbody id="ruleActionDescriptionRows"></tbody></table>
-            <div class="rule-list-add"><button class="rule-link-action" type="button" onclick="ruleAddActionDescription()">添加动作表述</button></div>
+            <div class="rule-config-head" style="margin-top:18px;"><div><b>动作描述</b></div></div>
+            <table class="rule-config-table"><thead><tr><th style="width:52px;">序号</th><th>中文动作描述</th><th>英文动作描述</th><th style="width:52px;"></th></tr></thead><tbody id="ruleActionDescriptionRows"></tbody></table>
+            <div class="rule-list-add"><button class="rule-link-action" type="button" onclick="ruleAddActionDescription()">添加动作描述</button></div>
           </div>
         </section>
 
@@ -7595,6 +7679,14 @@ def data_rules():
         </section>
       </div>
       <div class="drawer-foot"><button class="btn" type="button" onclick="closeDrawer()">取消</button><button class="btn btn-primary" type="button" id="ruleDrawerSubmit" onclick="ruleSave()">创建</button></div>
+    </div>
+    <template id="ruleTagTreeTemplate">__RULE_TAG_TREE__</template>
+    <div class="modal-mask" id="ruleTagModal" onclick="if(event.target===this)ruleCloseTagPicker()">
+      <div class="modal" role="dialog" aria-modal="true" aria-labelledby="ruleTagModalTitle">
+        <div class="modal-head"><h3 id="ruleTagModalTitle">添加标签</h3><button type="button" class="rule-link-action" aria-label="关闭标签弹窗" onclick="ruleCloseTagPicker()">×</button></div>
+        <div class="modal-body"><div class="train-tag-select" id="ruleTagModalTree"></div></div>
+        <div class="modal-foot"><span class="rule-tag-count" id="ruleTagModalCount"></span><button class="btn" type="button" id="ruleTagCancel" onclick="ruleCloseTagPicker()">取消</button><button class="btn btn-primary" type="button" id="ruleTagConfirm" onclick="ruleConfirmTags()">确认</button></div>
+      </div>
     </div>
     <script>
     var RULE_DETAIL_DATA=__RULE_DETAIL_DATA__;
@@ -7617,12 +7709,12 @@ def data_rules():
     function ruleAddActionElement(value){
       var userAdded=arguments.length===0;value=value||{};var id='ruleActionElement'+(++ruleElementSequence),host=document.getElementById('ruleActionElements');
       var nameZh=value.name||value.name_zh||value.zh||'',nameEn=value.name_en||value.nameEn||value.en||'';
-      host.insertAdjacentHTML('beforeend','<section class="rule-action-tree-group" id="'+id+'"><div class="rule-action-parent-row"><div class="rule-action-name-cell"><button class="rule-action-tree-toggle" type="button" aria-label="收起枚举值" aria-expanded="true" onclick="ruleToggleActionElement(this)">▾</button><div class="rule-action-name-stack"><input class="rule-action-element-name" placeholder="中文元素名称" value="'+ruleEscape(nameZh)+'" oninput="ruleRefreshPlaceholders()"></div></div><input class="rule-action-element-key rule-key" placeholder="请输入 Key（英文名）" value="'+ruleEscape(value.key||nameEn)+'" oninput="ruleRefreshPlaceholders()"><button class="rule-link-action" type="button" onclick="ruleRemoveActionElement(this)">删除</button></div><div class="rule-action-children"><div class="rule-action-enum-values"></div><div class="rule-list-add rule-list-add-inner"><button class="rule-link-action" type="button" onclick="ruleAddActionEnumFromButton(this)">添加枚举值</button></div></div></section>');
+      host.insertAdjacentHTML('beforeend','<section class="rule-action-tree-group" id="'+id+'"><div class="rule-action-parent-row"><div class="rule-action-name-cell"><button class="rule-action-tree-toggle" type="button" aria-label="收起枚举值" aria-expanded="true" onclick="ruleToggleActionElement(this)">▾</button><div class="rule-action-name-stack"><span class="rule-action-field-label">动作元素</span><input aria-label="动作元素名称" class="rule-action-element-name" placeholder="中文元素名称" value="'+ruleEscape(nameZh)+'" oninput="ruleRefreshPlaceholders()"></div></div><div class="rule-action-key-field"><span class="rule-action-field-label">元素 Key（英文名）</span><input aria-label="元素 Key（英文名）" class="rule-action-element-key rule-key" placeholder="请输入 Key（英文名）" value="'+ruleEscape(value.key||nameEn)+'" oninput="ruleRefreshPlaceholders()"></div><button class="rule-link-action" type="button" onclick="ruleRemoveActionElement(this)">删除</button></div><div class="rule-action-children"><div class="rule-action-enum-head"><span>枚举值</span><span>枚举 Key</span><span>操作</span></div><div class="rule-action-enum-values"></div><div class="rule-list-add rule-list-add-inner"><button class="rule-link-action" type="button" onclick="ruleAddActionEnumFromButton(this)">添加枚举值</button></div></div></section>');
       var values=value.values&&value.values.length?value.values:[{}];values.forEach(function(item){ruleAddActionEnumValue(id,item)});ruleRefreshActionTree();ruleRefreshPlaceholders();if(userAdded){var group=document.getElementById(id);group.scrollIntoView({block:'nearest'});group.querySelector('.rule-action-element-name').focus()}
     }
     function ruleAddActionEnumValue(elementId,value){
       var userAdded=arguments.length===1;value=value||{};var group=document.getElementById(elementId),body=group.querySelector('.rule-action-enum-values');
-      body.insertAdjacentHTML('beforeend','<div class="rule-action-value-row"><div class="rule-action-value-name"><input class="rule-enum-value-name" placeholder="请输入枚举值" value="'+ruleEscape(value.name)+'"></div><input class="rule-enum-value-key rule-key" placeholder="请输入 Key" value="'+ruleEscape(value.key)+'"><button class="rule-link-action" type="button" onclick="ruleRemoveEnumValue(this)">删除</button></div>');
+      body.insertAdjacentHTML('beforeend','<div class="rule-action-value-row"><div class="rule-action-value-name"><input class="rule-enum-value-name" placeholder="请输入枚举值" value="'+ruleEscape(value.name)+'"></div><input class="rule-enum-value-key rule-key" aria-label="枚举 Key" placeholder="请输入枚举 Key" value="'+ruleEscape(value.key)+'"><button class="rule-link-action" type="button" onclick="ruleRemoveEnumValue(this)">删除</button></div>');
       if(userAdded){group.classList.remove('collapsed');var toggle=group.querySelector('.rule-action-tree-toggle');toggle.textContent='▾';toggle.setAttribute('aria-expanded','true');toggle.setAttribute('aria-label','收起枚举值');body.lastElementChild.querySelector('.rule-enum-value-name').focus()}
     }
     function ruleAddActionEnumFromButton(button){ruleAddActionEnumValue(button.closest('.rule-action-tree-group').id)}
@@ -7632,10 +7724,12 @@ def data_rules():
     function ruleRefreshActionTree(){var groups=document.querySelectorAll('#ruleActionElements .rule-action-tree-group');document.getElementById('ruleActionElementEmpty').classList.toggle('visible',!groups.length)}
     function ruleAddActionDescription(value){
       value=value||{};var body=document.getElementById('ruleActionDescriptionRows');
-      body.insertAdjacentHTML('beforeend','<tr><td class="rule-row-index"></td><td><div class="rule-desc-field"><input class="rule-action-desc-zh" placeholder="例如：拿起目标物体" value="'+ruleEscape(value.zh)+'"><select class="rule-desc-token-select" data-token-placeholder="插入元素" data-description-language="zh" aria-label="向中文动作表述插入中文元素" onchange="ruleInsertDescriptionToken(this)"></select></div></td><td><div class="rule-desc-field"><input class="rule-action-desc-en" placeholder="e.g. Pick up the target object" value="'+ruleEscape(value.en)+'"><select class="rule-desc-token-select" data-token-placeholder="插入元素" data-description-language="en" aria-label="向英文动作表述插入英文元素" onchange="ruleInsertDescriptionToken(this)"></select></div></td><td><button class="rule-remove-row" type="button" aria-label="删除" onclick="ruleRemoveTableRow(this)">×</button></td></tr>');
+      var descriptionZh=value.zh||'';
+      document.querySelectorAll('#ruleActionElements .rule-action-tree-group').forEach(function(group){var name=group.querySelector('.rule-action-element-name').value.trim(),key=group.querySelector('.rule-action-element-key').value.trim();if(name&&key)descriptionZh=descriptionZh.split('{'+name+'/'+key+'}').join('{'+name+'}')});
+      body.insertAdjacentHTML('beforeend','<tr><td class="rule-row-index"></td><td><div class="rule-desc-field"><input class="rule-action-desc-zh" placeholder="例如：拿起目标物体" value="'+ruleEscape(descriptionZh)+'"><select class="rule-desc-token-select" data-token-placeholder="插入元素" data-description-language="zh" aria-label="向中文动作描述插入中文元素" onchange="ruleInsertDescriptionToken(this)"></select></div></td><td><div class="rule-desc-field"><input class="rule-action-desc-en" placeholder="e.g. Pick up the target object" value="'+ruleEscape(value.en)+'"><select class="rule-desc-token-select" data-token-placeholder="插入元素" data-description-language="en" aria-label="向英文动作描述插入英文元素" onchange="ruleInsertDescriptionToken(this)"></select></div></td><td><button class="rule-remove-row" type="button" aria-label="删除" onclick="ruleRemoveTableRow(this)">×</button></td></tr>');
       ruleRefreshIndexes('#ruleActionDescriptionRows');ruleRefreshPlaceholders();
     }
-    function ruleActionElementTokens(language){var tokens=[];language=language||'zh';document.querySelectorAll('#ruleActionElements .rule-action-tree-group').forEach(function(group){var name=group.querySelector('.rule-action-element-name').value.trim(),key=group.querySelector('.rule-action-element-key').value.trim();if(language==='en'&&key)tokens.push(key);else if(name&&key)tokens.push(name+'/'+key)});return tokens}
+    function ruleActionElementTokens(language){var tokens=[];language=language||'zh';document.querySelectorAll('#ruleActionElements .rule-action-tree-group').forEach(function(group){var name=group.querySelector('.rule-action-element-name').value.trim(),key=group.querySelector('.rule-action-element-key').value.trim();if(language==='en'&&key)tokens.push(key);else if(language==='zh'&&name)tokens.push(name)});return tokens}
     function ruleRefreshPlaceholders(){
       document.querySelectorAll('#ruleActionDescriptionRows .rule-desc-token-select').forEach(function(select){var language=select.dataset.descriptionLanguage||'zh',tokens=ruleActionElementTokens(language),options=tokens.length?'<option value="">插入'+(language==='en'?'英文':'中文')+'元素</option>'+tokens.map(function(token){return '<option value="'+ruleEscape(token)+'">{'+ruleEscape(token)+'}</option>'}).join(''):'<option value="">暂无'+(language==='en'?'英文':'中文')+'元素</option>';select.innerHTML=options;select.disabled=!tokens.length});
     }
@@ -7648,10 +7742,73 @@ def data_rules():
       document.getElementById('ruleSemanticLink').style.display=mode==='link'?'':'none';document.getElementById('ruleSemanticRichText').style.display=mode==='richtext'?'':'none';
     }
     function ruleFormatRichText(command){var editor=document.getElementById('ruleRichTextEditor');if(editor.contentEditable==='false')return;editor.focus();document.execCommand(command,false,null)}
+    var ruleTagSelection=new Set(),ruleTagDraft=new Set(),ruleTagReadonly=false,ruleTagViewing=false,ruleTagReturnFocus=null;
+    function ruleCloseTagPicker(){
+      var modal=document.getElementById('ruleTagModal'),wasOpen=modal.classList.contains('active');modal.classList.remove('active');
+      if(wasOpen&&ruleTagReturnFocus&&ruleTagReturnFocus.isConnected)ruleTagReturnFocus.focus();
+    }
+    function ruleSelectedTags(){return Array.from(ruleTagSelection)}
+    function ruleSyncTags(){
+      var hasTags=ruleTagSelection.size>0;
+      document.getElementById('ruleTagSummary').hidden=!hasTags;
+      document.getElementById('ruleTagCount').textContent='（'+ruleTagSelection.size+'）';
+      document.getElementById('ruleTagView').disabled=false;
+      document.getElementById('ruleTagEdit').hidden=ruleTagReadonly;
+      document.getElementById('ruleTagAdd').hidden=ruleTagReadonly||hasTags;
+      document.getElementById('ruleTagEmpty').hidden=!ruleTagReadonly||hasTags;
+    }
+    function ruleTagUpdateCount(){document.getElementById('ruleTagModalCount').textContent='已选择 '+ruleTagDraft.size+' 个标签'}
+    function ruleOpenTagModal(viewOnly){
+      if(!viewOnly&&ruleTagReadonly)return;
+      ruleTagViewing=viewOnly;ruleTagDraft=new Set(ruleTagSelection);ruleTagReturnFocus=document.activeElement;
+      var tree=document.getElementById('ruleTagModalTree');tree.replaceChildren(document.getElementById('ruleTagTreeTemplate').content.cloneNode(true));
+      if(viewOnly){
+        Array.from(tree.querySelectorAll('.ts-node')).reverse().forEach(function(node){
+          var row=node.firstElementChild;
+          var keep=ruleTagSelection.has(row.dataset.id)||Array.from(node.querySelectorAll('.ts-row[data-id]')).some(function(child){return ruleTagSelection.has(child.dataset.id)});
+          if(!keep)node.remove();
+        });
+      }
+      tree.querySelectorAll('.ts-row').forEach(function(row){
+        var id=row.dataset.id,name=row.textContent.replace('▶','').trim(),children=Array.from(row.parentElement.children).find(function(child){return child.classList.contains('ts-children')}),hasChildren=children&&children.children.length;
+        row.replaceChildren();row.classList.toggle('selected',!!id&&ruleTagDraft.has(id));
+        var arrow=document.createElement(hasChildren?'button':'span');arrow.className='ts-arrow'+(hasChildren?' expanded':' empty');arrow.textContent='▶';
+        if(hasChildren){children.classList.add('expanded');arrow.type='button';arrow.setAttribute('aria-label','收起 '+name);arrow.setAttribute('aria-expanded','true');arrow.onclick=function(){var open=children.classList.toggle('expanded');arrow.classList.toggle('expanded',open);arrow.setAttribute('aria-expanded',String(open));arrow.setAttribute('aria-label',(open?'收起 ':'展开 ')+name)}}
+        row.appendChild(arrow);
+        var label=document.createElement('label');
+        if(id&&(!viewOnly||ruleTagSelection.has(id))){
+          var checkbox=document.createElement('input');checkbox.type='checkbox';checkbox.checked=ruleTagDraft.has(id);checkbox.disabled=viewOnly;checkbox.setAttribute('aria-label',row.dataset.path);
+          checkbox.onchange=function(){if(checkbox.checked)ruleTagDraft.add(id);else ruleTagDraft.delete(id);row.classList.toggle('selected',checkbox.checked);ruleTagUpdateCount()};label.appendChild(checkbox);
+        }else if(viewOnly){row.classList.add('rule-tag-context')}
+        var text=document.createElement('span');text.textContent=name;label.appendChild(text);row.appendChild(label);
+      });
+      if(!tree.children.length)tree.textContent='暂无已选标签';
+      document.getElementById('ruleTagModalTitle').textContent=viewOnly?'已选标签':'添加标签';
+      document.getElementById('ruleTagConfirm').hidden=viewOnly;
+      document.getElementById('ruleTagCancel').textContent=viewOnly?'关闭':'取消';
+      ruleTagUpdateCount();document.getElementById('ruleTagModal').classList.add('active');
+      document.querySelector('#ruleTagModal .modal-body').scrollTop=0;
+      document.querySelector('#ruleTagModal .modal-head button').focus();
+    }
+    function ruleConfirmTags(){
+      if(ruleTagReadonly||ruleTagViewing)return;
+      ruleTagSelection=new Set(ruleTagDraft);ruleSyncTags();ruleCloseTagPicker();
+    }
+    function ruleInitTagPicker(){
+      document.getElementById('ruleTagModal').addEventListener('keydown',function(event){
+        if(event.key==='Escape'){event.preventDefault();event.stopPropagation();ruleCloseTagPicker()}
+        if(event.key==='Tab'){
+          var controls=Array.from(this.querySelectorAll('button,input')).filter(function(control){return !control.disabled&&control.getClientRects().length});
+          var first=controls[0],last=controls[controls.length-1];
+          if(event.shiftKey&&document.activeElement===first){event.preventDefault();last.focus()}
+          else if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first.focus()}
+        }
+      });
+    }
     function ruleCreateStageChanged(stage){
       var type=document.getElementById('ruleCreateType');
       type.innerHTML=stage==='标注'
-        ? '<option value="语义标注">语义标注</option><option value="动作标注">动作标注</option>'
+        ? '<option value="语义标注">语义标注</option><option value="动作标注">动作标注</option><option value="标签标注">标签标注</option>'
         : '<option value="质检">质检</option>';
       ruleCreateTypeChanged(type.value);
     }
@@ -7665,15 +7822,29 @@ def data_rules():
       document.getElementById('ruleQualityConfig').style.display=quality?'block':'none';
       document.getElementById('ruleActionConfig').style.display=action?'block':'none';
       document.getElementById('ruleDocumentConfig').style.display=semantic?'block':'none';
+      document.getElementById('ruleTagConfig').style.display=stage==='标注'&&ruleType==='标签标注'?'block':'none';
+      ruleCloseTagPicker();
     }
     function ruleResetDynamicConfig(data){
-      data=data||{};document.getElementById('ruleMistakeRows').innerHTML='';document.getElementById('ruleUnqualifiedRows').innerHTML='';document.getElementById('ruleActionElements').innerHTML='';document.getElementById('ruleActionDescriptionRows').innerHTML='';document.getElementById('ruleErrorReasonRows').innerHTML='';ruleElementSequence=0;
+      data=data||{};
+      ruleTagSelection=new Set(data.annotation_tags||[]);ruleSyncTags();ruleCloseTagPicker();
+      var adminPicker=document.getElementById('ruleCreateAdmins'),adminInput=adminPicker.querySelector('input');
+      adminPicker.querySelectorAll('.picked').forEach(function(chip){chip.remove()});adminInput.value='';
+      (data.admins||[]).forEach(function(value){
+        var chip=document.createElement('span');chip.className='picked';chip.dataset.value=value;
+        var label=document.createElement('span');label.textContent=value;
+        var remove=document.createElement('button');remove.type='button';remove.innerHTML='&times;';remove.setAttribute('aria-label','移除 '+value);remove.onclick=function(event){remotePersonRemove(remove,event)};
+        chip.appendChild(label);chip.appendChild(remove);adminPicker.insertBefore(chip,adminInput);
+      });
+      adminPicker.classList.remove('open');adminPicker.querySelector('.remote-picker-menu').innerHTML='';
+      document.getElementById('ruleMistakeRows').innerHTML='';document.getElementById('ruleUnqualifiedRows').innerHTML='';document.getElementById('ruleActionElements').innerHTML='';document.getElementById('ruleActionDescriptionRows').innerHTML='';document.getElementById('ruleErrorReasonRows').innerHTML='';ruleElementSequence=0;
       (data.quality_mistakes&&data.quality_mistakes.length?data.quality_mistakes:['']).forEach(function(value){ruleAddQualityCriterion('mistake',value)});(data.quality_unqualified&&data.quality_unqualified.length?data.quality_unqualified:['']).forEach(function(value){ruleAddQualityCriterion('unqualified',value)});
       (data.action_elements&&data.action_elements.length?data.action_elements:[{}]).forEach(ruleAddActionElement);(data.action_descriptions&&data.action_descriptions.length?data.action_descriptions:[{}]).forEach(ruleAddActionDescription);(data.error_reasons&&data.error_reasons.length?data.error_reasons:[{}]).forEach(ruleAddErrorReason);
       document.getElementById('ruleDocumentLink').value=data.document_link||'';document.getElementById('ruleRichTextEditor').innerHTML=data.semantic_rich_text||'';ruleSetSemanticMode(data.semantic_mode||'link');ruleRefreshPlaceholders();
     }
     function ruleSetReadonly(readonly){
-      var drawer=document.getElementById('drawerRuleCreate');drawer.querySelectorAll('.drawer-body input,.drawer-body select,.drawer-body textarea,.drawer-body button').forEach(function(control){control.disabled=readonly});if(!readonly)ruleRefreshPlaceholders();document.getElementById('ruleRichTextEditor').contentEditable=readonly?'false':'true';drawer.querySelector('.drawer-foot').style.display=readonly?'none':'';
+      ruleTagReadonly=readonly;ruleCloseTagPicker();
+      var drawer=document.getElementById('drawerRuleCreate');drawer.querySelectorAll('.drawer-body input,.drawer-body select,.drawer-body textarea,.drawer-body button').forEach(function(control){control.disabled=readonly});if(!readonly)ruleRefreshPlaceholders();document.getElementById('ruleRichTextEditor').contentEditable=readonly?'false':'true';drawer.querySelector('.drawer-foot').style.display=readonly?'none':'';ruleSyncTags();
     }
     function openRuleDetail(trigger, editable){
       var drawer=document.getElementById('drawerRuleCreate');
@@ -7699,26 +7870,28 @@ def data_rules():
     }
     function ruleSave(){
       if(!document.getElementById('ruleCreateName').value.trim()){toast('请输入规则名称');return}
-      if(!document.querySelector('#ruleCreateAdmins option:checked')){toast('请至少选择一位管理员');return}
+      if(!document.querySelector('#ruleCreateAdmins .picked')){toast('请至少选择一位管理员');return}
       var stage=document.getElementById('ruleCreateStage').value,ruleType=document.getElementById('ruleCreateType').value;
       if(stage==='质检'){
         var mistakes=Array.from(document.querySelectorAll('#ruleMistakeRows .rule-quality-value')).filter(function(input){return input.value.trim()});var unqualified=Array.from(document.querySelectorAll('#ruleUnqualifiedRows .rule-quality-value')).filter(function(input){return input.value.trim()});if(!mistakes.length||!unqualified.length){toast('失误标准和不合格标准至少各填写一条');return}
       }
+      if(ruleType==='标签标注'&&!ruleSelectedTags().length){toast('请至少选择一个要打的标签');return}
       if(ruleType==='语义标注'){
         var semanticMode=document.querySelector('input[name="ruleSemanticMode"]:checked').value;if(semanticMode==='link'&&!document.getElementById('ruleDocumentLink').value.trim()){toast('请输入文档链接');return}if(semanticMode==='richtext'&&!document.getElementById('ruleRichTextEditor').textContent.trim()){toast('请输入富文本说明');return}
       }
       if(ruleType==='动作标注'){
         var cards=Array.from(document.querySelectorAll('#ruleActionElements .rule-action-tree-group')),zhTokens=[],enTokens=[];if(!cards.length){toast('请至少添加一个动作元素');return}
-        for(var card of cards){var enumName=card.querySelector('.rule-action-element-name').value.trim(),enumKey=card.querySelector('.rule-action-element-key').value.trim(),valueRows=Array.from(card.querySelectorAll('.rule-action-value-row'));if(!enumName||!enumKey){toast('请完整填写动作元素名称和 Key（英文名）');return}if(!valueRows.length||valueRows.some(function(row){return !row.querySelector('.rule-enum-value-name').value.trim()||!row.querySelector('.rule-enum-value-key').value.trim()})){toast('每个动作元素至少需要一个完整的枚举值');return}zhTokens.push(enumName+'/'+enumKey);enTokens.push(enumKey)}
-        var zhDescriptions=Array.from(document.querySelectorAll('#ruleActionDescriptionRows .rule-action-desc-zh')).filter(function(input){return input.value.trim()}),enDescriptions=Array.from(document.querySelectorAll('#ruleActionDescriptionRows .rule-action-desc-en')).filter(function(input){return input.value.trim()});if(!zhDescriptions.length&&!enDescriptions.length){toast('请至少填写一条动作描述');return}var invalidPlaceholder=false;zhDescriptions.concat(enDescriptions).forEach(function(input){var tokens=input.classList.contains('rule-action-desc-en')?enTokens:zhTokens,matches=input.value.matchAll(/\{([^{}]+)\}/g);for(var match of matches){if(tokens.indexOf(match[1])<0)invalidPlaceholder=true}});if(invalidPlaceholder){toast('中文动作表述只能使用中文元素，英文动作表述只能使用英文元素');return}
+        for(var card of cards){var enumName=card.querySelector('.rule-action-element-name').value.trim(),enumKey=card.querySelector('.rule-action-element-key').value.trim(),valueRows=Array.from(card.querySelectorAll('.rule-action-value-row'));if(!enumName||!enumKey){toast('请完整填写动作元素名称和 Key（英文名）');return}if(!valueRows.length||valueRows.some(function(row){return !row.querySelector('.rule-enum-value-name').value.trim()||!row.querySelector('.rule-enum-value-key').value.trim()})){toast('每个动作元素至少需要一个完整的枚举值');return}zhTokens.push(enumName);enTokens.push(enumKey)}
+        var zhDescriptions=Array.from(document.querySelectorAll('#ruleActionDescriptionRows .rule-action-desc-zh')).filter(function(input){return input.value.trim()}),enDescriptions=Array.from(document.querySelectorAll('#ruleActionDescriptionRows .rule-action-desc-en')).filter(function(input){return input.value.trim()});if(!zhDescriptions.length&&!enDescriptions.length){toast('请至少填写一条动作描述');return}var invalidPlaceholder=false;zhDescriptions.concat(enDescriptions).forEach(function(input){var tokens=input.classList.contains('rule-action-desc-en')?enTokens:zhTokens,matches=input.value.matchAll(/\{([^{}]+)\}/g);for(var match of matches){if(tokens.indexOf(match[1])<0)invalidPlaceholder=true}});if(invalidPlaceholder){toast('中文动作描述只能使用中文元素，英文动作描述只能使用英文元素');return}
       }
       var reasons=Array.from(document.querySelectorAll('#ruleErrorReasonRows .rule-error-name')).filter(function(input){return input.value.trim()});if(!reasons.length){toast('请至少添加一个错误原因');return}
       var drawer=document.getElementById('drawerRuleCreate');toast(drawer.dataset.mode==='edit'?'Demo: 规则已保存':'Demo: 规则已创建');closeDrawer();
     }
-    ruleCreateStageChanged('质检');ruleResetDynamicConfig({});
+    ruleInitTagPicker();ruleCreateStageChanged('质检');ruleResetDynamicConfig({});
     </script>
     """
     rule_drawer = rule_drawer.replace("__RULE_DETAIL_DATA__", rule_detail_json)
+    rule_drawer = rule_drawer.replace("__RULE_TAG_TREE__", ep.build_tree_selector_html("rule-tags", ep.tag_management_dimensions()))
 
     content = f"""
     <div class="dpr-intro dpr-intro-inline-action">

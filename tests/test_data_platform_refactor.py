@@ -2172,6 +2172,27 @@ class DataPlatformArchitectureTests(unittest.TestCase):
             with self.subTest(path=path):
                 self.assertNotIn(subtitle, html)
 
+    def test_tag_annotation_rule_uses_tag_management_catalog(self):
+        from unittest.mock import patch
+
+        dimensions = [{"id": "test_dimension", "name": "测试标签体系", "tags": [
+            {"id": "test_parent", "name": "测试分类", "sub_tags": [
+                {"id": "test_leaf", "name": "待标注标签"}
+            ]}
+        ]}]
+        with patch.object(toolchain_demo.ep, "tag_management_dimensions", return_value=dimensions):
+            page = self.client.get("/data/rules").get_data(as_text=True)
+        self.assertIn('<option value="标签标注">标签标注</option>', page)
+        self.assertIn('data-id="test_leaf" data-path="测试标签体系 / 测试分类 / 待标注标签"', page)
+        self.assertIn('id="ruleTagConfig"', page)
+        self.assertIn("请至少选择一个要打的标签", page)
+        self.assertIn('id="ruleErrorReasonRows"', page)
+        self.assertNotIn("__RULE_TAG_TREE__", page)
+        self.assertIn('id="ruleTagModal"', page)
+        self.assertIn('id="ruleTagTreeTemplate"', page)
+        self.assertIn('查看已选标签', page)
+        self.assertNotIn('id="ruleTagPicker"', page)
+
     def test_rule_create_drawer_supports_four_cards_and_fluid_fields(self):
         html = self.client.get("/data/rules").get_data(as_text=True)
         self.assertIn("width:min(1120px,calc(100vw - 24px))", html)

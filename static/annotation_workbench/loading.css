@@ -1,0 +1,12 @@
+.workbench-loading{--loading-accent:#25d4e5;--loading-track:#233d49;--loading-glow:#20bfd026;position:absolute;inset:0;z-index:100;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:28px;background:#0f161e;color:#a6bdca;font-size:16px;font-weight:500;letter-spacing:1px}
+.workbench-loading__spinner{position:relative;display:block;width:96px;height:96px;border-radius:12px;background:linear-gradient(var(--loading-track) 1px,transparent 1px),linear-gradient(90deg,var(--loading-track) 1px,transparent 1px);background-size:16px 16px;box-shadow:0 0 40px var(--loading-glow)}
+.workbench-loading__spinner::before,.workbench-loading__spinner::after{content:'';position:absolute;inset:-3px;pointer-events:none;background:linear-gradient(var(--loading-accent),var(--loading-accent)) left top/20px 2px no-repeat,linear-gradient(var(--loading-accent),var(--loading-accent)) left top/2px 20px no-repeat,linear-gradient(var(--loading-accent),var(--loading-accent)) right bottom/20px 2px no-repeat,linear-gradient(var(--loading-accent),var(--loading-accent)) right bottom/2px 20px no-repeat}
+.workbench-loading__spinner::after{transform:rotate(90deg)}
+.workbench-loading__core{position:absolute;inset:0;overflow:hidden;border-radius:10px}
+.workbench-loading__core::before{content:'';position:absolute;left:0;right:0;top:0;height:36px;background:linear-gradient(transparent,var(--loading-glow));border-bottom:2px solid var(--loading-accent);box-shadow:0 6px 16px var(--loading-glow);animation:workbench-loading-scan 2.4s ease-in-out infinite alternate}
+html.theme-light .workbench-loading,html[data-theme=light] .workbench-loading{--loading-accent:#009bb5;--loading-track:#dce8ed;--loading-glow:#009bb51c;background:#f5f7fa;color:#627d8e}
+.workbench-loading-preview{position:relative;min-height:320px;border-radius:12px;overflow:hidden}
+html[data-workbench-theme="blue"] .workbench-loading{--loading-accent:var(--color-brand,#27C4D4);--loading-track:var(--color-border,#173249);--loading-glow:#27c4d426;background:var(--color-bg-canvas,#020F1D);color:var(--color-text-muted,#91ACC7)}
+@keyframes workbench-loading-scan{from{transform:translateY(-30px);opacity:.45}to{transform:translateY(60px);opacity:1}}
+@media(prefers-reduced-motion:reduce){.workbench-loading__core::before{animation:none;transform:translateY(28px)}}
+.workbench-loading__pattern{position:absolute;left:24px;top:24px;width:48px;height:48px;color:var(--loading-accent);filter:drop-shadow(0 0 6px var(--loading-glow))}

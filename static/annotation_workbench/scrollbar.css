@@ -1,0 +1,16 @@
+/* Shared native scrollbar skin. Import once through styles.css. */
+:root{--scrollbar-size:6px;--scrollbar-thumb:#b8c7cf;--scrollbar-hover:#96aab5;--scrollbar-track:transparent}
+html[data-theme="dark"]{--scrollbar-thumb:#465868;--scrollbar-hover:#61788b}
+html,body,body *{scrollbar-width:thin;scrollbar-color:var(--scrollbar-thumb) var(--scrollbar-track)!important}
+@supports selector(::-webkit-scrollbar){
+  /* Native non-auto colors override WebKit scrollbar dimensions in Chromium. */
+  html,body,body *{scrollbar-width:auto!important;scrollbar-color:auto!important}
+}
+html::-webkit-scrollbar,body::-webkit-scrollbar,body *::-webkit-scrollbar{width:var(--scrollbar-size)!important;height:var(--scrollbar-size)!important}
+html::-webkit-scrollbar-track,body::-webkit-scrollbar-track,body *::-webkit-scrollbar-track{background:var(--scrollbar-track)!important}
+html::-webkit-scrollbar-thumb,body::-webkit-scrollbar-thumb,body *::-webkit-scrollbar-thumb{background:var(--scrollbar-thumb)!important;border:0!important;border-radius:999px!important}
+html::-webkit-scrollbar-thumb:hover,body::-webkit-scrollbar-thumb:hover,body *::-webkit-scrollbar-thumb:hover{background:var(--scrollbar-hover)!important}
+html::-webkit-scrollbar-corner,body::-webkit-scrollbar-corner,body *::-webkit-scrollbar-corner{background:transparent!important}
+
+/* Inset table tracks so thumbs do not collide with the rounded frame corners. */
+body :is(.task-data-table__scroll,.assignment-table-wrap,.todo-table-wrap,.table-component-scroll)::-webkit-scrollbar-track:vertical{margin-block:6px}

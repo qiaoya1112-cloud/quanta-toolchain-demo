@@ -162,6 +162,39 @@ class EvalCatalogTests(unittest.TestCase):
         finally:
             toolchain_demo.ep.BENCHMARKS[:] = original
 
+    def test_benchmark_project_save_filter_and_edit(self):
+        import copy
+        original = copy.deepcopy(toolchain_demo.ep.BENCHMARKS)
+        try:
+            response = self.client.post('/model/eval/benchmarks/create', data={
+                'name': '项目筛选验证集', 'project': '后训练评测',
+            })
+            self.assertEqual(response.status_code, 302)
+            benchmark = toolchain_demo.ep.BENCHMARKS[-1]
+            self.assertEqual(benchmark['project'], '后训练评测')
+            page = self.client.get('/model/eval/benchmarks?project=后训练评测').get_data(as_text=True)
+            filters = re.search(r'<form class="filter-bar fb-labeled benchmark-filter-bar".*?</form>', page, re.S).group()
+            self.assertEqual(re.findall(r'<label[^>]*>(.*?)</label>', filters)[0], '所属项目')
+            self.assertIn('<option selected>后训练评测</option>', filters)
+            self.assertIn('name="project" id="bm-project"', page)
+            self.assertIn('项目筛选验证集', re.search(r'<tbody>(.*?)</tbody>', page, re.S).group(1))
+            for query in ('project=预训练评测', 'project=后训练评测&publish_status=已发布', 'project=后训练评测&name=无匹配名称'):
+                page = self.client.get('/model/eval/benchmarks?' + query).get_data(as_text=True)
+                self.assertNotIn('项目筛选验证集', re.search(r'<tbody>(.*?)</tbody>', page, re.S).group(1))
+            response = self.client.post('/model/eval/benchmarks/create', data={
+                'edit_id': benchmark['id'], 'name': benchmark['name'], 'project': '预训练评测',
+            })
+            self.assertEqual(response.status_code, 302)
+            self.assertEqual(benchmark['project'], '预训练评测')
+            for project in ('', '无效项目'):
+                response = self.client.post('/model/eval/benchmarks/create', data={
+                    'edit_id': benchmark['id'], 'name': benchmark['name'], 'project': project,
+                })
+                self.assertEqual(response.status_code, 400)
+                self.assertEqual(benchmark['project'], '预训练评测')
+        finally:
+            toolchain_demo.ep.BENCHMARKS[:] = original
+
 
 class BenchmarkBatchAddTests(unittest.TestCase):
     def setUp(self):

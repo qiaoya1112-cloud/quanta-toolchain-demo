@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>标注工作台 · 新版样式</title>
+  <script>
+    try {
+      const theme = localStorage.getItem('workbench-theme') || 'dark';
+      document.documentElement.dataset.workbenchTheme = ['dark', 'blue', 'light'].includes(theme) ? theme : 'dark';
+      document.documentElement.dataset.theme = theme === 'light' ? 'light' : 'dark';
+      if (theme === 'light') {
+        document.documentElement.classList.add('theme-light');
+        document.documentElement.dataset.theme = 'light';
+      }
+    } catch (_) {}
+  </script>
+  <link rel="stylesheet" href="/static/annotation_workbench/base.css" />
+  <link rel="stylesheet" href="/static/annotation_workbench/workbench.css" />
+<link rel="stylesheet" href="/static/annotation_workbench/loading.css" />
+  <link rel="stylesheet" href="/static/annotation_workbench/timeline.css" />
+  <script src="/static/annotation_workbench/components.js" defer></script>
+  <link rel="stylesheet" href="/static/annotation_workbench/integration.css" />
+</head>
+<body class="theme-pending">
+  <script>
+    if (document.documentElement.classList.contains('theme-light')) {
+      document.body.classList.add('theme-light');
+    }
+  </script>
+  <main class="page">
+    <workbench-task-header data-processing-id="DP202609070018" data-id="DT202609070126"></workbench-task-header>
+
+    <section class="main is-loading" aria-busy="true">
+      <div class="workbench-loading" role="status"><span class="workbench-loading__spinner" aria-hidden="true"><svg class="workbench-loading__pattern" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="6" width="42" height="36" rx="4"/><path d="M3 13h42M3 33h42" opacity=".55"/><circle cx="8" cy="9.5" r="1" fill="currentColor" stroke="none"/><circle cx="12" cy="9.5" r="1" fill="currentColor" stroke="none" opacity=".6"/><path d="M34 9.5h6" opacity=".65"/><circle cx="24" cy="23" r="7" opacity=".45"/><path d="m22 19.5 6 3.5-6 3.5Z" fill="currentColor" stroke="none"/><path d="M8 17h3m-3 0v3m32-3h-3m3 0v3" opacity=".5"/><path d="M8 37.5h22" opacity=".3"/><path d="M8 37.5h9"/><circle cx="18" cy="37.5" r="1.5" fill="currentColor" stroke="none"/><path d="M35 36v3m3-3v3M41 36v3" stroke-width="1" opacity=".7"/></svg><span class="workbench-loading__core"></span></span><span>工作台加载中…</span></div>
+      <div class="workspace" inert>
+        <div class="media-timeline-group">
+        <section class="card media-card"><workbench-instruction></workbench-instruction><workbench-media-viewer></workbench-media-viewer></section>
+        <section class="card timeline-card"><semantic-annotation-track position="8.2" label="14"></semantic-annotation-track><action-annotation-track position="8.2" label="14" hidden></action-annotation-track><workbench-quality-track hidden></workbench-quality-track></section>
+        </div>
+
+        <workbench-segment-editor></workbench-segment-editor>
+        <workbench-segment-editor variant="variant-2" hidden></workbench-segment-editor>
+        <workbench-segment-editor variant="variant-3" hidden></workbench-segment-editor>
+      </div>
+
+      <workbench-segment-list variant="segments" inert></workbench-segment-list>
+    </section>
+  </main>
+  <script id="workbench-tag-tree" type="application/json">{{ tag_tree | tojson }}</script>
+  <script src="/static/annotation_workbench/tag-tree.js" defer></script>
+  <script src="/static/annotation_workbench/tags.js" defer></script>
+  <script src="/static/annotation_workbench/workbench.js" defer></script>
+  <div id="workbenchNotice" role="status" hidden></div>
+</body>
+</html>

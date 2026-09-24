@@ -1,0 +1,68 @@
+/* Local integration; reuse the reference's workbench controls and theme tokens. */
+#workbenchNotice { position:fixed; z-index:2000; top:62px; left:50%; transform:translateX(-50%); max-width:calc(100vw - 32px); padding:10px 16px; border:1px solid var(--line); border-radius:8px; background:var(--panel); color:var(--text); box-shadow:0 4px 20px #0003; font-size:13px; }
+#workbenchNotice[hidden] { display:none; }
+.tag-timeline[hidden], .tag-editor-shell[hidden], .tag-panel[hidden], .tag-editor [hidden] { display:none !important; }
+body:not(.component-preview) .media-timeline-group > .timeline-card.is-tags-mode { flex:0 0 223px; height:223px; }
+.tag-timeline { --tag-name-width:64px; --tag-name-offset:72px; min-width:0; height:100%; display:flex; flex-direction:column; padding:0 12px; font-size:12px; color:var(--text); }
+.tag-muted { color:var(--muted); font-size:12px; }
+.tag-toolbar { display:block; flex:0 0 32px; }
+.tag-toolbar .segmented-timeline__tools { height:30px; margin:0; gap:12px; }
+.tag-toolbar .segmented-timeline__tool-group { position:static; transform:none; margin-inline:auto; gap:8px; }
+.tag-toolbar .segmented-timeline__playback { padding-left:0; }
+.tag-toolbar .segmented-timeline__playback span { min-width:90px; }
+.tag-toolbar .segmented-timeline__standard { margin-left:0; padding-right:0; white-space:nowrap; }
+.tag-toolbar .segmented-timeline__tool:disabled { opacity:.35; cursor:not-allowed; }
+.tag-timeline[data-tool-mode="分割"] .tag-block { cursor:crosshair; }
+.tag-timeline[data-tool-mode="拖动"] .tag-block { cursor:grab; touch-action:none; }
+.tag-selection, .tag-lane { display:block; }
+.tag-selection { min-height:30px; margin:0 1px 4px var(--tag-name-offset); }
+.tag-selection timeline-range-selector { display:block; height:30px; position:relative; }
+.tag-selection .segmented-timeline__range { position:relative; inset:auto; width:100%; height:30px; }
+.tag-selection .segmented-timeline__range-rail { position:absolute; top:17px; left:0; right:0; }
+.tag-selection .segmented-timeline__range-label { top:0; }
+.tag-lanes-window { position:relative; flex:0 0 155px; height:155px; min-height:0; }
+.tag-lanes { overflow:auto; height:100%; padding-right:1px; scrollbar-width:thin; }
+.tag-playhead-track { position:absolute; top:0; bottom:0; left:var(--tag-name-offset); right:1px; pointer-events:none; }
+.tag-playhead-track .tag-playhead { top:0; bottom:0; }
+.tag-lane { display:grid; grid-template-columns:var(--tag-name-width) minmax(0,1fr); gap:8px; align-items:center; border-bottom:1px solid var(--line); min-height:31px; }
+.tag-lane-name { width:var(--tag-name-width); padding-left:2px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:11px; color:var(--muted); }
+.tag-lane--empty .tag-lane-rail { height:30px; }
+.tag-record-title::before { content:''; width:6px; height:6px; border-radius:2px; flex-shrink:0; background:var(--tag-color); }
+.tag-lane-rail { position:relative; min-width:0; border:1px solid var(--st-border); border-radius:4px; background:var(--st-track); }
+.tag-block { position:absolute; bottom:auto; height:18px; min-width:3px; padding:0 6px; border-radius:3px; color:var(--text); background:color-mix(in srgb,var(--tag-color) 38%,var(--panel)); border:1px solid var(--tag-color); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:11px; cursor:pointer; text-align:left; }
+.tag-block:hover { filter:brightness(1.12); }
+.tag-block.is-selected { outline:1px solid var(--tag-color); outline-offset:1px; filter:brightness(1.12); font-weight:600; }
+/* Reuse the action editor rows; only editable time fields need an adaptation. */
+.workspace > .tag-editor-shell { flex:0 0 auto; min-width:0; }
+.tag-editor-shell .tag-editor { height:auto; min-height:86px; overflow:visible; }
+.tag-editor-shell .tag-time-input { width:58px; height:26px; min-width:0; padding:2px 4px; border:1px solid var(--line); border-radius:4px; background:var(--panel); color:var(--text); font:12px ui-monospace,monospace; }
+.tag-editor-shell .segment-meta label { color:var(--muted); font-size:12px; }
+.tag-editor-shell .segment-meta { gap:7px; }
+.tag-editor-shell .segment-meta > b { margin-right:4px; }
+.tag-editor-shell .segment-action:disabled { opacity:.4; cursor:not-allowed; }
+.tag-editor-shell .tag-label-source { display:none !important; }
+.tag-editor-shell .form-row--meta { flex-wrap:wrap; height:auto; padding-block:3px; }
+.tag-editor-shell .tag-editor-validation { color:#ee7979; font-size:12px; }
+.tag-editor-shell [data-tag-status]:empty { display:none; }
+.tag-text-button { border:0; padding:0; color:var(--cyan); background:transparent; cursor:pointer; white-space:nowrap; font-size:12px; }
+.tag-panel { display:flex; flex-direction:column; flex:1; min-height:0; width:100%; height:auto; font-size:12px; }
+.tag-panel > .workbench-flat-list__header { flex:0 0 36px; justify-content:space-between; gap:12px; }
+.tag-search { flex:0 0 auto; padding:8px 12px; border-bottom:1px solid var(--line); }
+.tag-search .input-like { display:block; width:100%; min-width:0; height:30px; padding:4px 10px; border:1px solid var(--line); border-radius:7px; background:var(--panel); color:var(--text); font-family:inherit; font-size:12px; }
+.tag-search .input-like::placeholder { color:var(--muted); }
+.tag-search .input-like:focus { outline:1px solid var(--cyan); border-color:var(--cyan); }
+.tag-tree-actions [aria-pressed="true"] { text-decoration:underline; text-underline-offset:3px; }
+.tag-tree-actions { display:flex; align-items:center; gap:12px; }
+.tag-records { flex:1; min-height:0; overflow:auto; }
+.tag-list-branch > summary, .tag-tree-options summary { cursor:pointer; padding:9px 12px; color:var(--flat-list-text,var(--text)); font-size:12px; }
+.tag-list-branch > summary:hover, .tag-tree-options summary:hover { background:var(--flat-list-active,var(--panel-2)); }
+.tag-list-branch > [role=group], .tag-tree-options [role=group] { margin-left:12px; }
+.tag-group-header { display:flex; align-items:center; gap:8px; padding:8px 12px; }
+.tag-group-header .tag-text-button { margin-left:auto; }
+.tag-record-title { display:flex; gap:8px; align-items:center; }
+.tag-record .workbench-annotation-list__time { margin:0; padding:0; border:0; white-space:nowrap; }
+.tag-tree-options summary { list-style-position:inside; }
+workbench-tag-tree-select .tag-tree-options { display:block; max-height:300px; }
+workbench-tag-tree-select [data-tag-leaf] { width:100%; }
+workbench-tag-tree-select .workbench-multi-select__value { overflow-x:auto; }
+.tag-empty { margin:24px 12px; color:var(--muted); text-align:center; font-size:12px; }

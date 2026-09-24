@@ -1,0 +1,164 @@
+@import url("./scrollbar.css");
+:root {
+  /* Workflow node palette: icon foreground and paired background. */
+  --color-accent-teal: #0E9488;
+  --color-accent-teal-soft: #E0F3F0;
+  --color-accent-gray: #60788A;
+  --color-accent-gray-soft: #EEF3F6;
+  --color-accent-blue: #3B92C9;
+  --color-accent-blue-soft: #E6F1F9;
+  --color-accent-mint: #1BB985;
+  --color-accent-mint-soft: #E5F4EC;
+  --color-accent-yellow: #D99A00;
+  --color-accent-yellow-soft: #FAF2DC;
+  --color-accent-purple: #6C63E6;
+  --color-accent-purple-soft: #ECECF8;
+  --color-accent-magenta: #C058A2;
+  --color-accent-magenta-soft: #F5EAF3;
+  --color-accent-pink: #D75D9F;
+  --color-accent-pink-soft: #F7EAF1;
+  --color-accent-orange: #D98935;
+  --color-accent-orange-soft: #FAEFDF;
+  --color-accent-coral: #D96B62;
+  --color-accent-coral-soft: #F9EAE7;
+  --color-accent-grass: #7DA548;
+  --color-accent-grass-soft: #EDF3E3;
+  --color-accent-cyan: #299FB2;
+  --color-accent-cyan-soft: #E3F2F5;
+  --color-accent-indigo: #5873C7;
+  --color-accent-indigo-soft: #E9EDF8;
+}
+
+:root,
+html[data-theme="dark"] {
+  color-scheme: dark;
+
+  /* Background hierarchy — annotation workbench */
+  --color-bg-canvas: #080c11;
+  --color-bg-surface: #10161d;
+  --color-bg-surface-raised: #18212b;
+  --color-bg-surface-subtle: #141c25;
+  --color-bg-input: #0f1720;
+  --color-bg-hover: #1b2530;
+
+  /* Borders and dividers */
+  --color-border: #263340;
+  --color-border-strong: #31404e;
+  --color-divider: rgba(49, 64, 78, 0.72);
+
+  /* Text */
+  --color-text-primary: #e8eef5;
+  --color-text-secondary: #b8c4d0;
+  --color-text-muted: #8391a0;
+  --color-text-placeholder: #6f7e8e;
+  --color-text-inverse: #0f1d24;
+
+  /* Brand and interaction */
+  --color-brand: #27c4d4;
+  --color-brand-hover: #55d5dd;
+  --color-brand-soft: rgba(39, 196, 212, 0.14);
+  --color-brand-selected: rgba(48, 211, 222, 0.14);
+
+  /* Status */
+  --color-success: #4fbd91;
+  --color-range: #b8ee4f;
+  --color-warning: #d8ad34;
+  --color-warning-soft: rgba(171, 125, 18, 0.17);
+  --color-danger: #e7535d;
+  --color-danger-soft: rgba(231, 83, 93, 0.12);
+
+  /* Persistent dark navigation used by the light list page */
+  --color-inverse-surface: #05284D;
+  --color-inverse-raised: #18212b;
+  --color-inverse-border: #232a32;
+  --color-inverse-text: #e8eef5;
+  --color-inverse-muted: #7f8d9b;
+
+  --color-shadow: rgba(0, 0, 0, 0.7);
+
+  /* Backward-compatible aliases */
+  --bg: var(--color-bg-canvas);
+  --panel: var(--color-bg-surface);
+  --panel-2: var(--color-bg-surface-raised);
+  --panel-3: var(--color-bg-surface-subtle);
+  --line: var(--color-border);
+  --dash: var(--color-border-strong);
+  --muted: var(--color-text-muted);
+  --text: var(--color-text-primary);
+  --text-2: var(--color-text-secondary);
+  --cyan: var(--color-brand);
+  --cyan-soft: var(--color-brand-soft);
+  --green: var(--color-success);
+  --lime: var(--color-range);
+  --warn: var(--color-warning);
+  --amber: var(--color-warning);
+  --shadow: var(--color-shadow);
+}
+
+/* Keep same-origin management page changes visually continuous. */
+@view-transition {
+  navigation: auto;
+}
+
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 120ms;
+  animation-timing-function: ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation-duration: 0.01ms;
+  }
+}
+
+html[data-theme="light"],
+.theme-light {
+  color-scheme: light;
+
+  /* Background hierarchy — light annotation workbench */
+  --color-bg-canvas: #eef2f5;
+  --color-bg-surface: #fbfcfd;
+  --color-bg-surface-raised: #e7edf2;
+  --color-bg-surface-subtle: #f5f8fa;
+  --color-bg-input: #ffffff;
+  --color-bg-hover: #f4f8fa;
+
+  /* Component surfaces */
+  --color-bg-section-header: #e1e9ef;
+  --color-bg-group-header: #f5f8fa;
+  --color-bg-track: #edf4f6;
+
+  /* Borders and dividers */
+  --color-border: #d7e0e7;
+  --color-border-strong: #c4d0d9;
+  --color-border-media: #dce5eb;
+  --color-border-track: #cbdde3;
+  --size-border-track: 0.5px;
+  --color-divider: rgba(196, 208, 217, 0.72);
+
+  /* Text */
+  --color-text-primary: #172B40;
+  --color-text-secondary: #435D76;
+  --color-text-muted: #70849A;
+  --color-text-placeholder: #94A3B5;
+  --color-text-inverse: #ffffff;
+
+  /* Brand and interaction */
+  --color-brand: #0095B6;
+  --color-brand-hover: #007F9B;
+  --color-brand-soft: rgba(0, 149, 182, 0.06);
+  --color-brand-selected: rgba(0, 149, 182, 0.08);
+
+  /* Status */
+  --color-success: var(--color-accent-mint);
+  --color-range: #8abd35;
+  --color-warning: #a97813;
+  --color-warning-soft: rgba(169, 120, 19, 0.12);
+  --color-warning-marker: var(--color-accent-yellow);
+  --color-danger: #cf3f4b;
+  --color-danger-soft: rgba(207, 63, 75, 0.1);
+
+  --color-shadow: rgba(25, 42, 55, 0.14);
+}

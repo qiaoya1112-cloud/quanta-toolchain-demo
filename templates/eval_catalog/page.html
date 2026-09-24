@@ -1,6 +1,8 @@
 <link rel="stylesheet" href="/static/shared/scene-images.css">
 <section id="catalog" data-kind="{{kind}}" data-section="{{section}}">
-  <div class="model-list-title"><h1>{{page_title}}</h1><div class="model-list-actions">{% if kind == 'test-cases' %}<div class="ts-wrap" id="ec-benchmark-actions" style="display:inline-flex;width:auto">
+  <div class="model-list-title"><div class="model-list-title-main"><h1>{{page_title}}</h1><div class="eval-project-switcher" role="group" aria-label="所属项目">
+    <span class="eval-project-switcher-label">所属项目</span><select id="ec-title-project" aria-label="所属项目" onchange="if(window.syncEvalCatalogProject){window.syncEvalCatalogProject(this.value);}"><option value="">全部项目</option><option value="预训练评测">预训练评测</option><option value="后训练评测">后训练评测</option></select>
+  </div></div><div class="model-list-actions">{% if kind == 'test-cases' %}<div class="ts-wrap" id="ec-benchmark-actions" style="display:inline-flex;width:auto">
     <button type="button" class="ant-btn" id="ec-create-benchmark" style="border-radius:6px 0 0 6px" disabled>批量新建评测集</button><button type="button" class="ant-btn" id="ec-benchmark-menu-trigger" style="border-radius:0 6px 6px 0;margin-left:-1px;padding:0 10px" aria-label="评测集批量操作" aria-haspopup="menu" aria-expanded="false" aria-controls="ec-benchmark-menu" disabled>▾</button>
     <div class="ts-panel" id="ec-benchmark-menu" role="menu" style="left:auto;right:0;width:220px;min-width:0">
       <button type="button" class="ts-row" id="ec-benchmark-menu-create" role="menuitem" style="width:100%;border:0;background:none;text-align:left">批量新建评测集</button>
@@ -23,6 +25,7 @@
   {% endif %}
   {% endif %}
   <form class="filter-bar fb-labeled" id="ec-filter">
+    {% if kind != 'test-cases' %}<div class="ff"><label for="ec-project">所属项目</label><select id="ec-project"><option value="">全部项目</option><option>预训练评测</option><option>后训练评测</option></select></div>{% endif %}
     {% if kind == 'test-cases' %}
     <div class="ff"><label for="ec-search">用例 ID</label><input type="text" id="ec-search" placeholder="输入用例 ID 模糊搜索"></div>
     {% endif %}
@@ -37,15 +40,20 @@
     {% if kind == 'test-cases' %}
     <div class="ff"><label for="ec-data-owner">数据归属</label><select id="ec-data-owner"><option value="">全部数据归属</option></select></div>
     {% endif %}
-    <div class="ff"><label for="ec-project">所属项目</label><select id="ec-project"><option value="">全部项目</option><option>预训练评测</option><option>后训练评测</option></select></div>
     {% if section != 'scenario' %}
     <div class="ff"><label for="ec-status">发布状态</label><select id="ec-status"><option value="">全部发布状态</option><option>已发布</option><option>未发布</option></select></div>
     <div class="ff"><label for="ec-enabled">启用状态</label><select id="ec-enabled"><option value="">全部启用状态</option><option value="true">启用</option><option value="false">停用</option></select></div>
     {% endif %}
     <div class="filter-actions"><button class="ant-btn" type="button" id="ec-clear">重置</button><button class="ant-btn ant-btn-primary" type="submit">查询</button></div>
   </form>
+  {% if section == 'scenario' %}
+  <div class="model-list-actions" style="margin-bottom:12px">
+    <div class="form-group" style="display:flex;align-items:center;gap:8px;margin:0"><label for="ec-scenario-sort" style="margin:0;white-space:nowrap">排序方式</label><select id="ec-scenario-sort" style="width:220px"><option value="elements" selected>按要素聚合排序</option><option value="created-desc">按创建时间降序</option></select></div>
+  </div>
+  {% endif %}
   {% if kind == 'test-cases' %}
   <div class="model-list-actions" style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
+    <div class="form-group" style="display:flex;align-items:center;gap:8px;margin:0"><label for="ec-case-sort" style="margin:0;white-space:nowrap">排序方式</label><select id="ec-case-sort" style="width:220px" title="聚合时，相同 Stage 下的相同 Story 用例连续展示，组内按创建时间降序排列"><option value="stage-story" selected>按要素聚合排序</option><option value="created-desc">按创建时间降序</option></select></div>
     <span id="ec-selected-count" aria-live="polite" hidden></span>
     <button type="button" class="action-link" id="ec-clear-selection" style="border:0;background:none;padding:0" hidden>清空选择</button>
   </div>

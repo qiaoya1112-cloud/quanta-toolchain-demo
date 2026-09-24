@@ -356,10 +356,10 @@ def td_tip(content, extra_attr="", tip_text=None):
     return f'<td {extra_attr} data-tip="{tip}">{content}</td>'
 
 
-def build_tree_selector_html(instance_id):
+def build_tree_selector_html(instance_id, dimensions=None):
     """Build a proper TreeSelect dropdown with expand/collapse arrows, all levels selectable."""
     html = ""
-    for dim in TAXONOMY["dimensions"]:
+    for dim in (TAXONOMY["dimensions"] if dimensions is None else dimensions):
         dim_name = dim["name"]
         # L1: dimension — has children (L2 tags)
         l2_nodes = ""
@@ -378,6 +378,8 @@ def build_tree_selector_html(instance_id):
         html += f'<div class="ts-node"><div class="ts-row ts-row-dim"><span class="ts-arrow">&#9654;</span><strong>{dim_name}</strong></div><div class="ts-children">{l2_nodes}</div></div>'
     return html
 
+
+BENCHMARK_PROJECTS = ("预训练评测", "后训练评测")
 
 BENCHMARKS = [
     {
@@ -420,6 +422,7 @@ _benchmark_case_groups = {
     'b4': ['BM_06', 'BM_10', 'Study_47', 'Study_54', 'Kit_11', 'Kit_22'],
 }
 for _benchmark in BENCHMARKS:
+    _benchmark.setdefault("project", BENCHMARK_PROJECTS[0])
     _benchmark["publish_status"] = "已发布" if _benchmark.get("publish_status") in ("发布", "已发布") or (_benchmark.get("publish_status") is None and _benchmark.get("id") != "b4") else "未发布"
     _benchmark['test_cases'] = [
         dict(deepcopy(_benchmark_sample_cases[case_id]), distribution_type='OOD' if index % 3 == 2 else 'ID')
@@ -519,7 +522,10 @@ CRITERIA = [
     },
 ]
 
+CRITERIA_PROJECTS = ("预训练评测", "后训练评测")
+
 for _criterion in CRITERIA:
+    _criterion.setdefault("project", CRITERIA_PROJECTS[0])
     _criterion["publish_status"] = "已发布" if _criterion.get("publish_status") in ("发布", "已发布") or (_criterion.get("publish_status") is None and _criterion.get("id") != "c4") else "未发布"
     _criterion.setdefault("result_definitions", {
         "成功": ["直接成功", "重试后成功"],
@@ -3515,8 +3521,11 @@ def tags_page():
 # ── Criteria Management ──
 @app.route("/criteria")
 def criteria_page():
+    project_filter = request.args.get("project", "").strip()
     rows = ""
     for c in CRITERIA:
+        if project_filter and c.get("project", CRITERIA_PROJECTS[0]) != project_filter:
+            continue
         status_label = c.get("publish_status", "已发布")
         is_unpublished = status_label == "未发布"
         status_class = "tag-gray" if is_unpublished else "tag-green"
@@ -3542,9 +3551,10 @@ def criteria_page():
         more_btn = f'<span class="action-more-wrap"><a href="javascript:void(0)" class="action-link">更多</a><span class="action-more-menu">{edit_btn}{del_btn}</span></span>' if is_unpublished else ''
         actions_html = view_btn + copy_btn + publish_btn + more_btn
 
-        rows += f'''<tr>
+        rows += f'''<tr data-project="{html.escape(c.get("project", CRITERIA_PROJECTS[0]), quote=True)}">
             <td style="font-weight:500;">{html.escape(c["name"])}</td>
             <td title="{c['description']}">{c["description"][:40]}...</td>
+            <td>{html.escape(c.get("project", CRITERIA_PROJECTS[0]))}</td>
             <td><span class="tag {status_class}">{status_label}</span></td>
             <td>{c["creator"]}</td>
             <td>{c["created_at"]}</td>
@@ -3555,6 +3565,7 @@ def criteria_page():
         c["id"]: {
             "name": c.get("name", ""),
             "description": c.get("description", ""),
+            "project": c.get("project", CRITERIA_PROJECTS[0]),
             "publish_status": c.get("publish_status", "已发布"),
             "result_definitions": normalize_result_definitions(c.get("result_definitions", {})),
             "metrics": get_criterion_metrics(c),
@@ -3587,13 +3598,13 @@ def criteria_page():
     </div>
 
     </div>
-    <div class="filter-bar fb-labeled">
+    <div class="filter-bar fb-labeled" id="criteria-filters">
       <div class="ff"><label>\u6807\u51c6\u540d\u79f0</label><input type="text" placeholder="\u641c\u7d22\u6807\u51c6\u540d\u79f0"></div>
       <div class="ff"><label>\u521b\u5efa\u4eba</label><select><option value="">\u5168\u90e8\u521b\u5efa\u4eba</option>{"".join(f'<option>{c["creator"]}</option>' for c in CRITERIA)}</select></div>
       <div class="ff"><label>状态</label><select name="publish_status"><option value="">全部状态</option><option>未发布</option><option>已发布</option></select></div>
       <div class="filter-actions">
-        <button class="ant-btn" onclick="clearFilters()">\u6e05\u7a7a</button>
-        <button class="ant-btn ant-btn-primary" onclick="doSearch()">\u641c\u7d22</button>
+        <button class="ant-btn" onclick="criteriaClearFilters()">\u6e05\u7a7a</button>
+        <button class="ant-btn ant-btn-primary" onclick="criteriaSearch()">\u641c\u7d22</button>
       </div>
       <div style="flex:1;"></div>
       <button class="ant-btn ant-btn-primary" onclick="openCriteriaCreate()">\u65b0\u589e\u8bc4\u4ef7\u6807\u51c6</button>
@@ -3604,6 +3615,7 @@ def criteria_page():
         <thead><tr>
           <th>\u6807\u51c6\u540d\u79f0</th>
           <th>\u63cf\u8ff0</th>
+          <th>所属项目</th>
           <th>\u72b6\u6001</th>
           <th>\u521b\u5efa\u4eba</th>
           <th>\u521b\u5efa\u65f6\u95f4</th>
@@ -3625,6 +3637,7 @@ def criteria_page():
         <div class="ant-drawer-body">
           <div class="form-group"><label>\u6807\u51c6\u540d\u79f0</label><input type="text" name="name" required placeholder="请输入评价标准名称"></div>
           <div class="form-group"><label>\u63cf\u8ff0</label><textarea name="description" rows="3"></textarea></div>
+          <div class="form-group"><label>所属项目</label><select name="project" required>{"".join(f'<option>{project}</option>' for project in CRITERIA_PROJECTS)}</select></div>
           <div class="form-group" id="criteria-publish-status-field" style="display:none;"><label>状态</label><select name="publish_status"><option value="未发布">未发布</option><option value="已发布">已发布</option></select></div>
           <hr style="border:none;border-top:1px solid #f0f0f0;margin:20px 0;">
           <div class="form-group"><label class="eval-drawer-section-title">评测结果</label>
@@ -3892,6 +3905,24 @@ def criteria_page():
       var submit = drawer.querySelector('button[type="submit"]'); if (submit) submit.style.display = readonly ? 'none' : '';
       var cancel = drawer.querySelector('.ant-drawer-footer button[type="button"]'); if (cancel) cancel.textContent = readonly ? '关闭' : '取消';
     }}
+    function criteriaSearch() {{
+      var bar = document.getElementById('criteria-filters');
+      var keyword = bar.querySelector('input').value.trim().toLowerCase();
+      var selects = bar.querySelectorAll('select');
+      document.querySelectorAll('.criteria-list-card tbody tr').forEach(function(row) {{
+        var cells = row.cells;
+        var match = (!keyword || cells[0].textContent.toLowerCase().includes(keyword))
+          && (!selects[0].value || cells[4].textContent.trim() === selects[0].value)
+          && (!selects[1].value || cells[3].textContent.trim() === selects[1].value);
+        row.style.display = match ? '' : 'none';
+      }});
+    }}
+    function criteriaClearFilters() {{
+      var bar = document.getElementById('criteria-filters');
+      bar.querySelector('input').value = '';
+      bar.querySelectorAll('select').forEach(function(el) {{ el.selectedIndex = 0; el.classList.remove('has-value'); }});
+      criteriaSearch();
+    }}
     function openCriteriaCreate() {{
       var drawer = document.getElementById('create-criteria-drawer');
       drawer.querySelector('form').reset();
@@ -3907,6 +3938,7 @@ def criteria_page():
       drawer.querySelector('form').reset();
       drawer.querySelector('[name="name"]').value = data.name || '';
       drawer.querySelector('[name="description"]').value = data.description || '';
+      drawer.querySelector('[name="project"]').value = data.project || '预训练评测';
       drawer.querySelector('[name="publish_status"]').value = data.publish_status || '未发布';
       document.getElementById('criteria-publish-status-field').style.display = '';
       criteriaResetRows(data.result_definitions || {{}}); criteriaResetMetrics(data.metrics || []); setCriteriaDrawerReadonly(true); openModal('create-criteria-drawer');
@@ -3938,6 +3970,10 @@ def criteria_create():
     edit_id = request.form.get("edit_id", "").strip()
     edit_target = next((item for item in CRITERIA if item["id"] == edit_id), None) if edit_id else None
     ctype = edit_target.get("type", "preference") if edit_target else request.form.get("type", "preference")
+    project = request.form.get("project", edit_target.get("project", CRITERIA_PROJECTS[0]) if edit_target else CRITERIA_PROJECTS[0])
+    if project not in CRITERIA_PROJECTS:
+        flash("请选择有效的所属项目", "error")
+        return redirect(url_for("criteria_page"))
     desc = request.form.get("description", "")
     type_prompt = request.form.get("type_prompt", "")
     scale_name = request.form.get("scale_name", "")
@@ -4010,7 +4046,7 @@ def criteria_create():
             sr = {"min": 0, "max": 5}
         scale_items.append({"prompt": scale_desc or scale_name, "metric_name": scale_name, "metric_description": scale_desc, "score_range": sr, "value": None})
     criterion_payload = {
-        "name": name, "type": ctype, "description": desc,
+        "name": name, "type": ctype, "description": desc, "project": project,
         "publish_status": request.form.get("publish_status", "未发布") if request.form.get("publish_status") in ("未发布", "已发布") else "未发布",
         "result_definitions": result_definitions,
         "metrics": metrics,
@@ -4466,6 +4502,7 @@ BENCHMARK_CASE_TABLE_JS = r'''
     }
     function renderBenchmarkTestCases() {
       var section = document.getElementById('bm-test-case-section'), table = section.querySelector('table'), rows = document.getElementById('bm-test-case-rows');
+      var ordered = !!section.closest('#create-bm-drawer'), offset = ordered ? 1 : 0;
       section.hidden = false;
       document.getElementById('bm-test-cases').value = JSON.stringify(benchmarkCaseDraft);
       document.getElementById('bm-test-case-count').textContent = '共计 ' + benchmarkCaseDraft.length + ' 条';
@@ -4476,13 +4513,15 @@ BENCHMARK_CASE_TABLE_JS = r'''
         var contentWidth = Math.max.apply(null, [measure.measureText(field[1]).width].concat(benchmarkCaseDraft.map(function(row) { return measure.measureText(benchmarkCaseValue(row,field[0])).width; }))) + 32;
         return Math.ceil(Math.min(limits[1], Math.max(limits[0], contentWidth)));
       }).concat(benchmarkCaseReadonly ? [140] : [140,80]);
+      if (ordered) widths.unshift(80);
+      table.classList.toggle('bm-case-ordered', ordered);
       table.classList.toggle('bm-case-readonly', benchmarkCaseReadonly);
       document.getElementById('bm-add-case').hidden = !benchmarkCaseEditing || benchmarkCaseReadonly;
       table.style.width = widths.reduce(function(sum,width) { return sum+width; },0) + 'px';
       table.querySelector('colgroup').innerHTML = widths.map(function(width) { return '<col style="width:' + width + 'px">'; }).join('');
-      table.querySelector('thead').innerHTML = '<tr>' + benchmarkCaseFields.map(function(field) { return '<th>' + benchmarkPromptEscape(field[1]) + '</th>'; }).join('') + '<th>分布类型</th>' + (benchmarkCaseReadonly ? '' : '<th>操作</th>') + '</tr>';
+      table.querySelector('thead').innerHTML = '<tr>' + (ordered ? '<th>序号</th>' : '') + benchmarkCaseFields.map(function(field) { return '<th>' + benchmarkPromptEscape(field[1]) + '</th>'; }).join('') + '<th>分布类型</th>' + (benchmarkCaseReadonly ? '' : '<th>操作</th>') + '</tr>';
       rows.innerHTML = benchmarkCaseDraft.map(function(row, index) {
-        return '<tr>' + benchmarkCaseFields.map(function(field) {
+        return '<tr data-benchmark-row="' + index + '">' + (ordered ? '<td class="bm-case-order">' + (benchmarkCaseReadonly ? String(index + 1) : '<span draggable="true" tabindex="0" role="button" class="bm-case-drag" data-benchmark-drag="' + index + '" aria-label="拖动排序，第 ' + (index + 1) + ' 条用例" title="拖动排序，也可使用上下方向键">⠿ ' + (index + 1) + '</span>') + '</td>' : '') + benchmarkCaseFields.map(function(field) {
           var value = field[0] === 'id' && benchmarkCaseEditing && !benchmarkCaseReadonly
             ? '<input class="ant-input" required aria-label="用例 ID" aria-describedby="bm-case-error-' + index + '" placeholder="输入用例 ID" data-benchmark-case-id="' + index + '" value="' + benchmarkPromptEscape(row.id || '') + '"><div class="bm-case-error" id="bm-case-error-' + index + '" aria-live="polite" hidden></div>'
             : benchmarkPromptEscape(benchmarkCaseValue(row, field[0]));
@@ -4490,7 +4529,7 @@ BENCHMARK_CASE_TABLE_JS = r'''
         }).join('') + '<td>' + (benchmarkCaseReadonly ? benchmarkPromptEscape(row.distribution_type) : '<select class="ant-input has-value" aria-label="分布类型" data-benchmark-distribution="' + index + '"><option>ID</option><option>OOD</option></select>') + '</td>'
           + (benchmarkCaseReadonly ? '' : '<td><button type="button" class="action-link danger" data-benchmark-case-remove="' + index + '" style="border:0;background:none;padding:0">移除</button></td>') + '</tr>';
       }).join('');
-      if (!benchmarkCaseDraft.length) rows.innerHTML = '<tr><td colspan="' + (benchmarkCaseFields.length + (benchmarkCaseReadonly ? 1 : 2)) + '" class="muted" style="padding:32px;text-align:center">暂无用例</td></tr>';
+      if (!benchmarkCaseDraft.length) rows.innerHTML = '<tr><td colspan="' + (benchmarkCaseFields.length + offset + (benchmarkCaseReadonly ? 1 : 2)) + '" class="muted" style="padding:32px;text-align:center">暂无用例</td></tr>';
       var hasCaseErrors = false;
       rows.querySelectorAll('[data-benchmark-case-id]').forEach(function(input) {
         var row = benchmarkCaseDraft[Number(input.dataset.benchmarkCaseId)];
@@ -4517,11 +4556,54 @@ BENCHMARK_CASE_TABLE_JS = r'''
       rows.querySelectorAll('[data-benchmark-distribution]').forEach(function(select) { select.value = benchmarkCaseDraft[Number(select.dataset.benchmarkDistribution)].distribution_type; });
       table.querySelectorAll('tr').forEach(function(tr) {
         Array.from(tr.cells).forEach(function(cell,index) {
-          if (index === 0) cell.classList.add('bm-case-id');
-          if (index === benchmarkCaseFields.length) cell.classList.add('bm-case-distribution');
-          if (index === benchmarkCaseFields.length + 1) cell.classList.add('bm-case-action');
+          if (ordered && index === 0) cell.classList.add('bm-case-order');
+          if (index === offset) cell.classList.add('bm-case-id');
+          if (index === benchmarkCaseFields.length + offset) cell.classList.add('bm-case-distribution');
+          if (index === benchmarkCaseFields.length + offset + 1) cell.classList.add('bm-case-action');
         });
       });
+      var draggedIndex = null;
+      function moveCase(from, to) {
+        if (!ordered || benchmarkCaseReadonly || from === to || to < 0 || to >= benchmarkCaseDraft.length) return;
+        var moved = benchmarkCaseDraft.splice(from, 1)[0];
+        benchmarkCaseDraft.splice(to, 0, moved);
+        renderBenchmarkTestCases();
+      }
+      rows.ondragstart = function(event) {
+        var handle = event.target.closest('[data-benchmark-drag]');
+        if (!handle || benchmarkCaseReadonly) return;
+        draggedIndex = Number(handle.dataset.benchmarkDrag);
+        event.dataTransfer.effectAllowed = 'move';
+        event.dataTransfer.setData('text/plain', String(draggedIndex));
+      };
+      rows.ondragover = function(event) {
+        if (draggedIndex === null || benchmarkCaseReadonly) return;
+        event.preventDefault();
+        event.dataTransfer.dropEffect = 'move';
+        rows.querySelectorAll('.bm-case-drop').forEach(function(row) { row.classList.remove('bm-case-drop'); });
+        var target = event.target.closest('[data-benchmark-row]');
+        if (target) target.classList.add('bm-case-drop');
+      };
+      rows.ondrop = function(event) {
+        if (draggedIndex === null || benchmarkCaseReadonly) return;
+        event.preventDefault();
+        var target = event.target.closest('[data-benchmark-row]');
+        if (target) moveCase(draggedIndex, Number(target.dataset.benchmarkRow));
+        draggedIndex = null;
+      };
+      rows.ondragend = function() {
+        draggedIndex = null;
+        rows.querySelectorAll('.bm-case-drop').forEach(function(row) { row.classList.remove('bm-case-drop'); });
+      };
+      rows.onkeydown = function(event) {
+        var handle = event.target.closest('[data-benchmark-drag]');
+        if (!handle || !['ArrowUp','ArrowDown'].includes(event.key) || benchmarkCaseReadonly) return;
+        event.preventDefault();
+        var from = Number(handle.dataset.benchmarkDrag), to = from + (event.key === 'ArrowUp' ? -1 : 1);
+        moveCase(from, to);
+        var next = rows.querySelector('[data-benchmark-drag="' + Math.max(0, Math.min(to, benchmarkCaseDraft.length - 1)) + '"]');
+        if (next) next.focus();
+      };
       rows.oninput = function(event) {
         if (event.target.hasAttribute('data-benchmark-case-id')) {
           var cursor = event.target.selectionStart;
@@ -4546,6 +4628,11 @@ BENCHMARK_CASE_TABLE_CSS = '''
       #bm-case-table { table-layout:fixed; min-width:100%; border-collapse:separate; border-spacing:0; }
       #bm-case-table th, #bm-case-table td { box-sizing:border-box; overflow-wrap:anywhere; vertical-align:top; }
       #bm-case-table .bm-case-id { position:sticky; left:0; box-shadow:2px 0 4px rgba(0,0,0,.06); }
+      #bm-case-table.bm-case-ordered .bm-case-id { left:80px; }
+      #bm-case-table .bm-case-order { position:sticky; left:0; background:#fff; z-index:2; }
+      #bm-case-table th.bm-case-order { z-index:4; background:#fafafa; }
+      #bm-case-table .bm-case-drag { cursor:grab; display:inline-block; padding:4px 0; user-select:none; }
+      #bm-case-table .bm-case-drop td { box-shadow:inset 0 2px #1F80A0; }
       #bm-case-table .bm-case-distribution { position:sticky; right:80px; box-shadow:-2px 0 4px rgba(0,0,0,.06); }
       #bm-case-table.bm-case-readonly .bm-case-distribution { right:0; }
       #bm-case-table .bm-case-id input { width:100%; min-width:0; box-sizing:border-box; }
@@ -4559,7 +4646,7 @@ BENCHMARK_CASE_TABLE_CSS = '''
 '''
 
 
-def benchmark_case_payload():
+def benchmark_case_payload(include_visibility=True):
     import json as _json
     from eval_catalog import seed_data
     benchmark_catalog = seed_data()
@@ -4574,13 +4661,13 @@ def benchmark_case_payload():
         ["id", "用例 ID"], ["case_stage", "Stage"], ["story_id", "Story"],
         ["prompt", "prompt_EN"], ["prompt_cn", "prompt_CN"], ["skill_ids", "Skill标签"],
         ["factor_ids", "Factor"], ["attachments", "布置图片"], ["data_owner", "数据归属"],
-        ["visibility", "可见性"]
-    ], ensure_ascii=False)
+    ] + ([["visibility", "可见性"]] if include_visibility else []), ensure_ascii=False)
     return benchmark_catalog_json, benchmark_case_fields_json
 
 
 @app.route("/benchmarks")
 def benchmarks_page():
+    project_filter = request.args.get("project", "").strip()
     benchmark_filter = request.args.get("name", "").strip()
     prompt_filter_id = request.args.get("prompt_id", "").strip()
     prompt_filter_name = request.args.get("prompt_name", "").strip()
@@ -4590,6 +4677,8 @@ def benchmarks_page():
         prompt_filter_name = selected_prompt.get("high_level", "")
     rows = ""
     for b in BENCHMARKS:
+        if project_filter and project_filter != b.get("project", BENCHMARK_PROJECTS[0]):
+            continue
         if benchmark_filter and benchmark_filter.lower() not in b.get("name", "").lower():
             continue
         if prompt_filter_id and prompt_filter_id not in b.get("prompt_ids", []):
@@ -4640,6 +4729,7 @@ def benchmarks_page():
     benchmark_view_data = _json.dumps({
         b["id"]: {
             "name": b.get("name", ""),
+            "project": b.get("project", BENCHMARK_PROJECTS[0]),
             "description": b.get("description", ""),
             "tags": b.get("tags", []),
             "prompt_ids": b.get("prompt_ids", []),
@@ -4649,9 +4739,11 @@ def benchmarks_page():
         }
         for b in BENCHMARKS
     }, ensure_ascii=False)
-    benchmark_catalog_json, benchmark_case_fields_json = benchmark_case_payload()
+    benchmark_catalog_json, benchmark_case_fields_json = benchmark_case_payload(include_visibility=False)
+    benchmark_project_options = "".join(f'<option>{project}</option>' for project in BENCHMARK_PROJECTS)
     content = f'''
     <form class="filter-bar fb-labeled benchmark-filter-bar" method="get" action="/benchmarks">
+      <input type="hidden" name="project" value="{html.escape(project_filter, quote=True)}">
       <div class="ff"><label>评测集</label><input type="text" name="name" value="{html.escape(benchmark_filter, quote=True)}" placeholder="\u641c\u7d22评测集"></div>
       <div class="ff benchmark-prompt-filter"><label>\u63d0\u793a\u8bcd</label>
         <div class="benchmark-remote-select" id="benchmark-prompt-remote">
@@ -4697,6 +4789,7 @@ def benchmarks_page():
           <!-- Section 1: Basic Info -->
           <h4 style="font-size:14px;font-weight:500;margin-bottom:12px;color:rgba(0,0,0,0.85);">\u57fa\u672c\u4fe1\u606f</h4>
           <div class="form-group"><label class="req" for="bm-name">评测集名称</label><input type="text" name="name" id="bm-name" required pattern=".*\\S.*" placeholder="请输入评测集名称" title="请输入评测集名称，不能只包含空格"></div>
+          <div class="form-group"><label class="req" for="bm-project">所属项目</label><select name="project" id="bm-project" required>{benchmark_project_options}</select></div>
           <div class="form-group"><label>\u63cf\u8ff0</label><textarea name="description" rows="2"></textarea></div>
           <div class="form-group">
             <label>\u6807\u7b7e</label>
@@ -4770,9 +4863,13 @@ def benchmarks_page():
       if (new URLSearchParams(location.search).get('source') === 'test-cases') {{
         try {{ setBenchmarkTestCases(JSON.parse(sessionStorage.getItem('quanta.benchmark-case-selection') || '[]')); }}
         catch (error) {{ toast('无法读取所选测试用例，请返回测试用例列表重新选择'); }}
+        var caseProjects = [...new Set(benchmarkCaseDraft.map(function(row) {{ return row.project; }}))];
+        var projectSelect = document.getElementById('bm-project');
+        if (caseProjects.length === 1 && Array.from(projectSelect.options).some(function(option) {{ return option.value === caseProjects[0]; }})) projectSelect.value = caseProjects[0];
       }}
     }});
     function setBenchmarkCaseConfiguration() {{
+      benchmarkCaseFields = benchmarkCaseFields.filter(function(field) {{ return field[0] !== 'visibility'; }});
       document.getElementById('bm-case-config-title').textContent = '评测用例配置';
       document.getElementById('bm-legacy-prompt-field').hidden = true;
       document.getElementById('bm-prompt-execution-tree').hidden = true;
@@ -4823,9 +4920,11 @@ def benchmarks_page():
     function openBenchmarkView(id) {{
       var data = benchmarkViewData[id]; if (!data) return;
       resetBenchmarkDrawer();
+      benchmarkCaseFields = {benchmark_case_fields_json};
       setBenchmarkTestCases(data.test_cases || []);
       var drawer = document.getElementById('create-bm-drawer');
       drawer.querySelector('[name="name"]').value = data.name || '';
+      drawer.querySelector('[name="project"]').value = data.project || {BENCHMARK_PROJECTS[0]!r};
       drawer.querySelector('[name="description"]').value = data.description || '';
       var promptSet = new Set(data.prompt_ids || []);
       drawer.querySelectorAll('#ms-bm-prompts-panel input[type=checkbox]').forEach(function(cb) {{ cb.checked = promptSet.has(cb.value); }});
@@ -5089,8 +5188,12 @@ def benchmarks_create():
         return redirect(url_for("benchmarks_page"))
     edit_id = request.form.get("edit_id", "").strip()
     edit_target = next((item for item in BENCHMARKS if item["id"] == edit_id), None) if edit_id else None
+    project = request.form.get("project", edit_target.get("project", BENCHMARK_PROJECTS[0]) if edit_target else BENCHMARK_PROJECTS[0]).strip()
+    if project not in BENCHMARK_PROJECTS:
+        return "请选择有效的所属项目", 400
     benchmark_payload = {
         "name": name,
+        "project": project,
         "description": request.form.get("description", ""),
         "publish_status": edit_target.get("publish_status", "未发布") if edit_target else "未发布",
         "tags": [x.strip() for x in request.form.get("tags", "").split(",") if x.strip()],
@@ -5353,6 +5456,7 @@ def benchmark_detail(bid):
 # ── Evaluation Task Management ──
 @app.route("/tasks")
 def tasks_page():
+    project_filter = request.args.get("project", "").strip()
     def task_action(href, label, danger=False):
         cls = "action-link danger" if danger else "action-link"
         return f'<a href="{href}" class="{cls}" title="{label}">{label}</a>'
@@ -5361,6 +5465,8 @@ def tasks_page():
     rows = ""
     for t in EVAL_TASKS:
         bm = get_benchmark(t["benchmark_id"])
+        if project_filter and (bm or {}).get("project", BENCHMARK_PROJECTS[0]) != project_filter:
+            continue
         bm_name = bm["name"] if bm else "--"
         et = CRITERIA_TYPES.get(t.get("eval_type", ""), {})
         et_label = et.get("label", "--") if et else "--"

@@ -1,8 +1,10 @@
 const assert=require('node:assert/strict');
 const {batchScenarios,batchScenarioCount,scenarioValueRows,upgrade,validateScenario,saveScenarioRow,filterRecords}=require('../static/eval_catalog/catalog.js');
 const seed=JSON.parse(require('node:fs').readFileSync(process.argv[2],'utf8'));
+// This fixture includes a draft Stage; publish it before exercising batch creation.
+Object.assign(seed.stages.find(row=>row.id==='ST_BASIC'),{publish_status:'已发布',enabled:true});
 const db=upgrade(seed,null);
-const selection={stage_ids:['ST_BASIC','ST_KITCHEN'],story_ids:['SR_READ'],skill_ids:['SK_PICK','SK_PLACE'],factors:[
+const selection={project:'后训练评测',tag_ids:['act_pick','obj_phone'],stage_ids:['ST_BASIC','ST_KITCHEN'],story_ids:['SR_READ'],skill_ids:['SK_PICK','SK_PLACE'],factors:[
  {factor_id:'FC_SIZE',values:['小','大']},
  {factor_id:'FC_COLOR',values:[db.factors.find(f=>f.id==='FC_COLOR').values[0].value]}
 ]};
@@ -13,6 +15,9 @@ assert.equal(new Set(created.map(row=>row.id)).size,12);
 assert.equal(JSON.stringify(db),before);
 for(const row of created){
  assert.equal(row.publish_status,'未发布');
+ assert.equal(row.project,selection.project);
+ assert.deepEqual(row.tag_ids,selection.tag_ids);
+ assert.notEqual(row.tag_ids,selection.tag_ids);
  assert.deepEqual(validateScenario(db,row),[]);
 }
 const saved={...db,scenarios:created},restored=upgrade(seed,saved);

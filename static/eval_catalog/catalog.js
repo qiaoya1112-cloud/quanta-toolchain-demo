@@ -155,7 +155,7 @@ function prepareElement(db,kind,changes,original=null){
  if(row.publish_status==='未发布')row.enabled=false;
  return row;
 }
-function canPublish(kind,section,row){return section==='elements'&&['stages','stories','skills'].includes(kind)&&row?.publish_status==='未发布';}
+function canPublish(kind,section,row){return (kind==='test-cases'||section==='elements'&&['stages','stories','skills'].includes(kind))&&row?.publish_status==='未发布';}
 function elementHistoryValue(row,[key,,type]){
  if(!row)return null;
  if(type==='values')return (row[key]||[]).map(value=>Object.fromEntries(valueSchema.map(([key])=>[key,value[key]||''])));
@@ -310,6 +310,34 @@ function groupScenarios(rows,mode){
  for(const row of rows){const key=scenarioGroupKey(row,mode);if(!groups.has(key))groups.set(key,[]);groups.get(key).push(row);}
  return [...groups.values()].flat();
 }
+function sortScenarioRows(rows,mode='elements'){
+ if(mode==='created-desc'){
+  const timestamp=row=>Date.parse((row.created_at||'').replace(' ','T'))||0;
+  return [...rows].sort((a,b)=>timestamp(b)-timestamp(a));
+ }
+ const levels=['Stage','Story','Skill','Factor'];
+ function group(items,depth){
+  if(depth===levels.length)return items;
+  const groups=new Map();
+  for(const row of items){const key=scenarioGroupKey(row,levels[depth]);if(!groups.has(key))groups.set(key,[]);groups.get(key).push(row);}
+  return [...groups.values()].flatMap(items=>group(items,depth+1));
+ }
+ return group(rows,0);
+}
+function sortCaseRows(db,rows,mode='stage-story'){
+ const timestamp=row=>Date.parse((row.created_at||'').replace(' ','T'))||0;
+ const sorted=[...rows].sort((a,b)=>timestamp(b)-timestamp(a));
+ if(mode==='created-desc')return sorted;
+ const storyStages=new Map(db.stories.map(row=>[row.id,row.stage_id])),stages=new Map();
+ for(const row of sorted){
+  const stage=row.case_stage||storyStages.get(row.story_id)||'',story=row.story_id||'';
+  if(!stages.has(stage))stages.set(stage,new Map());
+  const stories=stages.get(stage);
+  if(!stories.has(story))stories.set(story,[]);
+  stories.get(story).push(row);
+ }
+ return [...stages.values()].flatMap(stories=>[...stories.values()].flat());
+}
 function validateScenario(db,row){
  const errors=[];
  for(const [key,label,target] of scenarioEditSchema){
@@ -364,7 +392,7 @@ function batchScenarios(db,selections,now){
   const row={stage_id,story_id,skill_id,...pair};if(existing.has(tuple(row)))continue;
   while(ids.has('SC_'+String(serial).padStart(2,'0')))serial++;
   row.id='SC_'+String(serial++).padStart(2,'0');ids.add(row.id);existing.add(tuple(row));
-  result.push({...row,project,publish_status:'未发布',enabled:true,created_by:demoActor,updated_by:demoActor,created_at:now,updated_at:now});
+  result.push({...row,project,tag_ids:[...new Set(selections.tag_ids||[])],publish_status:'未发布',enabled:true,created_by:demoActor,updated_by:demoActor,created_at:now,updated_at:now});
  }
  return result;
 }
@@ -380,7 +408,7 @@ function filterRecords(db,kind,section,filters={}){
   if(kind==='test-cases')return matchesCommon&&(!stages.length||stages.includes(r.case_stage||db.stories.find(x=>x.id===r.story_id)?.stage_id))&&(!stories.length||stories.includes(r.story_id))&&(!skills.length||(r.skill_ids||[]).some(id=>skills.includes(id)))&&(!factors.length||(r.factors||[]).some(f=>factors.includes(f.factor_id)));
   return matchesCommon;
  });
- // 要素定义列表以首列 ID 降序展示；测试用例继续按其原有顺序展示。
+ // 要素定义按 ID 降序；评测用例由列表选定的排序方式处理。
  if(section==='elements'&&kind!=='test-cases')rows.sort((a,b)=>(b.display_id||0)-(a.display_id||0));
  return rows;
 }
@@ -433,7 +461,7 @@ function upgrade(seed,saved){
  }
  return result;
 }
-const api={references,validate,schemas,listSchemas,scenarioSchema,fieldsFor,valueSchema,upgrade,filterRecords,elementName,nextDisplayId,normalizeImages,publishedDeleteBlocked,prepareElement,canPublish,recordElementUpdates,factorValueOptions,scenarioRows,scenarioValueRows,saveScenarioRow,deleteScenarioRow,scenarioCaseCount,groupScenarios,scenarioStats,batchScenarios,batchScenarioCount,validateScenario,caseOptions,caseOptionGroups,factorValueGroups,validateCaseSelection};if(typeof module!=='undefined'&&module.exports)module.exports=api;
+const api={references,validate,schemas,listSchemas,scenarioSchema,fieldsFor,valueSchema,upgrade,filterRecords,sortCaseRows,sortScenarioRows,elementName,nextDisplayId,normalizeImages,publishedDeleteBlocked,prepareElement,canPublish,recordElementUpdates,factorValueOptions,scenarioRows,scenarioValueRows,saveScenarioRow,deleteScenarioRow,scenarioCaseCount,groupScenarios,scenarioStats,batchScenarios,batchScenarioCount,validateScenario,caseOptions,caseOptionGroups,factorValueGroups,validateCaseSelection};if(typeof module!=='undefined'&&module.exports)module.exports=api;
 if(!root.document)return;
 const $=id=>document.getElementById(id),esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 if(!$('ec-filter'))return;
@@ -649,10 +677,10 @@ function render(){
  syncCaseFilterSingles();
  refreshElementFilters();
  syncDataOwnershipFilter();
- const filters={query:$('ec-search')?.value,publishStatus:$('ec-status')?.value,enabled:$('ec-enabled')?.value,project:$('ec-project')?.value,dataOwner:$('ec-data-owner')?.value};
+ const filters={query:$('ec-search')?.value,publishStatus:$('ec-status')?.value,enabled:$('ec-enabled')?.value,project:$('ec-title-project')?.value,dataOwner:$('ec-data-owner')?.value};
  for(const wrap of document.querySelectorAll('[data-filter-kind]'))filters[wrap.dataset.filterKind]=[...wrap.querySelectorAll('input:checked')].map(x=>x.value);
  for(const select of document.querySelectorAll('[data-filter-single]'))filters[select.dataset.filterSingle]=select.value?[select.value]:[];
- const filtered=filterRecords(db,kind,section,filters),rows=section==='scenario'?groupScenarios(filtered,'Stage'):filtered;
+ const filtered=filterRecords(db,kind,section,filters),rows=kind==='test-cases'?sortCaseRows(db,filtered,$('ec-case-sort').value):section==='scenario'?sortScenarioRows(filtered,$('ec-scenario-sort').value):filtered;
  if(kind==='test-cases')selectableCases=rows.map(r=>r.id);
  if(section==='elements'&&kind!=='test-cases')for(const target of ['stages','stories','skills','factors'])$('ec-total-'+target).textContent=db[target].length;
  const fields=fieldsFor(kind,section),pages=Math.max(1,Math.ceil(rows.length/10));page=Math.min(page,pages);
@@ -665,7 +693,7 @@ function render(){
  const cellStyle=(f,header=false)=>section==='scenario'?`min-width:${scenarioMinWidths[f[0]]||120}px;white-space:nowrap`:kind==='factors'&&header?'white-space:nowrap':['test-cases','factors'].includes(kind)?'white-space:pre-wrap;overflow-wrap:break-word':'max-width:360px;white-space:pre-wrap;min-width:120px;overflow-wrap:anywhere';
  const caseSticky=(left,header=false)=>kind==='test-cases'?`;position:sticky;left:${left}px;z-index:${header?4:2};background:${header?'#fafafa':'#fff'};`:'';
  $('ec-thead').innerHTML='<tr>'+(kind==='test-cases'?`<th style="${caseSticky(0,true)}"><div style="display:flex;align-items:center;gap:4px"><input type="checkbox" id="ec-select-page" aria-label="选择当前页全部用例"><button type="button" id="ec-selection-trigger" class="action-link" style="border:0;background:none;padding:0;width:20px;height:24px" aria-label="选择范围" title="选择范围" aria-expanded="false" aria-controls="ec-selection-menu">&#9662;</button></div></th>`:'')+fields.map((f,index)=>`<th style="${cellStyle(f,true)}${kind==='test-cases'&&index===0?caseSticky(72,true):''}">${esc(f[1])}</th>`).join('')+'<th>操作</th></tr>';
- const actions=[...(kind==='test-cases'||section==='scenario'||section==='elements'&&elementForms[kind]?[]:['view']),'edit',...(section==='elements'&&['stages','stories','skills'].includes(kind)?['publish']:[]),'delete'];
+ const actions=[...(kind==='test-cases'||section==='scenario'||section==='elements'&&elementForms[kind]?[]:['view']),'edit',...(kind==='test-cases'||section==='elements'&&['stages','stories','skills'].includes(kind)?['publish']:[]),'delete'];
  $('ec-tbody').innerHTML=rows.slice((page-1)*10,page*10).map(r=>{
   return `<tr data-collection="${r.scenario_record?'scenarios':kind}"${section==='scenario'?` data-scenario-key="${esc(r.row_key)}"`:''}>`+(kind==='test-cases'?`<td style="${caseSticky(0)}"><input type="checkbox" data-select-case="${esc(r.id)}" aria-label="选择用例 ${esc(r.id)}" ${selectedCases.has(r.id)?'checked':''}></td>`:'')+fields.map((f,index)=>`<td style="${cellStyle(f)}${kind==='test-cases'&&index===0?caseSticky(72):''}">${display(r,f)}</td>`).join('')+`<td class="actions-cell"><div style="display:flex;gap:12px">${actions.map(a=>{
   const blocked=a==='delete'&&(section==='scenario'?scenarioCaseCount(db,r)>0:publishedDeleteBlocked(kind,r))||a==='publish'&&!canPublish(kind,section,r);
@@ -801,7 +829,7 @@ function input([key,label,type,required],r,scope='',rows=3){
  if(type==='textarea'||type==='lines')return `<textarea ${attrs} rows="${rows}"${rows===1?' style="min-height:36px;height:36px;resize:vertical"':''}>${esc(Array.isArray(value)?value.join('\n'):value)}</textarea>`;
  return `<input type="text" ${attrs} value="${esc(value)}">`;
 }
-function field(schema,r,scope=''){const visibilityClass=schema[0]==='visible_group_ids'?' visibility-groups-field':'';const visibilityAttr=schema[0]==='visible_group_ids'?` data-visibility-groups="true"${r.visibility==='受限'?'':' style="display:none"'}`:'';return `<div class="form-group${visibilityClass}"${visibilityAttr}><label for="${schema[2]==='images'?'ec-image-upload':scope+schema[0]}">${esc(schema[1])}${schema[2]==='images'?' <span id="ec-image-total"></span>':''}${schema[3]?' <span style="color:#cf1322">*</span>':''}${batchCreating&&schema[2].endsWith('[]')?` <span class="muted" style="margin-left:8px;font-size:12px;font-weight:400" id="ec-selected-${schema[0]}" aria-live="polite">已选择 0 项</span>`:''}</label>${input(schema,r,scope)}</div>`;}
+function field(schema,r,scope=''){const visibilityClass=schema[0]==='visible_group_ids'?' visibility-groups-field':'';const visibilityAttr=schema[0]==='visible_group_ids'?` data-visibility-groups="true"${r.visibility==='受限'?'':' style="display:none"'}`:'';return `<div class="form-group${visibilityClass}"${visibilityAttr}><label for="${schema[2]==='images'?'ec-image-upload':scope+schema[0]}">${esc(schema[1])}${schema[2]==='images'?' <span id="ec-image-total"></span>':''}${schema[3]?' <span style="color:#cf1322">*</span>':''}${batchCreating&&batchScenarioSchema.some(([key])=>key===schema[0])?` <span class="muted" style="margin-left:8px;font-size:12px;font-weight:400" id="ec-selected-${schema[0]}" aria-live="polite">已选择 0 项</span>`:''}</label>${input(schema,r,scope)}</div>`;}
 function syncUserGroupChips(wrap){
  if(!wrap?.dataset.chipSelect)return;
  const checked=[...wrap.querySelectorAll('input[name="visible_group_ids"]:checked')];
@@ -894,7 +922,8 @@ function open(mode,id,collection=kind,rowKey=null){
  }
  if(batchCreating){
   html+=`<div class="form-group"><label>Factor 配置 <span style="color:#cf1322">*</span></label><table class="ant-table" style="table-layout:fixed;width:100%"><thead><tr><th>Factor</th><th>Factor取值（多选）</th><th style="width:72px">操作</th></tr></thead><tbody id="ec-factors">${conditionRow()}</tbody></table><button class="action-link" style="border:0;background:none;padding:0;margin-top:12px" type="button" id="ec-add-factor">添加 Factor</button></div>`;
-  html+='<div style="display:flex;align-items:center;flex-wrap:wrap;gap:8px 16px;border-top:1px solid #f0f0f0;padding-top:16px;font-size:14px" aria-live="polite"><span>组合条数</span><span class="muted" id="ec-batch-formula" style="font-variant-numeric:tabular-nums"></span><span id="ec-batch-total" style="margin-left:auto;white-space:nowrap;font-variant-numeric:tabular-nums"></span></div>';
+  html+='<div style="display:flex;align-items:center;flex-wrap:wrap;gap:8px 16px;border-top:1px solid #f0f0f0;padding-top:16px;margin-bottom:16px;font-size:14px" aria-live="polite"><span>组合条数</span><span class="muted" id="ec-batch-formula" style="font-variant-numeric:tabular-nums"></span><span id="ec-batch-total" style="margin-left:auto;white-space:nowrap;font-variant-numeric:tabular-nums"></span></div>';
+  html+=field(tagField,r);
  }
  if((section==='elements'&&elementForms[kind]&&editing)||(kind==='test-cases'&&(editing||readonly)))html+=updateHistorySection(r);
  $('ec-fields').innerHTML=readonly?(scenarioEditing?detailFields(r,scenarioFormSchema):section==='elements'&&elementForms[kind]?elementDetails(r):html):html;$('ec-save').hidden=readonly;$('ec-save').disabled=false;$('ec-cancel').textContent=readonly?'关闭':'取消';
@@ -968,7 +997,7 @@ function syncBatchSelection(){
  $('ec-batch-total').textContent='共 '+batchScenarioCount(selections)+' 条';
 }
 function collectBatchSelection(){
- return {...Object.fromEntries([projectField,...batchScenarioSchema].map(f=>[f[0],readValue($('ec-fields'),f)])),factors:[...$('ec-factors').children].map(row=>({factor_id:row.querySelector('.ec-factor-id').value,values:[...row.querySelectorAll('.ec-factor-value:checked')].map(input=>input.value)}))};
+ return {...Object.fromEntries([projectField,...batchScenarioSchema,tagField].map(f=>[f[0],readValue($('ec-fields'),f)])),factors:[...$('ec-factors').children].map(row=>({factor_id:row.querySelector('.ec-factor-id').value,values:[...row.querySelectorAll('.ec-factor-value:checked')].map(input=>input.value)}))};
 }
 function refreshCaseOptions(){
  const form=$('ec-form'),stage=form.elements.case_stage,story=form.elements.story_id;
@@ -1118,7 +1147,7 @@ $('ec-fields').addEventListener('change',e=>{
  if(caseCreating&&['case_stage','story_id','skill_ids'].includes(e.target.name))refreshCaseOptions();
  else if(e.target.name==='case_stage')$('ec-form').elements.story_id.innerHTML=options(db.stories,$('ec-form').elements.story_id.value);
  if(e.target.matches('.ec-factor-id')){const f=db.factors.find(x=>x.id===e.target.value);e.target.closest('tr').querySelector('.ec-factor-values').innerHTML=conditionValueInput(f,!batchCreating&&f?.default_value?[f.default_value]:[]);refreshConditions();}
- if(e.target.type==='checkbox'&&e.target.isConnected){if(batchCreating)syncBatchSelection();else{const wrap=e.target.closest('.ts-wrap');if(wrap?.hasAttribute('data-case-picker'))syncCasePicker(wrap);else if(wrap?.hasAttribute('data-tag-select'))syncTagSelection(wrap);else if(wrap?.dataset.chipSelect)syncUserGroupChips(wrap);else wrap.querySelector('.ts-placeholder').textContent=[...wrap.querySelectorAll('input:checked')].map(x=>x.parentElement.textContent.trim()).join('、')||'请选择';}}
+ if(e.target.type==='checkbox'&&e.target.isConnected){if(e.target.closest('[data-tag-select]'))syncTagSelection(e.target.closest('[data-tag-select]'));else if(batchCreating)syncBatchSelection();else{const wrap=e.target.closest('.ts-wrap');if(wrap?.hasAttribute('data-case-picker'))syncCasePicker(wrap);else if(wrap?.hasAttribute('data-tag-select'))syncTagSelection(wrap);else if(wrap?.dataset.chipSelect)syncUserGroupChips(wrap);else wrap.querySelector('.ts-placeholder').textContent=[...wrap.querySelectorAll('input:checked')].map(x=>x.parentElement.textContent.trim()).join('、')||'请选择';}}
  syncSelects();
 });
 $('ec-form').addEventListener('submit',e=>{
@@ -1179,6 +1208,9 @@ $('ec-confirm-delete').onclick=()=>{
 };
 $('ec-confirm-cancel').onclick=()=>close('ec-confirm');$('ec-create').onclick=()=>open('create');$('ec-close').onclick=$('ec-cancel').onclick=()=>close('ec-dialog');
 $('ec-filter').onsubmit=e=>{e.preventDefault();page=1;render();};$('ec-clear').onclick=()=>{$('ec-filter').reset();if($('ec-data-owner'))$('ec-data-owner').value='';$('ec-filter').querySelectorAll('input[type="checkbox"]').forEach(x=>x.checked=false);closeFilterMenus();page=1;render();};$('ec-prev').onclick=()=>{page--;render();};$('ec-next').onclick=()=>{page++;render();};
+root.syncEvalCatalogProject=value=>{const select=$('ec-title-project');if(select)select.value=value||'';page=1;render();};
+if($('ec-case-sort'))$('ec-case-sort').onchange=()=>{page=1;render();};
+if($('ec-scenario-sort'))$('ec-scenario-sort').onchange=()=>{page=1;render();};
 function closeFilterMenus(){document.querySelectorAll('[data-filter-kind].open').forEach(wrap=>{wrap.classList.remove('open');wrap.querySelector('.ts-trigger').setAttribute('aria-expanded','false');});}
 $('ec-filter').addEventListener('click',e=>{const trigger=e.target.closest('.ts-trigger');if(!trigger)return;const wrap=trigger.closest('.ts-wrap'),wasOpen=wrap.classList.contains('open');closeFilterMenus();wrap.classList.toggle('open',!wasOpen);trigger.setAttribute('aria-expanded',String(!wasOpen));});
 $('ec-filter').addEventListener('change',e=>{const wrap=e.target.closest('[data-filter-kind]');if(wrap)updateFilterSummary(wrap);});
