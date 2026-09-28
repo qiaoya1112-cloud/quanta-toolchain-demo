@@ -25,7 +25,6 @@
   {% endif %}
   {% endif %}
   <form class="filter-bar fb-labeled" id="ec-filter">
-    {% if kind != 'test-cases' %}<div class="ff"><label for="ec-project">所属项目</label><select id="ec-project"><option value="">全部项目</option><option>预训练评测</option><option>后训练评测</option></select></div>{% endif %}
     {% if kind == 'test-cases' %}
     <div class="ff"><label for="ec-search">用例 ID</label><input type="text" id="ec-search" placeholder="输入用例 ID 模糊搜索"></div>
     {% endif %}
