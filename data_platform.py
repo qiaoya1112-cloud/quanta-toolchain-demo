@@ -557,6 +557,9 @@ _review_flows = [
             },
             {
                 "name": "供应商抽验",
+                "processing_percent": 100,
+                "allow_task_percent": False,
+                "processing_rule_mode": "task_custom",
                 "kind": "human",
                 "meta": "供应商抽验",
                 "workbench": "语义标注工作台 v1.0",
@@ -567,6 +570,10 @@ _review_flows = [
             },
             {
                 "name": "供应商复核",
+                "processing_percent": 100,
+                "allow_task_percent": False,
+                "processing_rule_mode": "inherit",
+                "inherit_processing_rule_node": "供应商抽验",
                 "kind": "human",
                 "meta": "供应商复核",
                 "workbench": "语义标注工作台 v1.0",
@@ -580,6 +587,10 @@ _review_flows = [
             },
             {
                 "name": "供应商验收",
+                "processing_percent": 100,
+                "allow_task_percent": False,
+                "processing_rule_mode": "inherit",
+                "inherit_processing_rule_node": "供应商复核",
                 "kind": "human",
                 "meta": "供应商验收",
                 "workbench": "语义标注工作台 v1.0",
@@ -617,6 +628,9 @@ _review_flows = [
             },
             {
                 "name": "内部验收",
+                "processing_percent": 50,
+                "allow_task_percent": True,
+                "processing_rule_mode": "none",
                 "kind": "human",
                 "meta": "内部验收",
                 "workbench": "语义标注工作台 v1.0",
@@ -1503,6 +1517,7 @@ textarea.wf-edit-field { min-height:64px; height:auto; resize:vertical; line-hei
 .wf-human-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
 .wf-human-grid .full { grid-column:1/-1; }
 .wf-human-label { display:block; margin-bottom:5px; color:rgba(0,0,0,.52); font-size:12px; }
+.wf-module-config-table-wrap{margin-top:8px;border:1px solid #e8ecee;border-radius:6px;overflow:hidden}.wf-module-config-table{width:100%;border-collapse:collapse;font-size:12px}.wf-module-config-table th,.wf-module-config-table td{padding:8px 10px;border-bottom:1px solid #edf0f1;text-align:left}.wf-module-config-table th{background:#f7f9fa;color:#718087;font-weight:500}.wf-module-config-table tr:last-child td{border-bottom:0}.wf-module-config-table th:not(:first-child),.wf-module-config-table td:not(:first-child){width:28%;text-align:center}.wf-module-config-table input[type="checkbox"]{width:14px;height:14px;margin:0;vertical-align:middle;accent-color:#149DAA;cursor:pointer}.wf-module-config-table input:disabled{cursor:not-allowed}.wf-module-config-table .wf-module-view:checked:disabled{appearance:none;-webkit-appearance:none;position:relative;box-sizing:border-box;border:1px solid #1677ff;border-radius:3px;background:#1677ff;opacity:.5}.wf-module-config-table .wf-module-view:checked:disabled::after{content:"";position:absolute;left:4px;top:1px;width:3px;height:7px;border:solid #fff;border-width:0 2px 2px 0;transform:rotate(45deg)}
 .wf-mode-tabs { display:inline-flex; padding:3px; border-radius:7px; background:#f3f5f6; margin:2px 0 10px; }
 .wf-mode-tab { border:0; border-radius:5px; padding:4px 14px; background:transparent; color:rgba(0,0,0,.5); font-size:12px; cursor:pointer; }
 .wf-mode-tab.active { background:#fff; color:#1F80A0; box-shadow:0 1px 4px rgba(0,0,0,.1); font-weight:600; }
@@ -5622,6 +5637,8 @@ WF_CANVAS_JS = r"""
     '标注':['标注工作台 v4.1','语义标注工作台 v1.0'],
     '验收':['详情工作台 v1.0']
   };
+  var WORKBENCH_MODULES=['质检','标注','标签','日志','基础信息'];
+  var WORKBENCH_MODULE_STATES=['无权限','仅查看','可编辑'];
   function esc(v){ return String(v==null?'':v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;'); }
   function optionList(items,selected){
     return items.map(function(item){ return '<option'+(item===selected?' selected':'')+'>'+esc(item)+'</option>'; }).join('');
@@ -5660,6 +5677,34 @@ WF_CANVAS_JS = r"""
     select.innerHTML=optionList(items,selected);
     select.value=selected;
   }
+  function renderWorkbenchModuleConfig(n){
+    var holder=document.getElementById('wfhModuleConfigRows');
+    if(!holder) return;
+    var saved=n.workbenchModules||{};
+    holder.innerHTML=WORKBENCH_MODULES.map(function(name){
+      var states=name==='日志'||name==='基础信息'?WORKBENCH_MODULE_STATES.slice(0,2):WORKBENCH_MODULE_STATES;
+      var state=({'查看':'仅查看','编辑':'可编辑'})[saved[name]]||saved[name];
+      if(states.indexOf(state)<0) state='仅查看';
+      var editable=state==='可编辑', readable=state!=='无权限';
+      return '<tr data-module="'+esc(name)+'"><td>'+esc(name)+'</td><td><input type="checkbox" class="wf-module-view" aria-label="'+esc(name)+'可查看"'+(readable?' checked':'')+(editable||viewOnly?' disabled':'')+'></td><td><input type="checkbox" class="wf-module-edit" aria-label="'+esc(name)+'可编辑"'+(editable?' checked':'')+(states.length===2||viewOnly?' disabled':'')+' onchange="wfModuleEditChange(this)"></td></tr>';
+    }).join('');
+  }
+  window.wfModuleEditChange=function(input){
+    var view=input.closest('tr').querySelector('.wf-module-view');
+    if(input.checked) view.checked=true;
+    view.disabled=input.checked||viewOnly;
+  };
+  function wfRefreshWorkbenchActions(){
+    var type=document.getElementById('wfhWorkbenchType');
+    var label=document.getElementById('wfhAllowedActionsLabel');
+    var holder=document.getElementById('wfhAllowedActions');
+    var visible=!type||type.value!=='作业';
+    if(label) label.style.display=visible?'':'none';
+    if(holder) holder.style.display=visible?'':'none';
+    var rejectConfig=document.querySelector('#wfHumanConfig .wf-operation-reject');
+    if(rejectConfig) rejectConfig.style.display=visible?'':'none';
+  }
+  window.wfRefreshWorkbenchActions=wfRefreshWorkbenchActions;
   function workflowFrameIndex(phaseId){
     for(var i=0;i<FRAMES.length;i++) if(FRAMES[i].id===phaseId) return i;
     return FRAMES.length;
@@ -5800,6 +5845,17 @@ WF_CANVAS_JS = r"""
     if(mode==='inherit'&&previous.length&&!select.value) select.value=previous[0].id;
     hint.textContent=previous.length?'可选择任意前序人工节点':'当前没有前序人工节点，请选择任务自定义';
   }
+  function wfRefreshProcessingRuleInheritance(){
+    var n=byId(selId), mode=document.querySelector('input[name="wfhProcessingRuleMode"]:checked');
+    var wrap=document.getElementById('wfhProcessingRuleInheritWrap'), select=document.getElementById('wfhProcessingRuleInheritNode');
+    if(!wrap||!select) return;
+    var previous=previousHumanNodes(n);
+    wrap.style.display=mode&&mode.value==='inherit'?'block':'none';
+    select.innerHTML=previous.length?previous.map(function(item){return '<option value="'+esc(item.id)+'">'+esc(item.name||item.id)+'</option>';}).join(''):'<option value="">暂无前序人工节点</option>';
+    select.disabled=!(mode&&mode.value==='inherit')||!previous.length;
+    if(mode&&mode.value==='inherit'&&previous.length) select.value=previous.some(function(item){return item.id===n.inheritProcessingRuleNodeId;})?n.inheritProcessingRuleNodeId:previous[0].id;
+  }
+  window.wfRefreshProcessingRuleInheritance=wfRefreshProcessingRuleInheritance;
   window.wfRefreshAssigneeInheritance=wfRefreshAssigneeInheritance;
   function lockViewOnlyConfig(){
     if(!viewOnly) return;
@@ -5828,10 +5884,16 @@ WF_CANVAS_JS = r"""
       document.getElementById('wfhIdent').value=n.ident||'';
       document.getElementById('wfhDesc').value=n.desc||'';
       renderWorkbenchOptions(n);
+      document.getElementById('wfhWorkbenchType').value=n.workbenchStatus||n.workbenchType||'作业';
+      wfRefreshWorkbenchActions();
+      renderWorkbenchModuleConfig(n);
       var assigneeMode=n.assigneeMode||'task_custom';
       document.querySelectorAll('input[name="wfhAssigneeMode"]').forEach(function(input){ input.checked=input.value===assigneeMode; });
       var processingRuleMode=n.processingRuleMode||'none';
       document.querySelectorAll('input[name="wfhProcessingRuleMode"]').forEach(function(input){ input.checked=input.value===processingRuleMode; });
+      wfRefreshProcessingRuleInheritance();
+      document.getElementById('wfhProcessingPercent').value=n.processingPercent==null?'100':n.processingPercent;
+      document.getElementById('wfhAllowTaskPercent').checked=!!n.allowTaskPercent;
       wfRefreshAssigneeInheritance();
       document.getElementById('wfhAssigneeInheritNode').value=n.inheritAssigneeNodeId||'';
       var previousNodes=previousHumanNodes(n);
@@ -6000,7 +6062,19 @@ WF_CANVAS_JS = r"""
       n.ident=document.getElementById('wfhIdent').value.trim();
       n.desc=document.getElementById('wfhDesc').value.trim();
       n.workbench=document.getElementById('wfhWorkbench').value;
+      n.workbenchStatus=document.getElementById('wfhWorkbenchType').value;
+      n.workbenchType=n.workbenchStatus;
+      n.workbenchModules={};
+      document.querySelectorAll('#wfhModuleConfigRows tr').forEach(function(row){
+        var canEdit=row.dataset.module!=='日志'&&row.dataset.module!=='基础信息'&&row.querySelector('.wf-module-edit').checked;
+        n.workbenchModules[row.dataset.module]=canEdit?'可编辑':(row.querySelector('.wf-module-view').checked?'仅查看':'无权限');
+      });
       n.processingRuleMode=document.querySelector('input[name="wfhProcessingRuleMode"]:checked').value;
+      var percent=Number(document.getElementById('wfhProcessingPercent').value);
+      if(!Number.isInteger(percent)||percent<=0){ toast('处理比例请输入正整数'); return; }
+      n.processingPercent=percent;
+      n.allowTaskPercent=document.getElementById('wfhAllowTaskPercent').checked;
+      n.inheritProcessingRuleNodeId=n.processingRuleMode==='inherit'?document.getElementById('wfhProcessingRuleInheritNode').value:'';
       n.allowedActions=rejectEnabled?['驳回']:[];
       n.rejectEnabled=rejectEnabled;
       n.rejectTargets=rejectTargets;
@@ -6185,7 +6259,7 @@ WF_CANVAS_JS = r"""
       script:kind==='automatic'?'请选择算子':(kind==='condition'?'条件表达式':'人工任务'),
       operatorId:kind==='automatic'?(Object.keys(OPS)[0]||''):'',
       params:'',returns:'处理结果',kind:kind,
-      businessStage:'通用',workbench:'质检工作台 v2.0',userGroups:[],
+      businessStage:'通用',workbench:'质检工作台 v2.0',workbenchType:'作业',workbenchModules:{质检:'可编辑',标注:'可编辑',标签:'仅查看',日志:'仅查看',基础信息:'仅查看'},userGroups:[],
       assigneeType:'supplier',assigneeMode:'task_custom',inheritAssigneeNodeId:'',
       processingRuleMode:'none',
       allowedActions:['提交','暂离'],x:nodePosition.x,y:nodePosition.y
@@ -6388,6 +6462,9 @@ def _processing_canvas_payload(pl):
             "assigneeType": node.get("assignee_type", "supplier"),
             "assigneeMode": node.get("assignee_mode", "task_custom"),
             "processingRuleMode": node.get("processing_rule_mode", "none"),
+            "processingPercent": node.get("processing_percent", 100),
+            "allowTaskPercent": node.get("allow_task_percent", False),
+            "inheritProcessingRuleNodeId": node_name_to_id.get(node.get("inherit_processing_rule_node", ""), ""),
             "inheritAssigneeNodeId": node_name_to_id.get(
                 node.get("inherit_assignee_node", ""),
                 node.get("inherit_assignee_node_id", ""),
@@ -6764,14 +6841,22 @@ def pipeline_editor(pid):
             <div class="wf-cfg-sec">处理规则</div>
             <div class="wf-human-label">处理规则</div>
             <div class="wf-choice-grid" id="wfhProcessingRuleMode">
-              <label><input type="radio" name="wfhProcessingRuleMode" value="task_custom"><span>任务自定义</span></label>
-              <label><input type="radio" name="wfhProcessingRuleMode" value="inherit"><span>继承前序节点</span></label>
-              <label><input type="radio" name="wfhProcessingRuleMode" value="none" checked><span>无需配置</span></label>
+              <label><input type="radio" name="wfhProcessingRuleMode" value="task_custom" onchange="wfRefreshProcessingRuleInheritance()"><span>任务自定义</span></label>
+              <label><input type="radio" name="wfhProcessingRuleMode" value="inherit" onchange="wfRefreshProcessingRuleInheritance()"><span>继承前序节点</span></label>
+              <label><input type="radio" name="wfhProcessingRuleMode" value="none" checked onchange="wfRefreshProcessingRuleInheritance()"><span>无需配置</span></label>
             </div>
+            <div id="wfhProcessingRuleInheritWrap" style="display:none; margin-top:10px;"><label><span class="wf-human-label">继承节点</span><select id="wfhProcessingRuleInheritNode" class="wf-edit-field"></select></label><div class="wf-reject-hint">继承前序节点的处理规则，本节点无需单独配置</div></div>
+            <div class="wf-cfg-sec" style="margin-top:16px;">处理比例</div>
+            <div class="wf-human-grid"><label><span class="wf-human-label">比例（%）</span><input id="wfhProcessingPercent" class="wf-edit-field" type="number" min="1" step="1" value="100"></label><label style="display:flex;align-items:flex-end;padding-bottom:7px;gap:7px;"><input id="wfhAllowTaskPercent" type="checkbox"><span class="wf-human-label" style="margin:0;">支持任务自定义</span></label></div>
 
             <div class="wf-cfg-sec">工作台</div>
-            <label><span class="wf-human-label">工作台</span><select id="wfhWorkbench" class="wf-edit-field"></select></label>
-            <div class="wf-human-label" style="margin-top:12px;">可用操作</div>
+            <div class="wf-human-grid">
+              <label><span class="wf-human-label">工作台</span><select id="wfhWorkbench" class="wf-edit-field"></select></label>
+              <label><span class="wf-human-label">状态</span><select id="wfhWorkbenchType" class="wf-edit-field" onchange="wfRefreshWorkbenchActions()"><option value="作业">作业</option><option value="审核">审核</option></select></label>
+            </div>
+            <div class="wf-human-label" style="margin-top:12px;">模块配置</div>
+            <div class="wf-module-config-table-wrap"><table class="wf-module-config-table"><thead><tr><th>模块</th><th>可查看</th><th>可编辑</th></tr></thead><tbody id="wfhModuleConfigRows"></tbody></table></div>
+            <div id="wfhAllowedActionsLabel" class="wf-human-label" style="margin-top:12px;">可用操作</div>
             <div class="wf-choice-grid actions" id="wfhAllowedActions"></div>
 
             <div class="wf-operation-reject">

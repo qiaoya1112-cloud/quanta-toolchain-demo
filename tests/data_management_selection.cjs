@@ -9,6 +9,25 @@ const { chromium } = require('playwright');
     const errors = [];
     page.on('pageerror', error => errors.push(error.message));
     await page.goto(process.env.PREVIEW_URL || 'http://127.0.0.1:5007/data/recordings');
+    const qualityStatusHeader = page.locator('[data-header-control="qualityStatus"]');
+    assert.equal(await qualityStatusHeader.locator('span').first().innerText(), '质检状态');
+    assert.equal(await qualityStatusHeader.locator('select option').allTextContents().then(items => items.join(',')), '全部,未质检,质检中,已质检');
+    const visibleIds = () => page.locator('[data-instance-row]:visible').evaluateAll(rows => rows.map(row => row.dataset.dataId));
+    for (const [status, expected] of [
+      ['未质检', ['412001']],
+      ['质检中', ['405761']],
+      ['已质检', ['405708', '405709', '405711', '406006']],
+    ]) {
+      await qualityStatusHeader.locator('.dpr-header-filter-trigger').click();
+      await qualityStatusHeader.locator(`button[data-value="${status}"]`).click();
+      assert.deepEqual(await visibleIds(), expected);
+      assert.equal(await page.locator('#dprInstanceTotal').innerText(), `共 ${expected.length} 条`);
+    }
+    await page.locator('[data-header-control="quality"] .dpr-header-filter-trigger').click();
+    await page.locator('[data-header-control="quality"] button[data-value="合格"]').click();
+    assert.deepEqual(await visibleIds(), ['405708', '405709', '405711', '406006']);
+    await page.locator('.dpr-instance-filter-actions .btn').first().click();
+    assert.equal(await visibleIds().then(ids => ids.length), 6);
     const count = () => page.locator('.dpr-instance-select:checked').count();
     const range = async scope => {
       await page.locator('#dprSelectionMenuTrigger').click();
@@ -44,7 +63,22 @@ const { chromium } = require('playwright');
       }
       await closeReassign();
     }
-    assert.equal(await page.locator('[data-status="archived"] .dpr-instance-actions button:disabled').count(), 2);
+    assert.equal(await page.locator('[data-status="archived"] .dpr-instance-actions button:disabled').count(), 1);
+    const paused = page.locator('[data-data-id="412001"]');
+    assert.equal(await paused.locator('.dpr-instance-actions button').isDisabled(), true);
+    assert.equal(await paused.locator('.dpr-instance-select').isDisabled(), true);
+    await page.locator('[data-header-control="status"] .dpr-header-filter-trigger').click();
+    await page.locator('[data-header-control="status"] button[data-value="paused"]').click();
+    assert.deepEqual(await visibleIds(), ['412001']);
+    assert.equal(await page.locator('#dprInstanceSelectAll').isDisabled(), true);
+    assert.equal(await page.locator('#dprBulkReassignInstances').isDisabled(), true);
+    await paused.locator('.dpr-instance-actions button').evaluate(button => dprOpenInstanceAction('reassign', button));
+    assert.equal(await page.locator('#dprInstanceActionMask').isVisible(), false);
+    // The batch handler also rejects an ineligible row if invoked programmatically.
+    await paused.locator('.dpr-instance-select').evaluate(box => { box.checked = true; dprOpenBatchInstanceReassign(); });
+    assert.match(await page.locator('#dprReassignNoticeText').innerText(), /已暂停.*不支持重新分配/);
+    await page.locator('#dprReassignNoticeMask .drawer-close').click();
+    await page.locator('.dpr-instance-filter-actions .btn').first().click();
     // A supplier-backed row with a named person follows the same batch rule as a user row.
     for (const id of ['405708', '406006']) await page.locator(`[data-data-id="${id}"] .dpr-instance-select`).check();
     await page.locator('#dprBulkReassignInstances').click();

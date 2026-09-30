@@ -7463,11 +7463,13 @@ def data_dashboard():
 RULES = [
     {
         "id": "RL-009",
+        "project": "预训练采集",
         "name": "端到端切分标注规则",
         "stage": "标注",
         "rule_type": "语义标注",
         "rule_config": "https://docs.quanta.ai/rules/end-to-end-segmentation",
         "status": "enabled",
+        "publish_status": "已发布",
         "owner": "joanna.qiao",
         "created": "2026-08-03",
         "enabled": True,
@@ -7479,6 +7481,22 @@ RULES = [
             {"name": "语义层级错误"},
         ],
     },
+    {
+        "id": "RL-010",
+        "project": "demo 项目",
+        "name": "动作标签一致性规则",
+        "stage": "标注",
+        "rule_type": "标签标注",
+        "rule_config": "",
+        "status": "disabled",
+        "publish_status": "未发布",
+        "owner": "joanna.qiao",
+        "created": "2026-09-18",
+        "enabled": False,
+        "desc": "为动作片段选择标签并校验标签组合。",
+        "annotation_tags": [],
+        "error_reasons": [{"name": "标签选择不完整"}],
+    },
 ]
 RULES.sort(key=lambda item: item["name"] != "端到端切分标注规则")
 for _rule in RULES:
@@ -7489,11 +7507,69 @@ for _rule in RULES:
         _rule["status"] = "disabled"
 
 
+@app.post("/data/rules/<rule_id>/status")
+def update_rule_status(rule_id):
+    rule = next((item for item in RULES if item["id"] == rule_id), None)
+    if rule is None:
+        return jsonify({"error": "规则不存在"}), 404
+    payload = request.get_json(silent=True) or {}
+    if payload.get("status") not in ("enabled", "disabled"):
+        return jsonify({"error": "无效的启用状态"}), 400
+    rule["status"] = payload["status"]
+    rule["enabled"] = payload["status"] == "enabled"
+    return jsonify({"status": rule["status"]})
+
+
+@app.delete("/data/rules/<rule_id>")
+def delete_rule(rule_id):
+    rule = next((item for item in RULES if item["id"] == rule_id), None)
+    if rule is None:
+        return jsonify({"error": "规则不存在"}), 404
+    if rule.get("publish_status", "未发布") == "已发布":
+        return jsonify({"error": "已发布规则不可删除"}), 403
+    RULES.remove(rule)
+    return jsonify({"deleted": rule_id})
+
+
+@app.post("/data/rules/<rule_id>/publish")
+def publish_rule(rule_id):
+    rule = next((item for item in RULES if item["id"] == rule_id), None)
+    if rule is None:
+        return jsonify({"error": "规则不存在"}), 404
+    if rule.get("publish_status", "未发布") == "已发布":
+        return jsonify({"error": "规则已发布"}), 400
+    rule["publish_status"] = "已发布"
+    return jsonify({"publish_status": rule["publish_status"]})
+
+
 @app.route("/data/rules")
 def data_rules():
     rule_name = request.args.get("rule_name", "").strip()
     stage = request.args.get("stage", "").strip()
+    rule_type = request.args.get("rule_type", "").strip()
+    project = request.args.get("project", "").strip()
     owner = request.args.get("owner", "").strip()
+    rule_projects = list(dict.fromkeys(
+        [item["name"] for item in data_refactor.PROJECT_MANAGEMENT_ITEMS]
+        + [rule["project"] for rule in RULES if rule.get("project")]
+    ))
+    project_options = "".join(
+        f'<option value="{html.escape(value, quote=True)}">{html.escape(value)}</option>'
+        for value in rule_projects
+    )
+    project_filter_options = "".join(
+        f'<option value="{html.escape(value, quote=True)}"'
+        f'{" selected" if project == value else ""}>{html.escape(value)}</option>'
+        for value in rule_projects
+    )
+    rule_types = list(dict.fromkeys(["质检", "语义标注", "动作标注", "标签标注"] + [
+        rule["rule_type"] for rule in RULES if rule.get("rule_type")
+    ]))
+    type_options = "".join(
+        f'<option value="{html.escape(value, quote=True)}"'
+        f'{" selected" if rule_type == value else ""}>{html.escape(value)}</option>'
+        for value in rule_types
+    )
     allowed_stages = {"", "质检", "标注", "验收"}
     if stage not in allowed_stages:
         stage = ""
@@ -7503,6 +7579,8 @@ def data_rules():
         if (
             (not rule_name or rule_name.lower() in rule["name"].lower())
             and (not stage or rule["stage"] == stage)
+            and (not rule_type or rule.get("rule_type") == rule_type)
+            and (not project or rule.get("project") == project)
             and (not owner or owner.lower() in rule["owner"].lower())
         )
     ]
@@ -7517,8 +7595,13 @@ def data_rules():
     for r in rules:
         color = cat_color.get(r["stage"], "blue")
         is_enabled = r.get("status", "enabled" if r.get("enabled") else "disabled") == "enabled"
-        enabled_tag = ('<span class="qa qa-pass">启用</span>' if is_enabled
-                       else '<span class="qa qa-pend">草稿</span>')
+        enabled_switch = (
+            '<label class="toggle-sw rule-status-switch" title="切换启用状态">'
+            f'<input type="checkbox" aria-label="{html.escape(r["name"], quote=True)}启用状态" '
+            f'data-rule-id="{html.escape(r["id"], quote=True)}" '
+            f'{"checked " if is_enabled else ""}onchange="ruleToggleStatus(this)">'
+            '<span class="slider"></span></label>'
+        )
         action_data = " ".join(
             f'data-rule-{key}="{html.escape(str(value), quote=True)}"'
             for key, value in {
@@ -7526,19 +7609,23 @@ def data_rules():
                 "type": r.get("rule_type", ""),
                 "config": r.get("rule_config", ""),
                 "status": "enabled" if is_enabled else "disabled",
+                "publish-status": r.get("publish_status", "未发布"),
             }.items()
         )
-        if is_enabled:
-            actions = (
-                f'<a class="tbtn" href="#" {action_data} '
-                f'onclick="openRuleDetail(this);return false;">详情</a>'
-            )
-        else:
-            actions = (
-                f'<a class="tbtn" href="#" {action_data} '
-                f'onclick="openRuleDetail(this,false);return false;">编辑</a> '
-                f'<a class="tbtn" href="#" onclick="toast(\'Demo: 规则已删除\');return false;">删除</a> '
-                f'<a class="tbtn" href="#" onclick="toast(\'Demo: 规则已启用\');return false;">启用</a>'
+        actions = (
+            f'<a class="tbtn" href="#" {action_data} '
+            f'onclick="openRuleDetail(this);return false;">详情</a>'
+            f'<a class="tbtn" href="#" {action_data} '
+            f'onclick="ruleCopy(this);return false;">复制</a>'
+        )
+        if r.get("publish_status", "未发布") != "已发布":
+            actions += (
+                f'<span class="action-more"><a class="tbtn" href="#" aria-haspopup="menu">⋯ 更多</a>'
+                f'<span class="action-menu" role="menu">'
+                f'<a href="#" {action_data} onclick="openRuleDetail(this,false);return false;">编辑</a>'
+                f'<a href="#" class="rule-danger-action" {action_data} onclick="ruleDelete(this);return false;">删除</a>'
+                f'<a href="#" {action_data} onclick="rulePublish(this);return false;">发布</a>'
+                f'</span></span>'
             )
         rows += f"""<tr>
           <td class="mono">{r['id']}</td>
@@ -7546,7 +7633,9 @@ def data_rules():
           <td><b>{r['name']}</b></td>
           <td>{html.escape(r.get('rule_type', ''))}</td>
           <td class="muted" style="max-width:380px;font-size:12.5px;line-height:1.55;">{r['desc']}</td>
-          <td>{enabled_tag}</td>
+          <td>{html.escape(r.get("project") or "—")}</td>
+          <td><span class="dpr-state {'green' if r.get('publish_status') == '已发布' else 'gray'}">{html.escape(r.get('publish_status', '未发布'))}</span></td>
+          <td>{enabled_switch}</td>
           <td>{r['owner']}</td>
           <td class="muted mono">{r['created']}</td>
           <td class="actions-cell">
@@ -7556,10 +7645,12 @@ def data_rules():
 
     rule_detail_data = {
         rule["id"]: {
-            "admins": rule.get("admins", []),
+            "project": rule.get("project", ""),
             "annotation_tags": rule.get("annotation_tags", []),
+            "publish_status": rule.get("publish_status", "未发布"),
             "semantic_mode": rule.get("semantic_mode", "link" if rule.get("rule_config") else "none"),
             "document_link": rule.get("rule_config", ""),
+            "semantic_text": rule.get("semantic_text", rule.get("semantic_rich_text", "")),
             "semantic_rich_text": rule.get("semantic_rich_text", ""),
             "quality_mistakes": rule.get("quality_mistakes", []),
             "quality_unqualified": rule.get("quality_unqualified", []),
@@ -7577,10 +7668,16 @@ def data_rules():
       .rule-action-name-stack{display:block;min-width:0;flex:1}.rule-action-name-stack input{min-width:0}
       #drawerRuleCreate .fg{width:100%;max-width:none}
       #drawerRuleCreate .fg input,#drawerRuleCreate .fg select,#drawerRuleCreate .fg textarea{width:100%;box-sizing:border-box}
-      #drawerRuleCreate #ruleCreateAdmins input{width:auto;min-width:120px;border:0;box-shadow:none;background:transparent}
-      #ruleCreateAdmins:has(input:disabled){background:#f2f4f5}
-      .rule-basic-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.rule-form-module{margin-top:22px;padding-top:20px;border-top:1px solid #e5eaec}.rule-form-module-head{display:flex;align-items:flex-start;justify-content:space-between;gap:18px;margin-bottom:14px}.rule-form-module-head h4{margin:0;color:#243d45;font-size:16px}.rule-form-module-head p{margin:5px 0 0;color:#849298;font-size:11.5px;line-height:1.5}.rule-config-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:9px}.rule-config-head b{color:#30474f;font-size:13px}.rule-config-head span{color:#879499;font-size:11px}.rule-link-action{padding:0;border:0;background:transparent;color:#149DAA;font-size:12px;cursor:pointer}.rule-list-add{display:flex;justify-content:flex-end;margin-top:8px}.rule-list-add-inner{margin-top:9px}.rule-repeat-section+.rule-repeat-section{margin-top:18px}.rule-config-table{width:100%;border-collapse:collapse;border:1px solid #e2e8ea}.rule-config-table th,.rule-config-table td{padding:8px 10px;border-bottom:1px solid #e8edef;text-align:left;font-size:12px}.rule-config-table th{background:#f5f7f8;color:#6c7d83;font-weight:500}.rule-config-table input{width:100%;height:32px;padding:0 8px;border:1px solid #d8e0e3;border-radius:5px;box-sizing:border-box}.rule-config-table .rule-row-index{width:46px;color:#849298;text-align:center}.rule-remove-row{width:28px;height:28px;padding:0;border:0;background:transparent;color:#9aa6aa;font-size:18px;cursor:pointer}.rule-remove-row:hover{color:#cf584e}.rule-semantic-modes{display:inline-flex;gap:3px;padding:3px;border:1px solid #dfe7e9;border-radius:7px;background:#f5f7f8}.rule-semantic-modes label{position:relative;margin:0;cursor:pointer}.rule-semantic-modes input{position:absolute;opacity:0;pointer-events:none}.rule-semantic-modes span{display:block;padding:7px 15px;border-radius:5px;color:#64767c;font-size:12px}.rule-semantic-modes input:checked+span{background:#fff;color:#117a83;box-shadow:0 1px 4px rgba(37,73,87,.12);font-weight:600}.rule-semantic-panel{margin-top:14px}.rule-document-config .fg{margin:0}.rule-document-config input{font-family:'SF Mono',Menlo,monospace}.rule-rich-editor{min-height:150px;padding:11px 12px;border:1px solid #d8e0e3;border-radius:0 0 6px 6px;background:#fff;color:#344c54;line-height:1.65;outline:none}.rule-rich-editor:empty:before{content:attr(data-placeholder);color:#a2adb0}.rule-rich-toolbar{display:flex;gap:4px;padding:6px 8px;border:1px solid #d8e0e3;border-bottom:0;border-radius:6px 6px 0 0;background:#f7f9fa}.rule-rich-toolbar button{width:28px;height:26px;padding:0;border:0;border-radius:4px;background:transparent;color:#536970;cursor:pointer}.rule-rich-toolbar button:hover{background:#e8f4f5;color:#149DAA}.rule-enum-card{margin-bottom:12px;border:1px solid #dfe7e9;border-radius:7px;background:#fff;overflow:hidden}.rule-enum-card-head{display:flex;align-items:center;justify-content:space-between;padding:10px 13px;border-bottom:1px solid #e8edef;background:#f7f9fa}.rule-enum-card-head b{color:#30474f;font-size:12px}.rule-enum-card-body{padding:13px}.rule-element-meta{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:15px}.rule-element-meta label{display:flex;flex-direction:column;gap:6px;color:#60737a;font-size:11px}.rule-element-meta input{height:34px;padding:0 9px;border:1px solid #d8e0e3;border-radius:5px}.rule-key{font-family:'SF Mono',Menlo,monospace}.rule-placeholder-guide{margin:14px 0 9px;padding:10px 12px;border-left:3px solid #149DAA;border-radius:5px;background:#f2fafa;color:#597179;font-size:11.5px;line-height:1.6}.rule-placeholder-guide code{color:#117a83}.rule-placeholder-list{display:flex;flex-wrap:wrap;gap:6px;margin-top:7px}.rule-placeholder-chip{padding:3px 8px;border:1px solid #b9dde0;border-radius:10px;background:#fff;color:#117a83;font:11px 'SF Mono',Menlo,monospace;cursor:pointer}.rule-placeholder-empty{color:#98a4a8}.rule-error-config{padding:14px;border:1px solid #e2e8ea;border-radius:7px;background:#fafcfc}.rule-form-module input:disabled,.rule-form-module textarea:disabled,.rule-form-module select:disabled{background:#f2f4f5;color:#89959a}.rule-form-module button:disabled{opacity:.4;cursor:not-allowed}.rule-rich-editor[contenteditable="false"]{background:#f2f4f5;color:#89959a}@media(max-width:760px){#drawerRuleCreate{left:auto;right:0;width:calc(100vw - 24px)}.rule-basic-grid,.rule-element-meta{grid-template-columns:1fr}}
+      .rule-basic-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.rule-form-module{margin-top:22px;padding-top:20px;border-top:1px solid #e5eaec}.rule-form-module-head{display:flex;align-items:flex-start;justify-content:space-between;gap:18px;margin-bottom:14px}.rule-form-module-head h4{margin:0;color:#243d45;font-size:16px}.rule-form-module-head p{margin:5px 0 0;color:#849298;font-size:11.5px;line-height:1.5}.rule-config-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:9px}.rule-config-head b{color:#30474f;font-size:13px}.rule-config-head span{color:#879499;font-size:11px}.rule-link-action{padding:0;border:0;background:transparent;color:#149DAA;font-size:12px;cursor:pointer}.rule-list-add{display:flex;justify-content:flex-end;margin-top:8px}.rule-list-add-inner{margin-top:9px}.rule-repeat-section+.rule-repeat-section{margin-top:18px}.rule-config-table{width:100%;border-collapse:collapse;border:1px solid #e2e8ea}.rule-config-table th,.rule-config-table td{padding:8px 10px;border-bottom:1px solid #e8edef;text-align:left;font-size:12px}.rule-config-table th{background:#f5f7f8;color:#6c7d83;font-weight:500}.rule-config-table input{width:100%;height:32px;padding:0 8px;border:1px solid #d8e0e3;border-radius:5px;box-sizing:border-box}.rule-config-table .rule-row-index{width:46px;color:#849298;text-align:center}.rule-remove-row{width:28px;height:28px;padding:0;border:0;background:transparent;color:#9aa6aa;font-size:18px;cursor:pointer}.rule-remove-row:hover{color:#cf584e}.rule-semantic-modes{display:inline-flex;gap:3px;padding:3px;border:1px solid #dfe7e9;border-radius:7px;background:#f5f7f8}.rule-semantic-modes label{position:relative;margin:0;cursor:pointer}.rule-semantic-modes input{position:absolute;opacity:0;pointer-events:none}.rule-semantic-modes span{display:block;padding:7px 15px;border-radius:5px;color:#64767c;font-size:12px}.rule-semantic-modes input:checked+span{background:#fff;color:#117a83;box-shadow:0 1px 4px rgba(37,73,87,.12);font-weight:600}.rule-semantic-panel{margin-top:14px}.rule-document-config .fg{margin:0}.rule-document-config input{font-family:'SF Mono',Menlo,monospace}.rule-enum-card{margin-bottom:12px;border:1px solid #dfe7e9;border-radius:7px;background:#fff;overflow:hidden}.rule-enum-card-head{display:flex;align-items:center;justify-content:space-between;padding:10px 13px;border-bottom:1px solid #e8edef;background:#f7f9fa}.rule-enum-card-head b{color:#30474f;font-size:12px}.rule-enum-card-body{padding:13px}.rule-element-meta{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:15px}.rule-element-meta label{display:flex;flex-direction:column;gap:6px;color:#60737a;font-size:11px}.rule-element-meta input{height:34px;padding:0 9px;border:1px solid #d8e0e3;border-radius:5px}.rule-key{font-family:'SF Mono',Menlo,monospace}.rule-placeholder-guide{margin:14px 0 9px;padding:10px 12px;border-left:3px solid #149DAA;border-radius:5px;background:#f2fafa;color:#597179;font-size:11.5px;line-height:1.6}.rule-placeholder-guide code{color:#117a83}.rule-placeholder-list{display:flex;flex-wrap:wrap;gap:6px;margin-top:7px}.rule-placeholder-chip{padding:3px 8px;border:1px solid #b9dde0;border-radius:10px;background:#fff;color:#117a83;font:11px 'SF Mono',Menlo,monospace;cursor:pointer}.rule-placeholder-empty{color:#98a4a8}.rule-error-config{padding:14px;border:1px solid #e2e8ea;border-radius:7px;background:#fafcfc}.rule-form-module input:disabled,.rule-form-module textarea:disabled,.rule-form-module select:disabled{background:#f2f4f5;color:#89959a}.rule-form-module button:disabled{opacity:.4;cursor:not-allowed}@media(max-width:760px){#drawerRuleCreate{left:auto;right:0;width:calc(100vw - 24px)}.rule-basic-grid,.rule-element-meta{grid-template-columns:1fr}}
       .rule-list-add{justify-content:flex-start}.rule-action-enum-editor{display:grid;grid-template-columns:250px minmax(0,1fr);min-height:330px;border:1px solid #dfe7e9;border-radius:7px;background:#fff;overflow:hidden}.rule-enum-directory{display:flex;min-width:0;flex-direction:column;padding:14px;border-right:1px solid #e5eaec;background:#f7f9fa}.rule-enum-directory-head{margin-bottom:10px}.rule-enum-directory-head b{display:block;color:#30474f;font-size:13px}.rule-enum-directory-head span{display:block;margin-top:4px;color:#8a979c;font-size:11px}.rule-enum-nav{display:flex;flex:1;flex-direction:column;gap:6px}.rule-enum-nav-item{display:block;width:100%;min-height:50px;padding:8px 10px;border:1px solid transparent;border-radius:5px;background:transparent;text-align:left;cursor:pointer}.rule-enum-nav-item:hover{background:#eef4f4}.rule-enum-nav-item.active{border-color:#b9dadd;background:#fff;box-shadow:0 1px 3px rgba(38,70,79,.07)}.rule-enum-nav-name{display:block;overflow:hidden;color:#344c54;font-size:12px;font-weight:600;text-overflow:ellipsis;white-space:nowrap}.rule-enum-nav-key{display:block;overflow:hidden;margin-top:3px;color:#8a979c;font:10.5px 'SF Mono',Menlo,monospace;text-overflow:ellipsis;white-space:nowrap}.rule-enum-directory .rule-list-add{margin-top:12px;padding-top:10px;border-top:1px solid #e0e6e8}.rule-enum-detail{min-width:0;padding:16px}.rule-enum-card{display:none;margin:0;border:0;border-radius:0;overflow:visible}.rule-enum-card.active{display:block}.rule-enum-card-head{padding:0 0 12px;border-bottom:1px solid #e8edef;background:transparent}.rule-enum-card-head b{font-size:13px}.rule-enum-card-body{padding:14px 0 0}.rule-enum-empty{display:none;height:100%;min-height:290px;align-items:center;justify-content:center;color:#8a979c;font-size:12px}.rule-enum-empty.visible{display:flex}@media(max-width:760px){.rule-action-enum-editor{grid-template-columns:1fr}.rule-enum-directory{border-right:0;border-bottom:1px solid #e5eaec}.rule-enum-nav{max-height:180px}.rule-enum-detail{padding:14px}}
+      .rule-desc-editor{position:relative;min-width:0}
+      .rule-desc-editor input,.rule-desc-highlight{font-family:inherit;font-size:12px;letter-spacing:normal;line-height:30px}
+      .rule-desc-highlight{display:none;position:absolute;inset:1px;padding:0 8px;overflow:hidden;white-space:pre;pointer-events:none;color:#30474f}
+      .rule-desc-highlight-text{display:block;width:max-content;min-width:100%}
+      .rule-desc-editor.has-empty-slot .rule-desc-highlight{display:block}
+      #drawerRuleCreate .rule-desc-editor.has-empty-slot input{color:transparent;-webkit-text-fill-color:transparent;caret-color:#30474f}
+      .rule-desc-empty-slot{color:#d4504e}
+      .rule-desc-editor:has(input:disabled) .rule-desc-highlight{color:#89959a}
       .rule-desc-field{display:grid;grid-template-columns:minmax(140px,1fr) 124px;gap:6px;align-items:center}.rule-config-table .rule-desc-token-select{width:124px;height:32px;padding:0 28px 0 9px;border:1px solid #d8e0e3;border-radius:5px;background-color:#fff;color:#536970;font-size:11px;box-sizing:border-box}@media(max-width:760px){.rule-desc-field{grid-template-columns:1fr}.rule-config-table .rule-desc-token-select{width:100%}}
       .rule-action-tree{overflow-x:auto;border:1px solid #dfe7e9;border-radius:7px;background:#fff}.rule-action-tree-head,.rule-action-parent-row,.rule-action-value-row{display:grid;grid-template-columns:minmax(280px,1fr) minmax(240px,1fr) 62px;gap:12px;align-items:center;min-width:680px}.rule-action-tree-head{padding:9px 12px;background:#f5f7f8;color:#6c7d83;font-size:12px}.rule-action-tree-group+.rule-action-tree-group{border-top:1px solid #dfe7e9}.rule-action-parent-row{padding:10px 12px;background:#fafcfc}.rule-action-name-cell{display:flex;min-width:0;align-items:center;gap:7px}.rule-action-tree-toggle{flex:0 0 26px;width:26px;height:30px;padding:0;border:0;background:transparent;color:#5e737a;font-size:15px;cursor:pointer}.rule-action-parent-row input,.rule-action-value-row input{width:100%;height:32px;padding:0 9px;border:1px solid #d8e0e3;border-radius:5px;box-sizing:border-box}.rule-action-parent-row .rule-action-element-name{min-width:0}.rule-action-children{padding:0 12px 10px;background:#fff}.rule-action-tree-group.collapsed .rule-action-children{display:none}.rule-action-value-row{padding:8px 0;border-top:1px solid #edf1f2}.rule-action-value-name{padding-left:33px;border-left:1px solid #d8e1e3}.rule-action-children .rule-list-add{margin:2px 0 0 34px}.rule-action-tree-empty{display:none;padding:30px;color:#8a979c;text-align:center;font-size:12px}.rule-action-tree-empty.visible{display:block}.rule-action-parent-row .rule-link-action,.rule-action-value-row .rule-link-action{justify-self:start}@media(max-width:760px){.rule-action-tree-head,.rule-action-parent-row,.rule-action-value-row{min-width:620px;grid-template-columns:minmax(250px,1fr) minmax(210px,1fr) 58px}}
       #ruleTagConfig .rule-tag-summary td{padding:12px 14px;border-bottom:0}
@@ -7617,13 +7714,13 @@ def data_rules():
       <div class="drawer-body">
         <div class="rule-basic-grid">
           <div class="fg"><label>规则名称</label><input id="ruleCreateName" placeholder="请输入规则名称"></div>
-          <div class="fg"><label class="fg-req">管理员</label><div id="ruleCreateAdmins" class="remote-picker" data-show-all="true" onclick="this.querySelector('input').focus()"><input type="search" aria-label="管理员" placeholder="搜索并选择管理员" autocomplete="off" onfocus="remotePersonSearch(this)" onclick="remotePersonSearch(this)" oninput="remotePersonSearch(this)"><div class="remote-picker-menu"></div></div></div>
+          <div class="fg"><label class="fg-req" for="ruleCreateProject">所属项目</label><select id="ruleCreateProject" required><option value="">请选择所属项目</option>__RULE_PROJECT_OPTIONS__</select></div>
           <div class="fg"><label>业务环节</label><select id="ruleCreateStage" onchange="ruleCreateStageChanged(this.value)"><option value="质检">质检</option><option value="标注">标注</option></select></div>
           <div class="fg"><label>规则类型</label><select id="ruleCreateType" onchange="ruleCreateTypeChanged(this.value)"></select></div>
         </div>
 
         <section class="rule-form-module" id="ruleFormRuleModule">
-          <div class="rule-form-module-head"><div><h4>规则</h4></div></div>
+          <div class="rule-form-module-head"><div><h4>规则配置</h4></div></div>
           <div id="ruleQualityConfig" style="display:none;">
             <div class="rule-repeat-section">
               <div class="rule-config-head"><div><b>失误标准</b></div></div>
@@ -7650,18 +7747,18 @@ def data_rules():
           <div id="ruleDocumentConfig" class="rule-document-config" style="display:none;">
             <div class="rule-semantic-modes" role="radiogroup" aria-label="语义标注规则说明方式">
               <label><input type="radio" name="ruleSemanticMode" value="link" checked onchange="ruleSetSemanticMode(this.value)"><span>文档链接</span></label>
-              <label><input type="radio" name="ruleSemanticMode" value="richtext" onchange="ruleSetSemanticMode(this.value)"><span>富文本说明</span></label>
+              <label><input type="radio" name="ruleSemanticMode" value="text" onchange="ruleSetSemanticMode(this.value)"><span>文本说明</span></label>
             </div>
-            <div class="rule-semantic-panel" id="ruleSemanticLink"><div class="fg"><label>文档链接</label><input id="ruleDocumentLink" type="url" placeholder="请输入规则说明文档链接"></div></div>
-            <div class="rule-semantic-panel" id="ruleSemanticRichText" style="display:none;">
-              <div class="rule-rich-toolbar"><button type="button" title="加粗" onclick="ruleFormatRichText('bold')"><b>B</b></button><button type="button" title="斜体" onclick="ruleFormatRichText('italic')"><i>I</i></button><button type="button" title="无序列表" onclick="ruleFormatRichText('insertUnorderedList')">≡</button></div>
-              <div id="ruleRichTextEditor" class="rule-rich-editor" contenteditable="true" data-placeholder="请输入语义标注规则说明"></div>
+            <div class="rule-semantic-panel" id="ruleSemanticLink"><div class="fg"><input id="ruleDocumentLink" type="url" aria-label="文档链接" placeholder="请输入规则说明文档链接"></div></div>
+            <div class="rule-semantic-panel" id="ruleTextConfig" style="display:none;">
+              <div class="fg"><textarea id="ruleTextDescription" rows="7" aria-label="文本说明" placeholder="请输入语义标注规则说明"></textarea></div>
             </div>
           </div>
 
           <div id="ruleActionConfig" data-placeholder-format="{元素名称/元素Key}" style="display:none;">
             <div class="rule-config-head"><div><b>动作元素</b></div></div>
             <div class="rule-action-tree">
+              <span style="display:none">动作元素 / 枚举值</span>
               <div id="ruleActionElements"></div>
               <div class="rule-action-tree-empty" id="ruleActionElementEmpty">暂无动作元素</div>
             </div>
@@ -7673,7 +7770,8 @@ def data_rules():
         </section>
 
         <section class="rule-form-module" id="ruleFormErrorModule">
-          <div class="rule-form-module-head"><div><h4>错误原因</h4></div></div>
+          <div class="rule-form-module-head"><div><h4>审核配置</h4><p>质检/标注环节审核数据时，可供选择的错误原因选项</p></div></div>
+          <div class="rule-config-head"><div><b>错误原因</b></div></div>
           <table class="rule-config-table"><thead><tr><th style="width:52px;">序号</th><th>枚举值</th><th style="width:52px;"></th></tr></thead><tbody id="ruleErrorReasonRows"></tbody></table>
           <div class="rule-list-add"><button class="rule-link-action" type="button" onclick="ruleAddErrorReason()">添加枚举值</button></div>
         </section>
@@ -7720,13 +7818,44 @@ def data_rules():
     function ruleAddActionEnumFromButton(button){ruleAddActionEnumValue(button.closest('.rule-action-tree-group').id)}
     function ruleRemoveEnumValue(button){button.closest('.rule-action-value-row').remove()}
     function ruleToggleActionElement(button){var group=button.closest('.rule-action-tree-group'),collapsed=group.classList.toggle('collapsed');button.textContent=collapsed?'▸':'▾';button.setAttribute('aria-expanded',collapsed?'false':'true');button.setAttribute('aria-label',collapsed?'展开枚举值':'收起枚举值')}
-    function ruleRemoveActionElement(button){button.closest('.rule-action-tree-group').remove();ruleRefreshActionTree();ruleRefreshPlaceholders()}
+    function ruleRemoveActionElement(button){
+      var group=button.closest('.rule-action-tree-group');
+      var removed={zh:group.querySelector('.rule-action-element-name').value.trim(),en:group.querySelector('.rule-action-element-key').value.trim()};
+      group.remove();
+      ['zh','en'].forEach(function(language){
+        var token=removed[language];
+        if(!token||ruleActionElementTokens(language).includes(token))return;
+        document.querySelectorAll('#ruleActionDescriptionRows .rule-action-desc-'+language).forEach(function(input){
+          input.value=input.value.split('{'+token+'}').join('{}');
+          ruleSyncDescriptionHighlight(input);
+        });
+      });
+      ruleRefreshActionTree();ruleRefreshPlaceholders();
+    }
+    function ruleSyncDescriptionHighlight(input){
+      var editor=input.closest('.rule-desc-editor');if(!editor)return;
+      var empty=input.value.includes('{}');editor.classList.toggle('has-empty-slot',empty);
+      input.setAttribute('aria-invalid',String(empty));
+      var text=editor.querySelector('.rule-desc-highlight-text');
+      text.innerHTML=input.value.split('{}').map(ruleEscape).join('<span class="rule-desc-empty-slot">{}</span>');
+      text.style.transform='translateX('+(-input.scrollLeft)+'px)';
+    }
+    function ruleInitDescriptionInput(input){
+      var editor=document.createElement('div');editor.className='rule-desc-editor';
+      input.before(editor);editor.appendChild(input);
+      var highlight=document.createElement('div');highlight.className='rule-desc-highlight';highlight.setAttribute('aria-hidden','true');
+      highlight.innerHTML='<span class="rule-desc-highlight-text"></span>';editor.appendChild(highlight);
+      input.setAttribute('aria-label',input.classList.contains('rule-action-desc-en')?'英文动作描述':'中文动作描述');
+      ['input','scroll','keyup','click'].forEach(function(event){input.addEventListener(event,function(){ruleSyncDescriptionHighlight(input)})});
+      ruleSyncDescriptionHighlight(input);
+    }
     function ruleRefreshActionTree(){var groups=document.querySelectorAll('#ruleActionElements .rule-action-tree-group');document.getElementById('ruleActionElementEmpty').classList.toggle('visible',!groups.length)}
     function ruleAddActionDescription(value){
       value=value||{};var body=document.getElementById('ruleActionDescriptionRows');
       var descriptionZh=value.zh||'';
       document.querySelectorAll('#ruleActionElements .rule-action-tree-group').forEach(function(group){var name=group.querySelector('.rule-action-element-name').value.trim(),key=group.querySelector('.rule-action-element-key').value.trim();if(name&&key)descriptionZh=descriptionZh.split('{'+name+'/'+key+'}').join('{'+name+'}')});
       body.insertAdjacentHTML('beforeend','<tr><td class="rule-row-index"></td><td><div class="rule-desc-field"><input class="rule-action-desc-zh" placeholder="例如：拿起目标物体" value="'+ruleEscape(descriptionZh)+'"><select class="rule-desc-token-select" data-token-placeholder="插入元素" data-description-language="zh" aria-label="向中文动作描述插入中文元素" onchange="ruleInsertDescriptionToken(this)"></select></div></td><td><div class="rule-desc-field"><input class="rule-action-desc-en" placeholder="e.g. Pick up the target object" value="'+ruleEscape(value.en)+'"><select class="rule-desc-token-select" data-token-placeholder="插入元素" data-description-language="en" aria-label="向英文动作描述插入英文元素" onchange="ruleInsertDescriptionToken(this)"></select></div></td><td><button class="rule-remove-row" type="button" aria-label="删除" onclick="ruleRemoveTableRow(this)">×</button></td></tr>');
+      body.lastElementChild.querySelectorAll('.rule-action-desc-zh,.rule-action-desc-en').forEach(ruleInitDescriptionInput);
       ruleRefreshIndexes('#ruleActionDescriptionRows');ruleRefreshPlaceholders();
     }
     function ruleActionElementTokens(language){var tokens=[];language=language||'zh';document.querySelectorAll('#ruleActionElements .rule-action-tree-group').forEach(function(group){var name=group.querySelector('.rule-action-element-name').value.trim(),key=group.querySelector('.rule-action-element-key').value.trim();if(language==='en'&&key)tokens.push(key);else if(language==='zh'&&name)tokens.push(name)});return tokens}
@@ -7734,14 +7863,20 @@ def data_rules():
       document.querySelectorAll('#ruleActionDescriptionRows .rule-desc-token-select').forEach(function(select){var language=select.dataset.descriptionLanguage||'zh',tokens=ruleActionElementTokens(language),options=tokens.length?'<option value="">插入'+(language==='en'?'英文':'中文')+'元素</option>'+tokens.map(function(token){return '<option value="'+ruleEscape(token)+'">{'+ruleEscape(token)+'}</option>'}).join(''):'<option value="">暂无'+(language==='en'?'英文':'中文')+'元素</option>';select.innerHTML=options;select.disabled=!tokens.length});
     }
     function ruleInsertDescriptionToken(select){
-      if(!select.value)return;var input=select.closest('.rule-desc-field').querySelector('input');if(input.disabled)return;var token='{'+select.value+'}',start=input.selectionStart==null?input.value.length:input.selectionStart,end=input.selectionEnd==null?start:input.selectionEnd;input.value=input.value.slice(0,start)+token+input.value.slice(end);input.focus();input.setSelectionRange(start+token.length,start+token.length);select.value='';
+      if(!select.value)return;var input=select.closest('.rule-desc-field').querySelector('input');if(input.disabled)return;
+      var token='{'+select.value+'}',start=input.selectionStart==null?input.value.length:input.selectionStart,end=input.selectionEnd==null?start:input.selectionEnd;
+      if(start===end){
+        var slot=input.value.lastIndexOf('{}',start);
+        if(slot>=0&&start<=slot+2){start=slot;end=slot+2;}
+      }
+      input.value=input.value.slice(0,start)+token+input.value.slice(end);input.focus();input.setSelectionRange(start+token.length,start+token.length);select.value='';
+      ruleSyncDescriptionHighlight(input);
     }
     function ruleSetSemanticMode(mode){
-      mode=mode==='richtext'?'richtext':'link';
+      mode=mode==='link'?'link':'text';
       var radio=document.querySelector('input[name="ruleSemanticMode"][value="'+mode+'"]');if(radio)radio.checked=true;
-      document.getElementById('ruleSemanticLink').style.display=mode==='link'?'':'none';document.getElementById('ruleSemanticRichText').style.display=mode==='richtext'?'':'none';
+      document.getElementById('ruleSemanticLink').style.display=mode==='link'?'':'none';document.getElementById('ruleTextConfig').style.display=mode==='text'?'':'none';
     }
-    function ruleFormatRichText(command){var editor=document.getElementById('ruleRichTextEditor');if(editor.contentEditable==='false')return;editor.focus();document.execCommand(command,false,null)}
     var ruleTagSelection=new Set(),ruleTagDraft=new Set(),ruleTagReadonly=false,ruleTagViewing=false,ruleTagReturnFocus=null;
     function ruleCloseTagPicker(){
       var modal=document.getElementById('ruleTagModal'),wasOpen=modal.classList.contains('active');modal.classList.remove('active');
@@ -7828,23 +7963,15 @@ def data_rules():
     function ruleResetDynamicConfig(data){
       data=data||{};
       ruleTagSelection=new Set(data.annotation_tags||[]);ruleSyncTags();ruleCloseTagPicker();
-      var adminPicker=document.getElementById('ruleCreateAdmins'),adminInput=adminPicker.querySelector('input');
-      adminPicker.querySelectorAll('.picked').forEach(function(chip){chip.remove()});adminInput.value='';
-      (data.admins||[]).forEach(function(value){
-        var chip=document.createElement('span');chip.className='picked';chip.dataset.value=value;
-        var label=document.createElement('span');label.textContent=value;
-        var remove=document.createElement('button');remove.type='button';remove.innerHTML='&times;';remove.setAttribute('aria-label','移除 '+value);remove.onclick=function(event){remotePersonRemove(remove,event)};
-        chip.appendChild(label);chip.appendChild(remove);adminPicker.insertBefore(chip,adminInput);
-      });
-      adminPicker.classList.remove('open');adminPicker.querySelector('.remote-picker-menu').innerHTML='';
+      document.getElementById('ruleCreateProject').value=data.project||'';
       document.getElementById('ruleMistakeRows').innerHTML='';document.getElementById('ruleUnqualifiedRows').innerHTML='';document.getElementById('ruleActionElements').innerHTML='';document.getElementById('ruleActionDescriptionRows').innerHTML='';document.getElementById('ruleErrorReasonRows').innerHTML='';ruleElementSequence=0;
       (data.quality_mistakes&&data.quality_mistakes.length?data.quality_mistakes:['']).forEach(function(value){ruleAddQualityCriterion('mistake',value)});(data.quality_unqualified&&data.quality_unqualified.length?data.quality_unqualified:['']).forEach(function(value){ruleAddQualityCriterion('unqualified',value)});
       (data.action_elements&&data.action_elements.length?data.action_elements:[{}]).forEach(ruleAddActionElement);(data.action_descriptions&&data.action_descriptions.length?data.action_descriptions:[{}]).forEach(ruleAddActionDescription);(data.error_reasons&&data.error_reasons.length?data.error_reasons:[{}]).forEach(ruleAddErrorReason);
-      document.getElementById('ruleDocumentLink').value=data.document_link||'';document.getElementById('ruleRichTextEditor').innerHTML=data.semantic_rich_text||'';ruleSetSemanticMode(data.semantic_mode||'link');ruleRefreshPlaceholders();
+      document.getElementById('ruleDocumentLink').value=data.document_link||'';document.getElementById('ruleTextDescription').value=data.semantic_text||data.semantic_rich_text||'';ruleSetSemanticMode(data.semantic_mode||'link');ruleRefreshPlaceholders();
     }
     function ruleSetReadonly(readonly){
       ruleTagReadonly=readonly;ruleCloseTagPicker();
-      var drawer=document.getElementById('drawerRuleCreate');drawer.querySelectorAll('.drawer-body input,.drawer-body select,.drawer-body textarea,.drawer-body button').forEach(function(control){control.disabled=readonly});if(!readonly)ruleRefreshPlaceholders();document.getElementById('ruleRichTextEditor').contentEditable=readonly?'false':'true';drawer.querySelector('.drawer-foot').style.display=readonly?'none':'';ruleSyncTags();
+      var drawer=document.getElementById('drawerRuleCreate');drawer.querySelectorAll('.drawer-body input,.drawer-body select,.drawer-body textarea,.drawer-body button').forEach(function(control){control.disabled=readonly});if(!readonly)ruleRefreshPlaceholders();drawer.querySelector('.drawer-foot').style.display=readonly?'none':'';ruleSyncTags();
     }
     function openRuleDetail(trigger, editable){
       var drawer=document.getElementById('drawerRuleCreate');
@@ -7870,16 +7997,17 @@ def data_rules():
     }
     function ruleSave(){
       if(!document.getElementById('ruleCreateName').value.trim()){toast('请输入规则名称');return}
-      if(!document.querySelector('#ruleCreateAdmins .picked')){toast('请至少选择一位管理员');return}
+      if(!document.getElementById('ruleCreateProject').value){toast('请选择所属项目');return}
       var stage=document.getElementById('ruleCreateStage').value,ruleType=document.getElementById('ruleCreateType').value;
       if(stage==='质检'){
         var mistakes=Array.from(document.querySelectorAll('#ruleMistakeRows .rule-quality-value')).filter(function(input){return input.value.trim()});var unqualified=Array.from(document.querySelectorAll('#ruleUnqualifiedRows .rule-quality-value')).filter(function(input){return input.value.trim()});if(!mistakes.length||!unqualified.length){toast('失误标准和不合格标准至少各填写一条');return}
       }
       if(ruleType==='标签标注'&&!ruleSelectedTags().length){toast('请至少选择一个要打的标签');return}
       if(ruleType==='语义标注'){
-        var semanticMode=document.querySelector('input[name="ruleSemanticMode"]:checked').value;if(semanticMode==='link'&&!document.getElementById('ruleDocumentLink').value.trim()){toast('请输入文档链接');return}if(semanticMode==='richtext'&&!document.getElementById('ruleRichTextEditor').textContent.trim()){toast('请输入富文本说明');return}
+        var semanticMode=document.querySelector('input[name="ruleSemanticMode"]:checked').value;if(semanticMode==='link'&&!document.getElementById('ruleDocumentLink').value.trim()){toast('请输入文档链接');return}if(semanticMode==='text'&&!document.getElementById('ruleTextDescription').value.trim()){toast('请输入文本说明');return}
       }
       if(ruleType==='动作标注'){
+        if(Array.from(document.querySelectorAll('#ruleActionDescriptionRows input')).some(function(input){return input.value.includes('{}')})){toast('请补全动作描述中的空变量插槽');return}
         var cards=Array.from(document.querySelectorAll('#ruleActionElements .rule-action-tree-group')),zhTokens=[],enTokens=[];if(!cards.length){toast('请至少添加一个动作元素');return}
         for(var card of cards){var enumName=card.querySelector('.rule-action-element-name').value.trim(),enumKey=card.querySelector('.rule-action-element-key').value.trim(),valueRows=Array.from(card.querySelectorAll('.rule-action-value-row'));if(!enumName||!enumKey){toast('请完整填写动作元素名称和 Key（英文名）');return}if(!valueRows.length||valueRows.some(function(row){return !row.querySelector('.rule-enum-value-name').value.trim()||!row.querySelector('.rule-enum-value-key').value.trim()})){toast('每个动作元素至少需要一个完整的枚举值');return}zhTokens.push(enumName);enTokens.push(enumKey)}
         var zhDescriptions=Array.from(document.querySelectorAll('#ruleActionDescriptionRows .rule-action-desc-zh')).filter(function(input){return input.value.trim()}),enDescriptions=Array.from(document.querySelectorAll('#ruleActionDescriptionRows .rule-action-desc-en')).filter(function(input){return input.value.trim()});if(!zhDescriptions.length&&!enDescriptions.length){toast('请至少填写一条动作描述');return}var invalidPlaceholder=false;zhDescriptions.concat(enDescriptions).forEach(function(input){var tokens=input.classList.contains('rule-action-desc-en')?enTokens:zhTokens,matches=input.value.matchAll(/\{([^{}]+)\}/g);for(var match of matches){if(tokens.indexOf(match[1])<0)invalidPlaceholder=true}});if(invalidPlaceholder){toast('中文动作描述只能使用中文元素，英文动作描述只能使用英文元素');return}
@@ -7891,6 +8019,7 @@ def data_rules():
     </script>
     """
     rule_drawer = rule_drawer.replace("__RULE_DETAIL_DATA__", rule_detail_json)
+    rule_drawer = rule_drawer.replace("__RULE_PROJECT_OPTIONS__", project_options)
     rule_drawer = rule_drawer.replace("__RULE_TAG_TREE__", ep.build_tree_selector_html("rule-tags", ep.tag_management_dimensions()))
 
     content = f"""
@@ -7909,12 +8038,26 @@ def data_rules():
           <input id="ruleFilterName" name="rule_name" value="{html.escape(rule_name, quote=True)}" placeholder="请输入规则名称">
         </div>
         <div class="q-field">
-          <label for="ruleFilterStage">适用环节</label>
+          <label for="ruleFilterStage">业务环节</label>
           <select id="ruleFilterStage" name="stage">
             <option value="">全部环节</option>
             <option value="质检"{' selected' if stage == '质检' else ''}>质检</option>
             <option value="标注"{' selected' if stage == '标注' else ''}>标注</option>
             <option value="验收"{' selected' if stage == '验收' else ''}>验收</option>
+          </select>
+        </div>
+        <div class="q-field">
+          <label for="ruleFilterType">类型</label>
+          <select id="ruleFilterType" name="rule_type">
+            <option value="">全部类型</option>
+            {type_options}
+          </select>
+        </div>
+        <div class="q-field">
+          <label for="ruleFilterProject">所属项目</label>
+          <select id="ruleFilterProject" name="project">
+            <option value="">全部项目</option>
+            {project_filter_options}
           </select>
         </div>
         <div class="q-field">
@@ -7931,23 +8074,92 @@ def data_rules():
       <table class="ant-table">
         <thead><tr>
           <th>规则 ID</th>
-          <th>适用环节</th>
+          <th>业务环节</th>
           <th>规则名称</th>
           <th>类型</th>
           <th>描述</th>
-          <th>状态</th>
+          <th>所属项目</th>
+          <th>发布状态</th>
+          <th>启用状态</th>
           <th>创建人</th>
           <th>创建时间</th>
           <th>操作</th>
         </tr></thead>
-        <tbody>{rows or '<tr><td colspan="9" style="text-align:center;padding:30px;color:rgba(0,0,0,0.25);">暂无数据</td></tr>'}</tbody>
+        <tbody>{rows or '<tr><td colspan="11" style="text-align:center;padding:30px;color:rgba(0,0,0,0.25);">暂无数据</td></tr>'}</tbody>
       </table>
     </div>
     {rule_drawer}
+    <div class="modal-mask" id="ruleStatusConfirm" onclick="if(event.target===this)ruleCloseStatusConfirm()">
+      <div class="modal" role="dialog" aria-modal="true" aria-labelledby="ruleStatusConfirmTitle" onclick="event.stopPropagation()">
+        <div class="modal-head"><h3 id="ruleStatusConfirmTitle">确认变更启用状态</h3></div>
+        <div class="modal-body"><p id="ruleStatusConfirmMessage"></p></div>
+        <div class="modal-foot"><button class="btn" type="button" id="ruleStatusCancel" onclick="ruleCloseStatusConfirm()">取消</button><button class="btn btn-primary" type="button" id="ruleStatusSubmit" onclick="ruleConfirmStatus()">确认</button></div>
+      </div>
+    </div>
+    <script>
+      var rulePendingStatusInput=null,rulePendingStatus='',ruleStatusSaving=false;
+      function ruleToggleStatus(input){{
+        if(ruleStatusSaving)return;
+        rulePendingStatusInput=input;
+        rulePendingStatus=input.checked?'enabled':'disabled';
+        input.checked=!input.checked;
+        document.getElementById('ruleStatusConfirmMessage').textContent=rulePendingStatus==='enabled'?'启用后，规则可被选择':'停用后，规则不可被选择';
+        document.getElementById('ruleStatusConfirm').classList.add('active');
+        document.getElementById('ruleStatusCancel').focus();
+      }}
+      function ruleCloseStatusConfirm(){{
+        if(ruleStatusSaving)return;
+        document.getElementById('ruleStatusConfirm').classList.remove('active');
+        if(rulePendingStatusInput)rulePendingStatusInput.focus();
+        rulePendingStatusInput=null;rulePendingStatus='';
+      }}
+      function ruleConfirmStatus(){{
+        var input=rulePendingStatusInput,status=rulePendingStatus;
+        if(!input||ruleStatusSaving)return;
+        ruleStatusSaving=true;
+        document.getElementById('ruleStatusSubmit').disabled=true;
+        document.getElementById('ruleStatusCancel').disabled=true;
+        fetch('/data/rules/'+encodeURIComponent(input.dataset.ruleId)+'/status',{{
+          method:'POST',headers:{{'Content-Type':'application/json'}},body:JSON.stringify({{status:status}})
+        }}).then(function(response){{if(!response.ok)throw new Error('状态更新失败');return response.json()}})
+          .then(function(){{window.location.reload()}})
+          .catch(function(error){{
+            ruleStatusSaving=false;
+            document.getElementById('ruleStatusSubmit').disabled=false;
+            document.getElementById('ruleStatusCancel').disabled=false;
+            ruleCloseStatusConfirm();toast(error.message);
+          }});
+      }}
+      document.getElementById('ruleStatusConfirm').addEventListener('keydown',function(event){{if(event.key==='Escape')ruleCloseStatusConfirm()}});
+      function ruleCopy(trigger){{
+        openRuleCreate();
+        var name=trigger.dataset.ruleName||'';
+        document.getElementById('ruleCreateName').value=name+' - 副本';
+        document.getElementById('ruleCreateProject').value=(RULE_DETAIL_DATA[trigger.dataset.ruleId]||{{}}).project||'';
+        document.querySelector('#drawerRuleCreate .drawer-head h3').textContent='复制规则';
+        document.getElementById('ruleDrawerSubmit').textContent='创建';
+      }}
+      function ruleDelete(trigger){{
+        if(trigger.dataset.rulePublishStatus==='已发布'){{toast('已发布规则不可删除');return;}}
+        fetch('/data/rules/'+encodeURIComponent(trigger.dataset.ruleId),{{method:'DELETE'}})
+          .then(function(response){{if(!response.ok)throw new Error('规则删除失败');return response.json()}})
+          .then(function(){{toast('规则已删除');setTimeout(function(){{window.location.reload()}},250)}})
+          .catch(function(error){{toast(error.message)}});
+      }}
+      function rulePublish(trigger){{
+        if(trigger.dataset.rulePublishStatus==='已发布'){{toast('规则已发布');return;}}
+        fetch('/data/rules/'+encodeURIComponent(trigger.dataset.ruleId)+'/publish',{{method:'POST'}})
+          .then(function(response){{if(!response.ok)throw new Error('规则发布失败');return response.json()}})
+          .then(function(){{toast('规则已发布');setTimeout(function(){{window.location.reload()}},250)}})
+          .catch(function(error){{toast(error.message)}});
+      }}
+    </script>
     <style>
       .rule-filter-panel{{margin-bottom:12px;padding:16px 18px}}
       .rule-filter-panel .q-filter-row{{align-items:flex-end}}
       .rule-filter-panel .q-field input,.rule-filter-panel .q-field select{{min-width:220px}}
+      .rule-status-switch input:focus-visible+.slider{{outline:2px solid #149DAA;outline-offset:3px}}
+      #ruleStatusConfirm .modal-body p{{margin:0;color:#607178;font-size:13px;line-height:1.7}}
     </style>
     """
     return render_page("规则管理", content, active="/data/rules", module="data",

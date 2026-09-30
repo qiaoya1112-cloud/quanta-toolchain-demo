@@ -90,7 +90,7 @@ class DataPlatformArchitectureTests(unittest.TestCase):
             for entry in entries
             if entry[0] == "/data/workbench-v2"
         )
-        self.assertEqual("标注工作台", workbench_nav_entry[1])
+        self.assertEqual("工作台", workbench_nav_entry[1])
 
         nav_keys = [key for _, keys in architecture.NAV_GROUPS for key in keys]
         self.assertEqual(
@@ -437,10 +437,12 @@ class DataPlatformArchitectureTests(unittest.TestCase):
         )
         self.assertIn("已发布", html)
         self.assertIn("未发布", html)
-        self.assertIn(
-            "关闭后将停止筛选新数据，已流入的数据将继续处理",
-            html,
-        )
+        for mode in ("continue", "remove", "pending", "all"):
+            self.assertIn(f'name="dprProcessingCloseMode" value="{mode}"', html)
+        self.assertIn('id="dprProcessingTargetTask"', html)
+        self.assertIn('id="dprProcessingInheritResults"', html)
+        self.assertIn('dprUpdateProcessingCloseOptions()', html)
+        self.assertIn('dprPositionTaskMore(this)', html)
         self.assertNotIn("window.confirm", html)
         self.assertIn('id="dprProcessingStatusConfirm"', html)
         self.assertIn("dprCancelProcessingStatusChange()", html)
@@ -455,6 +457,95 @@ class DataPlatformArchitectureTests(unittest.TestCase):
             self.assertIn("flow_bindings", task)
             self.assertIn("enabled", task)
             self.assertIn(task["priority"], ("P0", "P1", "P2"))
+
+    def test_processing_task_close_options_and_publish_actions(self):
+        html = self.client.get("/data/processing-tasks").get_data(as_text=True)
+        self.assertIn("确认开启处理任务", html)
+        self.assertIn("新数据将持续流入，已暂停的数据将继续处理。", html)
+        self.assertIn('id="dprProcessingCloseOptions"', html)
+        self.assertIn("if (pending.enabled)", html)
+        self.assertIn("document.getElementById('processingTaskEnabledField').hidden = mode !== 'detail'", html)
+        self.assertNotIn("var shouldEnable = document.getElementById('processingTaskEnabled').value", html)
+        for mode in ("continue", "remove", "pending", "all"):
+            self.assertIn(f'name="dprProcessingCloseMode" value="{mode}"', html)
+        self.assertIn('id="dprProcessingTargetField" hidden', html)
+        self.assertIn('id="dprProcessingInheritField" hidden', html)
+        self.assertIn("mode !== 'pending' && mode !== 'all'", html)
+        self.assertIn("mode !== 'all'", html)
+        self.assertIn("if ((mode === 'pending' || mode === 'all') && !target.value)", html)
+        self.assertIn('body > .dpr-task-more-menu{position:fixed', html)
+        self.assertIn('dprRestoreProcessingCloseStates()', html)
+        self.assertIn('dprRestoreProcessingPublishStates()', html)
+        for task in (
+            item for item in architecture.BUSINESS_TASKS
+            if item["type"] == "data_processing_task"
+        ):
+            publish = re.search(
+                rf'data-task-id="{task["id"]}"[^>]*onclick="dprPublishProcessingTask\(this\)"([^>]*)>发布</button>',
+                html,
+            )
+            self.assertIsNotNone(publish, task["id"])
+            self.assertEqual(task["task_status"] != "unpublished", "disabled" in publish.group(1))
+
+    def test_processing_task_edit_can_append_id_filters(self):
+        html = self.client.get("/data/processing-tasks").get_data(as_text=True)
+        self.assertIn("var DPR_EDITABLE_TASK_FILTER_FIELDS = ['采集任务 ID', '数据 ID']", html)
+        self.assertIn('data-added-filter="true"', html)
+        self.assertIn("editing\n          ? dprTaskFilterRow('采集任务 ID', '等于', '', true)", html)
+        self.assertIn("drawer.querySelectorAll('.dpr-filter-add-bottom').forEach", html)
+        self.assertIn("button.closest('[data-filter-group]').dataset.filterGroup === 'processing'", html)
+        self.assertIn("control.disabled = filterLocked", html)
+        self.assertIn("multi.inert = filterLocked", html)
+        self.assertIn("row.dataset.lockedFilter = String(filterLocked)", html)
+        self.assertIn("button.style.display = isDetail ? 'none' : ''", html)
+        self.assertIn("DPR_CURRENT_PROCESSING_FILTERS.concat(addedFilters)", html)
+        self.assertIn("DPR_PROCESSING_FILTER_STORAGE", html)
+
+    def test_new_processing_task_warns_about_enabled_duplicate_filters(self):
+        html = self.client.get("/data/processing-tasks").get_data(as_text=True)
+        self.assertIn('<div class="dpr-task-config-head"><div><b>基础信息</b></div></div>', html)
+        self.assertIn('未添加基础信息条件', html)
+        self.assertIn('<div class="dpr-task-config-head"><div><b>处理信息</b></div></div>', html)
+        self.assertIn('id="processingTaskDuplicateWarning" role="status" hidden', html)
+        self.assertIn('当前有筛选条件相同的任务，会导致数据重复处理', html)
+        self.assertIn('dprCanonicalTaskFilters(dprCurrentTaskFilters())', html)
+        self.assertIn('(toggle.checked ? enabled : disabled).push(button.dataset.taskId)', html)
+        self.assertIn('if (!enabled.length) return;', html)
+        self.assertIn("if (button.dataset.taskPane === 'filter') dprUpdateDuplicateFilterWarning()", html)
+
+    def test_processing_task_human_nodes_have_editable_integer_percentages(self):
+        html = self.client.get("/data/processing-tasks").get_data(as_text=True)
+        self.assertIn('.dpr-node-config-row { display:grid;grid-template-columns:repeat(2,minmax(0,1fr))', html)
+        self.assertIn('<b>处理规则</b>', html)
+        self.assertNotIn('继承前序节点，无需单独配置', html)
+        self.assertNotIn('当前节点配置', html)
+        self.assertNotIn('节点执行时生效', html)
+        self.assertIn('<b>处理比例</b><span>', html)
+        self.assertIn('class="dpr-node-percent-input" type="number" min="1" max="100" step="1"', html)
+        self.assertIn("? flowValues[nodeName] : 100", html)
+        self.assertIn("DPR_NODE_PERCENT_STORAGE", html)
+        self.assertIn("control.classList.contains('dpr-node-percent-input')", html)
+        self.assertIn("if (!dprNodePercentagesValid())", html)
+        rule_pos = html.index('dpr-node-rule-module')
+        percent_pos = html.index('dpr-node-percent-module')
+        processor_pos = html.index('dpr-node-processor-module')
+        self.assertLess(percent_pos, rule_pos)
+        self.assertLess(rule_pos, processor_pos)
+
+    def test_published_processing_task_locks_flow_and_saves_processors_separately(self):
+        html = self.client.get('/data/processing-tasks').get_data(as_text=True)
+        self.assertIn('drawer.dataset.taskStatus = data.taskStatus', html)
+        self.assertIn("isEdit && drawer.dataset.taskStatus === 'published'", html)
+        self.assertIn('dpr-node-processor-edit', html)
+        self.assertIn('onclick="dprEditProcessorAssignments(this)">编辑</button>', html)
+        self.assertIn('onclick="dprSaveProcessorAssignments(this)"', html)
+        self.assertIn('onclick="dprCancelProcessorAssignments(this)"', html)
+        self.assertIn('<span class="dpr-node-processor-notice" hidden>处理人修改仅对后续新增的数据生效</span><button type="button" class="dpr-node-processor-save"', html)
+        self.assertIn('DPR_ASSIGNMENT_STORAGE', html)
+        self.assertIn('dprReadAssignmentStates()[data.taskId]', html)
+        self.assertIn('control.disabled = !editing', html)
+        self.assertIn('dprApplyInitialAssignments(configDisabled || isEdit)', html)
+        self.assertIn('请先保存或取消处理人修改', html)
 
     def test_new_processing_task_uses_full_page_flow_assignment(self):
         html = self.client.get("/data/processing-tasks").get_data(as_text=True)
@@ -542,14 +633,15 @@ class DataPlatformArchitectureTests(unittest.TestCase):
         self.assertIn('data-task-category="formal"', html)
         self.assertIn('data-flowed-count="1200"', html)
         self.assertIn('data-flowed-hours="0"', html)
-        self.assertIn("control.disabled = !['processingTaskPriority', 'processingTaskEnabled', 'processingTaskExpectedValue'].includes(control.id)", html)
+        self.assertIn("control.disabled = !['processingTaskPriority', 'processingTaskExpectedValue'].includes(control.id)", html)
         self.assertIn("预期任务量不能小于当前已流入数据量", html)
         self.assertIn('<option>非正式</option>', html)
         self.assertIn('id="processingTaskEnabledField"', html)
         self.assertIn(
-            "document.getElementById('processingTaskEnabledField').hidden = mode === 'new'",
+            "document.getElementById('processingTaskEnabledField').hidden = mode !== 'detail'",
             html,
         )
+        self.assertNotIn("var shouldEnable = document.getElementById('processingTaskEnabled').value", html)
         self.assertNotIn("定义任务归属及接收数据后的工作状态。", html)
         self.assertNotIn("数据字段变化后重新判断，命中记录只进入一次；留空表示不限制。", html)
         self.assertNotIn("选择流程后可在右侧预览流程图；点击人工任务节点可快速定位对应的分配卡片。", html)
@@ -2193,6 +2285,76 @@ class DataPlatformArchitectureTests(unittest.TestCase):
         self.assertIn('查看已选标签', page)
         self.assertNotIn('id="ruleTagPicker"', page)
 
+    def test_rule_status_switch_updates_selectability(self):
+        rule = toolchain_demo.RULES[0]
+        original = (rule["status"], rule["enabled"])
+        workbench_url = "/data/workbench-v2/pools/POOL-E2E-ACCEPTANCE"
+
+        def rule_options():
+            page = self.client.get(workbench_url).get_data(as_text=True)
+            return page.split('<select id="wbRule"', 1)[1].split("</select>", 1)[0]
+
+        try:
+            page = self.client.get("/data/rules").get_data(as_text=True)
+            self.assertIn("<th>启用状态</th>", page)
+            self.assertIn('class="toggle-sw rule-status-switch"', page)
+            self.assertIn("启用后，规则可被选择", page)
+            self.assertIn("停用后，规则不可被选择", page)
+            self.assertIn(rule["name"], rule_options())
+
+            response = self.client.post(
+                f"/data/rules/{rule['id']}/status", json={"status": "disabled"}
+            )
+            self.assertEqual(200, response.status_code)
+            self.assertFalse(rule["enabled"])
+            self.assertNotIn(rule["name"], rule_options())
+            self.assertIn(
+                f'data-rule-id="{rule["id"]}" onchange="ruleToggleStatus(this)"',
+                self.client.get("/data/rules").get_data(as_text=True),
+            )
+
+            response = self.client.post(
+                f"/data/rules/{rule['id']}/status", json={"status": "enabled"}
+            )
+            self.assertEqual(200, response.status_code)
+            self.assertTrue(rule["enabled"])
+            self.assertEqual("enabled", rule["status"])
+            self.assertIn(rule["name"], rule_options())
+            self.assertEqual(
+                400,
+                self.client.post(
+                    f"/data/rules/{rule['id']}/status", json={"status": "unknown"}
+                ).status_code,
+            )
+        finally:
+            rule["status"], rule["enabled"] = original
+
+    def test_rule_publish_status_controls_list_actions(self):
+        html = self.client.get("/data/rules").get_data(as_text=True)
+        self.assertIn("<th>发布状态</th>", html)
+        self.assertIn(">已发布<", html)
+        self.assertIn(">未发布<", html)
+        self.assertIn('<span class="dpr-state green">已发布</span>', html)
+        self.assertIn('<span class="dpr-state gray">未发布</span>', html)
+        rows = re.findall(r"<tr>(.*?)</tr>", html, flags=re.S)
+        published = next(row for row in rows if "RL-009" in row)
+        unpublished = next(row for row in rows if "RL-010" in row)
+        self.assertEqual(["详情", "复制"], re.findall(r"<a[^>]*>(.*?)</a>", published, flags=re.S))
+        self.assertIn("⋯ 更多", unpublished)
+        self.assertIn('class="action-menu"', unpublished)
+        for action in ("编辑", "删除", "发布"):
+            self.assertIn(f">{action}</a>", unpublished)
+        self.assertEqual(1, unpublished.count("class=\"action-more\""))
+        self.assertIn("data-rule-publish-status=\"已发布\"", published)
+        self.assertIn("data-rule-publish-status=\"未发布\"", unpublished)
+        response = self.client.delete("/data/rules/RL-009")
+        self.assertEqual(403, response.status_code)
+        response = self.client.post("/data/rules/RL-010/publish")
+        self.assertEqual(200, response.status_code)
+        draft_rule = next(rule for rule in toolchain_demo.RULES if rule["id"] == "RL-010")
+        self.assertEqual("已发布", draft_rule["publish_status"])
+        draft_rule["publish_status"] = "未发布"
+
     def test_rule_create_drawer_supports_four_cards_and_fluid_fields(self):
         html = self.client.get("/data/rules").get_data(as_text=True)
         self.assertIn("width:min(1120px,calc(100vw - 24px))", html)
@@ -2363,7 +2525,7 @@ class DataPlatformArchitectureTests(unittest.TestCase):
             "/data/rules": (
                 "规则管理",
                 "端到端切分标注规则",
-                "适用环节",
+                "<th>业务环节</th>",
             ),
             "/data/scenes": ("场景管理", "场景名称", "新增场景"),
             "/data/tags": ("标签管理", "能力标签", "动作标签"),
@@ -2379,7 +2541,7 @@ class DataPlatformArchitectureTests(unittest.TestCase):
             'id="ruleFilterStage"',
             'id="ruleFilterOwner"',
             ">规则名称</label>",
-            ">适用环节</label>",
+            ">业务环节</label>",
             ">创建人</label>",
             ">清空</a>",
             ">查询</button>",
@@ -2387,9 +2549,10 @@ class DataPlatformArchitectureTests(unittest.TestCase):
             '<th>类型</th>',
             '<td>语义标注</td>',
             'id="ruleFormRuleModule"',
-            '<h4>规则</h4>',
+            '<h4>规则配置</h4>',
             'id="ruleFormErrorModule"',
-            '<h4>错误原因</h4>',
+            '<h4>审核配置</h4>',
+            '质检/标注环节审核数据时，可供选择的错误原因选项',
             'id="ruleQualityConfig"',
             'id="ruleMistakeRows"',
             'id="ruleUnqualifiedRows"',
@@ -2398,9 +2561,11 @@ class DataPlatformArchitectureTests(unittest.TestCase):
             'id="ruleActionConfig"',
             'id="ruleDocumentConfig"',
             'name="ruleSemanticMode" value="link"',
-            'name="ruleSemanticMode" value="richtext"',
-            '>文档链接</label>',
-            '富文本说明',
+            'name="ruleSemanticMode" value="text"',
+            '<span>文档链接</span>',
+            '文本说明',
+            'id="ruleTextDescription"',
+            '<textarea id="ruleTextDescription"',
             'class="rule-action-tree"',
             '动作元素 / 枚举值',
             'class="rule-action-tree-group"',
@@ -2423,6 +2588,9 @@ class DataPlatformArchitectureTests(unittest.TestCase):
             self.assertIn(expected, rules_html)
         self.assertNotIn('name="ruleSemanticMode" value="none"', rules_html)
         self.assertNotIn('id="ruleSemanticNone"', rules_html)
+        self.assertNotIn('富文本说明', rules_html)
+        self.assertNotIn('id="ruleRichTextEditor"', rules_html)
+        self.assertNotIn('rule-rich-toolbar', rules_html)
         self.assertNotIn('id="rulePlaceholderList"', rules_html)
         self.assertIn('.rule-list-add{justify-content:flex-start}', rules_html)
         action_module = rules_html[
@@ -2446,7 +2614,6 @@ class DataPlatformArchitectureTests(unittest.TestCase):
             "选择要维护的动作元素",
             "维护该元素的可选值及对应 Key",
             "使用动作元素生成的占位符",
-            "以枚举方式维护规则执行时可选择的错误原因",
             "占位符格式为",
         ):
             self.assertNotIn(removed_help_text, rules_html)
