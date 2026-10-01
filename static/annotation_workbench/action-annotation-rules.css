@@ -1,0 +1,10 @@
+/* Only the action option lists gain grouped content. Closed controls retain the original styles. */
+workbench-segment-editor[variant="variant-3"] .action-element-group{display:grid;min-width:0}
+workbench-segment-editor[variant="variant-3"] .action-element-group[hidden],
+workbench-segment-editor[variant="variant-3"] [data-multi-option][hidden]{display:none}
+workbench-segment-editor[variant="variant-3"] .action-element-group+.action-element-group{border-top:1px solid var(--color-border,#2b3a4a)}
+workbench-segment-editor[variant="variant-3"] .action-element-group__title{height:28px;display:flex;align-items:center;gap:6px;padding:0 10px;color:var(--editor-text,#dce5ee);font-size:12px;font-weight:600;line-height:28px}
+workbench-segment-editor[variant="variant-3"] .action-element-group__title span{color:var(--editor-muted,#8fa0b3);font-size:10px;font-weight:400}
+workbench-segment-editor[variant="variant-3"] .action-element-group__title em{margin-left:auto;color:var(--color-brand,#27c4d4);font-size:10px;font-style:normal;font-weight:500}
+workbench-segment-editor[variant="variant-3"] .action-element-group [data-multi-option]{padding-left:24px}
+workbench-segment-editor[variant="variant-3"] .action-element-group [data-multi-option]:disabled{opacity:.4;cursor:not-allowed}

@@ -1,0 +1,22 @@
+const assert = require('node:assert/strict');
+const rules = require('../static/annotation_workbench/action-annotation-rules.js');
+
+const data = (elements, descriptions) => ({
+  elements, descriptions,
+  ruleId: rules.rule.id,
+  ruleVersion: rules.rule.version
+});
+
+assert.equal(rules.validate(data(['书本'], ['整理'])).valid, true);
+assert.equal(rules.validate(data(['书本', '笔记本'], ['整理'])).valid, false);
+assert.equal(rules.validate(data(['书本', '笔记本'], ['整理两个物体'])).valid, true);
+assert.deepEqual(rules.availableDescriptions(['书本', '笔记本'], []), ['整理两个物体']);
+assert.deepEqual(rules.availableDescriptions(['苹果', '杯子'], []), ['将水果放入容器']);
+assert.equal(rules.availableDescriptions(['苹果', '草莓', '杯子'], []).includes('将两种水果放入容器'), true);
+assert.equal(rules.availableDescriptions(['苹果', '杯子'], []).includes('将物体放入容器'), false);
+assert.equal(rules.availableDescriptions([], ['将两种水果放入容器']).includes('将水果放入容器'), false);
+assert.equal(rules.signature(['整理', '拿起']).Object, 1);
+assert.equal(rules.signature(['整理', '整理两个物体']), null);
+assert.equal(rules.validate(data([], ['整理'])).valid, false);
+assert.equal(rules.validate(data(['书本'], [])).valid, false);
+console.log('PASS: action annotation rules require one complete template signature with exact type counts.');
