@@ -188,7 +188,7 @@ PAGE_SPECS = {
         "nav_title": "标注工作台",
         "subtitle": "领取用户组或供应商任务，并处理被驳回的数据",
         "icon": "&#9881;",
-        "nav_badge": "S026",
+        "nav_badge": "S027",
     },
     "personal_dashboard": {
         "path": "/data/dashboard",

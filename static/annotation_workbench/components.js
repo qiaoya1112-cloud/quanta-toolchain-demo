@@ -504,7 +504,7 @@
         panel.classList.toggle('is-expanded',expanded);
       });
     }
-    setMode(mode){this.dataset.mode=['quality','action','tags'].includes(mode)?mode:'segments';this.setAttribute('aria-label',`${mode==='quality'?'质检':mode==='action'?'动作标注':mode==='tags'?'标签':'语义标注'}视频采集指令`);}
+    setMode(mode){this.dataset.mode=['quality','post-quality','action','tags'].includes(mode)?mode:'segments';this.setAttribute('aria-label',`${mode==='quality'?'质检':mode==='post-quality'?'后训练质检':mode==='action'?'动作标注':mode==='tags'?'标签':'语义标注'}视频采集指令`);}
   }
 
   class WorkbenchMediaViewer extends HTMLElement{
@@ -882,11 +882,11 @@ this.innerHTML=`<div class="segment-editor-component"><section class="card form-
     connectedCallback(){
       if(this.dataset.rendered)return;
       this.dataset.rendered='true';
-      this.innerHTML='<nav class="workbench-review__tabs" aria-label="复核侧栏"><button type="button" data-review-variant="quality">质检</button><button type="button" data-review-variant="segments">语义标注</button><button type="button" data-review-variant="action">动作标注</button><button type="button" data-review-variant="tags">标签</button><button type="button" data-review-variant="log">日志</button><button type="button" data-review-variant="info">基本信息</button></nav>';
+      this.innerHTML='<nav class="workbench-review__tabs" aria-label="复核侧栏"><button type="button" data-review-variant="quality">质检</button><button type="button" data-review-variant="post-quality">后训练质检</button><button type="button" data-review-variant="segments">语义标注</button><button type="button" data-review-variant="action">动作标注</button><button type="button" data-review-variant="tags">标签</button><button type="button" data-review-variant="log">日志</button><button type="button" data-review-variant="info">基本信息</button></nav>';
       this.querySelectorAll('[data-review-variant]').forEach(tab=>tab.addEventListener('click',()=>this.setActive(tab.dataset.reviewVariant,true)));
       this.setActive(this.getAttribute('active')||'segments',false);
     }
-    _normalize(value){return value==='quality'||value==='action'||value==='tags'||value==='log'||value==='info'?value:'segments';}
+    _normalize(value){return value==='quality'||value==='post-quality'||value==='action'||value==='tags'||value==='log'||value==='info'?value:'segments';}
     setActive(value,emit=true){const active=this._normalize(value);if(this.getAttribute('active')!==active)this.setAttribute('active',active);this.querySelectorAll('[data-review-variant]').forEach(tab=>{const selected=tab.dataset.reviewVariant===active;tab.classList.toggle('is-active',selected);tab.setAttribute('aria-pressed',String(selected));});if(emit)this.dispatchEvent(new CustomEvent('review-variant-change',{bubbles:true,detail:{variant:active}}));}
   }
 
@@ -898,11 +898,12 @@ this.innerHTML=`<div class="segment-editor-component"><section class="card form-
       if(this.hasAttribute('hydrate')){this.dataset.rendered='true';return;}
       this.dataset.rendered='true';
       const variant=this._normalizeVariant(this.getAttribute('variant'));
-      this.innerHTML=`<aside class="workbench-review"><div class="workbench-review__main"><workbench-segment-list-panel variant="${variant}"></workbench-segment-list-panel><workbench-annotation-list title="质检列表" data-quality-list hidden></workbench-annotation-list><workbench-quality-list title="标注列表" data-action-list hidden></workbench-quality-list><div class="workbench-quality-actions" data-quality-actions hidden><workbench-quality-conclusion></workbench-quality-conclusion><workbench-footer-actions variant="quality"></workbench-footer-actions></div><workbench-footer-actions></workbench-footer-actions></div><div class="workbench-review__rail"><workbench-segment-tabs active="${variant}"></workbench-segment-tabs><div class="workbench-theme-tabs" role="group" aria-label="工作台主题"><button type="button" data-theme="dark" title="深色" aria-label="深色"><span class="workbench-theme-switch__moon" aria-hidden="true"></span></button><button type="button" data-theme="blue" title="深蓝" aria-label="深蓝"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="m10 2 7 4-7 4-7-4 7-4Zm-7 8 7 4 7-4M3 14l7 4 7-4"/></svg></button><button type="button" data-theme="light" title="浅色" aria-label="浅色"><span class="workbench-theme-switch__sun" aria-hidden="true"></span></button></div></div></aside>`;
+      this.innerHTML=`<aside class="workbench-review"><div class="workbench-review__main"><workbench-segment-list-panel variant="${variant}"></workbench-segment-list-panel><workbench-annotation-list title="质检列表" data-quality-list hidden></workbench-annotation-list><workbench-quality-list title="标注列表" data-action-list hidden></workbench-quality-list><post-training-quality-sidebar data-post-quality hidden></post-training-quality-sidebar><div class="workbench-quality-actions" data-quality-actions hidden><workbench-quality-conclusion></workbench-quality-conclusion><workbench-footer-actions variant="quality"></workbench-footer-actions></div><workbench-footer-actions></workbench-footer-actions></div><div class="workbench-review__rail"><workbench-segment-tabs active="${variant}"></workbench-segment-tabs><div class="workbench-theme-tabs" role="group" aria-label="工作台主题"><button type="button" data-theme="dark" title="深色" aria-label="深色"><span class="workbench-theme-switch__moon" aria-hidden="true"></span></button><button type="button" data-theme="blue" title="深蓝" aria-label="深蓝"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="m10 2 7 4-7 4-7-4 7-4Zm-7 8 7 4 7-4M3 14l7 4 7-4"/></svg></button><button type="button" data-theme="light" title="浅色" aria-label="浅色"><span class="workbench-theme-switch__sun" aria-hidden="true"></span></button></div></div></aside>`;
       this._panel=this.querySelector('workbench-segment-list-panel');
       enableListResize(this,this.querySelector('.workbench-review'));
       this._quality=this.querySelector('[data-quality-list]');
       this._action=this.querySelector('[data-action-list]');
+      this._postQuality=this.querySelector('[data-post-quality]');
       this._qualityActions=this.querySelector('[data-quality-actions]');
       this._tabs=this.querySelector('workbench-segment-tabs');
       this._footer=this.querySelector('.workbench-review__main > workbench-footer-actions');
@@ -913,8 +914,8 @@ this.innerHTML=`<div class="segment-editor-component"><section class="card form-
     }
     get variant(){return this.getAttribute('variant')||'segments';}
     set variant(value){this.setAttribute('variant',this._normalizeVariant(value));}
-    _normalizeVariant(value){return value==='quality'||value==='action'||value==='tags'||value==='log'||value==='info'?value:'segments';}
-    setVariant(value,emit=true){const variant=this._normalizeVariant(value);if(this.getAttribute('variant')!==variant)this.setAttribute('variant',variant);const quality=variant==='quality',action=variant==='action';if(this._panel){this._panel.hidden=quality||action||variant==='tags';if(!quality&&!action&&variant!=='tags')this._panel.setVariant(variant,false);}if(this._quality)this._quality.hidden=!quality;if(this._action)this._action.hidden=!action;if(this._qualityActions)this._qualityActions.hidden=!quality;this._tabs?.setActive(variant,false);if(this._footer)this._footer.hidden=quality||variant==='log'||variant==='info';if(emit)this.dispatchEvent(new CustomEvent('review-variant-change',{bubbles:true,detail:{variant}}));}
+    _normalizeVariant(value){return value==='quality'||value==='post-quality'||value==='action'||value==='tags'||value==='log'||value==='info'?value:'segments';}
+    setVariant(value,emit=true){const variant=this._normalizeVariant(value);if(this.getAttribute('variant')!==variant)this.setAttribute('variant',variant);const quality=variant==='quality',postQuality=variant==='post-quality',action=variant==='action';if(this._panel){this._panel.hidden=quality||postQuality||action||variant==='tags';if(!quality&&!postQuality&&!action&&variant!=='tags')this._panel.setVariant(variant,false);}if(this._quality)this._quality.hidden=!quality;if(this._postQuality)this._postQuality.hidden=!postQuality;if(this._action)this._action.hidden=!action;if(this._qualityActions)this._qualityActions.hidden=!quality;this._tabs?.setActive(variant,false);if(this._footer)this._footer.hidden=quality||postQuality||variant==='log'||variant==='info';if(emit)this.dispatchEvent(new CustomEvent('review-variant-change',{bubbles:true,detail:{variant}}));}
     _setPageTheme(theme,persist){applyWorkbenchTheme(theme,persist);}
     _syncThemeSwitch(){if(!this._themeSwitch)return;let theme=document.documentElement.dataset.workbenchTheme||(document.body.classList.contains('theme-light')?'light':'dark');try{theme=localStorage.getItem(document.body.classList.contains('component-preview')?'workbench-component-theme':'workbench-theme')||theme;}catch(_){}applyWorkbenchTheme(theme,false);}
 

@@ -65,25 +65,29 @@ segmentList.addEventListener('segment-change', event => {
 
 segmentList.addEventListener('review-variant-change', event => {
   const variant = event.detail.variant;
-  if (['quality', 'segments', 'action', 'tags'].includes(variant)) activeWorkbenchMode = variant;
+  if (['quality', 'post-quality', 'segments', 'action', 'tags'].includes(variant)) activeWorkbenchMode = variant;
   instruction.setMode(activeWorkbenchMode);
   const tagMode = activeWorkbenchMode === 'tags';
   tagsWorkspace.setVisible(tagMode);
   tagsWorkspace.panel.hidden = variant !== 'tags';
   const qualityMode = activeWorkbenchMode === 'quality';
+  const postQualityMode = activeWorkbenchMode === 'post-quality';
   const actionMode = activeWorkbenchMode === 'action';
-  mediaViewer.setAttribute('variant', qualityMode || tagMode ? 'three-panel' : 'default');
-  semanticTimeline.hidden = qualityMode || actionMode || tagMode;
+  mediaViewer.setAttribute('variant', qualityMode || postQualityMode || tagMode ? 'three-panel' : 'default');
+  semanticTimeline.hidden = qualityMode || postQualityMode || actionMode || tagMode;
   actionTimeline.hidden = !actionMode;
   qualityTimeline.hidden = !qualityMode;
   const timelineCard = actionTimeline.closest('.timeline-card');
   timelineCard.classList.toggle('is-tags-mode', tagMode);
   timelineCard.classList.toggle('is-quality-mode', qualityMode);
+  timelineCard.classList.toggle('is-post-quality-mode', postQualityMode);
   timelineCard.classList.toggle('is-action-mode', actionMode);
-  semanticEditor.hidden = qualityMode || actionMode || tagMode;
+  semanticEditor.hidden = qualityMode || postQualityMode || actionMode || tagMode;
   qualityEditor.hidden = !qualityMode;
   actionEditor.hidden = !actionMode;
-  requestAnimationFrame(() => selectSegment(activeSegmentIndex, 'mode'));
+  const postQualityWorkspace = document.querySelector('post-training-quality-workspace');
+  if (postQualityWorkspace) postQualityWorkspace.hidden = !postQualityMode;
+  requestAnimationFrame(() => { if (!postQualityMode) selectSegment(activeSegmentIndex, 'mode'); });
 });
 
 selectSegment(1);
