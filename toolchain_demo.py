@@ -1853,6 +1853,8 @@ textarea.yaml-area:focus { border-color:#149DAA; box-shadow:0 0 0 2px rgba(20,15
 .wb-rule-box ol { margin:0; padding:0; list-style:none; counter-reset:wb-rule; }
 .wb-rule-box li { display:grid; grid-template-columns:28px minmax(0,1fr); gap:10px; padding:7px 0; color:rgba(0,0,0,.73); font-size:13px; line-height:1.65; counter-increment:wb-rule; }
 .wb-rule-box li::before { content:counter(wb-rule) "."; color:#1685a4; font-family:'SF Mono',Menlo,monospace; font-weight:600; }
+.wb-filter-reset { margin:16px 20px 20px; }
+.wb-filter-config > .wb-filter-reset { margin:0 16px 16px; }
 .wb-task-home-actions { display:flex; justify-content:flex-end; gap:10px; margin-top:20px; padding-top:18px; border-top:1px solid #f0f0f0; }
 .wb-card .wb-progress { width:260px; display:flex; flex-direction:column; gap:8px; }
 .wb-card .wb-progress .wp-bar { position:relative; height:10px; background:#f0f0f0; border-radius:5px; overflow:hidden; }
@@ -5355,6 +5357,7 @@ def _render_workbench_pool_home(pool_id, selected_task_id=None, version="v1"):
             <input type="hidden" name="task" value="{html.escape(task['id'])}">
             <div class="wb-filter-grid wb-v2-filter-grid">{rule_selector}</div>
           </form>
+          <div class="wb-filter-reset"><button class="btn" form="wbFilterForm" type="reset" onclick="{reset_rule_details}">重置</button></div>
         </section>''' if use_annotation_pool_layout else ('' if is_v2 else f'''<section class="wb-task-config wb-filter-config">
           <div class="wb-task-config-title">
             <h3>筛选条件</h3><span>设置本次进入工作台的数据范围</span>
@@ -5383,17 +5386,17 @@ def _render_workbench_pool_home(pool_id, selected_task_id=None, version="v1"):
         </section>''')}
         {'' if use_annotation_pool_layout else f'''<section class="wb-task-config wb-rule-config">
           <div class="wb-task-config-title">
-            <h3>处理规则</h3><span>{html.escape(task['task_name'])}</span>
+            <h3>{'筛选条件' if is_v2 else '处理规则'}</h3><span>{html.escape(task['task_name'])}</span>
           </div>
           {rule_selector}
           {rule_groups_html}
+          {f'<div class="wb-filter-reset"><button class="btn" form="wbFilterForm" type="reset" onclick="{reset_rule_details}">重置</button></div>' if is_v2 else ''}
         </section>'''}
       </div>
       <div class="wb-task-home-actions">
         {claim_control}
-        <button class="btn" form="wbFilterForm" type="reset"
-          onclick="{reset_rule_details}">重置</button>
-        {f'<a class="btn" href="{pool_url}/records?{html.escape(urlencode({"source": task["id"]}), quote=True)}">进入任务池</a>' if is_v2 else ''}
+        {f'<button class="btn" form="wbFilterForm" type="reset" onclick="{reset_rule_details}">重置</button>' if not is_v2 else ''}
+        {f'<a class="btn" href="{pool_url}/records?{html.escape(urlencode({"source": task["id"]}), quote=True)}">数据列表</a>' if is_v2 else ''}
         <button class="btn btn-primary" form="wbFilterForm"
           type="submit">{'开始处理' if is_v2 else '按筛选条件开始处理'}</button>
       </div>
@@ -5470,7 +5473,7 @@ def data_workbench_pool_action(pool_id):
     try:
         records = wb_pool.shared_transition(_pool_db(), task, session.get("workbench_pool_states", {}), _pool_owner(),
             payload.get("action"), payload.get("ids"), payload.get("result", ""),
-            payload.get("reason", ""), payload.get("remark", ""))
+            payload.get("reason", ""), payload.get("remark", ""), reasons=payload.get("reasons"))
     except wb_pool.PoolConflict as error:
         return jsonify(error=str(error), code="record_occupied"), 409
     except ValueError as error:

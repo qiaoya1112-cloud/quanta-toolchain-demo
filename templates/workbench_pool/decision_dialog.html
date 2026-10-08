@@ -1,9 +1,8 @@
 <div class="wp-mask" id="wpDecision" hidden>
   <section class="wp-dialog" role="dialog" aria-modal="true" aria-labelledby="wpDecisionTitle">
-    <h3 id="wpDecisionTitle"></h3><p id="wpDecisionCopy"></p>
+    <h3 id="wpDecisionTitle"></h3>
     <div id="wpRejectionFields" hidden>
-      <label>不合格原因 <em>*</em><select id="wpReason"><option value="">请选择不合格原因</option>{% for reason in reasons %}<option>{{ reason }}</option>{% endfor %}</select></label>
-      <label>补充说明 <span id="wpRemarkRequired">（可选）</span><textarea id="wpRemark" maxlength="300" placeholder="补充问题说明；选择其他时必填"></textarea></label>
+      <fieldset id="wpReason" class="wp-reason-options"><legend>不合格原因 <em>*</em> <span>（可多选）</span></legend>{% for reason in reasons %}<label><input type="checkbox" name="rejection_reason" value="{{ reason }}"><span>{{ reason }}</span></label>{% endfor %}</fieldset>
     </div>
     <p id="wpDecisionError" class="wp-error" role="alert" hidden></p>
     <footer><button type="button" class="btn" id="wpCancelDecision">取消</button><button type="button" class="btn btn-primary" id="wpConfirmDecision">确认</button></footer>

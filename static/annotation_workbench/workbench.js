@@ -12,6 +12,7 @@ const actionEditor = segmentEditors.find(editor => editor.getAttribute('variant'
 const segmentList = document.querySelector('workbench-segment-list');
 let activeWorkbenchMode = 'segments';
 let activeSegmentIndex = 1;
+let semanticIntegrationReady=false;
 const qualityList = segmentList.querySelector('[data-quality-list]');
 // Share each record so navigation and error-reason edits use the same data.
 qualityEditor._segments = qualityList._items.map(item => {
@@ -49,9 +50,12 @@ function selectSegment(index, source = 'page') {
   });
   if (source !== 'list') segmentList.selectSegment(safeIndex + 1, false);
   syncQualityEditor();
+  if(activeWorkbenchMode==='segments')syncSemanticEditorRange();
+  semanticTimeline.querySelectorAll('.segmented-timeline__rejected-gap').forEach(button=>button.classList.remove('is-active'));
 }
 
 [semanticTimeline, actionTimeline].forEach(track => track.addEventListener('track-change', event => {
+  if(track.hidden)return;
   selectSegment(event.detail.index, track);
 }));
 
@@ -65,29 +69,34 @@ segmentList.addEventListener('segment-change', event => {
 
 segmentList.addEventListener('review-variant-change', event => {
   const variant = event.detail.variant;
-  if (['quality', 'post-quality', 'segments', 'action', 'tags'].includes(variant)) activeWorkbenchMode = variant;
+  if (['quality', 'pre-quality', 'post-quality', 'segments', 'action', 'tags'].includes(variant)) activeWorkbenchMode = variant;
   instruction.setMode(activeWorkbenchMode);
   const tagMode = activeWorkbenchMode === 'tags';
   tagsWorkspace.setVisible(tagMode);
   tagsWorkspace.panel.hidden = variant !== 'tags';
   const qualityMode = activeWorkbenchMode === 'quality';
+  const preQualityMode = activeWorkbenchMode === 'pre-quality';
   const postQualityMode = activeWorkbenchMode === 'post-quality';
+  const trainingQualityMode = preQualityMode || postQualityMode;
   const actionMode = activeWorkbenchMode === 'action';
-  mediaViewer.setAttribute('variant', qualityMode || postQualityMode || tagMode ? 'three-panel' : 'default');
-  semanticTimeline.hidden = qualityMode || postQualityMode || actionMode || tagMode;
+  mediaViewer.setAttribute('variant', qualityMode || trainingQualityMode || tagMode ? 'three-panel' : 'default');
+  semanticTimeline.hidden = qualityMode || trainingQualityMode || actionMode || tagMode;
   actionTimeline.hidden = !actionMode;
   qualityTimeline.hidden = !qualityMode;
   const timelineCard = actionTimeline.closest('.timeline-card');
   timelineCard.classList.toggle('is-tags-mode', tagMode);
   timelineCard.classList.toggle('is-quality-mode', qualityMode);
+  timelineCard.classList.toggle('is-pre-quality-mode', preQualityMode);
   timelineCard.classList.toggle('is-post-quality-mode', postQualityMode);
   timelineCard.classList.toggle('is-action-mode', actionMode);
-  semanticEditor.hidden = qualityMode || postQualityMode || actionMode || tagMode;
+  semanticEditor.hidden = qualityMode || trainingQualityMode || actionMode || tagMode;
   qualityEditor.hidden = !qualityMode;
   actionEditor.hidden = !actionMode;
   const postQualityWorkspace = document.querySelector('post-training-quality-workspace');
   if (postQualityWorkspace) postQualityWorkspace.hidden = !postQualityMode;
-  requestAnimationFrame(() => { if (!postQualityMode) selectSegment(activeSegmentIndex, 'mode'); });
+  const preQualityWorkspace = document.querySelector('pre-training-quality-workspace');
+  if (preQualityWorkspace) preQualityWorkspace.hidden = !preQualityMode;
+  requestAnimationFrame(() => { if (!trainingQualityMode) selectSegment(activeSegmentIndex, 'mode'); });
 });
 
 selectSegment(1);
@@ -209,4 +218,27 @@ segmentList.addEventListener('workbench-action', event => {
   if (action === 'save') recordAction('保存');
   if (action === 'submit') recordAction('提交');
   if (action === 'leave' && saveDraft()) window.location.assign('/data/workbench-v2');
+});
+
+// Semantic annotation consumes upstream pre-training QC, while post-training QC stays independent.
+const syncSemanticQuality=state=>semanticTimeline.setRejectedRanges((state?.segments||[]).filter(item=>item.conclusion==='rejected'));
+document.addEventListener('pre-quality-state-change',event=>syncSemanticQuality(event.detail));
+syncSemanticQuality(window.PreTrainingQualityDemo?.state);
+
+function syncSemanticEditorRange(){
+  if(!semanticIntegrationReady||semanticEditor._rejectedSegment)return;
+  const ruler=semanticTimeline.querySelector('timeline-range-selector');
+  if(ruler?._start===undefined||!semanticEditor._segments[activeSegmentIndex])return;
+  const start=ruler._start*.7,end=ruler._end*.7;
+  const format=value=>{const rounded=Math.round(value*10)/10;return `${String(Math.floor(rounded/60)).padStart(2,'0')}:${String(Math.floor(rounded%60)).padStart(2,'0')}${Number((rounded%1).toFixed(1))?'.'+Math.round(rounded%1*10):''}`;};
+  const item=semanticEditor._segments[activeSegmentIndex];
+  item.start=format(start);item.end=format(end);item.duration=format(end-start);
+  semanticEditor.setSegment(activeSegmentIndex+1,false);
+  refreshSemanticList();
+}
+semanticIntegrationReady=true;
+requestAnimationFrame(()=>{if(activeWorkbenchMode==='segments')syncSemanticEditorRange();});
+
+semanticTimeline.addEventListener('rejected-segment-select',event=>{
+  semanticEditor.setRejectedSegment(event.detail);
 });

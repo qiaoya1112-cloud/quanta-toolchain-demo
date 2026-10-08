@@ -100,7 +100,12 @@
       this._endLabel.style.transform='none';
     }
     _format(percent){const total=Math.round(percent*.7);return `${String(Math.floor(total/60)).padStart(2,'0')}:${String(total%60).padStart(2,'0')}s`;}
-    setSnapPoints(points){this._snapPoints=[...new Set(points.map(value=>Math.max(0,Math.min(100,value))))];}
+    setRejectedRanges(ranges){
+      this._rejectedRanges=window.WorkbenchQualityRanges.merge(ranges);
+      this.setSnapPoints(this._snapPoints||[]);
+      this.setRange(this._start,this._end,true);
+    }
+    setSnapPoints(points){points=[...points,...(this._rejectedRanges||[]).flatMap(r=>[r.start,r.end])];this._snapPoints=[...new Set(points.map(value=>Math.max(0,Math.min(100,value))))];}
     _snap(value){
       if(!this._snapPoints.length)return {value,snapped:false};
       const threshold=this._rail.clientWidth?8/this._rail.clientWidth*100:0;
@@ -221,6 +226,9 @@
       }
     }
     splitAt(button,clientX){
+      const trackBounds=this.querySelector('.segmented-timeline__track').getBoundingClientRect();
+      const point=(clientX-trackBounds.left)/trackBounds.width*100;
+      if(window.WorkbenchQualityRanges?.contains(this._rejectedRanges||[],point))return;
       const bounds=button.getBoundingClientRect();
       if(bounds.width<4)return;
       const ratio=(clientX-bounds.left)/bounds.width;
@@ -263,6 +271,12 @@
     }
     mergeSelection(selection=[...this._selected]){
       if(selection.length<2)return;
+      if(this._rejectedRanges?.length){
+        const bounds=this.querySelector('.segmented-timeline__track').getBoundingClientRect();
+        const boxes=selection.map(i=>this.buttons[i].getBoundingClientRect());
+        const start=(Math.min(...boxes.map(b=>b.left))-bounds.left)/bounds.width*100,end=(Math.max(...boxes.map(b=>b.right))-bounds.left)/bounds.width*100;
+        if(window.WorkbenchQualityRanges.overlaps(this._rejectedRanges,start,end))return;
+      }
       this._activateHistory();
       this._undoStack.push({html:this.querySelector('.segmented-timeline__segments').innerHTML,selected:[...this._selected],label:this.querySelector('.segmented-timeline__index').textContent});
       if(this._undoStack.length>50)this._undoStack.shift();
@@ -435,7 +449,7 @@
       this.dataset.rendered='true';
       const isLongReject=this.getAttribute('variant')==='long-reject';
       const rejectReason=isLongReject?'驳回原因：High-level片段范围需要调整，动作起止边界与任务要求不一致，请重新检查完整操作过程后修正并再次提交':'驳回原因：High-level片段范围需要调整';
-      this.innerHTML=`<header class="workbench-task-info"><div class="workbench-task-info__left"><button class="workbench-task-info__close" type="button" aria-label="关闭"><img src="${assets}icon-close.svg" alt=""></button><div class="workbench-task-info__identity"><span>任务ID</span><b>17782</b></div><i class="workbench-task-info__divider" aria-hidden="true"></i><div class="workbench-task-info__workflow"><div class="workbench-task-info__step"><span>当前节点</span><b>内部验收</b></div><i class="workbench-task-info__divider" aria-hidden="true"></i><div class="workbench-task-info__step"><span>上一节点</span><b>供应商验收</b><em>·</em><b>Aria提交</b><em>·</em></div></div><div class="workbench-task-info__reject"${isLongReject?` tabindex="0" aria-label="${rejectReason}" data-tooltip="${rejectReason}"`:` title="${rejectReason}"`}><span>${rejectReason}</span></div></div></header>`;
+      this.innerHTML=`<header class="workbench-task-info"><div class="workbench-task-info__left"><button class="workbench-task-info__close" type="button" aria-label="关闭"><img src="${assets}icon-close.svg" alt=""></button><div class="workbench-task-info__identity"><span>采集任务ID</span><b>17782</b></div><i class="workbench-task-info__divider" aria-hidden="true"></i><div class="workbench-task-info__workflow"><div class="workbench-task-info__step"><span>当前节点</span><b>内部验收</b></div><i class="workbench-task-info__divider" aria-hidden="true"></i><div class="workbench-task-info__step"><span>上一节点</span><b>供应商验收</b><em>·</em><b>Aria提交</b><em>·</em></div></div><div class="workbench-task-info__reject"${isLongReject?` tabindex="0" aria-label="${rejectReason}" data-tooltip="${rejectReason}"`:` title="${rejectReason}"`}><span>${rejectReason}</span></div></div></header>`;
       const taskIdentity=this.querySelector('.workbench-task-info__identity');
       for(const [label,attribute] of [['数据处理 ID','data-processing-id'],['数据 ID','data-id']]){
         const identity=document.createElement('div');
@@ -504,7 +518,7 @@
         panel.classList.toggle('is-expanded',expanded);
       });
     }
-    setMode(mode){this.dataset.mode=['quality','post-quality','action','tags'].includes(mode)?mode:'segments';this.setAttribute('aria-label',`${mode==='quality'?'质检':mode==='post-quality'?'后训练质检':mode==='action'?'动作标注':mode==='tags'?'标签':'语义标注'}视频采集指令`);}
+    setMode(mode){this.dataset.mode=['quality','pre-quality','post-quality','action','tags'].includes(mode)?mode:'segments';this.setAttribute('aria-label',`${mode==='quality'?'质检':mode==='pre-quality'?'预训练质检':mode==='post-quality'?'后训练质检':mode==='action'?'动作标注':mode==='tags'?'标签':'语义标注'}视频采集指令`);}
   }
 
   class WorkbenchMediaViewer extends HTMLElement{
@@ -623,6 +637,7 @@ this.innerHTML=`<div class="segment-editor-component"><section class="card form-
     _setSeveritySegment(index,emit=true){const safe=Math.max(1,Math.min(this._segments.length,Number(index)||1)),{start,end,duration,error}=this._segments[safe-1],colors=['#42a8d2','#ff9559','#9850d7','#48c98a','#8fd04c','#d7a23b'];this._index=safe;this.querySelector('[data-number]').textContent=String(safe).padStart(2,'0');this.querySelector('[data-start]').textContent=start;this.querySelector('[data-end]').textContent=end;this.querySelector('[data-duration]').textContent=duration;const trigger=this.querySelector('.error-trigger');if(trigger){trigger.querySelector('[data-error]').textContent=error||'请选择错误原因';trigger.classList.toggle('is-placeholder',!error);this.querySelectorAll('[data-reason]').forEach(button=>button.classList.toggle('is-selected',button.dataset.reason===error));}const color=this.querySelector('[data-segment-color]');if(color){color.style.backgroundColor=colors[safe-1];color.setAttribute('aria-label',`当前片段颜色 ${colors[safe-1]}`);}if(this.getAttribute('variant')==='variant-3'&&this._actionData){const data=this._actionData[safe-1];this.querySelector('workbench-multi-select[aria-label="动作元素"]')?.setValues(data.elements);this.querySelector('workbench-multi-select[aria-label="动作描述"]')?.setValues(data.descriptions);}if(emit)this.dispatchEvent(new CustomEvent('segment-change',{bubbles:true,detail:{index:safe}}));}
     _handleClick(event){
       const action=event.target.closest('[data-action]')?.dataset.action;
+      if(this._rejectedSegment&&!['previous','next'].includes(action))return;
       if(action==='previous')this.setSegment(this._index-1,true);
       if(action==='next')this.setSegment(this._index+1,true);
       if(action==='delete'){const button=this.querySelector('[data-action=delete]');button.classList.add('is-active');window.setTimeout(()=>button.classList.remove('is-active'),260);this.dispatchEvent(new CustomEvent('segment-delete',{bubbles:true,detail:{index:this._index}}));}
@@ -636,8 +651,25 @@ this.innerHTML=`<div class="segment-editor-component"><section class="card form-
     _setUnavailable(value,persist=true){this._unavailable=value;if(persist)this._segments[this._index-1].unavailable=value;const description=this.querySelector('.input-like--description'),descriptionValue=description?.querySelector('[data-description]');description?.classList.toggle('is-unavailable',value);descriptionValue?.setAttribute('aria-disabled',String(value));this.querySelector('.unavailable-tag').hidden=!value;const button=this.querySelector('[data-action=unavailable]');button.classList.toggle('is-active',value);button.setAttribute('aria-pressed',String(value));if(persist)this._emitUpdate();}
     _positionErrorPopover(){const trigger=this.querySelector('.error-trigger'),popover=this.querySelector('.error-popover'),bounds=trigger.getBoundingClientRect(),left=Math.max(12,bounds.left),width=Math.min(bounds.width,window.innerWidth-left-12);popover.style.width=`${width}px`;popover.style.left=`${left}px`;popover.style.top=`${Math.max(12,bounds.top-popover.offsetHeight-8)}px`;}
     _setErrorOpen(open){const popover=this.querySelector('.error-popover'),trigger=this.querySelector('.error-trigger');popover.hidden=!open;trigger.classList.toggle('is-open',open);trigger.setAttribute('aria-expanded',String(open));this.querySelectorAll('[data-reason]').forEach(button=>button.setAttribute('aria-selected',String(button.classList.contains('is-selected'))));if(open)requestAnimationFrame(()=>this._positionErrorPopover());}
+    setRejectedSegment(range){
+      if(this.hasAttribute('variant'))return;
+      this._rejectedSegment=range;
+      this.querySelector('.segment-current').hidden=Boolean(range);
+      const errorRow=this.querySelector('.error-trigger')?.closest('.form-row');if(errorRow)errorRow.hidden=Boolean(range);
+      this.querySelectorAll('[data-action="delete"],[data-action="unavailable"]').forEach(button=>button.disabled=Boolean(range));
+      if(!range)return;
+      this._setErrorOpen(false);
+      this.querySelector('.unavailable-tag').hidden=true;
+      this.querySelector('.input-like--description')?.classList.remove('is-unavailable');
+      const format=value=>{const sec=Math.round(value*10)/10;return `${String(Math.floor(sec/60)).padStart(2,'0')}:${String(Math.floor(sec%60)).padStart(2,'0')}${Number((sec%1).toFixed(1))?'.'+Math.round(sec%1*10):''}`;};
+      this.querySelector('[data-start]').textContent=format(range.start);
+      this.querySelector('[data-end]').textContent=format(range.end);
+      this.querySelector('[data-duration]').textContent=format(range.end-range.start);
+      this.querySelector('[data-description]').textContent='失误片段，无需标注';
+      this.querySelector('[data-description]').setAttribute('aria-disabled','true');
+    }
     _emitUpdate(){const data=this._segments[this._index-1];this.dispatchEvent(new CustomEvent('segment-update',{bubbles:true,detail:{index:this._index,error:data.error,unavailable:data.unavailable}}));}
-    setSegment(index,emit=true){if(this.getAttribute('variant')==='variant-2'||this.getAttribute('variant')==='variant-3')return this._setSeveritySegment(index,emit);const safe=Math.max(1,Math.min(this._segments.length,Number(index)||1)),{start,end,duration,description,error,unavailable}=this._segments[safe-1];this._index=safe;this.querySelector('[data-number]').textContent=String(safe).padStart(2,'0');this.querySelector('[data-start]').textContent=start;this.querySelector('[data-end]').textContent=end;this.querySelector('[data-duration]').textContent=duration;this.querySelector('[data-description]').textContent=description;this.querySelector('[data-error]').textContent=error||'请选择错误原因';this.querySelector('.error-trigger').classList.toggle('is-placeholder',!error);this.querySelectorAll('[data-reason]').forEach(button=>button.classList.toggle('is-selected',button.dataset.reason===error));this._setUnavailable(unavailable,false);if(emit)this.dispatchEvent(new CustomEvent('segment-change',{bubbles:true,detail:{index:safe}}));}
+    setSegment(index,emit=true){this.setRejectedSegment(null);if(this.getAttribute('variant')==='variant-2'||this.getAttribute('variant')==='variant-3')return this._setSeveritySegment(index,emit);const safe=Math.max(1,Math.min(this._segments.length,Number(index)||1)),{start,end,duration,description,error,unavailable}=this._segments[safe-1];this._index=safe;this.querySelector('[data-number]').textContent=String(safe).padStart(2,'0');this.querySelector('[data-start]').textContent=start;this.querySelector('[data-end]').textContent=end;this.querySelector('[data-duration]').textContent=duration;this.querySelector('[data-description]').textContent=description;this.querySelector('[data-description]').removeAttribute('aria-disabled');this.querySelector('[data-error]').textContent=error||'请选择错误原因';this.querySelector('.error-trigger').classList.toggle('is-placeholder',!error);this.querySelectorAll('[data-reason]').forEach(button=>button.classList.toggle('is-selected',button.dataset.reason===error));this._setUnavailable(unavailable,false);if(emit)this.dispatchEvent(new CustomEvent('segment-change',{bubbles:true,detail:{index:safe}}));}
   }
 
   const reviewSegments=[
@@ -882,11 +914,11 @@ this.innerHTML=`<div class="segment-editor-component"><section class="card form-
     connectedCallback(){
       if(this.dataset.rendered)return;
       this.dataset.rendered='true';
-      this.innerHTML='<nav class="workbench-review__tabs" aria-label="复核侧栏"><button type="button" data-review-variant="quality">质检</button><button type="button" data-review-variant="post-quality">后训练质检</button><button type="button" data-review-variant="segments">语义标注</button><button type="button" data-review-variant="action">动作标注</button><button type="button" data-review-variant="tags">标签</button><button type="button" data-review-variant="log">日志</button><button type="button" data-review-variant="info">基本信息</button></nav>';
+      this.innerHTML='<nav class="workbench-review__tabs" aria-label="复核侧栏"><button type="button" data-review-variant="quality">质检</button><button type="button" data-review-variant="pre-quality">预训练质检</button><button type="button" data-review-variant="post-quality">后训练质检</button><button type="button" data-review-variant="segments">语义标注</button><button type="button" data-review-variant="action">动作标注</button><button type="button" data-review-variant="tags">标签</button><button type="button" data-review-variant="log">日志</button><button type="button" data-review-variant="info">基本信息</button></nav>';
       this.querySelectorAll('[data-review-variant]').forEach(tab=>tab.addEventListener('click',()=>this.setActive(tab.dataset.reviewVariant,true)));
       this.setActive(this.getAttribute('active')||'segments',false);
     }
-    _normalize(value){return value==='quality'||value==='post-quality'||value==='action'||value==='tags'||value==='log'||value==='info'?value:'segments';}
+    _normalize(value){return value==='quality'||value==='pre-quality'||value==='post-quality'||value==='action'||value==='tags'||value==='log'||value==='info'?value:'segments';}
     setActive(value,emit=true){const active=this._normalize(value);if(this.getAttribute('active')!==active)this.setAttribute('active',active);this.querySelectorAll('[data-review-variant]').forEach(tab=>{const selected=tab.dataset.reviewVariant===active;tab.classList.toggle('is-active',selected);tab.setAttribute('aria-pressed',String(selected));});if(emit)this.dispatchEvent(new CustomEvent('review-variant-change',{bubbles:true,detail:{variant:active}}));}
   }
 
@@ -898,11 +930,12 @@ this.innerHTML=`<div class="segment-editor-component"><section class="card form-
       if(this.hasAttribute('hydrate')){this.dataset.rendered='true';return;}
       this.dataset.rendered='true';
       const variant=this._normalizeVariant(this.getAttribute('variant'));
-      this.innerHTML=`<aside class="workbench-review"><div class="workbench-review__main"><workbench-segment-list-panel variant="${variant}"></workbench-segment-list-panel><workbench-annotation-list title="质检列表" data-quality-list hidden></workbench-annotation-list><workbench-quality-list title="标注列表" data-action-list hidden></workbench-quality-list><post-training-quality-sidebar data-post-quality hidden></post-training-quality-sidebar><div class="workbench-quality-actions" data-quality-actions hidden><workbench-quality-conclusion></workbench-quality-conclusion><workbench-footer-actions variant="quality"></workbench-footer-actions></div><workbench-footer-actions></workbench-footer-actions></div><div class="workbench-review__rail"><workbench-segment-tabs active="${variant}"></workbench-segment-tabs><div class="workbench-theme-tabs" role="group" aria-label="工作台主题"><button type="button" data-theme="dark" title="深色" aria-label="深色"><span class="workbench-theme-switch__moon" aria-hidden="true"></span></button><button type="button" data-theme="blue" title="深蓝" aria-label="深蓝"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="m10 2 7 4-7 4-7-4 7-4Zm-7 8 7 4 7-4M3 14l7 4 7-4"/></svg></button><button type="button" data-theme="light" title="浅色" aria-label="浅色"><span class="workbench-theme-switch__sun" aria-hidden="true"></span></button></div></div></aside>`;
+      this.innerHTML=`<aside class="workbench-review"><div class="workbench-review__main"><workbench-segment-list-panel variant="${variant}"></workbench-segment-list-panel><workbench-annotation-list title="质检列表" data-quality-list hidden></workbench-annotation-list><workbench-quality-list title="标注列表" data-action-list hidden></workbench-quality-list><pre-training-quality-sidebar data-pre-quality hidden></pre-training-quality-sidebar><post-training-quality-sidebar data-post-quality hidden></post-training-quality-sidebar><div class="workbench-quality-actions" data-quality-actions hidden><workbench-quality-conclusion></workbench-quality-conclusion><workbench-footer-actions variant="quality"></workbench-footer-actions></div><workbench-footer-actions></workbench-footer-actions></div><div class="workbench-review__rail"><workbench-segment-tabs active="${variant}"></workbench-segment-tabs><div class="workbench-theme-tabs" role="group" aria-label="工作台主题"><button type="button" data-theme="dark" title="深色" aria-label="深色"><span class="workbench-theme-switch__moon" aria-hidden="true"></span></button><button type="button" data-theme="blue" title="深蓝" aria-label="深蓝"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="m10 2 7 4-7 4-7-4 7-4Zm-7 8 7 4 7-4M3 14l7 4 7-4"/></svg></button><button type="button" data-theme="light" title="浅色" aria-label="浅色"><span class="workbench-theme-switch__sun" aria-hidden="true"></span></button></div></div></aside>`;
       this._panel=this.querySelector('workbench-segment-list-panel');
       enableListResize(this,this.querySelector('.workbench-review'));
       this._quality=this.querySelector('[data-quality-list]');
       this._action=this.querySelector('[data-action-list]');
+      this._preQuality=this.querySelector('[data-pre-quality]');
       this._postQuality=this.querySelector('[data-post-quality]');
       this._qualityActions=this.querySelector('[data-quality-actions]');
       this._tabs=this.querySelector('workbench-segment-tabs');
@@ -914,8 +947,8 @@ this.innerHTML=`<div class="segment-editor-component"><section class="card form-
     }
     get variant(){return this.getAttribute('variant')||'segments';}
     set variant(value){this.setAttribute('variant',this._normalizeVariant(value));}
-    _normalizeVariant(value){return value==='quality'||value==='post-quality'||value==='action'||value==='tags'||value==='log'||value==='info'?value:'segments';}
-    setVariant(value,emit=true){const variant=this._normalizeVariant(value);if(this.getAttribute('variant')!==variant)this.setAttribute('variant',variant);const quality=variant==='quality',postQuality=variant==='post-quality',action=variant==='action';if(this._panel){this._panel.hidden=quality||postQuality||action||variant==='tags';if(!quality&&!postQuality&&!action&&variant!=='tags')this._panel.setVariant(variant,false);}if(this._quality)this._quality.hidden=!quality;if(this._postQuality)this._postQuality.hidden=!postQuality;if(this._action)this._action.hidden=!action;if(this._qualityActions)this._qualityActions.hidden=!quality;this._tabs?.setActive(variant,false);if(this._footer)this._footer.hidden=quality||postQuality||variant==='log'||variant==='info';if(emit)this.dispatchEvent(new CustomEvent('review-variant-change',{bubbles:true,detail:{variant}}));}
+    _normalizeVariant(value){return value==='quality'||value==='pre-quality'||value==='post-quality'||value==='action'||value==='tags'||value==='log'||value==='info'?value:'segments';}
+    setVariant(value,emit=true){const variant=this._normalizeVariant(value);if(this.getAttribute('variant')!==variant)this.setAttribute('variant',variant);const quality=variant==='quality',preQuality=variant==='pre-quality',postQuality=variant==='post-quality',trainingQuality=preQuality||postQuality,action=variant==='action';if(this._panel){this._panel.hidden=quality||trainingQuality||action||variant==='tags';if(!quality&&!trainingQuality&&!action&&variant!=='tags')this._panel.setVariant(variant,false);}if(this._quality)this._quality.hidden=!quality;if(this._preQuality)this._preQuality.hidden=!preQuality;if(this._postQuality)this._postQuality.hidden=!postQuality;if(this._action)this._action.hidden=!action;if(this._qualityActions)this._qualityActions.hidden=!quality;this._tabs?.setActive(variant,false);if(this._footer)this._footer.hidden=quality||trainingQuality||variant==='log'||variant==='info';if(emit)this.dispatchEvent(new CustomEvent('review-variant-change',{bubbles:true,detail:{variant}}));}
     _setPageTheme(theme,persist){applyWorkbenchTheme(theme,persist);}
     _syncThemeSwitch(){if(!this._themeSwitch)return;let theme=document.documentElement.dataset.workbenchTheme||(document.body.classList.contains('theme-light')?'light':'dark');try{theme=localStorage.getItem(document.body.classList.contains('component-preview')?'workbench-component-theme':'workbench-theme')||theme;}catch(_){}applyWorkbenchTheme(theme,false);}
 
@@ -970,8 +1003,7 @@ this.innerHTML=`<div class="segment-editor-component"><section class="card form-
       if(this.dataset.rendered)return;
       if(this.hasAttribute('hydrate')){this.dataset.rendered='true';return;}
       this.dataset.rendered='true';
-      const quality=this.getAttribute('variant')==='quality';
-      this.innerHTML=`<footer class="workbench-footer-actions"><button type="button" data-action="submit">提交</button><button type="button" data-action="${quality?'leave':'reject'}">${quality?'暂离':'驳回'}</button><button type="button" data-action="save">保存</button></footer><workbench-confirm-dialog></workbench-confirm-dialog>`;
+      this.innerHTML=`<footer class="workbench-footer-actions"><button type="button" data-action="save">保存</button><button type="button" data-action="leave">释放</button><button type="button" data-action="reject">驳回</button><button type="button" data-action="submit">提交</button></footer><workbench-confirm-dialog></workbench-confirm-dialog>`;
       this._dialog=this.querySelector('workbench-confirm-dialog');
       this._dialog.addEventListener('confirm-dialog-confirm',event=>{event.stopPropagation();this.dispatchEvent(new CustomEvent('workbench-action',{bubbles:true,detail:{action:'submit'}}));});
       this.addEventListener('click',event=>{
@@ -1103,7 +1135,7 @@ this.innerHTML=`<div class="segment-editor-component"><section class="card form-
         const x=Math.max(0,Math.min(bounds.width,event.clientX-bounds.left));
         splitPreview.style.left=`${x}px`;
         splitPreview.querySelector('span').textContent=`${(x/bounds.width*70).toFixed(2)}s`;
-        splitPreview.hidden=false;
+        splitPreview.hidden=Boolean(window.WorkbenchQualityRanges?.contains(this._rejectedRanges||[],x/bounds.width*100));
       });
       row.addEventListener('pointerleave',()=>{splitPreview.hidden=true;});
       this.querySelector('timeline-controls').addEventListener('click',event=>{
@@ -1140,6 +1172,35 @@ this.innerHTML=`<div class="segment-editor-component"><section class="card form-
         if(emit)this.dispatchEvent(new CustomEvent('track-change',{bubbles:true,detail:{index,start:ruler._start,end:ruler._end,source:'segment'}}));
       };
       this._row=row;this._syncRange=syncRange;
+      this._ruler=ruler;
+      const paintRejected=()=>{
+        if(!this._rejectedRanges)return;
+        row._rejectedRanges=this._rejectedRanges;
+        const bounds=track.getBoundingClientRect();if(!bounds.width)return;
+        track.querySelectorAll('.segmented-timeline__rejected-gap').forEach(item=>item.remove());
+        for(const range of this._rejectedRanges){
+          const gap=document.createElement('button');gap.type='button';gap.className='segmented-timeline__rejected-gap';
+          gap.setAttribute('aria-label','查看不合格片段');gap.style.left=`${range.start}%`;gap.style.width=`${range.end-range.start}%`;
+          gap.addEventListener('click',event=>{
+            event.stopPropagation();if(splitMode)return;
+            row._selected=new Set();row._paintSelection();
+            track.querySelectorAll('.segmented-timeline__rejected-gap').forEach(button=>button.classList.toggle('is-active',button===gap));
+            controls.setPlaying(false);
+            controls.dispatchEvent(new CustomEvent('play-toggle',{bubbles:true,detail:{playing:false}}));
+            playbackStart=range.start;playbackEnd=range.end;
+            ruler.setRange(range.start,range.end,false);
+            setPlayPercent(range.start,false);
+            this.dispatchEvent(new CustomEvent('rejected-segment-select',{bubbles:true,detail:{start:range.start*.7,end:range.end*.7}}));
+          });
+          track.append(gap);
+        }
+        row.buttons.forEach(button=>{const box=button.getBoundingClientRect();const start=(box.left-bounds.left)/bounds.width*100,end=(box.right-bounds.left)/bounds.width*100;button.style.clipPath=window.WorkbenchQualityRanges.clip(this._rejectedRanges,start,end);button.disabled=this._rejectedRanges.some(r=>r.start<=start&&r.end>=end);});
+      };
+      this._paintRejected=paintRejected;
+      ['segments-split','segments-merge','segments-undo'].forEach(name=>this.addEventListener(name,paintRejected));
+      const rejectedObserver=new ResizeObserver(paintRejected);rejectedObserver.observe(track);
+      if(this._rejectedRanges)this.setRejectedRanges(this._rejectedRanges);
+
       syncGeometry();
       row.addEventListener('segment-select',event=>{syncRange(event.detail.index,true,true);controls.setPlaying(false);controls.dispatchEvent(new CustomEvent('play-toggle',{bubbles:true,detail:{playing:false}}));});
       ruler.addEventListener('range-change',event=>{
@@ -1209,6 +1270,12 @@ this.innerHTML=`<div class="segment-editor-component"><section class="card form-
       resizeObserver.observe(track);
       syncRange(0,false,true);
     }
+    setRejectedRanges(ranges){
+      this._rejectedRanges=window.WorkbenchQualityRanges.merge(ranges);
+      if(this._row)this._row._rejectedRanges=this._rejectedRanges;
+      this._ruler?.setRejectedRanges(this._rejectedRanges);
+      this._paintRejected?.();
+    }
     selectSegment(index,emit=true){if(!this._row||!this._syncRange){requestAnimationFrame(()=>this.selectSegment(index,emit));return;}const safe=Math.max(0,Math.min(this._row.buttons.length-1,Number(index)||0));this._row.selectIndex(safe,false);this._syncRange(safe,emit,true);}
   }
 
@@ -1218,6 +1285,7 @@ this.innerHTML=`<div class="segment-editor-component"><section class="card form-
       this.dataset.rendered='true';
       this.innerHTML=`<segmented-track label="${this.getAttribute('label')||'14'}" position="${this.getAttribute('position')||'19'}"></segmented-track>`;
     }
+    setRejectedRanges(ranges){this.querySelector('segmented-track')?.setRejectedRanges(ranges.map(r=>({start:r.start/70*100,end:r.end/70*100})));}
     selectSegment(index,emit=true){this.querySelector('segmented-track')?.selectSegment(index,emit);}
   }
 

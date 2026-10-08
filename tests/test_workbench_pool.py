@@ -77,7 +77,7 @@ class WorkbenchPoolTests(unittest.TestCase):
         for pool in ("POOL-PRETRAINING-QC", "POOL-PRETRAINING-ACCEPTANCE", "POOL-E2E-ACCEPTANCE"):
             html = self.client.get("/data/workbench-v2/pools/" + pool).get_data(as_text=True)
             self.assertIn("/pools/" + pool + "/records?source=", html)
-            self.assertLess(html.index(">重置</button>"), html.index(">进入任务池</a>"))
+            self.assertLess(html.index(">重置</button>"), html.index(">数据列表</a>"))
             if "PRETRAINING" in pool:
                 self.assertIn("规则 v1</option>", html)
             response = self.client.get("/data/workbench-v2/pools/" + pool + "/records")
@@ -102,7 +102,7 @@ class WorkbenchPoolTests(unittest.TestCase):
         self.assertEqual(400, self.action(action="finish", ids=["7523787"], result="合格").status_code)
 
     def test_decision_reason_and_repeat_guard(self):
-        for reason, remark in (("", ""), ("bad", ""), ("其他", "  ")):
+        for reason, remark in (("", ""), ("bad", "")):
             self.assertEqual(400, self.action(action="finish", ids=["7523785"], result="不合格", reason=reason, remark=remark).status_code)
         result = self.action(action="finish", ids=["7523785"], result="不合格", reason="其他", remark="动作没有完成")
         self.assertEqual(200, result.status_code)
@@ -112,6 +112,19 @@ class WorkbenchPoolTests(unittest.TestCase):
         self.assertEqual(400, self.action(action="start", ids=["7523785"]).status_code)
         result = self.action(action="finish", ids=["7523786"], result="合格")
         self.assertEqual(200, result.status_code)
+
+    def test_multiple_rejection_reasons_are_validated_and_persisted(self):
+        for reasons in ([], "其他", ["bad"], ["其他", "其他"], [None], [["其他"]]):
+            response = self.action(action="finish", ids=["7523785"], result="不合格", reasons=reasons)
+            self.assertEqual(400, response.status_code, reasons)
+            self.assertEqual("processing", next(item for item in self.records() if item["id"] == "7523785")["status"])
+        reasons = ["画面遮挡或模糊", "其他"]
+        response = self.action(action="finish", ids=["7523785"], result="不合格", reasons=reasons)
+        self.assertEqual(200, response.status_code)
+        saved = next(item for item in self.records() if item["id"] == "7523785")
+        self.assertEqual(reasons, saved["reasons"])
+        self.assertEqual("", saved["remark"])
+        self.assertRegex(saved["reviewed_at"], r"^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\+08:00$")
 
     def test_editor_is_scoped_to_pool_and_record(self):
         url = "/data/workbench-v2/edit?task=WB-PRETRAINING-QC&pool_id=POOL-PRETRAINING-QC&recording_id="

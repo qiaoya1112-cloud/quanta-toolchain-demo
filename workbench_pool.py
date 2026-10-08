@@ -4,6 +4,8 @@ import json
 import sqlite3
 from contextlib import contextmanager
 from pathlib import Path
+from datetime import datetime
+from zoneinfo import ZoneInfo
 
 
 class PoolConflict(ValueError):
@@ -57,7 +59,7 @@ def pool_records(task, saved):
         record.update(states.get(record["id"], {}))
     return sorted(records, key=lambda item: item["status"] != "processing")
 
-def transition(task, saved, action, ids, result="", reason="", remark="", owner=None):
+def transition(task, saved, action, ids, result="", reason="", remark="", owner=None, reasons=None):
     """Validate the entire request before changing any record."""
     if not isinstance(ids, list) or not ids or len(ids) != len(set(map(str, ids))):
         raise ValueError("请选择有效且不重复的数据")
@@ -75,12 +77,17 @@ def transition(task, saved, action, ids, result="", reason="", remark="", owner=
             raise ValueError("仅可提交正在处理的数据，请刷新列表")
         if result not in ("合格", "不合格"):
             raise ValueError("请选择有效结论")
-        if result == "不合格" and reason not in REJECTION_REASONS:
-            raise ValueError("请选择不合格原因")
-        if result == "不合格" and reason == "其他" and not remark.strip():
-            raise ValueError("请填写其他原因说明")
+        selected_reasons = reasons if reasons is not None else ([reason] if reason else [])
+        if result == "不合格" and (
+            not isinstance(selected_reasons, list) or not selected_reasons
+            or any(not isinstance(item, str) or item not in REJECTION_REASONS for item in selected_reasons)
+            or len(selected_reasons) != len(set(selected_reasons))
+        ):
+            raise ValueError("请选择有效且不重复的不合格原因")
+        selected_reasons = selected_reasons if result == "不合格" else []
         changes = {ids[0]: {"status": "completed", "result": result,
-                           "reason": reason if result == "不合格" else "",
+                           "reasons": selected_reasons, "reason": "、".join(selected_reasons),
+                           "reviewed_at": datetime.now(ZoneInfo("Asia/Shanghai")).isoformat(sep=" ", timespec="seconds"),
                            "remark": remark.strip() if result == "不合格" else ""}}
     else:
         raise ValueError("无效操作")
@@ -115,9 +122,9 @@ def shared_records(path, task, legacy, owner):
         return pool_records(task, saved)
 
 
-def shared_transition(path, task, legacy, owner, action, ids, result="", reason="", remark=""):
+def shared_transition(path, task, legacy, owner, action, ids, result="", reason="", remark="", reasons=None):
     with shared_state(path, task, legacy, owner) as saved:
-        updated = transition(task, saved, action, ids, result, reason, remark, owner)
+        updated = transition(task, saved, action, ids, result, reason, remark, owner, reasons)
         saved.update(updated)
         return pool_records(task, updated)
 

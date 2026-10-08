@@ -405,7 +405,7 @@ html[data-theme=light] .review-info__code{color:#1c2d36!important}
 workbench-footer-actions{display:block;width:100%;min-width:380px;--footer-bg:#101821;--footer-line:#2b3a4a;--footer-button-line:#263340;--footer-text:#fff;--footer-brand:#27c4d4;--footer-brand-text:#10161d;font-family:Inter,-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif}
 .workbench-footer-actions{width:100%;height:52px;display:flex;align-items:center;gap:6px;padding:8px 12px;border-top:1px solid var(--footer-line);background:var(--footer-bg);box-sizing:border-box}
 .workbench-footer-actions button{min-width:0;height:36px;flex:1 1 0;padding:0;border:1px solid var(--footer-button-line);border-radius:8px;background:transparent;color:var(--footer-text);font:400 13px/19.5px Inter,-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;cursor:pointer}
-.workbench-footer-actions button:first-child{border-color:var(--footer-brand);background:var(--footer-brand);color:var(--footer-brand-text)}
+.workbench-footer-actions button[data-action="submit"]{border-color:var(--footer-brand);background:var(--footer-brand);color:var(--footer-brand-text)}
 html[data-theme=light] workbench-footer-actions{--footer-bg:#fbfcfd;--footer-line:#d7e0e7;--footer-button-line:#cbd6de;--footer-text:#435660;--footer-brand:#0095b6;--footer-brand-text:#fff}
 html[data-theme=light] .workbench-footer-actions{border-top-width:.5px}
 .workbench-submit-dialog{width:min(460px,calc(100vw - 32px));margin:auto;padding:0;overflow:hidden;border:1px solid #354555;border-radius:16px;background:#151e28;color:#e7edf3;box-shadow:0 20px 60px rgba(0,0,0,.46);font-family:Inter,-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif}
@@ -928,3 +928,7 @@ html[data-workbench-theme="blue"] :is(workbench-segment-editor,.tag-editor-shell
 html[data-workbench-theme="blue"] :is(workbench-segment-editor,.tag-editor-shell) .error-option:not(.is-selected):hover,
 html[data-workbench-theme="blue"] :is(workbench-multi-select,workbench-tag-tree-select) [data-multi-option]:not(.is-selected):hover,
 html[data-workbench-theme="blue"] .workbench-error-popover [data-reason]:not(.is-selected):hover{background:var(--color-bg-hover);color:var(--color-text-primary)}
+
+.segmented-timeline__rejected-range{position:absolute;z-index:5;top:0;bottom:0;background:#65717b;border-radius:2px;cursor:default}
+
+.segmented-timeline__rejected-gap{position:absolute;z-index:4;top:1px;bottom:1px;padding:0;border:0;border-radius:2px;background:var(--st-track);cursor:pointer}.segmented-timeline__rejected-gap.is-active{box-shadow:inset 0 0 0 1px var(--st-brand)}

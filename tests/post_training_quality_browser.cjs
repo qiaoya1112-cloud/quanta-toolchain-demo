@@ -1,4 +1,4 @@
-﻿const assert=require('node:assert/strict');
+const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const http=require('node:http');
 const os=require('node:os');
@@ -45,7 +45,8 @@ async function main(){
     for(let index=0;index<100;index+=1){if(await evaluate("document.querySelector('.main')?.getAttribute('aria-busy')==='false'"))break;await delay(100);}
 
     console.log('browser check: tab and layout');
-    assert.equal(await evaluate("document.querySelector('[data-review-variant=quality]').nextElementSibling.dataset.reviewVariant"),'post-quality','新Tab应位于原质检Tab下方');
+    assert.equal(await evaluate("document.querySelector('[data-review-variant=quality]').nextElementSibling.dataset.reviewVariant"),'pre-quality','预训练质检应位于原质检Tab下方');
+    assert.equal(await evaluate("document.querySelector('[data-review-variant=pre-quality]').nextElementSibling.dataset.reviewVariant"),'post-quality','后训练质检应位于预训练质检下方');
     assert.match(await evaluate("document.querySelector('[data-review-variant=post-quality]').textContent"),/后训练质检/);
     assert.equal(await evaluate("(()=>{const tab=document.querySelector('[data-review-variant=post-quality]');return tab.scrollHeight<=tab.clientHeight})()"),true,'后训练质检工作台Tab文案必须完整显示');
     await evaluate("document.querySelector('[data-review-variant=post-quality]').click()");
@@ -91,13 +92,13 @@ async function main(){
     assert.equal(await evaluate("document.querySelector('.ptq-range-label.is-start').textContent"),'00:01.0','选中片段后公共时间轴应显示其开始时间');
     assert.equal(await evaluate("document.querySelector('.ptq-range-label.is-end').textContent"),'00:05.0','选中片段后公共时间轴应显示其结束时间');
     assert.equal(await evaluate("document.querySelector('.ptq-time-field').textContent"),'00:01.0','编辑栏时间只读展示应与公共时间轴一致');
-    assert.equal(await evaluate("document.querySelectorAll('[data-field=start],[data-field=end]').length"),0,'编辑栏不应提供时间输入框');
+    assert.equal(await evaluate("document.querySelectorAll('post-training-quality-workspace [data-field=start],[data-field=end]').length"),0,'编辑栏不应提供时间输入框');
     await evaluate("(()=>{const rail=document.querySelector('.ptq-public-rail'),rect=rail.getBoundingClientRect(),handle=document.querySelector('.ptq-range-handle.is-start');handle.dispatchEvent(new PointerEvent('pointerdown',{bubbles:true,button:0,clientX:rect.left+rect.width*(1/40)}));document.dispatchEvent(new PointerEvent('pointermove',{bubbles:true,button:0,clientX:rect.left+rect.width*(1.5/40)}));document.dispatchEvent(new PointerEvent('pointerup',{bubbles:true,button:0,clientX:rect.left+rect.width*(1.5/40)}));})()");
     assert.equal(await evaluate("window.PostTrainingQualityDemo.state.segments.find(item=>item.id==='A').start"),1.5,'公共时间轴手柄应修改选中正式片段的开始时间');
     assert.equal(await evaluate("document.querySelector('.ptq-time-field').textContent"),'00:01.5','公共时间轴调整后编辑栏只读时间应同步更新');
     await evaluate("window.PostTrainingQualityDemo.updateTime('A','start',1)");
-    assert.equal(await evaluate("document.querySelector('#ptqVideoConclusion').disabled"),true,'整体结论必须只读');
-    assert.equal(await evaluate("document.querySelector('#ptqVideoConclusion').value"),'不合格');
+    assert.equal(await evaluate("document.querySelector('#ptqVideoConclusion').tagName"),'OUTPUT','整体结论必须自动显示');
+    assert.equal(await evaluate("document.querySelector('#ptqVideoConclusion').textContent"),'不合格');
     assert.equal(await evaluate("document.querySelector('post-training-quality-timeline timeline-controls').nextElementSibling.classList.contains('ptq-track-stack')"),true,'平台播放操作区应位于公共时间轴和业务轨道上方');
     assert.equal(await evaluate("document.querySelector('.ptq-public-timeline').compareDocumentPosition(document.querySelector('.ptq-lanes'))&Node.DOCUMENT_POSITION_FOLLOWING"),4,'公共时间轴应位于三条业务轨道上方');
     assert.equal(await evaluate("document.querySelector('.ptq-public-timeline>span').textContent.trim()"),'','公共时间轴左侧不应显示文字');
@@ -105,7 +106,7 @@ async function main(){
     assert.equal(await evaluate("document.querySelector('.ptq-lane').getBoundingClientRect().height < document.querySelector('.ptq-public-timeline').getBoundingClientRect().height"),true,'三条业务轨道应比公共时间轴更矮');
     assert.equal(await evaluate("document.body.innerText.includes('备注（选填）')"),false,'审核编辑区不应显示选填备注');
     assert.equal(await evaluate("document.body.innerText.includes('错误原因')"),true,'审核编辑区应显示错误原因');
-    assert.equal(await evaluate("document.querySelectorAll('[data-review-error]').length"),7,'错误原因应复用原质检工作台的七个下拉选项');
+    assert.equal(await evaluate("document.querySelectorAll('post-training-quality-workspace [data-review-error]').length"),7,'错误原因应复用原质检工作台的七个下拉选项');
     assert.equal(await evaluate("(()=>{const head=document.querySelector('.ptq-playhead').getBoundingClientRect(),pub=document.querySelector('.ptq-public-timeline').getBoundingClientRect(),lanes=document.querySelector('.ptq-lanes').getBoundingClientRect();return head.top<=pub.top&&head.bottom>=lanes.bottom})()"),true,'统一播放头应贯穿公共时间轴和三条业务轨道');
     assert.equal(await evaluate("(()=>{const control=document.querySelector('post-training-quality-timeline timeline-controls');control.dataset.identity='kept';document.dispatchEvent(new CustomEvent('post-quality-seek',{detail:{seconds:4.2}}));return document.querySelector('post-training-quality-timeline timeline-controls').dataset.identity})()"),'kept','播放位置更新不得重建平台播放操作区');
     assert.equal(await evaluate("(()=>{const label=document.querySelector('.ptq-conclusion-switch label');return label.scrollHeight<=label.clientHeight})()"),true,'片段结论按钮文字必须保持单行');
@@ -114,22 +115,22 @@ async function main(){
     assert.ok(footerLayout.buttonBottom<=footerLayout.panelBottom&&footerLayout.footerBottom<=footerLayout.panelBottom,'右侧底部操作区必须完整显示');
     assert.deepEqual(await evaluate("[...document.querySelectorAll('.ptq-editor-actions button')].slice(0,4).map(button=>button.textContent.trim().replace(/\\s+/g,' '))"),['上一段 ⌘↑','下一段 ⌘↓','同轨左 ⌘←','同轨右 ⌘→']);
 
-    await evaluate("document.querySelector('[data-action=toggle-review-error]').click()");
-    const reviewMenu=await evaluate("(()=>{const menu=document.querySelector('.ptq-review-error-menu'),rect=menu.getBoundingClientRect(),trigger=document.querySelector('[data-action=toggle-review-error]').getBoundingClientRect();return{hidden:menu.hidden,top:rect.top,bottom:rect.bottom,triggerTop:trigger.top,viewport:innerHeight}})()");
+    await evaluate("document.querySelector('post-training-quality-workspace [data-action=toggle-review-error]').click()");
+    const reviewMenu=await evaluate("(()=>{const menu=document.querySelector('.ptq-review-error-menu'),rect=menu.getBoundingClientRect(),trigger=document.querySelector('post-training-quality-workspace [data-action=toggle-review-error]').getBoundingClientRect();return{hidden:menu.hidden,top:rect.top,bottom:rect.bottom,triggerTop:trigger.top,viewport:innerHeight}})()");
     assert.equal(reviewMenu.hidden,false,'错误原因下拉应能展开');
     assert.ok(reviewMenu.top>=0&&reviewMenu.bottom<=reviewMenu.triggerTop&&reviewMenu.bottom<=reviewMenu.viewport,'错误原因下拉应向上展开且完整位于视口内');
-    await evaluate("document.querySelector('[data-review-error=\"动作开始边界偏晚\"]').click()");
+    await evaluate("document.querySelector('post-training-quality-workspace [data-review-error=\"动作开始边界偏晚\"]').click()");
     assert.equal(await evaluate("window.PostTrainingQualityDemo.state.segments.find(item=>item.id==='A').reviewErrorReason"),'动作开始边界偏晚','选择错误原因后应写入当前片段');
-    assert.equal(await evaluate("document.querySelector('[data-action=toggle-review-error] span').textContent"),'动作开始边界偏晚','下拉触发器应显示已选错误原因');
-    await evaluate("document.querySelector('[data-action=toggle-review-error]').click();document.querySelector('[data-action=clear-review-error]').click()");
+    assert.equal(await evaluate("document.querySelector('post-training-quality-workspace [data-action=toggle-review-error] span').textContent"),'动作开始边界偏晚','下拉触发器应显示已选错误原因');
+    await evaluate("document.querySelector('post-training-quality-workspace [data-action=toggle-review-error]').click();document.querySelector('post-training-quality-workspace [data-action=clear-review-error]').click()");
     assert.equal(await evaluate("window.PostTrainingQualityDemo.segmentErrors(window.PostTrainingQualityDemo.state.segments.find(item=>item.id==='A')).some(error=>error.includes('错误原因'))"),true,'清空错误原因后必填校验应立即失败');
-    await evaluate("document.querySelector('[data-action=toggle-review-error]').click();document.querySelector('[data-review-error=\"动作开始边界偏晚\"]').click()");
+    await evaluate("document.querySelector('post-training-quality-workspace [data-action=toggle-review-error]').click();document.querySelector('post-training-quality-workspace [data-review-error=\"动作开始边界偏晚\"]').click()");
 
     const editorHeight=await evaluate("document.querySelector('.ptq-editor').getBoundingClientRect().height");
-    await evaluate("document.querySelector('[data-action=toggle-reasons]').click()");
+    await evaluate("document.querySelector('post-training-quality-workspace [data-action=toggle-reasons]').click()");
     assert.equal(await evaluate("document.querySelector('.ptq-reason-menu').hidden"),false);
     assert.equal(await evaluate("document.querySelectorAll('.ptq-reason-menu label').length"),4,'失误原因应完整渲染');
-    const mistakeMenu=await evaluate("(()=>{const menu=document.querySelector('.ptq-reason-menu'),rect=menu.getBoundingClientRect(),topElement=document.elementFromPoint(rect.left+12,rect.top+12);return{top:rect.top,bottom:rect.bottom,viewport:innerHeight,scrollHeight:menu.scrollHeight,clientHeight:menu.clientHeight,triggerTop:document.querySelector('[data-action=toggle-reasons]').getBoundingClientRect().top,painted:topElement?.closest('.ptq-reason-menu')===menu}})()");
+    const mistakeMenu=await evaluate("(()=>{const menu=document.querySelector('.ptq-reason-menu'),rect=menu.getBoundingClientRect(),topElement=document.elementFromPoint(rect.left+12,rect.top+12);return{top:rect.top,bottom:rect.bottom,viewport:innerHeight,scrollHeight:menu.scrollHeight,clientHeight:menu.clientHeight,triggerTop:document.querySelector('post-training-quality-workspace [data-action=toggle-reasons]').getBoundingClientRect().top,painted:topElement?.closest('.ptq-reason-menu')===menu}})()");
     assert.ok(mistakeMenu.top>=0&&mistakeMenu.bottom<=mistakeMenu.viewport,'失误原因浮层必须完整位于视口内');
     assert.ok(mistakeMenu.bottom<=mistakeMenu.triggerTop,'原因浮层应向上展开');
     assert.equal(mistakeMenu.painted,true,'失误原因浮层不得被父容器裁切或被其他区域遮挡');
@@ -138,11 +139,11 @@ async function main(){
       const capture=await call('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});
       fs.writeFileSync(path.resolve(root,'../03-requirements/S027-后训练质检平台/后训练质检工作台-失误原因.png'),Buffer.from(capture.data,'base64'));
     }
-    await evaluate("document.querySelector('input[data-field=reason][value=M01]').click()");
+    await evaluate("document.querySelector('post-training-quality-workspace input[data-field=reason][value=M01]').click()");
     assert.equal(await evaluate("document.querySelector('.ptq-editor').getBoundingClientRect().height"),editorHeight,'原因选择不应改变底部编辑区高度');
-    await evaluate("document.querySelector('[data-action=toggle-reasons]').click();document.querySelector('input[data-field=reason][value=M01]').click()");
+    await evaluate("document.querySelector('post-training-quality-workspace [data-action=toggle-reasons]').click();document.querySelector('post-training-quality-workspace input[data-field=reason][value=M01]').click()");
 
-    await evaluate("document.querySelector('.ptq-list-item[data-segment-id=B]').click();document.querySelector('[data-action=toggle-reasons]').click()");
+    await evaluate("document.querySelector('.ptq-list-item[data-segment-id=B]').click();document.querySelector('post-training-quality-workspace [data-action=toggle-reasons]').click()");
     assert.equal(await evaluate("document.querySelectorAll('.ptq-reason-menu label').length"),8,'不合格状态应完整渲染失误和不合格原因');
     const rejectedMenu=await evaluate("(()=>{const menu=document.querySelector('.ptq-reason-menu'),rect=menu.getBoundingClientRect(),topElement=document.elementFromPoint(rect.left+12,rect.top+12),last=menu.querySelector('label:last-child').getBoundingClientRect();menu.scrollTop=menu.scrollHeight;const lastAfter=menu.querySelector('label:last-child').getBoundingClientRect();return{top:rect.top,bottom:rect.bottom,viewport:innerHeight,scrollHeight:menu.scrollHeight,clientHeight:menu.clientHeight,painted:topElement?.closest('.ptq-reason-menu')===menu,lastInitiallyVisible:last.bottom<=rect.bottom,lastAccessible:lastAfter.bottom<=rect.bottom&&lastAfter.top>=rect.top}})()");
     assert.ok(rejectedMenu.top>=0&&rejectedMenu.bottom<=rejectedMenu.viewport,'不合格原因浮层必须完整位于视口内');
@@ -153,7 +154,7 @@ async function main(){
       const capture=await call('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});
       fs.writeFileSync(path.resolve(root,'../03-requirements/S027-后训练质检平台/后训练质检工作台-不合格原因.png'),Buffer.from(capture.data,'base64'));
     }
-    await evaluate("document.querySelector('[data-action=toggle-reasons]').click();document.querySelector('.ptq-list-item[data-segment-id=A]').click()");
+    await evaluate("document.querySelector('post-training-quality-workspace [data-action=toggle-reasons]').click();document.querySelector('.ptq-list-item[data-segment-id=A]').click()");
 
     console.log('browser check: screenshot');
     const screenshot=await call('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});
@@ -181,30 +182,29 @@ async function main(){
     const pendingIds=await evaluate("window.PostTrainingQualityDemo.state.segments.filter(item=>item.conclusion==='pending').map(item=>item.id)");
     for(const id of pendingIds){
       await evaluate(`document.querySelector('.ptq-list-item[data-segment-id="${id}"]').click()`);
-      await evaluate("document.querySelector('input[data-field=conclusion][value=mistake]').click()");
-      await evaluate("document.querySelector('input[data-field=reason][value=M01]').click()");
-      await evaluate("document.querySelector('[data-action=toggle-review-error]').click();document.querySelector('[data-review-error=\"片段范围错误\"]').click()");
+      await evaluate("document.querySelector('post-training-quality-workspace input[data-field=conclusion][value=mistake]').click()");
+      await evaluate("document.querySelector('post-training-quality-workspace input[data-field=reason][value=M01]').click()");
+      await evaluate("document.querySelector('post-training-quality-workspace [data-action=toggle-review-error]').click();document.querySelector('post-training-quality-workspace [data-review-error=\"片段范围错误\"]').click()");
     }
     const rejectedIds=await evaluate("window.PostTrainingQualityDemo.state.segments.filter(item=>item.conclusion==='rejected').map(item=>item.id)");
     for(const id of rejectedIds){
       await evaluate(`document.querySelector('.ptq-list-item[data-segment-id="${id}"]').click()`);
       const oldReasons=await evaluate("window.PostTrainingQualityDemo.state.segments.find(item=>item.id===window.PostTrainingQualityDemo.state.selectedId).rejectedReasons.slice()");
-      await evaluate("document.querySelector('input[data-field=conclusion][value=mistake]').click()");
+      await evaluate("document.querySelector('post-training-quality-workspace input[data-field=conclusion][value=mistake]').click()");
       assert.deepEqual(await evaluate("window.PostTrainingQualityDemo.state.segments.find(item=>item.id===window.PostTrainingQualityDemo.state.selectedId).rejectedReasons"),oldReasons,'切换结论不得静默清除原因');
-      for(const reason of oldReasons)await evaluate(`document.querySelector('input[data-field=reason][value=${reason}]').click()`);
-      if(!await evaluate("document.querySelector('input[data-field=reason][value=M01]').checked"))await evaluate("document.querySelector('input[data-field=reason][value=M01]').click()");
+      for(const reason of oldReasons)await evaluate(`document.querySelector('post-training-quality-workspace input[data-field=reason][value=${reason}]').click()`);
+      if(!await evaluate("document.querySelector('post-training-quality-workspace input[data-field=reason][value=M01]').checked"))await evaluate("document.querySelector('post-training-quality-workspace input[data-field=reason][value=M01]').click()");
     }
-    assert.equal(await evaluate("document.querySelector('#ptqVideoConclusion').value"),'失误','只有失误片段的视频结论应为失误');
-    assert.equal(await evaluate("document.querySelector('#ptqCompleted').disabled"),false);
+    assert.equal(await evaluate("document.querySelector('#ptqVideoConclusion').textContent"),'失误','只有失误片段的视频结论应为失误');
+    assert.equal(await evaluate("document.querySelector('#ptqCompleted')"),null,'不应显示整段检查确认复选框');
     await evaluate("document.querySelector('post-training-quality-sidebar [data-action=save]').click()");
     assert.match(await evaluate("document.querySelector('#workbenchNotice').textContent"),/草稿已保存/);
-    await evaluate("document.querySelector('#ptqCompleted').click()");
     await evaluate("document.querySelector('post-training-quality-sidebar [data-action=submit]').click()");
     assert.equal(await evaluate("document.querySelector('#ptqSubmitDialog').open"),true);
     assert.equal(await evaluate("document.querySelector('#ptqSubmitDialog [data-result]').textContent"),'失误');
     await evaluate("document.querySelector('#ptqSubmitDialog [data-action=confirm-submit]').click()");
     assert.equal(await evaluate("document.querySelector('post-training-quality-sidebar [data-action=submit]').disabled"),true,'提交成功后结果应只读');
-    assert.equal(await evaluate("document.querySelector('.ptq-time-field')!==null&&document.querySelector('[data-action=toggle-review-error]').disabled"),true,'提交后时间展示和片段编辑控件应进入只读状态');
+    assert.equal(await evaluate("document.querySelector('.ptq-time-field')!==null&&document.querySelector('post-training-quality-workspace [data-action=toggle-review-error]').disabled"),true,'提交后时间展示和片段编辑控件应进入只读状态');
 
     console.log('browser check: original tabs regression');
     await evaluate("document.querySelector('[data-review-variant=quality]').click()");

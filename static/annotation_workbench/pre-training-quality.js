@@ -1,21 +1,22 @@
 (() => {
-  const trainingType = 'post';
-  const label = '后训练';
+  const trainingType = 'pre';
+  const label = '预训练';
   const eventName = suffix => `${trainingType}-quality-${suffix}`;
   const elementName = suffix => `${trainingType}-training-quality-${suffix}`;
-  const domPrefix = 'ptq';
+  const domPrefix = 'prq';
   const recordId = document.querySelector('workbench-task-header')?.dataset?.id || 'DT202609070126';
   const DURATION = 40;
   const TRACK_COUNT = 3;
   const PERMISSIONS = { canReviewErrorReason: true };
   const DRAFT_KEY = `quanta.${trainingType}-training-quality.v4.${recordId}`;
   const RULE = {
-    id: 'RL-PTQC-001', version: 'v1', name: `${label}采集质检规则`,
+    id: 'RL-PRQC-001', version: 'v1', name: `${label}采集质检规则`,
     mistake: [
       {id:'M01', name:'夹爪超出画面', detail:'操作过程中夹爪短暂离开有效画面。'},
       {id:'M02', name:'手部脱离夹爪', detail:'采集动作中手部未按规范保持夹持。'},
       {id:'M03', name:'其他身体部位辅助', detail:'使用规定外的身体部位辅助完成动作。'},
-      {id:'M04', name:'无意义动作或假动作', detail:'出现与任务目标无关或未真实执行的动作。'}
+      {id:'M04', name:'无意义动作或假动作', detail:'出现与任务目标无关或未真实执行的动作。'},
+      {id:'M05', name:'可用时长太短', detail:'连续可用片段不足 3 秒，提交时自动标记为失误。'}
     ],
     rejected: [
       {id:'U01', name:'视频损坏或相机卡死', detail:'任一必要视角无法连续正常播放。'},
@@ -62,7 +63,7 @@
     if (segment.conclusion === 'mistake' && !segment.mistakeReasons.length) errors.push('请选择失误原因');
     if (segment.conclusion === 'mistake' && segment.rejectedReasons.length) errors.push('请移除不合格原因');
     if (segment.conclusion === 'rejected' && !segment.rejectedReasons.length) errors.push('请选择不合格原因');
-    if (PERMISSIONS.canReviewErrorReason && ['mistake','rejected'].includes(segment.conclusion) && !segment.reviewErrorReason?.trim()) errors.push('请填写错误原因');
+    if (!segment.autoShortDuration && PERMISSIONS.canReviewErrorReason && ['mistake','rejected'].includes(segment.conclusion) && !segment.reviewErrorReason?.trim()) errors.push('请填写错误原因');
     return errors;
   };
   const valid = segment => segmentErrors(segment).length === 0;
@@ -100,6 +101,35 @@
   const selected = () => byId(state.selectedId);
   const pendingCount = () => state.segments.filter(item => item.conclusion === 'pending').length;
   const invalidCount = () => state.segments.filter(item => !valid(item)).length;
+  const isShortDuration = item => item.conclusion === 'mistake' && item.mistakeReasons.includes('M05');
+
+  // Problem segments occupy the video; their complement is the usable footage.
+  function usableRanges(segments, duration = DURATION) {
+    const occupied = sortSegments(segments.filter(item => item.conclusion !== 'pass'));
+    const ranges = [];
+    let cursor = 0;
+    for (const item of occupied) {
+      const start = clamp(item.start, 0, duration), end = clamp(item.end, 0, duration);
+      if (start > cursor) ranges.push({start:cursor, end:start});
+      cursor = Math.max(cursor, end);
+    }
+    if (cursor < duration) ranges.push({start:cursor, end:duration});
+    return ranges;
+  }
+  function validateUsableDuration() {
+    const manual = state.segments.filter(item => !item.autoShortDuration);
+    const short = usableRanges(manual).filter(item => item.end - item.start < 3 - 1e-9);
+    state.segments = manual;
+    for (const range of short) {
+      const item = {...range, id:nextId(), conclusion:'mistake', mistakeReasons:['M05'], rejectedReasons:[], reviewErrorReason:'', autoShortDuration:true, order:Math.max(0,...state.segments.map(item=>item.order))+1};
+      placeSegment(item, state.segments);
+      state.segments.push(item);
+    }
+    if (!state.segments.some(item=>item.id===state.selectedId)) state.selectedId=state.segments[0]?.id||'';
+    if (short.length) state.dirty = true;
+    notify();
+    return short.length;
+  }
   const calculateConclusion = (segments, completed) => segments.some(item => item.conclusion === 'rejected') ? '不合格'
     : segments.some(item => item.conclusion === 'mistake') ? '失误'
     : completed && segments.every(valid) ? '合格' : '待计算';
@@ -111,6 +141,7 @@
       conclusion:['mistake','rejected'].includes(raw.conclusion) ? raw.conclusion : 'pending',
       mistakeReasons:Array.isArray(raw.mistakeReasons) ? raw.mistakeReasons : [],
       rejectedReasons:Array.isArray(raw.rejectedReasons) ? raw.rejectedReasons : [], reviewErrorReason:REVIEW_ERROR_REASONS.includes(String(raw.reviewErrorReason ?? raw.note ?? '')) ? String(raw.reviewErrorReason ?? raw.note ?? '') : '',
+      autoShortDuration:raw.autoShortDuration === true && raw.conclusion === 'mistake' && raw.mistakeReasons?.includes('M05'),
       order:Number(raw.order) || index + 1, track:clamp(Number(raw.track ?? raw.lane) || 0,0,2)
     };
   }
@@ -180,7 +211,7 @@
     markDirty();
   }
 
-  class PostTrainingQualityTimeline extends HTMLElement {
+  class PreTrainingQualityTimeline extends HTMLElement {
     connectedCallback() {
       if (this.dataset.ready) return;
       this.dataset.ready = 'true';
@@ -195,7 +226,7 @@
       document.addEventListener(eventName('state-change'), () => this.render());
       document.addEventListener(eventName('seek'), event => { this.pause(); this.playTime = event.detail.seconds; this.updatePlayback(); });
       this.addEventListener('keydown',event=>{
-        if(!event.target.matches('.ptq-playhead')||!['ArrowLeft','ArrowRight','Home','End'].includes(event.key))return;
+        if(!event.target.matches('.prq-playhead')||!['ArrowLeft','ArrowRight','Home','End'].includes(event.key))return;
         event.preventDefault();this.pause();this.playTime=event.key==='Home'?0:event.key==='End'?DURATION:clamp(this.playTime+(event.key==='ArrowLeft'?-.1:.1),0,DURATION);this.updatePlayback();
       });
       this.render();
@@ -229,10 +260,10 @@
       }
     }
     onPointerDown(event) {
-      const playhead=event.target.closest('.ptq-playhead');
+      const playhead=event.target.closest('.prq-playhead');
       if(playhead){
         event.preventDefault();event.stopPropagation();this.pause();
-        const rect=this.querySelector('.ptq-public-rail').getBoundingClientRect();
+        const rect=this.querySelector('.prq-public-rail').getBoundingClientRect();
         const move=e=>{this.playTime=clamp((e.clientX-rect.left)/rect.width*DURATION,0,DURATION);this.updatePlayback();};
         const up=()=>{document.removeEventListener('pointermove',move);document.removeEventListener('pointerup',up);};
         document.addEventListener('pointermove',move);document.addEventListener('pointerup',up);return;
@@ -241,14 +272,14 @@
       // 正式片段的边界只允许在公共时间轴调整，业务轨道仅负责展示和选中。
       if (handle) return;
       if(event.target.closest('[data-segment-id]'))return;
-      const publicRail = event.target.closest('.ptq-public-rail');
+      const publicRail = event.target.closest('.prq-public-rail');
       if (!publicRail || event.button !== 0 || state.submitted) return;
       this.pause();
       event.preventDefault();
       const rect = publicRail.getBoundingClientRect();
       const toTime = x => clamp((x - rect.left) / rect.width * DURATION, 0, DURATION);
       const rangeHandle = event.target.closest('[data-range-handle]');
-      const rangeFill = event.target.closest('.ptq-draft-range');
+      const rangeFill = event.target.closest('.prq-draft-range');
       if (rangeHandle || rangeFill) {
         const mode = rangeHandle?.dataset.rangeHandle || 'fill';
         const originX = event.clientX;
@@ -299,20 +330,20 @@
       document.addEventListener('pointermove',move); document.addEventListener('pointerup',up);
     }
     renderDraft() {
-      const node=this.querySelector('.ptq-draft-range');
+      const node=this.querySelector('.prq-draft-range');
       if(!node||!this.draft)return;
       node.hidden=false;
       node.style.left=`${Math.min(this.draft.start,this.draft.end)/DURATION*100}%`;
       node.style.width=`${Math.abs(this.draft.end-this.draft.start)/DURATION*100}%`;
     }
     renderCandidate() {
-      const node=this.querySelector('.ptq-draft-range');
+      const node=this.querySelector('.prq-draft-range');
       if(!node)return;
       const range=this.rangeEdit || (selected()?selected():{start:state.rangeStart,end:state.rangeEnd});
       node.style.left=`${range.start/DURATION*100}%`;
       node.style.width=`${(range.end-range.start)/DURATION*100}%`;
-      const start=node.querySelector('.ptq-range-label.is-start');
-      const end=node.querySelector('.ptq-range-label.is-end');
+      const start=node.querySelector('.prq-range-label.is-start');
+      const end=node.querySelector('.prq-range-label.is-end');
       if(start)start.textContent=format(range.start);
       if(end)end.textContent=format(range.end);
     }
@@ -336,8 +367,8 @@
     pause(){this.playing=false;clearInterval(this.timer);this.querySelector('timeline-controls')?.setPlaying(false);}
     updatePlayback(){
       const hits=state.segments.filter(item=>item.start<=this.playTime&&this.playTime<item.end).map(item=>item.id);
-      this.querySelectorAll('.ptq-block').forEach(block=>block.classList.toggle('is-hit',hits.includes(block.dataset.segmentId)));
-      const head=this.querySelector('.ptq-playhead');
+      this.querySelectorAll('.prq-block').forEach(block=>block.classList.toggle('is-hit',hits.includes(block.dataset.segmentId)));
+      const head=this.querySelector('.prq-playhead');
       if(head){head.style.left=`calc(68px + (100% - 68px) * ${this.playTime/DURATION})`;head.setAttribute('aria-valuenow',this.playTime);head.setAttribute('aria-valuetext',format(this.playTime));}
       const playback=this.querySelector('.segmented-timeline__playback span');
       if(playback)playback.innerHTML=`<b>${format(this.playTime)}</b> <i>/</i> ${format(DURATION)}`;
@@ -357,15 +388,15 @@
         const otherDuration=candidate.end-candidate.start;
         return otherDuration>duration||(otherDuration===duration&&candidate.order<item.order);
       }).length;
-      return `<button type="button" data-segment-id="${escape(item.id)}" class="ptq-block is-${item.conclusion}${isSelected?' is-selected':''}${overlaps?' is-overlap':''}${hits.includes(item.id)?' is-hit':''}${valid(item)?'':' has-error'}" style="left:${item.start/DURATION*100}%;width:${Math.max(0,(item.end-item.start)/DURATION*100)}%;z-index:${layer}" title="${String(segmentNumber(item)).padStart(2,'0')} · ${conclusionLabel(item.conclusion)} · ${format(item.start)}–${format(item.end)}"></button>`;
+      return `<button type="button" data-segment-id="${escape(item.id)}" class="prq-block is-${item.conclusion}${isShortDuration(item)?' is-short-duration':''}${isSelected?' is-selected':''}${overlaps?' is-overlap':''}${hits.includes(item.id)?' is-hit':''}${valid(item)?'':' has-error'}" style="left:${item.start/DURATION*100}%;width:${Math.max(0,(item.end-item.start)/DURATION*100)}%;z-index:${layer}" title="${String(segmentNumber(item)).padStart(2,'0')} · ${conclusionLabel(item.conclusion)} · ${format(item.start)}–${format(item.end)}"></button>`;
     }
     render() {
       const hits=state.segments.filter(item=>item.start<=this.playTime&&this.playTime<item.end).map(item=>item.id);
       const play=clamp(this.playTime/DURATION*100,0,100);
       const shown=selected()||{start:state.rangeStart,end:state.rangeEnd};
-      this.innerHTML=`<section class="ptq-timeline" aria-label="后训练质检公共时间轴">
+      this.innerHTML=`<section class="prq-timeline" aria-label="预训练质检公共时间轴">
         <timeline-controls standard-label="质检标准"></timeline-controls>
-        <div class="ptq-track-stack"><div class="ptq-ruler"><span class="ptq-ruler-label" aria-hidden="true"></span><div class="ptq-ruler-rail">${[0,10,20,30,40].map(value=>`<span style="left:${value/DURATION*100}%">${format(value)}</span>`).join('')}</div></div><div class="ptq-public-timeline"><span aria-hidden="true"></span><div class="segmented-timeline__range-rail ptq-public-rail" aria-label="公共时间轴：调整当前片段或待添加片段区间"><i class="ptq-draft-range" style="left:${shown.start/DURATION*100}%;width:${(shown.end-shown.start)/DURATION*100}%"><span class="ptq-range-label is-start">${format(shown.start)}</span><span class="ptq-range-label is-end">${format(shown.end)}</span><button type="button" class="ptq-range-handle is-start" data-range-handle="start" aria-label="调整片段开始时间"></button><button type="button" class="ptq-range-handle is-end" data-range-handle="end" aria-label="调整片段结束时间"></button></i></div></div><div class="ptq-lanes">${Array.from({length:TRACK_COUNT},(_,track)=>`<div class="ptq-lane"><small>轨道 ${track+1}</small><div class="ptq-lane-rail">${state.segments.filter(item=>item.track===track).map(item=>this.block(item,hits)).join('')}</div></div>`).join('')}</div><i class="segmented-timeline__playhead ptq-playhead" role="slider" tabindex="0" aria-label="公共播放位置" aria-valuemin="0" aria-valuemax="40" aria-valuenow="${this.playTime}" style="left:calc(68px + (100% - 68px) * ${play/100})"></i></div>
+        <div class="prq-track-stack"><div class="prq-ruler"><span class="prq-ruler-label" aria-hidden="true"></span><div class="prq-ruler-rail">${[0,10,20,30,40].map(value=>`<span style="left:${value/DURATION*100}%">${format(value)}</span>`).join('')}</div></div><div class="prq-public-timeline"><span aria-hidden="true"></span><div class="segmented-timeline__range-rail prq-public-rail" aria-label="公共时间轴：调整当前片段或待添加片段区间"><i class="prq-draft-range" style="left:${shown.start/DURATION*100}%;width:${(shown.end-shown.start)/DURATION*100}%"><span class="prq-range-label is-start">${format(shown.start)}</span><span class="prq-range-label is-end">${format(shown.end)}</span><button type="button" class="prq-range-handle is-start" data-range-handle="start" aria-label="调整片段开始时间"></button><button type="button" class="prq-range-handle is-end" data-range-handle="end" aria-label="调整片段结束时间"></button></i></div></div><div class="prq-lanes">${Array.from({length:TRACK_COUNT},(_,track)=>`<div class="prq-lane"><small>轨道 ${track+1}</small><div class="prq-lane-rail">${state.segments.filter(item=>item.track===track).map(item=>this.block(item,hits)).join('')}</div></div>`).join('')}</div><i class="segmented-timeline__playhead prq-playhead" role="slider" tabindex="0" aria-label="公共播放位置" aria-valuemin="0" aria-valuemax="40" aria-valuenow="${this.playTime}" style="left:calc(68px + (100% - 68px) * ${play/100})"></i></div>
       </section>`;
       const playback=this.querySelector('.segmented-timeline__playback span');
       if(playback)playback.innerHTML=`<b>${format(this.playTime)}</b> <i>/</i> ${format(DURATION)}`;
@@ -375,7 +406,7 @@
     }
   }
 
-  class PostTrainingQualityWorkspace extends HTMLElement {
+  class PreTrainingQualityWorkspace extends HTMLElement {
     connectedCallback() {
       if(this.dataset.ready)return;
       this.dataset.ready='true';
@@ -388,14 +419,14 @@
       document.addEventListener('keydown',event=>this.onKey(event));
       document.addEventListener('pointerdown',event=>{
         if(this.hidden)return;
-        if(this.reasonsOpen&&!this.querySelector('.ptq-reason-select')?.contains(event.target))this.closeMenus();
-        if(this.reviewErrorOpen&&!this.querySelector('.ptq-review-error-select')?.contains(event.target))this.closeMenus();
+        if(this.reasonsOpen&&!this.querySelector('.prq-reason-select')?.contains(event.target))this.closeMenus();
+        if(this.reviewErrorOpen&&!this.querySelector('.prq-review-error-select')?.contains(event.target))this.closeMenus();
       },true);
       this.render();
     }
     closeMenus(){
       this.reasonsOpen=false;this.reviewErrorOpen=false;
-      this.querySelectorAll('.ptq-reason-menu,.ptq-review-error-menu').forEach(menu=>{menu.hidden=true;});
+      this.querySelectorAll('.prq-reason-menu,.prq-review-error-menu').forEach(menu=>{menu.hidden=true;});
       this.querySelectorAll('[data-action="toggle-reasons"],[data-action="toggle-review-error"]').forEach(trigger=>trigger.setAttribute('aria-expanded','false'));
     }
     set hidden(value){this.toggleAttribute('hidden',value);if(this.timeline){this.timeline.hidden=value;if(value)this.timeline.pause();}if(value)this.closeMenus();}
@@ -434,6 +465,7 @@
       const field=event.target.dataset.field;
       if(field==='conclusion'){
         item.conclusion=event.target.value;
+        item.autoShortDuration=false;
         this.reasonsOpen=item.conclusion!=='pending';
         markDirty(); return;
       }
@@ -449,25 +481,25 @@
     }
     render(){
       const item=selected();
-      if(!item){this.innerHTML=`<section class="ptq-editor card"><div class="ptq-empty"><b>尚未记录问题片段</b><span>在时间轴刻度拖拽创建片段，或设置起止时间后点击添加。</span></div></section>${this.ruleDialog()}`;return;}
+      if(!item){this.innerHTML=`<section class="prq-editor card"><div class="prq-empty"><b>尚未记录问题片段</b><span>在时间轴刻度拖拽创建片段，或设置起止时间后点击添加。</span></div></section>${this.ruleDialog()}`;return;}
       const ordered=sortSegments(state.segments),globalIndex=ordered.findIndex(candidate=>candidate.id===item.id);
       const trackItems=sortSegments(state.segments.filter(candidate=>candidate.track===item.track));
       const trackIndex=trackItems.findIndex(candidate=>candidate.id===item.id),errors=segmentErrors(item);
       const reasons=[...item.mistakeReasons,...item.rejectedReasons].map(reasonName);
       const trigger=item.conclusion==='pending'?'选择结论后设置原因':reasons.length?`${escape(reasons[0])}${reasons.length>1?` <em>+${reasons.length-1}</em>`:''}`:'请选择必选原因';
-      const menu=item.conclusion==='pending'||state.submitted?'':`<div class="ptq-reason-menu" ${this.reasonsOpen?'':'hidden'}>${this.reasonGroup('失误原因',item.conclusion==='mistake'?'必选':'选填','mistake',RULE.mistake,item.mistakeReasons)}${item.conclusion==='rejected'||item.rejectedReasons.length?this.reasonGroup(item.conclusion==='rejected'?'不合格原因':'不兼容原因',item.conclusion==='rejected'?'必选':'请移除','rejected',item.conclusion==='rejected'?RULE.rejected:RULE.rejected.filter(reason=>item.rejectedReasons.includes(reason.id)),item.rejectedReasons):''}</div>`;
+      const menu=item.conclusion==='pending'||state.submitted?'':`<div class="prq-reason-menu" ${this.reasonsOpen?'':'hidden'}>${this.reasonGroup('失误原因',item.conclusion==='mistake'?'必选':'选填','mistake',RULE.mistake,item.mistakeReasons)}${item.conclusion==='rejected'||item.rejectedReasons.length?this.reasonGroup(item.conclusion==='rejected'?'不合格原因':'不兼容原因',item.conclusion==='rejected'?'必选':'请移除','rejected',item.conclusion==='rejected'?RULE.rejected:RULE.rejected.filter(reason=>item.rejectedReasons.includes(reason.id)),item.rejectedReasons):''}</div>`;
       const reviewTrigger=item.reviewErrorReason||'请选择错误原因';
-      const reviewMenu=`<div class="ptq-review-error-menu" ${this.reviewErrorOpen?'':'hidden'} role="listbox">${REVIEW_ERROR_REASONS.map(reason=>`<button type="button" data-review-error="${escape(reason)}" role="option" class="${item.reviewErrorReason===reason?'is-selected':''}">${escape(reason)}<span>✓</span></button>`).join('')}<button type="button" class="ptq-review-error-clear" data-action="clear-review-error">清除错误原因</button></div>`;
-      this.innerHTML=`<section class="ptq-editor card">
-        <header><div class="ptq-editor-fields"><span class="ptq-id is-${item.conclusion}">${String(globalIndex+1).padStart(2,'0')}</span><label>开始<span class="ptq-time-field">${format(item.start)}</span></label><label>结束<span class="ptq-time-field">${format(item.end)}</span></label><span>时长 <b>${Math.max(0,item.end-item.start).toFixed(1)}s</b></span><div class="ptq-conclusion-switch" aria-label="片段结论">${[['pending','待判定'],['mistake','失误'],['rejected','不合格']].map(([value,name])=>`<label class="is-${value}${item.conclusion===value?' is-active':''}"><input type="radio" name="${domPrefix}-conclusion" data-field="conclusion" value="${value}" ${item.conclusion===value?'checked':''} ${state.submitted?'disabled':''}>${name}</label>`).join('')}</div><div class="ptq-reason-select"><button type="button" data-action="toggle-reasons" aria-expanded="${this.reasonsOpen}" ${item.conclusion==='pending'||state.submitted?'disabled':''}><span>${trigger}</span><img src="/static/annotation_workbench/assets/icon-chevron.svg" alt=""></button>${menu}</div></div>
-        <div class="segment-actions ptq-editor-actions"><button class="segment-action segment-action--navigate" data-action="previous" ${globalIndex<=0?'disabled':''}>上一段 <kbd>⌘↑</kbd></button><button class="segment-action segment-action--navigate" data-action="next" ${globalIndex>=ordered.length-1?'disabled':''}>下一段 <kbd>⌘↓</kbd></button><button class="segment-action" data-action="track-left" ${trackIndex<=0?'disabled':''}>同轨左 <kbd>⌘←</kbd></button><button class="segment-action" data-action="track-right" ${trackIndex>=trackItems.length-1?'disabled':''}>同轨右 <kbd>⌘→</kbd></button><button class="segment-action segment-action--danger" data-action="delete" ${state.submitted?'disabled':''}>删除</button></div></header>
-        <div class="ptq-editor-lower"><label><span>错误原因</span><div class="ptq-review-error-select"><button type="button" data-action="toggle-review-error" aria-expanded="${this.reviewErrorOpen}" ${state.submitted?'disabled':''}><span>${escape(reviewTrigger)}</span><img src="/static/annotation_workbench/assets/icon-chevron.svg" alt=""></button>${reviewMenu}</div></label><div class="ptq-field-state ${errors.length?'has-error':'is-complete'}">${errors.length?`${item.conclusion==='pending'?'待判定':'待补充'}：${errors.map(escape).join('、')}`:'当前片段已完善'}</div></div>
+      const reviewMenu=`<div class="prq-review-error-menu" ${this.reviewErrorOpen?'':'hidden'} role="listbox">${REVIEW_ERROR_REASONS.map(reason=>`<button type="button" data-review-error="${escape(reason)}" role="option" class="${item.reviewErrorReason===reason?'is-selected':''}">${escape(reason)}<span>✓</span></button>`).join('')}<button type="button" class="prq-review-error-clear" data-action="clear-review-error">清除错误原因</button></div>`;
+      this.innerHTML=`<section class="prq-editor card">
+        <header><div class="prq-editor-fields"><span class="prq-id is-${item.conclusion}${isShortDuration(item)?' is-short-duration':''}">${String(globalIndex+1).padStart(2,'0')}</span><label>开始<span class="prq-time-field">${format(item.start)}</span></label><label>结束<span class="prq-time-field">${format(item.end)}</span></label><span>时长 <b>${Math.max(0,item.end-item.start).toFixed(1)}s</b></span><div class="prq-conclusion-switch" aria-label="片段结论">${[['pending','待判定'],['mistake','失误'],['rejected','不合格']].map(([value,name])=>`<label class="is-${value}${item.conclusion===value?' is-active':''}"><input type="radio" name="${domPrefix}-conclusion" data-field="conclusion" value="${value}" ${item.conclusion===value?'checked':''} ${state.submitted?'disabled':''}>${name}</label>`).join('')}</div><div class="prq-reason-select"><button type="button" data-action="toggle-reasons" aria-expanded="${this.reasonsOpen}" ${item.conclusion==='pending'||state.submitted?'disabled':''}><span>${trigger}</span><img src="/static/annotation_workbench/assets/icon-chevron.svg" alt=""></button>${menu}</div></div>
+        <div class="segment-actions prq-editor-actions"><button class="segment-action segment-action--navigate" data-action="previous" ${globalIndex<=0?'disabled':''}>上一段 <kbd>⌘↑</kbd></button><button class="segment-action segment-action--navigate" data-action="next" ${globalIndex>=ordered.length-1?'disabled':''}>下一段 <kbd>⌘↓</kbd></button><button class="segment-action" data-action="track-left" ${trackIndex<=0?'disabled':''}>同轨左 <kbd>⌘←</kbd></button><button class="segment-action" data-action="track-right" ${trackIndex>=trackItems.length-1?'disabled':''}>同轨右 <kbd>⌘→</kbd></button><button class="segment-action segment-action--danger" data-action="delete" ${state.submitted?'disabled':''}>删除</button></div></header>
+        <div class="prq-editor-lower"><label><span>错误原因</span><div class="prq-review-error-select"><button type="button" data-action="toggle-review-error" aria-expanded="${this.reviewErrorOpen}" ${state.submitted?'disabled':''}><span>${escape(reviewTrigger)}</span><img src="/static/annotation_workbench/assets/icon-chevron.svg" alt=""></button>${reviewMenu}</div></label><div class="prq-field-state ${errors.length?'has-error':'is-complete'}">${errors.length?`${item.conclusion==='pending'?'待判定':'待补充'}：${errors.map(escape).join('、')}`:'当前片段已完善'}</div></div>
       </section>${this.ruleDialog()}`;
     }
-    ruleDialog(){return `<dialog id="${domPrefix}RuleDialog" class="ptq-dialog"><header><div><h2>${label}采集质检规则</h2><p>${RULE.name} · ${RULE.id} · ${RULE.version}</p></div><button type="button" onclick="this.closest('dialog').close()" aria-label="关闭">×</button></header><div class="ptq-rule-body"><section><h3>失误标准</h3>${RULE.mistake.map(item=>`<article><b>${escape(item.name)}</b><p>${escape(item.detail)}</p></article>`).join('')}</section><section><h3>不合格标准</h3>${RULE.rejected.map(item=>`<article><b>${escape(item.name)}</b><p>${escape(item.detail)}</p></article>`).join('')}</section><div class="ptq-fixed-rule"><b>固定汇总规则</b><p>无问题片段为合格；只有失误片段为失误；存在任意不合格片段为不合格。</p></div></div></dialog>`;}
+    ruleDialog(){return `<dialog id="${domPrefix}RuleDialog" class="prq-dialog"><header><div><h2>${label}采集质检规则</h2><p>${RULE.name} · ${RULE.id} · ${RULE.version}</p></div><button type="button" onclick="this.closest('dialog').close()" aria-label="关闭">×</button></header><div class="prq-rule-body"><section><h3>失误标准</h3>${RULE.mistake.map(item=>`<article><b>${escape(item.name)}</b><p>${escape(item.detail)}</p></article>`).join('')}</section><section><h3>不合格标准</h3>${RULE.rejected.map(item=>`<article><b>${escape(item.name)}</b><p>${escape(item.detail)}</p></article>`).join('')}</section><div class="prq-fixed-rule"><b>固定汇总规则</b><p>无问题片段为合格；只有失误片段为失误；存在任意不合格片段为不合格。</p></div></div></dialog>`;}
   }
 
-  class PostTrainingQualitySidebar extends HTMLElement {
+  class PreTrainingQualitySidebar extends HTMLElement {
     connectedCallback(){
       if(this.dataset.ready)return;
       this.dataset.ready='true';
@@ -475,7 +507,7 @@
       document.addEventListener(eventName('meta-change'),()=>this.render());
       document.addEventListener(eventName('playback'),event=>{
         this.hits=event.detail.hits;
-        this.querySelectorAll('.ptq-list-item').forEach(row=>row.classList.toggle('is-hit',this.hits.includes(row.dataset.segmentId)));
+        this.querySelectorAll('.prq-list-item').forEach(row=>row.classList.toggle('is-hit',this.hits.includes(row.dataset.segmentId)));
       });
       this.addEventListener('click',event=>this.onClick(event));
       this.addEventListener('confirm-dialog-confirm',event=>{
@@ -502,9 +534,11 @@
       if(action==='reject'&&!state.submitted)this.querySelector('workbench-confirm-dialog[variant="reject"]')?.show();
       if(action==='submit'&&!state.submitted){
         if(invalidCount()){this.querySelector(`#${domPrefix}ErrorDialog`)?.showModal();return;}
+        const shortCount=validateUsableDuration();
         const dialog=this.querySelector(`#${domPrefix}SubmitDialog`);
         dialog.querySelector('[data-result]').textContent=calculatedConclusion();
         dialog.querySelector('[data-counts]').textContent=`失误 ${state.segments.filter(item=>item.conclusion==='mistake').length} 条 · 不合格 ${state.segments.filter(item=>item.conclusion==='rejected').length} 条 · 规则 ${RULE.version}`;
+        dialog.querySelector('[data-duration-check]').textContent=shortCount?`检测到 ${shortCount} 处可用片段不足 3 秒，已自动标记为失误，原因：可用时长太短。`:'可用片段时长校验通过。';
         dialog.showModal();
       }
       if(action==='confirm-submit'){
@@ -518,17 +552,17 @@
       const ordered=sortSegments(state.segments),pending=pendingCount(),canSubmit=!pending&&!state.submitted;
       const conclusion=calculatedConclusion(),conclusionClass=conclusion==='合格'?'is-pass':conclusion==='失误'?'is-mistake':conclusion==='不合格'?'is-rejected':'is-pending';
       const rows=ordered.map(item=>{
-        return `<button type="button" data-segment-id="${escape(item.id)}" class="ptq-list-item${item.id===state.selectedId?' is-active':''}${this.hits?.includes(item.id)?' is-hit':''}${valid(item)?'':' has-error'}"><span class="ptq-list-id">${String(ordered.indexOf(item)+1).padStart(2,'0')}</span><span class="ptq-list-main"><span class="ptq-list-time">${format(item.start)}–${format(item.end)} <em>${(item.end-item.start).toFixed(1)}s</em></span><span class="ptq-list-summary"><b class="is-${item.conclusion}">${conclusionLabel(item.conclusion)}</b><strong>${escape(reasonSummary(item))}</strong></span>${valid(item)?'':`<i>${escape(segmentErrors(item)[0])}</i>`}</span></button>`;
+        return `<button type="button" data-segment-id="${escape(item.id)}" class="prq-list-item${isShortDuration(item)?' is-short-duration':''}${item.id===state.selectedId?' is-active':''}${this.hits?.includes(item.id)?' is-hit':''}${valid(item)?'':' has-error'}"><span class="prq-list-id">${String(ordered.indexOf(item)+1).padStart(2,'0')}</span><span class="prq-list-main"><span class="prq-list-time">${format(item.start)}–${format(item.end)} <em>${(item.end-item.start).toFixed(1)}s</em></span><span class="prq-list-summary"><b class="is-${item.conclusion}">${conclusionLabel(item.conclusion)}</b><strong>${escape(reasonSummary(item))}</strong></span>${valid(item)?'':`<i>${escape(segmentErrors(item)[0])}</i>`}</span></button>`;
       }).join('');
-      this.innerHTML=`<section class="ptq-sidebar"><header><div><b>质检列表</b><span>共 ${ordered.length} 个问题片段</span></div></header><div class="ptq-list">${ordered.length?rows:'<div class="ptq-list-empty">尚未记录问题片段</div>'}</div><footer><div class="ptq-video-conclusion"><span class="ptq-conclusion-label">质检结论</span><output id="${domPrefix}VideoConclusion" class="${conclusionClass}" aria-label="质检结论，由系统自动计算">${conclusion}</output></div><div class="ptq-conclusion-meta">系统自动计算 · 失误 ${state.segments.filter(item=>item.conclusion==='mistake').length} · 不合格 ${state.segments.filter(item=>item.conclusion==='rejected').length}${pending?` · 待判定 ${pending}`:''}</div><workbench-footer-actions hydrate><div class="workbench-footer-actions"><button type="button" data-action="save" ${state.submitted?'disabled':''}>保存</button><button type="button" data-action="leave" ${state.submitted?'disabled':''}>释放</button><button type="button" data-action="reject" ${state.submitted?'disabled':''}>驳回</button><button type="button" class="${canSubmit?'':'is-blocked'}" data-action="submit" ${canSubmit?'':'disabled'}>提交</button></div></workbench-footer-actions></footer></section><workbench-confirm-dialog variant="reject"></workbench-confirm-dialog>
-        <dialog id="${domPrefix}ErrorDialog" class="ptq-dialog ptq-error-dialog"><header><h2>暂时无法提交</h2><button onclick="this.closest('dialog').close()" aria-label="关闭">×</button></header><div><b>标注有问题</b><p>${invalidCount()} 个问题片段存在待判定或必填项缺失，请检查后提交。</p></div><footer><button onclick="this.closest('dialog').close()">我知道了</button></footer></dialog>
-        <dialog id="${domPrefix}SubmitDialog" class="ptq-dialog ptq-submit-dialog ${conclusionClass}"><header><h2>确认提交质检</h2><button onclick="this.closest('dialog').close()" aria-label="关闭">×</button></header><div><span>系统计算的视频结论</span><strong data-result></strong><p data-counts></p><small>提交后将保存全部片段和本次质检结果。</small></div><footer><button onclick="this.closest('dialog').close()">取消</button><button class="is-primary" data-action="confirm-submit">确认提交</button></footer></dialog>`;
+      this.innerHTML=`<section class="prq-sidebar"><header><div><b>质检列表</b><span>共 ${ordered.length} 个问题片段</span></div></header><div class="prq-list">${ordered.length?rows:'<div class="prq-list-empty">尚未记录问题片段</div>'}</div><footer><div class="prq-video-conclusion"><span class="prq-conclusion-label">质检结论</span><output id="${domPrefix}VideoConclusion" class="${conclusionClass}" aria-label="质检结论，由系统自动计算">${conclusion}</output></div><div class="prq-conclusion-meta">系统自动计算 · 失误 ${state.segments.filter(item=>item.conclusion==='mistake').length} · 不合格 ${state.segments.filter(item=>item.conclusion==='rejected').length}${pending?` · 待判定 ${pending}`:''}</div><workbench-footer-actions hydrate><div class="workbench-footer-actions"><button type="button" data-action="save" ${state.submitted?'disabled':''}>保存</button><button type="button" data-action="leave" ${state.submitted?'disabled':''}>释放</button><button type="button" data-action="reject" ${state.submitted?'disabled':''}>驳回</button><button type="button" class="${canSubmit?'':'is-blocked'}" data-action="submit" ${canSubmit?'':'disabled'}>提交</button></div></workbench-footer-actions></footer></section><workbench-confirm-dialog variant="reject"></workbench-confirm-dialog>
+        <dialog id="${domPrefix}ErrorDialog" class="prq-dialog prq-error-dialog"><header><h2>暂时无法提交</h2><button onclick="this.closest('dialog').close()" aria-label="关闭">×</button></header><div><b>标注有问题</b><p>${invalidCount()} 个问题片段存在待判定或必填项缺失，请检查后提交。</p></div><footer><button onclick="this.closest('dialog').close()">我知道了</button></footer></dialog>
+        <dialog id="${domPrefix}SubmitDialog" class="prq-dialog prq-submit-dialog ${conclusionClass}"><header><h2>确认提交质检</h2><button onclick="this.closest('dialog').close()" aria-label="关闭">×</button></header><div><span>系统计算的视频结论</span><strong data-result></strong><p data-counts></p><p data-duration-check></p><small>提交后将保存全部片段和本次质检结果。</small></div><footer><button onclick="this.closest('dialog').close()">取消</button><button class="is-primary" data-action="confirm-submit">确认提交</button></footer></dialog>`;
     }
   }
 
-  customElements.define(elementName('timeline'),PostTrainingQualityTimeline);
-  customElements.define(elementName('workspace'),PostTrainingQualityWorkspace);
-  customElements.define(elementName('sidebar'),PostTrainingQualitySidebar);
+  customElements.define(elementName('timeline'),PreTrainingQualityTimeline);
+  customElements.define(elementName('workspace'),PreTrainingQualityWorkspace);
+  customElements.define(elementName('sidebar'),PreTrainingQualitySidebar);
 
   let toastTimer;
   document.addEventListener(eventName('toast'),event=>{
@@ -538,11 +572,11 @@
     clearTimeout(toastTimer);toastTimer=setTimeout(()=>{notice.hidden=true;},2600);
   });
 
-  window.__postTrainingQualityRules = {
-    overlapDuration, trackOverlap, sortSegments, calculateConclusion, calculatedConclusion, pendingCount,
+  window.__preTrainingQualityRules = {
+    overlapDuration, trackOverlap, sortSegments, calculateConclusion, calculatedConclusion, usableRanges, validateUsableDuration, pendingCount, isShortDuration,
     placeSegment:(candidate,segments)=>placeSegment(clone(candidate),clone(segments)),
     segmentErrors:segment=>segmentErrors(clone(segment)),
     constants:{duration:DURATION,trackCount:TRACK_COUNT}
   };
-  window.PostTrainingQualityDemo = {state,addSegment,updateTime,selectSegment,segmentErrors,placeSegment};
+  window.PreTrainingQualityDemo = {state,addSegment,updateTime,selectSegment,segmentErrors,placeSegment};
 })();

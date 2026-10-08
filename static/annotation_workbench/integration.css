@@ -32,6 +32,13 @@ body:not(.component-preview) .media-timeline-group > .timeline-card.is-tags-mode
 .tag-block { position:absolute; bottom:auto; height:18px; min-width:3px; padding:0 6px; border-radius:3px; color:var(--text); background:color-mix(in srgb,var(--tag-color) 38%,var(--panel)); border:1px solid var(--tag-color); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:11px; cursor:pointer; text-align:left; }
 .tag-block:hover { filter:brightness(1.12); }
 .tag-block.is-selected { outline:1px solid var(--tag-color); outline-offset:1px; filter:brightness(1.12); font-weight:600; }
+.workbench-task-info.has-operation-timer{gap:12px}
+.has-operation-timer .workbench-task-info__left{width:auto;flex:1}
+.workbench-operation-timer{display:flex;align-items:center;gap:9px;flex:none;padding-left:12px;border-left:1px solid var(--line);white-space:nowrap}
+.workbench-operation-timer[hidden]{display:none}
+.workbench-operation-timer strong{color:var(--text);font:600 15px ui-monospace,monospace}
+.workbench-operation-timer [data-operation-status]{color:var(--cyan);font-size:9px}
+.workbench-operation-timer[data-running=false] [data-operation-status]{color:var(--muted)}
 /* Reuse the action editor rows; only editable time fields need an adaptation. */
 .workspace > .tag-editor-shell { flex:0 0 auto; min-width:0; }
 .tag-editor-shell .tag-editor { height:auto; min-height:86px; overflow:visible; }
@@ -66,3 +73,6 @@ workbench-tag-tree-select .tag-tree-options { display:block; max-height:300px; }
 workbench-tag-tree-select [data-tag-leaf] { width:100%; }
 workbench-tag-tree-select .workbench-multi-select__value { overflow-x:auto; }
 .tag-empty { margin:24px 12px; color:var(--muted); text-align:center; font-size:12px; }
+
+workbench-segment-editor .segment-editor-component [hidden]{display:none!important}
+workbench-segment-editor .segment-actions button:disabled{opacity:.4;cursor:not-allowed}

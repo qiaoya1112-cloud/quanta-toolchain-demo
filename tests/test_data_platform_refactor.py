@@ -1638,7 +1638,8 @@ class DataPlatformArchitectureTests(unittest.TestCase):
             rule_html,
         )
         self.assertIn('class="drawer" id="drawerRuleCreate"', rule_html)
-        self.assertEqual(1, operator_html.count('class="op-main-row"'))
+        self.assertEqual(3, operator_html.count('class="op-main-row"'))
+        self.assertIn("后处理执行算子", operator_html)
         self.assertIn("端到端切分标注处理算子", operator_html)
         pipeline_html = self.client.get("/data/pipelines").get_data(as_text=True)
         self.assertEqual(

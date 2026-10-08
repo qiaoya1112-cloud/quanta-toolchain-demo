@@ -1,26 +1,26 @@
 <link rel="stylesheet" href="/static/workbench_pool/pool.css">
 <section class="wp-page" id="wpPage">
   <a href="/data/workbench-v2/pools/{{ task.pool }}?source={{ task.id }}">← 返回任务池配置</a>
-  <div class="wp-heading"><div><h1>任务池数据列表</h1><p>{{ task.flow }} · {{ task.node }} · {{ task.user_group }}</p></div><span class="wp-demo">Demo · 视频区域使用示例帧</span></div>
+  <div class="wp-heading"><div><h1>任务池数据列表</h1></div></div>
   <form id="wpFilters" class="wp-filters">
     <label>任务 ID<input name="task_id" placeholder="请输入任务 ID"></label>
-    <label>Recording ID<input name="id" placeholder="请输入 Recording ID"></label>
+    <label>数据ID<input name="id" placeholder="请输入 数据ID"></label>
     <label>设备序列号<input name="device" placeholder="请输入设备序列号"></label>
-    <label>供应商<select name="supplier"><option value="">全部供应商</option><option>宁波博登智能科技有限公司</option><option>千寻智能</option></select></label>
     <label>采集员<input name="collector" placeholder="请输入采集员"></label>
-    <label>采集开始时间<input name="from" type="date"></label>
-    <label>采集结束时间<input name="to" type="date"></label>
-    <label>自动质检错误原因<select name="auto_reason"><option value="">全部原因</option><option>画面短暂遮挡</option><option value="—">无错误</option></select></label>
-    <label>状态<select name="status"><option value="">全部状态</option><option value="pending">待处理</option><option value="processing">处理中</option></select></label>
-    <div class="wp-filter-actions"><button type="submit" class="btn btn-primary">查询</button><button type="reset" class="btn">重置</button></div>
+    <div class="wp-filter-actions"><button type="submit" class="btn btn-primary">查询</button><button type="reset" class="btn">重置</button><button type="button" class="wp-filter-toggle" id="wpFilterToggle" aria-expanded="false" aria-controls="wpAdvancedFilters">展开 <span aria-hidden="true">⌄</span></button></div>
+    <div class="wp-advanced-filters" id="wpAdvancedFilters" hidden>
+      <label>采集开始时间<input name="from" type="date"></label>
+      <label>采集结束时间<input name="to" type="date"></label>
+      <label>自动质检错误原因<select name="auto_reason"><option value="">全部原因</option><option>画面短暂遮挡</option><option value="—">无错误</option></select></label>
+      <label>状态<select name="status"><option value="">全部状态</option><option value="pending">待领取</option><option value="processing">已领取</option></select></label>
+    </div>
   </form>
-  <div class="wp-toolbar"><div><b id="wpCount"></b><span id="wpSelected">已选 0 条</span><span>处理中数据优先展示</span></div><button class="btn btn-primary" id="wpBatch" disabled>批量置为处理中</button></div>
+  <div class="wp-toolbar"><div><b id="wpCount"></b><span id="wpSelected">已选0条，最多同时执行20条</span></div><button class="btn btn-primary" id="wpBatch" disabled>批量领取</button></div>
   <p id="wpError" class="wp-error" role="alert" hidden></p>
   <div class="wp-table-wrap"><table class="wp-table">
-    <thead><tr><th><input id="wpSelectAll" type="checkbox" aria-label="全选当前待处理数据"></th><th>任务 ID / ID</th><th>视频区域（头部 | 左臂 | 右臂）</th><th>设备序列号</th><th>供应商</th><th>采集时间</th><th>质检标准版本</th><th>自动质检结论</th><th>操作员</th><th>状态</th><th>操作</th></tr></thead>
+    <thead><tr><th><input id="wpSelectAll" type="checkbox" aria-label="全选当前待领取数据"></th><th>任务ID</th><th>数据ID</th><th>视频区域（头部 | 左臂 | 右臂）</th><th>设备序列号</th><th>质检结论</th><th>操作员</th><th>操作时间</th><th>状态</th><th>操作</th></tr></thead>
     <tbody id="wpRows"></tbody>
   </table></div>
-  <p class="wp-footnote" id="wpSummary"></p>
 </section>
 {% include 'workbench_pool/decision_dialog.html' %}
 <script id="wpPayload" type="application/json">{{ {'task': task, 'records': records, 'notice': notice}|tojson }}</script>

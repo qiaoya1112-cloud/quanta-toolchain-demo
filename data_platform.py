@@ -338,8 +338,41 @@ MANAGED_OPERATORS = [
                 "references": [], "note": "首个发布版本。",
             },
         ],
+    },
+    {
+        "id": "op_post_processing",
+        "name": "后处理执行算子",
+        "ident": "post_processing",
+        "current_version": "v1.0.0",
+        "updated": "2026-10-08 13:40",
+        "script": "post_processing.py",
+        "cat": "质检",
+        "creator": "ben",
+        "desc": "对自检合格数据执行后处理和自动化质检，输出质检结果。",
+        "params": "--recording-id / --quality-rule / --flow-version",
+        "returns": "后处理数据与自动化质检结果 JSON",
+        "versions": [{
+            "version": "v1.0.0", "status": "已发布",
+            "creator": "ben", "created": "2026-10-08 13:40",
+            "image": "frontdesk-py3.10:latest", "script": "post_processing.py",
+            "params": "--recording-id / --quality-rule / --flow-version",
+            "returns": "后处理数据与自动化质检结果 JSON",
+            "references": ["预标注数据质检自动化流程"],
+            "note": "支持预标注数据后处理与自动化质检。",
+        }],
     }
 ]
+
+MANAGED_OPERATORS.append({
+    "id": "op_automatic_quality_check", "name": "自动化质检算子", "ident": "automatic_quality_check",
+    "current_version": "v1.0.0", "updated": "2026-10-08 18:00", "script": "automatic_quality_check.py",
+    "cat": "质检", "creator": "ben", "desc": "自动检查采集数据并输出质检结论。",
+    "params": "--recording-id / --quality-rule", "returns": "自动化质检结果 JSON",
+    "versions": [{"version": "v1.0.0", "status": "已发布", "creator": "ben", "created": "2026-10-08 18:00",
+        "image": "frontdesk-py3.10:latest", "script": "automatic_quality_check.py",
+        "params": "--recording-id / --quality-rule", "returns": "自动化质检结果 JSON",
+        "references": [], "note": "支持采集数据自动化质检。"}],
+})
 
 PIPELINES = [
     {"id": "pl1", "name": "标准训练数据流水线", "creator": "joanna.qiao", "status": "已保存", "updated": "2026-06-03 18:22",
@@ -488,6 +521,68 @@ for _pipeline in PIPELINES:
     _pipeline["node_count"] = len(_automatic_nodes)
 
 _review_flows = [
+    {
+        "id": "pl-preannotation-qc-manual", "ident": "preannotation-data-quality-manual",
+        "name": "预标注数据质检人工流程", "creator": "ben", "status": "草稿",
+        "updated": "2026-10-08 18:00", "show_in_management": True, "fit_canvas": True,
+        "input_name": "开始", "output_name": "完成", "stages": [], "schedules": [],
+        "business_stage": "质检", "input_contract": "自检合格数据",
+        "output_contract": "quality_conclusion + quality_records",
+        "desc": "自检合格数据由采集验收节点进行全检。",
+        "flow_nodes": [{
+            "name": "采集验收", "ident": "collection_acceptance", "kind": "human",
+            "meta": "全检全部数据并提交验收结果", "processing_percent": 100,
+            "processing_rule_mode": "none", "allow_task_percent": False,
+            "assignee_type": "user_group", "assignee_mode": "task_custom",
+            "workbench": "质检工作台 v2.0", "workbench_status": "审核",
+            "workbench_modules": {"质检": "可编辑", "标注": "仅查看", "标签": "仅查看", "日志": "仅查看", "基础信息": "仅查看"},
+            "allowed_actions": ["提交", "暂离"],
+        }],
+    },
+    {
+        "id": "pl-preannotation-qc",
+        "ident": "preannotation-data-quality",
+        "name": "预标注数据质检自动化流程",
+        "creator": "ben",
+        "status": "草稿",
+        "updated": "2026-10-08 13:40",
+        "show_in_management": True,
+        "fit_canvas": True,
+        "input_name": "开始", "output_name": "完成",
+        "stages": [], "schedules": [],
+        "business_stage": "质检",
+        "input_contract": "自检合格数据",
+        "output_contract": "quality_conclusion + quality_records",
+        "desc": "自检合格数据经自动化质检和采集质检后，进入采集验收。",
+        "flow_nodes": [
+            {
+                "name": "自动化质检", "ident": "automatic_quality_check",
+                "kind": "automatic", "meta": "对自检合格数据执行后处理与自动化质检",
+                "processing_rule_mode": "none", "operator_id": "op_post_processing",
+            },
+            {
+                "name": "采集质检", "ident": "collection_quality_check",
+                "kind": "human", "meta": "检查全部数据并提交质检结果",
+                "processing_percent": 100,
+                "processing_rule_mode": "task_custom", "allow_task_percent": False,
+                "assignee_type": "user_group", "assignee_mode": "task_custom",
+                "workbench": "质检工作台 v2.0", "workbench_status": "作业",
+                "workbench_modules": {"质检": "可编辑", "标注": "仅查看", "标签": "仅查看", "日志": "仅查看", "基础信息": "仅查看"},
+                "allowed_actions": ["提交", "暂离"],
+            },
+            {
+                "name": "采集验收", "ident": "collection_acceptance",
+                "kind": "human", "meta": "验收全部质检数据",
+                "processing_percent": 100,
+                "processing_rule_mode": "inherit", "inherit_processing_rule_node": "采集质检",
+                "allow_task_percent": False,
+                "assignee_type": "user_group", "assignee_mode": "task_custom",
+                "workbench": "质检工作台 v2.0", "workbench_status": "审核",
+                "workbench_modules": {"质检": "可编辑", "标注": "仅查看", "标签": "仅查看", "日志": "仅查看", "基础信息": "仅查看"},
+                "allowed_actions": ["提交", "暂离"],
+            },
+        ],
+    },
     {
         "id": "pl3q",
         "name": "多级质检复核流程",
@@ -1435,7 +1530,7 @@ select option:disabled { color:rgba(0,0,0,0.32); }
 .wf-effective-tag { display:inline-flex; align-items:center; height:22px; padding:0 8px; border-radius:11px; background:#edf8ef; color:#4b9b5f; font-size:11px; font-weight:500; white-space:nowrap; }
 /* ---- 自由画布 (free-form DAG canvas) ---- */
 .wf-stage { display:flex; gap:0; height:calc(100vh - 200px); }
-.wf-canvas { position:relative; flex:1; background:#fafbfc; background-image:radial-gradient(#e1e4e8 1px, transparent 1px); background-size:18px 18px; border:1px solid #f0f0f0; border-radius:8px; overflow:hidden; outline:none; }
+.wf-canvas { position:relative; flex:1; background:#fafbfc; background-image:radial-gradient(#e1e4e8 1px, transparent 1px); background-size:18px 18px; border:1px solid #f0f0f0; border-radius:8px; overflow:clip; outline:none; }
 .wf-pan { position:absolute; left:0; top:0; transform-origin:0 0; }
 .wf-edges { position:absolute; left:0; top:0; width:4000px; height:3000px; overflow:visible; pointer-events:none; z-index:1; }
 .wf-edges path.edge { pointer-events:stroke; cursor:pointer; }
@@ -4840,7 +4935,7 @@ def dataset_new_panel_v2():
 @app.route("/operators")
 def operators():
     displayed_operators = MANAGED_OPERATORS
-    cat_order = ["标注"]
+    cat_order = list(dict.fromkeys(op["cat"] for op in displayed_operators))
 
     rows = ""
     for cat in cat_order:
@@ -5031,7 +5126,9 @@ def pipelines():
 
     pls = [
         pl
-        for pl in (enabled_pipeline, draft_pipeline)
+        for pl in (enabled_pipeline, draft_pipeline, *[
+            item for item in PIPELINES if item.get("show_in_management")
+        ])
         if (
             not flow_ident
             or flow_ident.lower() in pl.get("ident", pl["id"]).lower()
@@ -5894,6 +5991,7 @@ WF_CANVAS_JS = r"""
       wfRefreshProcessingRuleInheritance();
       document.getElementById('wfhProcessingPercent').value=n.processingPercent==null?'100':n.processingPercent;
       document.getElementById('wfhAllowTaskPercent').checked=!!n.allowTaskPercent;
+      document.querySelectorAll('input[name="wfhDataListEnabled"]').forEach(function(input){ input.checked=input.value===(n.dataListEnabled===false?'false':'true'); });
       wfRefreshAssigneeInheritance();
       document.getElementById('wfhAssigneeInheritNode').value=n.inheritAssigneeNodeId||'';
       var previousNodes=previousHumanNodes(n);
@@ -6058,8 +6156,15 @@ WF_CANVAS_JS = r"""
       var assigneeMode=wfHumanAssigneeMode();
       var inheritNodeId=document.getElementById('wfhAssigneeInheritNode').value;
       if(assigneeMode==='inherit'&&!inheritNodeId){ toast('请选择前序人工节点'); return; }
+      var humanIdent=document.getElementById('wfhIdent').value.trim();
+      if(!humanIdent){ toast('请填写节点 ID'); return; }
+      var percent=Number(document.getElementById('wfhProcessingPercent').value);
+      if(!Number.isInteger(percent)||percent<=0||percent>100){ toast('处理比例请输入 1～100 的整数'); return; }
+      var ruleMode=document.querySelector('input[name="wfhProcessingRuleMode"]:checked').value;
+      var ruleInheritId=document.getElementById('wfhProcessingRuleInheritNode').value;
+      if(ruleMode==='inherit'&&!ruleInheritId){ toast('请选择处理规则的前序人工节点'); return; }
       n.name=humanName;
-      n.ident=document.getElementById('wfhIdent').value.trim();
+      n.ident=humanIdent;
       n.desc=document.getElementById('wfhDesc').value.trim();
       n.workbench=document.getElementById('wfhWorkbench').value;
       n.workbenchStatus=document.getElementById('wfhWorkbenchType').value;
@@ -6069,11 +6174,10 @@ WF_CANVAS_JS = r"""
         var canEdit=row.dataset.module!=='日志'&&row.dataset.module!=='基础信息'&&row.querySelector('.wf-module-edit').checked;
         n.workbenchModules[row.dataset.module]=canEdit?'可编辑':(row.querySelector('.wf-module-view').checked?'仅查看':'无权限');
       });
-      n.processingRuleMode=document.querySelector('input[name="wfhProcessingRuleMode"]:checked').value;
-      var percent=Number(document.getElementById('wfhProcessingPercent').value);
-      if(!Number.isInteger(percent)||percent<=0){ toast('处理比例请输入正整数'); return; }
+      n.processingRuleMode=ruleMode;
       n.processingPercent=percent;
       n.allowTaskPercent=document.getElementById('wfhAllowTaskPercent').checked;
+      n.dataListEnabled=document.querySelector('input[name="wfhDataListEnabled"]:checked').value==='true';
       n.inheritProcessingRuleNodeId=n.processingRuleMode==='inherit'?document.getElementById('wfhProcessingRuleInheritNode').value:'';
       n.allowedActions=rejectEnabled?['驳回']:[];
       n.rejectEnabled=rejectEnabled;
@@ -6262,6 +6366,7 @@ WF_CANVAS_JS = r"""
       businessStage:'通用',workbench:'质检工作台 v2.0',workbenchType:'作业',workbenchModules:{质检:'可编辑',标注:'可编辑',标签:'仅查看',日志:'仅查看',基础信息:'仅查看'},userGroups:[],
       assigneeType:'supplier',assigneeMode:'task_custom',inheritAssigneeNodeId:'',
       processingRuleMode:'none',
+      dataListEnabled:true,
       allowedActions:['提交','暂离'],x:nodePosition.x,y:nodePosition.y
     };
     NODES.push(node);
@@ -6300,7 +6405,7 @@ WF_CANVAS_JS = r"""
   };
 
   renderFrames(); applyPan(); renderNodes();
-  if(FRAMES.length) setTimeout(function(){ wfFit(); },0);
+  if(FRAMES.length||canvas.closest('.wf-stage').dataset.fitCanvas==='true') setTimeout(function(){ wfFit(); },0);
 })();
 """
 
@@ -6425,7 +6530,7 @@ def _processing_canvas_payload(pl):
     canvas_nodes = [
         {
             "id": "flow-input",
-            "name": "start",
+            "name": pl.get("input_name", "start"),
             "ident": "input",
             "desc": "Start",
             "kind": "flow-input",
@@ -6458,12 +6563,15 @@ def _processing_canvas_payload(pl):
             "kind": kind,
             "businessStage": pl.get("business_stage", "通用"),
             "workbench": node.get("workbench"),
+            "workbenchStatus": node.get("workbench_status", "作业"),
+            "workbenchModules": node.get("workbench_modules", {}),
             "userGroups": node.get("user_groups", []),
             "assigneeType": node.get("assignee_type", "supplier"),
             "assigneeMode": node.get("assignee_mode", "task_custom"),
             "processingRuleMode": node.get("processing_rule_mode", "none"),
             "processingPercent": node.get("processing_percent", 100),
             "allowTaskPercent": node.get("allow_task_percent", False),
+            "dataListEnabled": node.get("data_list_enabled", True),
             "inheritProcessingRuleNodeId": node_name_to_id.get(node.get("inherit_processing_rule_node", ""), ""),
             "inheritAssigneeNodeId": node_name_to_id.get(
                 node.get("inherit_assignee_node", ""),
@@ -6505,7 +6613,7 @@ def _processing_canvas_payload(pl):
     canvas_nodes.append(
         {
             "id": "flow-output",
-            "name": "end",
+            "name": pl.get("output_name", "end"),
             "ident": "output",
             "desc": "End",
             "kind": "flow-output",
@@ -6555,7 +6663,7 @@ def pipeline_editor(pid):
     pl = next((p for p in PIPELINES if p["id"] == pid), None)
     is_draft_version = request.args.get("version") == "draft" and pl is not None
     if is_draft_version:
-        pl = {**pl, "name": f'{pl["name"]}（草稿）', "status": "草稿"}
+        pl = {**pl, "name": pl["name"] if pl.get("status") == "草稿" else f'{pl["name"]}（草稿）', "status": "草稿"}
     is_new = pid == "new" or pl is None
     view_mode = request.args.get("mode") == "view" and not is_new
     is_processing_flow = is_new or bool(pl and pl.get("flow_nodes"))
@@ -6676,6 +6784,7 @@ def pipeline_editor(pid):
             f'data-business-stage="{html.escape(flow_business_stage, quote=True)}"',
             f'data-flow-description="{html.escape(flow_desc, quote=True)}"',
             f'data-last-saved="{html.escape(initial_saved_at, quote=True)}"',
+            f'data-fit-canvas="{str(bool(pl and pl.get("fit_canvas"))).lower()}"',
         )
         if item
     )
@@ -6823,8 +6932,8 @@ def pipeline_editor(pid):
             <div class="wf-cfg-sec">基础信息</div>
             <div class="wf-human-grid">
               <label><span class="wf-human-label">节点名称</span><input id="wfhName" class="wf-edit-field" placeholder="请输入节点名称"></label>
-              <label><span class="wf-human-label">标识</span><input id="wfhIdent" class="wf-edit-field" placeholder="英文标识"></label>
-              <label class="full"><span class="wf-human-label">描述</span><textarea id="wfhDesc" class="wf-edit-field" placeholder="请输入节点描述"></textarea></label>
+              <label><span class="wf-human-label">节点 ID</span><input id="wfhIdent" class="wf-edit-field" placeholder="请输入节点 ID"></label>
+              <label class="full"><span class="wf-human-label">节点描述</span><textarea id="wfhDesc" class="wf-edit-field" placeholder="请输入节点描述"></textarea></label>
             </div>
 
             <div class="wf-cfg-sec">处理人</div>
@@ -6847,7 +6956,13 @@ def pipeline_editor(pid):
             </div>
             <div id="wfhProcessingRuleInheritWrap" style="display:none; margin-top:10px;"><label><span class="wf-human-label">继承节点</span><select id="wfhProcessingRuleInheritNode" class="wf-edit-field"></select></label><div class="wf-reject-hint">继承前序节点的处理规则，本节点无需单独配置</div></div>
             <div class="wf-cfg-sec" style="margin-top:16px;">处理比例</div>
-            <div class="wf-human-grid"><label><span class="wf-human-label">比例（%）</span><input id="wfhProcessingPercent" class="wf-edit-field" type="number" min="1" step="1" value="100"></label><label style="display:flex;align-items:flex-end;padding-bottom:7px;gap:7px;"><input id="wfhAllowTaskPercent" type="checkbox"><span class="wf-human-label" style="margin:0;">支持任务自定义</span></label></div>
+            <div class="wf-human-grid"><label><span class="wf-human-label">比例（%）</span><input id="wfhProcessingPercent" class="wf-edit-field" type="number" min="1" max="100" step="1" value="100"></label><label style="display:flex;align-items:flex-end;padding-bottom:7px;gap:7px;"><input id="wfhAllowTaskPercent" type="checkbox"><span class="wf-human-label" style="margin:0;">支持任务自定义</span></label></div>
+
+            <div class="wf-cfg-sec">数据列表</div>
+            <div class="wf-choice-grid" id="wfhDataListEnabled" role="group" aria-label="数据列表">
+              <label><input type="radio" name="wfhDataListEnabled" value="true" checked><span>开启</span></label>
+              <label><input type="radio" name="wfhDataListEnabled" value="false"><span>关闭</span></label>
+            </div>
 
             <div class="wf-cfg-sec">工作台</div>
             <div class="wf-human-grid">

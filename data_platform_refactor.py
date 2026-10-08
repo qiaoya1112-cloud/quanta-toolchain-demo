@@ -3643,8 +3643,8 @@ def render_processing_tasks():
       '数据 ID': {{type:'text', placeholder:'多个数据 ID 请用英文逗号隔开'}},
       '是否完成质检': {{type:'single', options:['是', '否'], ruleStage:'质检'}},
       '质检结果': {{type:'multi', options:['合格', '不合格', '操作失误'], ruleStage:'质检'}},
-      '是否完成自检': {{type:'single', options:['是', '否'], ruleStage:'自检', anyRuleOnly:true}},
-      '自检结果': {{type:'single', options:['合格', '不合格'], ruleStage:'自检', anyRuleOnly:true}},
+      '是否完成采集自检': {{type:'single', options:['是', '否'], ruleStage:'自检', anyRuleOnly:true}},
+      '采集自检结果': {{type:'single', options:['合格', '不合格'], ruleStage:'自检', anyRuleOnly:true}},
       '是否完成标注': {{type:'single', options:['是', '否'], ruleStage:'标注'}}
     }};
     var DPR_TASK_FILTER_OPERATORS = ['等于', '不等于', '包含', '不包含', '为空', '不为空'];
@@ -3828,7 +3828,7 @@ def render_processing_tasks():
     dprRestoreProcessingCloseStates();
     dprRestoreProcessingPublishStates();
     function dprTaskFilterFieldName(field) {{
-      return {{'是否质检':'是否完成质检', '是否标注':'是否完成标注', '质检结论':'质检结果'}}[field] || field;
+      return {{'是否质检':'是否完成质检', '是否标注':'是否完成标注', '质检结论':'质检结果', '是否完成自检':'是否完成采集自检', '自检结果':'采集自检结果'}}[field] || field;
     }}
     function dprTaskFilterScopeControl(field, scope) {{
       var stage = (DPR_TASK_FILTER_FIELDS[field] || {{}}).ruleStage;
