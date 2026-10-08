@@ -946,10 +946,12 @@ BUSINESS_TASKS = [
         "enabled": True,
         "task_status": "published",
         "runtime_status": "正常",
-        "filter_summary": "所属项目=预训练采集；采集任务=20197；质检结论=合格/操作失误",
+        "filter_summary": "所属项目=预训练采集；采集任务=20197；采集任务 ID=20197；数据 ID=406006；质检结论=合格/操作失误",
         "filter_rules": [
             ("所属项目", "等于", "预训练采集"),
             ("采集任务", "等于", "20197"),
+            ("采集任务 ID", "等于", "20197"),
+            ("数据 ID", "等于", "406006"),
             ("质检结论", "等于", "合格,操作失误"),
         ],
         "flow_bindings": [
@@ -3847,12 +3849,41 @@ def render_processing_tasks():
         return '<option value="' + dprProcessingEscape(option.value) + '"' + (option.value === selected ? ' selected' : '') + '>' + dprProcessingEscape(option.label) + '</option>';
       }}).join('') + '</select>';
     }}
-    function dprTaskFilterValueControl(field, value) {{
+    function dprAppendOnlyFilterValueChange(input) {{
+      var original = String(input.dataset.originalValue || '');
+      var previous = String(input.dataset.lastValue || original);
+      var required = original.split(/[,，、]/).map(function(item) {{ return item.trim(); }}).filter(Boolean);
+      var current = String(input.value || '');
+      var currentValues = current.split(/[,，、]/).map(function(item) {{ return item.trim(); }}).filter(Boolean);
+      if (required.some(function(item) {{ return currentValues.indexOf(item) < 0; }})) {{
+        input.value = previous;
+        return;
+      }}
+      input.dataset.lastValue = current;
+    }}
+    function dprValidateAppendOnlyTaskFilters() {{
+      var rows = document.querySelectorAll('#processingTaskFilters .dpr-filter-row');
+      for (var row of rows) {{
+        var field = row.querySelector('.dpr-task-filter-field');
+        if (!field || DPR_EDITABLE_TASK_FILTER_FIELDS.indexOf(field.value) < 0) continue;
+        var input = row.querySelector('.dpr-task-filter-value');
+        if (!input) continue;
+        var original = String(input.dataset.originalValue || '');
+        var required = original.split(/[,，、]/).map(function(item) {{ return item.trim(); }}).filter(Boolean);
+        var current = String(input.value || '').split(/[,，、]/).map(function(item) {{ return item.trim(); }}).filter(Boolean);
+        if (required.some(function(item) {{ return current.indexOf(item) < 0; }})) {{
+          return {{valid:false, field:field.value}};
+        }}
+      }}
+      return {{valid:true}};
+    }}
+    function dprTaskFilterValueControl(field, value, appendOnly) {{
       var config = DPR_TASK_FILTER_FIELDS[field] || {{type:'text'}};
       var values = String(value || '').split(/[,，、]/).map(function(item) {{ return item.trim(); }}).filter(Boolean);
       if (config.type === 'text') {{
         return '<input class="dpr-task-filter-value" value="' + dprProcessingEscape(value) +
-          '" placeholder="' + dprProcessingEscape(config.placeholder || '请输入字段值') + '">';
+          '" placeholder="' + dprProcessingEscape(config.placeholder || '请输入字段值') + '"' +
+          (appendOnly ? ' data-original-value="' + dprProcessingEscape(value) + '" data-last-value="' + dprProcessingEscape(value) + '" oninput="dprAppendOnlyFilterValueChange(this)"' : '') + '>';
       }}
       if (config.type === 'datetime_range') {{
         var range = String(value || '').split('~');
@@ -3908,29 +3939,34 @@ def render_processing_tasks():
     }}
     function dprTaskFilterRow(field, operator, value, added, scope) {{
       field = dprTaskFilterFieldName(field);
+      var drawer = typeof document !== 'undefined' ? document.getElementById('drawerProcessingTaskForm') : null;
+      var editMode = !!(drawer && drawer.dataset.mode === 'edit');
       var processing = !!(DPR_TASK_FILTER_FIELDS[field] || {{}}).ruleStage;
       var fields = added ? DPR_EDITABLE_TASK_FILTER_FIELDS : Object.keys(DPR_TASK_FILTER_FIELDS).filter(function(name) {{
         return !!DPR_TASK_FILTER_FIELDS[name].ruleStage === processing;
       }});
       if (!fields.includes(field)) fields = fields.concat([field]);
       var selectedField = fields.indexOf(field) >= 0 ? field : fields[0];
+      var editValueOnly = editMode && DPR_EDITABLE_TASK_FILTER_FIELDS.indexOf(selectedField) >= 0;
+      var fieldDisabled = editMode ? ' disabled' : '';
+      var operatorDisabled = editMode ? ' disabled' : '';
       if (value === undefined) {{ value = operator; operator = '等于'; }}
       var selectedOperator = DPR_TASK_FILTER_OPERATORS.indexOf(operator) >= 0 ? operator : '等于';
       return '<div class="dpr-task-config-row dpr-filter-row"' + (added ? ' data-added-filter="true"' : '') + '>' +
         '<span class="dpr-filter-and">且</span>' +
-        '<select class="dpr-task-filter-field" onchange="dprTaskFilterFieldChange(this)">' +
+        '<select class="dpr-task-filter-field" onchange="dprTaskFilterFieldChange(this)"' + fieldDisabled + '>' +
           fields.map(function(item) {{
             return '<option' + (item === selectedField ? ' selected' : '') + '>' +
               dprProcessingEscape(item) + '</option>';
           }}).join('') + '</select>' +
         (processing ? '<div class="dpr-task-filter-scope-wrap">' + dprTaskFilterScopeControl(selectedField, scope) + '</div>' : '') +
-        '<select class="dpr-task-filter-operator" onchange="dprTaskFilterOperatorChange(this)">' +
+        '<select class="dpr-task-filter-operator" onchange="dprTaskFilterOperatorChange(this)"' + operatorDisabled + '>' +
           DPR_TASK_FILTER_OPERATORS.map(function(item) {{
             return '<option' + (item === selectedOperator ? ' selected' : '') + '>' + item + '</option>';
           }}).join('') + '</select>' +
         '<div class="dpr-task-filter-value-wrap">' +
-          dprTaskFilterValueControl(selectedField, value) + '</div>' +
-        '<button type="button" class="dpr-task-config-remove" ' +
+          dprTaskFilterValueControl(selectedField, value, editValueOnly) + '</div>' +
+        '<button type="button" class="dpr-task-config-remove"' + (editMode ? ' style="display:none" disabled' : '') + ' ' +
           'onclick="dprRemoveTaskFilter(this)">&times;</button></div>';
     }}
     function dprRenderTaskFilters(filters) {{
@@ -3958,12 +3994,9 @@ def render_processing_tasks():
     }}
     function dprAddTaskFilter(group) {{
       var mode = document.getElementById('drawerProcessingTaskForm').dataset.mode;
-      var editing = mode === 'edit';
-      if (mode === 'detail' || (editing && group === 'processing')) return;
+      if (mode === 'detail' || mode === 'edit') return;
       document.getElementById(group === 'processing' ? 'processingTaskProcessingFilters' : 'processingTaskBasicFilters').insertAdjacentHTML(
-        'beforeend', editing
-          ? dprTaskFilterRow('采集任务 ID', '等于', '', true)
-          : group === 'processing' ? dprTaskFilterRow('是否完成质检', '等于', '是')
+        'beforeend', group === 'processing' ? dprTaskFilterRow('是否完成质检', '等于', '是')
           : dprTaskFilterRow('所属项目', '等于', '预训练采集'));
       dprRefreshFilterRelationLabels();
       dprUpdateDuplicateFilterWarning();
@@ -4036,23 +4069,6 @@ def render_processing_tasks():
     ['input', 'change', 'click'].forEach(function(eventName) {{
       document.getElementById('processingTaskFilters').addEventListener(eventName, dprUpdateDuplicateFilterWarning);
     }});
-    function dprAddedProcessingFilters() {{
-      var rows = Array.from(document.querySelectorAll('#processingTaskFilters [data-added-filter="true"]'));
-      var filters = [];
-      for (var row of rows) {{
-        var field = row.querySelector('.dpr-task-filter-field').value;
-        var operator = row.querySelector('.dpr-task-filter-operator').value;
-        var input = row.querySelector('input.dpr-task-filter-value');
-        var values = (input.value || '').split(/[,，]/).map(function(value) {{ return value.trim(); }}).filter(Boolean);
-        if (!values.length && operator !== '为空' && operator !== '不为空') {{
-          toast('请填写' + field);
-          input.focus();
-          return null;
-        }}
-        filters.push([field, operator, values.join(',')]);
-      }}
-      return filters;
-    }}
     function dprRemoveTaskFilter(button) {{
       button.closest('.dpr-filter-row').remove();
       dprRefreshFilterRelationLabels();
@@ -4570,13 +4586,16 @@ def render_processing_tasks():
         }}
       }});
       drawer.querySelectorAll('#processingTaskFilters input, #processingTaskFilters select, #processingTaskFilters button').forEach(function(control) {{
-        control.disabled = filterLocked;
+        var row = control.closest('.dpr-filter-row');
+        var field = row && row.querySelector('.dpr-task-filter-field');
+        var valueEditable = mode === 'edit' && field && DPR_EDITABLE_TASK_FILTER_FIELDS.indexOf(field.value) >= 0 && control.classList.contains('dpr-task-filter-value');
+        control.disabled = filterLocked && !valueEditable;
       }});
       drawer.querySelectorAll('#processingTaskFilters .dpr-task-config-remove').forEach(function(button) {{
-        button.style.display = isDetail ? 'none' : '';
+        button.style.display = isDetail || mode === 'edit' ? 'none' : '';
       }});
       drawer.querySelectorAll('.dpr-filter-add-bottom').forEach(function(button) {{
-        var locked = isDetail || (mode === 'edit' && button.closest('[data-filter-group]').dataset.filterGroup === 'processing');
+        var locked = isDetail || mode === 'edit';
         button.style.display = locked ? 'none' : '';
         button.disabled = locked;
       }});
@@ -4617,21 +4636,22 @@ def render_processing_tasks():
         return;
       }}
       if (mode === 'edit') {{
-        var addedFilters = dprAddedProcessingFilters();
-        if (!addedFilters) return;
+        var appendOnlyValidation = dprValidateAppendOnlyTaskFilters();
+        if (!appendOnlyValidation.valid) {{
+          toast('原有的采集任务 ID 和数据 ID 不能删除，只能追加新值。请恢复已删除的值后再保存。');
+          return;
+        }}
         var percentages = dprReadNodePercentages();
         percentages[drawer.dataset.taskId] = DPR_NODE_PERCENTAGES;
         try {{ localStorage.setItem(DPR_NODE_PERCENT_STORAGE, JSON.stringify(percentages)); }} catch (error) {{}}
-        if (addedFilters.length) {{
-          var filters = DPR_CURRENT_PROCESSING_FILTERS.concat(addedFilters);
-          var taskId = drawer.dataset.taskId;
-          var savedFilters = dprReadProcessingFilterStates();
-          savedFilters[taskId] = filters;
-          try {{ localStorage.setItem(DPR_PROCESSING_FILTER_STORAGE, JSON.stringify(savedFilters)); }} catch (error) {{}}
-          document.querySelectorAll('#dpr-processing-task-table .dpr-task-actions button[data-task-id]').forEach(function(button) {{
-            if (button.dataset.taskId === taskId) button.dataset.filters = JSON.stringify(filters);
-          }});
-        }}
+        var filters = dprCurrentTaskFilters();
+        var taskId = drawer.dataset.taskId;
+        var savedFilters = dprReadProcessingFilterStates();
+        savedFilters[taskId] = filters;
+        try {{ localStorage.setItem(DPR_PROCESSING_FILTER_STORAGE, JSON.stringify(savedFilters)); }} catch (error) {{}}
+        document.querySelectorAll('#dpr-processing-task-table .dpr-task-actions button[data-task-id]').forEach(function(button) {{
+          if (button.dataset.taskId === taskId) button.dataset.filters = JSON.stringify(filters);
+        }});
       }}
       toast(mode === 'new'
         ? 'Demo: 已创建持续处理任务并开始监听数据湖'

@@ -458,6 +458,17 @@ class DataPlatformArchitectureTests(unittest.TestCase):
             self.assertIn("enabled", task)
             self.assertIn(task["priority"], ("P0", "P1", "P2"))
 
+    def test_processing_task_20455_has_collection_and_data_id_filters(self):
+        task = next(item for item in architecture.BUSINESS_TASKS if item["id"] == "20455")
+        self.assertIn(("采集任务 ID", "等于", "20197"), task["filter_rules"])
+        self.assertIn(
+            ("数据 ID", "等于", "406006"),
+            task["filter_rules"],
+        )
+        self.assertIn("采集任务 ID=20197", task["filter_summary"])
+        self.assertIn("数据 ID=406006", task["filter_summary"])
+        self.assertRegex(task["filter_rules"][3][2], r"^\d{6}$")
+
     def test_processing_task_close_options_and_publish_actions(self):
         html = self.client.get("/data/processing-tasks").get_data(as_text=True)
         self.assertIn("确认开启处理任务", html)
@@ -487,18 +498,25 @@ class DataPlatformArchitectureTests(unittest.TestCase):
             self.assertIsNotNone(publish, task["id"])
             self.assertEqual(task["task_status"] != "unpublished", "disabled" in publish.group(1))
 
-    def test_processing_task_edit_can_append_id_filters(self):
+    def test_processing_task_edit_only_updates_id_filter_values(self):
         html = self.client.get("/data/processing-tasks").get_data(as_text=True)
         self.assertIn("var DPR_EDITABLE_TASK_FILTER_FIELDS = ['采集任务 ID', '数据 ID']", html)
-        self.assertIn('data-added-filter="true"', html)
-        self.assertIn("editing\n          ? dprTaskFilterRow('采集任务 ID', '等于', '', true)", html)
+        self.assertIn("function dprAppendOnlyFilterValueChange(input)", html)
+        self.assertIn("function dprValidateAppendOnlyTaskFilters()", html)
+        self.assertIn("原有的采集任务 ID 和数据 ID 不能删除，只能追加新值。请恢复已删除的值后再保存。", html)
+        self.assertIn("var appendOnlyValidation = dprValidateAppendOnlyTaskFilters();", html)
+        self.assertIn("var editValueOnly = editMode && DPR_EDITABLE_TASK_FILTER_FIELDS.indexOf(selectedField) >= 0", html)
+        self.assertIn("fieldDisabled = editMode ? ' disabled' : ''", html)
+        self.assertIn("operatorDisabled = editMode ? ' disabled' : ''", html)
+        self.assertIn("dprTaskFilterValueControl(selectedField, value, editValueOnly)", html)
         self.assertIn("drawer.querySelectorAll('.dpr-filter-add-bottom').forEach", html)
-        self.assertIn("button.closest('[data-filter-group]').dataset.filterGroup === 'processing'", html)
-        self.assertIn("control.disabled = filterLocked", html)
+        self.assertIn("var locked = isDetail || mode === 'edit'", html)
+        self.assertIn("control.disabled = filterLocked && !valueEditable", html)
         self.assertIn("multi.inert = filterLocked", html)
         self.assertIn("row.dataset.lockedFilter = String(filterLocked)", html)
-        self.assertIn("button.style.display = isDetail ? 'none' : ''", html)
-        self.assertIn("DPR_CURRENT_PROCESSING_FILTERS.concat(addedFilters)", html)
+        self.assertIn("button.style.display = isDetail || mode === 'edit' ? 'none' : ''", html)
+        self.assertIn("var filters = dprCurrentTaskFilters();", html)
+        self.assertNotIn("DPR_CURRENT_PROCESSING_FILTERS.concat(addedFilters)", html)
         self.assertIn("DPR_PROCESSING_FILTER_STORAGE", html)
 
     def test_new_processing_task_warns_about_enabled_duplicate_filters(self):
