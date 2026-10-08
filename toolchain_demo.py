@@ -27,14 +27,16 @@ import json
 import os
 import re
 import sys
+import secrets
 from decimal import Decimal
 from datetime import date, datetime, timedelta
 from urllib.parse import quote, urlencode
-from flask import Flask, render_template, render_template_string, request, redirect, jsonify
+from flask import Flask, render_template, render_template_string, request, redirect, jsonify, abort, session
 
 from prototype_filters import filter_url
 
 import data_platform_refactor as data_refactor
+import workbench_pool as wb_pool
 
 app = Flask(__name__)
 # Keep local prototype previews current when templates change without debug mode.
@@ -4915,6 +4917,7 @@ WB_TASKS = [
 ]
 
 WB_PRIORITY_ORDER = {"P0": 0, "P1": 1, "P2": 2}
+WB_TASKS.extend(wb_pool.PRETRAINING_TASKS)
 
 WB_POOL_META = {
     "POOL-E2E-ACCEPTANCE": {
@@ -4948,6 +4951,10 @@ WB_POOL_META = {
         "risk": "5 条接近超时",
     },
 }
+
+WB_POOL_META.update({task["pool"]: {"name": f'{task["flow"]} · {task["node"]}任务池',
+                                   "oldest_wait": "0.5 小时", "risk": "运行正常"}
+                     for task in wb_pool.PRETRAINING_TASKS})
 
 WB_MY_JOBS = [
     {
@@ -5131,7 +5138,7 @@ def _render_workbench_pool_home(pool_id, selected_task_id=None, version="v1"):
         )
     if task_id_query and visible_pool_tasks and task not in visible_pool_tasks:
         task = visible_pool_tasks[0]
-    use_annotation_pool_layout = is_v2 and task["stage"] == "标注"
+    use_annotation_pool_layout = is_v2 and (task["stage"] == "标注" or task["id"].startswith("WB-PRETRAINING-"))
     meta = WB_POOL_META[pool_id]
     total_waiting = sum(item["count"] for item in pool_tasks)
     total_processing = sum(item["processing"] for item in pool_tasks)
@@ -5191,6 +5198,8 @@ def _render_workbench_pool_home(pool_id, selected_task_id=None, version="v1"):
             for rule in RULES
             if rule.get("enabled") and rule["stage"] == task["stage"]
         )
+        if task["id"].startswith("WB-PRETRAINING-"):
+            rule_names = (f'预训练数据{task["node"]}规则 v1',)
         show_rule_details = any(
             rule.get("rule_config") not in (None, "", "略")
             for rule in RULES
@@ -5384,6 +5393,7 @@ def _render_workbench_pool_home(pool_id, selected_task_id=None, version="v1"):
         {claim_control}
         <button class="btn" form="wbFilterForm" type="reset"
           onclick="{reset_rule_details}">重置</button>
+        {f'<a class="btn" href="{pool_url}/records?{html.escape(urlencode({"source": task["id"]}), quote=True)}">进入任务池</a>' if is_v2 else ''}
         <button class="btn btn-primary" form="wbFilterForm"
           type="submit">{'开始处理' if is_v2 else '按筛选条件开始处理'}</button>
       </div>
@@ -5414,6 +5424,58 @@ def data_workbench_v2_pool_home(pool_id):
         request.args.get("source"),
         version="v2",
     )
+
+
+def _pool_list_task(pool_id):
+    tasks = [task for task in WB_TASKS if task["pool"] == pool_id]
+    if not tasks:
+        abort(404)
+    source = request.args.get("source")
+    if source and not any(task["id"] == source for task in tasks):
+        abort(404)
+    return next((task for task in tasks if task["id"] == source), tasks[0])
+
+
+def _pool_owner():
+    if "workbench_pool_owner" not in session:
+        session["workbench_pool_owner"] = secrets.token_urlsafe(24)
+    return session["workbench_pool_owner"]
+
+
+def _pool_db():
+    return app.config.get("WORKBENCH_POOL_DB", os.path.join(app.instance_path, "workbench-pools.sqlite3"))
+
+
+def _shared_pool_records(task):
+    return wb_pool.shared_records(_pool_db(), task, session.get("workbench_pool_states", {}), _pool_owner())
+
+
+@app.route("/data/workbench-v2/pools/<pool_id>/records")
+def data_workbench_pool_records(pool_id):
+    task = _pool_list_task(pool_id)
+    records = wb_pool.public_records(_shared_pool_records(task), _pool_owner())
+    content = render_template("workbench_pool/list.html", task=task, records=records,
+                              reasons=wb_pool.REJECTION_REASONS, notice=session.pop("workbench_pool_notice", ""))
+    return render_page("任务池数据列表", content, active="/data/workbench-v2", module="data",
+                       breadcrumb=f'数据平台 / 工作台 / <b>{html.escape(task["node"])}任务池</b>')
+
+
+@app.route("/data/workbench-v2/pools/<pool_id>/records/actions", methods=["POST"])
+def data_workbench_pool_action(pool_id):
+    task = _pool_list_task(pool_id)
+    payload = request.get_json(silent=True)
+    if not isinstance(payload, dict) or any(not isinstance(payload.get(key, ""), str)
+                                          for key in ("action", "result", "reason", "remark")):
+        return jsonify(error="无效请求"), 400
+    try:
+        records = wb_pool.shared_transition(_pool_db(), task, session.get("workbench_pool_states", {}), _pool_owner(),
+            payload.get("action"), payload.get("ids"), payload.get("result", ""),
+            payload.get("reason", ""), payload.get("remark", ""))
+    except wb_pool.PoolConflict as error:
+        return jsonify(error=str(error), code="record_occupied"), 409
+    except ValueError as error:
+        return jsonify(error=str(error)), 400
+    return jsonify(records=wb_pool.public_records(records, _pool_owner()))
 
 
 @app.route("/data/workbench/tasks/<task_id>")
@@ -6898,6 +6960,22 @@ def data_workbench_edit(preview_mode=None):
         "验收": "detail",
     }.get(workbench_task["stage"], "detail")
     management_preview = preview_mode is not None
+    pool_id = request.args.get("pool_id")
+    if pool_id and not management_preview:
+        if pool_id != workbench_task.get("pool"):
+            abort(404)
+        pool_record = next((item for item in _shared_pool_records(workbench_task)
+                            if item["id"] == recording_id), None)
+        if not pool_record:
+            abort(404)
+        if pool_record["status"] != "processing" or pool_record.get("owner") != _pool_owner():
+            if pool_record.get("owner") and pool_record["owner"] != _pool_owner():
+                session["workbench_pool_notice"] = "数据已被其他人占用或处理，请选择其他数据"
+            return redirect(f'/data/workbench-v2/pools/{quote(pool_id)}/records?source={quote(requested_task_id)}')
+        original_task = next(item for item in WB_TASKS if item["id"] == requested_task_id)
+        workbench_task = dict(original_task, recording_id=recording_id, recording_device=pool_record["device"],
+                              recording_collector=pool_record["collector"], collection_command=pool_record["description"])
+        workbench_mode = "quality"
     v2_workbench_page = request.path.startswith("/data/workbench-v2")
     style_preview = request.args.get("style_preview") == "1"
     style_config = WORKBENCH_STYLE_VARIANTS.get(request.args.get("style", ""))

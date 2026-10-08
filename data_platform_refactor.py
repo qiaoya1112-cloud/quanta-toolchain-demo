@@ -3598,7 +3598,7 @@ def render_processing_tasks():
                 <div class="dpr-filter-group-rows" id="processingTaskProcessingFilters"></div>
                 <div class="dpr-task-config-empty">未添加处理信息条件</div>
                 <button type="button" class="dpr-filter-add-bottom" onclick="dprAddTaskFilter('processing')">+ 添加条件</button>
-                <p class="dpr-task-filter-scope-help">按所选规则判断是否已完成；选择“任意规则”，完成过其中一条即可。质检结果取所选范围内最近一次有效结果。</p>
+                <p class="dpr-task-filter-scope-help">按所选规则判断是否已完成；选择“任意规则”，完成过其中一条即可。质检结果取所选范围内最近一次有效结果。自检条件的规则范围为“任意规则”。</p>
               </section>
             </div>
             <p class="dpr-task-filter-scope-help">两组条件需同时满足；未添加条件的组不限制数据。</p>
@@ -3643,6 +3643,8 @@ def render_processing_tasks():
       '数据 ID': {{type:'text', placeholder:'多个数据 ID 请用英文逗号隔开'}},
       '是否完成质检': {{type:'single', options:['是', '否'], ruleStage:'质检'}},
       '质检结果': {{type:'multi', options:['合格', '不合格', '操作失误'], ruleStage:'质检'}},
+      '是否完成自检': {{type:'single', options:['是', '否'], ruleStage:'自检', anyRuleOnly:true}},
+      '自检结果': {{type:'single', options:['合格', '不合格'], ruleStage:'自检', anyRuleOnly:true}},
       '是否完成标注': {{type:'single', options:['是', '否'], ruleStage:'标注'}}
     }};
     var DPR_TASK_FILTER_OPERATORS = ['等于', '不等于', '包含', '不包含', '为空', '不为空'];
@@ -3832,7 +3834,7 @@ def render_processing_tasks():
       var stage = (DPR_TASK_FILTER_FIELDS[field] || {{}}).ruleStage;
       if (!stage) return '<span class="muted">—</span>';
       var selected = scope || 'any';
-      var options = [{{value:'any', label:'任意规则'}}].concat(DPR_NODE_RULES.filter(function(rule) {{ return rule.stage === stage; }}).map(function(rule) {{
+      var options = [{{value:'any', label:'任意规则'}}].concat(DPR_NODE_RULES.filter(function(rule) {{ return !DPR_TASK_FILTER_FIELDS[field].anyRuleOnly && rule.stage === stage; }}).map(function(rule) {{
         return {{value:JSON.stringify([rule.stage, rule.name, rule.version]), label:rule.name + ' · ' + rule.version}};
       }}));
       // 保留历史版本，不把已有条件静默替换成任意规则。
@@ -9784,6 +9786,8 @@ def render_workbench_v2():
         {"owner": "验收-端到端切分标注", "pool": "端到端切分标注 · 内部验收任务池", "pool_id": "POOL-E2E-ACCEPTANCE", "flow": "端到端切分标注流程", "node": "内部验收", "priority": 9, "pending": 86, "processing": 18, "stalled_hours": 2.1, "priority_counts": {9: 62, 8: 24}},
         {"owner": "供应商 A", "pool": "端到端切分标注 · 供应商 A 任务池", "pool_id": "POOL-E2E-SUPPLIER-A", "flow": "端到端切分标注流程", "node": "供应商抽验", "priority": 9, "pending": 124, "processing": 31, "stalled_hours": 3.4, "priority_counts": {9: 88, 7: 36}},
         {"owner": "光轮智能", "pool": "端到端切分标注 · 光轮智能任务池", "pool_id": "POOL-E2E-GUAN", "flow": "端到端切分标注流程", "node": "供应商抽验", "priority": 9, "pending": 118, "processing": 28, "stalled_hours": 2.8, "priority_counts": {9: 76, 6: 42}},
+        {"owner": "采集质检用户组", "pool_id": "POOL-PRETRAINING-QC", "flow": "预训练数据质检流程", "node": "采集质检", "pending": 4, "processing": 2, "stalled_hours": 0, "priority_counts": {9: 4}},
+        {"owner": "采集验收用户组", "pool_id": "POOL-PRETRAINING-ACCEPTANCE", "flow": "预训练数据质检流程", "node": "采集验收", "pending": 4, "processing": 2, "stalled_hours": 0, "priority_counts": {9: 4}},
     ]
     pool_groups = {}
     for item in pool_items:

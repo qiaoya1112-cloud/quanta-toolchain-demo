@@ -1350,8 +1350,8 @@ class DataPlatformArchitectureTests(unittest.TestCase):
             flags=re.S,
         )
         self.assertIsNotNone(pool_table)
-        self.assertEqual(2, len(re.findall(r'<tr data-flow="', pool_table.group(0))))
-        self.assertEqual(2, pool_table.group(0).count("开始处理"))
+        self.assertEqual(4, len(re.findall(r'<tr data-flow="', pool_table.group(0))))
+        self.assertEqual(4, pool_table.group(0).count("开始处理"))
         self.assertNotIn("<th>处理范围</th>", pool_table.group(0))
         self.assertNotIn("POOL-E2E-GUAN", pool_table.group(0))
         self.assertIn('data-flow="端到端切分标注流程" data-node="供应商抽验"', pool_table.group(0))

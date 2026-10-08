@@ -28,3 +28,6 @@ skills-lock.json
 
 # CodeGraph local index
 .codegraph/
+
+# Local shared task-pool demo state
+instance/workbench-pools.sqlite3*
