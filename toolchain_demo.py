@@ -1833,7 +1833,7 @@ textarea.yaml-area:focus { border-color:#149DAA; box-shadow:0 0 0 2px rgba(20,15
 .wb-v2-basic-grid > div:last-child { padding-right:0; border-right:0; }
 .wb-v2-basic-grid span { color:rgba(0,0,0,.42); font-size:11.5px; }
 .wb-v2-basic-grid b { overflow:hidden; color:rgba(0,0,0,.82); font-size:13px; font-weight:500; text-overflow:ellipsis; white-space:nowrap; }
-.wb-v2-filter-grid { grid-template-columns:minmax(240px,360px); }
+.wb-v2-filter-grid { grid-template-columns:repeat(auto-fit,minmax(240px,360px)); }
 .wb-v2-filter-grid .wb-rule-selector { padding:0; }
 .wb-date-range { display:grid; grid-template-columns:1fr 12px 1fr; gap:7px; align-items:center; }
 .wb-date-range > span { color:rgba(0,0,0,.3); font-size:11px; text-align:center; }
@@ -5106,6 +5106,13 @@ def data_workbench():
                        breadcrumb='数据平台 / <b>工作台</b>', mvp_note="MVP 一期")
 
 
+def _workbench_collection_task_id(task):
+    source = task.get("source_task_id") or dict(task.get("filters", [])).get("来源任务")
+    if source:
+        return "" if source.startswith("IMP-") else source
+    return "COL-2026-0718"
+
+
 def _render_workbench_pool_home(pool_id, selected_task_id=None, version="v1"):
     is_v2 = version == "v2"
     workbench_url = "/data/workbench-v2" if is_v2 else "/data/workbench"
@@ -5121,22 +5128,23 @@ def _render_workbench_pool_home(pool_id, selected_task_id=None, version="v1"):
         pool_tasks,
         key=lambda item: (WB_PRIORITY_ORDER[item["priority"]], item["id"]),
     )
-    task_id_query = request.args.get("task_id", "").strip()
+    task_id_query = request.args.get("processing_task_id", request.args.get("task_id", "")).strip()
+    collection_task_query = request.args.get("collection_task_id", "").strip() if is_v2 else ""
     visible_pool_tasks = [
         item for item in pool_tasks
-        if not task_id_query
-        or task_id_query.lower() in item["processing_task"].lower()
+        if (not task_id_query or task_id_query.lower() in item["processing_task"].lower())
+        and (not collection_task_query or collection_task_query.lower() in _workbench_collection_task_id(item).lower())
     ]
     task = next(
         (item for item in pool_tasks if item["id"] == selected_task_id),
         visible_pool_tasks[0] if visible_pool_tasks else pool_tasks[0],
     )
-    if is_v2 and not selected_task_id and not task_id_query:
+    if is_v2 and not selected_task_id and not task_id_query and not collection_task_query:
         task = next(
             (item for item in visible_pool_tasks if item.get("node") == "供应商抽验"),
             task,
         )
-    if task_id_query and visible_pool_tasks and task not in visible_pool_tasks:
+    if (task_id_query or collection_task_query) and visible_pool_tasks and task not in visible_pool_tasks:
         task = visible_pool_tasks[0]
     use_annotation_pool_layout = is_v2 and (task["stage"] == "标注" or task["id"].startswith("WB-PRETRAINING-"))
     meta = WB_POOL_META[pool_id]
@@ -5206,33 +5214,46 @@ def _render_workbench_pool_home(pool_id, selected_task_id=None, version="v1"):
             if rule.get("enabled") and rule["stage"] == task["stage"]
         )
         rule_options = "".join(
-            f'<option value="{html.escape(name, quote=True)}"'
-            f'{" selected" if use_annotation_pool_layout and name == "端到端切分标注规则" else ""}>'
+            f'<option value="{html.escape(name, quote=True)}">'
             f'{html.escape(name)}</option>'
             for name in rule_names
         )
         rule_groups_class += " wb-rule-groups-hidden"
         rule_groups_attrs = ' id="wbRuleDetails" style="display:none"'
-        rule_field_label = "规则" if use_annotation_pool_layout else rule_label
+        rule_field_label = "处理规则"
         rule_select_attrs = (
             ""
             if use_annotation_pool_layout
             else 'form="wbFilterForm" onchange="var details=document.getElementById(\'wbRuleDetails\');if(details)details.style.display=this.value?\'grid\':\'none\'"'
         )
-        rule_placeholder = (
-            ""
-            if use_annotation_pool_layout
-            else f'<option value="">请选择{rule_label}</option>'
-        )
+        rule_placeholder = '<option value="">全部处理规则</option>'
         rule_selector = f"""
           <div class="wb-filter-field wb-rule-selector">
-            <label for="wbRule">{rule_field_label}<span aria-hidden="true"> *</span></label>
-            <select id="wbRule" name="rule" required {rule_select_attrs}>
+            <label for="wbRule">{rule_field_label}</label>
+            <select id="wbRule" name="rule" {rule_select_attrs}>
               {rule_placeholder}
               {rule_options}
             </select>
           </div>
         """
+    task_id_filter = f"""
+          <div class="wb-filter-field">
+            <label for="wbTaskId">处理任务 ID</label>
+            <input id="wbTaskId" name="processing_task_id" form="wbFilterForm"
+              value="{html.escape(task_id_query, quote=True)}" placeholder="请输入处理任务 ID">
+          </div>
+          <div class="wb-filter-field">
+            <label for="wbCollectionTaskId">采集任务 ID</label>
+            <input id="wbCollectionTaskId" name="collection_task_id" form="wbFilterForm"
+              value="{html.escape(collection_task_query, quote=True)}" placeholder="请输入采集任务 ID">
+          </div>
+    """ if is_v2 else ""
+    if is_v2 and not use_annotation_pool_layout:
+        rule_selector = f'<div class="wb-filter-form wb-filter-grid wb-v2-filter-grid">{rule_selector}{task_id_filter}</div>'
+    task_filter_error = (
+        '<p class="wb-filter-tip" role="status">未找到匹配的任务，请修改筛选条件</p>'
+        if is_v2 and (task_id_query or collection_task_query) and not visible_pool_tasks else ""
+    )
     claim_control = (
         ""
         if is_v2
@@ -5353,7 +5374,7 @@ def _render_workbench_pool_home(pool_id, selected_task_id=None, version="v1"):
           </div>
           <form class="wb-filter-form" id="wbFilterForm" action="{workbench_url}/edit" method="get">
             <input type="hidden" name="task" value="{html.escape(task['id'])}">
-            <div class="wb-filter-grid wb-v2-filter-grid">{rule_selector}</div>
+            <div class="wb-filter-grid wb-v2-filter-grid">{rule_selector}{task_id_filter}</div>
           </form>
         </section>''' if use_annotation_pool_layout else ('' if is_v2 else f'''<section class="wb-task-config wb-filter-config">
           <div class="wb-task-config-title">
@@ -5389,6 +5410,7 @@ def _render_workbench_pool_home(pool_id, selected_task_id=None, version="v1"):
           {rule_groups_html}
         </section>'''}
       </div>
+      {task_filter_error}
       <div class="wb-task-home-actions">
         {claim_control}
         <button class="btn" form="wbFilterForm" type="reset"
@@ -5753,7 +5775,7 @@ def _workbench_basic_info_panel_html(task):
     recording_id = task.get("recording_id") or "—"
     device = task.get("recording_device") or "—"
     collector = task.get("recording_collector") or "—"
-    source_task_id = task.get("source_task_id") or "COL-2026-0718"
+    source_task_id = _workbench_collection_task_id(task) or "—"
     source_task_name = task.get("source_task_name") or (
         "家居动作采集任务" if project == "demo 项目" else "厨房采集任务"
     )
@@ -6877,6 +6899,21 @@ def data_workbench_edit(preview_mode=None):
         (item for item in WB_TASKS if item["id"] == requested_task_id),
         WB_TASKS[0],
     )
+    task_id_filter = request.args.get("processing_task_id", request.args.get("task_id", "")).strip()
+    collection_task_filter = request.args.get("collection_task_id", "").strip()
+    if request.path == "/data/workbench-v2/edit" and not preview_mode and (task_id_filter or collection_task_filter):
+        candidates = sorted(
+            (item for item in WB_TASKS
+             if item["pool"] == workbench_task["pool"]
+             and (not task_id_filter or task_id_filter.lower() in item["processing_task"].lower())
+             and (not collection_task_filter or collection_task_filter.lower() in _workbench_collection_task_id(item).lower())),
+            key=lambda item: (WB_PRIORITY_ORDER[item["priority"]], item["id"]),
+        )
+        if not candidates:
+            return redirect(f'/data/workbench-v2/pools/{quote(workbench_task["pool"])}?'
+                            + urlencode({"source": requested_task_id, "processing_task_id": task_id_filter, "collection_task_id": collection_task_filter}))
+        workbench_task = next((item for item in candidates if item["id"] == requested_task_id), candidates[0])
+        requested_task_id = workbench_task["id"]
     recording_id = request.args.get("recording_id", "")
     instance_id = request.args.get("instance_id", "")
     instance_context = {

@@ -501,6 +501,10 @@ class DataPlatformArchitectureTests(unittest.TestCase):
     def test_processing_task_edit_only_updates_id_filter_values(self):
         html = self.client.get("/data/processing-tasks").get_data(as_text=True)
         self.assertIn("var DPR_EDITABLE_TASK_FILTER_FIELDS = ['采集任务 ID', '数据 ID']", html)
+        self.assertIn('id="processingTaskIdFilterNotice" role="note" hidden', html)
+        self.assertIn("idFilterNotice.hidden = mode !== 'edit' || !editableIdFields.length;", html)
+        self.assertIn("editableIdFields.map(function(field) { return '「' + field + '」'; }).join('和')", html)
+        self.assertIn("仅支持追加新值，不能删除已有值。", html)
         self.assertIn("function dprAppendOnlyFilterValueChange(input)", html)
         self.assertIn("function dprValidateAppendOnlyTaskFilters()", html)
         self.assertIn("原有的采集任务 ID 和数据 ID 不能删除，只能追加新值。请恢复已删除的值后再保存。", html)
@@ -1387,8 +1391,8 @@ class DataPlatformArchitectureTests(unittest.TestCase):
             "筛选条件",
             "处理规则",
             "质检规则",
-            'name="rule" form="wbFilterForm" required',
-            "请选择质检规则",
+            'name="rule" form="wbFilterForm"',
+            "全部处理规则",
             "var details=document.getElementById('wbRuleDetails')",
             "wb-v2-pool-home",
             "wb-filter-config",
@@ -1412,8 +1416,8 @@ class DataPlatformArchitectureTests(unittest.TestCase):
             "<span>节点</span>",
             "<span>用户组</span>",
             "<h3>筛选条件</h3>",
-            '<label for="wbRule">规则',
-            '<option value="端到端切分标注规则" selected>端到端切分标注规则</option>',
+            '<label for="wbRule">处理规则',
+            '<option value="端到端切分标注规则">端到端切分标注规则</option>',
             "端到端切分标注流程 v2",
             "供应商抽验",
             "供应商 A",

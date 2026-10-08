@@ -3592,6 +3592,7 @@ def render_processing_tasks():
                 <div class="dpr-task-config-cols dpr-filter-cols"><span></span><span>筛选项</span><span>操作符</span><span>值</span><span></span></div>
                 <div class="dpr-filter-group-rows" id="processingTaskBasicFilters"></div>
                 <div class="dpr-task-config-empty">未添加基础信息条件</div>
+                <p class="dpr-task-filter-scope-help" id="processingTaskIdFilterNotice" role="note" hidden></p>
                 <button type="button" class="dpr-filter-add-bottom" onclick="dprAddTaskFilter()">+ 添加条件</button>
               </section>
               <section class="dpr-task-config-block dpr-page-config-block" data-filter-group="processing">
@@ -4539,6 +4540,12 @@ def render_processing_tasks():
       try {{ filters = JSON.parse(data.filters || '[]'); }} catch (error) {{}}
       if (data.taskId) filters = dprReadProcessingFilterStates()[data.taskId] || filters;
       DPR_CURRENT_PROCESSING_FILTERS = filters.slice();
+      var editableIdFields = DPR_EDITABLE_TASK_FILTER_FIELDS.filter(function(field) {{
+        return filters.some(function(item) {{ return item[0] === field; }});
+      }});
+      var idFilterNotice = document.getElementById('processingTaskIdFilterNotice');
+      idFilterNotice.hidden = mode !== 'edit' || !editableIdFields.length;
+      idFilterNotice.textContent = editableIdFields.map(function(field) {{ return '「' + field + '」'; }}).join('和') + '仅支持追加新值，不能删除已有值。';
       try {{ flows = JSON.parse(data.flows || '[]'); }} catch (error) {{}}
       try {{ DPR_INITIAL_ASSIGNMENTS = JSON.parse(data.assignments || '{{}}'); }} catch (error) {{ DPR_INITIAL_ASSIGNMENTS = {{}}; }}
       if (data.taskId) DPR_INITIAL_ASSIGNMENTS = dprReadAssignmentStates()[data.taskId] || DPR_INITIAL_ASSIGNMENTS;
