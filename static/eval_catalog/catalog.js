@@ -76,7 +76,7 @@ function validate(db,kind,r,editing){
   const story=db.stories.find(x=>x.id===r.story_id);
   if(!story||(r.enabled!==false&&(!active('stories',r.story_id)||!active('stages',r.case_stage||story.stage_id))))errors.push('请选择启用的 Story 和 Stage');
   if(!r.prompt.trim())errors.push('请填写 prompt_EN');
-  if(!r.skill_ids.length||r.skill_ids.some(id=>!has('skills',id)||(r.enabled!==false&&!active('skills',id))))errors.push('至少选择一个启用的 Skill');
+  if(r.skill_ids.some(id=>!has('skills',id)||(r.enabled!==false&&!active('skills',id))))errors.push('所选 Skill 不存在或未启用');
   if(!['P0','P1','P2','P3'].includes(r.priority))errors.push('请选择优先级');
 
   if(new Set(r.factors.map(f=>f.factor_id)).size!==r.factors.length)errors.push('同一 Factor 只能配置一次');
@@ -99,7 +99,7 @@ const schemas={
  stories:[['stage_id','1级-场域-Stage','stages',true],['name','2级-任务-Story','text',true],['skill_ids','3级-原子能力-Skill','skills[]'],['factor_ids','4级-factor','factors[]'],['factor_values','factor取值','textarea'],['notes','备注','textarea'],['case_ids','用例id','computed'],['text3','文本 3','textarea'],['parent_id','父记录','stories'],['stage_count','unique stage cnt','computed'],['story_count','unique story cnt','computed'],['skill_count','unique skill count','computed'],['factor_count','unique factor cnt','computed']],
  skills:[['name','Skill','text',true],['name_zh','Skill_中文','text'],['name_en','Skill_EN','text'],['action_descriptions','可能的动作描述','lines'],['tool_usage','工具使用','skills[]'],['category','SKill类别','category'],['notes','备注','textarea'],['key_factor','Key Factor','textarea']],
  factors:[['name','Factor','text',true],['category','一级（影响来源）','text',true],['dimension','二级（维度组）','text',true],['level3','三级（具体 factor）','text'],['default_value','default 标准值','text'],['value_range','取值范围','textarea'],['values','取值说明','values'],['directory_ids','场景库目录表','computed'],['parent_id','父记录','factors']],
- 'test-cases':[['id','用例ID','text',true],['prerequisite_ids','前置用例','test-cases[]'],['priority','优先级','priority'],['case_stage','Stage','stages',true],['story_id','Story','stories',true],['prompt','prompt_EN','textarea',true],['prompt_cn','prompt_CN','textarea'],['skill_ids','Skill标签','skills[]',true],['factor_ids','Factor','caseFactors'],['factor_values','Factor取值','caseValues'],['props','道具','textarea'],['attachments','布置图片','images'],['factor_option_ids','Factor（选项版）','factors[]'],['text8','文本 8','textarea'],['attributes','属性','textarea'],['attribute_values','属性取值','textarea'],['lookup_reference','查找引用','text'],['t4','T-4','text'],['t5','T-5','text']]
+ 'test-cases':[['id','用例ID','text',true],['prerequisite_ids','前置用例','test-cases[]'],['priority','优先级','priority'],['case_stage','Stage','stages',true],['story_id','Story','stories',true],['prompt','prompt_EN','textarea',true],['prompt_cn','prompt_CN','textarea'],['skill_ids','Skill标签','skills[]'],['factor_ids','Factor','caseFactors'],['factor_values','Factor取值','caseValues'],['props','道具','textarea'],['attachments','布置图片','images'],['factor_option_ids','Factor（选项版）','factors[]'],['text8','文本 8','textarea'],['attributes','属性','textarea'],['attribute_values','属性取值','textarea'],['lookup_reference','查找引用','text'],['t4','T-4','text'],['t5','T-5','text']]
 };
 const listSchemas={...schemas,
  stages:[['name','Stage 场域','text',true]],
@@ -294,7 +294,7 @@ function factorValueGroups(db,selection={},factorId){
 function validateCaseSelection(db,r){
  const active=(kind,id)=>db[kind].some(row=>row.id===id&&row.enabled!==false),errors=[];
  if(!active('stages',r.case_stage)||!active('stories',r.story_id))errors.push('请选择启用的 Stage 和 Story');
- if(!r.skill_ids.length||r.skill_ids.some(id=>!active('skills',id)))errors.push('请选择启用的 Skill');
+ if(r.skill_ids.some(id=>!active('skills',id)))errors.push('请选择启用的 Skill');
  if(r.factors.some(f=>!active('factors',f.factor_id)))errors.push('请选择启用的 Factor');
  return errors;
 }

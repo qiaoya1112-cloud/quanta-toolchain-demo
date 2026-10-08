@@ -17,7 +17,7 @@ const multiValueDb={...db,'test-cases':[multiValueCase]};
 const sizeFactor=db.factors.find(f=>f.id==='FC_SIZE');
 assert(validate(multiValueDb,'factors',{...sizeFactor,values:sizeFactor.values.filter(v=>v.value!=='小')},sizeFactor.id).some(x=>x.includes('引用')));
 assert(validate(db,'test-cases',{...case0,story_id:'missing'},case0.id).length);
-assert(validate(db,'test-cases',{...case0,skill_ids:[]},case0.id).length);
+assert.deepEqual(validate(db,'test-cases',{...case0,skill_ids:[]},case0.id),[]);
 assert(validate(db,'test-cases',{...case0,factors:[{factor_id:'FC_SIZE',value:'玻璃'}]},case0.id).length);
 assert(validate(db,'test-cases',{...case0,factors:[...case0.factors,...case0.factors]},case0.id).length);
 const pre=db['test-cases'].find(x=>x.id==='Study_47');
@@ -37,6 +37,8 @@ const linkedCaseSelection={case_stage:'ST_KITCHEN',story_id:'SR_IDENTIFY',skill_
 assert.deepEqual(caseOptions(sceneDb,linkedCaseSelection).skills.map(r=>r.id),['SK_TURN']);
 assert.deepEqual(caseOptions(sceneDb,linkedCaseSelection).factors.map(r=>r.id),['FC_POSITION']);
 assert.deepEqual(validateCaseSelection(sceneDb,linkedCaseSelection),[]);
+assert.deepEqual(validateCaseSelection(sceneDb,{...linkedCaseSelection,skill_ids:[]}),[]);
+for(const mode of ['create','form'])assert(!fieldsFor('test-cases','elements',mode).find(field=>field[0]==='skill_ids')[3]);
 assert.deepEqual(validateCaseSelection(sceneDb,{...linkedCaseSelection,skill_ids:['SK_PICK']}),[]);
 assert.deepEqual(validateCaseSelection(sceneDb,{...linkedCaseSelection,factors:[{factor_id:'FC_COLOR',value:'红色'}]}),[]);
 const grouped=caseOptionGroups(sceneDb,linkedCaseSelection);
