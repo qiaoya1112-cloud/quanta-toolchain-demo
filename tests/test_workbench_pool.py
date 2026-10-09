@@ -5,7 +5,8 @@ import tempfile
 from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor
 
-from toolchain_demo import app
+from toolchain_demo import app, WB_TASKS, _workbench_pool_rule_names
+from urllib.parse import urlencode
 from workbench_pool import PRETRAINING_TASKS, transition, pool_records, shared_transition, PoolConflict
 
 
@@ -63,7 +64,9 @@ class WorkbenchPoolTests(unittest.TestCase):
         return self.client.post(self.base + "/actions", json=payload)
 
     def records(self, base=None):
-        response = self.client.get(base or self.base)
+        path = base or self.base
+        task = next(item for item in WB_TASKS if item["pool"] == path.split("/")[-2])
+        response = self.client.get(path + "?" + urlencode({"rule": _workbench_pool_rule_names(task)[0]}))
         self.assertEqual(200, response.status_code)
         html = response.get_data(as_text=True)
         return json.loads(re.search(r'<script id="wpPayload" type="application/json">(.*?)</script>', html, re.S)[1])["records"]
@@ -80,10 +83,35 @@ class WorkbenchPoolTests(unittest.TestCase):
             self.assertLess(html.index(">重置</button>"), html.index(">数据列表</a>"))
             if "PRETRAINING" in pool:
                 self.assertIn("规则 v1</option>", html)
-            response = self.client.get("/data/workbench-v2/pools/" + pool + "/records")
+            task = next(item for item in WB_TASKS if item["pool"] == pool)
+            response = self.client.get("/data/workbench-v2/pools/" + pool + "/records?" + urlencode({"rule": _workbench_pool_rule_names(task)[0]}))
             self.assertEqual(200, response.status_code)
             self.assertNotIn("<th>人工质检结论</th>", response.get_data(as_text=True))
             self.assertNotIn("<th>任务状态</th>", response.get_data(as_text=True))
+
+    def test_data_list_requires_a_specific_processing_rule(self):
+        self.assertEqual(302, self.client.get(self.base).status_code)
+        self.assertEqual(302, self.client.get(self.base + "?rule=invalid").status_code)
+        self.records()
+        self.assertEqual(200, self.client.get(self.base).status_code)
+        self.assertEqual(302, self.client.get(self.base + "?rule=").status_code)
+
+    def test_acceptance_reads_completed_upstream_quality_history(self):
+        acceptance = "/data/workbench-v2/pools/POOL-PRETRAINING-ACCEPTANCE/records"
+        before = next(item for item in self.records(acceptance) if item['id'] == '7523785')
+        self.assertEqual('', before['collection_qc_result'])
+        response = self.action(action='finish', ids=['7523785'], result='不合格', reasons=['其他'])
+        self.assertEqual(200, response.status_code)
+        after = next(item for item in self.records(acceptance) if item['id'] == '7523785')
+        self.assertEqual('processing', after['status'])
+        self.assertNotIn('result', after)
+        self.assertEqual('不合格', after['collection_qc_result'])
+        self.assertEqual('李奕冲', after['collection_qc_operator'])
+        self.assertEqual('SUP-003', after['collection_qc_supplier_id'])
+        self.assertTrue(after['collection_qc_at'])
+        response = self.client.post(acceptance + '/actions', json={'action':'start', 'ids':['7523787']})
+        self.assertEqual(200, response.status_code)
+        self.assertEqual('不合格', next(item for item in response.json['records'] if item['id']=='7523785')['collection_qc_result'])
 
     def test_batch_start_persists_and_is_sorted(self):
         result = self.action(action="start", ids=["7523788", "7523790"])

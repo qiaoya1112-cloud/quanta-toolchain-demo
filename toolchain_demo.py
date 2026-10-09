@@ -5115,6 +5115,13 @@ def _workbench_collection_task_id(task):
     return "COL-2026-0718"
 
 
+def _workbench_pool_rule_names(task):
+    if task["id"].startswith("WB-PRETRAINING-"):
+        return (f'预训练数据{task["node"]}规则 v1',)
+    return tuple(rule["name"] for rule in RULES
+                 if rule.get("enabled") and rule["stage"] == task["stage"])
+
+
 def _render_workbench_pool_home(pool_id, selected_task_id=None, version="v1"):
     is_v2 = version == "v2"
     workbench_url = "/data/workbench-v2" if is_v2 else "/data/workbench"
@@ -5203,20 +5210,14 @@ def _render_workbench_pool_home(pool_id, selected_task_id=None, version="v1"):
     if is_v2:
         is_quality = task["stage"] == "质检"
         rule_label = "质检规则" if is_quality else "标注规则"
-        rule_names = tuple(
-            rule["name"]
-            for rule in RULES
-            if rule.get("enabled") and rule["stage"] == task["stage"]
-        )
-        if task["id"].startswith("WB-PRETRAINING-"):
-            rule_names = (f'预训练数据{task["node"]}规则 v1',)
+        rule_names = _workbench_pool_rule_names(task)
         show_rule_details = any(
             rule.get("rule_config") not in (None, "", "略")
             for rule in RULES
             if rule.get("enabled") and rule["stage"] == task["stage"]
         )
         rule_options = "".join(
-            f'<option value="{html.escape(name, quote=True)}">'
+            f'<option value="{html.escape(name, quote=True)}"{ " selected" if name == request.args.get("rule") else ""}>'
             f'{html.escape(name)}</option>'
             for name in rule_names
         )
@@ -5418,7 +5419,8 @@ def _render_workbench_pool_home(pool_id, selected_task_id=None, version="v1"):
       <div class="wb-task-home-actions">
         {claim_control}
         {f'<button class="btn" form="wbFilterForm" type="reset" onclick="{reset_rule_details}">重置</button>' if not is_v2 else ''}
-        {f'<a class="btn" href="{pool_url}/records?{html.escape(urlencode({"source": task["id"]}), quote=True)}">数据列表</a>' if is_v2 else ''}
+        {f'''<a class="btn" href="{pool_url}/records?{html.escape(urlencode({"source": task["id"]}), quote=True)}"
+          onclick="var rule=document.getElementById('wbRule');if(!rule.value){{toast('请选择具体处理规则后进入数据列表');rule.focus();return false;}}var params=new URLSearchParams(this.search);new FormData(document.getElementById('wbFilterForm')).forEach(function(value,key){{if(value)params.set(key,value);}});params.set('rule',rule.value);this.search=params.toString();">数据列表</a>''' if is_v2 else ''}
         <button class="btn btn-primary" form="wbFilterForm"
           type="submit">{'开始处理' if is_v2 else '按筛选条件开始处理'}</button>
       </div>
@@ -5475,10 +5477,35 @@ def _shared_pool_records(task):
     return wb_pool.shared_records(_pool_db(), task, session.get("workbench_pool_states", {}), _pool_owner())
 
 
+def _pool_list_history(task, records):
+    if task["id"] != "WB-PRETRAINING-ACCEPTANCE":
+        return records
+    upstream_task = next(item for item in WB_TASKS if item["id"] == "WB-PRETRAINING-QC")
+    upstream = {item["id"]: item for item in _shared_pool_records(upstream_task)}
+    enriched = []
+    for record in records:
+        previous = upstream.get(record["id"], {})
+        completed = previous.get("status") == "completed"
+        enriched.append(dict(record,
+            collection_qc_result=previous.get("result", "") if completed else "",
+            collection_qc_at=previous.get("reviewed_at", "") if completed else "",
+            collection_qc_operator=previous.get("operators", {}).get("质检人", "") if completed else "",
+            collection_qc_supplier_id=previous.get("reviewer_supplier_id", previous.get("supplier_id", "")) if completed else ""))
+    return enriched
+
+
 @app.route("/data/workbench-v2/pools/<pool_id>/records")
 def data_workbench_pool_records(pool_id):
     task = _pool_list_task(pool_id)
-    records = wb_pool.public_records(_shared_pool_records(task), _pool_owner())
+    scope = task["pool"] + ":" + task["id"]
+    selected_rule = request.args.get("rule", session.get("workbench_pool_rules", {}).get(scope, ""))
+    if selected_rule not in _workbench_pool_rule_names(task):
+        return redirect(f'/data/workbench-v2/pools/{quote(pool_id)}?source={quote(task["id"])}')
+    selected_rules = dict(session.get("workbench_pool_rules", {}))
+    selected_rules[scope] = selected_rule
+    session["workbench_pool_rules"] = selected_rules
+    task = dict(task, selected_rule=selected_rule)
+    records = wb_pool.public_records(_pool_list_history(task, _shared_pool_records(task)), _pool_owner())
     content = render_template("workbench_pool/list.html", task=task, records=records,
                               reasons=wb_pool.REJECTION_REASONS, notice=session.pop("workbench_pool_notice", ""))
     return render_page("任务池数据列表", content, active="/data/workbench-v2", module="data",
@@ -5500,7 +5527,7 @@ def data_workbench_pool_action(pool_id):
         return jsonify(error=str(error), code="record_occupied"), 409
     except ValueError as error:
         return jsonify(error=str(error)), 400
-    return jsonify(records=wb_pool.public_records(records, _pool_owner()))
+    return jsonify(records=wb_pool.public_records(_pool_list_history(task, records), _pool_owner()))
 
 
 @app.route("/data/workbench/tasks/<task_id>")
