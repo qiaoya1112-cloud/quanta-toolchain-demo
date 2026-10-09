@@ -117,6 +117,8 @@ async function main(){
     assert.equal(await evaluate("document.querySelectorAll('.ptq-conclusion-switch label').length"),2,'片段结论只应显示失误和不合格');
     assert.equal(await evaluate("document.querySelector('.ptq-editor-meta-row').compareDocumentPosition(document.querySelector('.ptq-editor-fields-row'))&Node.DOCUMENT_POSITION_FOLLOWING"),4,'片段基础信息和导航操作应位于片段编辑区上一行');
     assert.equal(await evaluate("document.querySelector('.ptq-editor-meta-row').contains(document.querySelector('.ptq-editor-actions'))"),true,'片段导航与操作区应位于基础信息行');
+    assert.equal(await evaluate("document.querySelectorAll('.ptq-editor-actions [data-action=track-up],.ptq-editor-actions [data-action=track-down]').length"),0,'不应显示上下轨切换按钮');
+    assert.equal(await evaluate("document.querySelector('.ptq-conclusion-meta').compareDocumentPosition(document.querySelector('.ptq-video-conclusion'))&Node.DOCUMENT_POSITION_FOLLOWING"),4,'系统自动计算说明应位于质检结论上方');
 
     await evaluate("document.querySelector('post-training-quality-workspace [data-action=toggle-review-error]').click()");
     const reviewMenu=await evaluate("(()=>{const menu=document.querySelector('.ptq-review-error-menu'),rect=menu.getBoundingClientRect(),trigger=document.querySelector('post-training-quality-workspace [data-action=toggle-review-error]').getBoundingClientRect();return{hidden:menu.hidden,top:rect.top,bottom:rect.bottom,triggerTop:trigger.top,viewport:innerHeight}})()");
@@ -212,6 +214,12 @@ async function main(){
     await evaluate("document.querySelector('#ptqSubmitDialog [data-action=confirm-submit]').click()");
     assert.equal(await evaluate("document.querySelector('post-training-quality-sidebar [data-action=submit]').disabled"),true,'提交成功后结果应只读');
     assert.equal(await evaluate("document.querySelector('.ptq-time-field')!==null&&document.querySelector('post-training-quality-workspace [data-action=toggle-review-error]').disabled"),true,'提交后时间展示和片段编辑控件应进入只读状态');
+
+    console.log('browser check: pre-training conclusion layout');
+    await evaluate("document.querySelector('[data-review-variant=pre-quality]').click()");
+    assert.equal(await evaluate("document.querySelector('pre-training-quality-workspace').hidden"),false,'预训练质检工作台应正常显示');
+    assert.equal(await evaluate("document.querySelector('.prq-conclusion-meta').compareDocumentPosition(document.querySelector('.prq-video-conclusion'))&Node.DOCUMENT_POSITION_FOLLOWING"),4,'预训练系统自动计算说明应位于质检结论上方');
+    assert.equal(await evaluate("(()=>{const panel=document.querySelector('.workbench-review'),footer=document.querySelector('.prq-sidebar>footer'),button=document.querySelector('.prq-sidebar footer .workbench-footer-actions button');return button.getBoundingClientRect().bottom<=panel.getBoundingClientRect().bottom&&footer.getBoundingClientRect().bottom<=panel.getBoundingClientRect().bottom})()"),true,'预训练底部操作区必须完整显示');
 
     console.log('browser check: original tabs regression');
     await evaluate("document.querySelector('[data-review-variant=quality]').click()");
