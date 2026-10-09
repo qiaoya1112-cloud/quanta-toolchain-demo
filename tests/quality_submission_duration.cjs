@@ -23,7 +23,7 @@ for(const mode of ['pre','post']){
  let opened='';const fields={};sidebar.querySelector=selector=>({showModal(){opened=selector;},close(){},querySelector:field=>(fields[field]??={})});
  const click=action=>sidebar.onClick({target:{closest:selector=>selector==='[data-action]'?{dataset:{action}}:null}});
  demo.state.segments=[{...problem(1,5),conclusion:'mistake',mistakeReasons:[],rejectedReasons:[]}];click('submit');assert.match(opened,/ErrorDialog/,'默认失误但缺少失误原因时应阻止提交');
- demo.state.segments=[{...problem(1,5),reviewErrorReason:''}];assert.equal(rules.pendingCount(),0);click('submit');assert.match(opened,/ErrorDialog/,'缺少审核错误原因时仍应阻止提交');
+ demo.state.segments=[{...problem(1,5),reviewErrorReason:''}];assert.equal(rules.pendingCount(),0);opened='';click('submit');assert.match(opened,/SubmitDialog/,`${mode} 训练审核错误原因选填，不应阻止提交`);
  demo.state.segments=[problem(1,5)];click('submit');assert.match(opened,/SubmitDialog/);if(mode==='pre')assert.match(fields['[data-duration-check]'].textContent,/1 处可用片段不足 3 秒/);else assert.equal(demo.state.segments.length,1);
  sidebar.save();const saved=JSON.parse([...storage.values()][0]);assert.equal(saved.segments.filter(r=>r.autoShortDuration).length,mode==='pre'?1:0);
  click('confirm-submit');assert.equal(demo.state.submitted,true);

@@ -20,7 +20,7 @@ const validMistake={id:'M',start:1,end:5,conclusion:'mistake',mistakeReasons:['M
 assert.deepEqual(Array.from(rules.segmentErrors(validMistake)),[]);
 assert.match(rules.segmentErrors({...validMistake,mistakeReasons:[]})[0],/失误原因/);
 assert.match(rules.segmentErrors({...validMistake,rejectedReasons:['U01']})[0],/移除不合格原因/);
-assert.match(rules.segmentErrors({...validMistake,reviewErrorReason:''})[0],/错误原因/);
+assert.deepEqual(Array.from(rules.segmentErrors({...validMistake,reviewErrorReason:''})),[],'审核错误原因应为选填');
 
 const validRejected={id:'R',start:3,end:8,conclusion:'rejected',mistakeReasons:['M02'],rejectedReasons:['U01'],reviewErrorReason:'视频不可用',order:2};
 assert.deepEqual(Array.from(rules.segmentErrors(validRejected)),[]);

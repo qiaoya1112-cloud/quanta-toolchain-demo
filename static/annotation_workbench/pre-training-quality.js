@@ -7,7 +7,6 @@
   const recordId = document.querySelector('workbench-task-header')?.dataset?.id || 'DT202609070126';
   const DURATION = 40;
   const TRACK_COUNT = 3;
-  const PERMISSIONS = { canReviewErrorReason: true };
   const DRAFT_KEY = `quanta.${trainingType}-training-quality.v4.${recordId}`;
   const RULE = {
     id: 'RL-PRQC-001', version: 'v1', name: `${label}采集质检规则`,
@@ -63,7 +62,6 @@
     if (segment.conclusion === 'mistake' && !segment.mistakeReasons.length) errors.push('请选择失误原因');
     if (segment.conclusion === 'mistake' && segment.rejectedReasons.length) errors.push('请移除不合格原因');
     if (segment.conclusion === 'rejected' && !segment.rejectedReasons.length) errors.push('请选择不合格原因');
-    if (!segment.autoShortDuration && PERMISSIONS.canReviewErrorReason && ['mistake','rejected'].includes(segment.conclusion) && !segment.reviewErrorReason?.trim()) errors.push('请填写错误原因');
     return errors;
   };
   const valid = segment => segmentErrors(segment).length === 0;
@@ -456,6 +454,12 @@
       if(action==='track-left')this.moveTrack(-1);
       if(action==='track-right')this.moveTrack(1);
       if(action==='delete')removeSelected();
+      if(action==='remove-reason'&&!state.submitted){
+        const item=selected(),target=event.target.closest('[data-reason-id]');
+        if(item&&target){const list=target.dataset.kind==='mistake'?item.mistakeReasons:item.rejectedReasons,index=list.indexOf(target.dataset.reasonId);if(index>=0)list.splice(index,1);item.autoShortDuration=false;markDirty();}
+        return;
+      }
+      if(action==='clear-reasons'&&!state.submitted){const item=selected();if(item){item.mistakeReasons=[];item.rejectedReasons=[];item.autoShortDuration=false;markDirty();}return;}
       if(action==='toggle-reasons'&&!state.submitted){this.reasonsOpen=!this.reasonsOpen;this.reviewErrorOpen=false;this.render();}
       if(action==='toggle-review-error'&&!state.submitted){this.reviewErrorOpen=!this.reviewErrorOpen;this.reasonsOpen=false;this.render();}
       if(action==='clear-review-error'&&!state.submitted){const item=selected();if(item){item.reviewErrorReason='';this.reviewErrorOpen=false;markDirty();}}
@@ -480,17 +484,17 @@
       return `<section><header><b>${title}</b><em class="${requirement==='必选'?'is-required':''}">${requirement}</em></header>${items.map(item=>`<label title="${escape(item.detail)}"><input type="checkbox" data-field="reason" data-kind="${kind}" value="${item.id}" ${values.includes(item.id)?'checked':''}><span>${escape(item.name)}</span></label>`).join('')}</section>`;
     }
     reasonChips(item){
-      const rejected=item.rejectedReasons.map(id=>`<span class="prq-reason-chip is-rejected">${escape(reasonName(id))}</span>`);
-      const mistake=item.mistakeReasons.map(id=>`<span class="prq-reason-chip is-mistake">${escape(reasonName(id))}</span>`);
+      const rejected=item.rejectedReasons.map(id=>`<span class="prq-reason-chip is-rejected"><span>${escape(reasonName(id))}</span><span class="prq-reason-remove" data-action="remove-reason" data-kind="rejected" data-reason-id="${escape(id)}" role="button" aria-label="删除${escape(reasonName(id))}" title="删除此原因">×</span></span>`);
+      const mistake=item.mistakeReasons.map(id=>`<span class="prq-reason-chip is-mistake"><span>${escape(reasonName(id))}</span><span class="prq-reason-remove" data-action="remove-reason" data-kind="mistake" data-reason-id="${escape(id)}" role="button" aria-label="删除${escape(reasonName(id))}" title="删除此原因">×</span></span>`);
       const chips=[...rejected,...mistake].join('');
-      return chips||'<span class="prq-reason-empty">请选择必选原因</span>';
+      return chips?`${chips}<span class="prq-reasons-clear" data-action="clear-reasons" role="button" aria-label="清空全部原因" title="清空全部原因">×</span>`:'<span class="prq-reason-empty">请选择必选原因</span>';
     }
     render(){
       const item=selected();
       if(!item){this.innerHTML=`<section class="prq-editor card"><div class="prq-empty"><b>尚未记录问题片段</b><span>在时间轴刻度拖拽创建片段，或设置起止时间后点击添加。</span></div></section>${this.ruleDialog()}`;return;}
       const ordered=sortSegments(state.segments),globalIndex=ordered.findIndex(candidate=>candidate.id===item.id);
       const trackItems=sortSegments(state.segments.filter(candidate=>candidate.track===item.track));
-      const trackIndex=trackItems.findIndex(candidate=>candidate.id===item.id),errors=segmentErrors(item);
+      const trackIndex=trackItems.findIndex(candidate=>candidate.id===item.id);
       const rejectedGroup=item.conclusion==='rejected'
         ?this.reasonGroup('不合格原因','必选','rejected',RULE.rejected,item.rejectedReasons)
         :item.rejectedReasons.length?this.reasonGroup('不兼容原因','请移除','rejected',RULE.rejected.filter(reason=>item.rejectedReasons.includes(reason.id)),item.rejectedReasons):'';
@@ -499,8 +503,8 @@
       const reviewMenu=`<div class="prq-review-error-menu" ${this.reviewErrorOpen?'':'hidden'} role="listbox">${REVIEW_ERROR_REASONS.map(reason=>`<button type="button" data-review-error="${escape(reason)}" role="option" class="${item.reviewErrorReason===reason?'is-selected':''}">${escape(reason)}<span>✓</span></button>`).join('')}<button type="button" class="prq-review-error-clear" data-action="clear-review-error">清除错误原因</button></div>`;
       this.innerHTML=`<section class="prq-editor card">
         <div class="prq-editor-meta-row"><div class="prq-editor-fields"><span class="prq-id is-${item.conclusion}${isShortDuration(item)?' is-short-duration':''}">${String(globalIndex+1).padStart(2,'0')}</span><label>开始<span class="prq-time-field">${format(item.start)}</span></label><label>结束<span class="prq-time-field">${format(item.end)}</span></label><span>时长 <b>${Math.max(0,item.end-item.start).toFixed(1)}s</b></span></div><div class="segment-actions prq-editor-actions"><button class="segment-action segment-action--navigate" data-action="previous" ${globalIndex<=0?'disabled':''}>上一段 <kbd>⌘↑</kbd></button><button class="segment-action segment-action--navigate" data-action="next" ${globalIndex>=ordered.length-1?'disabled':''}>下一段 <kbd>⌘↓</kbd></button><button class="segment-action" data-action="track-left" ${trackIndex<=0?'disabled':''}>同轨左 <kbd>⌘←</kbd></button><button class="segment-action" data-action="track-right" ${trackIndex>=trackItems.length-1?'disabled':''}>同轨右 <kbd>⌘→</kbd></button><button class="segment-action segment-action--danger" data-action="delete" ${state.submitted?'disabled':''}>删除</button></div></div>
-        <div class="prq-editor-fields-row"><div class="prq-conclusion-switch" aria-label="片段结论"><label class="is-mistake${item.conclusion==='mistake'?' is-active':''}"><input type="radio" name="${domPrefix}-conclusion" data-field="conclusion" value="mistake" ${item.conclusion==='mistake'?'checked':''} ${state.submitted?'disabled':''}>失误</label><label class="is-rejected${item.conclusion==='rejected'?' is-active':''}"><input type="radio" name="${domPrefix}-conclusion" data-field="conclusion" value="rejected" ${item.conclusion==='rejected'?'checked':''} ${state.submitted?'disabled':''}>不合格</label></div><div class="prq-reason-select"><div class="prq-selected-reasons" aria-label="已选原因">${this.reasonChips(item)}</div><button type="button" data-action="toggle-reasons" aria-expanded="${this.reasonsOpen}" ${state.submitted?'disabled':''}><span>选择原因</span><img src="/static/annotation_workbench/assets/icon-chevron.svg" alt=""></button>${menu}</div></div>
-        <div class="prq-editor-lower"><label><span>错误原因</span><div class="prq-review-error-select"><button type="button" data-action="toggle-review-error" aria-expanded="${this.reviewErrorOpen}" ${state.submitted?'disabled':''}><span>${escape(reviewTrigger)}</span><img src="/static/annotation_workbench/assets/icon-chevron.svg" alt=""></button>${reviewMenu}</div></label><div class="prq-field-state ${errors.length?'has-error':'is-complete'}">${errors.length?'待补充：'+errors.map(escape).join('、'):'当前片段已完善'}</div></div>
+        <div class="prq-editor-fields-row"><div class="prq-conclusion-switch" aria-label="片段结论"><label class="is-mistake${item.conclusion==='mistake'?' is-active':''}"><input type="radio" name="${domPrefix}-conclusion" data-field="conclusion" value="mistake" ${item.conclusion==='mistake'?'checked':''} ${state.submitted?'disabled':''}>失误</label><label class="is-rejected${item.conclusion==='rejected'?' is-active':''}"><input type="radio" name="${domPrefix}-conclusion" data-field="conclusion" value="rejected" ${item.conclusion==='rejected'?'checked':''} ${state.submitted?'disabled':''}>不合格</label></div><span class="prq-reason-label">失误描述</span><div class="prq-reason-select"><button class="prq-reason-trigger" type="button" data-action="toggle-reasons" aria-expanded="${this.reasonsOpen}" ${state.submitted?'disabled':''}><span class="prq-selected-reasons" aria-label="已选原因">${this.reasonChips(item)}</span><img src="/static/annotation_workbench/assets/icon-chevron.svg" alt=""></button>${menu}</div></div>
+        <div class="prq-editor-lower"><label><span>错误原因</span><div class="prq-review-error-select"><button type="button" data-action="toggle-review-error" aria-expanded="${this.reviewErrorOpen}" ${state.submitted?'disabled':''}><span>${escape(reviewTrigger)}</span><img src="/static/annotation_workbench/assets/icon-chevron.svg" alt=""></button>${reviewMenu}</div></label></div>
       </section>${this.ruleDialog()}`;
     }
     ruleDialog(){return `<dialog id="${domPrefix}RuleDialog" class="prq-dialog"><header><div><h2>${label}采集质检规则</h2><p>${RULE.name} · ${RULE.id} · ${RULE.version}</p></div><button type="button" onclick="this.closest('dialog').close()" aria-label="关闭">×</button></header><div class="prq-rule-body"><section><h3>失误标准</h3>${RULE.mistake.map(item=>`<article><b>${escape(item.name)}</b><p>${escape(item.detail)}</p></article>`).join('')}</section><section><h3>不合格标准</h3>${RULE.rejected.map(item=>`<article><b>${escape(item.name)}</b><p>${escape(item.detail)}</p></article>`).join('')}</section><div class="prq-fixed-rule"><b>固定汇总规则</b><p>无问题片段为合格；只有失误片段为失误；存在任意不合格片段为不合格。</p></div></div></dialog>`;}
