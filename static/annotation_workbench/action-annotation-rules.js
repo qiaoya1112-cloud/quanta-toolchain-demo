@@ -41,6 +41,19 @@
     return counts;
   }, {});
   const sameCounts = (left, right) => Boolean(left && right) && [...new Set([...Object.keys(left), ...Object.keys(right)])].every(type => (left[type] || 0) === (right[type] || 0));
+  const fillTemplate = (name, elements) => {
+    const valuesByType = (elements || []).reduce((groups, value) => {
+      const type = typeByValue[value];
+      if (type) (groups[type] ||= []).push(value);
+      return groups;
+    }, {});
+    const used = {};
+    return (templates[name] || name).replace(/\{([A-Za-z]+)\}/g, (placeholder, type) => {
+      const index = used[type] || 0;
+      used[type] = index + 1;
+      return valuesByType[type]?.[index] ? `{${valuesByType[type][index]}}` : placeholder;
+    });
+  };
   const signature = descriptions => {
     if (!descriptions.length) return {};
     const first = slots[descriptions[0]];
@@ -54,12 +67,13 @@
     if (data.ruleId !== rule.id || data.ruleVersion !== rule.version) return { valid: false, message: '动作标注规则版本不匹配' };
     return { valid: true, message: '' };
   }
-  function availableDescriptions(elements, descriptions) {
+  function availableDescriptions(elements) {
     if (elements.some(value => !Object.hasOwn(typeByValue, value))) return [];
-    const target = elements.length ? countElements(elements) : signature(descriptions);
-    return Object.keys(templates).filter(name => target !== null && (!Object.keys(target).length || sameCounts(slots[name], target)));
+    if (!elements.length) return [];
+    const target = countElements(elements);
+    return Object.keys(templates).filter(name => sameCounts(slots[name], target));
   }
-  const api = { rule, elementTypes, templates, slots, countElements, sameCounts, signature, validate, availableDescriptions };
+  const api = { rule, elementTypes, templates, slots, countElements, sameCounts, signature, fillTemplate, validate, availableDescriptions };
   if (typeof module === 'object' && module.exports) module.exports = api;
   if (!root.document) return;
   root.ActionAnnotationRules = api;
@@ -71,7 +85,7 @@
     const elements = editor.querySelector('workbench-multi-select[aria-label="动作元素"]');
     const descriptions = editor.querySelector('workbench-multi-select[aria-label="动作描述"]');
     elements._options = Object.keys(typeByValue);
-    elements.querySelector('.workbench-multi-select__options').innerHTML = Object.entries(elementTypes).map(([type, group]) => `<div class="action-element-group" data-element-type="${type}"><div class="action-element-group__title">${group.label}<span>${type}</span><em>【新】</em></div>${group.values.map(value => `<button type="button" data-multi-option="${value}" data-element-option-type="${type}" role="option">${value}<span>✓</span></button>`).join('')}</div>`).join('');
+    elements.querySelector('.workbench-multi-select__options').innerHTML = Object.entries(elementTypes).map(([type, group]) => `<div class="action-element-group" data-element-type="${type}"><div class="action-element-group__title">${group.label}<span>${type}</span></div>${group.values.map(value => `<button type="button" data-multi-option="${value}" data-element-option-type="${type}" role="option">${value}<span>✓</span></button>`).join('')}</div>`).join('');
     descriptions._options = Object.keys(templates);
     descriptions.querySelector('.workbench-multi-select__options').innerHTML = Object.entries(templates).map(([name, label]) => `<button type="button" data-multi-option="${name}" role="option">${label}<span>✓</span></button>`).join('');
     const renderValue = descriptions._renderValue.bind(descriptions);
@@ -79,7 +93,7 @@
       renderValue();
       descriptions.querySelectorAll('.workbench-multi-select__tag').forEach(tag => {
         const name = tag.querySelector('[data-remove-value]').dataset.removeValue;
-        tag.firstChild.textContent = templates[name] || name;
+        tag.firstChild.textContent = fillTemplate(name, elements.values);
       });
     };
     // Existing unversioned demo records are migrated once; saved rule records retain their edits.
@@ -92,15 +106,11 @@
     });
     function renderRules() {
       const data = editor._actionData[editor._index - 1];
-      const counts = countElements(data.elements), required = signature(data.descriptions);
-      const visible = new Set(availableDescriptions(data.elements, data.descriptions));
+      const visible = new Set(availableDescriptions(data.elements));
       descriptions.querySelectorAll('[data-multi-option]').forEach(option => { option.hidden = !visible.has(option.dataset.multiOption); });
-      const compatible = required !== null && data.elements.every(value => Object.hasOwn(typeByValue, value)) && (!data.descriptions.length || Object.entries(counts).every(([type, count]) => count <= (required[type] || 0)));
-      elements.querySelectorAll('.action-element-group').forEach(group => { group.hidden = !compatible || (data.descriptions.length > 0 && !required[group.dataset.elementType]); });
-      elements.querySelectorAll('[data-element-option-type]').forEach(option => {
-        const type = option.dataset.elementOptionType;
-        option.disabled = data.descriptions.length > 0 && !data.elements.includes(option.dataset.multiOption) && (counts[type] || 0) >= ((required || {})[type] || 0);
-      });
+      elements.querySelectorAll('.action-element-group').forEach(group => { group.hidden = false; });
+      elements.querySelectorAll('[data-element-option-type]').forEach(option => { option.disabled = false; });
+      descriptions._renderValue();
       const result = validate(data);
       for (const select of [elements, descriptions]) select._trigger.title = result.message;
       if (!elements._popover.hidden) elements._positionPopover();
@@ -111,6 +121,11 @@
     editor.addEventListener('multi-select-change', event => {
       if (event.target !== elements && event.target !== descriptions) return;
       Object.assign(editor._actionData[editor._index - 1], { ruleId: rule.id, ruleVersion: rule.version });
+      if (event.target === elements) {
+        const allowed = new Set(availableDescriptions(elements.values));
+        const retained = descriptions.values.filter(name => allowed.has(name));
+        if (retained.length !== descriptions.values.length) descriptions.setValues(retained, true);
+      }
       renderRules();
       const result = validate(editor._actionData[editor._index - 1]);
       if (!result.valid) notifyWorkbench(`${result.message}，请检查动作元素和动作描述。`);
