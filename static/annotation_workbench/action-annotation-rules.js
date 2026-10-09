@@ -54,16 +54,12 @@
       return valuesByType[type]?.[index] ? `{${valuesByType[type][index]}}` : placeholder;
     });
   };
-  const signature = descriptions => {
-    if (!descriptions.length) return {};
-    const first = slots[descriptions[0]];
-    return first && descriptions.every(name => sameCounts(slots[name], first)) ? first : null;
-  };
   function validate(data) {
     if (!data?.elements?.length || !data?.descriptions?.length) return { valid: false, message: '动作元素和动作描述不能为空' };
+    if (data.descriptions.length !== 1) return { valid: false, message: '每个片段只能选择一个动作描述' };
     if (data.elements.some(value => !Object.hasOwn(typeByValue, value))) return { valid: false, message: '动作元素不属于任务绑定规则' };
     if (data.descriptions.some(name => !Object.hasOwn(slots, name))) return { valid: false, message: '动作描述不属于任务绑定规则' };
-    if (!data.descriptions.every(name => sameCounts(countElements(data.elements), slots[name]))) return { valid: false, message: '动作元素类型或数量与动作描述不匹配' };
+    if (!sameCounts(countElements(data.elements), slots[data.descriptions[0]])) return { valid: false, message: '动作元素类型或数量与动作描述不匹配' };
     if (data.ruleId !== rule.id || data.ruleVersion !== rule.version) return { valid: false, message: '动作标注规则版本不匹配' };
     return { valid: true, message: '' };
   }
@@ -73,7 +69,7 @@
     const target = countElements(elements);
     return Object.keys(templates).filter(name => sameCounts(slots[name], target));
   }
-  const api = { rule, elementTypes, templates, slots, countElements, sameCounts, signature, fillTemplate, validate, availableDescriptions };
+  const api = { rule, elementTypes, templates, slots, countElements, sameCounts, fillTemplate, validate, availableDescriptions };
   if (typeof module === 'object' && module.exports) module.exports = api;
   if (!root.document) return;
   root.ActionAnnotationRules = api;
@@ -88,6 +84,14 @@
     elements.querySelector('.workbench-multi-select__options').innerHTML = Object.entries(elementTypes).map(([type, group]) => `<div class="action-element-group" data-element-type="${type}"><div class="action-element-group__title">${group.label}<span>${type}</span></div>${group.values.map(value => `<button type="button" data-multi-option="${value}" data-element-option-type="${type}" role="option">${value}<span>✓</span></button>`).join('')}</div>`).join('');
     descriptions._options = Object.keys(templates);
     descriptions.querySelector('.workbench-multi-select__options').innerHTML = Object.entries(templates).map(([name, label]) => `<button type="button" data-multi-option="${name}" role="option">${label}<span>✓</span></button>`).join('');
+    descriptions.querySelector('.workbench-multi-select__options').setAttribute('aria-multiselectable', 'false');
+    descriptions.addEventListener('click', event => {
+      const option = event.target.closest('[data-multi-option]');
+      if (!option) return;
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      descriptions.setValues(descriptions.values[0] === option.dataset.multiOption ? [] : [option.dataset.multiOption], true);
+    }, true);
     const renderValue = descriptions._renderValue.bind(descriptions);
     descriptions._renderValue = () => {
       renderValue();
@@ -98,10 +102,10 @@
     };
     // Existing unversioned demo records are migrated once; saved rule records retain their edits.
     editor._actionData = editor._actionData.map((data, index) => {
-      if (data.ruleId) return data;
       const migrated = { ...data, elements: [...data.elements], descriptions: [...data.descriptions], ruleId: rule.id, ruleVersion: rule.version };
-      if (index === 4 && migrated.descriptions.join('|') === '整理散落书本|将书本竖直放回书架') migrated.descriptions = ['观察并整理桌面物品', '将书本竖直放回书架'];
-      if (index === 5 && migrated.descriptions.join('|') === '按类别整理笔记本|放回指定位置') { migrated.elements = ['笔记本', '书架']; migrated.descriptions = ['移动', '放置']; }
+      if (!data.ruleId && index === 4 && migrated.descriptions.join('|') === '整理散落书本|将书本竖直放回书架') migrated.descriptions = ['观察并整理桌面物品'];
+      if (!data.ruleId && index === 5 && migrated.descriptions.join('|') === '按类别整理笔记本|放回指定位置') { migrated.elements = ['笔记本', '书架']; migrated.descriptions = ['移动']; }
+      migrated.descriptions = migrated.descriptions.slice(0, 1);
       return migrated;
     });
     function renderRules() {

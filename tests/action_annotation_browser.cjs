@@ -21,6 +21,7 @@ const debugPort = Number(process.env.DEBUG_PORT || 9337);
     await call('Runtime.enable');
     for(let i=0;i<100;i+=1){if(await evaluate("document.querySelector('.main')?.getAttribute('aria-busy')==='false'"))break;await delay(100);}
     await evaluate("document.querySelector('[data-review-variant=action]').click()");
+    assert.equal(await evaluate("document.querySelector('workbench-segment-editor[variant=variant-3]')._actionData.every(item=>item.descriptions.length<=1)"),true);
     assert.equal(await evaluate("document.querySelectorAll('workbench-segment-editor[variant=variant-3] .action-element-group').length"),5);
     assert.deepEqual(await evaluate("[...document.querySelectorAll('workbench-segment-editor[variant=variant-3] .action-element-group__title')].map(e=>e.textContent)"),['物体Object','位置Location','容器Container','水果Fruit','工具Tool']);
     assert.equal(await evaluate("[...document.querySelectorAll('workbench-segment-editor[variant=variant-3] workbench-multi-select[aria-label=\"动作描述\"] [data-multi-option]')].some(e=>e.textContent.includes('{Object}'))"),true);
@@ -29,6 +30,10 @@ const debugPort = Number(process.env.DEBUG_PORT || 9337);
     assert.equal(await evaluate("document.querySelector('workbench-segment-editor[variant=variant-3] workbench-multi-select[aria-label=\"动作描述\"] [data-multi-option=\"整理\"]').hidden"),true);
     await evaluate(`document.querySelector('workbench-segment-editor[variant=variant-3] workbench-multi-select[aria-label="动作描述"] [data-multi-option="整理两个物体"]').click()`);
     assert.equal(await evaluate("document.querySelector('workbench-segment-editor[variant=variant-3] workbench-multi-select[aria-label=\"动作描述\"] .workbench-multi-select__tag').textContent.replace('×','').trim()"),'整理 {书本} 和 {笔记本}');
+    assert.equal(await evaluate("document.querySelector('workbench-segment-editor[variant=variant-3] workbench-multi-select[aria-label=\"动作描述\"] .workbench-multi-select__options').getAttribute('aria-multiselectable')"),'false');
+    await evaluate(`(()=>{const e=document.querySelector('workbench-segment-editor[variant=variant-3]');const a=e.querySelector('workbench-multi-select[aria-label="动作元素"]'),d=e.querySelector('workbench-multi-select[aria-label="动作描述"]');a.setValues(['书本','桌面'],true);d.querySelector('[data-multi-option="观察并整理桌面物品"]').click();d.querySelector('[data-multi-option="移动"]').click()})()`);
+    assert.deepEqual(await evaluate("document.querySelector('workbench-segment-editor[variant=variant-3] workbench-multi-select[aria-label=\"动作描述\"]').values"),['移动']);
+    assert.equal(await evaluate("document.querySelectorAll('workbench-segment-editor[variant=variant-3] workbench-multi-select[aria-label=\"动作描述\"] .workbench-multi-select__tag').length"),1);
     await evaluate(`document.querySelector('workbench-segment-editor[variant=variant-3] workbench-multi-select[aria-label="动作元素"]').setValues(['书本','苹果'],true)`);
     assert.equal(await evaluate("[...document.querySelectorAll('workbench-segment-editor[variant=variant-3] workbench-multi-select[aria-label=\"动作描述\"] [data-multi-option]')].filter(e=>!e.hidden).length"),0);
     assert.equal(await evaluate("document.querySelectorAll('workbench-segment-editor[variant=variant-3] workbench-multi-select[aria-label=\"动作描述\"] .workbench-multi-select__tag').length"),0);
@@ -46,7 +51,7 @@ const debugPort = Number(process.env.DEBUG_PORT || 9337);
     assert.equal(await evaluate("document.querySelector('workbench-segment-editor[variant=variant-3] workbench-multi-select[aria-label=\"动作描述\"] .workbench-multi-select__tag').textContent.replace('×','').trim()"),'将 {苹果}、{草莓} 放入 {杯子}');
     assert.equal(await evaluate("window.ActionAnnotationRules.validate(document.querySelector('workbench-segment-editor[variant=variant-3]')._actionData[1]).valid"),true);
     assert.deepEqual(errors,[]);
-    console.log('PASS: grouped elements, one-way description filtering, placeholder filling and submit blocking.');
+    console.log('PASS: grouped elements, single description selection, one-way filtering, placeholder filling and submit blocking.');
   } finally {
     chrome.kill();
     await delay(300);
