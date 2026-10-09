@@ -14,6 +14,16 @@ const {chromium} = require('playwright');
     await page.goto(root+'/data/workbench-v2/optimized');
     await page.locator('.main[aria-busy="false"]').waitFor();
     assert.equal(await page.locator('iframe').count(),0);
+    assert.deepEqual(
+      (await page.locator('workbench-task-header .workbench-task-info__identity > span').allTextContents()).slice(0,3),
+      ['数据 ID','数据处理 ID','采集任务ID']
+    );
+    const controlsBeforeTrack=async selector=>page.locator(selector).evaluate(root=>{
+      const controls=root.querySelector('timeline-controls');
+      const body=root.querySelector('.segmented-timeline__body');
+      return Boolean(controls&&body&&(controls.compareDocumentPosition(body)&Node.DOCUMENT_POSITION_FOLLOWING));
+    });
+    assert.equal(await controlsBeforeTrack('semantic-annotation-track segmented-track'),true);
     assert.equal(await page.locator('.workbench-feed').count(),4);
     const semantic=page.locator('workbench-segment-editor:not([variant])');
     await page.locator('.workbench-review__row[data-index="3"]').click();
@@ -32,6 +42,7 @@ const {chromium} = require('playwright');
     assert.match(await page.locator('[data-quality-list] .is-active').innerText(),/质检草稿 <检查画面>/);
     await page.locator('[data-review-variant="action"]').click();
     assert.equal(await page.locator('.workbench-feed').count(),4);
+    assert.equal(await controlsBeforeTrack('action-annotation-track segmented-track'),true);
     const action=page.locator('workbench-segment-editor[variant="variant-3"]');
     assert.equal(await action.isVisible(),true);
     await action.locator('[data-action="error"]').click();

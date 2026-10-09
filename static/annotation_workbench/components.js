@@ -451,7 +451,7 @@
       const rejectReason=isLongReject?'驳回原因：High-level片段范围需要调整，动作起止边界与任务要求不一致，请重新检查完整操作过程后修正并再次提交':'驳回原因：High-level片段范围需要调整';
       this.innerHTML=`<header class="workbench-task-info"><div class="workbench-task-info__left"><button class="workbench-task-info__close" type="button" aria-label="关闭"><img src="${assets}icon-close.svg" alt=""></button><div class="workbench-task-info__identity"><span>采集任务ID</span><b>17782</b></div><i class="workbench-task-info__divider" aria-hidden="true"></i><div class="workbench-task-info__workflow"><div class="workbench-task-info__step"><span>当前节点</span><b>内部验收</b></div><i class="workbench-task-info__divider" aria-hidden="true"></i><div class="workbench-task-info__step"><span>上一节点</span><b>供应商验收</b><em>·</em><b>Aria提交</b><em>·</em></div></div><div class="workbench-task-info__reject"${isLongReject?` tabindex="0" aria-label="${rejectReason}" data-tooltip="${rejectReason}"`:` title="${rejectReason}"`}><span>${rejectReason}</span></div></div></header>`;
       const taskIdentity=this.querySelector('.workbench-task-info__identity');
-      for(const [label,attribute] of [['数据处理 ID','data-processing-id'],['数据 ID','data-id']]){
+      for(const [label,attribute] of [['数据 ID','data-id'],['数据处理 ID','data-processing-id']]){
         const identity=document.createElement('div');
         identity.className='workbench-task-info__identity';
         const name=document.createElement('span');name.textContent=label;
@@ -1079,7 +1079,7 @@ this.innerHTML=`<div class="segment-editor-component"><section class="card form-
       this.dataset.rendered="true";
       const position=Math.max(0,Math.min(100,Number(this.getAttribute('position')||19)))/100;
       const action=this.getAttribute('variant')==='action';
-      this.innerHTML=`<section class="segmented-timeline" aria-label="${action?'动作标注':'语义标注'}" style="--play-position:${position}"><div class="segmented-timeline__body"><timeline-time-scale></timeline-time-scale><timeline-range-selector></timeline-range-selector><annotation-segment-row label="${this.getAttribute('label')||'14'}"></annotation-segment-row>${action?'':'<annotation-base-row label="1"></annotation-base-row>'}<i class="segmented-timeline__playhead" role="slider" aria-label="播放位置" tabindex="0"></i></div><timeline-controls></timeline-controls></section>`;
+      this.innerHTML=`<section class="segmented-timeline" aria-label="${action?'动作标注':'语义标注'}" style="--play-position:${position}"><timeline-controls></timeline-controls><div class="segmented-timeline__body"><timeline-time-scale></timeline-time-scale><timeline-range-selector></timeline-range-selector><annotation-segment-row label="${this.getAttribute('label')||'14'}"></annotation-segment-row>${action?'':'<annotation-base-row label="1"></annotation-base-row>'}<i class="segmented-timeline__playhead" role="slider" aria-label="播放位置" tabindex="0"></i></div></section>`;
       requestAnimationFrame(()=>this._connectInteractions());
     }
     _connectInteractions(){
