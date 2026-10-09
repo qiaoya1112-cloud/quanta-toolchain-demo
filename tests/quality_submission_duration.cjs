@@ -22,11 +22,11 @@ for(const mode of ['pre','post']){
  const sidebar=new (registry.get(`${mode}-training-quality-sidebar`))();sidebar.render=()=>{};sidebar.toast=()=>{};
  let opened='';const fields={};sidebar.querySelector=selector=>({showModal(){opened=selector;},close(){},querySelector:field=>(fields[field]??={})});
  const click=action=>sidebar.onClick({target:{closest:selector=>selector==='[data-action]'?{dataset:{action}}:null}});
- demo.state.segments=[{...problem(1,5),conclusion:'pending'}];click('submit');assert.match(opened,/ErrorDialog/);
- demo.state.segments=[{...problem(1,5),reviewErrorReason:''}];assert.equal(rules.pendingCount(),0);click('submit');assert.match(opened,/ErrorDialog/,'无待判定但缺必填原因仍校验');
+ demo.state.segments=[{...problem(1,5),conclusion:'mistake',mistakeReasons:[],rejectedReasons:[]}];click('submit');assert.match(opened,/ErrorDialog/,'默认失误但缺少失误原因时应阻止提交');
+ demo.state.segments=[{...problem(1,5),reviewErrorReason:''}];assert.equal(rules.pendingCount(),0);click('submit');assert.match(opened,/ErrorDialog/,'缺少审核错误原因时仍应阻止提交');
  demo.state.segments=[problem(1,5)];click('submit');assert.match(opened,/SubmitDialog/);if(mode==='pre')assert.match(fields['[data-duration-check]'].textContent,/1 处可用片段不足 3 秒/);else assert.equal(demo.state.segments.length,1);
  sidebar.save();const saved=JSON.parse([...storage.values()][0]);assert.equal(saved.segments.filter(r=>r.autoShortDuration).length,mode==='pre'?1:0);
  click('confirm-submit');assert.equal(demo.state.submitted,true);
- const markup=fs.readFileSync(`static/annotation_workbench/${mode}-training-quality.js`,'utf8');assert.ok(!markup.includes('待完善'));assert.ok(!markup.includes('save-state'));
+ const markup=fs.readFileSync(`static/annotation_workbench/${mode}-training-quality.js`,'utf8');assert.ok(!markup.includes('待完善'));assert.ok(!markup.includes('save-state'));assert.ok(!markup.includes("['pending','待判定']"));
 }
 console.log('Quality submissions: common validation, pre-training-only short duration, strict 3s boundary, idempotence and confirmation passed');

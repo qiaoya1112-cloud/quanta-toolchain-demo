@@ -31,7 +31,7 @@
     {id:'C', start:9.4, end:10.8, conclusion:'mistake', mistakeReasons:['M03'], rejectedReasons:[], reviewErrorReason:'描述与画面不一致'},
     {id:'D', start:12, end:20, conclusion:'rejected', mistakeReasons:[], rejectedReasons:['U02'], reviewErrorReason:'片段范围错误'},
     {id:'E', start:17, end:22.5, conclusion:'mistake', mistakeReasons:['M04'], rejectedReasons:[], reviewErrorReason:'动作结束边界偏晚'},
-    {id:'F', start:18, end:19.4, conclusion:'pending', mistakeReasons:[], rejectedReasons:[], reviewErrorReason:''},
+    {id:'F', start:18, end:19.4, conclusion:'mistake', mistakeReasons:[], rejectedReasons:[], reviewErrorReason:''},
     {id:'G', start:18.2, end:19, conclusion:'rejected', mistakeReasons:[], rejectedReasons:['U03'], reviewErrorReason:'片段范围错位'},
     {id:'H', start:18.4, end:19.2, conclusion:'mistake', mistakeReasons:['M02'], rejectedReasons:[], reviewErrorReason:'动作结束边界偏早'}
   ];
@@ -51,7 +51,7 @@
     const parts = raw.split(':').map(Number);
     return parts.length === 2 && parts.every(Number.isFinite) ? parts[0] * 60 + parts[1] : NaN;
   };
-  const conclusionLabel = value => value === 'mistake' ? '失误' : value === 'rejected' ? '不合格' : '待判定';
+  const conclusionLabel = value => value === 'rejected' ? '不合格' : '失误';
   const overlapDuration = (a, b) => Math.max(0, Math.min(a.end, b.end) - Math.max(a.start, b.start));
   const trackOverlap = (candidate, segments, track) => segments
     .filter(item => item.id !== candidate.id && item.track === track)
@@ -70,8 +70,8 @@
   const reasonName = id => [...RULE.mistake, ...RULE.rejected].find(item => item.id === id)?.name || id;
   const REVIEW_ERROR_REASONS = ['片段范围错误','片段范围错位','动作开始边界偏早','动作开始边界偏晚','动作结束边界偏早','动作结束边界偏晚','描述与画面不一致'];
   const reasonSummary = segment => {
-    const names = [...segment.mistakeReasons, ...segment.rejectedReasons].map(reasonName);
-    return names.length ? names.join('、') : segment.conclusion === 'pending' ? '选择结论后设置原因' : '请选择必选原因';
+    const names = [...segment.rejectedReasons, ...segment.mistakeReasons].map(reasonName);
+    return names.length ? names.join('、') : '请选择必选原因';
   };
   const sortSegments = list => list.slice().sort((a,b) => a.start - b.start || a.end - b.end || a.order - b.order);
   const segmentNumber = item => Math.max(1, sortSegments(state.segments).findIndex(candidate => candidate.id === item.id) + 1);
@@ -99,7 +99,7 @@
   };
   const byId = id => state.segments.find(item => item.id === id);
   const selected = () => byId(state.selectedId);
-  const pendingCount = () => state.segments.filter(item => item.conclusion === 'pending').length;
+  const pendingCount = () => 0;
   const invalidCount = () => state.segments.filter(item => !valid(item)).length;
   const isShortDuration = item => item.conclusion === 'mistake' && item.mistakeReasons.includes('M05');
 
@@ -138,7 +138,7 @@
   function normalizeSaved(raw, index) {
     return {
       id:String(raw.id || `P${index + 1}`), start:Number(raw.start), end:Number(raw.end),
-      conclusion:['mistake','rejected'].includes(raw.conclusion) ? raw.conclusion : 'pending',
+      conclusion:['mistake','rejected'].includes(raw.conclusion) ? raw.conclusion : 'mistake',
       mistakeReasons:Array.isArray(raw.mistakeReasons) ? raw.mistakeReasons : [],
       rejectedReasons:Array.isArray(raw.rejectedReasons) ? raw.rejectedReasons : [], reviewErrorReason:REVIEW_ERROR_REASONS.includes(String(raw.reviewErrorReason ?? raw.note ?? '')) ? String(raw.reviewErrorReason ?? raw.note ?? '') : '',
       autoShortDuration:raw.autoShortDuration === true && raw.conclusion === 'mistake' && raw.mistakeReasons?.includes('M05'),
@@ -186,7 +186,7 @@
     const safeEnd = clamp(Math.max(start,end), safeStart + .3, DURATION);
     const item = {
       id:nextId(), start:Math.round(safeStart * 10) / 10, end:Math.round(safeEnd * 10) / 10,
-      conclusion:'pending', mistakeReasons:[], rejectedReasons:[], reviewErrorReason:'', order:Math.max(0,...state.segments.map(item=>item.order))+1, track:0
+      conclusion:'mistake', mistakeReasons:[], rejectedReasons:[], reviewErrorReason:'', order:Math.max(0,...state.segments.map(item=>item.order))+1, track:0
     };
     placeSegment(item, state.segments);
     state.segments.push(item);
@@ -466,7 +466,7 @@
       if(field==='conclusion'){
         item.conclusion=event.target.value;
         item.autoShortDuration=false;
-        this.reasonsOpen=item.conclusion!=='pending';
+        this.reasonsOpen=true;
         markDirty(); return;
       }
       if(field==='reason'){
@@ -479,21 +479,28 @@
     reasonGroup(title,requirement,kind,items,values){
       return `<section><header><b>${title}</b><em class="${requirement==='必选'?'is-required':''}">${requirement}</em></header>${items.map(item=>`<label title="${escape(item.detail)}"><input type="checkbox" data-field="reason" data-kind="${kind}" value="${item.id}" ${values.includes(item.id)?'checked':''}><span>${escape(item.name)}</span></label>`).join('')}</section>`;
     }
+    reasonChips(item){
+      const rejected=item.rejectedReasons.map(id=>`<span class="prq-reason-chip is-rejected">${escape(reasonName(id))}</span>`);
+      const mistake=item.mistakeReasons.map(id=>`<span class="prq-reason-chip is-mistake">${escape(reasonName(id))}</span>`);
+      const chips=[...rejected,...mistake].join('');
+      return chips||'<span class="prq-reason-empty">请选择必选原因</span>';
+    }
     render(){
       const item=selected();
       if(!item){this.innerHTML=`<section class="prq-editor card"><div class="prq-empty"><b>尚未记录问题片段</b><span>在时间轴刻度拖拽创建片段，或设置起止时间后点击添加。</span></div></section>${this.ruleDialog()}`;return;}
       const ordered=sortSegments(state.segments),globalIndex=ordered.findIndex(candidate=>candidate.id===item.id);
       const trackItems=sortSegments(state.segments.filter(candidate=>candidate.track===item.track));
       const trackIndex=trackItems.findIndex(candidate=>candidate.id===item.id),errors=segmentErrors(item);
-      const reasons=[...item.mistakeReasons,...item.rejectedReasons].map(reasonName);
-      const trigger=item.conclusion==='pending'?'选择结论后设置原因':reasons.length?`${escape(reasons[0])}${reasons.length>1?` <em>+${reasons.length-1}</em>`:''}`:'请选择必选原因';
-      const menu=item.conclusion==='pending'||state.submitted?'':`<div class="prq-reason-menu" ${this.reasonsOpen?'':'hidden'}>${this.reasonGroup('失误原因',item.conclusion==='mistake'?'必选':'选填','mistake',RULE.mistake,item.mistakeReasons)}${item.conclusion==='rejected'||item.rejectedReasons.length?this.reasonGroup(item.conclusion==='rejected'?'不合格原因':'不兼容原因',item.conclusion==='rejected'?'必选':'请移除','rejected',item.conclusion==='rejected'?RULE.rejected:RULE.rejected.filter(reason=>item.rejectedReasons.includes(reason.id)),item.rejectedReasons):''}</div>`;
+      const rejectedGroup=item.conclusion==='rejected'
+        ?this.reasonGroup('不合格原因','必选','rejected',RULE.rejected,item.rejectedReasons)
+        :item.rejectedReasons.length?this.reasonGroup('不兼容原因','请移除','rejected',RULE.rejected.filter(reason=>item.rejectedReasons.includes(reason.id)),item.rejectedReasons):'';
+      const menu=state.submitted?'':`<div class="prq-reason-menu" ${this.reasonsOpen?'':'hidden'}>${rejectedGroup}${this.reasonGroup('失误原因',item.conclusion==='mistake'?'必选':'选填','mistake',RULE.mistake,item.mistakeReasons)}</div>`;
       const reviewTrigger=item.reviewErrorReason||'请选择错误原因';
       const reviewMenu=`<div class="prq-review-error-menu" ${this.reviewErrorOpen?'':'hidden'} role="listbox">${REVIEW_ERROR_REASONS.map(reason=>`<button type="button" data-review-error="${escape(reason)}" role="option" class="${item.reviewErrorReason===reason?'is-selected':''}">${escape(reason)}<span>✓</span></button>`).join('')}<button type="button" class="prq-review-error-clear" data-action="clear-review-error">清除错误原因</button></div>`;
       this.innerHTML=`<section class="prq-editor card">
-        <header><div class="prq-editor-fields"><span class="prq-id is-${item.conclusion}${isShortDuration(item)?' is-short-duration':''}">${String(globalIndex+1).padStart(2,'0')}</span><label>开始<span class="prq-time-field">${format(item.start)}</span></label><label>结束<span class="prq-time-field">${format(item.end)}</span></label><span>时长 <b>${Math.max(0,item.end-item.start).toFixed(1)}s</b></span><div class="prq-conclusion-switch" aria-label="片段结论">${[['pending','待判定'],['mistake','失误'],['rejected','不合格']].map(([value,name])=>`<label class="is-${value}${item.conclusion===value?' is-active':''}"><input type="radio" name="${domPrefix}-conclusion" data-field="conclusion" value="${value}" ${item.conclusion===value?'checked':''} ${state.submitted?'disabled':''}>${name}</label>`).join('')}</div><div class="prq-reason-select"><button type="button" data-action="toggle-reasons" aria-expanded="${this.reasonsOpen}" ${item.conclusion==='pending'||state.submitted?'disabled':''}><span>${trigger}</span><img src="/static/annotation_workbench/assets/icon-chevron.svg" alt=""></button>${menu}</div></div>
-        <div class="segment-actions prq-editor-actions"><button class="segment-action segment-action--navigate" data-action="previous" ${globalIndex<=0?'disabled':''}>上一段 <kbd>⌘↑</kbd></button><button class="segment-action segment-action--navigate" data-action="next" ${globalIndex>=ordered.length-1?'disabled':''}>下一段 <kbd>⌘↓</kbd></button><button class="segment-action" data-action="track-left" ${trackIndex<=0?'disabled':''}>同轨左 <kbd>⌘←</kbd></button><button class="segment-action" data-action="track-right" ${trackIndex>=trackItems.length-1?'disabled':''}>同轨右 <kbd>⌘→</kbd></button><button class="segment-action segment-action--danger" data-action="delete" ${state.submitted?'disabled':''}>删除</button></div></header>
-        <div class="prq-editor-lower"><label><span>错误原因</span><div class="prq-review-error-select"><button type="button" data-action="toggle-review-error" aria-expanded="${this.reviewErrorOpen}" ${state.submitted?'disabled':''}><span>${escape(reviewTrigger)}</span><img src="/static/annotation_workbench/assets/icon-chevron.svg" alt=""></button>${reviewMenu}</div></label><div class="prq-field-state ${errors.length?'has-error':'is-complete'}">${errors.length?`${item.conclusion==='pending'?'待判定':'待补充'}：${errors.map(escape).join('、')}`:'当前片段已完善'}</div></div>
+        <div class="prq-editor-meta-row"><div class="prq-editor-fields"><span class="prq-id is-${item.conclusion}${isShortDuration(item)?' is-short-duration':''}">${String(globalIndex+1).padStart(2,'0')}</span><label>开始<span class="prq-time-field">${format(item.start)}</span></label><label>结束<span class="prq-time-field">${format(item.end)}</span></label><span>时长 <b>${Math.max(0,item.end-item.start).toFixed(1)}s</b></span></div><div class="segment-actions prq-editor-actions"><button class="segment-action segment-action--navigate" data-action="previous" ${globalIndex<=0?'disabled':''}>上一段 <kbd>⌘↑</kbd></button><button class="segment-action segment-action--navigate" data-action="next" ${globalIndex>=ordered.length-1?'disabled':''}>下一段 <kbd>⌘↓</kbd></button><button class="segment-action" data-action="track-left" ${trackIndex<=0?'disabled':''}>同轨左 <kbd>⌘←</kbd></button><button class="segment-action" data-action="track-right" ${trackIndex>=trackItems.length-1?'disabled':''}>同轨右 <kbd>⌘→</kbd></button><button class="segment-action segment-action--danger" data-action="delete" ${state.submitted?'disabled':''}>删除</button></div></div>
+        <div class="prq-editor-fields-row"><div class="prq-conclusion-switch" aria-label="片段结论"><label class="is-mistake${item.conclusion==='mistake'?' is-active':''}"><input type="radio" name="${domPrefix}-conclusion" data-field="conclusion" value="mistake" ${item.conclusion==='mistake'?'checked':''} ${state.submitted?'disabled':''}>失误</label><label class="is-rejected${item.conclusion==='rejected'?' is-active':''}"><input type="radio" name="${domPrefix}-conclusion" data-field="conclusion" value="rejected" ${item.conclusion==='rejected'?'checked':''} ${state.submitted?'disabled':''}>不合格</label></div><div class="prq-reason-select"><div class="prq-selected-reasons" aria-label="已选原因">${this.reasonChips(item)}</div><button type="button" data-action="toggle-reasons" aria-expanded="${this.reasonsOpen}" ${state.submitted?'disabled':''}><span>选择原因</span><img src="/static/annotation_workbench/assets/icon-chevron.svg" alt=""></button>${menu}</div></div>
+        <div class="prq-editor-lower"><label><span>错误原因</span><div class="prq-review-error-select"><button type="button" data-action="toggle-review-error" aria-expanded="${this.reviewErrorOpen}" ${state.submitted?'disabled':''}><span>${escape(reviewTrigger)}</span><img src="/static/annotation_workbench/assets/icon-chevron.svg" alt=""></button>${reviewMenu}</div></label><div class="prq-field-state ${errors.length?'has-error':'is-complete'}">${errors.length?'待补充：'+errors.map(escape).join('、'):'当前片段已完善'}</div></div>
       </section>${this.ruleDialog()}`;
     }
     ruleDialog(){return `<dialog id="${domPrefix}RuleDialog" class="prq-dialog"><header><div><h2>${label}采集质检规则</h2><p>${RULE.name} · ${RULE.id} · ${RULE.version}</p></div><button type="button" onclick="this.closest('dialog').close()" aria-label="关闭">×</button></header><div class="prq-rule-body"><section><h3>失误标准</h3>${RULE.mistake.map(item=>`<article><b>${escape(item.name)}</b><p>${escape(item.detail)}</p></article>`).join('')}</section><section><h3>不合格标准</h3>${RULE.rejected.map(item=>`<article><b>${escape(item.name)}</b><p>${escape(item.detail)}</p></article>`).join('')}</section><div class="prq-fixed-rule"><b>固定汇总规则</b><p>无问题片段为合格；只有失误片段为失误；存在任意不合格片段为不合格。</p></div></div></dialog>`;}
@@ -555,7 +562,7 @@
         return `<button type="button" data-segment-id="${escape(item.id)}" class="prq-list-item${isShortDuration(item)?' is-short-duration':''}${item.id===state.selectedId?' is-active':''}${this.hits?.includes(item.id)?' is-hit':''}${valid(item)?'':' has-error'}"><span class="prq-list-id">${String(ordered.indexOf(item)+1).padStart(2,'0')}</span><span class="prq-list-main"><span class="prq-list-time">${format(item.start)}–${format(item.end)} <em>${(item.end-item.start).toFixed(1)}s</em></span><span class="prq-list-summary"><b class="is-${item.conclusion}">${conclusionLabel(item.conclusion)}</b><strong>${escape(reasonSummary(item))}</strong></span>${valid(item)?'':`<i>${escape(segmentErrors(item)[0])}</i>`}</span></button>`;
       }).join('');
       this.innerHTML=`<section class="prq-sidebar"><header><div><b>质检列表</b><span>共 ${ordered.length} 个问题片段</span></div></header><div class="prq-list">${ordered.length?rows:'<div class="prq-list-empty">尚未记录问题片段</div>'}</div><footer><div class="prq-video-conclusion"><span class="prq-conclusion-label">质检结论</span><output id="${domPrefix}VideoConclusion" class="${conclusionClass}" aria-label="质检结论，由系统自动计算">${conclusion}</output></div><div class="prq-conclusion-meta">系统自动计算 · 失误 ${state.segments.filter(item=>item.conclusion==='mistake').length} · 不合格 ${state.segments.filter(item=>item.conclusion==='rejected').length}${pending?` · 待判定 ${pending}`:''}</div><workbench-footer-actions hydrate><div class="workbench-footer-actions"><button type="button" data-action="save" ${state.submitted?'disabled':''}>保存</button><button type="button" data-action="leave" ${state.submitted?'disabled':''}>释放</button><button type="button" data-action="reject" ${state.submitted?'disabled':''}>驳回</button><button type="button" class="${canSubmit?'':'is-blocked'}" data-action="submit" ${canSubmit?'':'disabled'}>提交</button></div></workbench-footer-actions></footer></section><workbench-confirm-dialog variant="reject"></workbench-confirm-dialog>
-        <dialog id="${domPrefix}ErrorDialog" class="prq-dialog prq-error-dialog"><header><h2>暂时无法提交</h2><button onclick="this.closest('dialog').close()" aria-label="关闭">×</button></header><div><b>标注有问题</b><p>${invalidCount()} 个问题片段存在待判定或必填项缺失，请检查后提交。</p></div><footer><button onclick="this.closest('dialog').close()">我知道了</button></footer></dialog>
+        <dialog id="${domPrefix}ErrorDialog" class="prq-dialog prq-error-dialog"><header><h2>暂时无法提交</h2><button onclick="this.closest('dialog').close()" aria-label="关闭">×</button></header><div><b>标注有问题</b><p>${invalidCount()} 个问题片段存在必填项缺失，请检查后提交。</p></div><footer><button onclick="this.closest('dialog').close()">我知道了</button></footer></dialog>
         <dialog id="${domPrefix}SubmitDialog" class="prq-dialog prq-submit-dialog ${conclusionClass}"><header><h2>确认提交质检</h2><button onclick="this.closest('dialog').close()" aria-label="关闭">×</button></header><div><span>系统计算的视频结论</span><strong data-result></strong><p data-counts></p><p data-duration-check></p><small>提交后将保存全部片段和本次质检结果。</small></div><footer><button onclick="this.closest('dialog').close()">取消</button><button class="is-primary" data-action="confirm-submit">确认提交</button></footer></dialog>`;
     }
   }
