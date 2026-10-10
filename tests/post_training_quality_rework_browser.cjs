@@ -27,10 +27,10 @@ async function main(){
   assert.deepEqual(await evaluate("[...document.querySelectorAll('post-rework-training-quality-sidebar .workbench-footer-actions button')].map(button=>button.textContent)"),['保存','释放','提交']);
   assert.equal(await evaluate("document.querySelector('.ptqw-status').textContent.includes('【新】')"),false);
   assert.equal(await evaluate("getComputedStyle(document.querySelector('[data-review-variant=post-quality-rework]')).fontSize"),await evaluate("getComputedStyle(document.querySelector('[data-review-variant=post-quality-review]')).fontSize"));
-  assert.equal(await evaluate("document.querySelectorAll('.ptqw-chip.is-error').length"),1);
+  assert.equal(await evaluate("document.querySelectorAll('post-rework-training-quality-workspace .ptqw-chip.is-error').length"),1);
   assert.equal(await evaluate("getComputedStyle(document.querySelector('.ptqw-chip.is-error')).color"),'rgb(207, 176, 255)');
   assert.equal(await evaluate("getComputedStyle(document.querySelector('.ptqw-chip.is-omitted')).color"),'rgb(145, 199, 255)');
-  assert.equal(await evaluate("document.querySelectorAll('.ptqw-chip.is-correct').length"),0);
+  assert.equal(await evaluate("document.querySelectorAll('post-rework-training-quality-workspace .ptqw-chip.is-correct').length"),0);
   assert.equal(await evaluate("document.querySelector('.ptqw-feedback').tagName"),'DIV');
   assert.equal(await evaluate("document.querySelector('.ptqw-feedback summary')===null"),true);
   assert.equal(await evaluate("getComputedStyle(document.querySelector('.ptqw-compare')).display"),'grid');
@@ -47,7 +47,7 @@ async function main(){
   assert.equal(await evaluate("document.querySelector('#ptqrDescriptionTooltip').hidden"),false);
   assert.equal(await evaluate("document.querySelector('#ptqrDescriptionTooltip span').textContent===document.querySelector('.ptqw-note-text').textContent"),true);
   await evaluate("document.querySelector('.ptqw-note-text').dispatchEvent(new PointerEvent('pointerout',{bubbles:true,relatedTarget:document.body}))");
-  assert.equal(await evaluate("document.querySelectorAll('.ptqw-chip.is-omitted').length"),1);
+  assert.equal(await evaluate("document.querySelectorAll('post-rework-training-quality-workspace .ptqw-chip.is-omitted').length"),1);
   const feedback=await evaluate("JSON.stringify(PostTrainingQualityReworkDemo.state.segments[0].feedback)");
   const original=await evaluate("JSON.stringify(PostTrainingQualityDemo.state.segments)");
   await evaluate("document.querySelector('post-rework-training-quality-workspace [data-action=remove-reason][data-reason-id=M02]').click()");

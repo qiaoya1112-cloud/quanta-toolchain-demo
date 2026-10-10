@@ -1,0 +1,28 @@
+post-training-quality-second-review-workspace{display:block;min-width:0}
+post-training-quality-second-review-sidebar{display:block;min-height:0;height:100%;width:100%;flex:1 1 auto;overflow:hidden}
+post-training-quality-second-review-workspace[hidden],post-training-quality-second-review-sidebar[hidden],post-training-quality-second-review-timeline[hidden]{display:none!important}
+.workbench-review__tabs button[data-review-variant=post-quality-second-review]{font:inherit;line-height:18px}
+.ptqs-compare{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px;height:58px;box-sizing:border-box;padding-top:2px}
+.ptqs-current,.ptqs-previous{min-width:0;overflow:auto;scrollbar-width:thin}
+.ptqs-previous{border-left:1px solid var(--ptqr-line);padding-left:8px}
+.ptqs-current-heading{display:flex;align-items:center;gap:8px;height:24px;font-size:11px;color:var(--ptqr-text)}
+.ptqs-current-heading .ptqr-conclusion{height:20px;min-width:42px;font-size:10px}
+.ptqs-change{margin-left:auto;color:var(--ptqr-muted);font-size:10px;cursor:pointer}
+.ptqs-current .ptqr-description-box{min-height:28px;padding:2px 5px;max-height:30px;overflow:auto;flex-wrap:nowrap;scrollbar-width:thin}
+.ptqs-current .ptqr-chip{flex:none;min-height:22px;white-space:nowrap}
+.ptqs-current .ptqr-add{flex:none}
+/* The add menu is positioned outside scrolling chips so it is never clipped. */
+.ptqs-current .ptqr-add-menu{position:fixed;z-index:150;bottom:auto;right:auto}
+.ptqs-previous .ptqw-feedback-chips{display:flex;gap:4px;flex-wrap:nowrap;min-width:0;overflow:auto;max-height:24px;margin:0;scrollbar-width:thin}
+.ptqs-previous .ptqw-chip{flex:none;padding:1px 5px;font-size:10px;line-height:18px;white-space:nowrap}
+.ptqs-previous .ptqw-chip small{font-size:9px}
+.ptqs-muted{font-size:10px;color:var(--ptqr-muted);white-space:nowrap}
+.ptqs-feedback-row{display:flex;align-items:center;gap:8px;height:24px}
+.ptqs-field{display:flex;align-items:center;gap:5px;min-width:0;flex:1}
+.ptqs-field>small{flex:none;white-space:nowrap;color:var(--ptqr-muted);font-size:10px}
+.ptqs-field>.ptqw-reason-value,.ptqs-field>.ptqw-note-text{flex:1;min-width:0;height:20px;line-height:18px;padding:0 5px;margin:0;border:1px solid var(--ptqr-line);border-radius:4px;background:#0d161e;color:var(--ptqr-text);font-size:10px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;cursor:pointer;box-sizing:border-box}
+post-training-quality-second-review-workspace .ptqr-editor{margin-top:2px;padding-bottom:2px}
+post-training-quality-second-review-workspace .ptqr-error-row{height:30px}
+.workspace:has(> post-training-quality-second-review-workspace:not([hidden])) .workbench-instruction{height:28px;min-height:28px}
+.workspace:has(> post-training-quality-second-review-workspace:not([hidden])) .workbench-media-preview{padding:3px}
+html[data-theme=light] .ptqs-field>.ptqw-reason-value,html[data-theme=light] .ptqs-field>.ptqw-note-text{background:#fff}

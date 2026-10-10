@@ -1,5 +1,5 @@
 (() => {
-  const selector = '.ptqr-list-summary strong, .ptqw-note-text, .ptqw-reason-value';
+  const selector = '.ptqr-list-summary strong, .ptqw-note-text, .ptqw-reason-value, .ptqs-change';
   let tip, active;
   const hide = () => {
     if (tip) tip.hidden = true;
@@ -24,7 +24,7 @@
       document.body.append(tip);
     }
     const heading = document.createElement('b');
-    heading.textContent = target.matches('.ptqw-note-text')?'补充说明':target.matches('.ptqw-reason-value')?'错误原因':'完整失误描述';
+    heading.textContent = target.matches('.ptqs-change')?'本次修改':target.matches('.ptqw-note-text')?'补充说明':target.matches('.ptqw-reason-value')?'错误原因':'完整失误描述';
     const content = document.createElement('span');
     content.textContent = target.dataset.fullDescription || target.textContent;
     tip.replaceChildren(heading, content);

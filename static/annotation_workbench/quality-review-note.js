@@ -1,5 +1,5 @@
 (() => {
-  const api=window.PostTrainingQualityReviewDemo;
+  function install({api,hostTag='post-training-quality-review-workspace',eventName='post-quality-review-state-change'}) {
   const selected=()=>api.state.segments.find(item=>item.id===api.state.selectedId);
   let dialog;
   function openEditor(){
@@ -9,7 +9,7 @@
       dialog.innerHTML='<header><h2>补充说明（选填）</h2><button type="button" aria-label="关闭">×</button></header><div><textarea maxlength="500" aria-label="补充说明" placeholder="请补充具体问题或修改建议（最多500字）"></textarea><small></small></div><footer><button type="button">完成</button></footer>';
       document.body.append(dialog);
       dialog.querySelectorAll('button').forEach(button=>button.addEventListener('click',()=>dialog.close()));
-      dialog.addEventListener('close',()=>document.dispatchEvent(new CustomEvent('post-quality-review-state-change')));
+      dialog.addEventListener('close',()=>document.dispatchEvent(new CustomEvent(eventName)));
       dialog.querySelector('textarea').addEventListener('input',event=>{
         const target=api.state.segments.find(item=>item.id===dialog.dataset.segmentId);
         if(target&&!api.state.submitted){target.reviewNote=event.target.value;api.state.dirty=true;}
@@ -22,7 +22,7 @@
     dialog.showModal();dialog.querySelector('textarea').focus();
   }
   function render(){
-    const host=document.querySelector('post-training-quality-review-workspace'),row=host?.querySelector('.ptqr-error-row'),item=selected();
+    const host=document.querySelector(hostTag),row=host?.querySelector('.ptqr-error-row'),item=selected();
     if(!row||!item||row.querySelector('.ptqr-note-field'))return;
     const label=document.createElement('label');label.className='ptqr-note-field';
     label.innerHTML='<span>补充说明</span><input type="text" maxlength="500" placeholder="具体问题或修改建议（选填）" aria-label="补充说明"><button type="button">展开</button>';
@@ -31,6 +31,9 @@
     label.querySelector('button').addEventListener('click',openEditor);
     row.append(label);
   }
-  document.addEventListener('post-quality-review-state-change',render);
+  document.addEventListener(eventName,render);
   render();
+  }
+  window.installQualityReviewNote=install;
+  install({api:window.PostTrainingQualityReviewDemo});
 })();
