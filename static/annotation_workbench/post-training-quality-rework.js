@@ -6,13 +6,14 @@
   source.forEach((item, index) => {
     item.audit = {removed:[], added:[]};
     item.reviewErrorReason = '';
+    item.reviewNote = index===0?'请重点核对右臂视角：该片段夹爪仍位于画面内，但手部没有持续握住夹爪。请移除错误描述，并补充实际发生的身体辅助动作。':index===2?'开始边界应后移至动作真正开始的位置。请结合三个视角逐帧检查，避免将准备动作算入片段。\n修改后请重新播放该区间，检查起止时间与描述是否一致。':'';
     if(index === 0){item.audit={removed:['M02'],added:['M03']};item.reviewErrorReason='描述与画面不一致';}
     if(index === 1){item.audit={removed:[item.originalRejectedReasons[0]],added:['U02']};item.reviewErrorReason='描述与画面不一致';}
     if(index === 2)item.reviewErrorReason='动作开始边界偏早';
   });
   const segments = source.map(item => ({...item,
     mistakeReasons:clone(item.originalMistakeReasons),rejectedReasons:clone(item.originalRejectedReasons),
-    feedback:{original:[...item.originalRejectedReasons,...item.originalMistakeReasons],removed:clone(item.audit.removed),added:clone(item.audit.added),reason:item.reviewErrorReason}
+    feedback:{original:[...item.originalRejectedReasons,...item.originalMistakeReasons],removed:clone(item.audit.removed),added:clone(item.audit.added),reason:item.reviewErrorReason,note:item.reviewNote}
   }));
   const hasIssue = item => Boolean(item.feedback && (item.feedback.removed.length || item.feedback.added.length || item.feedback.reason));
   const ui = {filter:'all', feedbackOpen:true};
@@ -27,8 +28,28 @@
     if(!feedback)return;
     const details=document.createElement('details');details.className='ptqw-feedback';details.open=ui.feedbackOpen;
     const chip=(id,status)=>`<span class="ptqw-chip is-${status}">${esc(name(id))}${status==='error'?'<del>错误项</del>':status==='omitted'?'<small>遗漏项</small>':''}</span>`;
-    details.innerHTML=`<summary>审核反馈 <small>上次驳回意见 · 只读</small></summary><div class="ptqw-feedback-chips">${feedback.original.map(id=>chip(id,feedback.removed.includes(id)?'error':'correct')).join('')}${feedback.added.map(id=>chip(id,'omitted')).join('')}</div><div class="ptqw-error-reason">错误原因：${esc(feedback.reason||'无')}</div>`;
+    details.innerHTML=`<summary>审核反馈 <small>上次驳回意见 · 只读</small></summary><div class="ptqw-feedback-chips">${feedback.removed.map(id=>chip(id,'error')).join('')}${feedback.added.map(id=>chip(id,'omitted')).join('')}</div><div class="ptqw-error-reason">错误原因：${esc(feedback.reason||'无')}</div>`;
     details.addEventListener('toggle',()=>{ui.feedbackOpen=details.open;});
+    const feedbackRow=document.createElement('div');feedbackRow.className='ptqw-feedback-row';
+    const reason=details.querySelector('.ptqw-error-reason');
+    reason.replaceChildren();
+    const reasonLabel=document.createElement('span');reasonLabel.textContent='错误原因';
+    const reasonValue=document.createElement('span');reasonValue.className='ptqw-reason-value';reasonValue.textContent=feedback.reason||'无';
+    reason.append(reasonLabel,reasonValue);feedbackRow.append(reason);details.append(feedbackRow);
+    if(feedback.note){
+      const note=document.createElement('div');note.className='ptqw-feedback-note';
+      const label=document.createElement('span');label.textContent='补充说明';
+      const text=document.createElement('div');text.className='ptqw-note-text';text.textContent=feedback.note;
+      const expand=document.createElement('button');expand.type='button';expand.textContent='查看全文';
+      expand.addEventListener('click',()=>{
+        const dialog=document.createElement('dialog');dialog.className='ptqr-dialog ptqw-note-dialog';
+        dialog.innerHTML='<header><h2>审核补充说明</h2><button type="button" aria-label="关闭">×</button></header><div></div><footer><button type="button">关闭</button></footer>';
+        dialog.querySelector('div').textContent=feedback.note;
+        dialog.querySelectorAll('button').forEach(button=>button.addEventListener('click',()=>dialog.close()));
+        dialog.addEventListener('close',()=>dialog.remove());document.body.append(dialog);dialog.showModal();
+      });
+      note.append(label,text,expand);feedbackRow.append(note);
+    }
     host.querySelector('.ptq-editor').append(details);
   }
   function decorateSidebar(host,state){
@@ -49,10 +70,6 @@
       if(hasIssue(item)){const badge=document.createElement('span');badge.className='ptqr-issue-badge';badge.textContent='!';badge.setAttribute('aria-label','上次审核有问题');row.append(badge);}
     });
     if(ui.filter==='issues'&&!issueCount){const empty=document.createElement('div');empty.className='ptq-list-empty';empty.textContent='暂无审核问题';host.querySelector('.ptq-list').append(empty);}
-    const confirm=document.createElement('label');confirm.className='ptqr-complete';
-    confirm.innerHTML=`<input type="checkbox" data-field="rework-complete" ${state.reworkComplete?'checked':''} ${state.submitted?'disabled':''}><span>已根据审核反馈完成检查</span>`;
-    confirm.addEventListener('change',event=>{state.reworkComplete=event.target.checked;});
-    host.querySelector('.ptq-sidebar>footer').prepend(confirm);
     host.querySelector('[data-action="submit"]').textContent=state.submitted?'已重新提交':'重新提交';
     host.querySelector('#ptqwSubmitDialog h2').textContent='确认重新提交审核';
     host.querySelector('#ptqwSubmitDialog small').textContent='将保存当前修改结果并重新交给审核员复核；上次审核意见保留。';

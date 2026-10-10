@@ -132,7 +132,6 @@ window.createPostTrainingQualityWorkspace = (options = {}) => {
   }
   function markDirty() {
     state.dirty = true;
-    if(options.trainingType)state.reworkComplete=false;
     notify();
   }
   function selectSegment(id, seek = true) {
@@ -540,7 +539,6 @@ window.createPostTrainingQualityWorkspace = (options = {}) => {
       if(action==='leave'&&!state.submitted&&this.save())this.toast('草稿已保存');
       if(action==='reject'&&!state.submitted)this.querySelector('workbench-confirm-dialog[variant="reject"]')?.show();
       if(action==='submit'&&!state.submitted){
-        if(options.trainingType&&!state.reworkComplete){this.toast('请确认已根据审核反馈完成检查');return;}
         if(invalidCount()){this.querySelector(`#${domPrefix}ErrorDialog`)?.showModal();return;}
         const dialog=this.querySelector(`#${domPrefix}SubmitDialog`);
         dialog.querySelector('[data-result]').textContent=calculatedConclusion();
@@ -549,7 +547,6 @@ window.createPostTrainingQualityWorkspace = (options = {}) => {
       }
       if(action==='confirm-submit'){
         if(invalidCount())return;
-        if(options.trainingType&&!state.reworkComplete)return;
         state.submitted=true;state.dirty=false;state.revision+=1;
         try{if(options.trainingType)this.save();else localStorage.removeItem(DRAFT_KEY);}catch(_){}
         this.querySelector(`#${domPrefix}SubmitDialog`)?.close();notify();this.toast(options.trainingType?'已重新提交审核':'质检已提交');

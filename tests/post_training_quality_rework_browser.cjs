@@ -28,6 +28,13 @@ async function main(){
   assert.equal(await evaluate("document.querySelector('.ptqw-status').textContent.includes('【新】')"),false);
   assert.equal(await evaluate("getComputedStyle(document.querySelector('[data-review-variant=post-quality-rework]')).fontSize"),await evaluate("getComputedStyle(document.querySelector('[data-review-variant=post-quality-review]')).fontSize"));
   assert.equal(await evaluate("document.querySelectorAll('.ptqw-chip.is-error').length"),1);
+  assert.equal(await evaluate("document.querySelectorAll('.ptqw-chip.is-correct').length"),0);
+  assert.equal(await evaluate("document.querySelector('.ptqw-note-text').textContent.includes('请重点核对右臂视角')"),true);
+  await delay(100);
+  await evaluate("document.querySelector('.ptqw-feedback-note button').click()");
+  assert.equal(await evaluate("document.querySelector('.ptqw-note-dialog').open"),true);
+  assert.equal(await evaluate("document.querySelector('.ptqw-note-dialog>div').textContent===document.querySelector('.ptqw-note-text').textContent"),true);
+  await evaluate("document.querySelector('.ptqw-note-dialog footer button').click()");
   assert.equal(await evaluate("document.querySelectorAll('.ptqw-chip.is-omitted').length"),1);
   const feedback=await evaluate("JSON.stringify(PostTrainingQualityReworkDemo.state.segments[0].feedback)");
   const original=await evaluate("JSON.stringify(PostTrainingQualityDemo.state.segments)");
@@ -43,8 +50,6 @@ async function main(){
   assert.equal(await evaluate("PostTrainingQualityReworkDemo.state.segments[0].mistakeReasons.includes('M02')"),false);
   assert.equal(await evaluate("JSON.stringify(PostTrainingQualityReworkDemo.state.segments[0].feedback)"),feedback);
   await evaluate("document.querySelector('post-rework-training-quality-sidebar [data-action=submit]').click()");
-  assert.equal(await evaluate("document.querySelector('#ptqwSubmitDialog').open"),false);
-  await evaluate("document.querySelector('[data-field=rework-complete]').click();document.querySelector('post-rework-training-quality-sidebar [data-action=submit]').click()");
   assert.equal(await evaluate("document.querySelector('#ptqwSubmitDialog').open"),true);
   await evaluate("document.querySelector('#ptqwSubmitDialog [data-action=confirm-submit]').click()");
   assert.equal(await evaluate("PostTrainingQualityReworkDemo.state.submitted"),true);

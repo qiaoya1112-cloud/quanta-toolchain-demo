@@ -55,6 +55,12 @@ html[data-theme=light] .ptqr-list-tools{background:#f3f6f8}
 .ptqr-list-summary strong{min-width:0;overflow:hidden;color:#c9d6df;font-size:12px;font-weight:400;text-overflow:ellipsis;white-space:nowrap;cursor:pointer}
 .ptqr-error-row.is-required>span{color:#ff8293;font-weight:600}
 .ptqr-error-row.is-required .ptqr-error-select>button{border-color:#b33f55;box-shadow:0 0 0 1px rgba(255,97,119,.12)}
+.ptqr-error-row .ptqr-error-select{flex:0 1 36%;min-width:130px}
+.ptqr-note-field{display:flex;align-items:center;gap:7px;min-width:0;flex:1;font-size:10px;color:var(--ptqr-muted)}
+.ptqr-note-field>span{white-space:nowrap}.ptqr-note-field input{min-width:0;flex:1;height:27px;box-sizing:border-box;border:1px solid #34495d;border-radius:5px;background:#0d161e;color:var(--ptqr-text);padding:0 8px;font:11px sans-serif;text-overflow:ellipsis}
+.ptqr-note-field button{height:27px;border:1px solid #34495d;border-radius:5px;background:#151f28;color:var(--ptqr-text);font-size:10px;cursor:pointer}
+.ptqr-note-dialog{width:min(560px,calc(100vw - 32px))}.ptqr-note-dialog>div{align-items:stretch;text-align:left}.ptqr-note-dialog textarea{height:180px;max-height:40vh;resize:none;border:1px solid #34495d;border-radius:5px;background:#0d161e;color:var(--ptqr-text);padding:10px;font:12px/20px sans-serif;box-sizing:border-box;overflow:auto}.ptqr-note-dialog small{text-align:right}
+html[data-theme=light] :is(.ptqr-note-field input,.ptqr-note-field button,.ptqr-note-dialog textarea){background:#fff;color:#263640;border-color:#cbd6de}
 .ptqr-total.has-warning{color:#ff8293}
 
 /* 质检员原始结论与描述沿用质检列表视觉；审核统计保持中性，避免混为一类信息。 */
