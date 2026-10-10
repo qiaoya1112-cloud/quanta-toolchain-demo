@@ -111,3 +111,7 @@ html[data-theme=light] :is(.ptqr-chip,.ptqw-chip).is-omitted{color:#256ba6;borde
 .ptqr-legend .is-correct,.ptqr-meta-legend .is-correct,.ptqr-counts .is-correct{color:#fff}
 html[data-theme=light] :is(.ptqr-chip,.ptqw-chip).is-correct{color:#263640;border-color:#cbd6de;background:#f3f6f8}
 html[data-theme=light] :is(.ptqr-legend,.ptqr-meta-legend,.ptqr-counts) .is-correct{color:#263640}
+.ptqr-sidebar>header{gap:8px;padding-inline:10px}
+.ptqr-sidebar>header>div{flex:none;white-space:nowrap;gap:5px}
+.ptqr-sidebar>header .ptqr-list-overview{display:block;flex:1;min-width:0;height:auto;padding:0;border:0;background:transparent;font-size:9px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:right}
+html[data-theme=light] .ptqr-sidebar>header .ptqr-list-overview{background:transparent}

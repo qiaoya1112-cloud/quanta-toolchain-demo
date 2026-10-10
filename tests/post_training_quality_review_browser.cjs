@@ -55,6 +55,7 @@ async function main(){
     await delay(100);
     assert.equal(await evaluate("document.querySelector('.ptqr-note-field input').value.includes('请核对右臂视角')"),true);
     assert.equal(await evaluate("document.querySelector('.ptqr-note-field input').maxLength"),500);
+    assert.equal(await evaluate("document.querySelector('.ptqr-list-overview').parentElement.tagName"),'HEADER');
     assert.equal(await evaluate("document.querySelector('.ptqr-result span').textContent"),'质检结论');
     assert.equal(await evaluate("document.querySelector('.ptqr-result output').textContent"),'不合格','底部应显示质检员原有的视频质检结论');
     assert.match(await evaluate("document.querySelector('.ptqr-list-overview').textContent"),/正确/,'审核统计应放在质检审核列表顶部');
