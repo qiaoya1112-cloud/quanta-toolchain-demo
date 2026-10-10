@@ -24,7 +24,7 @@ async function main(){
   assert.equal(await evaluate("document.querySelectorAll('post-rework-training-quality-timeline .ptqw-track-issue').length"),3);
   assert.equal(await evaluate("document.querySelectorAll('post-rework-training-quality-sidebar .ptqr-issue-badge').length"),3);
   assert.equal(await evaluate("getComputedStyle(document.querySelector('post-rework-training-quality-sidebar .ptqr-issue-badge')).backgroundColor"),'rgb(255, 97, 119)');
-  assert.equal(await evaluate("document.querySelector('post-rework-training-quality-sidebar [data-action=submit]').textContent"),'重新提交');
+  assert.deepEqual(await evaluate("[...document.querySelectorAll('post-rework-training-quality-sidebar .workbench-footer-actions button')].map(button=>button.textContent)"),['保存','释放','提交']);
   assert.equal(await evaluate("document.querySelector('.ptqw-status').textContent.includes('【新】')"),false);
   assert.equal(await evaluate("getComputedStyle(document.querySelector('[data-review-variant=post-quality-rework]')).fontSize"),await evaluate("getComputedStyle(document.querySelector('[data-review-variant=post-quality-review]')).fontSize"));
   assert.equal(await evaluate("document.querySelectorAll('.ptqw-chip.is-error').length"),1);

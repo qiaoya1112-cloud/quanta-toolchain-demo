@@ -75,7 +75,7 @@
       if(hasIssue(item)){const badge=document.createElement('span');badge.className='ptqr-issue-badge';badge.textContent='!';badge.setAttribute('aria-label','上次审核有问题');row.append(badge);}
     });
     if(ui.filter==='issues'&&!issueCount){const empty=document.createElement('div');empty.className='ptq-list-empty';empty.textContent='暂无审核问题';host.querySelector('.ptq-list').append(empty);}
-    host.querySelector('[data-action="submit"]').textContent=state.submitted?'已重新提交':'重新提交';
+    host.querySelector('[data-action="submit"]').textContent=state.submitted?'已提交':'提交';
     host.querySelector('#ptqwSubmitDialog h2').textContent='确认重新提交审核';
     host.querySelector('#ptqwSubmitDialog small').textContent='将保存当前修改结果并重新交给审核员复核；上次审核意见保留。';
   }
