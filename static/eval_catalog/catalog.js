@@ -76,6 +76,7 @@ function validate(db,kind,r,editing){
   const story=db.stories.find(x=>x.id===r.story_id);
   if(!story||(r.enabled!==false&&(!active('stories',r.story_id)||!active('stages',r.case_stage||story.stage_id))))errors.push('请选择启用的 Story 和 Stage');
   if(!r.prompt.trim())errors.push('请填写 prompt_EN');
+  if(!(r.prompt_cn||'').trim())errors.push('请填写 prompt_CN');
   if(r.skill_ids.some(id=>!has('skills',id)||(r.enabled!==false&&!active('skills',id))))errors.push('所选 Skill 不存在或未启用');
   if(!['P0','P1','P2','P3'].includes(r.priority))errors.push('请选择优先级');
 
@@ -99,7 +100,7 @@ const schemas={
  stories:[['stage_id','1级-场域-Stage','stages',true],['name','2级-任务-Story','text',true],['skill_ids','3级-原子能力-Skill','skills[]'],['factor_ids','4级-factor','factors[]'],['factor_values','factor取值','textarea'],['notes','备注','textarea'],['case_ids','用例id','computed'],['text3','文本 3','textarea'],['parent_id','父记录','stories'],['stage_count','unique stage cnt','computed'],['story_count','unique story cnt','computed'],['skill_count','unique skill count','computed'],['factor_count','unique factor cnt','computed']],
  skills:[['name','Skill','text',true],['name_zh','Skill_中文','text'],['name_en','Skill_EN','text'],['action_descriptions','可能的动作描述','lines'],['tool_usage','工具使用','skills[]'],['category','SKill类别','category'],['notes','备注','textarea'],['key_factor','Key Factor','textarea']],
  factors:[['name','Factor','text',true],['category','一级（影响来源）','text',true],['dimension','二级（维度组）','text',true],['level3','三级（具体 factor）','text'],['default_value','default 标准值','text'],['value_range','取值范围','textarea'],['values','取值说明','values'],['directory_ids','场景库目录表','computed'],['parent_id','父记录','factors']],
- 'test-cases':[['id','用例ID','text',true],['prerequisite_ids','前置用例','test-cases[]'],['priority','优先级','priority'],['case_stage','Stage','stages',true],['story_id','Story','stories',true],['prompt','prompt_EN','textarea',true],['prompt_cn','prompt_CN','textarea'],['skill_ids','Skill标签','skills[]'],['factor_ids','Factor','caseFactors'],['factor_values','Factor取值','caseValues'],['props','道具','textarea'],['attachments','布置图片','images'],['factor_option_ids','Factor（选项版）','factors[]'],['text8','文本 8','textarea'],['attributes','属性','textarea'],['attribute_values','属性取值','textarea'],['lookup_reference','查找引用','text'],['t4','T-4','text'],['t5','T-5','text']]
+ 'test-cases':[['id','用例ID','text',true],['prerequisite_ids','前置用例','test-cases[]'],['priority','优先级','priority'],['case_stage','Stage','stages',true],['story_id','Story','stories',true],['prompt','prompt_EN','textarea',true],['prompt_cn','prompt_CN','textarea',true],['skill_ids','Skill标签','skills[]'],['factor_ids','Factor','caseFactors'],['factor_values','Factor取值','caseValues'],['props','道具','textarea'],['attachments','布置图片','images'],['factor_option_ids','Factor（选项版）','factors[]'],['text8','文本 8','textarea'],['attributes','属性','textarea'],['attribute_values','属性取值','textarea'],['lookup_reference','查找引用','text'],['t4','T-4','text'],['t5','T-5','text']]
 };
 const listSchemas={...schemas,
  stages:[['name','Stage 场域','text',true]],
@@ -132,7 +133,7 @@ function factorValueOptions(values){return [...new Set(values.map(row=>row.value
 function fieldsFor(kind,section='elements',mode='list'){
  if(section==='scenario'&&mode==='form')return scenarioFormSchema;
  if(kind==='test-cases'&&mode==='form')return fieldsFor(kind,section,'create');
- if(kind==='test-cases'&&mode==='create')return ['prompt','prompt_cn','id','case_stage','story_id','skill_ids','factor_ids','factor_values','data_owner','project','tag_ids','props','attachments','visibility','visible_group_ids'].map(key=>{const f=key==='visible_group_ids'?['visible_group_ids','可见用户组','userGroups[]']:key==='data_owner'?dataOwnershipField:key==='project'?projectField:key==='tag_ids'?tagField:key==='visibility'?['visibility','可见性','visibility']:schemas[kind].find(f=>f[0]===key);return [f[0],key==='attachments'?'场景示意图':key==='skill_ids'?'Skill':f[1],['prompt','prompt_cn'].includes(key)?'text':f[2],...f.slice(3)];});
+ if(kind==='test-cases'&&mode==='create')return ['id','case_stage','story_id','prompt','prompt_cn','skill_ids','factor_ids','factor_values','data_owner','project','tag_ids','props','attachments','visibility','visible_group_ids'].map(key=>{const f=key==='visible_group_ids'?['visible_group_ids','可见用户组','userGroups[]']:key==='data_owner'?dataOwnershipField:key==='project'?projectField:key==='tag_ids'?tagField:key==='visibility'?['visibility','可见性','visibility']:schemas[kind].find(f=>f[0]===key);return [f[0],key==='attachments'?'场景示意图':key==='skill_ids'?'Skill':f[1],['prompt','prompt_cn'].includes(key)?'text':f[2],...f.slice(3)];});
  if(mode==='form'&&section==='elements'&&elementForms[kind])return [...elementForms[kind],projectField,tagField];
  const fields=mode==='form'?schemas[kind]:section==='scenario'?scenarioSchema:listSchemas[kind];
  const catalogList=mode==='list'&&kind!=='test-cases';
@@ -829,7 +830,14 @@ function input([key,label,type,required],r,scope='',rows=3){
  if(type==='textarea'||type==='lines')return `<textarea ${attrs} rows="${rows}"${rows===1?' style="min-height:36px;height:36px;resize:vertical"':''}>${esc(Array.isArray(value)?value.join('\n'):value)}</textarea>`;
  return `<input type="text" ${attrs} value="${esc(value)}">`;
 }
-function field(schema,r,scope=''){const visibilityClass=schema[0]==='visible_group_ids'?' visibility-groups-field':'';const visibilityAttr=schema[0]==='visible_group_ids'?` data-visibility-groups="true"${r.visibility==='受限'?'':' style="display:none"'}`:'';return `<div class="form-group${visibilityClass}"${visibilityAttr}><label for="${schema[2]==='images'?'ec-image-upload':scope+schema[0]}">${esc(schema[1])}${schema[2]==='images'?' <span id="ec-image-total"></span>':''}${schema[3]?' <span style="color:#cf1322">*</span>':''}${batchCreating&&batchScenarioSchema.some(([key])=>key===schema[0])?` <span class="muted" style="margin-left:8px;font-size:12px;font-weight:400" id="ec-selected-${schema[0]}" aria-live="polite">已选择 0 项</span>`:''}</label>${input(schema,r,scope)}</div>`;}
+function field(schema,r,scope=''){
+ const visibilityClass=schema[0]==='visible_group_ids'?' visibility-groups-field':'';
+ const visibilityAttr=schema[0]==='visible_group_ids'?` data-visibility-groups="true"${r.visibility==='受限'?'':' style="display:none"'}`:'';
+ const label=`<label for="${schema[2]==='images'?'ec-image-upload':scope+schema[0]}">${esc(schema[1])}${schema[2]==='images'?' <span id="ec-image-total"></span>':''}${schema[3]?' <span style="color:#cf1322">*</span>':''}${batchCreating&&batchScenarioSchema.some(([key])=>key===schema[0])?` <span class="muted" style="margin-left:8px;font-size:12px;font-weight:400" id="ec-selected-${schema[0]}" aria-live="polite">已选择 0 项</span>`:''}</label>`;
+ const createUrl=kind==='test-cases'&&!readonly?{project:'/data/projects',visible_group_ids:'/data/user-groups'}[schema[0]]:null;
+ const header=createUrl?`<div style="display:flex;align-items:baseline;gap:12px">${label}<a class="action-link" style="margin-left:auto;white-space:nowrap" href="${createUrl}" target="_blank" rel="noopener noreferrer" aria-label="${esc(schema[1])}：前往查看或创建（新标签页）">前往查看或创建</a></div>`:label;
+ return `<div class="form-group${visibilityClass}"${visibilityAttr}>${header}${input(schema,r,scope)}</div>`;
+}
 function syncUserGroupChips(wrap){
  if(!wrap?.dataset.chipSelect)return;
  const checked=[...wrap.querySelectorAll('input[name="visible_group_ids"]:checked')];
@@ -909,7 +917,7 @@ function open(mode,id,collection=kind,rowKey=null){
  if(kind==='test-cases'&&readonly)formFields.push(caseSystemSchema.find(field=>field[0]==='publish_status'));
  const metadataStart=formFields.find(f=>!schemas[kind].includes(f));
  let html='';for(const f of formFields){
-  if(kind==='test-cases'&&['prompt','case_stage','props','visibility'].includes(f[0]))html+=`<h4>${{prompt:'提示词',case_stage:'用例属性',props:'场景说明',visibility:'可见性配置'}[f[0]]}</h4>`;
+  if(kind==='test-cases'&&['id','data_owner','props','visibility'].includes(f[0]))html+=`<h4>${{id:'用例配置',data_owner:'用例属性',props:'场景说明',visibility:'可见性配置'}[f[0]]}</h4>`;
   if(kind==='test-cases'&&f[0]==='publish_status')html+='<h4>记录信息</h4>';
   if(section==='elements'&&elementForms[kind]&&kind!=='factors'&&f===formFields[0])html+='<h4>基础信息</h4>';
   if(kind==='factors'&&f[0]==='category')html+='<h4>基础信息</h4>';

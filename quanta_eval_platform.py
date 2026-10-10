@@ -5951,6 +5951,7 @@ def tasks_page():
       window.updateTaskResourceLinks();
     }}
     function openTaskCreate() {{
+      benchmarkCaseFields = {benchmark_case_fields_json}.filter(function(field) {{ return field[0] !== 'visibility'; }});
       resetTaskDrawerForm();
       setTaskDrawerReadonly(false);
       document.getElementById('task-publish-status-field').style.display = 'none';
@@ -5963,6 +5964,7 @@ def tasks_page():
       if (!d) return;
       var form = document.getElementById('task-drawer-form');
       if (!form) return;
+      benchmarkCaseFields = {benchmark_case_fields_json};
       resetTaskDrawerForm();
       form.querySelector('input[name="name"]').value = d.name || '';
       form.querySelector('select[name="project"]').value = d.project || '';
