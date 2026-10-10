@@ -1,0 +1,22 @@
+post-rework-training-quality-workspace{display:block;min-width:0}
+post-rework-training-quality-sidebar{width:100%;height:100%;min-height:0;display:block;flex:1 1 auto;overflow:hidden}
+post-rework-training-quality-workspace[hidden],post-rework-training-quality-sidebar[hidden],post-rework-training-quality-timeline[hidden]{display:none!important}
+.timeline-card.is-post-quality-mode>post-rework-training-quality-timeline{display:block}
+.ptqw-status{font-size:11px;color:var(--ptq-muted);padding:0 0 6px;border-bottom:1px solid var(--ptq-line);margin-bottom:6px}
+.ptqw-feedback{margin-top:6px;border-top:1px solid var(--ptq-line);padding-top:6px;font-size:11px;color:var(--ptq-text)}
+.ptqw-feedback summary{cursor:pointer}.ptqw-feedback summary small{color:var(--ptq-muted);margin-left:8px}
+.ptqw-feedback-chips{display:flex;flex-wrap:wrap;gap:5px;max-height:64px;overflow:auto;margin-top:6px}
+.ptqw-chip{display:inline-flex;align-items:center;gap:5px;padding:3px 7px;border:1px solid;border-radius:4px;font-size:11px}
+.ptqw-chip.is-correct{color:#72d6a1;border-color:#38634e;background:#16372b}
+.ptqw-chip.is-error{color:#f58b9a;border-color:#743c48;background:#3f222c;text-decoration:line-through}
+.ptqw-chip.is-omitted{color:#e9c263;border-color:#705c30;background:#3b321e}
+.ptqw-chip del{text-decoration:none;font-size:10px}
+.ptqw-error-reason{color:var(--ptq-muted);padding-top:6px}
+.ptqw-list-feedback{display:flex;flex-direction:column;gap:3px;font-size:10px;line-height:14px;color:var(--ptq-muted);margin-top:5px}
+post-rework-training-quality-sidebar .ptq-list-item{position:relative;min-height:86px}
+post-rework-training-quality-sidebar .ptq-list-item[hidden]{display:none}
+post-rework-training-quality-sidebar .workbench-footer-actions{grid-template-columns:1fr 1fr 2fr}
+post-rework-training-quality-workspace .ptq-reason-chip:is(.is-mistake,.is-rejected){color:var(--ptq-text);background:#17232c;border-color:var(--ptq-line)}
+html[data-theme=light] post-rework-training-quality-workspace .ptq-reason-chip:is(.is-mistake,.is-rejected){background:#f3f6f8;color:#435864;border-color:#cbd6de}
+.workbench-review__tabs button[data-review-variant="post-quality-rework"]{font-size:13px;line-height:19.5px;min-height:132px;height:132px;flex-basis:132px;gap:2px}
+.ptqw-track-issue{position:absolute;left:2px;top:50%;transform:translateY(-50%);width:11px;height:11px;display:grid;place-items:center;border-radius:50%;background:#d83950;color:#fff;font:700 10px/1 sans-serif;box-shadow:0 0 0 1px #fff;pointer-events:none}

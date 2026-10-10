@@ -43,6 +43,8 @@ html[data-theme=light] .ptqr-list-tools{background:#f3f6f8}
 .ptqr-counts i{font-size:10px}
 .ptqr-list-error{overflow:hidden;color:var(--ptqr-muted);font-size:10px;text-overflow:ellipsis;white-space:nowrap}
 .ptqr-issue-badge{position:absolute;left:28px;top:4px;width:10px;height:10px;display:grid;place-items:center;border-radius:50%;background:var(--ptqr-red);color:#fff;font-size:10px;font-weight:700}
+.ptqr-block.has-review-issue:after{display:none}
+.ptqr-track-issue{position:absolute;left:2px;top:50%;transform:translateY(-50%);width:11px;height:11px;display:grid;place-items:center;border-radius:50%;background:#d83950;color:#fff;font:700 10px/1 sans-serif;box-shadow:0 0 0 1px #fff;pointer-events:none}
 .ptqr-chip .ptqr-chip-action{width:20px;min-width:20px;padding:0;border-left:1px solid currentColor;border-radius:0 3px 3px 0;font-size:11px;font-weight:700;white-space:nowrap}
 .ptqr-chip .ptqr-chip-action:hover{background:rgba(255,255,255,.14)}
 .ptqr-chip button:disabled{opacity:.5;cursor:not-allowed}

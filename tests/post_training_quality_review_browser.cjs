@@ -79,10 +79,12 @@ async function main(){
     assert.equal(await evaluate("document.querySelector('.ptqr-chip.is-error button').textContent"),'↶');
     assert.equal(await evaluate("document.querySelector('.ptqr-chip.is-error button').title"),'撤销');
     assert.equal(await evaluate("document.querySelector('.ptqr-list-item.is-active .ptqr-issue-badge').textContent"),'!');
+    assert.equal(await evaluate("document.querySelector('.ptqr-block.is-selected .ptqr-track-issue').textContent"),'!','标错后轨道同步显示感叹号');
     assert.equal(await evaluate("document.querySelector('.ptqr-list-item.is-active .ptqr-counts .is-error').textContent"),'错误项 1');
     assert.equal(await evaluate("document.querySelector('.ptqr-result output').textContent"),'未完成');
     await evaluate("document.querySelector('.ptqr-chip.is-error button').click()");
     assert.equal(await evaluate("document.querySelectorAll('post-training-quality-review-workspace .ptqr-chip.is-error').length"),0,'错误项应可撤销');
+    assert.equal(await evaluate("document.querySelector('.ptqr-block.is-selected .ptqr-track-issue')===null"),true,'撤销所有问题后轨道移除感叹号');
     await evaluate("document.querySelector('[data-action=toggle-add]').click()");
     assert.deepEqual(await evaluate("[...document.querySelectorAll('.ptqr-add-menu section>b')].map(item=>item.textContent)"),['不合格描述','失误描述'],'失误片段也应允许补充全部不合格和失误原因');
     const addMenu=await evaluate("(()=>{const menu=document.querySelector('.ptqr-add-menu'),rect=menu.getBoundingClientRect(),trigger=document.querySelector('[data-action=toggle-add]').getBoundingClientRect(),painted=document.elementFromPoint(rect.left+8,rect.top+8)?.closest('.ptqr-add-menu')===menu;return{hidden:menu.hidden,top:rect.top,bottom:rect.bottom,triggerTop:trigger.top,viewport:innerHeight,painted,lastBottom:menu.lastElementChild.getBoundingClientRect().bottom}})()");
