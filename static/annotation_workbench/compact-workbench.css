@@ -1,0 +1,59 @@
+/* Keep the common range selector compact without removing controls. */
+.ptq-ruler,.prq-ruler{height:16px}
+.ptq-ruler-rail>span,.prq-ruler-rail>span{top:1px}
+.ptq-public-timeline,.prq-public-timeline{height:20px}
+.ptq-public-rail,.prq-public-rail{height:8px}
+.ptq-draft-range,.prq-draft-range{height:8px}
+.ptq-range-handle,.prq-range-handle{top:-3px;height:14px}
+.ptq-range-label,.prq-range-label{bottom:10px;padding:0 3px;font-size:8px}
+segmented-track .segmented-timeline__range{height:16px;margin-top:12px}
+segmented-track .segmented-timeline{height:114px}
+segmented-track[variant=action] .segmented-timeline{height:94px}
+.tag-selection{min-height:24px;margin-bottom:2px}
+.tag-selection timeline-range-selector,.tag-selection .segmented-timeline__range{height:24px}
+.tag-selection .segmented-timeline__range-rail{top:13px;height:8px}
+/* Full labels remain readable and every mode remains reachable on laptop screens. */
+.workbench-review__rail>workbench-segment-tabs{overflow:auto;scrollbar-width:thin}
+.workbench-review__rail .workbench-review__tabs{height:auto;min-height:100%;overflow:visible}
+@media(max-height:900px),(max-width:1500px){
+  .workbench-review__rail{width:28px;min-width:28px;flex-basis:28px}
+  .workbench-review__rail>workbench-segment-tabs{width:28px;max-width:28px}
+  .workbench-review__main{width:calc(100% - 28px);min-width:0;flex:1 1 0}
+  .workbench-review__main .workbench-footer-actions{width:100%;min-width:0;box-sizing:border-box}
+  .workbench-review__main .workbench-footer-actions button{min-width:0;padding-inline:5px}
+  .workbench-review__rail .workbench-review__tabs{width:28px;min-width:28px;max-width:28px;min-height:0}
+  .workbench-review__rail .workbench-review__tabs button[data-review-variant]{writing-mode:vertical-rl;width:100%;height:auto;min-height:min-content;flex:0 0 auto;padding:6px 4px;box-sizing:border-box;font-size:12px;line-height:18px;white-space:nowrap;letter-spacing:0}
+  .workbench-theme-tabs{width:24px;flex-direction:column;margin-bottom:4px}
+}
+/* Compact editing while keeping feedback alongside the result. */
+post-rework-training-quality-workspace .ptqw-status{display:none}
+post-rework-training-quality-workspace .ptq-editor-meta-row{height:32px;min-height:32px;padding-block:0}
+post-rework-training-quality-workspace .ptq-editor{margin-top:4px;padding-bottom:4px}
+post-rework-training-quality-workspace .ptqw-compare{height:64px;padding-top:4px;gap:8px;box-sizing:border-box}
+post-rework-training-quality-workspace .ptqw-compare .ptqw-feedback{height:56px;padding-left:8px}
+post-rework-training-quality-workspace .ptqw-current-title{line-height:14px;font-size:10px}
+post-rework-training-quality-workspace .ptqw-current .ptq-editor-fields-row{min-height:0;padding-block:2px;gap:3px 6px}
+post-rework-training-quality-workspace .ptqw-current .ptq-reason-trigger{min-height:26px;padding:1px 6px}
+post-rework-training-quality-workspace .ptqw-current .ptq-selected-reasons{max-height:26px;min-height:22px}
+post-rework-training-quality-workspace .ptqw-feedback summary{line-height:14px;font-size:10px}
+post-rework-training-quality-workspace .ptqw-chip{padding:1px 5px;font-size:10px;line-height:16px}
+post-rework-training-quality-workspace .ptqw-compare .ptqw-feedback-row{grid-template-columns:minmax(0,1fr) minmax(0,1.5fr);margin-top:3px;gap:8px}
+post-rework-training-quality-workspace .ptqw-feedback-row:not(:has(.ptqw-feedback-note)){grid-template-columns:minmax(0,1fr)}
+post-rework-training-quality-workspace .ptqw-feedback-row .ptqw-error-reason>span:first-child,
+post-rework-training-quality-workspace .ptqw-feedback-note>span{flex:none;white-space:nowrap}
+post-rework-training-quality-workspace .ptqw-reason-value{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer}
+post-rework-training-quality-workspace .ptqw-compare :is(.ptqw-reason-value,.ptqw-note-text){height:20px;line-height:18px}
+post-rework-training-quality-workspace .ptqw-feedback-note button{top:1px}
+.ptqr-editor{margin-top:4px;padding-bottom:4px}.ptqr-meta{height:32px}
+.ptqr-review-row{min-height:36px;padding-block:3px}.ptqr-legend{height:18px}.ptqr-legend em{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.ptqr-error-row{height:32px}
+.ptqw-current-heading{display:flex;align-items:center;gap:10px;height:24px}
+post-rework-training-quality-workspace .ptqw-current-title,
+post-rework-training-quality-workspace .ptqw-feedback summary{font-family:inherit;font-size:11px;font-weight:400;line-height:24px;color:var(--ptq-text)}
+.ptqw-current-heading .ptq-conclusion-switch{height:22px}
+.ptqw-current-heading .ptq-conclusion-switch label{height:20px;min-height:20px;padding-block:0}
+post-rework-training-quality-workspace .ptqw-current .ptq-editor-fields-row{padding-top:3px}
+.ptqw-feedback-heading{display:flex;align-items:center;gap:8px;height:24px;min-width:0}
+.ptqw-feedback-heading .ptqw-feedback-title{flex:none;font-family:inherit;font-size:11px;font-weight:400;line-height:24px;color:var(--ptq-text)}
+post-rework-training-quality-workspace .ptqw-feedback-heading .ptqw-feedback-chips{margin:0;flex-wrap:nowrap;min-width:0;overflow:auto;max-height:24px;scrollbar-width:thin}
+.ptqw-feedback-heading .ptqw-chip{flex:none;white-space:nowrap}
+post-rework-training-quality-workspace .ptqw-feedback-row .ptqw-note-text{padding-right:8px;cursor:pointer}

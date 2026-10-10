@@ -28,7 +28,7 @@ html[data-theme=light] :is(.ptqr-add-menu,.ptqr-error-menu){border-color:#c4d0d9
 .ptqr-list-tools{height:34px;display:flex;align-items:center;justify-content:space-between;padding:0 9px;border-bottom:1px solid var(--ptqr-line);background:#101922;box-sizing:border-box}
 .ptqr-list-tools>div{display:flex;gap:3px}.ptqr-list-tools button{height:23px;padding:0 7px;border:1px solid transparent;border-radius:4px;background:transparent;color:var(--ptqr-muted);font-size:9px;cursor:pointer}.ptqr-list-tools button:hover{background:#192630;color:var(--ptqr-text)}.ptqr-list-tools button.is-active{border-color:#315466;background:rgba(39,196,212,.1);color:#65dce4}.ptqr-list-tools>div:last-child button{width:auto;padding:0 7px;font-size:9px}.ptqr-list-tools button:disabled{opacity:.35;cursor:not-allowed}
 .ptqr-issue-summary{min-width:0;overflow:hidden;color:#f3a9b4;font-size:9px;text-overflow:ellipsis;white-space:nowrap}.ptqr-list-empty{height:100%;display:grid;place-items:center;color:var(--ptqr-muted);font-size:10px}
-.ptqr-sidebar>footer{flex-basis:142px;padding-top:7px}.ptqr-complete{height:24px;display:flex;align-items:center;gap:6px;color:var(--ptqr-text);font-size:10px;cursor:pointer}.ptqr-complete input{width:13px;height:13px;accent-color:#27c4d4}.ptqr-total{height:17px}.ptqr-result{height:34px}.ptqr-result output.is-pending{border-color:#4a5c69;color:var(--ptqr-muted)}
+.ptqr-sidebar>footer{flex-basis:99px;padding-top:7px}.ptqr-complete{height:24px;display:flex;align-items:center;gap:6px;color:var(--ptqr-text);font-size:10px;cursor:pointer}.ptqr-complete input{width:13px;height:13px;accent-color:#27c4d4}.ptqr-total{height:17px}.ptqr-result{height:34px}.ptqr-result output.is-pending{border-color:#4a5c69;color:var(--ptqr-muted)}
 .ptqr-dialog p{max-width:340px;line-height:17px}.ptqr-dialog small{margin-top:5px;color:#718491;font-size:9px;line-height:15px}
 html[data-theme=light] .ptqr-list-tools{background:#f3f6f8}
 
@@ -71,6 +71,8 @@ html[data-theme=light] :is(.ptqr-note-field input,.ptqr-note-field button,.ptqr-
 .ptqr-chip .ptqr-chip-action:hover,.ptqr-chip .ptqr-chip-action:focus-visible{opacity:1;background:rgba(255,255,255,.18)}
 
 .ptqr-list-tools>div{flex-wrap:nowrap;min-width:0}.ptqr-list-tools button{flex-shrink:0;white-space:nowrap}
+.ptqr-list-overview{height:27px;display:flex;align-items:center;padding:0 10px;border-bottom:1px solid var(--ptqr-line);background:#101922;color:var(--ptqr-muted);font-size:9px;box-sizing:border-box;flex-shrink:0}.ptqr-list-overview.has-warning{color:#ff8293}.ptqr-result output.is-mistake{border-color:#9c7922;color:var(--ptqr-yellow)}.ptqr-result output.is-rejected{border-color:#9b354b;color:var(--ptqr-red)}
+html[data-theme=light] .ptqr-list-overview{background:#f3f6f8}
 
 /* 审核底部操作栏复用平台质检按钮规格，并强化主次操作。 */
 .ptqr-sidebar .workbench-footer-actions{height:50px;gap:7px;padding:7px 12px;background:var(--ptqr-panel)}
@@ -81,7 +83,31 @@ html[data-theme=light] :is(.ptqr-note-field input,.ptqr-note-field button,.ptqr-
 .ptqr-sidebar .workbench-footer-actions button.is-reject{border-color:#d84960;background:#a92f43;color:#fff;font-weight:600}
 .ptqr-sidebar .workbench-footer-actions button.is-reject:not(:disabled):hover{border-color:#f16a7e;background:#c93b52}
 .ptqr-sidebar .workbench-footer-actions button:disabled{cursor:not-allowed;opacity:.45}.ptqr-sidebar .workbench-footer-actions button:not(.is-submit):not(.is-reject):disabled{border-color:#2a3946;background:#141e27;color:#5f7280}
+.ptqr-sidebar .workbench-footer-actions button:is(.is-submit,.is-reject):disabled{border-color:#2a3946;background:#141e27;color:#5f7280;opacity:1}
 html[data-theme=light] .ptqr-sidebar .workbench-footer-actions{background:#fff}
 html[data-theme=light] .ptqr-sidebar .workbench-footer-actions button{border-color:#c4d0d9;background:#f6f8fa;color:#425660}
 html[data-theme=light] .ptqr-sidebar .workbench-footer-actions button.is-submit:not(:disabled){border-color:#009db3;background:#009db3;color:#fff}
 html[data-theme=light] .ptqr-sidebar .workbench-footer-actions button.is-reject:not(:disabled){border-color:#c63b53;background:#c63b53;color:#fff}
+html[data-theme=light] .ptqr-sidebar .workbench-footer-actions button:is(.is-submit,.is-reject):disabled{border-color:#d7e0e7;background:#edf1f4;color:#9ba8af}
+
+/* 审核状态图例并入片段信息行，说明通过 Hover 提示查看。 */
+.ptqr-meta-legend{display:inline-flex;align-items:center;gap:8px;margin-left:3px;cursor:default}
+.ptqr-meta-legend i{display:inline-flex;align-items:center;gap:3px;color:var(--ptqr-muted);font-size:9px;font-style:normal;white-space:nowrap}
+.ptqr-meta-legend i:before{width:6px;height:6px;border-radius:50%;background:currentColor;content:""}
+.ptqr-meta-legend .is-correct{color:var(--ptqr-green)}
+.ptqr-meta-legend .is-error{color:var(--ptqr-red)}
+.ptqr-meta-legend .is-omitted{color:var(--ptqr-yellow)}
+.ptqr-meta-legend{position:relative;outline:none}
+.ptqr-meta-legend:after{position:absolute;z-index:150;left:0;top:calc(100% + 9px);width:max-content;max-width:420px;padding:7px 10px;border:1px solid #405568;border-radius:5px;background:#111c25;color:#dce7ee;box-shadow:0 8px 24px rgba(0,0,0,.4);content:attr(data-tooltip);font-size:10px;line-height:16px;white-space:normal;pointer-events:none;opacity:0;transform:translateY(-3px);transition:opacity .12s ease,transform .12s ease}
+.ptqr-meta-legend:hover:after,.ptqr-meta-legend:focus:after{opacity:1;transform:translateY(0)}
+html[data-theme=light] .ptqr-meta-legend:after{border-color:#c4d0d9;background:#fff;color:#263640;box-shadow:0 8px 24px rgba(31,50,63,.18)}
+.ptqr-chip.is-error,.ptqw-chip.is-error{color:#cfb0ff;border-color:#8060ab;background:rgba(155,112,219,.18)}
+.ptqr-chip.is-omitted,.ptqw-chip.is-omitted{color:#91c7ff;border-color:#427bb0;background:rgba(74,144,215,.18)}
+.ptqr-legend .is-error,.ptqr-meta-legend .is-error{color:#cfb0ff}
+.ptqr-legend .is-omitted,.ptqr-meta-legend .is-omitted{color:#91c7ff}
+html[data-theme=light] :is(.ptqr-chip,.ptqw-chip).is-error{color:#7541ab;border-color:#a789c5;background:#f1e9fa}
+html[data-theme=light] :is(.ptqr-chip,.ptqw-chip).is-omitted{color:#256ba6;border-color:#7caacf;background:#e8f2fc}
+.ptqr-chip.is-correct,.ptqw-chip.is-correct{color:#fff;border-color:#51616d;background:#17232c}
+.ptqr-legend .is-correct,.ptqr-meta-legend .is-correct,.ptqr-counts .is-correct{color:#fff}
+html[data-theme=light] :is(.ptqr-chip,.ptqw-chip).is-correct{color:#263640;border-color:#cbd6de;background:#f3f6f8}
+html[data-theme=light] :is(.ptqr-legend,.ptqr-meta-legend,.ptqr-counts) .is-correct{color:#263640}

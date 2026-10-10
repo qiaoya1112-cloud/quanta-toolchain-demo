@@ -26,10 +26,9 @@
     notice.textContent=state.submitted?'已重新提交审核 · 当前结果只读':'已驳回，请根据审核反馈修改';
     host.querySelector('.ptq-editor').prepend(notice);
     if(!feedback)return;
-    const details=document.createElement('details');details.className='ptqw-feedback';details.open=ui.feedbackOpen;
+    const details=document.createElement('div');details.className='ptqw-feedback';
     const chip=(id,status)=>`<span class="ptqw-chip is-${status}">${esc(name(id))}${status==='error'?'<del>错误项</del>':status==='omitted'?'<small>遗漏项</small>':''}</span>`;
     details.innerHTML=`<summary>审核反馈 <small>上次驳回意见 · 只读</small></summary><div class="ptqw-feedback-chips">${feedback.removed.map(id=>chip(id,'error')).join('')}${feedback.added.map(id=>chip(id,'omitted')).join('')}</div><div class="ptqw-error-reason">错误原因：${esc(feedback.reason||'无')}</div>`;
-    details.addEventListener('toggle',()=>{ui.feedbackOpen=details.open;});
     const feedbackRow=document.createElement('div');feedbackRow.className='ptqw-feedback-row';
     const reason=details.querySelector('.ptqw-error-reason');
     reason.replaceChildren();
@@ -40,17 +39,23 @@
       const note=document.createElement('div');note.className='ptqw-feedback-note';
       const label=document.createElement('span');label.textContent='补充说明';
       const text=document.createElement('div');text.className='ptqw-note-text';text.textContent=feedback.note;
-      const expand=document.createElement('button');expand.type='button';expand.textContent='查看全文';
-      expand.addEventListener('click',()=>{
-        const dialog=document.createElement('dialog');dialog.className='ptqr-dialog ptqw-note-dialog';
-        dialog.innerHTML='<header><h2>审核补充说明</h2><button type="button" aria-label="关闭">×</button></header><div></div><footer><button type="button">关闭</button></footer>';
-        dialog.querySelector('div').textContent=feedback.note;
-        dialog.querySelectorAll('button').forEach(button=>button.addEventListener('click',()=>dialog.close()));
-        dialog.addEventListener('close',()=>dialog.remove());document.body.append(dialog);dialog.showModal();
-      });
-      note.append(label,text,expand);feedbackRow.append(note);
+      text.dataset.fullDescription=feedback.note;
+      note.append(label,text);feedbackRow.append(note);
     }
-    host.querySelector('.ptq-editor').append(details);
+    const compare=document.createElement('div');compare.className='ptqw-compare';
+    const current=document.createElement('div');current.className='ptqw-current';
+    const title=document.createElement('div');title.className='ptqw-current-title';title.textContent='当前质检结果';
+    const fields=host.querySelector('.ptq-editor-fields-row');
+    const heading=document.createElement('div');heading.className='ptqw-current-heading';
+    heading.append(title,fields.querySelector('.ptq-conclusion-switch'));
+    fields.querySelector('.ptq-reason-label')?.remove();
+    const feedbackTitle=document.createElement('span');feedbackTitle.className='ptqw-feedback-title';feedbackTitle.textContent='审核反馈';
+    details.querySelector('summary').remove();
+    const feedbackHeading=document.createElement('div');feedbackHeading.className='ptqw-feedback-heading';
+    feedbackHeading.append(feedbackTitle,details.querySelector('.ptqw-feedback-chips'));
+    details.prepend(feedbackHeading);
+    current.append(heading,fields);compare.append(current,details);
+    host.querySelector('.ptq-editor').append(compare);
   }
   function decorateSidebar(host,state){
     host.querySelector('[data-action="reject"]')?.remove();

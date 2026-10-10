@@ -69,7 +69,7 @@
   const REVIEW_ERROR_REASONS = ['片段范围错误','片段范围错位','动作开始边界偏早','动作开始边界偏晚','动作结束边界偏早','动作结束边界偏晚','描述与画面不一致'];
   const reasonSummary = segment => {
     const names = [...segment.rejectedReasons, ...segment.mistakeReasons].map(reasonName);
-    return names.length ? names.join('、') : '请选择必选原因';
+    return names.length ? names.join('、') : '请选择原因';
   };
   const sortSegments = list => list.slice().sort((a,b) => a.start - b.start || a.end - b.end || a.order - b.order);
   const segmentNumber = item => Math.max(1, sortSegments(state.segments).findIndex(candidate => candidate.id === item.id) + 1);
@@ -487,7 +487,7 @@
       const rejected=item.rejectedReasons.map(id=>`<span class="prq-reason-chip is-rejected"><span>${escape(reasonName(id))}</span><span class="prq-reason-remove" data-action="remove-reason" data-kind="rejected" data-reason-id="${escape(id)}" role="button" aria-label="删除${escape(reasonName(id))}" title="删除此原因">×</span></span>`);
       const mistake=item.mistakeReasons.map(id=>`<span class="prq-reason-chip is-mistake"><span>${escape(reasonName(id))}</span><span class="prq-reason-remove" data-action="remove-reason" data-kind="mistake" data-reason-id="${escape(id)}" role="button" aria-label="删除${escape(reasonName(id))}" title="删除此原因">×</span></span>`);
       const chips=[...rejected,...mistake].join('');
-      return chips?`${chips}<span class="prq-reasons-clear" data-action="clear-reasons" role="button" aria-label="清空全部原因" title="清空全部原因">×</span>`:'<span class="prq-reason-empty">请选择必选原因</span>';
+      return chips?`${chips}<span class="prq-reasons-clear" data-action="clear-reasons" role="button" aria-label="清空全部原因" title="清空全部原因">×</span>`:'<span class="prq-reason-empty">请选择原因</span>';
     }
     render(){
       const item=selected();

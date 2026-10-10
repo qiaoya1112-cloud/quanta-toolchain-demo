@@ -45,6 +45,9 @@ async function main(){
     assert.equal(await evaluate("getComputedStyle(document.querySelector('.ptqr-list-summary b.is-mistake')).color"),'rgb(229, 173, 36)','审核列表失误结论应与质检列表同为黄色');
     assert.equal(await evaluate("getComputedStyle(document.querySelector('.ptqr-list-summary b.is-rejected')).color"),'rgb(240, 74, 105)','审核列表不合格结论应与质检列表同为红色');
     assert.equal(await evaluate("document.querySelectorAll('.ptqr-chip.is-correct').length>0"),true,'原始描述应显示为绿色正确项');
+    assert.equal(await evaluate("document.querySelector('.ptqr-meta>.ptqr-legend')"),null,'审核状态说明不应再单独占一行');
+    assert.equal(await evaluate("document.querySelector('.ptqr-meta .ptqr-meta-legend').textContent"),'正确项错误项遗漏项','审核状态图例应位于片段编号信息行');
+    assert.match(await evaluate("document.querySelector('.ptqr-meta-legend').dataset.tooltip"),/未操作的原始描述视为正确/,'详细说明应改为 Hover 提示');
     await evaluate("document.querySelector('.ptqr-note-field button').click()");
     assert.equal(await evaluate("document.querySelector('.ptqr-note-dialog').open"),true);
     await evaluate("(()=>{const t=document.querySelector('.ptqr-note-dialog textarea');t.value='请核对右臂视角。\\n'+ '补充说明'.repeat(90);t.dispatchEvent(new Event('input',{bubbles:true}));document.querySelector('.ptqr-note-dialog footer button').click()})()");
@@ -52,8 +55,9 @@ async function main(){
     await delay(100);
     assert.equal(await evaluate("document.querySelector('.ptqr-note-field input').value.includes('请核对右臂视角')"),true);
     assert.equal(await evaluate("document.querySelector('.ptqr-note-field input').maxLength"),500);
-    assert.equal(await evaluate("document.querySelector('.ptqr-result output').textContent"),'通过','无问题时直接显示通过');
-    assert.match(await evaluate("document.querySelector('.ptqr-total').textContent"),/正确/,'原始描述默认视为正确');
+    assert.equal(await evaluate("document.querySelector('.ptqr-result span').textContent"),'质检结论');
+    assert.equal(await evaluate("document.querySelector('.ptqr-result output').textContent"),'不合格','底部应显示质检员原有的视频质检结论');
+    assert.match(await evaluate("document.querySelector('.ptqr-list-overview').textContent"),/正确/,'审核统计应放在质检审核列表顶部');
     assert.equal(await evaluate("window.PostTrainingQualityReviewDemo.state.segments.every(item=>item.originalMistakeReasons.length+item.originalRejectedReasons.length>=2)"),true,'每个审核片段都应预置多个已选描述');
     assert.equal(await evaluate("window.PostTrainingQualityReviewDemo.state.segments.filter(item=>item.conclusion==='rejected').every(item=>item.originalMistakeReasons.length>0&&item.originalRejectedReasons.length>0)"),true,'不合格片段应同时展示不合格描述和失误描述');
     const reviewVisual=await evaluate("(()=>{const sidebar=getComputedStyle(document.querySelector('.ptqr-sidebar')),header=getComputedStyle(document.querySelector('.ptqr-sidebar>header')),row=getComputedStyle(document.querySelector('.ptqr-list-item')),id=getComputedStyle(document.querySelector('.ptqr-list-id')),footer=getComputedStyle(document.querySelector('.ptqr-sidebar>footer'));return{sidebarBg:sidebar.backgroundColor,sidebarColor:sidebar.color,headerBg:header.backgroundImage,rowBorder:row.borderBottomColor,idBg:id.backgroundColor,footerBorder:footer.borderTopColor,rowHeight:document.querySelector('.ptqr-list-item').getBoundingClientRect().height}})()");
@@ -65,8 +69,8 @@ async function main(){
     assert.ok(reviewRowHeight<=100,'补充两行审核信息后列表仍应紧凑');
     await evaluate("document.querySelector('[data-review-variant=post-quality-review]').click()");
     assert.match(await evaluate("document.querySelector('.ptqr-list-item .ptqr-counts').textContent"),/审核情况错误项 -遗漏项 -/);
-    assert.equal(await evaluate("document.querySelector('post-training-quality-review-sidebar [data-action=submit]').disabled"),false);
-    assert.equal(await evaluate("document.querySelector('.ptqr-result output').textContent"),'通过');
+    assert.equal(await evaluate("document.querySelectorAll('.ptqr-sidebar .workbench-footer-actions button').length"),4);
+    assert.equal(await evaluate("document.querySelector('post-training-quality-review-sidebar [data-action=reject]').disabled"),true);
     assert.equal(await evaluate("document.querySelector('post-training-quality-review-sidebar [data-action=submit]').disabled"),false);
     await evaluate("document.querySelector('post-training-quality-review-sidebar [data-action=submit]').click()");
     assert.equal(await evaluate("document.querySelector('#ptqrSubmitDialog h2').textContent"),'确认提交审核');
@@ -87,7 +91,9 @@ async function main(){
     assert.equal(await evaluate("document.querySelector('.ptqr-list-item.is-active .ptqr-issue-badge').textContent"),'!');
     assert.equal(await evaluate("document.querySelector('.ptqr-block.is-selected .ptqr-track-issue').textContent"),'!','标错后轨道同步显示感叹号');
     assert.equal(await evaluate("document.querySelector('.ptqr-list-item.is-active .ptqr-counts .is-error').textContent"),'错误项 1');
-    assert.equal(await evaluate("document.querySelector('.ptqr-result output').textContent"),'不通过');
+    assert.equal(await evaluate("document.querySelector('.ptqr-result output').textContent"),'不合格');
+    assert.equal(await evaluate("document.querySelector('post-training-quality-review-sidebar [data-action=reject]').disabled"),false);
+    assert.equal(await evaluate("document.querySelector('post-training-quality-review-sidebar [data-action=submit]').disabled"),true);
     await evaluate("document.querySelector('.ptqr-chip.is-error button').click()");
     assert.equal(await evaluate("document.querySelectorAll('post-training-quality-review-workspace .ptqr-chip.is-error').length"),0,'错误项应可撤销');
     assert.equal(await evaluate("document.querySelector('.ptqr-block.is-selected .ptqr-track-issue')===null"),true,'撤销所有问题后轨道移除感叹号');
@@ -114,11 +120,11 @@ async function main(){
     assert.equal(await evaluate("window.PostTrainingQualityReviewDemo.state.segments.find(item=>item.id===window.PostTrainingQualityReviewDemo.state.selectedId).reviewErrorReason"),'动作开始边界偏晚');
     assert.equal(await evaluate("document.querySelector('.ptqr-list-item.is-active .ptqr-list-error').textContent"),'错误原因：动作开始边界偏晚');
     await evaluate("document.querySelector('.ptqr-chip.is-omitted button').click()");
-    assert.equal(await evaluate("document.querySelector('.ptqr-result output').textContent"),'不通过','片段错误原因应计入不通过');
+    assert.equal(await evaluate("document.querySelector('.ptqr-result output').textContent"),'不合格','审核修改不应改变原有质检结论');
     assert.equal(await evaluate("document.querySelector('post-training-quality-review-sidebar [data-action=reject]').textContent"),'驳回');
     const footerButtons=await evaluate("(()=>{const buttons=[...document.querySelectorAll('.ptqr-sidebar .workbench-footer-actions button')],widths=buttons.map(button=>button.getBoundingClientRect().width),reject=getComputedStyle(document.querySelector('.ptqr-sidebar [data-action=reject]'));return{count:buttons.length,widthDelta:Math.max(...widths)-Math.min(...widths),rejectBg:reject.backgroundColor,rejectBorder:reject.borderTopColor}})()");
-    assert.equal(footerButtons.count,3);assert.ok(footerButtons.widthDelta<2,'底部三个按钮应等宽');assert.notEqual(footerButtons.rejectBg,'rgba(0, 0, 0, 0)','驳回按钮应有明确背景');
-    assert.match(await evaluate("document.querySelector('.ptqr-total').textContent"),/片段错误 1/);
+    assert.equal(footerButtons.count,4);assert.ok(footerButtons.widthDelta<2,'底部四个按钮应等宽');assert.notEqual(footerButtons.rejectBg,'rgba(0, 0, 0, 0)','驳回按钮应有明确背景');
+    assert.match(await evaluate("document.querySelector('.ptqr-list-overview').textContent"),/片段错误 1/);
     await evaluate("document.querySelector('[data-action=filter-issues]').click()");
     assert.equal(await evaluate("document.querySelectorAll('.ptqr-list-item').length"),1,'仅看有问题应过滤无反馈片段');
     assert.equal(await evaluate("document.querySelector('[data-action=filter-issues]').classList.contains('is-active')"),true);
