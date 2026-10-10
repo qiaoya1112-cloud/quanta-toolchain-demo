@@ -8,3 +8,17 @@ workbench-segment-editor[variant="variant-3"] .action-element-group__title span{
 workbench-segment-editor[variant="variant-3"] .action-element-group__title em{margin-left:auto;color:var(--color-brand,#27c4d4);font-size:10px;font-style:normal;font-weight:500}
 workbench-segment-editor[variant="variant-3"] .action-element-group [data-multi-option]{padding-left:24px}
 workbench-segment-editor[variant="variant-3"] .action-element-group [data-multi-option]:disabled{opacity:.4;cursor:not-allowed}
+workbench-segment-editor[variant="variant-3"] [data-multi-option]{height:auto;min-height:42px;gap:8px;padding-block:5px}
+workbench-segment-editor[variant="variant-3"] .action-bilingual{min-width:0;display:block;flex:1;visibility:visible;color:inherit;font-weight:400;line-height:15px;white-space:normal;overflow-wrap:anywhere}
+workbench-segment-editor[variant="variant-3"] .action-bilingual [lang]{visibility:visible;color:inherit;font-weight:400}
+workbench-segment-editor[variant="variant-3"] .action-bilingual [lang="zh"]{font-size:12px}
+workbench-segment-editor[variant="variant-3"] .action-bilingual [lang="en"]{display:inline;margin-left:6px;color:var(--editor-muted,#8fa0b3);font-size:10px;white-space:normal;overflow-wrap:anywhere}
+workbench-segment-editor[variant="variant-3"] [data-multi-option].is-selected .action-bilingual [lang="en"]{color:color-mix(in srgb,var(--color-brand,#27c4d4) 68%,#dce5ee)}
+workbench-segment-editor[variant="variant-3"] .workbench-multi-select__trigger{height:auto;min-height:42px;align-items:center;padding-block:4px}
+workbench-segment-editor[variant="variant-3"] .workbench-multi-select__value{align-items:stretch;flex-wrap:wrap;overflow:visible}
+workbench-segment-editor[variant="variant-3"] .workbench-multi-select__tag{width:100%;height:auto;min-height:31px;align-items:center;flex:1 1 100%;padding-block:3px;line-height:normal;white-space:normal;box-sizing:border-box}
+workbench-segment-editor[variant="variant-3"] .workbench-multi-select__tag .action-bilingual{gap:1px}
+workbench-segment-editor[variant="variant-3"] .workbench-multi-select__tag .action-bilingual [lang="zh"]{font-size:11px;line-height:14px}
+workbench-segment-editor[variant="variant-3"] .workbench-multi-select__tag .action-bilingual [lang="en"]{font-size:9px;line-height:12px}
+workbench-segment-editor[variant="variant-3"] .workbench-multi-select__tag button{flex:0 0 16px}
+html[data-theme="light"] workbench-segment-editor[variant="variant-3"] .action-bilingual [lang="en"]{color:#71838e}

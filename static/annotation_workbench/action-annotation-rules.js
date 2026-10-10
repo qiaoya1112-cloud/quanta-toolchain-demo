@@ -30,6 +30,37 @@
     '整理两个物体': '整理 {Object} 和 {Object}'
   };
   const typeByValue = Object.fromEntries(Object.entries(elementTypes).flatMap(([type, group]) => group.values.map(value => [value, type])));
+  const elementEnglish = {'遥控器':'Remote control','纸盒':'Cardboard box','书本':'Book','笔记本':'Notebook','把手':'Handle','桌面':'Tabletop','抽屉':'Drawer','书架':'Bookshelf','杯子':'Cup','碗':'Bowl','收纳盒':'Storage box','苹果':'Apple','草莓':'Strawberry','香蕉':'Banana','剪刀':'Scissors','夹子':'Tongs','清洁刷':'Cleaning brush'};
+  const englishTemplates = {
+    '观察并整理桌面物品':'Observe and organize {Object} at {Location}',
+    '选择并移动遥控器到目标位置':'Select and move {Object}',
+    '打开或关闭抽屉':'Use {Object} to open or close {Location}',
+    '调整纸盒摆放位置':'Adjust the position of {Object}',
+    '整理散落书本':'Organize scattered {Object}',
+    '将书本竖直放回书架':'Return {Object} upright to {Location}',
+    '按类别整理笔记本':'Organize {Object} by category',
+    '放回指定位置':'Return to {Location}',
+    '拿起':'Pick up {Object}',
+    '移动':'Move {Object} to {Location}',
+    '放置':'Place {Object} at {Location}',
+    '整理':'Organize {Object}',
+    '将水果放入容器':'Put {Fruit} into {Container}',
+    '将两种水果放入容器':'Put {Fruit} and {Fruit} into {Container}',
+    '用工具夹取水果':'Use {Tool} to grasp {Fruit}',
+    '将物体放入容器':'Put {Object} into {Container}',
+    '将容器放到指定位置':'Place {Container} at {Location}',
+    '用工具整理两个物体':'Use {Tool} to organize {Object} and {Object}',
+    '整理两个物体':'Organize {Object} and {Object}'
+  };
+  function fillEnglishTemplate(name, elements) {
+    const groups = {}, used = {};
+    for (const value of elements || []) (groups[typeByValue[value]] ||= []).push(value);
+    return (englishTemplates[name] || name).replace(/\{([A-Za-z]+)\}/g, (placeholder, type) => {
+      const value = groups[type]?.[used[type] || 0];
+      used[type] = (used[type] || 0) + 1;
+      return value ? `{${elementEnglish[value]}}` : placeholder;
+    });
+  }
   const slots = Object.fromEntries(Object.entries(templates).map(([name, label]) => {
     const counts = {};
     for (const match of label.matchAll(/\{([A-Za-z]+)\}/g)) counts[match[1]] = (counts[match[1]] || 0) + 1;
@@ -69,7 +100,7 @@
     const target = countElements(elements);
     return Object.keys(templates).filter(name => sameCounts(slots[name], target));
   }
-  const api = { rule, elementTypes, templates, slots, countElements, sameCounts, fillTemplate, validate, availableDescriptions };
+  const api = { rule, elementTypes, templates, elementEnglish, englishTemplates, fillEnglishTemplate, slots, countElements, sameCounts, fillTemplate, validate, availableDescriptions };
   if (typeof module === 'object' && module.exports) module.exports = api;
   if (!root.document) return;
   root.ActionAnnotationRules = api;
@@ -81,9 +112,10 @@
     const elements = editor.querySelector('workbench-multi-select[aria-label="动作元素"]');
     const descriptions = editor.querySelector('workbench-multi-select[aria-label="动作描述"]');
     elements._options = Object.keys(typeByValue);
-    elements.querySelector('.workbench-multi-select__options').innerHTML = Object.entries(elementTypes).map(([type, group]) => `<div class="action-element-group" data-element-type="${type}"><div class="action-element-group__title">${group.label}<span>${type}</span></div>${group.values.map(value => `<button type="button" data-multi-option="${value}" data-element-option-type="${type}" role="option">${value}<span>✓</span></button>`).join('')}</div>`).join('');
+    const bilingual = (zh, en) => `<span class="action-bilingual"><span lang="zh">${zh}</span><span lang="en">${en}</span></span>`;
+    elements.querySelector('.workbench-multi-select__options').innerHTML = Object.entries(elementTypes).map(([type, group]) => `<div class="action-element-group" data-element-type="${type}"><div class="action-element-group__title">${group.label}<span>${type}</span></div>${group.values.map(value => `<button type="button" data-multi-option="${value}" data-element-option-type="${type}" role="option">${bilingual(value, elementEnglish[value])}<span>✓</span></button>`).join('')}</div>`).join('');
     descriptions._options = Object.keys(templates);
-    descriptions.querySelector('.workbench-multi-select__options').innerHTML = Object.entries(templates).map(([name, label]) => `<button type="button" data-multi-option="${name}" role="option">${label}<span>✓</span></button>`).join('');
+    descriptions.querySelector('.workbench-multi-select__options').innerHTML = Object.entries(templates).map(([name, label]) => `<button type="button" data-multi-option="${name}" role="option">${bilingual(label, englishTemplates[name])}<span>✓</span></button>`).join('');
     descriptions.querySelector('.workbench-multi-select__options').setAttribute('aria-multiselectable', 'false');
     descriptions.addEventListener('click', event => {
       const option = event.target.closest('[data-multi-option]');
@@ -92,14 +124,20 @@
       event.stopImmediatePropagation();
       descriptions.setValues(descriptions.values[0] === option.dataset.multiOption ? [] : [option.dataset.multiOption], true);
     }, true);
-    const renderValue = descriptions._renderValue.bind(descriptions);
-    descriptions._renderValue = () => {
-      renderValue();
-      descriptions.querySelectorAll('.workbench-multi-select__tag').forEach(tag => {
-        const name = tag.querySelector('[data-remove-value]').dataset.removeValue;
-        tag.firstChild.textContent = fillTemplate(name, elements.values);
-      });
-    };
+    for (const select of [elements, descriptions]) {
+      const renderValue = select._renderValue.bind(select);
+      select._renderValue = () => {
+        renderValue();
+        select.querySelectorAll('.workbench-multi-select__tag').forEach(tag => {
+          const name = tag.querySelector('[data-remove-value]').dataset.removeValue;
+          const zh = select === elements ? name : fillTemplate(name, elements.values);
+          const en = select === elements ? elementEnglish[name] : fillEnglishTemplate(name, elements.values);
+          tag.firstChild.remove();
+          tag.insertAdjacentHTML('afterbegin', bilingual(zh, en));
+          tag.title = `${zh}\n${en}`;
+        });
+      };
+    }
     // Existing unversioned demo records are migrated once; saved rule records retain their edits.
     editor._actionData = editor._actionData.map((data, index) => {
       const migrated = { ...data, elements: [...data.elements], descriptions: [...data.descriptions], ruleId: rule.id, ruleVersion: rule.version };

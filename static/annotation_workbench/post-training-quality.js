@@ -489,6 +489,9 @@
         this.querySelectorAll('.ptq-list-item').forEach(row=>row.classList.toggle('is-hit',this.hits.includes(row.dataset.segmentId)));
       });
       this.addEventListener('click',event=>this.onClick(event));
+      this.addEventListener('pointerover',event=>this.showDescriptionTooltip(event));
+      this.addEventListener('pointermove',event=>this.positionDescriptionTooltip(event));
+      this.addEventListener('pointerout',event=>{if(event.target.closest('[data-full-description]')&&!event.relatedTarget?.closest?.('[data-full-description]'))this.hideDescriptionTooltip();});
       this.addEventListener('confirm-dialog-confirm',event=>{
         if(event.detail.variant!=='reject')return;
         event.stopPropagation();
@@ -499,6 +502,26 @@
       });
       this.render();
     }
+    descriptionTooltip(){
+      let tooltip=document.getElementById(`${domPrefix}DescriptionTooltip`);
+      if(!tooltip){tooltip=document.createElement('div');tooltip.id=`${domPrefix}DescriptionTooltip`;tooltip.className='ptq-description-tooltip';tooltip.setAttribute('role','tooltip');tooltip.hidden=true;document.body.append(tooltip);}
+      return tooltip;
+    }
+    showDescriptionTooltip(event){
+      const target=event.target.closest('[data-full-description]');
+      if(!target)return;
+      const tooltip=this.descriptionTooltip(),text=target.dataset.fullDescription;
+      tooltip.innerHTML=`<b>完整失误描述</b><span>${escape(text)}</span>`;
+      tooltip.hidden=false;target.setAttribute('aria-describedby',tooltip.id);this.positionDescriptionTooltip(event);
+    }
+    positionDescriptionTooltip(event){
+      const tooltip=document.getElementById(`${domPrefix}DescriptionTooltip`);
+      if(!tooltip||tooltip.hidden)return;
+      const margin=10,width=tooltip.offsetWidth,height=tooltip.offsetHeight;
+      tooltip.style.left=`${Math.max(margin,Math.min(window.innerWidth-width-margin,event.clientX+12))}px`;
+      tooltip.style.top=`${Math.max(margin,Math.min(window.innerHeight-height-margin,event.clientY+14))}px`;
+    }
+    hideDescriptionTooltip(){const tooltip=document.getElementById(`${domPrefix}DescriptionTooltip`);if(tooltip)tooltip.hidden=true;this.querySelectorAll('[aria-describedby]').forEach(node=>node.removeAttribute('aria-describedby'));}
     toast(message){document.dispatchEvent(new CustomEvent(eventName('toast'),{detail:{message}}));}
     save(){
       try{localStorage.setItem(DRAFT_KEY,JSON.stringify({segments:state.segments,selectedId:state.selectedId,revision:state.revision,savedAt:new Date().toISOString()}));state.dirty=false;notify();this.toast('草稿已保存');return true;}
@@ -529,7 +552,8 @@
       const ordered=sortSegments(state.segments),canSubmit=!state.submitted;
       const conclusion=calculatedConclusion(),conclusionClass=conclusion==='合格'?'is-pass':conclusion==='失误'?'is-mistake':conclusion==='不合格'?'is-rejected':'is-pending';
       const rows=ordered.map(item=>{
-        return `<button type="button" data-segment-id="${escape(item.id)}" class="ptq-list-item${item.id===state.selectedId?' is-active':''}${this.hits?.includes(item.id)?' is-hit':''}${valid(item)?'':' has-error'}"><span class="ptq-list-id">${String(ordered.indexOf(item)+1).padStart(2,'0')}</span><span class="ptq-list-main"><span class="ptq-list-time">${format(item.start)}–${format(item.end)} <em>${(item.end-item.start).toFixed(1)}s</em></span><span class="ptq-list-summary"><b class="is-${item.conclusion}">${conclusionLabel(item.conclusion)}</b><strong>${escape(reasonSummary(item))}</strong></span>${valid(item)?'':`<i>${escape(segmentErrors(item)[0])}</i>`}</span></button>`;
+        const summary=reasonSummary(item);
+        return `<button type="button" data-segment-id="${escape(item.id)}" class="ptq-list-item${item.id===state.selectedId?' is-active':''}${this.hits?.includes(item.id)?' is-hit':''}${valid(item)?'':' has-error'}"><span class="ptq-list-id">${String(ordered.indexOf(item)+1).padStart(2,'0')}</span><span class="ptq-list-main"><span class="ptq-list-time">${format(item.start)}–${format(item.end)} <em>${(item.end-item.start).toFixed(1)}s</em></span><span class="ptq-list-summary"><b class="is-${item.conclusion}">${conclusionLabel(item.conclusion)}</b><strong data-full-description="${escape(summary)}">${escape(summary)}</strong></span>${valid(item)?'':`<i>${escape(segmentErrors(item)[0])}</i>`}</span></button>`;
       }).join('');
       this.innerHTML=`<section class="ptq-sidebar"><header><div><b>质检列表</b><span>共 ${ordered.length} 个问题片段</span></div></header><div class="ptq-list">${ordered.length?rows:'<div class="ptq-list-empty">尚未记录问题片段</div>'}</div><footer><div class="ptq-conclusion-meta">系统自动计算 · 失误 ${state.segments.filter(item=>item.conclusion==='mistake').length} · 不合格 ${state.segments.filter(item=>item.conclusion==='rejected').length}</div><div class="ptq-video-conclusion"><span class="ptq-conclusion-label">质检结论</span><output id="${domPrefix}VideoConclusion" class="${conclusionClass}" aria-label="质检结论，由系统自动计算">${conclusion}</output></div><workbench-footer-actions hydrate><div class="workbench-footer-actions"><button type="button" data-action="save" ${state.submitted?'disabled':''}>保存</button><button type="button" data-action="leave" ${state.submitted?'disabled':''}>释放</button><button type="button" data-action="reject" ${state.submitted?'disabled':''}>驳回</button><button type="button" class="${canSubmit?'':'is-blocked'}" data-action="submit" ${canSubmit?'':'disabled'}>提交</button></div></workbench-footer-actions></footer></section><workbench-confirm-dialog variant="reject"></workbench-confirm-dialog>
         <dialog id="${domPrefix}ErrorDialog" class="ptq-dialog ptq-error-dialog"><header><h2>暂时无法提交</h2><button onclick="this.closest('dialog').close()" aria-label="关闭">×</button></header><div><b>标注有问题</b><p>${invalidCount()} 个问题片段存在必填项缺失，请检查后提交。</p></div><footer><button onclick="this.closest('dialog').close()">我知道了</button></footer></dialog>
