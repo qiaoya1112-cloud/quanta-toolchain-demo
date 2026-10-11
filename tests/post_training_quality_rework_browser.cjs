@@ -24,7 +24,7 @@ async function main(){
   assert.equal(await evaluate("document.querySelectorAll('post-rework-training-quality-timeline .ptqw-track-issue').length"),3);
   assert.equal(await evaluate("document.querySelectorAll('post-rework-training-quality-sidebar .ptqr-issue-badge').length"),3);
   assert.equal(await evaluate("getComputedStyle(document.querySelector('post-rework-training-quality-sidebar .ptqr-issue-badge')).backgroundColor"),'rgb(255, 97, 119)');
-  assert.deepEqual(await evaluate("[...document.querySelectorAll('post-rework-training-quality-sidebar .workbench-footer-actions button')].map(button=>button.textContent)"),['保存','释放','提交']);
+  assert.deepEqual(await evaluate("[...document.querySelectorAll('post-rework-training-quality-sidebar .workbench-footer-actions button')].map(button=>button.textContent)"),['保存','提交']);
   assert.equal(await evaluate("document.querySelector('.ptqw-status').textContent.includes('【新】')"),false);
   assert.equal(await evaluate("getComputedStyle(document.querySelector('[data-review-variant=post-quality-rework]')).fontSize"),await evaluate("getComputedStyle(document.querySelector('[data-review-variant=post-quality-review]')).fontSize"));
   assert.equal(await evaluate("document.querySelectorAll('post-rework-training-quality-workspace .ptqw-chip.is-error').length"),1);
@@ -43,9 +43,11 @@ async function main(){
   assert.equal(await evaluate("document.querySelector('.ptqw-compare').getBoundingClientRect().height<=64"),true);
   await evaluate("document.querySelector('.ptqw-reason-value').dispatchEvent(new PointerEvent('pointerover',{bubbles:true,clientX:700,clientY:600}))");
   assert.equal(await evaluate("document.querySelector('#ptqrDescriptionTooltip span').textContent===document.querySelector('.ptqw-reason-value').textContent"),true);
+  assert.equal(await evaluate("document.querySelector('#ptqrDescriptionTooltip b')===null"),true);
   await evaluate("document.querySelector('.ptqw-note-text').dispatchEvent(new PointerEvent('pointerover',{bubbles:true,clientX:700,clientY:600}))");
   assert.equal(await evaluate("document.querySelector('#ptqrDescriptionTooltip').hidden"),false);
   assert.equal(await evaluate("document.querySelector('#ptqrDescriptionTooltip span').textContent===document.querySelector('.ptqw-note-text').textContent"),true);
+  assert.equal(await evaluate("document.querySelector('#ptqrDescriptionTooltip b')===null"),true);
   await evaluate("document.querySelector('.ptqw-note-text').dispatchEvent(new PointerEvent('pointerout',{bubbles:true,relatedTarget:document.body}))");
   assert.equal(await evaluate("document.querySelectorAll('post-rework-training-quality-workspace .ptqw-chip.is-omitted').length"),1);
   const feedback=await evaluate("JSON.stringify(PostTrainingQualityReworkDemo.state.segments[0].feedback)");
@@ -57,15 +59,26 @@ async function main(){
   await evaluate("document.querySelector('[data-rework-filter=issues]').click()");
   assert.equal(await evaluate("[...document.querySelectorAll('post-rework-training-quality-sidebar .ptq-list-item')].filter(x=>!x.hidden).length"),3);
   await evaluate("document.querySelector('post-rework-training-quality-sidebar [data-action=save]').click()");
-  await call('Page.reload');await delay(1000);
+  await call('Page.reload');await delay(300);for(let i=0;i<100;i++){if(await evaluate("Boolean(window.PostTrainingQualityReworkDemo&&document.querySelector('[data-review-variant=post-quality-rework]'))"))break;await delay(100);}
   await evaluate("document.querySelector('[data-review-variant=post-quality-rework]').click()");
   assert.equal(await evaluate("PostTrainingQualityReworkDemo.state.segments[0].mistakeReasons.includes('M02')"),false);
   assert.equal(await evaluate("JSON.stringify(PostTrainingQualityReworkDemo.state.segments[0].feedback)"),feedback);
   await evaluate("document.querySelector('post-rework-training-quality-sidebar [data-action=submit]').click()");
+  assert.equal(await evaluate("document.querySelector('#ptqwSubmitDialog [data-action=confirm-submit]').textContent"),'确认');
   assert.equal(await evaluate("document.querySelector('#ptqwSubmitDialog').open"),true);
+  assert.deepEqual(await evaluate("[...document.querySelectorAll('post-rework-training-quality-sidebar .workbench-footer-actions button')].map(b=>b.textContent)"),['保存','提交']);
+  assert.equal(await evaluate("document.querySelector('#ptqwSubmitDialog h2').textContent===document.querySelector('#ptqSubmitDialog h2').textContent"),true);
+  assert.equal(await evaluate("document.querySelector('#ptqwSubmitDialog small').textContent===document.querySelector('#ptqSubmitDialog small').textContent"),true);
   await evaluate("document.querySelector('#ptqwSubmitDialog [data-action=confirm-submit]').click()");
   assert.equal(await evaluate("PostTrainingQualityReworkDemo.state.submitted"),true);
   assert.equal(await evaluate("document.querySelector('post-rework-training-quality-workspace [data-action=toggle-reasons]').disabled"),true);
+  await call('Page.reload');await delay(300);for(let i=0;i<100;i++){if(await evaluate("Boolean(window.PostTrainingQualityReworkDemo&&document.querySelector('[data-review-variant=post-quality-rework]'))"))break;await delay(100);}
+  await evaluate("document.querySelector('[data-review-variant=post-quality-rework]').click()");
+  assert.match(await evaluate("document.querySelector('post-rework-training-quality-workspace .ptqr-suggested-result').textContent"),/^(合格|失误|不合格)$/);
+  assert.equal(await evaluate("PostTrainingQualityReworkDemo.state.submitted"),false);
+  assert.equal(await evaluate("document.querySelector('post-rework-training-quality-workspace [data-action=toggle-reasons]').disabled"),false);
+  assert.equal(await evaluate("PostTrainingQualityReworkDemo.state.segments[0].mistakeReasons.includes('M02')"),false);
+  assert.equal(await evaluate("JSON.stringify(PostTrainingQualityReworkDemo.state.segments[0].feedback)"),feedback);
   const bounds=await evaluate("(()=>{const e=document.querySelector('post-rework-training-quality-workspace').getBoundingClientRect(),s=document.querySelector('post-rework-training-quality-sidebar').getBoundingClientRect();return{bottom:e.bottom,right:s.right,width:innerWidth,height:innerHeight}})()");
   assert.ok(bounds.bottom<=bounds.height+1,JSON.stringify(bounds));assert.ok(bounds.right<=bounds.width+1);
   const screenshot=await call('Page.captureScreenshot',{format:'png'});

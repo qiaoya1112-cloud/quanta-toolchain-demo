@@ -4,6 +4,7 @@
   const eventBase=options.eventBase||"post-quality-review";
   const domPrefix=options.domPrefix||"ptqr";
   const eventName=name=>`${eventBase}-${name}`;
+  const conclusionReviewEnabled=['post-training-quality-review','post-training-quality-second-review'].includes(tagBase);
   const storageKey=`quanta.${eventBase}.v1`;
   const SOURCE = window.PostTrainingQualityDemo;
   if (!SOURCE) return;
@@ -21,22 +22,38 @@
   const ordered = () => state.segments.slice().sort((a,b)=>a.start-b.start||a.end-b.end||a.order-b.order);
   const selected = () => state.segments.find(item=>item.id===state.selectedId);
   const originalIds = item => [...item.originalRejectedReasons,...item.originalMistakeReasons];
+  const reviewedConclusion = item => {
+    const ids=reviewedReasonIds(item);
+    return ids.some(id=>REJECTED.includes(id))?'rejected':ids.some(id=>MISTAKE.includes(id))?'mistake':'pass';
+  };
+  // Store the derived suggestion for review evidence; never restore a manual override.
+  const syncSuggestions = () => state.segments.forEach(item=>{
+    const value=reviewedConclusion(item);item.audit.conclusion=value===item.conclusion?null:value;
+  });
+  const conclusionChanged = item => reviewedConclusion(item) !== item.conclusion;
+  const reviewedReasonIds = item => originalIds(item).filter(id=>!item.audit.removed.includes(id)).concat(item.audit.added);
   const counts = item => ({
     correct: originalIds(item).filter(id=>!item.audit.removed.includes(id)).length,
     error: item.audit.removed.length,
+    descriptionError: item.audit.removed.length,
     omitted: item.audit.added.length,
-    reason: item.reviewErrorReason ? 1 : 0
+    reason: item.reviewErrorReason ? 1 : 0,
+    errorReason: item.reviewErrorReason ? 1 : 0,
+    conclusion: conclusionChanged(item) ? 1 : 0
   });
-  const totals = () => state.segments.reduce((sum,item)=>{const value=counts(item);sum.correct+=value.correct;sum.error+=value.error;sum.omitted+=value.omitted;sum.reason+=value.reason;return sum;},{correct:0,error:0,omitted:0,reason:0});
+  const totals = () => state.segments.reduce((sum,item)=>{const value=counts(item);sum.correct+=value.correct;sum.error+=value.descriptionError;sum.omitted+=value.omitted;sum.reason+=value.reason;sum.errorReason+=value.errorReason;sum.conclusion+=value.conclusion;return sum;},{correct:0,error:0,omitted:0,reason:0,errorReason:0,conclusion:0});
   const descriptionChanged = item => Boolean(item.audit.removed.length||item.audit.added.length);
-  const missingReasonSegments = () => state.segments.filter(item=>descriptionChanged(item)&&!item.reviewErrorReason);
-  const hasIssues = () => state.segments.some(item=>descriptionChanged(item)||item.reviewErrorReason);
+  // The derived suggestion is evidence, not an additional reviewer edit. Only
+  // description changes create a new review issue and require a reason.
+  const reviewChanged = item => descriptionChanged(item);
+  const missingReasonSegments = () => state.segments.filter(item=>reviewChanged(item)&&!item.reviewErrorReason);
+  const hasIssues = () => state.segments.some(item=>reviewChanged(item)||item.reviewErrorReason);
   const result = () => hasIssues() ? '不通过' : '通过';
   const qualityResult = () => state.segments.some(item=>item.conclusion==='rejected') ? '不合格' : state.segments.some(item=>item.conclusion==='mistake') ? '失误' : '合格';
-  const issueSummary = item => {const value=counts(item), names=[];if(value.error)names.push(`错误 ${value.error}`);if(value.omitted)names.push(`遗漏 ${value.omitted}`);if(value.reason)names.push('有片段错误原因');return names.join(' · ');};
-  const conclusion = value => value==='rejected'?'不合格':'失误';
+  const issueSummary = item => {const value=counts(item), names=[];if(conclusionChanged(item))names.push('结论修改');if(value.descriptionError)names.push(`错误 ${value.descriptionError}`);if(value.omitted)names.push(`遗漏 ${value.omitted}`);if(item.reviewErrorReason)names.push('有片段错误原因');return names.join(' · ');};
+  const conclusion = value => value==='pass'?'合格':value==='rejected'?'不合格':'失误';
   const allowed = () => [...REJECTED,...MISTAKE];
-  const notify = () => document.dispatchEvent(new CustomEvent(eventName('state-change'),{detail:clone(state)}));
+  const notify = () => {syncSuggestions();document.dispatchEvent(new CustomEvent(eventName('state-change'),{detail:clone(state)}));};
   const toast = message => document.dispatchEvent(new CustomEvent(eventName('toast'),{detail:{message}}));
   const demoReasons = (item, index) => {
     const mistake = [
@@ -62,13 +79,17 @@
       return {
         id:item.id,start:item.start,end:item.end,track:item.track,order:item.order,conclusion:item.conclusion,
         originalMistakeReasons:reasons.mistakeReasons,originalRejectedReasons:reasons.rejectedReasons,
-        reviewErrorReason:'',audit:{removed:[],added:[]}
+        reviewErrorReason:'',audit:{removed:[],added:[],conclusion:null}
       };
     }),
     selectedId:SOURCE.state.selectedId||SOURCE.state.segments[0]?.id||'',submitted:false,dirty:false,filter:'all'
   };
 
   if(options.restoreDraft){try{const saved=JSON.parse(localStorage.getItem(storageKey)||'null');if(saved&&Array.isArray(saved.segments)&&saved.segments.length===state.segments.length&&saved.segments.every(item=>state.segments.some(seed=>seed.id===item.id))){state.segments.forEach(item=>{const draft=saved.segments.find(row=>row.id===item.id);item.audit=clone(draft.audit||{removed:[],added:[]});item.reviewErrorReason=draft.reviewErrorReason||'';item.reviewNote=draft.reviewNote||'';});if(state.segments.some(item=>item.id===saved.selectedId))state.selectedId=saved.selectedId;}}catch(_){}}
+  state.segments.forEach(item=>{item.audit=item.audit||{removed:[],added:[],conclusion:null};item.audit.removed=item.audit.removed||[];item.audit.added=item.audit.added||[];item.audit.conclusion=null;});
+  // Other views may have selected a segment that is absent from this snapshot.
+  if(!state.segments.some(item=>item.id===state.selectedId))state.selectedId=ordered()[0]?.id||'';
+  syncSuggestions();
   function select(id, seek=true){if(!state.segments.some(item=>item.id===id))return;state.selectedId=id;notify();if(seek)document.dispatchEvent(new CustomEvent(eventName('seek'),{detail:{seconds:selected().start}}));}
   function removeOriginal(reasonId){const item=selected();if(!item||state.submitted||!originalIds(item).includes(reasonId))return;if(!item.audit.removed.includes(reasonId))item.audit.removed.push(reasonId);item.audit.added=item.audit.added.filter(id=>id!==reasonId);state.dirty=true;notify();}
   function restoreOriginal(reasonId){const item=selected();if(!item||state.submitted)return;item.audit.removed=item.audit.removed.filter(id=>id!==reasonId);state.dirty=true;notify();}
@@ -81,7 +102,7 @@
     set hidden(value){this.toggleAttribute('hidden',value);if(value){this.playing=false;clearInterval(this.timer);}else this.render();}
     get hidden(){return this.hasAttribute('hidden');}
     onClick(event){const block=event.target.closest('[data-segment-id]');if(block){select(block.dataset.segmentId);return;}if(event.target.closest('.segmented-timeline__play')){this.playing=!this.playing;clearInterval(this.timer);if(this.playing)this.timer=setInterval(()=>{this.playTime=Math.min(DURATION,this.playTime+.1);if(this.playTime>=DURATION){this.playing=false;clearInterval(this.timer);}this.render();},100);this.render();}}
-    block(item){const active=item.id===state.selectedId;const issue=descriptionChanged(item)||item.reviewErrorReason;return `<button type="button" class="ptqr-block is-${item.conclusion}${active?' is-selected':''}${issue?' has-review-issue':''}" data-segment-id="${esc(item.id)}" style="left:${item.start/DURATION*100}%;width:${Math.max(.8,(item.end-item.start)/DURATION*100)}%;z-index:${active?30:2}" aria-label="${conclusion(item.conclusion)}片段${issue?' · 存在审核问题':''}">${issue?'<span class="ptqr-track-issue" aria-hidden="true">!</span>':''}</button>`;}
+    block(item){const active=item.id===state.selectedId;const issue=reviewChanged(item)||item.reviewErrorReason;return `<button type="button" class="ptqr-block is-${item.conclusion}${active?' is-selected':''}${issue?' has-review-issue':''}" data-segment-id="${esc(item.id)}" style="left:${item.start/DURATION*100}%;width:${Math.max(.8,(item.end-item.start)/DURATION*100)}%;z-index:${active?30:2}" aria-label="${conclusion(item.conclusion)}片段${conclusionChanged(item)?` · 建议改为${conclusion(reviewedConclusion(item))}`:''}${issue?' · 存在审核问题':''}">${issue?'<span class="ptqr-track-issue" aria-hidden="true">!</span>':''}</button>`;}
     render(){const hits=state.segments.filter(item=>item.start<=this.playTime&&this.playTime<item.end).map(item=>item.id);this.innerHTML=`<section class="ptqr-timeline"><timeline-controls hydrate standard-label="质检标准"><div class="segmented-timeline__controls"><div class="segmented-timeline__playback"><button type="button" class="segmented-timeline__play" aria-label="${this.playing?'暂停':'播放'}"></button><span><b>${format(this.playTime)}</b> <i>/</i> ${format(DURATION)}</span></div><div class="segmented-timeline__tools"><button type="button" class="segmented-timeline__standard">质检标准</button></div></div></timeline-controls><div class="ptqr-ruler"><span></span><div>${[0,10,20,30,40].map(n=>`<i style="left:${n/DURATION*100}%">${format(n)}</i>`).join('')}</div></div><div class="ptqr-lanes">${[0,1,2].map(track=>`<div class="ptqr-lane"><small>轨道 ${track+1}</small><div>${state.segments.filter(item=>item.track===track).map(item=>this.block(item)).join('')}</div></div>`).join('')}<i class="ptqr-playhead" style="left:calc(68px + (100% - 68px) * ${this.playTime/DURATION})"></i></div></section>`;this.querySelectorAll('.ptqr-block').forEach(node=>node.classList.toggle('is-hit',hits.includes(node.dataset.segmentId)));}
   }
 
@@ -99,25 +120,58 @@
 
   class ReviewSidebar extends HTMLElement {
     connectedCallback(){if(this.dataset.ready)return;this.dataset.ready='true';this.addEventListener('click',event=>this.onClick(event));document.addEventListener(eventName('state-change'),()=>this.render());this.render();}
-    save(){try{localStorage.setItem(storageKey,JSON.stringify({segments:state.segments,selectedId:state.selectedId,savedAt:new Date().toISOString()}));state.dirty=false;notify();toast('审核草稿已保存');}catch(_){toast('保存失败，请重试');}}
-    moveIssue(direction){const issues=ordered().filter(item=>counts(item).error||counts(item).omitted||item.reviewErrorReason);if(!issues.length)return;const index=issues.findIndex(item=>item.id===state.selectedId),target=issues[(index<0?0:index+direction+issues.length)%issues.length];select(target.id);}
+    save(){syncSuggestions();try{localStorage.setItem(storageKey,JSON.stringify({segments:state.segments,selectedId:state.selectedId,savedAt:new Date().toISOString()}));state.dirty=false;notify();toast('审核草稿已保存');}catch(_){toast('保存失败，请重试');}}
+    moveIssue(direction){const issues=ordered().filter(item=>reviewChanged(item)||item.reviewErrorReason);if(!issues.length)return;const index=issues.findIndex(item=>item.id===state.selectedId),target=issues[(index<0?0:index+direction+issues.length)%issues.length];select(target.id);}
     onClick(event){const row=event.target.closest('[data-segment-id]');if(row){select(row.dataset.segmentId);return;}const action=event.target.closest('[data-action]')?.dataset.action;if(action==='filter-all'){state.filter='all';notify();}if(action==='filter-issues'){state.filter='issues';notify();}if(action==='previous-issue')this.moveIssue(-1);if(action==='next-issue')this.moveIssue(1);if(action==='save'&&!state.submitted)this.save();if(action==='leave'&&!state.submitted){this.save();toast('审核草稿已保存');}if((action==='submit'||action==='reject')&&!state.submitted){const missing=missingReasonSegments();if(missing.length){select(missing[0].id);this.querySelector(`#${domPrefix}ValidationDialog`)?.showModal();return;}this.querySelector(`#${domPrefix}SubmitDialog`)?.showModal();}if(action==='confirm-submit'&&!missingReasonSegments().length&&!state.submitted){state.submitted=true;state.dirty=false;this.querySelector(`#${domPrefix}SubmitDialog`)?.close();notify();toast(hasIssues()?'审核已驳回，问题已反馈给质检员':'审核已通过');}}
-    render(){const all=ordered(),issues=all.filter(item=>counts(item).error||counts(item).omitted||item.reviewErrorReason),list=state.filter==='issues'?issues:all,sum=totals(),reviewResult=result(),qualityConclusion=qualityResult(),resultClass=hasIssues()?'is-rework':'is-pass';const rows=list.map(item=>{const index=all.indexOf(item),value=counts(item),issue=value.error||value.omitted||value.reason,summary=originalIds(item).map(id=>REASONS[id]||id).join('、');return `<button type="button" class="ptqr-list-item${item.id===state.selectedId?' is-active':''}${issue?' has-issue':''}" data-segment-id="${esc(item.id)}"><span class="ptqr-list-id">${String(index+1).padStart(2,'0')}</span><span class="ptqr-list-main"><span class="ptqr-list-time">${format(item.start)}–${format(item.end)} <em>${(item.end-item.start).toFixed(1)}s</em></span><span class="ptqr-list-summary"><b class="is-${item.conclusion}">${conclusion(item.conclusion)}</b><strong title="${esc(summary)}">${esc(summary)}</strong></span><span class="ptqr-counts"><span>审核情况</span><i class="is-error">错误项 ${value.error||'-'}</i><i class="is-omitted">遗漏项 ${value.omitted||'-'}</i></span><span class="ptqr-list-error" title="${esc(item.reviewErrorReason||'')}">错误原因：${esc(item.reviewErrorReason||'-')}</span></span>${issue?'<span class="ptqr-issue-badge" aria-label="该片段存在审核问题" title="该片段存在审核问题">!</span>':''}</button>`;}).join('');const impacted=issues.length,missing=missingReasonSegments(),changed=hasIssues();this.innerHTML=`<section class="ptqr-sidebar"><header><div><b>质检审核列表</b><span>共 ${all.length} 个片段</span></div><div class="ptqr-list-overview${missing.length?' has-warning':''}">${missing.length?`还有 ${missing.length} 个修改片段未选错误原因`:`正确 ${sum.correct} · 错误 ${sum.error} · 遗漏 ${sum.omitted} · 片段错误 ${sum.reason}`}</div></header><div class="ptqr-list-tools"><div><button type="button" data-action="filter-all" class="${state.filter==='all'?'is-active':''}">全部 ${all.length}</button><button type="button" data-action="filter-issues" class="${state.filter==='issues'?'is-active':''}">仅看有问题 ${issues.length}</button></div></div><div class="ptqr-list">${rows||'<div class="ptqr-list-empty">暂无审核问题</div>'}</div><footer><div class="ptqr-result"><span>质检结论</span><output class="${qualityConclusion==='合格'?'is-pass':qualityConclusion==='失误'?'is-mistake':'is-rejected'}">${qualityConclusion}</output></div><div class="workbench-footer-actions"><button type="button" data-action="save" ${state.submitted?'disabled':''}>保存</button><button type="button" data-action="leave" ${state.submitted?'disabled':''}>释放</button><button type="button" class="is-reject" data-action="reject" ${state.submitted||!changed?'disabled':''}>驳回</button><button type="button" class="is-submit" data-action="submit" ${state.submitted||changed?'disabled':''}>提交</button></div></footer></section><dialog id="${domPrefix}SubmitDialog" class="ptqr-dialog"><header><h2>${changed?'确认驳回':'确认提交审核'}</h2><button type="button" onclick="this.closest('dialog').close()">×</button></header><div><span>审核结论</span><strong class="${resultClass}">${reviewResult}</strong><p>${changed?`涉及 ${impacted} 个片段：错误项 ${sum.error} 个、遗漏项 ${sum.omitted} 个、片段错误原因 ${sum.reason} 个。提交后将驳回给质检员返修。`:`已完成 ${all.length} 个片段审核，未发现错误项、遗漏项或片段错误原因，任务将审核通过。`}</p><small>质检员返修时可查看对应片段、错误描述、遗漏描述和片段错误原因。</small></div><footer><button type="button" onclick="this.closest('dialog').close()">取消</button><button type="button" class="is-primary" data-action="confirm-submit">${changed?'确认驳回返修':'确认审核通过'}</button></footer></dialog><dialog id="${domPrefix}ValidationDialog" class="ptqr-dialog ptqr-validation-dialog"><header><h2>请补充错误原因</h2><button type="button" onclick="this.closest('dialog').close()">×</button></header><div><strong class="is-rework">信息未完善</strong><p>还有 ${missing.length} 个修改过描述的片段未选择错误原因。请补充完整后再${changed?'驳回':'提交审核'}。</p><small>已自动定位到第一个未完善片段。</small></div><footer><button type="button" class="is-primary" onclick="this.closest('dialog').close()">去补充</button></footer></dialog>`;}
+    render(){const all=ordered(),issues=all.filter(item=>counts(item).error||counts(item).omitted||item.reviewErrorReason),list=state.filter==='issues'?issues:all,sum=totals(),reviewResult=result(),qualityConclusion=qualityResult(),resultClass=hasIssues()?'is-rework':'is-pass';const rows=list.map(item=>{const index=all.indexOf(item),value=counts(item),issue=value.error||value.omitted||value.reason,summary=originalIds(item).map(id=>REASONS[id]||id).join('、');return `<button type="button" class="ptqr-list-item${item.id===state.selectedId?' is-active':''}${issue?' has-issue':''}" data-segment-id="${esc(item.id)}"><span class="ptqr-list-id">${String(index+1).padStart(2,'0')}</span><span class="ptqr-list-main">${item.id===state.selectedId?`<span class="ptqr-list-time">${format(item.start)}–${format(item.end)}</span>`:''}<span class="ptqr-list-summary"><b class="is-${item.conclusion}">${conclusion(item.conclusion)}</b><strong title="${esc(summary)}">${esc(summary)}</strong></span><span class="ptqr-list-error" title="${esc(item.reviewErrorReason||'')}">错误原因：${esc(item.reviewErrorReason||'-')}</span></span>${issue?'<span class="ptqr-issue-badge" aria-label="该片段存在审核问题" title="该片段存在审核问题">!</span>':''}</button>`;}).join('');const impacted=issues.length,missing=missingReasonSegments(),changed=hasIssues();this.innerHTML=`<section class="ptqr-sidebar"><header><div><b>质检审核列表</b><span>共 ${all.length} 个片段</span></div><div class="ptqr-list-overview${missing.length?' has-warning':''}">${missing.length?`还有 ${missing.length} 个修改片段未选错误原因`:`正确 ${sum.correct} · 错误 ${sum.error} · 遗漏 ${sum.omitted} · 片段错误 ${sum.reason}`}</div></header><div class="ptqr-list-tools"><div><button type="button" data-action="filter-all" class="${state.filter==='all'?'is-active':''}">全部 ${all.length}</button><button type="button" data-action="filter-issues" class="${state.filter==='issues'?'is-active':''}">仅看有问题 ${issues.length}</button></div></div><div class="ptqr-list">${rows||'<div class="ptqr-list-empty">暂无审核问题</div>'}</div><footer><div class="ptqr-result"><span>质检结论</span><output class="${qualityConclusion==='合格'?'is-pass':qualityConclusion==='失误'?'is-mistake':'is-rejected'}">${qualityConclusion}</output></div><div class="workbench-footer-actions"><button type="button" data-action="save" ${state.submitted?'disabled':''}>保存</button><button type="button" data-action="leave" ${state.submitted?'disabled':''}>释放</button><button type="button" class="is-reject" data-action="reject" ${state.submitted||!changed?'disabled':''}>驳回</button><button type="button" class="is-submit" data-action="submit" ${state.submitted||changed?'disabled':''}>提交</button></div></footer></section><dialog id="${domPrefix}SubmitDialog" class="ptqr-dialog"><header><h2>${changed?'确认驳回':'确认提交审核'}</h2><button type="button" onclick="this.closest('dialog').close()">×</button></header><div><span>审核结论</span><strong class="${resultClass}">${reviewResult}</strong><p>${changed?`涉及 ${impacted} 个片段：错误项 ${sum.error} 个、遗漏项 ${sum.omitted} 个、片段错误原因 ${sum.reason} 个。提交后将驳回给质检员返修。`:`已完成 ${all.length} 个片段审核，未发现错误项、遗漏项或片段错误原因，任务将审核通过。`}</p><small>质检员返修时可查看对应片段、错误描述、遗漏描述和片段错误原因。</small></div><footer><button type="button" onclick="this.closest('dialog').close()">取消</button><button type="button" class="is-primary" data-action="confirm-submit">确认</button></footer></dialog><dialog id="${domPrefix}ValidationDialog" class="ptqr-dialog ptqr-validation-dialog"><header><h2>请补充错误原因</h2><button type="button" onclick="this.closest('dialog').close()">×</button></header><div><strong class="is-rework">信息未完善</strong><p>还有 ${missing.length} 个修改过描述的片段未选择错误原因。请补充完整后再${changed?'驳回':'提交审核'}。</p><small>已自动定位到第一个未完善片段。</small></div><footer><button type="button" class="is-primary" onclick="this.closest('dialog').close()">去补充</button></footer></dialog>`;}
   }
 
   const renderReviewWorkspace = ReviewWorkspace.prototype.render;
   ReviewWorkspace.prototype.render = function(){
     renderReviewWorkspace.call(this);
+    const item=selected();
+    const oldConclusion=this.querySelector('.ptqr-conclusion');
+    if(conclusionReviewEnabled&&item&&oldConclusion){
+      const wrap=document.createElement('div');wrap.className='ptqr-conclusion-review';
+      wrap.innerHTML=`<span class="ptqr-original-conclusion">原结论 <b class="is-${item.conclusion}">${conclusion(item.conclusion)}</b></span><span class="ptqr-label">建议结论</span><output class="ptqr-auto-conclusion is-${reviewedConclusion(item)}" aria-label="建议结论，系统自动计算">${conclusion(reviewedConclusion(item))}</output>`;
+      oldConclusion.replaceWith(wrap);
+    }
+    const errorRow=this.querySelector('.ptqr-error-row');
+    if(!errorRow)return;
+    errorRow.classList.remove('is-required');
+    const label=errorRow.querySelector(':scope > span');
+    if(label)label.textContent='错误原因';
+    const confirmButton=this.querySelector(`#${domPrefix}SubmitDialog [data-action="confirm-submit"]`);
+    if(confirmButton)confirmButton.textContent='确认';
     options.decorateWorkspace?.(this, selected(), state);
   };
 
   customElements.define(`${tagBase}-timeline`,ReviewTimeline);
   customElements.define(`${tagBase}-workspace`,ReviewWorkspace);
   const originalSidebarRender=ReviewSidebar.prototype.render;
-  ReviewSidebar.prototype.render=function(){originalSidebarRender.call(this);options.decorateSidebar?.(this,state);};
+  ReviewSidebar.prototype.render=function(){
+    originalSidebarRender.call(this);
+    const sum=totals(),missing=missingReasonSegments();
+    const overview=this.querySelector('.ptqr-list-overview');
+    if(overview&&!missing.length)overview.textContent=`正确 ${sum.correct} · 错误 ${sum.error} · 遗漏 ${sum.omitted} · 结论修改 ${sum.conclusion} · 片段错误 ${sum.errorReason}`;
+    this.querySelectorAll('.ptqr-list-item').forEach(row=>{
+      const item=state.segments.find(candidate=>candidate.id===row.dataset.segmentId);
+      if(!item||!conclusionChanged(item))return;
+      const label=row.querySelector('.ptqr-list-summary b');
+      if(label){label.className=`is-${item.conclusion}`;label.innerHTML=`${conclusion(item.conclusion)} <span aria-hidden="true">→</span> <em class="is-${reviewedConclusion(item)}">${conclusion(reviewedConclusion(item))}</em>`;}
+    });
+    if(tagBase==='post-training-quality-review'||tagBase==='post-training-quality-second-review'){
+      const dialog=this.querySelector(`#${domPrefix}SubmitDialog`),footer=dialog.querySelector('footer');
+      const body=document.createElement('div'),question=document.createElement('p');
+      question.textContent=hasIssues()?'确认驳回吗？':'确认提交吗？';
+      body.append(question);dialog.replaceChildren(body,footer);dialog.classList.add('ptqr-simple-confirm');
+      dialog.setAttribute('aria-label',question.textContent);
+    }
+    options.decorateSidebar?.(this,state);
+  };
   customElements.define(`${tagBase}-sidebar`,ReviewSidebar);
   let timer;document.addEventListener(eventName('toast'),event=>{const node=document.getElementById('workbenchNotice');if(!node)return;node.textContent=event.detail.message;node.hidden=false;clearTimeout(timer);timer=setTimeout(()=>node.hidden=true,2600);});
-  return {state,select,removeOriginal,restoreOriginal,addOmission,removeOmission,counts,totals,result};
+  return {state,select,removeOriginal,restoreOriginal,addOmission,removeOmission,reviewedConclusion,reviewedReasonIds,missingReasonSegments,counts,totals,result};
   }
   window.createPostTrainingQualityReview=createReview;
   window.PostTrainingQualityReviewDemo=createReview();

@@ -23,13 +23,14 @@
     const current=document.createElement('div');current.className='ptqs-current';
     const heading=document.createElement('div');heading.className='ptqs-current-heading';
     heading.innerHTML='<span>本次质检结果</span>';
-    heading.append(review.querySelector('.ptqr-conclusion'));
+    const conclusionEditor=review.querySelector('.ptqr-conclusion-review')||review.querySelector('.ptqr-conclusion');
+    heading.append(conclusionEditor);
     current.append(heading,review.querySelector('.ptqr-description-box'));
     const previous=item.previousFeedback,removed=previous.original.filter(id=>![...item.originalRejectedReasons,...item.originalMistakeReasons].includes(id)),added=[...item.originalRejectedReasons,...item.originalMistakeReasons].filter(id=>!previous.original.includes(id));
     const delta=[removed.length?`已删除：${removed.map(id=>names[id]||id).join('、')}`:'',added.length?`已新增：${added.map(id=>names[id]||id).join('、')}`:'',previous.start!==item.start||previous.end!==item.end?`时间：${time(previous.start)}–${time(previous.end)} → ${time(item.start)}–${time(item.end)}`:''].filter(Boolean).join('；')||'描述及时间未修改';
     const change=document.createElement('span');change.className='ptqs-change';change.textContent='本次修改';change.dataset.fullDescription=delta;heading.append(change);
     const feedback=document.createElement('div');feedback.className='ptqs-previous';
-    feedback.innerHTML=`<div class="ptqw-feedback-heading"><span class="ptqw-feedback-title">上次审核反馈</span><div class="ptqw-feedback-chips">${previous.removed.map(id=>chip(id,'error')).join('')}${previous.added.map(id=>chip(id,'omitted')).join('')}${!previous.removed.length&&!previous.added.length?'<span class="ptqs-muted">无描述问题</span>':''}</div></div><div class="ptqs-feedback-row"><span class="ptqs-field"><small>错误原因</small><span class="ptqw-reason-value" data-full-description="${esc(previous.reason||'无')}">${esc(previous.reason||'无')}</span></span>${previous.note?`<span class="ptqs-field"><small>补充说明</small><span class="ptqw-note-text" data-full-description="${esc(previous.note)}">${esc(previous.note)}</span></span>`:''}</div>`;
+    feedback.innerHTML=`<div class="ptqw-feedback-heading"><span class="ptqw-feedback-title">上次审核反馈</span><span class="ptqr-suggested-result">建议 ${esc({pass:'合格',mistake:'失误',rejected:'不合格'}[previous.suggestedConclusion||previous.conclusion])}</span><div class="ptqw-feedback-chips">${previous.removed.map(id=>chip(id,'error')).join('')}${previous.added.map(id=>chip(id,'omitted')).join('')}${!previous.removed.length&&!previous.added.length?'<span class="ptqs-muted">无描述问题</span>':''}</div></div><div class="ptqs-feedback-row"><span class="ptqs-field"><small>错误原因</small><span class="ptqw-reason-value" data-full-description="${esc(previous.reason||'无')}">${esc(previous.reason||'无')}</span></span>${previous.note?`<span class="ptqs-field"><small>补充说明</small><span class="ptqw-note-text" data-full-description="${esc(previous.note)}">${esc(previous.note)}</span></span>`:''}</div>`;
     const compare=document.createElement('div');compare.className='ptqs-compare';compare.append(current,feedback);review.replaceWith(compare);
     editor.querySelector('.ptqr-error-row>span').textContent='本次错误原因';
     if(host.menuOpen)requestAnimationFrame(()=>{
@@ -42,10 +43,8 @@
   function decorateSidebar(host,state){
     host.querySelector('.ptqr-sidebar>header b').textContent='二次审核列表';
     const dialog=host.querySelector('#ptqsSubmitDialog');
-    dialog.querySelector('h2').textContent=state.segments.some(item=>item.audit.removed.length||item.audit.added.length||item.reviewErrorReason)?'确认再次驳回':'确认二次审核提交';
-    dialog.querySelector('small').textContent='上次审核反馈保留；本次审核意见独立记录。';
     dialog.querySelector('[data-action="confirm-submit"]').textContent='确认';
-    const hasPreviousIssue=item=>item.previousFeedback.removed.length||item.previousFeedback.added.length||item.previousFeedback.reason;
+    const hasPreviousIssue=item=>item.previousFeedback.removed.length||item.previousFeedback.added.length||item.previousFeedback.reason||item.previousFeedback.suggestedConclusion!==(item.previousFeedback.originalConclusion||item.previousFeedback.conclusion);
     const previousButton=document.createElement('button');previousButton.type='button';previousButton.dataset.action='filter-previous';previousButton.textContent=`上次有问题 ${state.segments.filter(hasPreviousIssue).length}`;
     previousButton.classList.toggle('is-active',state.filter==='previous');
     previousButton.addEventListener('click',()=>{state.filter='previous';api.select(state.selectedId,false);});
@@ -57,5 +56,5 @@
   }
   const api=window.createPostTrainingQualityReview({tagBase:'post-training-quality-second-review',eventBase:'post-quality-second-review',domPrefix:'ptqs',segments,restoreDraft:true,decorateWorkspace,decorateSidebar});
   window.PostTrainingQualitySecondReviewDemo=api;
-  window.installQualityReviewNote?.({api,hostTag:'post-training-quality-second-review-workspace',eventName:'post-quality-second-review-state-change'});
+  window.installQualityReviewNote?.({api,hostTag:'post-training-quality-second-review-workspace',eventName:'post-quality-second-review-state-change',observeRenders:true});
 })();

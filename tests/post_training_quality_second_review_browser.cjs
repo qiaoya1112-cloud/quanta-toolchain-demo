@@ -12,7 +12,7 @@ const debugPort=Number(process.env.DEBUG_PORT||9354);
 const browserExe=process.env.BROWSER_EXE||'C:/Program Files/Google/Chrome/Application/chrome.exe';
 const size=process.env.WINDOW_SIZE||'1440,900';
 const mime={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.svg':'image/svg+xml','.png':'image/png'};
-const server=http.createServer((req,res)=>{const target=new URL(req.url,`http://127.0.0.1:${port}`);if(target.pathname==='/data/workbench-v2/optimized'){res.writeHead(200,{'content-type':mime['.html']});res.end(fs.readFileSync(path.join(root,'templates/annotation_workbench/optimized.html'),'utf8').replace('{{ tag_tree | tojson }}','[]'));return;}if(target.pathname.startsWith('/static/')){const file=path.resolve(root,'.'+target.pathname);if(file.startsWith(root)&&fs.existsSync(file)){res.writeHead(200,{'content-type':mime[path.extname(file)]||'application/octet-stream'});res.end(fs.readFileSync(file));return;}}res.writeHead(404);res.end();});
+const server=http.createServer((req,res)=>{const target=new URL(req.url,`http://127.0.0.1:${port}`);if(target.pathname==='/data/workbench-v2/optimized'){res.writeHead(200,{'content-type':mime['.html']});res.end(fs.readFileSync(path.join(root,'templates/annotation_workbench/optimized.html'),'utf8').replace('{{ tag_tree | tojson }}','[]'));return;}if(target.pathname.startsWith('/static/')){const file=path.resolve(root,'.'+target.pathname);if(file.startsWith(root)&&fs.existsSync(file)){res.writeHead(200,{'content-type':mime[path.extname(file)]||'application/octet-stream'});res.end(target.pathname.endsWith('/post-training-quality-second-review.js')?Buffer.concat([Buffer.from("window.PostTrainingQualityDemo.state.selectedId='deleted-segment';\n"),fs.readFileSync(file)]):fs.readFileSync(file));return;}}res.writeHead(404);res.end();});
 const delay=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 
 async function main(){
@@ -29,9 +29,12 @@ async function main(){
     await call('Runtime.enable');await call('Page.enable');for(let i=0;i<100;i++){if(await evaluate("document.querySelector('.main')?.getAttribute('aria-busy')==='false'"))break;await delay(100);}
     await evaluate("document.querySelector('[data-review-variant=post-quality-second-review]').click()");
     const host='post-training-quality-second-review-workspace',side='post-training-quality-second-review-sidebar';
+    assert.equal(await evaluate("PostTrainingQualitySecondReviewDemo.state.segments.some(item=>item.id===PostTrainingQualitySecondReviewDemo.state.selectedId)"),true,'其他工作台已删除的选中片段不能导致二次审核空编辑区');
+    assert.equal(await evaluate("document.querySelector('post-training-quality-second-review-workspace .ptqs-compare')!==null"),true,'有片段时必须显示编辑和反馈对照');
     assert.equal(await evaluate("document.querySelector('post-training-quality-second-review-workspace').hidden"),false);
     assert.equal(await evaluate("document.querySelector('post-training-quality-review-workspace').hidden"),true);
     assert.equal(await evaluate("document.querySelectorAll('post-training-quality-second-review-timeline .ptqr-lane').length"),3);
+    assert.equal(await evaluate("document.querySelector('post-training-quality-second-review-workspace .ptqr-note-field')!==null"),true,'二次审核初始状态应始终显示补充说明');
     assert.equal(await evaluate("document.querySelector('post-training-quality-second-review-sidebar header b').textContent"),'二次审核列表');
     assert.equal(await evaluate("PostTrainingQualitySecondReviewDemo.state.segments[0].originalMistakeReasons.includes('M02')"),false);
     assert.equal(await evaluate("PostTrainingQualitySecondReviewDemo.state.segments[0].originalMistakeReasons.includes('M03')"),true);
@@ -43,6 +46,22 @@ async function main(){
     assert.equal(await evaluate("document.querySelector('.ptqs-previous-marker')===null"),true);
     await evaluate("document.querySelector('post-training-quality-second-review-sidebar [data-action=filter-all]').click()");
     assert.equal(await evaluate("document.querySelectorAll('post-training-quality-second-review-sidebar .ptqr-list-item').length"),8);
+    assert.equal(await evaluate("document.querySelectorAll('post-training-quality-second-review-workspace [data-review-conclusion]').length"),0,'建议结论应自动计算，不显示手动按钮');
+    assert.match(await evaluate("document.querySelector('post-training-quality-second-review-workspace .ptqr-suggested-result').textContent"),/建议 (合格|失误|不合格)/);
+    await evaluate("window.reviewCheckSnapshot=JSON.parse(JSON.stringify(PostTrainingQualitySecondReviewDemo.state.segments));PostTrainingQualitySecondReviewDemo.state.segments[0].reviewErrorReason='片段范围错误';PostTrainingQualitySecondReviewDemo.select(PostTrainingQualitySecondReviewDemo.state.segments[0].id);document.querySelector('post-training-quality-second-review-sidebar [data-action=reject]').click()");
+    assert.equal(await evaluate("document.querySelector('#ptqsSubmitDialog').open"),true,'只选错误原因也可驳回');
+    await evaluate("document.querySelector('#ptqsSubmitDialog').close();[...PostTrainingQualitySecondReviewDemo.state.segments[0].originalMistakeReasons,...PostTrainingQualitySecondReviewDemo.state.segments[0].originalRejectedReasons].forEach(id=>PostTrainingQualitySecondReviewDemo.removeOriginal(id))");
+    assert.equal(await evaluate("PostTrainingQualitySecondReviewDemo.reviewedConclusion(PostTrainingQualitySecondReviewDemo.state.segments[0])"),'pass','删除全部有效描述后自动建议合格');
+    assert.equal(await evaluate("document.querySelector('post-training-quality-second-review-workspace .ptqr-auto-conclusion').textContent"),'合格');
+    await evaluate("PostTrainingQualitySecondReviewDemo.addOmission('M04')");
+    assert.equal(await evaluate("PostTrainingQualitySecondReviewDemo.reviewedConclusion(PostTrainingQualitySecondReviewDemo.state.segments[0])"),'mistake','只有失误描述自动建议失误');
+    await evaluate("PostTrainingQualitySecondReviewDemo.addOmission('U04')");
+    assert.equal(await evaluate("PostTrainingQualitySecondReviewDemo.reviewedConclusion(PostTrainingQualitySecondReviewDemo.state.segments[0])"),'rejected','新增不合格描述自动建议不合格');
+    await evaluate("PostTrainingQualitySecondReviewDemo.removeOmission('U04')");
+    assert.equal(await evaluate("PostTrainingQualitySecondReviewDemo.reviewedConclusion(PostTrainingQualitySecondReviewDemo.state.segments[0])"),'mistake','撤销不合格描述重新汇总');
+    await evaluate("PostTrainingQualitySecondReviewDemo.removeOmission('M04');document.querySelector('post-training-quality-second-review-sidebar [data-action=reject]').click()");
+    assert.equal(await evaluate("document.querySelector('#ptqsSubmitDialog').open"),true,'有效描述为空可以按合格建议驳回');
+    await evaluate("document.querySelector('#ptqsSubmitDialog').close();PostTrainingQualitySecondReviewDemo.state.segments.forEach((x,i)=>Object.assign(x,window.reviewCheckSnapshot[i]));PostTrainingQualitySecondReviewDemo.select(PostTrainingQualitySecondReviewDemo.state.segments[0].id)");
     const previous=await evaluate("JSON.stringify(PostTrainingQualitySecondReviewDemo.state.segments.map(item=>item.previousFeedback))");
     const firstAudit=await evaluate("JSON.stringify(PostTrainingQualityReviewDemo.state)");
     await evaluate("document.querySelector('post-training-quality-second-review-workspace .ptqr-chip.is-correct button').click()");
@@ -58,12 +77,15 @@ async function main(){
     const feedback=await evaluate("PostTrainingQualitySecondReviewDemo.state.segments[0].audit.added.length");assert.equal(feedback,1);
     await evaluate("document.querySelector('post-training-quality-second-review-workspace .ptqr-note-field input').value='二次复核说明';document.querySelector('post-training-quality-second-review-workspace .ptqr-note-field input').dispatchEvent(new Event('input',{bubbles:true}))");
     await evaluate("document.querySelector('post-training-quality-second-review-sidebar [data-action=save]').click()");
-    await call('Page.reload');await delay(1000);await evaluate("document.querySelector('[data-review-variant=post-quality-second-review]').click()");
+    await call('Page.reload');await delay(300);for(let i=0;i<100;i++){if(await evaluate("Boolean(window.PostTrainingQualitySecondReviewDemo&&document.querySelector('[data-review-variant=post-quality-second-review]'))"))break;await delay(100);}await evaluate("document.querySelector('[data-review-variant=post-quality-second-review]').click()");
     assert.equal(await evaluate("PostTrainingQualitySecondReviewDemo.state.segments[0].reviewNote"),'二次复核说明');
     assert.equal(await evaluate("PostTrainingQualitySecondReviewDemo.state.segments[0].audit.added.length"),1);
     assert.equal(await evaluate("JSON.stringify(PostTrainingQualitySecondReviewDemo.state.segments.map(item=>item.previousFeedback))"),previous);
     await evaluate("document.querySelector('post-training-quality-second-review-sidebar [data-action=reject]').click()");
+    assert.equal(await evaluate("PostTrainingQualitySecondReviewDemo.reviewedConclusion(PostTrainingQualitySecondReviewDemo.state.segments[0])"),'rejected','草稿恢复按有效描述自动计算');
     assert.equal(await evaluate("document.querySelector('#ptqsSubmitDialog').open"),true);
+    assert.equal(await evaluate("document.querySelector('#ptqsSubmitDialog header')===null"),true);
+    assert.equal(await evaluate("document.querySelector('#ptqsSubmitDialog p').textContent"),'确认驳回吗？');
     await evaluate("document.querySelector('#ptqsSubmitDialog [data-action=confirm-submit]').click()");
     assert.equal(await evaluate("PostTrainingQualitySecondReviewDemo.state.submitted"),true);
     assert.equal(await evaluate("document.querySelector('post-training-quality-second-review-workspace .ptqr-chip button').disabled"),true);

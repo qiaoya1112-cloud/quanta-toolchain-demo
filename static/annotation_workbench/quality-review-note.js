@@ -1,5 +1,5 @@
 (() => {
-  function install({api,hostTag='post-training-quality-review-workspace',eventName='post-quality-review-state-change'}) {
+  function install({api,hostTag='post-training-quality-review-workspace',eventName='post-quality-review-state-change',observeRenders=false}) {
   const selected=()=>api.state.segments.find(item=>item.id===api.state.selectedId);
   let dialog;
   function openEditor(){
@@ -32,7 +32,16 @@
     row.append(label);
   }
   document.addEventListener(eventName,render);
+  // The second-review decorator replaces the editor row during its first render.
+  // Observe that rearrangement so the note field is present before any reason is selected.
+  const observe=()=>{
+    const host=document.querySelector(hostTag);if(!host)return;
+    const observer=new MutationObserver(()=>render());
+    observer.observe(host,{childList:true,subtree:true});
+  };
   render();
+  if(observeRenders)observe();
+  requestAnimationFrame(render);
   }
   window.installQualityReviewNote=install;
   install({api:window.PostTrainingQualityReviewDemo});

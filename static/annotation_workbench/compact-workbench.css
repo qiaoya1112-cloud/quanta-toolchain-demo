@@ -57,3 +57,23 @@ post-rework-training-quality-workspace .ptqw-current .ptq-editor-fields-row{padd
 post-rework-training-quality-workspace .ptqw-feedback-heading .ptqw-feedback-chips{margin:0;flex-wrap:nowrap;min-width:0;overflow:auto;max-height:24px;scrollbar-width:thin}
 .ptqw-feedback-heading .ptqw-chip{flex:none;white-space:nowrap}
 post-rework-training-quality-workspace .ptqw-feedback-row .ptqw-note-text{padding-right:8px;cursor:pointer}
+/* Give the three post-training views more video space without changing other modes. */
+.workspace:has(> :is(post-training-quality-workspace,post-training-quality-review-workspace,post-rework-training-quality-workspace):not([hidden])) .workbench-instruction{height:28px;min-height:28px}
+.workspace:has(> :is(post-training-quality-workspace,post-training-quality-review-workspace,post-rework-training-quality-workspace):not([hidden])) .workbench-media-preview{padding:3px}
+post-training-quality-workspace .ptq-editor{margin-top:4px;padding-bottom:4px}
+post-training-quality-workspace .ptq-editor-meta-row{height:32px;min-height:32px}
+post-training-quality-workspace .ptq-editor-fields-row{min-height:36px;padding-block:2px}
+post-training-quality-workspace .ptq-editor-lower{height:30px;margin-top:2px}
+post-training-quality-review-workspace .ptqr-editor{margin-top:2px;padding-bottom:2px}
+post-training-quality-review-workspace .ptqr-review-row{min-height:34px;padding-block:2px}
+post-training-quality-review-workspace .ptqr-error-row{height:30px}
+post-rework-training-quality-workspace .ptq-editor{margin-top:2px;padding-bottom:2px}
+post-rework-training-quality-workspace .ptqw-compare{height:60px;padding-top:2px}
+:is(.ptq-list-item,.prq-list-item,.ptqr-list-item){min-height:40px;padding-block:6px;grid-template-columns:26px minmax(0,1fr);gap:7px}
+post-rework-training-quality-sidebar .ptq-list-item{min-height:48px}
+:is(.ptq-list-main,.prq-list-main,.ptqr-list-main){gap:2px}
+:is(.ptq-list-time,.prq-list-time,.ptqr-list-time){padding-bottom:2px;line-height:16px}
+.ptqw-list-feedback{margin-top:2px}
+.ptqr-simple-confirm{width:min(340px,calc(100vw - 32px))}
+.ptqr-simple-confirm>div{min-height:72px;padding:16px}
+.ptqr-simple-confirm>div>p{margin:0;font-size:14px;color:var(--ptqr-text)}

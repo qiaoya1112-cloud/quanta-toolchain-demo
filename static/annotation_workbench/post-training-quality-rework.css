@@ -13,9 +13,9 @@ post-rework-training-quality-workspace[hidden],post-rework-training-quality-side
 .ptqw-chip del{text-decoration:none;font-size:10px}
 .ptqw-error-reason{color:var(--ptq-muted);padding-top:6px}
 .ptqw-list-feedback{display:flex;flex-direction:column;gap:3px;font-size:10px;line-height:14px;color:var(--ptq-muted);margin-top:5px}
-post-rework-training-quality-sidebar .ptq-list-item{position:relative;min-height:86px}
+post-rework-training-quality-sidebar .ptq-list-item{position:relative;min-height:69px}
 post-rework-training-quality-sidebar .ptq-list-item[hidden]{display:none}
-post-rework-training-quality-sidebar .workbench-footer-actions{grid-template-columns:1fr 1fr 2fr}
+post-rework-training-quality-sidebar .workbench-footer-actions{grid-template-columns:1fr 1fr}
 post-rework-training-quality-workspace .ptq-reason-chip:is(.is-mistake,.is-rejected){color:var(--ptq-text);background:#17232c;border-color:var(--ptq-line)}
 html[data-theme=light] post-rework-training-quality-workspace .ptq-reason-chip:is(.is-mistake,.is-rejected){background:#f3f6f8;color:#435864;border-color:#cbd6de}
 .workbench-review__tabs button[data-review-variant="post-quality-rework"]{font-size:13px;line-height:19.5px;min-height:132px;height:132px;flex-basis:132px;gap:2px}

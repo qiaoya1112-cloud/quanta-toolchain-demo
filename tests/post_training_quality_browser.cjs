@@ -63,7 +63,7 @@ async function main(){
     assert.equal(await evaluate("[...document.querySelectorAll('.ptq-list-summary strong')].every(item=>item.dataset.fullDescription===item.textContent)"),true,'右侧列表应为每个片段保存完整失误描述');
     await evaluate("(()=>{const target=document.querySelector('.ptq-list-summary strong');target.dispatchEvent(new PointerEvent('pointerover',{bubbles:true,clientX:1100,clientY:180}));})()");
     assert.equal(await evaluate("document.querySelector('#ptqDescriptionTooltip')?.hidden"),false,'hover 失误描述时应显示完整内容提示');
-    assert.match(await evaluate("document.querySelector('#ptqDescriptionTooltip')?.textContent"),/完整失误描述/);
+    assert.equal(await evaluate("document.querySelector('#ptqDescriptionTooltip b')===null"),true);
     assert.ok((await evaluate("document.querySelector('#ptqDescriptionTooltip span')?.textContent.length"))>0,'完整内容提示不得为空');
     await evaluate("document.querySelector('.ptq-list-summary strong').dispatchEvent(new PointerEvent('pointerout',{bubbles:true,relatedTarget:document.body}))");
     assert.equal(await evaluate("document.querySelector('#ptqDescriptionTooltip')?.hidden"),true,'移出描述后应隐藏完整内容提示');

@@ -23,11 +23,9 @@
       tip.setAttribute('role', 'tooltip');
       document.body.append(tip);
     }
-    const heading = document.createElement('b');
-    heading.textContent = target.matches('.ptqs-change')?'本次修改':target.matches('.ptqw-note-text')?'补充说明':target.matches('.ptqw-reason-value')?'错误原因':'完整失误描述';
     const content = document.createElement('span');
     content.textContent = target.dataset.fullDescription || target.textContent;
-    tip.replaceChildren(heading, content);
+    tip.replaceChildren(content);
     active = target;
     target.setAttribute('aria-describedby', tip.id);
     tip.hidden = false;

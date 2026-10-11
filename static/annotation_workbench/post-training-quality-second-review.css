@@ -7,6 +7,11 @@ post-training-quality-second-review-workspace[hidden],post-training-quality-seco
 .ptqs-previous{border-left:1px solid var(--ptqr-line);padding-left:8px}
 .ptqs-current-heading{display:flex;align-items:center;gap:8px;height:24px;font-size:11px;color:var(--ptqr-text)}
 .ptqs-current-heading .ptqr-conclusion{height:20px;min-width:42px;font-size:10px}
+.ptqs-current-heading .ptqr-conclusion-review{display:flex;align-items:center;gap:4px;min-width:0}
+.ptqs-current-heading .ptqr-original-conclusion{display:none}
+.ptqs-current-heading .ptqr-conclusion-switch button{height:20px;padding:0 5px;font-size:10px}
+.ptqr-suggested-result{flex:none;color:var(--ptqr-text);font-size:10px;white-space:nowrap}
+.ptqr-conclusion-switch .is-active.is-pass{background:#23323d;color:var(--ptqr-text)}
 .ptqs-change{margin-left:auto;color:var(--ptqr-muted);font-size:10px;cursor:pointer}
 .ptqs-current .ptqr-description-box{min-height:28px;padding:2px 5px;max-height:30px;overflow:auto;flex-wrap:nowrap;scrollbar-width:thin}
 .ptqs-current .ptqr-chip{flex:none;min-height:22px;white-space:nowrap}
