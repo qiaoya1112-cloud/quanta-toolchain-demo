@@ -615,7 +615,7 @@ PLATFORMS = {
         "home": "/model",
         "nav": [
             ("数据", [
-                ("/model/data/query", "数据查询", "&#9906;", ""),
+                ("/model/data/query", "数据湖圈选", "&#9906;", ""),
                 ("/model/data/datasets", "数据集", "&#9776;", ""),
                 ("/model/data/raw", "原始数据", "&#9783;", ""),
             ]),

@@ -472,7 +472,7 @@ def test_dataset_progress_supports_validation_status_and_legacy_redirect():
     assert 'toggleDsErrorIds' in html
     assert 'title="查看异常原因"' in html
     assert '查看失败日志' not in html
-    assert '>返回数据查询</a>' in html
+    assert '>返回数据湖圈选</a>' in html
     format_failure = html.split('id="dpErrorTemplate80"', 1)[1].split('</template>', 1)[0]
     assert '数据格式不一致' in format_failure
     assert '格式组 2' in format_failure
