@@ -13,6 +13,8 @@ for(const mode of ['pre','post']){
  const autos=demo.state.segments.filter(r=>r.autoShortDuration);
  assert.deepEqual(Array.from(autos,r=>[r.start,r.end]),[[0,1],[8,9.4],[10.8,12]]);
  assert.ok(autos.every(r=>rules.isShortDuration(r)&&rules.segmentErrors(r).length===0));
+ assert.equal(rules.visibleSegments().length,3,'系统自动标记不显示在质检列表');
+ const original=autos[0].start;demo.updateTime(autos[0].id,'start',original+.5);assert.equal(autos[0].start,original,'系统自动标记不支持调整');
  assert.equal(rules.validateUsableDuration(),3,'再次提交按当前时间重算，不重复添加');assert.equal(demo.state.segments.length,6);
  demo.state.segments=[problem(3,37)];assert.equal(rules.validateUsableDuration(),0,'恰好3秒保留为合格');
  demo.state.segments=[];assert.equal(rules.validateUsableDuration(),0,'整段合格无需新增问题');
@@ -27,6 +29,11 @@ for(const mode of ['pre','post']){
  demo.state.segments=[problem(1,5)];click('submit');assert.match(opened,/SubmitDialog/);if(mode==='pre')assert.match(fields['[data-duration-check]'].textContent,/1 处可用片段不足 3 秒/);else assert.equal(demo.state.segments.length,1);
  sidebar.save();const saved=JSON.parse([...storage.values()][0]);assert.equal(saved.segments.filter(r=>r.autoShortDuration).length,mode==='pre'?1:0);
  click('confirm-submit');assert.equal(demo.state.submitted,true);
+ if(mode==='pre'){
+  demo.state.submitted=false;opened='';click('leave');assert.match(opened,/ReleaseDialog/,'释放前应二次确认');
+  click('confirm-release');assert.equal(demo.state.submitted,true);assert.match(opened,/SuccessDialog/,'释放成功后显示不可关闭的操作结果弹窗');
+ }
  const markup=fs.readFileSync(`static/annotation_workbench/${mode}-training-quality.js`,'utf8');assert.ok(!markup.includes('待完善'));assert.ok(!markup.includes('save-state'));assert.ok(!markup.includes("['pending','待判定']"));
+ if(mode==='pre'){assert.match(markup,/SuccessDialog/);assert.match(markup,/confirm-release/);}
 }
 console.log('Quality submissions: common validation, pre-training-only short duration, strict 3s boundary, idempotence and confirmation passed');

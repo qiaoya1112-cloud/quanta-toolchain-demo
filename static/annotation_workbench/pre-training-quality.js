@@ -99,7 +99,8 @@
   const selected = () => byId(state.selectedId);
   const pendingCount = () => 0;
   const invalidCount = () => state.segments.filter(item => !valid(item)).length;
-  const isShortDuration = item => item.conclusion === 'mistake' && item.mistakeReasons.includes('M05');
+  const isShortDuration = item => item.autoShortDuration === true;
+  const manualSegments = () => state.segments.filter(item => !item.autoShortDuration);
 
   // Problem segments occupy the video; their complement is the usable footage.
   function usableRanges(segments, duration = DURATION) {
@@ -115,7 +116,7 @@
     return ranges;
   }
   function validateUsableDuration() {
-    const manual = state.segments.filter(item => !item.autoShortDuration);
+    const manual = manualSegments();
     const short = usableRanges(manual).filter(item => item.end - item.start < 3 - 1e-9);
     state.segments = manual;
     for (const range of short) {
@@ -123,7 +124,7 @@
       placeSegment(item, state.segments);
       state.segments.push(item);
     }
-    if (!state.segments.some(item=>item.id===state.selectedId)) state.selectedId=state.segments[0]?.id||'';
+    if (!manual.some(item=>item.id===state.selectedId)) state.selectedId=manual[0]?.id||'';
     if (short.length) state.dirty = true;
     notify();
     return short.length;
@@ -149,7 +150,8 @@
       const saved = JSON.parse(localStorage.getItem(DRAFT_KEY) || 'null');
       if (!saved || !Array.isArray(saved.segments)) return;
       state.segments = saved.segments.map(normalizeSaved);
-      state.selectedId = state.segments.some(item => item.id === saved.selectedId) ? saved.selectedId : state.segments[0]?.id || '';
+      const manual = manualSegments();
+      state.selectedId = manual.some(item => item.id === saved.selectedId) ? saved.selectedId : manual[0]?.id || '';
       state.revision = Number(saved.revision) || 1;
       state.dirty = false;
     } catch (_) {}
@@ -165,7 +167,7 @@
   }
   function selectSegment(id, seek = true) {
     const item = byId(id);
-    if (!item) return;
+    if (!item || item.autoShortDuration) return;
     state.selectedId = id;
     state.rangeStart = item.start;
     state.rangeEnd = item.end;
@@ -194,7 +196,7 @@
   }
   function updateTime(id, edge, value) {
     const item = byId(id);
-    if (!item || state.submitted || !Number.isFinite(value)) return;
+    if (!item || item.autoShortDuration || state.submitted || !Number.isFinite(value)) return;
     const others = state.segments.filter(segment => segment.id !== id);
     const next = {...item, [edge]:Math.round(value * 10) / 10};
     placeSegment(next, others);
@@ -203,9 +205,9 @@
   }
   function removeSelected() {
     const item = selected();
-    if (!item || state.submitted || !window.confirm(`删除片段 ${segmentNumber(item)}（${format(item.start)}–${format(item.end)}）？`)) return;
+    if (!item || item.autoShortDuration || state.submitted || !window.confirm(`删除片段 ${segmentNumber(item)}（${format(item.start)}–${format(item.end)}）？`)) return;
     state.segments = state.segments.filter(segment => segment.id !== item.id);
-    state.selectedId = sortSegments(state.segments)[0]?.id || '';
+    state.selectedId = sortSegments(manualSegments())[0]?.id || '';
     markDirty();
   }
 
@@ -374,7 +376,7 @@
       document.dispatchEvent(new CustomEvent(eventName('playback'),{detail:{hits}}));
     }
     moveGlobal(direction) {
-      const ordered=sortSegments(state.segments), index=ordered.findIndex(item=>item.id===state.selectedId);
+      const ordered=sortSegments(manualSegments()), index=ordered.findIndex(item=>item.id===state.selectedId);
       const target=ordered[index+direction]; if(target)selectSegment(target.id);
     }
     block(item,hits) {
@@ -386,7 +388,10 @@
         const otherDuration=candidate.end-candidate.start;
         return otherDuration>duration||(otherDuration===duration&&candidate.order<item.order);
       }).length;
-      return `<button type="button" data-segment-id="${escape(item.id)}" class="prq-block is-${item.conclusion}${isShortDuration(item)?' is-short-duration':''}${isSelected?' is-selected':''}${overlaps?' is-overlap':''}${hits.includes(item.id)?' is-hit':''}${valid(item)?'':' has-error'}" style="left:${item.start/DURATION*100}%;width:${Math.max(0,(item.end-item.start)/DURATION*100)}%;z-index:${layer}" title="${String(segmentNumber(item)).padStart(2,'0')} · ${conclusionLabel(item.conclusion)} · ${format(item.start)}–${format(item.end)}"></button>`;
+      const tag=item.autoShortDuration?'span':'button';
+      const identity=item.autoShortDuration?' aria-hidden="true" data-auto-short-duration="true"':` type="button" data-segment-id="${escape(item.id)}"`;
+      const title=item.autoShortDuration?'系统标记 · 合格片段不足 3 秒':`${String(segmentNumber(item)).padStart(2,'0')} · ${conclusionLabel(item.conclusion)}`;
+      return `<${tag}${identity} class="prq-block is-${item.conclusion}${isShortDuration(item)?' is-short-duration':''}${isSelected?' is-selected':''}${overlaps?' is-overlap':''}${hits.includes(item.id)?' is-hit':''}${valid(item)?'':' has-error'}" style="left:${item.start/DURATION*100}%;width:${Math.max(0,(item.end-item.start)/DURATION*100)}%;z-index:${layer}" title="${title} · ${format(item.start)}–${format(item.end)}"></${tag}>`;
     }
     render() {
       const hits=state.segments.filter(item=>item.start<=this.playTime&&this.playTime<item.end).map(item=>item.id);
@@ -430,12 +435,12 @@
     set hidden(value){this.toggleAttribute('hidden',value);if(this.timeline){this.timeline.hidden=value;if(value)this.timeline.pause();}if(value)this.closeMenus();}
     get hidden(){return this.hasAttribute('hidden');}
     moveGlobal(direction){
-      const ordered=sortSegments(state.segments),index=ordered.findIndex(item=>item.id===state.selectedId),target=ordered[index+direction];
+      const ordered=sortSegments(manualSegments()),index=ordered.findIndex(item=>item.id===state.selectedId),target=ordered[index+direction];
       if(target)selectSegment(target.id);
     }
     moveTrack(direction){
       const item=selected(); if(!item)return;
-      const ordered=sortSegments(state.segments.filter(candidate=>candidate.track===item.track));
+      const ordered=sortSegments(manualSegments().filter(candidate=>candidate.track===item.track));
       const target=ordered[ordered.findIndex(candidate=>candidate.id===item.id)+direction]; if(target)selectSegment(target.id);
     }
     onKey(event){
@@ -526,12 +531,17 @@
         event.stopPropagation();
         if(!state.submitted&&this.save()){
           document.dispatchEvent(new CustomEvent(eventName('reject'),{detail:{reason:event.detail.value,segments:state.segments}}));
-          this.toast('质检已驳回，草稿已保存');
+          state.submitted=true;state.dirty=false;notify();this.showSuccess('驳回');
         }
       });
       this.render();
     }
     toast(message){document.dispatchEvent(new CustomEvent(eventName('toast'),{detail:{message}}));}
+    showSuccess(action){
+      const dialog=this.querySelector(`#${domPrefix}SuccessDialog`);
+      dialog.querySelector('[data-success-message]').textContent=`${action}成功`;
+      if(!dialog.open)dialog.showModal();
+    }
     save(){
       try{localStorage.setItem(DRAFT_KEY,JSON.stringify({segments:state.segments,selectedId:state.selectedId,revision:state.revision,savedAt:new Date().toISOString()}));state.dirty=false;notify();this.toast('草稿已保存');return true;}
       catch(_){this.toast('保存失败，请重试');return false;}
@@ -541,7 +551,7 @@
       if(row){selectSegment(row.dataset.segmentId);return;}
       const action=event.target.closest('[data-action]')?.dataset.action;
       if(action==='save'&&!state.submitted)this.save();
-      if(action==='leave'&&!state.submitted&&this.save())this.toast('草稿已保存');
+      if(action==='leave'&&!state.submitted)this.querySelector(`#${domPrefix}ReleaseDialog`)?.showModal();
       if(action==='reject'&&!state.submitted)this.querySelector('workbench-confirm-dialog[variant="reject"]')?.show();
       if(action==='submit'&&!state.submitted){
         if(invalidCount()){this.querySelector(`#${domPrefix}ErrorDialog`)?.showModal();return;}
@@ -556,18 +566,31 @@
         if(invalidCount())return;
         state.submitted=true;state.dirty=false;state.revision+=1;
         try{localStorage.removeItem(DRAFT_KEY);}catch(_){}
-        this.querySelector(`#${domPrefix}SubmitDialog`)?.close();notify();this.toast('质检已提交');
+        this.querySelector(`#${domPrefix}SubmitDialog`)?.close();notify();this.showSuccess('提交');
       }
+      if(action==='confirm-release'&&!state.submitted){
+        this.querySelector(`#${domPrefix}ReleaseDialog`)?.close();
+        if(this.save()){state.submitted=true;state.dirty=false;notify();this.showSuccess('释放');}
+      }
+      if(action==='continue-work'){try{localStorage.removeItem(DRAFT_KEY);}catch(_){}window.location.reload();}
+      if(action==='exit-workbench'){try{localStorage.removeItem(DRAFT_KEY);}catch(_){}window.location.assign('/data/workbench-v2');}
     }
     render(){
-      const ordered=sortSegments(state.segments),pending=pendingCount(),canSubmit=!pending&&!state.submitted;
+      const ordered=sortSegments(manualSegments()),pending=pendingCount(),canSubmit=!pending&&!state.submitted;
       const conclusion=calculatedConclusion(),conclusionClass=conclusion==='合格'?'is-pass':conclusion==='失误'?'is-mistake':conclusion==='不合格'?'is-rejected':'is-pending';
       const rows=ordered.map(item=>{
         return `<button type="button" data-segment-id="${escape(item.id)}" class="prq-list-item${isShortDuration(item)?' is-short-duration':''}${item.id===state.selectedId?' is-active':''}${this.hits?.includes(item.id)?' is-hit':''}${valid(item)?'':' has-error'}"><span class="prq-list-id">${String(ordered.indexOf(item)+1).padStart(2,'0')}</span><span class="prq-list-main"><span class="prq-list-time">${format(item.start)}–${format(item.end)} <em>${(item.end-item.start).toFixed(1)}s</em></span><span class="prq-list-summary"><b class="is-${item.conclusion}">${conclusionLabel(item.conclusion)}</b><strong>${escape(reasonSummary(item))}</strong></span>${valid(item)?'':`<i>${escape(segmentErrors(item)[0])}</i>`}</span></button>`;
       }).join('');
       this.innerHTML=`<section class="prq-sidebar"><header><div><b>质检列表</b><span>共 ${ordered.length} 个问题片段</span></div></header><div class="prq-list">${ordered.length?rows:'<div class="prq-list-empty">尚未记录问题片段</div>'}</div><footer><div class="prq-conclusion-meta">系统自动计算 · 失误 ${state.segments.filter(item=>item.conclusion==='mistake').length} · 不合格 ${state.segments.filter(item=>item.conclusion==='rejected').length}${pending?` · 待判定 ${pending}`:''}</div><div class="prq-video-conclusion"><span class="prq-conclusion-label">质检结论</span><output id="${domPrefix}VideoConclusion" class="${conclusionClass}" aria-label="质检结论，由系统自动计算">${conclusion}</output></div><workbench-footer-actions hydrate><div class="workbench-footer-actions"><button type="button" data-action="save" ${state.submitted?'disabled':''}>保存</button><button type="button" data-action="leave" ${state.submitted?'disabled':''}>释放</button><button type="button" data-action="reject" ${state.submitted?'disabled':''}>驳回</button><button type="button" class="${canSubmit?'':'is-blocked'}" data-action="submit" ${canSubmit?'':'disabled'}>提交</button></div></workbench-footer-actions></footer></section><workbench-confirm-dialog variant="reject"></workbench-confirm-dialog>
         <dialog id="${domPrefix}ErrorDialog" class="prq-dialog prq-error-dialog"><header><h2>暂时无法提交</h2><button onclick="this.closest('dialog').close()" aria-label="关闭">×</button></header><div><b>标注有问题</b><p>${invalidCount()} 个问题片段存在必填项缺失，请检查后提交。</p></div><footer><button onclick="this.closest('dialog').close()">我知道了</button></footer></dialog>
-        <dialog id="${domPrefix}SubmitDialog" class="prq-dialog prq-submit-dialog ${conclusionClass}"><header><h2>确认提交质检</h2><button onclick="this.closest('dialog').close()" aria-label="关闭">×</button></header><div><span>系统计算的视频结论</span><strong data-result></strong><p data-counts></p><p data-duration-check></p><small>提交后将保存全部片段和本次质检结果。</small></div><footer><button onclick="this.closest('dialog').close()">取消</button><button class="is-primary" data-action="confirm-submit">确认提交</button></footer></dialog>`;
+        <dialog id="${domPrefix}ReleaseDialog" class="prq-dialog prq-action-dialog"><header><h2>确认释放当前数据</h2><button onclick="this.closest('dialog').close()" aria-label="关闭">×</button></header><div><b>释放后将退出当前处理状态</b><p>确定要释放当前数据吗？</p></div><footer><button onclick="this.closest('dialog').close()">取消</button><button class="is-primary" data-action="confirm-release">确认释放</button></footer></dialog>
+        <dialog id="${domPrefix}SubmitDialog" class="prq-dialog prq-submit-dialog ${conclusionClass}"><header><h2>确认提交质检</h2><button onclick="this.closest('dialog').close()" aria-label="关闭">×</button></header><div><span>系统计算的视频结论</span><strong data-result></strong><p data-counts></p><p data-duration-check></p><small>提交后将保存全部片段和本次质检结果。</small></div><footer><button onclick="this.closest('dialog').close()">取消</button><button class="is-primary" data-action="confirm-submit">确认提交</button></footer></dialog>
+        <dialog id="${domPrefix}SuccessDialog" class="prq-dialog prq-success-dialog"><div><span aria-hidden="true">✓</span><b data-success-message>操作成功</b><p>请选择继续处理下一条数据或退出工作台。</p></div><footer><button data-action="exit-workbench">退出工作台</button><button class="is-primary" data-action="continue-work">继续处理</button></footer></dialog>`;
+      this.querySelector(`#${domPrefix}SuccessDialog`)?.addEventListener('cancel',event=>event.preventDefault());
+      ['confirm-release','confirm-submit','continue-work','exit-workbench'].forEach(action=>{
+        const control=this.querySelector(`[data-action="${action}"]`);
+        control?.addEventListener('click',event=>{event.stopPropagation();this.onClick({target:control});});
+      });
     }
   }
 
@@ -585,6 +608,7 @@
 
   window.__preTrainingQualityRules = {
     overlapDuration, trackOverlap, sortSegments, calculateConclusion, calculatedConclusion, usableRanges, validateUsableDuration, pendingCount, isShortDuration,
+    visibleSegments:()=>clone(manualSegments()),
     placeSegment:(candidate,segments)=>placeSegment(clone(candidate),clone(segments)),
     segmentErrors:segment=>segmentErrors(clone(segment)),
     constants:{duration:DURATION,trackCount:TRACK_COUNT}

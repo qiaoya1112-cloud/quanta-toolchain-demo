@@ -1,0 +1,33 @@
+<link rel="stylesheet" href="/static/job_centers/center.css">
+<link rel="stylesheet" href="/static/workbench_pool/pool.css">
+<section class="jc-page">
+  <header class="jc-title"><div><h1>作业中心{{ payload.center }}</h1></div></header>
+  <div class="jc-tabs" role="tablist" aria-label="作业中心页面">
+    <button type="button" role="tab" aria-selected="true" aria-controls="jcWorkbench" id="jcWorkbenchTab" class="active">工作台</button>
+    <button type="button" role="tab" aria-selected="false" aria-controls="jcHistory" id="jcHistoryTab">作业记录</button>
+  </div>
+  <div id="jcWorkbench" role="tabpanel" aria-labelledby="jcWorkbenchTab" class="jc-layout">
+    <aside class="jc-tree"><header><b>{{ '任务列表' if payload.center == 1 else '流程列表' }}</b><span>待办项</span></header>
+      <div class="jc-tree-search"><input type="search" id="jcTreeSearch" aria-label="{{ '搜索任务名称或ID' if payload.center == 1 else '搜索流程名称' }}" placeholder="{{ '搜索任务名称或ID' if payload.center == 1 else '搜索流程名称' }}"></div>
+      {% for group in payload.groups %}<details open class="jc-parent" data-group="{{ group.id }}"><summary><div><b>{% if payload.center == 1 %}{{ group.id }} {% endif %}{{ group.name }}</b></div><span class="jc-parent-count">{{ group.count }}</span></summary>
+      <div class="jc-children">{% for node in group.nodes %}<a href="/data/job-centers/{{ payload.center }}?task={{ node.id }}" data-node="{{ node.id }}" class="jc-node {{ 'active' if payload.task.id == node.id else '' }}" {% if payload.task.id == node.id %}aria-current="page"{% endif %}><div><b>{{ node.name }}</b></div><span class="jc-node-count">{{ node.count }}</span></a>{% endfor %}</div></details>{% endfor %}
+      <p id="jcTreeEmpty" class="jc-tree-empty" role="status" hidden>未找到匹配的{{ '任务' if payload.center == 1 else '流程' }}</p>
+    </aside>
+    <section class="jc-data" aria-label="已领取数据列表">
+      <header class="jc-data-head"><div><h2>{{ payload.task.processing_task }} {{ payload.task.task_name }} · {{ payload.task.node }}</h2></div><span class="jc-unit">{{ '批量处理模式' if payload.task.execution_unit == 'batch' else '单条处理模式' }}</span></header>
+      <div class="jc-claim-bar"><span id="jcConditionSummary"></span><div class="jc-claim-actions"><button type="button" class="btn" id="jcConditions">⚙ 领取条件设置</button><button type="button" class="btn btn-primary" id="jcClaim">＋ 领取数据</button></div></div>
+      <p id="jcError" class="jc-feedback" role="alert" hidden></p>
+      <div class="jc-table-wrap"><table class="jc-table"><thead><tr><th>数据ID</th><th>来源操作</th>{% if payload.task.execution_unit != 'batch' %}<th>说明</th><th>当前轮次</th><th>更新时间</th>{% endif %}<th>操作</th></tr></thead><tbody id="jcRows"></tbody></table></div>
+    </section>
+  </div>
+  <section id="jcHistory" role="tabpanel" aria-labelledby="jcHistoryTab" class="jc-history" hidden><div class="jc-placeholder-icon">▤</div><h2>作业记录</h2><p>暂无作业记录，页面待完善</p></section>
+</section>
+<div class="jc-mask" id="jcConditionMask" hidden><section role="dialog" aria-modal="true" aria-labelledby="jcConditionTitle" class="jc-dialog">
+  <h2 id="jcConditionTitle">领取条件设置</h2><p>条件组合生效，后续只从符合条件的数据池领取。留空即无条件。</p>
+  <form id="jcConditionForm"><label>采集任务ID<input name="collection_task_id" placeholder="请输入采集任务ID" maxlength="200"></label><label>供应商<input name="supplier" placeholder="供应商名称或供应商ID" maxlength="200"></label><label>操作员<input name="operator" placeholder="请输入操作员" maxlength="200"></label>
+    <p id="jcConditionError" role="alert" class="jc-feedback" hidden></p>
+    <footer><button type="button" class="jc-text-button" id="jcNoConditions">恢复无条件</button><button type="button" class="btn" id="jcCancelConditions">取消</button><button type="submit" class="btn btn-primary" id="jcSaveConditions">保存条件</button></footer>
+  </form>
+</section></div>
+<script type="application/json" id="jcPayload">{{ payload|tojson }}</script>
+<script src="/static/job_centers/center.js"></script>

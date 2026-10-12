@@ -1827,7 +1827,7 @@ textarea.yaml-area:focus { border-color:#149DAA; box-shadow:0 0 0 2px rgba(20,15
 .wb-v2-pool-home .wb-filter-config { order:2; }
 .wb-v2-pool-home .wb-rule-config { order:1; }
 .wb-v2-basic-config { margin:18px 0 16px; }
-.wb-v2-basic-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:0; padding:18px 20px; }
+.wb-v2-basic-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:0; padding:18px 20px; }
 .wb-v2-basic-grid > div { display:flex; min-width:0; flex-direction:column; gap:7px; padding:0 20px; border-right:1px solid #edf0f1; }
 .wb-v2-basic-grid > div:first-child { padding-left:0; }
 .wb-v2-basic-grid > div:last-child { padding-right:0; border-right:0; }
@@ -1853,6 +1853,8 @@ textarea.yaml-area:focus { border-color:#149DAA; box-shadow:0 0 0 2px rgba(20,15
 .wb-rule-box ol { margin:0; padding:0; list-style:none; counter-reset:wb-rule; }
 .wb-rule-box li { display:grid; grid-template-columns:28px minmax(0,1fr); gap:10px; padding:7px 0; color:rgba(0,0,0,.73); font-size:13px; line-height:1.65; counter-increment:wb-rule; }
 .wb-rule-box li::before { content:counter(wb-rule) "."; color:#1685a4; font-family:'SF Mono',Menlo,monospace; font-weight:600; }
+.wb-filter-inline-reset { align-self:end; }
+.wb-filter-grid.wb-v2-filter-grid { grid-template-columns:repeat(4,minmax(0,1fr)) auto; }
 .wb-filter-reset { margin:16px 20px 20px; }
 .wb-filter-config > .wb-filter-reset { margin:0 16px 16px; }
 .wb-task-home-actions { display:flex; justify-content:flex-end; gap:10px; margin-top:20px; padding-top:18px; border-top:1px solid #f0f0f0; }
@@ -4001,7 +4003,7 @@ def _render_data_refactor_page(page_key):
 
 
 for _data_page_key, _data_page_spec in data_refactor.PAGE_SPECS.items():
-    if _data_page_spec.get("legacy"):
+    if _data_page_spec.get("legacy") or _data_page_spec.get("custom_view"):
         continue
 
     def _data_page_view(page_key=_data_page_key):
@@ -4920,6 +4922,9 @@ WB_TASKS = [
 
 WB_PRIORITY_ORDER = {"P0": 0, "P1": 1, "P2": 2}
 WB_TASKS.extend(wb_pool.PRETRAINING_TASKS)
+# 处理模式由流程决定：预训练质检采用批量，其余标注流程采用单独处理。
+for _task in WB_TASKS:
+    _task.setdefault("execution_unit", "batch" if _task.get("stage") == "质检" else "single")
 
 WB_POOL_META = {
     "POOL-E2E-ACCEPTANCE": {
@@ -5139,6 +5144,7 @@ def _render_workbench_pool_home(pool_id, selected_task_id=None, version="v1"):
     )
     task_id_query = request.args.get("processing_task_id", request.args.get("task_id", "")).strip()
     collection_task_query = request.args.get("collection_task_id", "").strip() if is_v2 else ""
+    collector_query = request.args.get("collector", "").strip() if is_v2 else ""
     visible_pool_tasks = [
         item for item in pool_tasks
         if (not task_id_query or task_id_query.lower() in item["processing_task"].lower())
@@ -5156,6 +5162,7 @@ def _render_workbench_pool_home(pool_id, selected_task_id=None, version="v1"):
     if (task_id_query or collection_task_query) and visible_pool_tasks and task not in visible_pool_tasks:
         task = visible_pool_tasks[0]
     use_annotation_pool_layout = is_v2 and (task["stage"] == "标注" or task["id"].startswith("WB-PRETRAINING-"))
+    workbench_submit_url = (f"{pool_url}/records" if is_v2 and task.get("execution_unit") == "batch" else f"{workbench_url}/edit")
     meta = WB_POOL_META[pool_id]
     total_waiting = sum(item["count"] for item in pool_tasks)
     total_processing = sum(item["processing"] for item in pool_tasks)
@@ -5332,6 +5339,7 @@ def _render_workbench_pool_home(pool_id, selected_task_id=None, version="v1"):
           <div><span>流程</span><b>{html.escape(task['flow'])}</b></div>
           <div><span>节点</span><b>{html.escape(task['node'])}</b></div>
           <div><span>用户组</span><b>{html.escape(task['user_group'])}</b></div>
+          <div><span>处理模式</span><b>{'批量处理' if task.get('execution_unit') == 'batch' else '单独处理'}</b></div>
         </div>
       </section>''' if use_annotation_pool_layout else ('' if is_v2 else f'''<div class="wb-task-brief wb-pool-brief">
         <div><span>环节</span><b>{html.escape(task['stage'])}</b></div>
@@ -5375,11 +5383,11 @@ def _render_workbench_pool_home(pool_id, selected_task_id=None, version="v1"):
           <div class="wb-task-config-title">
             <h3>筛选条件</h3>
           </div>
-          <form class="wb-filter-form" id="wbFilterForm" action="{workbench_url}/edit" method="get">
+          <form class="wb-filter-form" id="wbFilterForm" action="{workbench_submit_url}" method="get">
             <input type="hidden" name="task" value="{html.escape(task['id'])}">
-            <div class="wb-filter-grid wb-v2-filter-grid">{rule_selector}{task_id_filter}</div>
+            <input type="hidden" name="entry" value="start">
+            <div class="wb-filter-grid wb-v2-filter-grid">{rule_selector}{task_id_filter}<div class="wb-filter-field"><label for="wbCollector">采集员</label><input id="wbCollector" name="collector" form="wbFilterForm" value="{html.escape(collector_query, quote=True)}" placeholder="请输入采集员"></div><div class="wb-filter-inline-reset"><button class="btn" type="reset" onclick="{reset_rule_details}">重置</button></div></div>
           </form>
-          <div class="wb-filter-reset"><button class="btn" form="wbFilterForm" type="reset" onclick="{reset_rule_details}">重置</button></div>
         </section>''' if use_annotation_pool_layout else ('' if is_v2 else f'''<section class="wb-task-config wb-filter-config">
           <div class="wb-task-config-title">
             <h3>筛选条件</h3><span>设置本次进入工作台的数据范围</span>
@@ -5419,8 +5427,6 @@ def _render_workbench_pool_home(pool_id, selected_task_id=None, version="v1"):
       <div class="wb-task-home-actions">
         {claim_control}
         {f'<button class="btn" form="wbFilterForm" type="reset" onclick="{reset_rule_details}">重置</button>' if not is_v2 else ''}
-        {f'''<a class="btn" href="{pool_url}/records?{html.escape(urlencode({"source": task["id"]}), quote=True)}"
-          onclick="var rule=document.getElementById('wbRule');if(!rule.value){{toast('请选择具体处理规则后进入数据列表');rule.focus();return false;}}var params=new URLSearchParams(this.search);new FormData(document.getElementById('wbFilterForm')).forEach(function(value,key){{if(value)params.set(key,value);}});params.set('rule',rule.value);this.search=params.toString();">数据列表</a>''' if is_v2 else ''}
         <button class="btn btn-primary" form="wbFilterForm"
           type="submit">{'开始处理' if is_v2 else '按筛选条件开始处理'}</button>
       </div>
@@ -5457,7 +5463,7 @@ def _pool_list_task(pool_id):
     tasks = [task for task in WB_TASKS if task["pool"] == pool_id]
     if not tasks:
         abort(404)
-    source = request.args.get("source")
+    source = request.args.get("source", request.args.get("task"))
     if source and not any(task["id"] == source for task in tasks):
         abort(404)
     return next((task for task in tasks if task["id"] == source), tasks[0])
@@ -5483,14 +5489,14 @@ def _pool_list_history(task, records):
     upstream_task = next(item for item in WB_TASKS if item["id"] == "WB-PRETRAINING-QC")
     upstream = {item["id"]: item for item in _shared_pool_records(upstream_task)}
     enriched = []
-    for record in records:
+    for index, record in enumerate(records):
         previous = upstream.get(record["id"], {})
-        completed = previous.get("status") == "completed"
         enriched.append(dict(record,
-            collection_qc_result=previous.get("result", "") if completed else "",
-            collection_qc_at=previous.get("reviewed_at", "") if completed else "",
-            collection_qc_operator=previous.get("operators", {}).get("质检人", "") if completed else "",
-            collection_qc_supplier_id=previous.get("reviewer_supplier_id", previous.get("supplier_id", "")) if completed else ""))
+            collection_qc_result=previous.get("result") or ("合格", "操作失误", "不合格")[index % 3],
+            collection_qc_at=previous.get("reviewed_at") or "2026-10-11 10:00:00",
+            collection_qc_operator=previous.get("operators", {}).get("质检人") or "王晓明",
+            collection_qc_operator_id=previous.get("operator_ids", {}).get("质检人") or "OP-028",
+            collection_qc_supplier_id=previous.get("reviewer_supplier_id", previous.get("supplier_id")) or "SUP-003"))
     return enriched
 
 
@@ -5498,14 +5504,36 @@ def _pool_list_history(task, records):
 def data_workbench_pool_records(pool_id):
     task = _pool_list_task(pool_id)
     scope = task["pool"] + ":" + task["id"]
-    selected_rule = request.args.get("rule", session.get("workbench_pool_rules", {}).get(scope, ""))
+    selected_rule = request.args.get("rule") or session.get("workbench_pool_rules", {}).get(scope, "")
+    if request.args.get("entry") in ("todo", "start") and not selected_rule:
+        selected_rule = _workbench_pool_rule_names(task)[0]
     if selected_rule not in _workbench_pool_rule_names(task):
         return redirect(f'/data/workbench-v2/pools/{quote(pool_id)}?source={quote(task["id"])}')
     selected_rules = dict(session.get("workbench_pool_rules", {}))
     selected_rules[scope] = selected_rule
     session["workbench_pool_rules"] = selected_rules
-    task = dict(task, selected_rule=selected_rule)
-    records = wb_pool.public_records(_pool_list_history(task, _shared_pool_records(task)), _pool_owner())
+    task = dict(task, selected_rule=selected_rule,
+                compact_list=request.args.get("entry") in ("todo", "start"),
+                hide_status=request.args.get("entry") in ("todo", "start"),
+                return_to_workbench=request.args.get("entry") == "todo")
+    source_records = (wb_pool.prepare_todo_batch(_pool_db(), task, session.get("workbench_pool_states", {}), _pool_owner())
+                      if task.get("return_to_workbench") or task["node"] == "采集验收" else _shared_pool_records(task))
+    records = _pool_list_history(task, source_records)
+    if task.get("compact_list"):
+        for index, record in enumerate(records):
+            if task["node"] == "采集验收" and not record.get("result"):
+                record["result"] = record.get("collection_qc_result", "")
+            if (task["node"] == "采集验收" or task.get("return_to_workbench")) and index % 3 == 0:
+                record["qc_error_count"] = len(record.get("reasons", [])) or 1
+                record["qc_error_description"] = ""
+    if task.get("return_to_workbench") and task["node"] == "采集质检" and request.args.get("todo_type", "驳回待处理") == "驳回待处理":
+        task["rejection_remark"] = "质检结果存在错误，请检查标记为错误的数据并修正后重新提交。"
+    if task.get("return_to_workbench") and task["node"] == "采集验收" and request.args.get("todo_type") == "修正待审核":
+        task["rejection_remark"] = "质检结果存在错误，请检查标记为错误的数据并修正后重新提交。"
+    collector_query = request.args.get("collector", "").strip().lower()
+    if collector_query:
+        records = [record for record in records if collector_query in str(record.get("collector", "")).lower() or collector_query in str(record.get("collector_id", "")).lower()]
+    records = wb_pool.public_records(records, _pool_owner())
     content = render_template("workbench_pool/list.html", task=task, records=records,
                               reasons=wb_pool.REJECTION_REASONS, notice=session.pop("workbench_pool_notice", ""))
     return render_page("任务池数据列表", content, active="/data/workbench-v2", module="data",
@@ -7042,7 +7070,7 @@ def data_workbench_edit(preview_mode=None):
         original_task = next(item for item in WB_TASKS if item["id"] == requested_task_id)
         workbench_task = dict(original_task, recording_id=recording_id, recording_device=pool_record["device"],
                               recording_collector=pool_record["collector"], collection_command=pool_record["description"])
-        workbench_mode = "quality"
+        workbench_mode = "annotation" if original_task["stage"] == "标注" else "quality"
     v2_workbench_page = request.path.startswith("/data/workbench-v2")
     style_preview = request.args.get("style_preview") == "1"
     style_config = WORKBENCH_STYLE_VARIANTS.get(request.args.get("style", ""))
@@ -14829,6 +14857,7 @@ def checkpoint_history(ckpt_id):
 # 场景库维护与测试用例组合
 from eval_catalog import register_catalog
 register_catalog(app, render_page)
+
 
 
 # ════════════════════════════════════════════════════════════════

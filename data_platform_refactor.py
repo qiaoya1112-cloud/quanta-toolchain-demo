@@ -9849,6 +9849,7 @@ def render_workbench_v2():
             [
                 f'<b class="dpr-wb2-flow-name">{_e(group["flow"])}</b>',
                 f'<span class="dpr-wb2-node-name">{_e(group["node"])}</span>',
+                f'<span class="dpr-wb2-node-name">{"批量处理" if start_pool.get("execution_unit") == "batch" or start_pool["pool_id"].startswith("POOL-PRETRAINING-") else "单独处理"}</span>',
                 f'<b class="dpr-wb2-volume-number">{group["pending"]}</b>',
                 f'<b class="dpr-wb2-volume-number">{group["processing"]}</b>',
                 f'<div class="dpr-wb2-pool-actions"><a href="/data/workbench-v2/pools/{_e(start_pool["pool_id"])}">开始处理</a></div>',
@@ -9858,7 +9859,7 @@ def render_workbench_v2():
             f'data-flow="{_e(group["flow"])}" data-node="{_e(group["node"])}"'
         )
     pool_table = _table(
-        ["流程", "节点", "待领取", "处理中", "操作"],
+        ["流程", "节点", "处理类型", "待领取", "处理中", "操作"],
         pool_rows,
         table_id="dpr-wb2-pool-table",
         row_attrs=pool_row_attrs,
@@ -9913,13 +9914,27 @@ def render_workbench_v2():
             "description": description,
             "updated_at": updated_at,
             "task_id": task_id,
+            "processing_type": "批量处理" if task_id.startswith("WB-PRETRAINING-") else "单独处理",
         }
         for recording_id, flow_id, flow_name, current_node, source_node, source_operation, current_round, description, updated_at, task_id in rejected
     ]
+    for node, task_id, pool_id in (("采集质检", "WB-PRETRAINING-QC", "POOL-PRETRAINING-QC"), ("采集验收", "WB-PRETRAINING-ACCEPTANCE", "POOL-PRETRAINING-ACCEPTANCE")):
+        for todo_type in ("驳回待处理", "修正待审核", "其他分配任务"):
+            if node == "采集质检" and todo_type == "修正待审核":
+                continue
+            if node == "采集验收" and todo_type == "驳回待处理":
+                continue
+            todo_items.append(dict(recording_id="7523785", record_ids=[str(7523785 + i) for i in range(10)], flow_id="flow.pretraining.qc", flow_name="预训练自动化质检流程", current_node=node, source_operation={"驳回待处理":"驳回", "修正待审核":"提交"}.get(todo_type, "分配"), todo_type=todo_type, processing_type="批量处理", current_round="第 2 轮", description="质检结果存在错误，请检查标记为错误的数据并修正后重新提交。" if todo_type == "驳回待处理" or (node == "采集验收" and todo_type == "修正待审核") else "", updated_at="2026-10-11 10:00", task_id=task_id, pool_id=pool_id))
+    for item in todo_items:
+        if item["todo_type"] == "修正待审核":
+            item["source_operation"] = "提交"
     todo_data_json = json.dumps(todo_items, ensure_ascii=False).replace("</", "<\\/")
     return f"""
     <style>
       .dpr-wb2-items-type-header{{display:flex;align-items:center;flex-wrap:wrap;gap:10px 16px;margin-bottom:14px}}
+      .dpr-wb2-reject-reason span{{display:block;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}}
+      .dpr-wb2-id-tooltip{{position:fixed;z-index:1000;max-width:380px;padding:10px 12px;border:1px solid #dce4e6;border-radius:6px;background:#fff;color:#334c54;font:12px/1.7 monospace;box-shadow:0 4px 16px rgba(27,57,65,.15);overflow-wrap:anywhere;pointer-events:none}}
+      .dpr-wb2-tree{{border-bottom:1px solid #edf1f2}}.dpr-wb2-tree summary{{display:flex;align-items:center;gap:8px;padding:13px 16px;cursor:pointer;color:#334c54;font-size:12px;list-style:none}}.dpr-wb2-tree summary:before{{content:'›';color:#849197}}.dpr-wb2-tree[open] summary:before{{transform:rotate(90deg)}}.dpr-wb2-tree summary b{{flex:1;min-width:0}}.dpr-wb2-tree summary em{{color:#149daa;font-size:11px;font-style:normal;white-space:nowrap}}.dpr-wb2-tree-children .dpr-wb2-group-item{{padding-left:32px}}
       .dpr-wb2-items-type-description{{margin:0;color:#718188;font-size:12px;line-height:1.6}}
       .dpr-wb2-items-type-tabs{{display:inline-flex;flex-wrap:wrap;gap:0;margin:0;padding:3px;border:1px solid #d9e1e5;border-radius:8px;background:#f3f6f7}}
       .dpr-wb2-items-type-tab{{position:relative;min-width:92px;height:32px;padding:0 16px;border:0;border-radius:6px;background:transparent;color:#68777d;font-size:13px;cursor:pointer;transition:all .15s ease}}
@@ -9945,13 +9960,12 @@ def render_workbench_v2():
     </section>
     <section class="dpr-wb2-pane active" data-wb2-pane="items">
       <div class="dpr-wb2-items-type-header">
-        <div class="dpr-wb2-items-type-tabs"><button class="dpr-wb2-items-type-tab active" data-type="驳回待处理" data-description="对提交后被驳回的任务进行修正" onclick="dprWb2SetType(this)">驳回待处理</button><button class="dpr-wb2-items-type-tab" data-type="修正待审核" data-description="对修正后重新提交的任务进行再次审核" onclick="dprWb2SetType(this)">修正待审核</button><button class="dpr-wb2-items-type-tab" data-type="其他分配任务" data-description="其他定向分配的任务" onclick="dprWb2SetType(this)">其他分配任务</button></div>
+        <div class="dpr-wb2-items-type-tabs"><button class="dpr-wb2-items-type-tab active" data-type="驳回待处理" data-description="对提交后被驳回的任务进行修正" onclick="dprWb2SetType(this)">驳回待处理</button><button class="dpr-wb2-items-type-tab" data-type="修正待审核" data-description="对修正后重新提交的任务进行再次审核" onclick="dprWb2SetType(this)">修正待审核</button><button class="dpr-wb2-items-type-tab" data-type="其他分配任务" data-description="" onclick="dprWb2SetType(this)">分配待处理</button></div>
         <p id="dprWb2TypeDescription" class="dpr-wb2-items-type-description" aria-live="polite">对提交后被驳回的任务进行修正</p>
       </div>
       <div class="q-filters rule-filter-panel dpr-wb2-items-toolbar">
         <div class="q-filter-row">
-          <div class="q-field"><label for="dprWb2TaskIdFilter">任务 ID</label><input id="dprWb2TaskIdFilter" type="search" placeholder="请输入任务 ID" oninput="dprWb2Query()"></div>
-          <div class="q-field"><label for="dprWb2TaskFilter">处理任务</label><select id="dprWb2TaskFilter" onchange="dprWb2Query()"><option value="">全部处理任务</option></select></div>
+          <div class="q-field"><label for="dprWb2TaskFilter">流程</label><select id="dprWb2TaskFilter" onchange="dprWb2Query()"><option value="">全部流程</option></select></div>
           <div class="q-field"><label for="dprWb2CurrentNodeFilter">当前节点</label><select id="dprWb2CurrentNodeFilter" onchange="dprWb2Query()"><option value="">全部当前节点</option></select></div>
           <div class="q-field"><label for="dprWb2RecordingFilter">数据 ID</label><input id="dprWb2RecordingFilter" type="search" placeholder="请输入数据 ID" oninput="dprWb2Query()"></div>
           <div class="q-actions"><button type="button" class="btn" onclick="dprWb2ClearFilters()">清空</button><button type="button" class="btn btn-primary" onclick="dprWb2Query()">查询</button></div>
@@ -9959,13 +9973,13 @@ def render_workbench_v2():
       </div>
       <div class="dpr-wb2-items-split">
         <aside class="dpr-wb2-group-panel">
-          <div class="dpr-wb2-group-panel-head"><b>处理任务</b><span id="dprWb2TotalCount" class="dpr-wb2-total-count"></span></div>
+          <div class="dpr-wb2-group-panel-head"><b>流程列表</b><span id="dprWb2TotalCount" class="dpr-wb2-total-count"></span></div>
           <div id="dprWb2GroupList" class="dpr-wb2-group-list"></div>
         </aside>
         <section class="dpr-wb2-recordings-panel">
           <div class="table-wrap dpr-wb2-items-list">
             <table class="ant-table dpr-wb2-items-table">
-              <thead><tr><th>数据 ID</th><th>来源操作</th><th>说明</th><th>当前轮次</th><th><button type="button" onclick="dprWb2Sort(&quot;updated_at&quot;)">更新时间<span class="dpr-wb2-sort-indicator" data-sort-indicator="updated_at"></span></button></th><th>操作</th></tr></thead>
+              <thead><tr><th>数据 ID</th><th>处理类型</th><th>来源操作</th><th>说明</th><th>当前轮次</th><th><button type="button" onclick="dprWb2Sort(&quot;updated_at&quot;)">更新时间<span class="dpr-wb2-sort-indicator" data-sort-indicator="updated_at"></span></button></th><th>操作</th></tr></thead>
               <tbody id="dprWb2ItemsRows"></tbody>
             </table>
           </div>
@@ -9982,16 +9996,21 @@ def render_workbench_v2():
     function dprWb2Escape(value){{return String(value==null?'':value).replace(/[&<>\"']/g,function(char){{return {{'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":'&#39;'}}[char];}});}}
     function dprWb2RenderPagination(){{var holder=document.getElementById('dprWb2PageButtons');holder.innerHTML='';for(var page=1;page<=dprWb2TotalPages;page++)holder.innerHTML+='<button type="button" class="'+(page===dprWb2Page?'active':'')+'" onclick="dprWb2GoToPage('+page+')">'+page+'</button>';document.getElementById('dprWb2PrevPage').disabled=dprWb2Page<=1;document.getElementById('dprWb2NextPage').disabled=dprWb2Page>=dprWb2TotalPages;}}
     function dprWb2Query(){{dprWb2Page=1;dprWb2RenderItems();}}
-    function dprWb2ClearFilters(){{document.getElementById('dprWb2TaskIdFilter').value='';document.getElementById('dprWb2TaskFilter').value='';document.getElementById('dprWb2CurrentNodeFilter').value='';document.getElementById('dprWb2RecordingFilter').value='';dprWb2SelectedGroupKey='';dprWb2Query();}}
+    function dprWb2ClearFilters(){{document.getElementById('dprWb2TaskFilter').value='';document.getElementById('dprWb2CurrentNodeFilter').value='';document.getElementById('dprWb2RecordingFilter').value='';dprWb2SelectedGroupKey='';dprWb2Query();}}
     function dprWb2GoToPage(page){{dprWb2Page=Math.max(1,Math.min(page,dprWb2TotalPages));dprWb2RenderItems();}}
     function dprWb2ChangePage(delta){{dprWb2GoToPage(dprWb2Page+delta);}}
-    function dprWb2BuildOptions(){{var tasks=[],currentNodes=[];dprWb2Items.forEach(function(item){{if(tasks.indexOf(item.processing_task)<0)tasks.push(item.processing_task);if(currentNodes.indexOf(item.current_node)<0)currentNodes.push(item.current_node);}});document.getElementById('dprWb2TaskFilter').innerHTML='<option value="">全部处理任务</option>'+tasks.map(function(value){{return '<option value="'+dprWb2Escape(value)+'">'+dprWb2Escape(value)+'</option>';}}).join('');document.getElementById('dprWb2CurrentNodeFilter').innerHTML='<option value="">全部当前节点</option>'+currentNodes.map(function(value){{return '<option value="'+dprWb2Escape(value)+'">'+dprWb2Escape(value)+'</option>';}}).join('');}}
-    function dprWb2GroupItems(items){{var groups={{}};items.forEach(function(item){{var key=[item.task_id,item.processing_task,item.current_node,item.source_node].join('|'),group=groups[key];if(!group){{group=groups[key]=Object.assign({{}},item,{{group_key:key,group_count:0,items:[]}});}}group.group_count+=1;group.items.push(item);if(String(item.updated_at||'')>String(group.updated_at||'')){{group.updated_at=item.updated_at;}}}});return Object.keys(groups).map(function(key){{return groups[key];}});}}
-    function dprWb2FilteredItems(){{var taskId=document.getElementById('dprWb2TaskIdFilter').value.trim().toLowerCase(),task=document.getElementById('dprWb2TaskFilter').value,currentNode=document.getElementById('dprWb2CurrentNodeFilter').value,recording=document.getElementById('dprWb2RecordingFilter').value.trim().toLowerCase();return dprWb2Items.filter(function(item){{return item.todo_type===dprWb2TodoType&&(!taskId||(item.task_number+' '+item.task_id).toLowerCase().indexOf(taskId)>=0)&&(!task||item.processing_task===task)&&(!currentNode||item.current_node===currentNode)&&(!recording||item.recording_id.toLowerCase().indexOf(recording)>=0);}}).sort(function(a,b){{var left=String(a[dprWb2SortKey]||''),right=String(b[dprWb2SortKey]||''),result=left.localeCompare(right,'zh-CN');return dprWb2SortDirection==='asc'?result:-result;}});}}
+    function dprWb2BuildOptions(){{var tasks=[],currentNodes=[];dprWb2Items.forEach(function(item){{if(tasks.indexOf(item.flow_name)<0)tasks.push(item.flow_name);if(currentNodes.indexOf(item.current_node)<0)currentNodes.push(item.current_node);}});document.getElementById('dprWb2TaskFilter').innerHTML='<option value="">全部流程</option>'+tasks.map(function(value){{return '<option value="'+dprWb2Escape(value)+'">'+dprWb2Escape(value)+'</option>';}}).join('');document.getElementById('dprWb2CurrentNodeFilter').innerHTML='<option value="">全部当前节点</option>'+currentNodes.map(function(value){{return '<option value="'+dprWb2Escape(value)+'">'+dprWb2Escape(value)+'</option>';}}).join('');}}
+    function dprWb2GroupItems(items){{var groups={{}};items.forEach(function(item){{var key=[item.flow_id,item.current_node].join('|'),group=groups[key];if(!group){{group=groups[key]=Object.assign({{}},item,{{group_key:key,group_count:0,items:[]}});}}group.group_count+=1;group.items.push(item);if(String(item.updated_at||'')>String(group.updated_at||'')){{group.updated_at=item.updated_at;}}}});return Object.keys(groups).map(function(key){{return groups[key];}});}}
+    function dprWb2FilteredItems(){{var task=document.getElementById('dprWb2TaskFilter').value,currentNode=document.getElementById('dprWb2CurrentNodeFilter').value,recording=document.getElementById('dprWb2RecordingFilter').value.trim().toLowerCase();return dprWb2Items.filter(function(item){{return item.todo_type===dprWb2TodoType&&(!task||item.flow_name===task)&&(!currentNode||item.current_node===currentNode)&&(!recording||item.recording_id.toLowerCase().indexOf(recording)>=0);}}).sort(function(a,b){{var left=String(a[dprWb2SortKey]||''),right=String(b[dprWb2SortKey]||''),result=left.localeCompare(right,'zh-CN');return dprWb2SortDirection==='asc'?result:-result;}});}}
     function dprWb2SelectGroup(key){{dprWb2SelectedGroupKey=key;dprWb2Page=1;dprWb2RenderItems();}}
     function dprWb2DisplayTaskName(value){{return String(value||'').split(' · ')[0];}}
-    function dprWb2RenderItems(){{var allItems=dprWb2FilteredItems(),groups=dprWb2GroupItems(allItems),selected=groups.find(function(group){{return group.group_key===dprWb2SelectedGroupKey;}})||groups[0]||null;if(selected)dprWb2SelectedGroupKey=selected.group_key;else dprWb2SelectedGroupKey='';document.getElementById('dprWb2TotalCount').textContent=allItems.length+' 条待办';document.getElementById('dprWb2GroupList').innerHTML=groups.length?groups.map(function(group){{var groupTitle=group.task_number+' '+dprWb2DisplayTaskName(group.processing_task);return '<button type="button" class="dpr-wb2-group-item'+(group.group_key===dprWb2SelectedGroupKey?' active':'')+'" data-group-key="'+dprWb2Escape(group.group_key)+'" onclick="dprWb2SelectGroup(this.dataset.groupKey)"><div class="dpr-wb2-group-title-row"><b style="white-space:normal;overflow-wrap:anywhere" title="'+dprWb2Escape(groupTitle)+'">'+dprWb2Escape(groupTitle)+'</b><em>'+group.group_count+' 条待办</em></div><div class="dpr-wb2-group-meta"><span><i>当前节点</i>'+dprWb2Escape(group.current_node)+'</span></div></button>';}}).join(''):'<div class="dpr-wb2-recordings-empty">当前没有匹配的处理分组</div>';var recordingItems=selected?selected.items:[];dprWb2TotalPages=Math.max(1,Math.ceil(recordingItems.length/dprWb2PageSize));if(dprWb2Page>dprWb2TotalPages)dprWb2Page=dprWb2TotalPages;var items=recordingItems.slice((dprWb2Page-1)*dprWb2PageSize,dprWb2Page*dprWb2PageSize);document.getElementById('dprWb2ItemsRows').innerHTML=items.length?items.map(function(item){{var href='/data/workbench-v2/edit?task='+encodeURIComponent(item.task_id)+'&recording_id='+encodeURIComponent(item.recording_id)+'&entry=todo';return '<tr><td><code>'+dprWb2Escape(item.recording_id)+'</code></td><td><span class="dpr-wb2-operation">'+dprWb2Escape(item.source_operation)+'</span></td><td class="dpr-wb2-reject-reason">'+dprWb2Escape(item.description||'—')+'</td><td>'+dprWb2Escape(item.current_round)+'</td><td>'+dprWb2Escape(item.updated_at)+'</td><td class="dpr-wb2-item-action"><a class="tbtn" href="'+dprWb2Escape(href)+'">处理</a></td></tr>';}}).join(''):'<tr><td colspan="6" class="dpr-wb2-recordings-empty">当前分组没有匹配的 recording</td></tr>';document.querySelectorAll('[data-sort-indicator]').forEach(function(indicator){{indicator.textContent=indicator.dataset.sortIndicator===dprWb2SortKey?(dprWb2SortDirection==='asc'?' ↑':' ↓'):'';}});dprWb2RenderPagination();}}
+    var dprWb2CollapsedFlows={{}};
+    function dprWb2RenderTree(groups){{var flows={{}};groups.forEach(function(group){{var flow=flows[group.flow_id]||(flows[group.flow_id]={{name:group.flow_name,count:0,nodes:[]}});flow.count+=group.group_count;flow.nodes.push(group);}});return Object.keys(flows).map(function(id){{var flow=flows[id];return '<details class="dpr-wb2-tree" data-flow-id="'+dprWb2Escape(id)+'" '+(dprWb2CollapsedFlows[id]?'':'open')+' ontoggle="dprWb2CollapsedFlows[this.dataset.flowId]=!this.open"><summary><b>'+dprWb2Escape(flow.name)+'</b><em>'+flow.count+' 条待办</em></summary><div class="dpr-wb2-tree-children">'+flow.nodes.map(function(group){{return '<button type="button" class="dpr-wb2-group-item'+(group.group_key===dprWb2SelectedGroupKey?' active':'')+'" data-group-key="'+dprWb2Escape(group.group_key)+'" onclick="dprWb2SelectGroup(this.dataset.groupKey)"><div class="dpr-wb2-group-title-row"><b>'+dprWb2Escape(group.current_node)+'</b><em>'+group.group_count+' 条待办</em></div></button>';}}).join('')+'</div></details>';}}).join('')||'<div class="dpr-wb2-recordings-empty">当前没有匹配的流程</div>';}}
+    function dprWb2RenderItems(){{var allItems=dprWb2FilteredItems(),groups=dprWb2GroupItems(allItems),selected=groups.find(function(group){{return group.group_key===dprWb2SelectedGroupKey;}})||groups[0]||null;if(selected)dprWb2SelectedGroupKey=selected.group_key;else dprWb2SelectedGroupKey='';document.getElementById('dprWb2TotalCount').textContent=allItems.length+' 条待办';document.getElementById('dprWb2GroupList').innerHTML=dprWb2RenderTree(groups);var recordingItems=selected?selected.items:[];dprWb2TotalPages=Math.max(1,Math.ceil(recordingItems.length/dprWb2PageSize));if(dprWb2Page>dprWb2TotalPages)dprWb2Page=dprWb2TotalPages;var items=recordingItems.slice((dprWb2Page-1)*dprWb2PageSize,dprWb2Page*dprWb2PageSize);document.getElementById('dprWb2ItemsRows').innerHTML=items.length?items.map(function(item){{var ids=item.record_ids||[item.recording_id];var href='/data/workbench-v2/edit?task='+encodeURIComponent(item.task_id)+'&recording_id='+encodeURIComponent(item.recording_id)+'&entry=todo';if(item.pool_id)href='/data/workbench-v2/pools/'+encodeURIComponent(item.pool_id)+'/records?source='+encodeURIComponent(item.task_id)+'&entry=todo&todo_type='+encodeURIComponent(item.todo_type);return '<tr><td><code title="'+dprWb2Escape(ids.join('、'))+'">'+dprWb2Escape(ids.slice(0,3).join('、')+(ids.length>3?' …':''))+'</code></td><td>'+dprWb2Escape(item.processing_type||'单独处理')+'</td><td><span class="dpr-wb2-operation">'+dprWb2Escape(item.source_operation)+'</span></td><td class="dpr-wb2-reject-reason"><span title="'+dprWb2Escape(item.description||'—')+'">'+dprWb2Escape(item.description||'—')+'</span></td><td>'+dprWb2Escape(item.current_round)+'</td><td>'+dprWb2Escape(item.updated_at)+'</td><td class="dpr-wb2-item-action"><a class="tbtn" href="'+dprWb2Escape(href)+'">处理</a></td></tr>';}}).join(''):'<tr><td colspan="7" class="dpr-wb2-recordings-empty">当前分组没有匹配的 recording</td></tr>';document.querySelectorAll('[data-sort-indicator]').forEach(function(indicator){{indicator.textContent=indicator.dataset.sortIndicator===dprWb2SortKey?(dprWb2SortDirection==='asc'?' ↑':' ↓'):'';}});dprWb2RenderPagination();}}
     function dprWb2Sort(key){{if(dprWb2SortKey===key)dprWb2SortDirection=dprWb2SortDirection==='asc'?'desc':'asc';else{{dprWb2SortKey=key;dprWb2SortDirection='asc';}}dprWb2Page=1;dprWb2RenderItems();}}
+    var dprWb2IdTooltip;
+    document.getElementById('dprWb2ItemsRows').addEventListener('mouseover',function(event){{var code=event.target.closest('code[title],.dpr-wb2-reject-reason span[title]');if(!code)return;if(dprWb2IdTooltip)dprWb2IdTooltip.remove();dprWb2IdTooltip=document.createElement('div');dprWb2IdTooltip.className='dpr-wb2-id-tooltip';dprWb2IdTooltip.textContent=code.title;document.body.appendChild(dprWb2IdTooltip);var rect=code.getBoundingClientRect();dprWb2IdTooltip.style.left=Math.max(8,Math.min(rect.left,window.innerWidth-dprWb2IdTooltip.offsetWidth-8))+'px';dprWb2IdTooltip.style.top=Math.max(8,Math.min(rect.bottom+6,window.innerHeight-dprWb2IdTooltip.offsetHeight-8))+'px';}});
+    document.getElementById('dprWb2ItemsRows').addEventListener('mouseout',function(event){{if(event.target.closest('code[title],.dpr-wb2-reject-reason span[title]')&&dprWb2IdTooltip){{dprWb2IdTooltip.remove();dprWb2IdTooltip=null;}}}});
     dprWb2BuildOptions();dprWb2RenderItems();
     </script>
     """

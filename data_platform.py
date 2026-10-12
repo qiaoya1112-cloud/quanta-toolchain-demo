@@ -5991,7 +5991,7 @@ WF_CANVAS_JS = r"""
       wfRefreshProcessingRuleInheritance();
       document.getElementById('wfhProcessingPercent').value=n.processingPercent==null?'100':n.processingPercent;
       document.getElementById('wfhAllowTaskPercent').checked=!!n.allowTaskPercent;
-      document.querySelectorAll('input[name="wfhDataListEnabled"]').forEach(function(input){ input.checked=input.value===(n.dataListEnabled===false?'false':'true'); });
+      document.querySelectorAll('input[name="wfhProcessingMode"]').forEach(function(input){ input.checked=input.value===(n.processingMode || (n.businessStage==='质检'?'batch':'single')); });
       wfRefreshAssigneeInheritance();
       document.getElementById('wfhAssigneeInheritNode').value=n.inheritAssigneeNodeId||'';
       var previousNodes=previousHumanNodes(n);
@@ -6177,7 +6177,8 @@ WF_CANVAS_JS = r"""
       n.processingRuleMode=ruleMode;
       n.processingPercent=percent;
       n.allowTaskPercent=document.getElementById('wfhAllowTaskPercent').checked;
-      n.dataListEnabled=document.querySelector('input[name="wfhDataListEnabled"]:checked').value==='true';
+      n.processingMode=document.querySelector('input[name="wfhProcessingMode"]:checked').value;
+      n.dataListEnabled=n.processingMode==='batch';
       n.inheritProcessingRuleNodeId=n.processingRuleMode==='inherit'?document.getElementById('wfhProcessingRuleInheritNode').value:'';
       n.allowedActions=rejectEnabled?['驳回']:[];
       n.rejectEnabled=rejectEnabled;
@@ -6366,7 +6367,7 @@ WF_CANVAS_JS = r"""
       businessStage:'通用',workbench:'质检工作台 v2.0',workbenchType:'作业',workbenchModules:{质检:'可编辑',标注:'可编辑',标签:'仅查看',日志:'仅查看',基础信息:'仅查看'},userGroups:[],
       assigneeType:'supplier',assigneeMode:'task_custom',inheritAssigneeNodeId:'',
       processingRuleMode:'none',
-      dataListEnabled:true,
+      processingMode:'batch',dataListEnabled:true,
       allowedActions:['提交','暂离'],x:nodePosition.x,y:nodePosition.y
     };
     NODES.push(node);
@@ -6571,6 +6572,7 @@ def _processing_canvas_payload(pl):
             "processingRuleMode": node.get("processing_rule_mode", "none"),
             "processingPercent": node.get("processing_percent", 100),
             "allowTaskPercent": node.get("allow_task_percent", False),
+            "processingMode": "batch" if pl.get("business_stage") == "质检" else node.get("processing_mode", "single"),
             "dataListEnabled": node.get("data_list_enabled", True),
             "inheritProcessingRuleNodeId": node_name_to_id.get(node.get("inherit_processing_rule_node", ""), ""),
             "inheritAssigneeNodeId": node_name_to_id.get(
@@ -6958,10 +6960,10 @@ def pipeline_editor(pid):
             <div class="wf-cfg-sec" style="margin-top:16px;">处理比例</div>
             <div class="wf-human-grid"><label><span class="wf-human-label">比例（%）</span><input id="wfhProcessingPercent" class="wf-edit-field" type="number" min="1" max="100" step="1" value="100"></label><label style="display:flex;align-items:flex-end;padding-bottom:7px;gap:7px;"><input id="wfhAllowTaskPercent" type="checkbox"><span class="wf-human-label" style="margin:0;">支持任务自定义</span></label></div>
 
-            <div class="wf-cfg-sec">数据列表</div>
-            <div class="wf-choice-grid" id="wfhDataListEnabled" role="group" aria-label="数据列表">
-              <label><input type="radio" name="wfhDataListEnabled" value="true" checked><span>开启</span></label>
-              <label><input type="radio" name="wfhDataListEnabled" value="false"><span>关闭</span></label>
+            <div class="wf-cfg-sec">处理模式</div>
+            <div class="wf-choice-grid" id="wfhDataListEnabled" role="group" aria-label="处理模式">
+              <label><input type="radio" name="wfhProcessingMode" value="batch" checked><span>批量处理</span></label>
+              <label><input type="radio" name="wfhProcessingMode" value="single"><span>单独处理</span></label>
             </div>
 
             <div class="wf-cfg-sec">工作台</div>
