@@ -36,19 +36,14 @@ async function main(){
   assert.equal(await evaluate("getComputedStyle(document.querySelector('.ptqw-compare')).display"),'grid');
   assert.equal(await evaluate("document.querySelector('.ptq-public-timeline').getBoundingClientRect().height<=20"),true);
   assert.equal(await evaluate("(()=>{const rail=document.querySelector('.workbench-review__rail').getBoundingClientRect();return [...document.querySelectorAll('.workbench-review__rail [data-review-variant]')].every(b=>{const r=b.getBoundingClientRect();return r.right<=rail.right+1&&b.scrollHeight<=b.clientHeight+1})})()"),true);
-  assert.equal(await evaluate("document.querySelector('.ptqw-note-text').textContent.includes('请重点核对右臂视角')"),true);
+  assert.equal(await evaluate("document.querySelector('.ptqw-feedback-note')===null"),true);
   await delay(100);
-  assert.equal(await evaluate("document.querySelector('.ptqw-feedback-note button')===null"),true);
-  assert.equal(await evaluate("Math.abs(document.querySelector('.ptqw-error-reason').getBoundingClientRect().top-document.querySelector('.ptqw-feedback-note').getBoundingClientRect().top)<2"),true);
   assert.equal(await evaluate("document.querySelector('.ptqw-compare').getBoundingClientRect().height<=64"),true);
   await evaluate("document.querySelector('.ptqw-reason-value').dispatchEvent(new PointerEvent('pointerover',{bubbles:true,clientX:700,clientY:600}))");
   assert.equal(await evaluate("document.querySelector('#ptqrDescriptionTooltip span').textContent===document.querySelector('.ptqw-reason-value').textContent"),true);
   assert.equal(await evaluate("document.querySelector('#ptqrDescriptionTooltip b')===null"),true);
-  await evaluate("document.querySelector('.ptqw-note-text').dispatchEvent(new PointerEvent('pointerover',{bubbles:true,clientX:700,clientY:600}))");
   assert.equal(await evaluate("document.querySelector('#ptqrDescriptionTooltip').hidden"),false);
-  assert.equal(await evaluate("document.querySelector('#ptqrDescriptionTooltip span').textContent===document.querySelector('.ptqw-note-text').textContent"),true);
   assert.equal(await evaluate("document.querySelector('#ptqrDescriptionTooltip b')===null"),true);
-  await evaluate("document.querySelector('.ptqw-note-text').dispatchEvent(new PointerEvent('pointerout',{bubbles:true,relatedTarget:document.body}))");
   assert.equal(await evaluate("document.querySelectorAll('post-rework-training-quality-workspace .ptqw-chip.is-omitted').length"),1);
   const feedback=await evaluate("JSON.stringify(PostTrainingQualityReworkDemo.state.segments[0].feedback)");
   const original=await evaluate("JSON.stringify(PostTrainingQualityDemo.state.segments)");
@@ -87,3 +82,4 @@ async function main(){
  }finally{socket?.close();chrome.kill();server.close();}
 }
 main().catch(error=>{console.error(error);process.exitCode=1;});
+

@@ -35,13 +35,6 @@
     const reasonLabel=document.createElement('span');reasonLabel.textContent='错误原因';
     const reasonValue=document.createElement('span');reasonValue.className='ptqw-reason-value';reasonValue.textContent=feedback.reason||'无';
     reason.append(reasonLabel,reasonValue);feedbackRow.append(reason);details.append(feedbackRow);
-    if(feedback.note){
-      const note=document.createElement('div');note.className='ptqw-feedback-note';
-      const label=document.createElement('span');label.textContent='补充说明';
-      const text=document.createElement('div');text.className='ptqw-note-text';text.textContent=feedback.note;
-      text.dataset.fullDescription=feedback.note;
-      note.append(label,text);feedbackRow.append(note);
-    }
     const compare=document.createElement('div');compare.className='ptqw-compare';
     const current=document.createElement('div');current.className='ptqw-current';
     const title=document.createElement('div');title.className='ptqw-current-title';title.textContent='质检结果';
