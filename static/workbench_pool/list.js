@@ -12,23 +12,8 @@
   const selectAll = document.getElementById('wpSelectAll');
   const batch = document.getElementById('wpBatch');
   let activeFilters = {}, busy = false;
-  const pretraining = task.id.startsWith('WB-PRETRAINING-');
-  const acceptance = task.id === 'WB-PRETRAINING-ACCEPTANCE';
-  function history(item) {
-    const entries = [
-      {label:'采集', name:item.collector, supplier:item.supplier_id, time:item.collected_at},
-      {label:'采集自检', name:item.self_checker, supplier:item.self_checker_supplier_id || item.supplier_id, time:item.self_checked_at},
-    ];
-    if (acceptance) entries.push({label:'采集质检', name:item.collection_qc_operator, supplier:item.collection_qc_supplier_id, time:item.collection_qc_at});
-    else if (!pretraining) entries.push({label:'采集质检', name:item.result ? item.operators?.['质检人'] : '', supplier:item.reviewer_supplier_id || item.supplier_id, time:item.reviewed_at});
-    return entries;
-  }
-  const escape = value => String(value).replace(/[&<>"']/g, value => ({'&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;'}[value]));
-  const details = entries => '<div class="wp-details">' + entries.map(([label, value]) =>
-    '<div><span>' + escape(label) + '：</span>' + escape(Array.isArray(value) ? value.join('、') || '--' : value || '--') + '</div>'
-  ).join('') + '</div>';
   function visibleRecords() {
-    return records.filter(item => item.status !== 'completed').filter(item => {
+    return records.filter(item => (task.compact_list || item.status !== 'completed') && (!task.job_batch || (item.job_batch || item.id) === task.job_batch)).filter(item => {
       return Object.entries(activeFilters).every(([key, value]) => {
         if (!value) return true;
         if (key === 'time_node') return true;
@@ -38,7 +23,7 @@
         }
         if (key === 'status') return item.status === value;
         if (key === 'supplier_id') return String(item.supplier_id || '').toLowerCase().includes(value.toLowerCase());
-        if (key === 'operator') return history(item).some(entry => String(entry.name || '').toLowerCase().includes(value.toLowerCase()));
+        if (key === 'operator') return window.WorkbenchPoolRows.history(item, task).some(entry => String(entry.name || '').toLowerCase().includes(value.toLowerCase()));
         return String(item[key]).toLowerCase().includes(value.toLowerCase());
       });
     }).sort((a, b) => Number(b.status === 'processing') - Number(a.status === 'processing'));
@@ -47,37 +32,24 @@
     const visible = visibleRecords();
     const pending = visible.filter(item => item.status === 'pending');
     for (const id of selected) if (!pending.some(item => item.id === id)) selected.delete(id);
-    document.getElementById('wpCount').textContent = '共 ' + visible.length + ' 条数据';
-    document.getElementById('wpSelected').textContent = '已选' + selected.size + '条，最多同时执行20条';
-    batch.disabled = busy || !selected.size;
-    selectAll.disabled = busy || !pending.length;
-    selectAll.checked = pending.length > 0 && pending.every(item => selected.has(item.id));
-    selectAll.indeterminate = selected.size > 0 && !selectAll.checked;
-    rows.innerHTML = visible.length ? visible.map(item => {
-      const processing = item.status === 'processing';
-      const images = ['头部', '左臂', '右臂'].map(view => '<div class="wp-view"><img src="/static/annotation_workbench/assets/frame.png" alt="' + view + '视角示例帧"><span>' + view + ' · 示例</span></div>').join('');
-      const conclusion = value => !value || ['未自检', '未质检'].includes(value) ? '-' : value;
-      const conclusionEntries = [['采集自检', conclusion(item.self_check_result)], ['自动化质检', conclusion(item.auto_result)]];
-      if (acceptance) conclusionEntries.push(['采集质检', conclusion(item.collection_qc_result)]);
-      else if (!pretraining) conclusionEntries.push(['采集质检', conclusion(item.result)]);
-      const conclusions = details(conclusionEntries);
-      const entries = history(item);
-      const operators = details(entries.map(entry => [entry.label, entry.name ? entry.name + '（' + (entry.supplier || '--') + '）' : '--']));
-      const operationTimes = details(entries.map(entry => [entry.label, entry.time]));
-      const buttons = (processing && !item.occupied ? '<button data-action="不合格" class="wp-reject">不合格</button>' : '') + '<button class="wp-process" data-action="process">处理</button>';
-      return '<tr data-record-id="' + escape(item.id) + '" class="' + (processing ? 'wp-processing' : '') + '">' +
-        '<td><input type="checkbox" aria-label="选择 ' + escape(item.id) + '" ' + ((processing || busy) ? 'disabled ' : '') + (selected.has(item.id) ? 'checked ' : '') + '></td>' +
-        '<td class="wp-task-id">' + escape(item.task_id) + '</td><td class="wp-data-id"><b>' + escape(item.id) + '</b></td>' +
-        '<td><div class="wp-preview"><div class="wp-instruction"><b>' + escape(item.instruction) + '</b>：<span>' + escape(item.description) + '</span></div><div class="wp-views">' + images + '</div></div></td>' +
-        '<td>' + escape(item.device) + '</td>' +
-        '<td class="wp-operators">' + operators + '</td><td class="wp-operation-times">' + operationTimes + '</td><td class="wp-conclusions">' + conclusions + '</td>' +
-        '<td><span class="wp-status ' + (processing ? 'processing' : '') + '">' + (processing ? '已领取' : '待领取') + '</span></td>' +
-        '<td><div class="wp-row-actions">' + buttons + '</div></td></tr>';
-    }).join('') : '<tr><td colspan="10" class="wp-empty">当前没有匹配的数据</td></tr>';
+    if (!task.job_center && !task.compact_list) {
+      document.getElementById('wpCount').textContent = '共 ' + visible.length + ' 条数据';
+      document.getElementById('wpSelected').textContent = '已选' + selected.size + '条，最多同时执行20条';
+      batch.disabled = busy || !selected.size;
+      selectAll.disabled = busy || !pending.length;
+      selectAll.checked = pending.length > 0 && pending.every(item => selected.has(item.id));
+      selectAll.indeterminate = selected.size > 0 && !selectAll.checked;
+    }
+    rows.innerHTML = window.WorkbenchPoolRows.render(visible, task, {busy, selected});
     rows.querySelectorAll('button').forEach(button => { button.disabled = busy; });
   }
   function report(message) {
     const error = document.getElementById('wpError');
+    if (message && message.includes('数据已被其他人占用或处理')) {
+      error.textContent = ''; error.hidden = true;
+      if (typeof toast === 'function') toast('当前批次已变化，请刷新后重试');
+      return;
+    }
     error.textContent = message; error.hidden = !message;
     if (message) error.scrollIntoView({block: 'center', inline: 'nearest'});
   }
@@ -106,33 +78,82 @@
     if (event.target.checked) selected.add(id); else selected.delete(id);
     render();
   });
-  selectAll.addEventListener('change', () => {
+  selectAll?.addEventListener('change', () => {
     const checked = selectAll.checked;
     visibleRecords().filter(item => item.status === 'pending').forEach(item => checked ? selected.add(item.id) : selected.delete(item.id));
     render();
   });
-  rows.addEventListener('click', event => {
+  rows.addEventListener('click', async event => {
     const button = event.target.closest('button[data-action]');
     if (!button || busy) return;
     const id = button.closest('tr').dataset.recordId;
-    if (button.dataset.action === 'process') start([id], true);
-    else pool.open(id, button.dataset.action, updated => { records = updated; render(); });
+    if (button.dataset.action === 'process' && task.process_url) location.href = task.process_url + '&recording_id=' + encodeURIComponent(id);
+    else if (button.dataset.action === 'process') start([id], true);
+    else {
+      const item = records.find(record => record.id === id);
+      if (item.status !== 'processing') {
+        try { records = await pool.action({action:'start', ids:[id]}); render(); }
+        catch (error) { report(error.message); return; }
+      }
+      pool.open(id, button.dataset.action, updated => { records = updated; render(); });
+    }
   });
-  batch.addEventListener('click', () => start([...selected], false));
-  filterToggle.addEventListener('click', () => {
+  batch?.addEventListener('click', () => start([...selected], false));
+  document.getElementById('wpBatchActions')?.addEventListener('click', async event => {
+    const button = event.target.closest('[data-batch-action]');
+    if (!button || busy) return;
+    const ids = visibleRecords().map(item => item.id);
+    if (!ids.length) { report('当前没有可操作的数据'); return; }
+    if (button.dataset.batchAction === 'submit' && visibleRecords().some(item => !['合格','不合格','操作失误'].includes(item.result))) {
+      report('存在未质检的数据，请完成质检后再提交'); return;
+    }
+    const confirmed = await new Promise(resolve => {
+      const mask = document.getElementById('wpBatchConfirm');
+      const remark = document.getElementById('wpBatchRemark');
+      const error = document.getElementById('wpBatchConfirmError');
+      const requiresRemark = button.dataset.batchAction === 'reject';
+      document.getElementById('wpBatchRemarkField').hidden = button.dataset.batchAction === 'release';
+      document.getElementById('wpBatchRemarkRequirement').textContent = requiresRemark ? '（必填）' : '（选填）';
+      remark.value = ''; remark.required = requiresRemark; error.hidden = true;
+      document.getElementById('wpBatchConfirmTitle').textContent = '确认' + button.textContent;
+      document.getElementById('wpBatchConfirmText').textContent = '确认' + button.textContent + '当前批次的 ' + ids.length + ' 条数据？';
+      mask.hidden = false;
+      const finish = value => { mask.hidden = true; resolve(value); button.focus(); };
+      document.getElementById('wpBatchCancel').onclick = () => finish(false);
+      document.getElementById('wpBatchConfirmButton').onclick = () => {
+        if (requiresRemark && !remark.value.trim()) {
+          error.textContent = '请输入驳回说明'; error.hidden = false; remark.focus(); return;
+        }
+        finish(true);
+      };
+      document.getElementById('wpBatchCancel').focus();
+    });
+    if (!confirmed) return;
+    busy = true; report('');
+    const buttons = [...document.querySelectorAll('[data-batch-action]')];
+    buttons.forEach(item => { item.disabled = true; });
+    try {
+      records = await pool.action({action:'batch_' + button.dataset.batchAction, ids,
+        remark:document.getElementById('wpBatchRemark').value.trim()});
+      selected.clear(); render();
+      if (typeof toast === 'function') toast('操作成功，已加载新一批数据');
+    } catch (error) { report(error.message); }
+    finally { busy = false; buttons.forEach(item => { item.disabled = false; }); render(); }
+  });
+  filterToggle?.addEventListener('click', () => {
     const expanded = advancedFilters.hidden;
     advancedFilters.hidden = !expanded;
     filterToggle.setAttribute('aria-expanded', String(expanded));
     filterToggle.innerHTML = (expanded ? '收起' : '展开') + ' <span aria-hidden="true">' + (expanded ? '⌃' : '⌄') + '</span>';
   });
-  filters.addEventListener('submit', event => {
+  filters?.addEventListener('submit', event => {
     event.preventDefault();
     const values = Object.fromEntries(new FormData(filters));
     if ((values.from || values.to) && !values.time_node) { report('请先选择操作节点，再设置时间范围'); return; }
     if (values.from && values.to && values.from > values.to) { report('操作开始时间不能晚于结束时间'); return; }
     activeFilters = values; selected.clear(); report(''); render();
   });
-  filters.addEventListener('reset', () => { activeFilters = {}; selected.clear(); report(''); render(); });
+  filters?.addEventListener('reset', () => { activeFilters = {}; selected.clear(); report(''); render(); });
   // Back-forward caches must not show a stale row after a workbench submission.
   window.addEventListener('pageshow', event => { if (event.persisted) location.reload(); });
   render();

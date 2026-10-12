@@ -117,7 +117,7 @@ class WorkbenchPoolTests(unittest.TestCase):
         result = self.action(action="start", ids=["7523788", "7523790"])
         self.assertEqual(200, result.status_code)
         records = self.records()
-        self.assertEqual(["processing"] * 4 + ["pending"] * 2, [item["status"] for item in records])
+        self.assertEqual(["processing"] * 4 + ["pending"] * 6, [item["status"] for item in records])
         other = self.records("/data/workbench-v2/pools/POOL-PRETRAINING-ACCEPTANCE/records")
         self.assertEqual(2, sum(item["status"] == "processing" for item in other))
 

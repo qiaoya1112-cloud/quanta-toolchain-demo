@@ -19,6 +19,7 @@ PRETRAINING_TASKS = [
         "project": "预训练采集", "user_group": group,
         "workbench": "质检工作台 v1.0", "flow": "预训练数据质检流程",
         "stage": "质检", "node": node, "priority": "P0", "count": 4, "processing": 2,
+        "execution_unit": "batch", "batch_size": 10,
         "filters": [], "mistake_rules": ["采集动作不规范", "画面短暂遮挡"],
         "rejection_rules": list(REJECTION_REASONS[:-1]),
     }
@@ -36,31 +37,41 @@ def demo_records(task):
         ("将物品摆放到货架", "将桌面的物品逐个摆放到货架指定位置。"),
         ("擦拭桌面", "使用抹布擦拭桌面，覆盖整个工作区域。"),
         ("收纳线缆", "将线缆整理成圈并放入收纳盒，避免缠绕。"),
+        ("摆放餐具", "将餐具按类别摆放到指定区域，保持朝向一致。"),
+        ("整理文件", "将散落文件分类整理并放入对应文件夹。"),
+        ("装配零件", "按顺序完成零件装配，并确认连接位置牢固。"),
+        ("清洁设备", "使用指定工具清洁设备表面和操作区域。"),
     )
+    collectors = ("郭文静", "李燕", "刘立斌", "张龙龙", "周宇帆", "柳少龙", "陈一凡", "赵可", "孙宁", "吴桐")
     return [dict(
         id=str(7523785 + index), task_id=task["processing_task"],
         instruction=name, description=description,
         device=f"UDAS-{309 + index:05d}-{1511 + index}",
         supplier="宁波博登智能科技有限公司" if index % 2 == 0 else "千寻智能",
-        collector=("郭文静", "李燕", "刘立斌", "张龙龙", "周宇帆", "柳少龙")[index],
+        collector=collectors[index], collector_id=f"OP-{index + 1:03d}",
         collected_at=f"2026-09-30 {9 + index:02d}:20:00",
         supplier_id="SUP-001" if index % 2 == 0 else "SUP-003",
         self_check_result="合格" if index < 4 else "未自检",
-        self_checker="李奕冲" if index < 4 else "",
+        self_checker="李奕冲" if index < 4 else "", self_checker_id="OP-028" if index < 4 else "",
         self_checker_supplier_id="SUP-003" if index < 4 else "",
         reviewer_supplier_id="SUP-003",
         self_checked_at=f"2026-10-01 {9 + index:02d}:30:00" if index < 4 else "",
         standard="自动质检 V4 · 家庭目标态",
         auto_result="操作失误" if index % 3 == 0 else "合格",
         auto_reason="画面短暂遮挡" if index % 3 == 0 else "—",
-        operators={"采集人": ("郭文静", "李燕", "刘立斌", "张龙龙", "周宇帆", "柳少龙")[index],
-                   "质检人": "李奕冲", "验收人": "张苗苗"},
+        operators={"采集人": collectors[index], "质检人": "李奕冲", "验收人": "张苗苗"},
+        operator_ids={"采集人": f"OP-{index + 1:03d}", "质检人": "OP-028", "验收人": "OP-039"},
         status="processing" if index < 2 else "pending",
     ) for index, (name, description) in enumerate(instructions)]
 
 def pool_records(task, saved):
     records = demo_records(task)
     states = saved.get(task["pool"] + ":" + task["id"], {})
+    generation = states.get("__batch__", {}).get("generation", 0)
+    if generation:
+        for index, record in enumerate(records):
+            record["id"] = str(7523785 + generation * 10 + index)
+            record["status"] = "pending"
     for record in records:
         record.update(states.get(record["id"], {}))
     return sorted(records, key=lambda item: item["status"] != "processing")
@@ -74,7 +85,20 @@ def transition(task, saved, action, ids, result="", reason="", remark="", owner=
         raise ValueError("数据不属于当前任务池")
     if owner and any(records[item].get("owner") not in (None, "", owner) for item in ids):
         raise PoolConflict("数据已被其他人占用或处理，无法继续操作，请选择其他数据")
-    if action == "start":
+    if action in ("batch_release", "batch_reject", "batch_submit"):
+        if task.get("execution_unit") != "batch" or (action == "batch_reject" and task.get("node") != "采集验收"):
+            raise ValueError("当前节点不支持该整批操作")
+        if action == "batch_reject" and not remark.strip():
+            raise ValueError("请输入驳回说明")
+        if action == "batch_submit" and any(records[item].get("result") not in ("合格", "不合格", "操作失误") for item in ids):
+            raise ValueError("存在未质检的数据，请完成质检后再提交")
+        active_ids = set(records)
+        if set(ids) != active_ids:
+            raise PoolConflict("当前批次已发生变化，请刷新列表")
+        changes = {item: {"status": "pending" if action == "batch_release" else "completed",
+                          "batch_action": action, "owner": "", "remark": remark.strip(),
+                          "result": records[item].get("result", "合格") if action == "batch_submit" else ""} for item in ids}
+    elif action == "start":
         if any(records[item]["status"] == "completed" for item in ids):
             raise ValueError("数据已经处理完成，请刷新列表")
         changes = {item: {"status": "processing"} for item in ids}
@@ -97,11 +121,15 @@ def transition(task, saved, action, ids, result="", reason="", remark="", owner=
                            "remark": remark.strip() if result == "不合格" else ""}}
     else:
         raise ValueError("无效操作")
-    if owner:
+    if owner and not action.startswith("batch_"):
         for change in changes.values():
             change["owner"] = owner
     updated = deepcopy(saved)
-    updated.setdefault(task["pool"] + ":" + task["id"], {}).update(changes)
+    states = updated.setdefault(task["pool"] + ":" + task["id"], {})
+    for record_id, change in changes.items():
+        states[record_id] = dict(states.get(record_id, {}), **change)
+    if action.startswith("batch_"):
+        states["__batch__"] = {"generation": states.get("__batch__", {}).get("generation", 0) + 1}
     return updated
 
 
@@ -125,6 +153,20 @@ def shared_state(path, task, legacy, owner):
 
 def shared_records(path, task, legacy, owner):
     with shared_state(path, task, legacy, owner) as saved:
+        return pool_records(task, saved)
+
+
+def prepare_todo_batch(path, task, legacy, owner):
+    """Todo batches already have a prior human quality decision."""
+    with shared_state(path, task, legacy, owner) as saved:
+        scope = task["pool"] + ":" + task["id"]
+        states = saved[scope]
+        for index, record in enumerate(pool_records(task, saved)):
+            if not record.get("result"):
+                state = states.setdefault(record["id"], {})
+                state["result"] = ("合格", "操作失误", "不合格")[index % 3]
+                if state["result"] == "不合格":
+                    state.setdefault("reason", "指令与采集动作不一致")
         return pool_records(task, saved)
 
 

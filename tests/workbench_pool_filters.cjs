@@ -16,6 +16,7 @@ let values = {};
 const context = {window:{WorkbenchPool:{payload:{task:{id:'task',pool:'pool'},records}},addEventListener(){}},
   document:{getElementById:element},sessionStorage:{getItem(){return null;},removeItem(){}},
   FormData: class {constructor(){return Object.entries(values);}}, URLSearchParams};
+vm.runInNewContext(fs.readFileSync('static/workbench_pool/rows.js','utf8'),context);
 vm.runInNewContext(fs.readFileSync('static/workbench_pool/list.js','utf8'),context);
 const rows = element('wpRows'), form = element('wpFilters');
 const ids = () => [...rows.innerHTML.matchAll(/data-record-id="([^"]+)"/g)].map(m=>m[1]);
@@ -54,4 +55,16 @@ assert.match(rows.innerHTML,/采集质检：<\/span>合格/);
 assert.doesNotMatch(rows.innerHTML,/当前节点人员|2026-10-09/);
 assert.deepEqual(search({operator:'前序质检人员'}),['1']);
 assert.deepEqual(search({time_node:'collection_qc',from:'2026-10-08',to:'2026-10-08'}),['1']);
+Object.assign(context.window.WorkbenchPool.payload.task,{hide_status:true,job_batch:'batch-one'});
+records[0].job_batch='batch-one';records[1].job_batch='batch-two';
+vm.runInNewContext(fs.readFileSync('static/workbench_pool/list.js','utf8'),context);
+assert.deepEqual(ids(),['1'],'batch rows must not include records from another batch');
+assert.doesNotMatch(rows.innerHTML,/wp-status/);
+context.window.WorkbenchPool.payload.task.job_center=1;
+const removed = new Set(['wpFilters','wpFilterToggle','wpAdvancedFilters','wpSelectAll','wpBatch','wpCount','wpSelected']);
+context.document.getElementById = id => removed.has(id) ? null : element(id);
+vm.runInNewContext(fs.readFileSync('static/workbench_pool/list.js','utf8'),context);
+assert.deepEqual(ids(),['1'],'batch rows still render when filters and selection controls are absent');
+assert.doesNotMatch(rows.innerHTML,/type="checkbox"/);
+assert.match(rows.innerHTML,/data-action="process"/);
 console.log('Task pool filters and node-scoped history passed');

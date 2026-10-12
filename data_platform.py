@@ -37,6 +37,23 @@ TASKS = [
     {"id": "t2", "name": "tidy_the_desk", "zh": "整理桌面"},
     {"id": "t3", "name": "water_the_plant", "zh": "浇花"},
 ]
+# Bilingual prompt text attached to the demo recordings by task.
+QUERY_PROMPT_TEXT = {
+    "t1": {
+        "high": ("擦白板", "Clean the whiteboard"),
+        "low": ("拿起白板擦", "Pick up the whiteboard eraser", "擦拭白板", "Wipe the whiteboard"),
+    },
+    "t2": {
+        "high": ("整理桌面 (P0)", "Tidy the desk (P0)"),
+        "low": ("拾取红色糖果", "Pick up the red candy", "将糖果放入人手中", "Put the candy into the human's hand",
+                "拾取蓝色糖果", "Pick up the blue candy", "拾取绿色糖果", "Pick up the green candy"),
+    },
+    "t3": {
+        "high": ("浇花 (P0)", "Water the plant (P0)"),
+        "low": ("拾取浇水壶", "Pick up the watering can", "将水倒入花盆中", "Pour water into the flower pot",
+                "放回浇水壶", "Put the watering can back"),
+    },
+}
 
 # Demo segment weights; displayed ratios and counts are aggregated from annotations.
 LOWLEVEL_PROMPTS = [
@@ -996,6 +1013,42 @@ select option:disabled { color:rgba(0,0,0,0.32); }
 .q-adv-row .q-field .q-range input { flex:1; min-width:0; }
 .drawer-body .q-adv-row { margin-top:14px; }
 .q-filter-tools { display:flex; gap:8px; align-items:center; justify-content:flex-end; margin-top:14px; padding-top:14px; border-top:1px solid #f0f0f0; }
+.lake-query-page .q-filters { border-radius:4px; padding:14px 16px; }
+.lake-query-page .lake-query-heading { box-sizing:border-box; width:100%; background:#fff; color:#20252d; font-size:16px; font-weight:600; padding:16px 20px; margin-bottom:16px; border:1px solid #f0f0f0; border-radius:4px; }
+.lake-query-page .qf-group { background:#f5f6f9; border:0; border-radius:4px; padding:10px 14px 12px; margin-bottom:8px; }
+.lake-query-page .qf-group-title { color:#1F80A0; font-size:13px; margin-bottom:8px; position:relative; }
+.lake-query-page .qf-caret { float:right; transform:rotate(0); }
+.lake-query-page .qf-group.collapsed .qf-caret { transform:rotate(-90deg); }
+.lake-query-page .q-filter-row { display:grid; gap:8px 14px; margin-top:8px; }
+.lake-query-page .q-filter-row:first-child { margin-top:0; }
+.lake-query-page .qf-two { grid-template-columns:repeat(2,minmax(0,1fr)); }
+.lake-query-page .qf-three { grid-template-columns:repeat(3,minmax(0,1fr)); }
+.lake-query-page .qf-five { grid-template-columns:repeat(5,minmax(0,1fr)); }
+.lake-query-page .q-field { gap:4px; }
+.lake-query-page .q-field > label { font-size:13px; color:#656b75; }
+.lake-query-page .q-field select,.lake-query-page .q-field input:not([type=checkbox]),.lake-query-page .q-field .ms-trigger { height:32px; border-radius:4px; }
+.lake-query-page .q-field .ps-control { height:32px; min-height:32px; padding:0 8px; flex-wrap:nowrap; border-radius:4px; }
+.lake-query-page .q-field .ps-control .ps-input,.lake-query-page .q-field .ps-control .ps-input:hover,.lake-query-page .q-field .ps-control .ps-input:focus { height:30px; min-width:86px; padding:0; border:0; box-shadow:none; background:transparent; }
+.lake-query-page .q-field .ps-chips { display:flex; gap:4px; min-width:0; max-width:calc(100% - 90px); overflow-x:auto; scrollbar-width:none; }
+.lake-query-page .q-field .ps-chips::-webkit-scrollbar { display:none; }
+.lake-query-page .q-filter-tools { border-top:0; padding-top:0; margin-top:10px; }
+.lake-query-page .q-condition-group { border:1px solid #d9e4e8; border-left:3px solid #1F80A0; border-radius:4px; background:#fff; padding:8px 10px; margin:6px 0; }
+.lake-query-page .q-condition-group[data-op=or] { border-left-color:#b07832; }
+.lake-query-page .q-condition-head { display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:5px; }
+.lake-query-page .q-condition-head .q-condition-toggle { color:#1F80A0; border-color:#c6e1e8; background:#f4fafb; }
+.lake-query-page .q-condition-group[data-op=or]>.q-condition-head .q-condition-toggle { color:#a66d25; border-color:#eed9b7; background:#fffaf0; }
+.lake-query-page .q-condition-row { display:grid; grid-template-columns:minmax(150px,1.3fr) 110px minmax(160px,1.4fr) 38px; gap:8px; align-items:center; margin:8px 0; }
+.lake-query-page .q-condition-row select,.lake-query-page .q-condition-row input { min-width:0; width:100%; height:34px; border:1px solid #d9dfe5; border-radius:4px; padding:0 10px; box-sizing:border-box; background:#fff; }
+.lake-query-page .q-condition-row input:disabled { background:#f5f6f9; }
+.lake-query-page .q-condition-head button,.lake-query-page .q-condition-row button { border:1px solid #d9dfe5; background:#fff; border-radius:4px; min-height:30px; padding:0 9px; cursor:pointer; color:#356b7c; }
+.lake-query-page .q-condition-row button { color:#a64d4d; }
+.lake-query-page .q-condition-empty { color:#8b929c; font-size:12px; padding:6px 2px; }
+.lake-query-page .q-condition-error { color:#c43d3d; font-size:12px; margin-top:6px; }
+.lake-query-page .q-empty-state { display:grid; justify-items:center; gap:10px; padding:30px 0; color:#969da6; font-size:13px; }
+.lake-query-page .q-empty-icon { width:44px; height:28px; display:block; border-radius:5px 5px 9px 9px; background:linear-gradient(135deg,#74d2e4,#1F80A0); box-shadow:0 9px 16px rgba(31,128,160,.15); position:relative; }
+.lake-query-page .q-empty-icon:before { content:''; position:absolute; left:10px; right:10px; top:6px; height:9px; border-radius:3px; background:#d4f1f6; }
+@media(max-width:900px){.lake-query-page .qf-five{grid-template-columns:repeat(3,minmax(0,1fr))}.lake-query-page .qf-three{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:640px){.lake-query-page .qf-two,.lake-query-page .qf-three,.lake-query-page .qf-five{grid-template-columns:1fr}.lake-query-page .q-condition-row{grid-template-columns:1fr 100px}.lake-query-page .q-condition-row input{grid-column:1/-1}}
 .tools-divider { width:1px; height:22px; background:#e2e4e8; margin:0 6px; }
 .q-adv-note { flex-basis:100%; font-size:12px; margin-top:2px; }
 /* 配方助手 */
@@ -1190,18 +1243,8 @@ select option:disabled { color:rgba(0,0,0,0.32); }
 .status-with-reason { display:inline-flex; align-items:center; gap:6px; white-space:nowrap; }
 .status-reason-icon { width:18px; height:18px; padding:0; border:1px solid #f3d6d5; border-radius:50%; background:#fff; color:#d4504e; font-size:12px; line-height:16px; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; }
 .status-reason-icon:hover { border-color:#d4504e; background:#fdf3f3; }
-.ds-error-body { max-height:56vh; padding:22px 24px 26px; overflow:auto; }
-.ds-error-section + .ds-error-section { margin-top:22px; padding-top:22px; border-top:1px solid #f0f0f0; }
-.ds-error-section h4 { margin:0 0 16px; color:rgba(0,0,0,0.88); font-size:14px; font-weight:600; }
-.ds-error-format-group + .ds-error-format-group { margin-top:18px; padding-top:18px; border-top:1px solid #f3f3f3; }
-.ds-error-format-label { margin-bottom:12px; color:rgba(0,0,0,0.65); font-size:13px; font-weight:600; }
-.ds-error-task { display:grid; grid-template-columns:88px minmax(0,1fr); gap:5px 10px; align-items:start; }
-.ds-error-task + .ds-error-task { margin-top:16px; }
-.ds-error-field-label { color:rgba(0,0,0,0.45); font-size:12px; line-height:22px; }
-.ds-error-id-line { color:rgba(0,0,0,0.78); font-family:'SFMono-Regular',Consolas,Menlo,monospace; font-size:12.5px; line-height:22px; overflow-wrap:anywhere; }
-.ds-error-task-id { color:rgba(0,0,0,0.85); font-family:'SFMono-Regular',Consolas,Menlo,monospace; font-size:12.5px; font-weight:600; line-height:22px; }
-.ds-error-more { margin-left:8px; padding:0; border:0; background:transparent; color:#1F80A0; font-size:12px; line-height:22px; cursor:pointer; }
-.ds-error-more:hover { color:#176a88; text-decoration:underline; }
+.ds-error-body { max-height:56vh; padding:20px 24px 24px; overflow:auto; }
+.ds-error-detail { margin:0; color:rgba(0,0,0,0.78); font-size:13px; line-height:1.8; white-space:pre-wrap; overflow-wrap:anywhere; }
 
 /* ── Tags / status ── */
 .tag { display:inline-block; padding:1px 8px; border-radius:4px; font-size:12px; line-height:20px; border:1px solid transparent; }
@@ -1861,7 +1904,7 @@ BASE_TEMPLATE = """<!DOCTYPE html>
   {% if top=='data' %}
   <nav class="nav-section">
     <div class="nav-label">数据准备</div>
-    <a href="/query" class="nav-item {{ 'active' if active=='query' }}"><span class="icon">&#9906;</span><span class="nav-txt">数据查询</span></a>
+    <a href="/query" class="nav-item {{ 'active' if active=='query' }}"><span class="icon">&#9906;</span><span class="nav-txt">数据湖圈选</span></a>
     <a href="/datasets" class="nav-item {{ 'active' if active=='datasets' }}"><span class="icon">&#9776;</span><span class="nav-txt">数据集</span></a>
     <a href="/raw" class="nav-item {{ 'active' if active=='raw' }}"><span class="icon">&#9783;</span><span class="nav-txt">原始数据</span></a>
     <div class="nav-label">自动化任务</div>
@@ -2015,13 +2058,9 @@ function visibilitySyncPicker(input){
   if(picker.classList.contains('open')) datasetPickerPosition(picker);
 }
 function openBuildDsDrawer(){
+  if(window._qHasResult===false){toast('请先执行圈选');return;}
   var drawer=document.getElementById('buildDsDrawer');
   if(!drawer) return;
-  var visibility=document.getElementById('buildDsVisibility');
-  if(visibility) visibility.value='公开';
-  document.querySelectorAll('#buildDsGroups input').forEach(function(input){ input.checked=false; });
-  var first=document.querySelector('#buildDsGroups input'); if(first) visibilitySyncPicker(first);
-  datasetVisibilityToggle('buildDs');
   closeDatasetPickers();
   drawer.classList.add('active');
 }
@@ -2099,15 +2138,30 @@ function openDrawerById(id){ document.getElementById(id).classList.add('active')
 function closeDrawerById(id){ document.getElementById(id).classList.remove('active'); }
 function qfDep(id, val){ var el=document.getElementById(id); if(el) el.classList.toggle('qf-off', val!=='yes'); }
 function dsCreating(modalId){
-  if(modalId==='buildDsDrawer' && !datasetVisibilitySave('buildDs',document.getElementById('buildDsIdent').value.trim())) return;
+  if(modalId==='buildDsDrawer'){
+    var ident=document.getElementById('buildDsIdent'), name=document.getElementById('buildDsName'), folder=document.getElementById('buildDsFolder');
+    if(!ident.value.trim()){toast('请填写标识');ident.focus();return;}
+    if(!/^[A-Za-z][A-Za-z0-9_-]*$/.test(ident.value.trim())){toast('标识须以英文字母开头，仅支持英文字母、数字、下划线和短横线');ident.focus();return;}
+    if(!name.value.trim()){toast('请填写数据集名称');name.focus();return;}
+    if(!folder.value){toast('请选择目录');folder.focus();return;}
+    try{
+      var tasks=JSON.parse(sessionStorage.getItem('demoDatasetBuildTasks')||'[]');
+      tasks.unshift({id:'D'+Date.now().toString().slice(-8),ident:ident.value.trim(),name:name.value.trim(),
+        folder:folder.value,
+        tags:Array.from(document.querySelectorAll('#buildDsTags input[name="dataset_tag"]:checked'),function(input){return input.value;}),
+        filters:location.search,created:new Date().toLocaleString('sv-SE')});
+      sessionStorage.setItem('demoDatasetBuildTasks',JSON.stringify(tasks.slice(0,5)));
+    }catch(error){toast('创建记录未能保存在当前浏览器会话中');return;}
+  }
   var box=document.querySelector('#'+modalId+' .modal-box'); if(!box) return;
+  var progressPath=location.pathname.indexOf('/model/')===0?'/model/data/ds_progress':'/ds_progress';
   box.innerHTML='<div style="padding:46px 28px;text-align:center;">'
     +'<div style="font-size:42px;line-height:1;margin-bottom:14px;">&#9203;</div>'
     +'<h3 style="margin:0 0 8px;">数据集校验中</h3>'
     +'<div class="muted" style="font-size:13px;max-width:380px;margin:0 auto;">已提交数据集创建任务，正在进行数据完整性校验，可在「数据集创建进度」查看状态。</div>'
     +'<div style="margin-top:22px;display:flex;gap:10px;justify-content:center;">'
     +'<button class="btn btn-secondary" onclick="location.reload()">关闭</button>'
-    +'<a href="/model/data/ds_progress" class="btn-primary btn">查看进度</a>'
+    +'<a href="'+progressPath+'" class="btn-primary btn">查看进度</a>'
     +'</div></div>';
 }
 function qfToggleGroup(t){ t.closest('.qf-group').classList.toggle('collapsed'); }
@@ -3383,111 +3437,106 @@ def ds_progress():
     ]
     st_map = {"done": ("tag-green", "成功"), "fail": ("imp-fail", "失败"), "running": ("tag-orange", "进行中"), "verify": ("tag-blue", "校验中")}
 
-    def failure_reason(did):
-        format_groups = {
-            80: [
-                {
-                    "task_11092": ["rec_0012", "rec_0018", "rec_0021", "rec_0024", "rec_0027", "rec_0030", "rec_0033", "rec_0036", "rec_0039", "rec_0042", "rec_0045", "rec_0048"],
-                    "task_11095": ["rec_0051", "rec_0056"],
-                },
-                {
-                    "task_11103": ["rec_0061", "rec_0066"],
-                    "task_11108": ["rec_0072"],
-                },
-            ],
-            76: [
-                {"task_11061": ["rec_0102", "rec_0108"], "task_11066": ["rec_0114"]},
-                {"task_11061": ["rec_0120"], "task_11073": ["rec_0126", "rec_0131"]},
-            ],
-            73: [
-                {"task_10984": ["rec_0201"], "task_10991": ["rec_0206", "rec_0210"]},
-                {"task_11002": ["rec_0217"], "task_11005": ["rec_0223"]},
-            ],
-        }.get(did, [])
-        missing_recordings = {
-            79: {"task_11092": ["rec_0012", "rec_0018"], "task_11103": ["rec_0041"]},
-            78: {"task_11078": ["rec_0136", "rec_0142", "rec_0147"]},
-            74: {"task_11031": ["rec_0064"], "task_11038": ["rec_0091", "rec_0095"]},
-            72: {"task_10972": ["rec_0023", "rec_0028"]},
-        }.get(did, {})
-        if not format_groups and not missing_recordings:
-            missing_recordings = {f"task_{did:05d}": [f"rec_{did:04d}_01", f"rec_{did:04d}_02"]}
-        return format_groups, missing_recordings
-
-    def recording_ids_html(recording_ids, element_id):
-        visible_ids = recording_ids[:10]
-        hidden_ids = recording_ids[10:]
-        visible_html = "、".join(html.escape(recording_id) for recording_id in visible_ids)
-        if not hidden_ids:
-            return visible_html
-        hidden_html = "、" + "、".join(html.escape(recording_id) for recording_id in hidden_ids)
-        more_label = f"还有 {len(hidden_ids)} 个"
-        return (
-            f'{visible_html}<span id="{element_id}" hidden>{hidden_html}</span>'
-            f'<button type="button" class="ds-error-more" data-more-label="{more_label}" '
-            f'aria-expanded="false" aria-controls="{element_id}" onclick="toggleDsErrorIds(this)">{more_label}</button>'
-        )
-
-    def task_recording_html(tasks, element_prefix):
-        return "".join(
-            '<div class="ds-error-task">'
-            '<div class="ds-error-field-label">TaskID</div>'
-            f'<div class="ds-error-task-id">{html.escape(task_id)}</div>'
-            '<div class="ds-error-field-label">RecordingID</div>'
-            f'<div class="ds-error-id-line">{recording_ids_html(recording_ids, f"{element_prefix}Task{task_index}")}</div>'
-            '</div>'
-            for task_index, (task_id, recording_ids) in enumerate(tasks.items(), 1)
-        )
+    failure_titles = {
+        "FEATURES_MISMATCH": "数据格式不一致",
+        "FILE_MISSING": "文件缺失",
+        "NO_VALID_RECORDINGS": "无有效数据",
+    }
+    # Mock the API's failure_reason and newline-delimited failure_detail fields.
+    failure_examples = {
+        80: ("FEATURES_MISMATCH", "\n".join([
+            "共 4 组不同配置的采集数据不一致",
+            "【采集任务内部不一致】",
+            "采集任务 220：内部包含 3 组不同配置",
+            "  • 设备 moz1-03, moz1-11 → RecordingID 2572, 2573, 2574 等共 1462 条",
+            "  • 设备 moz1-y02-infer → RecordingID 2581, 2582 等共 147 条",
+            "  • 设备 9e26527dfe3f → RecordingID 2843, 2844 等共 78 条",
+            "",
+            "【采集任务间不一致】",
+            "• 采集任务 220（设备 moz1-03, moz1-11, moz1-y02-infer）",
+            "• 采集任务 221（设备 moz1-50）",
+            "",
+            "筛选范围：采集任务 220、采集任务 221",
+        ])),
+        79: ("FILE_MISSING", "\n".join([
+            "共 3 个文件缺失或为空：",
+            "【视频(mp4)缺失】",
+            "  采集任务 220: RecordingID 1001, 1002",
+            "【数据(parquet)缺失】",
+            "  采集任务 220: RecordingID 1001",
+            "请核验相关批次数据后重新创建",
+        ])),
+        78: ("FILE_MISSING", "\n".join([
+            "共 2 个文件缺失或为空：",
+            "【视频(mp4)缺失】",
+            "  采集任务 218: RecordingID 136, 142",
+            "请核验相关批次数据后重新创建",
+        ])),
+        76: ("FEATURES_MISMATCH", "\n".join([
+            "共 2 组不同配置的采集数据不一致",
+            "【采集任务间不一致】",
+            "• 采集任务 12（设备 moz1-11, moz1-12）",
+            "• 采集任务 15（设备 moz1-21, ur10e-01）",
+            "筛选范围：采集任务 12、采集任务 15",
+        ])),
+        74: ("FILE_MISSING", "\n".join([
+            "共 2 个文件缺失或为空：",
+            "【视频(mp4)缺失】",
+            "  采集任务 11031: RecordingID 64",
+            "【数据(parquet)缺失】",
+            "  采集任务 11038: RecordingID 91",
+            "请核验相关批次数据后重新创建",
+        ])),
+        73: ("FEATURES_MISMATCH", "\n".join([
+            "共 2 组不同配置的采集数据不一致",
+            "【采集任务内部不一致】",
+            "采集任务 10984：内部包含 2 组不同配置",
+            "  • 设备 moz1-01 → RecordingID 201, 206",
+            "  • 设备 moz1-02 → RecordingID 217",
+            "筛选范围：采集任务 10984",
+        ])),
+        72: ("NO_VALID_RECORDINGS", "\n".join([
+            "没有找到有效的录制数据",
+            "筛选条件:",
+            "- task_ids=[220, 221]",
+            "- capture_device_sns=['moz1-03', 'moz1-11']",
+            "- has_annotation=True",
+        ])),
+    }
 
     def failure_template(did):
-        format_groups, missing_recordings = failure_reason(did)
-        sections = []
-        if format_groups:
-            groups_html = "".join(
-                '<div class="ds-error-format-group">'
-                f'<div class="ds-error-format-label">格式组 {group_index}</div>'
-                f'{task_recording_html(tasks, f"dpError{did}Format{group_index}")}'
-                '</div>'
-                for group_index, tasks in enumerate(format_groups, 1)
-            )
-            sections.append(
-                '<section class="ds-error-section">'
-                '<h4>数据格式不一致</h4>'
-                f'{groups_html}'
-                '</section>'
-            )
-        if missing_recordings:
-            sections.append(
-                '<section class="ds-error-section">'
-                '<h4>视频文件缺失</h4>'
-                f'{task_recording_html(missing_recordings, f"dpError{did}Video")}'
-                '</section>'
-            )
-        return f'<template id="dpErrorTemplate{did}">{"".join(sections)}</template>'
+        reason, detail = failure_examples[did]
+        title = failure_titles.get(reason, "创建失败")
+        return (f'<template id="dpErrorTemplate{did}" data-reason="{reason}" '
+                f'data-title="{html.escape(title, quote=True)}">'
+                f'<div class="ds-error-detail">{html.escape(detail)}</div></template>')
 
     def status_cell(did, name, st, at):
         cls, txt = st_map[st]
         tag = f'<span class="tag {cls}">{txt}</span>'
         if st != "fail":
             return tag
+        reason, _ = failure_examples[did]
         return (
             f'<span class="status-with-reason">{tag}'
-            f'<button type="button" class="status-reason-icon" title="查看异常原因" aria-label="查看异常原因" '
+            f'<button type="button" class="status-reason-icon" title="查看异常原因：{failure_titles.get(reason, "创建失败")}" aria-label="查看异常原因" '
             f'onclick="openDsProgressError({did})">i</button>'
             f'</span>'
         )
 
     rows = ""
     failure_templates = []
+    creator_ids = {name: creator_id for creator_id, name in CREATOR_POOL}
     for did, name, st, at, by in rows_data:
         if st == "done":
             view_btn = f'<button class="btn" onclick="location.href=\'/datasets\'">查看数据集</button>'
         else:
             view_btn = '<button class="btn" disabled style="opacity:.4;cursor:not-allowed;">查看数据集</button>'
-        rows += (f'<tr data-status="{st}"><td>{did}</td>'
-                 f'<td>{name}</td>'
+        rows += (f'<tr data-status="{st}" data-name="{html.escape(name, quote=True)}" '
+                 f'data-creator="{html.escape(creator_ids.get(by, ""), quote=True)}"><td>{did}</td>'
+                 f'<td>{name}</td><td>{name}</td>'
                  f'<td>{status_cell(did, name, st, at)}</td>'
-                 f'<td>--</td><td>{at}</td><td>{by}</td>'
+                 f'<td>{at}</td><td>{by}</td>'
                  f'<td><div style="display:flex;gap:6px;">'
                  f'<button class="btn" onclick="dpDetail(\'{name}\')">任务详情</button>'
                  f'{view_btn}'
@@ -3502,17 +3551,17 @@ def ds_progress():
     </div>
     <div class="q-filters" style="margin-bottom:16px;">
       <div class="q-filter-row q-adv-row">
-        <div class="q-field"><label>数据集名称</label><input placeholder="请输入数据集名称"></div>
+        <div class="q-field"><label>数据集名称</label><input id="dpNameFilter" placeholder="请输入数据集名称" onkeydown="if(event.key==='Enter')dpApplyFilters()"></div>
         <div class="q-field"><label>创建人</label>{creator_ms}</div>
       </div>
       <div class="q-filter-tools">
-        <button type="button" class="btn" onclick="toast('Demo: 已重置')">重置</button>
-        <button type="button" class="btn-primary btn" onclick="toast('Demo: 已查询')">查询</button>
+        <button type="button" class="btn" onclick="dpResetFilters()">重置</button>
+        <button type="button" class="btn-primary btn" onclick="dpApplyFilters()">查询</button>
       </div>
     </div>
     <div class="card">
       <table class="ant-table">
-        <thead><tr><th>ID</th><th>数据集名称</th><th>
+        <thead><tr><th>ID</th><th>数据集名称</th><th>标识</th><th>
           <div class="status-head-filter">
             <button type="button" class="status-head-trigger" onclick="toggleDsProgressStatusFilter(this)">状态 <span class="caret">&#8963;</span></button>
             <div class="status-head-menu">
@@ -3523,9 +3572,10 @@ def ds_progress():
               <button type="button" class="status-head-option" data-value="fail" onclick="selectDsProgressStatus(this)">失败</button>
             </div>
           </div>
-        </th><th>标签</th><th>创建时间</th><th>创建人</th><th>操作</th></tr></thead>
-        <tbody>{rows}</tbody>
+        </th><th>创建时间</th><th>创建人</th><th>操作</th></tr></thead>
+        <tbody>{rows}<tr id="dpEmptyRow" hidden><td colspan="7" style="text-align:center;padding:30px;">暂无数据</td></tr></tbody>
       </table>
+      <div class="q-pager" id="dpPager"></div>
     </div>
 
     <div class="drawer-mask" id="dpDetailModal" onclick="if(event.target===this)this.classList.remove('active')">
@@ -3556,12 +3606,85 @@ def ds_progress():
         <div class="ds-error-body" id="dpErrorBody"></div>
         <div class="drawer-foot">
           <button type="button" class="btn btn-secondary" onclick="closeDrawerById('dpErrorModal')">关闭</button>
-          <a class="btn btn-primary" href="/model/data/query">返回数据查询</a>
+          <a class="btn btn-primary" href="/model/data/query">返回数据湖圈选</a>
         </div>
       </div>
     </div>
     <script>
-      function dpDetail(name){{ var el=document.getElementById('dpDsName'); if(el) el.textContent=name; openDrawerById('dpDetailModal'); }}
+      var dpCurrentPage=1;
+      var dpDefaultDetailHtml='';
+      function dpRestoreDemoTasks(){{
+        var tasks=[];try{{tasks=JSON.parse(sessionStorage.getItem('demoDatasetBuildTasks')||'[]');}}catch(error){{return;}}
+        var body=document.querySelector('.ant-table tbody');
+        tasks.forEach(function(task){{
+          var row=document.createElement('tr');row.dataset.status='verify';row.dataset.name=task.name;row.dataset.creator='U2001';
+          [task.id,task.name,task.ident].forEach(function(value){{var cell=row.insertCell();cell.textContent=value;}});
+          var status=row.insertCell(),tag=document.createElement('span');tag.className='tag tag-blue';tag.textContent='校验中';status.appendChild(tag);
+          [task.created,'Will Xiao'].forEach(function(value){{var cell=row.insertCell();cell.textContent=value;}});
+          var actions=row.insertCell(),detail=document.createElement('button'),view=document.createElement('button');
+          actions.style.cssText='display:flex;gap:6px;';
+          detail.className='btn';detail.textContent='任务详情';detail.onclick=function(){{dpDemoDetail(task);}};
+          view.className='btn';view.textContent='查看数据集';view.disabled=true;
+          actions.append(detail,view);body.insertBefore(row,body.firstChild);
+        }});
+      }}
+      function dpDemoDetail(task){{
+        dpDetail(task.name);
+        var grid=document.querySelector('#dpDetailModal .desc-grid');grid.replaceChildren();
+        var params=new URLSearchParams(task.filters||'');
+        function yesNo(value){{return value==='yes'?'是':value==='no'?'否':value;}}
+        var advanced='';try{{
+          var tree=JSON.parse(params.get('advanced')||'{{}}');
+          function describe(node){{
+            if(node.children)return node.children.length?'('+node.children.map(describe).join(node.op==='or'?' 或 ':' 且 ')+')':'';
+            return node.field+' '+node.operator+' '+(node.value||'');
+          }}
+          advanced=describe(tree);
+        }}catch(error){{}}
+        var fields=[['采集任务',params.get('task')],['批次编号',params.get('batch')],['设备序列号',params.get('device')],
+          ['Highlevel Prompt',params.get('hl')],['Lowlevel Prompt',params.get('ll')],
+          ['采集结论',{{success:'成功',fail:'失败'}}[params.get('quality')]||params.get('quality')],
+          ['是否质检',yesNo(params.get('qc'))],['质检结论',params.getAll('qa').map(function(value){{return {{pass:'合格',fail:'不合格',warn:'操作失误'}}[value]||value;}}).join('、')],
+          ['是否标注',yesNo(params.get('anno'))],['Episode 上限',params.get('limit')],
+          ['Prompt 语言',{{en:'英文',zh:'中文'}}[params.get('lang')]||params.get('lang')],['高级条件',advanced],
+          ['目录',task.folder],['标签',(task.tags||[]).join('、')]];
+        fields.filter(function(item){{return item[1];}}).forEach(function(item){{
+          var key=document.createElement('div'),value=document.createElement('div');key.className='dk';value.className='dv';
+          key.textContent=item[0];value.textContent=item[1];grid.append(key,value);
+        }});
+      }}
+      function dpApplyFilters(resetPage){{
+        if(resetPage!==false) dpCurrentPage=1;
+        var name=document.getElementById('dpNameFilter').value.trim().toLocaleLowerCase();
+        var selected=Array.from(document.querySelectorAll('input[name="creator"]:checked'),function(input){{return input.value;}});
+        var status=document.querySelector('.status-head-option.active').getAttribute('data-value')||'';
+        var rows=Array.from(document.querySelectorAll('.ant-table tbody tr[data-status]'));
+        var matches=rows.filter(function(row){{return (!name||row.dataset.name.toLocaleLowerCase().includes(name))
+          &&(!selected.length||selected.includes(row.dataset.creator))&&(!status||row.dataset.status===status);}});
+        var pages=Math.max(1,Math.ceil(matches.length/10));dpCurrentPage=Math.min(dpCurrentPage,pages);
+        rows.forEach(function(row){{row.hidden=true;}});
+        matches.slice((dpCurrentPage-1)*10,dpCurrentPage*10).forEach(function(row){{row.hidden=false;}});
+        document.getElementById('dpEmptyRow').hidden=matches.length>0;
+        var pager=document.getElementById('dpPager');pager.replaceChildren();
+        var count=document.createElement('span');count.textContent='共 '+matches.length+' 条 · 10条/页';pager.appendChild(count);
+        for(var page=1;page<=pages;page++){{
+          var button=document.createElement('button');button.type='button';button.className='pg-btn'+(page===dpCurrentPage?' active':'');
+          button.textContent=page;button.onclick=(function(target){{return function(){{dpCurrentPage=target;dpApplyFilters(false);}};}})(page);
+          pager.appendChild(button);
+        }}
+      }}
+      function dpResetFilters(){{
+        document.getElementById('dpNameFilter').value='';
+        document.querySelectorAll('input[name="creator"]:checked').forEach(function(input){{input.checked=false;}});
+        var trigger=document.querySelector('.q-filters .ms-trigger');if(trigger){{trigger.classList.remove('has-value');trigger.querySelector('.ms-label').textContent=trigger.dataset.base;}}
+        document.querySelectorAll('.status-head-option').forEach(function(option){{option.classList.toggle('active',!option.dataset.value);}});
+        dpApplyFilters();
+      }}
+      function dpDetail(name){{
+        var el=document.getElementById('dpDsName');if(el) el.textContent=name;
+        var grid=document.querySelector('#dpDetailModal .desc-grid');if(grid&&dpDefaultDetailHtml)grid.innerHTML=dpDefaultDetailHtml;
+        openDrawerById('dpDetailModal');
+      }}
       function toggleDsProgressStatusFilter(btn){{
         var wrap=btn.closest('.status-head-filter');
         if(!wrap) return;
@@ -3573,75 +3696,209 @@ def ds_progress():
         if(!filter) return;
         filter.querySelectorAll('.status-head-option').forEach(function(item){{ item.classList.remove('active'); }});
         btn.classList.add('active');
-        var value=btn.getAttribute('data-value') || '';
-        document.querySelectorAll('.ant-table tbody tr[data-status]').forEach(function(row){{
-          row.style.display = (!value || row.dataset.status === value) ? '' : 'none';
-        }});
         filter.classList.remove('open');
+        dpApplyFilters();
       }}
       function openDsProgressError(id){{
         var template=document.getElementById('dpErrorTemplate'+id);
         var body=document.getElementById('dpErrorBody');
+        var title=document.getElementById('dpErrorTitle');
+        if(title) title.textContent=template ? template.dataset.title : '异常原因';
         if(body) body.innerHTML=template ? template.innerHTML : '';
         openDrawerById('dpErrorModal');
-      }}
-      function toggleDsErrorIds(button){{
-        var extra=document.getElementById(button.getAttribute('aria-controls'));
-        if(!extra) return;
-        var expanding=extra.hidden;
-        extra.hidden=!expanding;
-        button.textContent=expanding ? '收起' : button.getAttribute('data-more-label');
-        button.setAttribute('aria-expanded', expanding ? 'true' : 'false');
       }}
       document.addEventListener('click', function(e){{
         document.querySelectorAll('.status-head-filter.open').forEach(function(wrap){{
           if(!wrap.contains(e.target)) wrap.classList.remove('open');
         }});
       }});
+      document.addEventListener('DOMContentLoaded',function(){{
+        dpDefaultDetailHtml=document.querySelector('#dpDetailModal .desc-grid').innerHTML;
+        dpRestoreDemoTasks();dpApplyFilters();
+      }});
     </script>
     """
     return render_page("数据集创建进度", content, active="query",
-                       breadcrumb='数据湖 / 数据查询 / <b>数据集创建进度</b>')
+                       breadcrumb='数据湖 / 数据湖圈选 / <b>数据集创建进度</b>')
+
+
+# The live condition builder exposes many warehouse columns. The prototype keeps
+# the columns that have meaningful values in its in-memory recording fixtures.
+QUERY_FIELDS = [
+    ("recording_id", "Recording ID", "number"),
+    ("task_id", "任务 ID", "text"),
+    ("collection_id", "collection_id", "number"),
+    ("collection_device_sn", "设备 SN", "text"),
+    ("collection_operator_id", "操作员", "text"),
+    ("collection_robot_type", "采集类型", "text"),
+    ("recording_dagger_type", "Dagger 类型", "text"),
+    ("recording_created_at", "采集时间", "date"),
+    ("recording_status", "采集结论", "text"),
+    ("recording_length", "帧数", "number"),
+    ("recording_duration", "视频时长", "number"),
+    ("recording_fps", "帧率", "number"),
+    ("inspection_status", "是否质检", "text"),
+    ("inspection_result", "质检结论", "text"),
+    ("annotation_status", "是否标注", "text"),
+    ("recording_high_level_prompt", "Highlevel Prompt", "text"),
+]
+QUERY_FIELD_TYPES = {key: kind for key, _, kind in QUERY_FIELDS}
+
+
+def query_field_value(recording, field):
+    values = {
+        "recording_id": recording["id"],
+        "task_id": recording["task"],
+        "collection_id": recording["collection"],
+        "collection_device_sn": rec_device(recording),
+        "collection_operator_id": rec_operator(recording),
+        "collection_robot_type": rec_type_enum(recording),
+        "recording_dagger_type": "policy" if recording["type"] == "dagger" else None,
+        "recording_created_at": recording["at"][:10],
+        "recording_status": "失败" if recording["life"] == "quarantined" else "成功",
+        "recording_length": recording["frames"],
+        "recording_duration": recording["dur"],
+        "recording_fps": recording["fps"],
+        "inspection_status": "是" if rec_qc(recording) else "否",
+        "inspection_result": {"pass": "合格", "fail": "不合格", "warn": "操作失误"}[recording["qa"]],
+        "annotation_status": "是" if rec_anno(recording) else "否",
+        "recording_high_level_prompt": task_instr(recording["task"]),
+    }
+    return values.get(field)
+
+
+def query_matches_condition(recording, node):
+    """Evaluate the same nested AND/OR shape used by the page's builder."""
+    if not isinstance(node, dict):
+        return True
+    if "children" in node:
+        children = node.get("children", [])
+        if not isinstance(children, list) or not children:
+            return True
+        checks = [query_matches_condition(recording, child) for child in children]
+        return any(checks) if node.get("op") == "or" else all(checks)
+    field, operator = node.get("field"), node.get("operator")
+    if field not in QUERY_FIELD_TYPES:
+        return False
+    actual = query_field_value(recording, field)
+    if operator == "为空":
+        return actual is None or actual == ""
+    if operator == "不为空":
+        return actual is not None and actual != ""
+    if actual is None:
+        return False
+    raw = str(node.get("value", "")).strip()
+    kind = QUERY_FIELD_TYPES[field]
+    if operator in ("in", "not in"):
+        parts = [part.strip().casefold() for part in raw.split(",") if part.strip()]
+        found = str(actual).casefold() in parts
+        return found if operator == "in" else not found
+    if operator in ("包含", "不包含"):
+        found = raw.casefold() in str(actual).casefold()
+        return found if operator == "包含" else not found
+    if operator == "介于":
+        try:
+            bounds = [part.strip() for part in raw.split(",", 1)]
+            if len(bounds) != 2:
+                return False
+            current = float(actual) if kind == "number" else str(actual).casefold()
+            low, high = (float(part) for part in bounds) if kind == "number" else (part.casefold() for part in bounds)
+            return low <= current <= high
+        except ValueError:
+            return False
+    if kind == "number":
+        try:
+            value = float(raw)
+            current = float(actual)
+        except (TypeError, ValueError):
+            return False
+    else:
+        value, current = raw.casefold(), str(actual).casefold()
+    return {
+        "=": lambda: current == value,
+        "≠": lambda: current != value,
+        ">": lambda: current > value,
+        ">=": lambda: current >= value,
+        "<": lambda: current < value,
+        "<=": lambda: current <= value,
+    }.get(operator, lambda: False)()
 
 
 @app.route("/query")
 def query():
-    # 筛选条件对齐数据拉取脚本 export_dataset.py 的参数
+    did_run = request.args.get("run") == "1"
+    advanced_raw = request.args.get("advanced", "")
+    try:
+        advanced = json.loads(advanced_raw) if advanced_raw else {"op": "and", "children": []}
+        if not isinstance(advanced, dict):
+            raise ValueError("Invalid condition tree")
+    except (ValueError, TypeError):
+        advanced = {"op": "and", "children": []}
+    # Keep the live page's initial defaults in the form and mock execution.
     f_task = request.args.get("task", "")          # 多个 task id, 逗号隔开
+    f_batch = request.args.get("batch", "")
     f_device = request.args.get("device", "")
     f_operators = request.args.getlist("operator")  # 多选操作员
     f_types = request.args.getlist("type")          # 多选采集类型
-    f_qas = request.args.getlist("qa")             # 多选: pass/fail/warn
+    f_dtype = request.args.getlist("dtype")
+    f_quality = request.args.get("quality", "success")
+    f_qc = request.args.get("qc", "yes")
+    f_anno = request.args.get("anno", "yes")
+    f_qas = request.args.getlist("qa") if "qa" in request.args else ["pass"]
     f_tags = request.args.getlist("tag")           # 多选标签
     f_from = request.args.get("from", "")
     f_to = request.args.get("to", "")
+    f_limit = request.args.get("limit", "")
+    f_lang = request.args.getlist("lang") if "lang" in request.args else ["en"]
+    f_hl = request.args.get("hl", "")
+    f_ll = request.args.get("ll", "")
     nl = request.args.get("nl", "")
 
     task_list = [t.strip() for t in f_task.split(",") if t.strip()]
+    hl_keyword = f_hl.strip().casefold()
+    ll_keyword = f_ll.strip().casefold()
 
     # —— 过滤 ——
     res = []
-    for r in RECORDINGS:
+    for r in RECORDINGS if did_run else []:
         if task_list and r["task"] not in task_list:
+            continue
+        prompts = QUERY_PROMPT_TEXT.get(r["task"], {})
+        if hl_keyword and not any(hl_keyword in value.casefold() for value in prompts.get("high", ())):
+            continue
+        if ll_keyword and not any(ll_keyword in value.casefold() for value in prompts.get("low", ())):
+            continue
+        if f_batch and str(r["collection"]) not in [part.strip() for part in f_batch.split(",")]:
             continue
         if f_tags and not any(t in rec_tags(r) for t in f_tags):
             continue
-        if f_device and rec_device(r) != f_device:
+        if f_device and rec_device(r).casefold() not in [part.strip().casefold() for part in f_device.split(",")]:
             continue
         if f_operators and rec_operator(r) not in f_operators:
             continue
         if f_types and rec_type_enum(r) not in f_types:
             continue
-        if f_qas and r["qa"] not in f_qas:
+        if f_dtype and ("policy" if r["type"] == "dagger" else "") not in f_dtype:
+            continue
+        if f_quality == "success" and r["life"] != "active":
+            continue
+        if f_quality == "fail" and r["life"] == "active":
+            continue
+        if f_qc and ("yes" if rec_qc(r) else "no") != f_qc:
+            continue
+        if f_anno and ("yes" if rec_anno(r) else "no") != f_anno:
+            continue
+        if f_qc == "yes" and f_qas and r["qa"] not in f_qas:
             continue
         if f_from and r["at"][:10] < f_from:
             continue
         if f_to and r["at"][:10] > f_to:
             continue
+        if not query_matches_condition(r, advanced):
+            continue
         res.append(r)
 
-    # 展示用结果集: 模拟较大命中量 (用于分页演示), 由筛选结果循环铺开
-    disp = [res[i % len(res)] for i in range(47)] if res else []
+    disp = res[:int(f_limit)] if f_limit.isdigit() and int(f_limit) > 0 else res
 
     # —— 配方助手: 当前筛选结果的 提示词 / 标签 构成 ——
     prompt_counts = {}
@@ -3656,7 +3913,8 @@ def query():
             tag_comp.append({"key": tid, "label": lab, "count": c})
     recipe_data_js = (f"window._rcPrompt={json.dumps(prompt_comp, ensure_ascii=False)};"
                       f"window._rcTag={json.dumps(tag_comp, ensure_ascii=False)};"
-                      f"window._rcBaseN={len(disp)};")
+                      f"window._rcBaseN={len(disp)};"
+                      f"window._qHasResult={json.dumps(bool(disp))};")
     # 预览抽屉: id → episode 序号 (复用 preview_block 的轨迹组件)
     qprev_map = {r["id"]: {"idx": i, "qa": r["qa"]} for i, r in enumerate(res)}
     recipe_data_js += f"window._qprevMap={json.dumps(qprev_map, ensure_ascii=False)};"
@@ -3690,8 +3948,8 @@ def query():
            "ORDER BY collected_at DESC;")
 
     # —— 选择器 ——
-    def sel(name, cur, options, placeholder):
-        opts = f'<option value="">{placeholder}</option>'
+    def sel(name, cur, options, placeholder=None):
+        opts = f'<option value="">{placeholder}</option>' if placeholder is not None else ""
         for v, lab in options:
             s = " selected" if v == cur else ""
             opts += f'<option value="{v}"{s}>{lab}</option>'
@@ -3700,7 +3958,7 @@ def query():
 
     # 任务: 文本输入, 多个 task id 逗号隔开
     task_cls = "has-value" if f_task else ""
-    task_input = f'<input name="task" class="{task_cls}" value="{f_task}" placeholder="如 t1,t2 多个逗号隔开">'
+    task_input = f'<input name="task" class="{task_cls}" value="{html.escape(f_task, quote=True)}" placeholder="多个英文逗号分隔">'
 
     # 多选下拉 (ms-wrap)
     def ms(name, base, items, selected):
@@ -3729,84 +3987,89 @@ def query():
               f'<span class="ms-label">{("标签 ("+str(n_tag)+")") if n_tag else "标签"}</span></div>'
               f'<div class="ms-panel">{tag_checks}</div></div>')
 
-    qa_ms = ms("qa", "全部", [("pass", "合格"), ("fail", "不合格"), ("warn", "操作失误")], f_qas)
-    dev_sel = sel("device", f_device, [(d, d) for d in DEVICES], "全部")
-    op_sel = ms_search_html("operator", "全部", OP_POOL, f_operators)
-    type_sel = ms("type", "全部", [("normal", "normal"), ("dagger", "dagger"), ("test", "test"), ("eval", "eval")], f_types)
+    qa_ms = ms("qa", "请选择质检结论", [("pass", "合格"), ("fail", "不合格"), ("warn", "操作失误")], f_qas)
+    dev_input = f'<input name="device" value="{html.escape(f_device, quote=True)}" placeholder="多个英文逗号分隔">'
+    op_sel = ms_search_html("operator", "请选择操作员", OP_POOL, f_operators,
+                            placeholder="请选择操作员")
+    type_sel = ms("type", "默认全部", [("normal", "normal"), ("dagger", "dagger"), ("test", "test"), ("eval", "eval")], f_types)
 
     # —— 新增分组字段 (与「新建数据集」弹窗一致; 部分为 demo 展示, 暂不参与后端过滤) ——
-    batch_input = '<input name="batch" placeholder="如 B20250612-01">'
-    import quanta_eval_platform as prompt_catalog
-    hl_pool = [(p["id"], p["high_level"]) for p in prompt_catalog.PROMPTS]
-    ll_pool = [(p["id"], p["zh"]) for h in prompt_catalog.PROMPTS for p in h["low_levels"]]
-    hl_input = ms_search_html("hl", "全部", hl_pool, request.args.getlist("hl"), placeholder="输入关键词", empty_text="无数据", browse=True)
-    ll_input = ms_search_html("ll", "全部", ll_pool, request.args.getlist("ll"), placeholder="输入关键词", empty_text="无数据", browse=True)
-    dagger_ms = ms("dtype", "全部", [("policy", "policy"), ("teleop", "teleop")], [])
+    batch_input = f'<input name="batch" value="{html.escape(f_batch, quote=True)}" placeholder="多个英文逗号分隔">'
+    hl_input = f'<input type="text" name="hl" value="{html.escape(f_hl, quote=True)}" placeholder="输入 prompt">'
+    ll_input = f'<input type="text" name="ll" value="{html.escape(f_ll, quote=True)}" placeholder="输入 prompt">'
+    dagger_ms = ms("dtype", "默认全部", [("policy", "policy"), ("teleop", "teleop")], f_dtype)
 
-    def tri_q(dep):  # 三态: 不限 / 是 / 否; 选「是」才启用依赖字段 dep
-        return (f'<select onchange="qfDep(\'{dep}\',this.value)">'
-                '<option value="">不限</option><option value="yes">是</option><option value="no">否</option></select>')
-    annover_sel = '<input type="number" min="1" name="annover" placeholder="留空默认最新版本">'
-    lang_ms = ms("lang", "全部", [("zh", "中文"), ("en", "英文")], [])
+    def tri_q(name, dep, current):
+        return (f'<select name="{name}" onchange="qfDep(\'{dep}\',this.value)">'
+                f'<option value="yes" {"selected" if current == "yes" else ""}>是</option>'
+                f'<option value="no" {"selected" if current == "no" else ""}>否</option></select>')
+    quality_sel = sel("quality", f_quality, [("success", "成功"), ("fail", "失败")])
+    annover_sel = f'<input type="number" min="0" name="annover" value="{html.escape(request.args.get("annover", ""), quote=True)}" placeholder="请输入标注版本">'
+    lang_sel = sel("lang", f_lang[0] if f_lang else "", [("en", "英文"), ("zh", "中文"), ("", "全部")])
 
     # 所有筛选条件默认全部展开 (不再折叠)
     adv_fd = ""
 
     top_card = f"""
     <div class="q-filters">
-      <div class="q-mode-tabs">
+      <div class="q-mode-tabs" hidden style="display:none" aria-hidden="true">
         <button class="qm-tab active" data-m="filter" onclick="qSetMode('filter')">固定筛选</button>
         <button class="qm-tab" data-m="sql" onclick="qSetMode('sql')">执行 SQL</button>
       </div>
 
       <div id="qModeFilter">
-        <form method="get" action="/query" id="qform">
+        <form method="get" action="/query" id="qform" onsubmit="return qSubmit()">
           <input type="hidden" name="nl" id="nlField" value="{nl}">
+          <input type="hidden" name="run" value="1">
+          <input type="hidden" name="advanced" id="qAdvancedValue">
           <div class="qf-group"><div class="qf-group-title" onclick="qfToggleGroup(this)"><span class="qf-caret">&#9662;</span>任务信息</div><div class="qf-group-body">
-            <div class="q-filter-row q-adv-row">
+            <div class="q-filter-row q-adv-row qf-two">
               <div class="q-field"><label>采集任务</label>{task_input}</div>
-              <div class="q-field"><label>任务标签</label>{tag_ms}</div>
-            </div>
-            <div class="q-filter-row q-adv-row">
               <div class="q-field"><label>批次编号</label>{batch_input}</div>
-              <div class="q-field"><label>设备序列号</label>{dev_sel}</div>
+            </div>
+            <div class="q-filter-row q-adv-row qf-two">
+              <div class="q-field"><label>设备序列号</label>{dev_input}</div>
               <div class="q-field"><label>采集时间</label>
                 <div class="q-range">
-                  <input type="date" name="from" value="{f_from}">
+                  <input type="text" name="from" value="{html.escape(f_from, quote=True)}" placeholder="开始时间" onfocus="this.type='date'" onblur="if(!this.value)this.type='text'">
                   <span class="q-range-sep">~</span>
-                  <input type="date" name="to" value="{f_to}">
+                  <input type="text" name="to" value="{html.escape(f_to, quote=True)}" placeholder="结束时间" onfocus="this.type='date'" onblur="if(!this.value)this.type='text'">
                 </div>
               </div>
-              <div class="q-field"><label>操作员</label>{op_sel}</div>
             </div>
-            <div class="q-filter-row q-adv-row">
+            <div class="q-filter-row q-adv-row qf-three">
+              <div class="q-field"><label>操作员</label>{op_sel}</div>
               <div class="q-field"><label>采集类型</label>{type_sel}</div>
               <div class="q-field"><label>Dagger 类型</label>{dagger_ms}</div>
             </div>
           </div></div>
-          <div class="qf-group collapsed"><div class="qf-group-title" onclick="qfToggleGroup(this)"><span class="qf-caret">&#9662;</span>处理信息</div><div class="qf-group-body">
-            <div class="q-filter-row q-adv-row">
-              <div class="q-field"><label>是否质检</label>{tri_q('q_dep_qc')}</div>
-              <div class="q-field qf-dep qf-off" id="q_dep_qc"><label>质检结论</label>{qa_ms}</div>
-              <div class="q-field"><label>是否标注</label>{tri_q('q_dep_anno')}</div>
-              <div class="q-field qf-dep qf-off" id="q_dep_anno"><label>标注版本</label>{annover_sel}</div>
+          <div class="qf-group"><div class="qf-group-title" onclick="qfToggleGroup(this)"><span class="qf-caret">&#9662;</span>处理信息</div><div class="qf-group-body">
+            <div class="q-filter-row q-adv-row qf-five">
+              <div class="q-field"><label>采集结论</label>{quality_sel}</div>
+              <div class="q-field"><label>是否质检</label>{tri_q('qc', 'q_dep_qc', f_qc)}</div>
+              <div class="q-field qf-dep {"" if f_qc == "yes" else "qf-off"}" id="q_dep_qc"><label>质检结论</label>{qa_ms}</div>
+              <div class="q-field"><label>是否标注</label>{tri_q('anno', 'q_dep_anno', f_anno)}</div>
+              <div class="q-field qf-dep {"" if f_anno == "yes" else "qf-off"}" id="q_dep_anno"><label>标注版本</label>{annover_sel}</div>
             </div>
           </div></div>
-          <div class="qf-group collapsed"><div class="qf-group-title" onclick="qfToggleGroup(this)"><span class="qf-caret">&#9662;</span>提示词</div><div class="qf-group-body">
-            <div class="q-filter-row q-adv-row">
+          <div class="qf-group"><div class="qf-group-title" onclick="qfToggleGroup(this)"><span class="qf-caret">&#9662;</span>提示词</div><div class="qf-group-body">
+            <div class="q-filter-row q-adv-row qf-two">
               <div class="q-field grow"><label>Highlevel (模糊搜索)</label>{hl_input}</div>
               <div class="q-field grow"><label>Lowlevel (模糊搜索)</label>{ll_input}</div>
             </div>
           </div></div>
-          <div class="qf-group collapsed"><div class="qf-group-title" onclick="qfToggleGroup(this)"><span class="qf-caret">&#9662;</span>导出要求</div><div class="qf-group-body">
-            <div class="q-filter-row q-adv-row">
-              <div class="q-field"><label>Episode 上限</label><input type="number" min="1" name="limit" placeholder="留空则不限制"></div>
-              <div class="q-field"><label>Prompt 语言</label>{lang_ms}</div>
+          <div class="qf-group"><div class="qf-group-title" onclick="qfToggleGroup(this)"><span class="qf-caret">&#9662;</span>导出要求</div><div class="qf-group-body">
+            <div class="q-filter-row q-adv-row qf-two">
+              <div class="q-field"><label>Episode 上限</label><input type="number" min="0" name="limit" value="{html.escape(f_limit, quote=True)}" placeholder="导出条数上限"></div>
+              <div class="q-field"><label>Prompt 语言</label>{lang_sel}</div>
             </div>
           </div></div>
+          <div class="qf-group qf-advanced"><div class="qf-group-title" onclick="qfToggleGroup(this)"><span class="qf-caret">&#9662;</span>高级条件</div>
+            <div class="qf-group-body"><div class="muted" style="font-size:12px;margin-bottom:8px;">可按且／或组合条件。</div><div id="qConditionTree"></div><div id="qConditionError" class="q-condition-error" hidden></div></div>
+          </div>
           <div class="q-filter-tools">
             <a href="/query" class="btn">重置</a>
-            <button type="submit" class="btn-primary btn">查询</button>
+            <button type="submit" class="btn-primary btn">执行圈选</button>
           </div>
         </form>
       </div>
@@ -3885,7 +4148,7 @@ def query():
                 else '<span class="tag tag-gray">否</span>')
     for i, r in enumerate(disp):
         pg = i // PAGE_SIZE
-        rows += (f'<tr data-pg="{pg}" style="{"display:none;" if pg else ""}"><td>#{r["id"]}</td><td>{r["task"]}</td>'
+        rows += (f'<tr data-pg="{pg}" style="{"display:none;" if pg else ""}"><td>{r["id"]}</td><td>{r["task"]}</td>'
                  f'<td>{rec_device(r)}</td>'
                  f'<td><span class="tag tag-gray">{rec_type_enum(r)}</span></td>'
                  f'<td>{yn(rec_qc(r))}</td>'
@@ -3893,7 +4156,8 @@ def query():
                  f'<td>{r["frames"]:,}</td><td>{r["dur"]}s</td>'
                  f'<td><a href="#" onclick="qPreview({r["id"]});return false;">预览</a></td></tr>')
     if not rows:
-        rows = '<tr><td colspan="9" class="muted" style="text-align:center;padding:30px;">无匹配 episode, 调整筛选条件试试</td></tr>'
+        empty_message = "未找到符合条件的 episode，请调整圈选条件" if did_run else "暂无数据"
+        rows = f'<tr><td colspan="9"><div class="q-empty-state"><span class="q-empty-icon" aria-hidden="true"></span><span>{empty_message}</span></div></td></tr>'
     total_frames = sum(r["frames"] for r in disp)
     n_disp = len(disp)
     n_pages = max(1, (n_disp + PAGE_SIZE - 1) // PAGE_SIZE)
@@ -3904,18 +4168,19 @@ def query():
             for p in range(n_pages))
         pager = (f'<div class="q-pager"><span class="muted" style="font-size:12px;">共 {n_disp} 条 · 每页 {PAGE_SIZE} 条</span>'
                  f'<div class="pg-btns">{btns}</div></div>')
+    progress_href = "/model/data/ds_progress" if request.path.startswith("/model/") else "/ds_progress"
     result_card = f"""
     <div class="card">
-      <h3>查询结果
-        <span class="muted" id="qResMeta" style="font-size:13px;font-weight:400;">默认展示 20 条, 更多请输入筛选条件查询</span>
+      <h3>圈选结果
+        <span class="muted" id="qResMeta" style="font-size:13px;font-weight:400;">{"共 " + str(n_disp) + " 条" if did_run else ""}</span>
         <span style="float:right;display:inline-flex;gap:8px;">
-          <a href="/model/data/ds_progress" class="btn">查看数据集创建进度</a>
-          <button class="btn btn-secondary" onclick="openBuildDsDrawer()">用结果新建数据集</button>
+          <a href="{progress_href}" class="btn">查看数据集创建进度</a>
+          <button class="btn" onclick="openBuildDsDrawer()">用圈选结果创建数据集</button>
         </span>
       </h3>
       <div class="q-table-scroll">
         <table class="ant-table">
-          <thead><tr><th>数据 ID</th><th>Task ID</th><th>设备</th><th>类型</th><th>是否质检</th><th>是否标注</th><th>帧数</th><th>时长</th><th>操作</th></tr></thead>
+          <thead><tr><th>recording_id</th><th>Task ID</th><th>设备</th><th>类型</th><th>是否质检</th><th>是否标注</th><th>帧数</th><th>时长</th><th>操作</th></tr></thead>
           <tbody id="qbody">{rows}</tbody>
         </table>
       </div>
@@ -3931,7 +4196,7 @@ def query():
       </div>
     </div>
     """
-    build_folder_opts = "".join(f"<option>{f}</option>" for f in V2_FOLDERS)
+    build_folder_opts = '<option value="">请选择目录</option>' + "".join(f"<option>{f}</option>" for f in V2_FOLDERS)
     build_selected_tag_paths = [
         DATASET_TAG_PATH_BY_ID.get(tag_id, TAG_LABEL.get(tag_id, tag_id))
         for tag_id in f_tags
@@ -3945,15 +4210,13 @@ def query():
     build_ds_drawer = f"""
     <div class="modal-mask" id="buildDsDrawer" onclick="if(event.target===this)this.classList.remove('active')">
       <div class="modal-box" style="width:520px;max-width:calc(100vw - 32px);">
-        <div class="drawer-head"><h3>用结果新建数据集</h3><!-- 兼容旧测试标记：用结果创建数据集 --><button class="drawer-close" onclick="document.getElementById('buildDsDrawer').classList.remove('active')">&times;</button></div>
+        <div class="drawer-head"><h3>用圈选结果创建数据集</h3><button class="drawer-close" onclick="document.getElementById('buildDsDrawer').classList.remove('active')">&times;</button></div>
         <div class="drawer-body">
-          <div class="muted" style="font-size:12px;margin-bottom:14px;">将当前查询结果（{n_disp} 个 episode）打包为一个新数据集。</div>
-          <div class="fg"><label><span class="req">*</span>标识</label><input id="buildDsIdent" placeholder="英文唯一标识" oninput="var n=document.getElementById('buildDsName'); if(n) n.value=this.value;"><div class="hint">全局唯一</div></div>
-          <div class="fg"><label><span class="req">*</span>数据集名称</label><input id="buildDsName" placeholder="填写标识后自动带入, 可修改"></div>
-          <div class="fg"><label>生成格式</label><select><option>LeRobot</option><option>Mozdataset</option></select></div>
-          <div class="fg"><label>选择目录</label><select>{build_folder_opts}</select></div>
+          <div class="muted" style="font-size:12px;margin-bottom:14px;">将基于本次圈选的 {n_disp} 条 recording_id 创建数据集。</div>
+          <div class="fg"><label><span class="req">*</span>标识</label><input id="buildDsIdent" maxlength="200" placeholder="英文唯一标识" oninput="var n=document.getElementById('buildDsName'); if(n) n.value=this.value;"><div class="hint">全局唯一</div></div>
+          <div class="fg"><label><span class="req">*</span>数据集名称</label><input id="buildDsName" placeholder="填写标识后可自动带出，可修改"></div>
+          <div class="fg"><label for="buildDsFolder"><span class="req">*</span>选择目录</label><select id="buildDsFolder" required>{build_folder_opts}</select></div>
           <div class="fg"><label>标签</label>{build_tag_selector}</div>
-          {dataset_visibility_fields("buildDs")}
         </div>
         <div class="drawer-foot">
           <button class="btn" onclick="document.getElementById('buildDsDrawer').classList.remove('active')">取消</button>
@@ -3962,8 +4225,87 @@ def query():
       </div>
     </div>
     """
-    content = top_card + result_card + ai_panel + recipe_panel + prev_drawer + build_ds_drawer
+    content = '<div class="lake-query-page"><div class="lake-query-heading">数据湖圈选</div>' + top_card + result_card + ai_panel + recipe_panel + prev_drawer + build_ds_drawer + '</div>'
     script = """<script>__RECIPE_DATA__
+    var QFIELDS=__QUERY_FIELDS__, qTree=__QUERY_TREE__;
+    function qElement(tag, className, text){
+      var element=document.createElement(tag); element.className=className||'';
+      if(text!==undefined) element.textContent=text;
+      return element;
+    }
+    function qSelect(options, value){
+      var select=qElement('select');
+      options.forEach(function(item){ var option=new Option(item[1],item[0]); select.add(option); });
+      select.value=value;
+      return select;
+    }
+    function qOperators(kind){
+      var shared=[['=','='],['≠','≠'],['in','in'],['not in','not in'],['为空','为空'],['不为空','不为空']];
+      return kind==='number'||kind==='date'
+        ? shared.slice(0,2).concat([['>','>'],['>=','>='],['<','<'],['<=','<=']],shared.slice(2,4),[['介于','介于']],shared.slice(4))
+        : shared.slice(0,2).concat([['包含','包含'],['不包含','不包含']],shared.slice(2));
+    }
+    function qRenderConditions(){
+      var root=document.getElementById('qConditionTree'); if(!root) return;
+      root.replaceChildren(qRenderGroup(qTree,true));
+    }
+    function qRenderGroup(group,isRoot){
+      var box=qElement('div','q-condition-group'); box.dataset.op=group.op;
+      var head=qElement('div','q-condition-head');
+      var toggle=qElement('button','q-condition-toggle',group.op==='or'?'或 (OR)':'且 (AND)');
+      toggle.type='button';toggle.title='点击切换当前组的且／或关系';
+      toggle.setAttribute('aria-label','切换当前组为'+(group.op==='or'?'且 (AND)':'或 (OR)'));
+      toggle.onclick=function(){group.op=group.op==='or'?'and':'or';qRenderConditions();};
+      head.appendChild(toggle);
+      function button(label,action){var b=qElement('button','',label);b.type='button';b.onclick=action;head.appendChild(b);}
+      button('添加条件',function(){group.children.push({field:QFIELDS[0][0],operator:'=',value:''});qRenderConditions();});
+      ['and','or'].forEach(function(op){
+        button('添加条件('+ (op==='and'?'且':'或') +')',function(){
+          group.children.push({op:op,children:[{field:QFIELDS[0][0],operator:'=',value:''}]});qRenderConditions();
+        });
+      });
+      if(!isRoot) button('删除组',function(){group._parent.splice(group._index,1);qRenderConditions();});
+      box.appendChild(head);
+      if(!group.children.length) box.appendChild(qElement('div','q-condition-empty','暂无条件，请添加筛选条件'));
+      group.children.forEach(function(node,index){
+        if(node.children){node._parent=group.children;node._index=index;box.appendChild(qRenderGroup(node,false));return;}
+        var row=qElement('div','q-condition-row');
+        var field=qSelect(QFIELDS.map(function(item){return [item[0],item[1]];}),node.field);
+        field.setAttribute('aria-label','条件字段');
+        field.onchange=function(){node.field=field.value;node.operator='=';node.value='';qRenderConditions();};
+        var kind=(QFIELDS.find(function(item){return item[0]===node.field;})||QFIELDS[0])[2];
+        var operators=qOperators(kind);
+        if(!operators.some(function(item){return item[0]===node.operator;})) node.operator='=';
+        var operator=qSelect(operators,node.operator);
+        operator.setAttribute('aria-label','条件运算符');
+        operator.onchange=function(){node.operator=operator.value;node.value='';qRenderConditions();};
+        var input=qElement('input');input.setAttribute('aria-label','条件值');
+        input.type=kind==='number'&&node.operator!=='in'&&node.operator!=='not in'&&node.operator!=='介于'?'number':kind==='date'&&node.operator!=='in'&&node.operator!=='not in'&&node.operator!=='介于'?'date':'text';
+        input.value=node.value||'';input.placeholder=node.operator==='介于'?'起始值,结束值':node.operator==='in'||node.operator==='not in'?'多个值用逗号分隔':'请输入值';
+        input.disabled=node.operator==='为空'||node.operator==='不为空';
+        input.oninput=function(){node.value=input.value;};
+        var remove=qElement('button','','×');remove.type='button';remove.title='删除条件';remove.setAttribute('aria-label','删除条件');
+        remove.onclick=function(){group.children.splice(index,1);qRenderConditions();};
+        row.append(field,operator,input,remove);box.appendChild(row);
+      });
+      return box;
+    }
+    function qSubmit(){
+      var errors=[];
+      function validate(node){
+        if(node.children){node.children.forEach(validate);return;}
+        if(node.operator==='为空'||node.operator==='不为空') return;
+        var value=(node.value||'').trim();
+        if(!value) errors.push('请填写高级条件的值');
+        else if(node.operator==='介于'&&value.split(',').filter(function(x){return x.trim();}).length!==2) errors.push('区间条件需要两个值，用英文逗号分隔');
+      }
+      validate(qTree);
+      var error=document.getElementById('qConditionError');error.hidden=!errors.length;error.textContent=errors[0]||'';
+      if(errors.length){error.scrollIntoView({block:'nearest'});return false;}
+      document.getElementById('qAdvancedValue').value=JSON.stringify(qTree,function(key,value){return key[0]==='_'?undefined:value;});
+      return true;
+    }
+    document.addEventListener('DOMContentLoaded',qRenderConditions);
     function toggleAdv(){
       var p=document.getElementById('advPanel'), b=document.getElementById('advBtn');
       var open=p.style.display!=='none';
@@ -4023,7 +4365,7 @@ def query():
         '<button class="btn-primary btn ai-run" onclick="aiRun()">执行查询 &#8594;</button></div>');
       msgs.scrollTop=msgs.scrollHeight;
     }
-    function aiRun(){ document.getElementById('nlField').value=window._aiNL||''; document.getElementById('qform').submit(); }
+    function aiRun(){ document.getElementById('nlField').value=window._aiNL||''; document.getElementById('qform').requestSubmit(); }
     function qGoPage(p){
       document.querySelectorAll('#qbody tr').forEach(function(tr){ tr.style.display = (+tr.getAttribute('data-pg')===p)?'':'none'; });
       document.querySelectorAll('.pg-btn').forEach(function(b){ b.classList.toggle('active', +b.getAttribute('data-p')===p); });
@@ -4155,9 +4497,11 @@ def query():
       toast('已按配方随机采样 '+target+' 个 episode');
     }
     </script>"""
-    script = script.replace("__RECIPE_DATA__", recipe_data_js)
-    return render_page("数据查询", content, active="query",
-                       breadcrumb="数据湖 / <b>数据查询</b>", extra_script=script)
+    script = (script.replace("__RECIPE_DATA__", recipe_data_js)
+             .replace("__QUERY_FIELDS__", json.dumps(QUERY_FIELDS, ensure_ascii=False).replace("</", "<\\/"))
+             .replace("__QUERY_TREE__", json.dumps(advanced, ensure_ascii=False).replace("</", "<\\/")))
+    return render_page("数据湖圈选", content, active="query",
+                       breadcrumb="数据湖 / <b>数据湖圈选</b>", extra_script=script)
 
 
 
@@ -4356,7 +4700,7 @@ def datasets():
       <div class="modal-box" style="width:780px;max-width:94vw;">
         <div class="drawer-head"><h3>新建数据集</h3><button class="drawer-close" onclick="closeDrawerById('newDsDrawer')">&times;</button></div>
         <div class="drawer-body">
-          <div class="ds-hint">&#128161; 可以前往 <a href="/query">数据查询</a> 页面使用 <b>AI 助手</b>, 筛选想要的数据, 一键生成数据集。</div>
+          <div class="ds-hint">&#128161; 可以前往 <a href="/query">数据湖圈选</a> 页面使用 <b>AI 助手</b>, 筛选想要的数据, 一键生成数据集。</div>
           <div class="section-label">数据集信息</div>
           <div class="fg-row">
             <div class="fg"><label><span class="req">*</span>标识</label><input id="newDsIdent" placeholder="英文唯一标识" oninput="var n=document.getElementById('newDsName'); if(n) n.value=this.value;"></div>
@@ -5991,7 +6335,7 @@ WF_CANVAS_JS = r"""
       wfRefreshProcessingRuleInheritance();
       document.getElementById('wfhProcessingPercent').value=n.processingPercent==null?'100':n.processingPercent;
       document.getElementById('wfhAllowTaskPercent').checked=!!n.allowTaskPercent;
-      document.querySelectorAll('input[name="wfhDataListEnabled"]').forEach(function(input){ input.checked=input.value===(n.dataListEnabled===false?'false':'true'); });
+      document.querySelectorAll('input[name="wfhProcessingMode"]').forEach(function(input){ input.checked=input.value===(n.processingMode || (n.businessStage==='质检'?'batch':'single')); });
       wfRefreshAssigneeInheritance();
       document.getElementById('wfhAssigneeInheritNode').value=n.inheritAssigneeNodeId||'';
       var previousNodes=previousHumanNodes(n);
@@ -6177,7 +6521,8 @@ WF_CANVAS_JS = r"""
       n.processingRuleMode=ruleMode;
       n.processingPercent=percent;
       n.allowTaskPercent=document.getElementById('wfhAllowTaskPercent').checked;
-      n.dataListEnabled=document.querySelector('input[name="wfhDataListEnabled"]:checked').value==='true';
+      n.processingMode=document.querySelector('input[name="wfhProcessingMode"]:checked').value;
+      n.dataListEnabled=n.processingMode==='batch';
       n.inheritProcessingRuleNodeId=n.processingRuleMode==='inherit'?document.getElementById('wfhProcessingRuleInheritNode').value:'';
       n.allowedActions=rejectEnabled?['驳回']:[];
       n.rejectEnabled=rejectEnabled;
@@ -6366,7 +6711,7 @@ WF_CANVAS_JS = r"""
       businessStage:'通用',workbench:'质检工作台 v2.0',workbenchType:'作业',workbenchModules:{质检:'可编辑',标注:'可编辑',标签:'仅查看',日志:'仅查看',基础信息:'仅查看'},userGroups:[],
       assigneeType:'supplier',assigneeMode:'task_custom',inheritAssigneeNodeId:'',
       processingRuleMode:'none',
-      dataListEnabled:true,
+      processingMode:'batch',dataListEnabled:true,
       allowedActions:['提交','暂离'],x:nodePosition.x,y:nodePosition.y
     };
     NODES.push(node);
@@ -6571,6 +6916,7 @@ def _processing_canvas_payload(pl):
             "processingRuleMode": node.get("processing_rule_mode", "none"),
             "processingPercent": node.get("processing_percent", 100),
             "allowTaskPercent": node.get("allow_task_percent", False),
+            "processingMode": "batch" if pl.get("business_stage") == "质检" else node.get("processing_mode", "single"),
             "dataListEnabled": node.get("data_list_enabled", True),
             "inheritProcessingRuleNodeId": node_name_to_id.get(node.get("inherit_processing_rule_node", ""), ""),
             "inheritAssigneeNodeId": node_name_to_id.get(
@@ -6958,10 +7304,10 @@ def pipeline_editor(pid):
             <div class="wf-cfg-sec" style="margin-top:16px;">处理比例</div>
             <div class="wf-human-grid"><label><span class="wf-human-label">比例（%）</span><input id="wfhProcessingPercent" class="wf-edit-field" type="number" min="1" max="100" step="1" value="100"></label><label style="display:flex;align-items:flex-end;padding-bottom:7px;gap:7px;"><input id="wfhAllowTaskPercent" type="checkbox"><span class="wf-human-label" style="margin:0;">支持任务自定义</span></label></div>
 
-            <div class="wf-cfg-sec">数据列表</div>
-            <div class="wf-choice-grid" id="wfhDataListEnabled" role="group" aria-label="数据列表">
-              <label><input type="radio" name="wfhDataListEnabled" value="true" checked><span>开启</span></label>
-              <label><input type="radio" name="wfhDataListEnabled" value="false"><span>关闭</span></label>
+            <div class="wf-cfg-sec">处理模式</div>
+            <div class="wf-choice-grid" id="wfhDataListEnabled" role="group" aria-label="处理模式">
+              <label><input type="radio" name="wfhProcessingMode" value="batch" checked><span>批量处理</span></label>
+              <label><input type="radio" name="wfhProcessingMode" value="single"><span>单独处理</span></label>
             </div>
 
             <div class="wf-cfg-sec">工作台</div>
