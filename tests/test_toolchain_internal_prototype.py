@@ -463,25 +463,31 @@ def test_dataset_progress_supports_validation_status_and_legacy_redirect():
     assert '未开始</button>' not in html
     assert 'data-value="verify"' in html
     assert '<h3 id="dpErrorTitle">异常原因</h3>' in html
-    assert '数据格式不一致' in html
-    assert '格式组 1' in html
-    assert '视频文件缺失' in html
-    assert 'TaskID' in html
+    assert 'data-reason="FEATURES_MISMATCH"' in html
+    assert 'data-reason="FILE_MISSING"' in html
+    assert 'data-reason="NO_VALID_RECORDINGS"' in html
+    assert 'white-space:pre-wrap' in html
     assert 'RecordingID' in html
-    assert '还有 2 个' in html
-    assert 'toggleDsErrorIds' in html
-    assert 'title="查看异常原因"' in html
+    assert 'title.textContent=template ? template.dataset.title' in html
+    assert 'aria-label="查看异常原因"' in html
     assert '查看失败日志' not in html
     assert '>返回数据湖圈选</a>' in html
     format_failure = html.split('id="dpErrorTemplate80"', 1)[1].split('</template>', 1)[0]
-    assert '数据格式不一致' in format_failure
-    assert '格式组 2' in format_failure
-    assert 'task_11092' in format_failure
-    assert 'rec_0012' in format_failure
-    assert '视频文件缺失' not in format_failure
+    assert 'data-title="数据格式不一致"' in format_failure
+    assert '【采集任务内部不一致】' in format_failure
+    assert '【采集任务间不一致】' in format_failure
+    assert '采集任务 220' in format_failure
+    assert 'RecordingID 2572' in format_failure
+    assert '【视频(mp4)缺失】' not in format_failure
     video_failure = html.split('id="dpErrorTemplate79"', 1)[1].split('</template>', 1)[0]
-    assert '视频文件缺失' in video_failure
-    assert '数据格式不一致' not in video_failure
+    assert 'data-title="文件缺失"' in video_failure
+    assert '【视频(mp4)缺失】' in video_failure
+    assert '【数据(parquet)缺失】' in video_failure
+    assert '采集任务 220: RecordingID 1001, 1002' in video_failure
+    assert '【采集任务内部不一致】' not in video_failure
+    no_valid_failure = html.split('id="dpErrorTemplate72"', 1)[1].split('</template>', 1)[0]
+    assert '没有找到有效的录制数据' in no_valid_failure
+    assert 'task_ids=[220, 221]' in no_valid_failure
     legacy = client.get('/ds_progress')
     assert legacy.status_code in (301, 302)
     assert legacy.headers['Location'].endswith('/model/data/ds_progress')

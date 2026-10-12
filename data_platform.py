@@ -1243,18 +1243,8 @@ select option:disabled { color:rgba(0,0,0,0.32); }
 .status-with-reason { display:inline-flex; align-items:center; gap:6px; white-space:nowrap; }
 .status-reason-icon { width:18px; height:18px; padding:0; border:1px solid #f3d6d5; border-radius:50%; background:#fff; color:#d4504e; font-size:12px; line-height:16px; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; }
 .status-reason-icon:hover { border-color:#d4504e; background:#fdf3f3; }
-.ds-error-body { max-height:56vh; padding:22px 24px 26px; overflow:auto; }
-.ds-error-section + .ds-error-section { margin-top:22px; padding-top:22px; border-top:1px solid #f0f0f0; }
-.ds-error-section h4 { margin:0 0 16px; color:rgba(0,0,0,0.88); font-size:14px; font-weight:600; }
-.ds-error-format-group + .ds-error-format-group { margin-top:18px; padding-top:18px; border-top:1px solid #f3f3f3; }
-.ds-error-format-label { margin-bottom:12px; color:rgba(0,0,0,0.65); font-size:13px; font-weight:600; }
-.ds-error-task { display:grid; grid-template-columns:88px minmax(0,1fr); gap:5px 10px; align-items:start; }
-.ds-error-task + .ds-error-task { margin-top:16px; }
-.ds-error-field-label { color:rgba(0,0,0,0.45); font-size:12px; line-height:22px; }
-.ds-error-id-line { color:rgba(0,0,0,0.78); font-family:'SFMono-Regular',Consolas,Menlo,monospace; font-size:12.5px; line-height:22px; overflow-wrap:anywhere; }
-.ds-error-task-id { color:rgba(0,0,0,0.85); font-family:'SFMono-Regular',Consolas,Menlo,monospace; font-size:12.5px; font-weight:600; line-height:22px; }
-.ds-error-more { margin-left:8px; padding:0; border:0; background:transparent; color:#1F80A0; font-size:12px; line-height:22px; cursor:pointer; }
-.ds-error-more:hover { color:#176a88; text-decoration:underline; }
+.ds-error-body { max-height:56vh; padding:20px 24px 24px; overflow:auto; }
+.ds-error-detail { margin:0; color:rgba(0,0,0,0.78); font-size:13px; line-height:1.8; white-space:pre-wrap; overflow-wrap:anywhere; }
 
 /* ── Tags / status ── */
 .tag { display:inline-block; padding:1px 8px; border-radius:4px; font-size:12px; line-height:20px; border:1px solid transparent; }
@@ -2149,14 +2139,15 @@ function closeDrawerById(id){ document.getElementById(id).classList.remove('acti
 function qfDep(id, val){ var el=document.getElementById(id); if(el) el.classList.toggle('qf-off', val!=='yes'); }
 function dsCreating(modalId){
   if(modalId==='buildDsDrawer'){
-    var ident=document.getElementById('buildDsIdent'), name=document.getElementById('buildDsName');
+    var ident=document.getElementById('buildDsIdent'), name=document.getElementById('buildDsName'), folder=document.getElementById('buildDsFolder');
     if(!ident.value.trim()){toast('请填写标识');ident.focus();return;}
     if(!/^[A-Za-z][A-Za-z0-9_-]*$/.test(ident.value.trim())){toast('标识须以英文字母开头，仅支持英文字母、数字、下划线和短横线');ident.focus();return;}
     if(!name.value.trim()){toast('请填写数据集名称');name.focus();return;}
+    if(!folder.value){toast('请选择目录');folder.focus();return;}
     try{
       var tasks=JSON.parse(sessionStorage.getItem('demoDatasetBuildTasks')||'[]');
       tasks.unshift({id:'D'+Date.now().toString().slice(-8),ident:ident.value.trim(),name:name.value.trim(),
-        folder:document.getElementById('buildDsFolder').value,
+        folder:folder.value,
         tags:Array.from(document.querySelectorAll('#buildDsTags input[name="dataset_tag"]:checked'),function(input){return input.value;}),
         filters:location.search,created:new Date().toLocaleString('sv-SE')});
       sessionStorage.setItem('demoDatasetBuildTasks',JSON.stringify(tasks.slice(0,5)));
@@ -3446,96 +3437,89 @@ def ds_progress():
     ]
     st_map = {"done": ("tag-green", "成功"), "fail": ("imp-fail", "失败"), "running": ("tag-orange", "进行中"), "verify": ("tag-blue", "校验中")}
 
-    def failure_reason(did):
-        format_groups = {
-            80: [
-                {
-                    "task_11092": ["rec_0012", "rec_0018", "rec_0021", "rec_0024", "rec_0027", "rec_0030", "rec_0033", "rec_0036", "rec_0039", "rec_0042", "rec_0045", "rec_0048"],
-                    "task_11095": ["rec_0051", "rec_0056"],
-                },
-                {
-                    "task_11103": ["rec_0061", "rec_0066"],
-                    "task_11108": ["rec_0072"],
-                },
-            ],
-            76: [
-                {"task_11061": ["rec_0102", "rec_0108"], "task_11066": ["rec_0114"]},
-                {"task_11061": ["rec_0120"], "task_11073": ["rec_0126", "rec_0131"]},
-            ],
-            73: [
-                {"task_10984": ["rec_0201"], "task_10991": ["rec_0206", "rec_0210"]},
-                {"task_11002": ["rec_0217"], "task_11005": ["rec_0223"]},
-            ],
-        }.get(did, [])
-        missing_recordings = {
-            79: {"task_11092": ["rec_0012", "rec_0018"], "task_11103": ["rec_0041"]},
-            78: {"task_11078": ["rec_0136", "rec_0142", "rec_0147"]},
-            74: {"task_11031": ["rec_0064"], "task_11038": ["rec_0091", "rec_0095"]},
-            72: {"task_10972": ["rec_0023", "rec_0028"]},
-        }.get(did, {})
-        if not format_groups and not missing_recordings:
-            missing_recordings = {f"task_{did:05d}": [f"rec_{did:04d}_01", f"rec_{did:04d}_02"]}
-        return format_groups, missing_recordings
-
-    def recording_ids_html(recording_ids, element_id):
-        visible_ids = recording_ids[:10]
-        hidden_ids = recording_ids[10:]
-        visible_html = "、".join(html.escape(recording_id) for recording_id in visible_ids)
-        if not hidden_ids:
-            return visible_html
-        hidden_html = "、" + "、".join(html.escape(recording_id) for recording_id in hidden_ids)
-        more_label = f"还有 {len(hidden_ids)} 个"
-        return (
-            f'{visible_html}<span id="{element_id}" hidden>{hidden_html}</span>'
-            f'<button type="button" class="ds-error-more" data-more-label="{more_label}" '
-            f'aria-expanded="false" aria-controls="{element_id}" onclick="toggleDsErrorIds(this)">{more_label}</button>'
-        )
-
-    def task_recording_html(tasks, element_prefix):
-        return "".join(
-            '<div class="ds-error-task">'
-            '<div class="ds-error-field-label">TaskID</div>'
-            f'<div class="ds-error-task-id">{html.escape(task_id)}</div>'
-            '<div class="ds-error-field-label">RecordingID</div>'
-            f'<div class="ds-error-id-line">{recording_ids_html(recording_ids, f"{element_prefix}Task{task_index}")}</div>'
-            '</div>'
-            for task_index, (task_id, recording_ids) in enumerate(tasks.items(), 1)
-        )
+    failure_titles = {
+        "FEATURES_MISMATCH": "数据格式不一致",
+        "FILE_MISSING": "文件缺失",
+        "NO_VALID_RECORDINGS": "无有效数据",
+    }
+    # Mock the API's failure_reason and newline-delimited failure_detail fields.
+    failure_examples = {
+        80: ("FEATURES_MISMATCH", "\n".join([
+            "共 4 组不同配置的采集数据不一致",
+            "【采集任务内部不一致】",
+            "采集任务 220：内部包含 3 组不同配置",
+            "  • 设备 moz1-03, moz1-11 → RecordingID 2572, 2573, 2574 等共 1462 条",
+            "  • 设备 moz1-y02-infer → RecordingID 2581, 2582 等共 147 条",
+            "  • 设备 9e26527dfe3f → RecordingID 2843, 2844 等共 78 条",
+            "",
+            "【采集任务间不一致】",
+            "• 采集任务 220（设备 moz1-03, moz1-11, moz1-y02-infer）",
+            "• 采集任务 221（设备 moz1-50）",
+            "",
+            "筛选范围：采集任务 220、采集任务 221",
+        ])),
+        79: ("FILE_MISSING", "\n".join([
+            "共 3 个文件缺失或为空：",
+            "【视频(mp4)缺失】",
+            "  采集任务 220: RecordingID 1001, 1002",
+            "【数据(parquet)缺失】",
+            "  采集任务 220: RecordingID 1001",
+            "请核验相关批次数据后重新创建",
+        ])),
+        78: ("FILE_MISSING", "\n".join([
+            "共 2 个文件缺失或为空：",
+            "【视频(mp4)缺失】",
+            "  采集任务 218: RecordingID 136, 142",
+            "请核验相关批次数据后重新创建",
+        ])),
+        76: ("FEATURES_MISMATCH", "\n".join([
+            "共 2 组不同配置的采集数据不一致",
+            "【采集任务间不一致】",
+            "• 采集任务 12（设备 moz1-11, moz1-12）",
+            "• 采集任务 15（设备 moz1-21, ur10e-01）",
+            "筛选范围：采集任务 12、采集任务 15",
+        ])),
+        74: ("FILE_MISSING", "\n".join([
+            "共 2 个文件缺失或为空：",
+            "【视频(mp4)缺失】",
+            "  采集任务 11031: RecordingID 64",
+            "【数据(parquet)缺失】",
+            "  采集任务 11038: RecordingID 91",
+            "请核验相关批次数据后重新创建",
+        ])),
+        73: ("FEATURES_MISMATCH", "\n".join([
+            "共 2 组不同配置的采集数据不一致",
+            "【采集任务内部不一致】",
+            "采集任务 10984：内部包含 2 组不同配置",
+            "  • 设备 moz1-01 → RecordingID 201, 206",
+            "  • 设备 moz1-02 → RecordingID 217",
+            "筛选范围：采集任务 10984",
+        ])),
+        72: ("NO_VALID_RECORDINGS", "\n".join([
+            "没有找到有效的录制数据",
+            "筛选条件:",
+            "- task_ids=[220, 221]",
+            "- capture_device_sns=['moz1-03', 'moz1-11']",
+            "- has_annotation=True",
+        ])),
+    }
 
     def failure_template(did):
-        format_groups, missing_recordings = failure_reason(did)
-        sections = []
-        if format_groups:
-            groups_html = "".join(
-                '<div class="ds-error-format-group">'
-                f'<div class="ds-error-format-label">格式组 {group_index}</div>'
-                f'{task_recording_html(tasks, f"dpError{did}Format{group_index}")}'
-                '</div>'
-                for group_index, tasks in enumerate(format_groups, 1)
-            )
-            sections.append(
-                '<section class="ds-error-section">'
-                '<h4>Feature 不一致（数据格式不一致）</h4>'
-                f'{groups_html}'
-                '</section>'
-            )
-        if missing_recordings:
-            sections.append(
-                '<section class="ds-error-section">'
-                '<h4>视频文件缺失</h4>'
-                f'{task_recording_html(missing_recordings, f"dpError{did}Video")}'
-                '</section>'
-            )
-        return f'<template id="dpErrorTemplate{did}">{"".join(sections)}</template>'
+        reason, detail = failure_examples[did]
+        title = failure_titles.get(reason, "创建失败")
+        return (f'<template id="dpErrorTemplate{did}" data-reason="{reason}" '
+                f'data-title="{html.escape(title, quote=True)}">'
+                f'<div class="ds-error-detail">{html.escape(detail)}</div></template>')
 
     def status_cell(did, name, st, at):
         cls, txt = st_map[st]
         tag = f'<span class="tag {cls}">{txt}</span>'
         if st != "fail":
             return tag
+        reason, _ = failure_examples[did]
         return (
             f'<span class="status-with-reason">{tag}'
-            f'<button type="button" class="status-reason-icon" title="查看异常原因" aria-label="查看异常原因" '
+            f'<button type="button" class="status-reason-icon" title="查看异常原因：{failure_titles.get(reason, "创建失败")}" aria-label="查看异常原因" '
             f'onclick="openDsProgressError({did})">i</button>'
             f'</span>'
         )
@@ -3718,16 +3702,10 @@ def ds_progress():
       function openDsProgressError(id){{
         var template=document.getElementById('dpErrorTemplate'+id);
         var body=document.getElementById('dpErrorBody');
+        var title=document.getElementById('dpErrorTitle');
+        if(title) title.textContent=template ? template.dataset.title : '异常原因';
         if(body) body.innerHTML=template ? template.innerHTML : '';
         openDrawerById('dpErrorModal');
-      }}
-      function toggleDsErrorIds(button){{
-        var extra=document.getElementById(button.getAttribute('aria-controls'));
-        if(!extra) return;
-        var expanding=extra.hidden;
-        extra.hidden=!expanding;
-        button.textContent=expanding ? '收起' : button.getAttribute('data-more-label');
-        button.setAttribute('aria-expanded', expanding ? 'true' : 'false');
       }}
       document.addEventListener('click', function(e){{
         document.querySelectorAll('.status-head-filter.open').forEach(function(wrap){{
@@ -4218,7 +4196,7 @@ def query():
       </div>
     </div>
     """
-    build_folder_opts = '<option value="">请选择目录（可选）</option>' + "".join(f"<option>{f}</option>" for f in V2_FOLDERS)
+    build_folder_opts = '<option value="">请选择目录</option>' + "".join(f"<option>{f}</option>" for f in V2_FOLDERS)
     build_selected_tag_paths = [
         DATASET_TAG_PATH_BY_ID.get(tag_id, TAG_LABEL.get(tag_id, tag_id))
         for tag_id in f_tags
@@ -4237,7 +4215,7 @@ def query():
           <div class="muted" style="font-size:12px;margin-bottom:14px;">将基于本次圈选的 {n_disp} 条 recording_id 创建数据集。</div>
           <div class="fg"><label><span class="req">*</span>标识</label><input id="buildDsIdent" maxlength="200" placeholder="英文唯一标识" oninput="var n=document.getElementById('buildDsName'); if(n) n.value=this.value;"><div class="hint">全局唯一</div></div>
           <div class="fg"><label><span class="req">*</span>数据集名称</label><input id="buildDsName" placeholder="填写标识后可自动带出，可修改"></div>
-          <div class="fg"><label>选择目录</label><select id="buildDsFolder">{build_folder_opts}</select></div>
+          <div class="fg"><label for="buildDsFolder"><span class="req">*</span>选择目录</label><select id="buildDsFolder" required>{build_folder_opts}</select></div>
           <div class="fg"><label>标签</label>{build_tag_selector}</div>
         </div>
         <div class="drawer-foot">
