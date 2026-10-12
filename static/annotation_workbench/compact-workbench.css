@@ -46,6 +46,7 @@ post-rework-training-quality-workspace .ptqw-compare :is(.ptqw-reason-value,.ptq
 post-rework-training-quality-workspace .ptqw-feedback-note button{top:1px}
 .ptqr-editor{margin-top:4px;padding-bottom:4px}.ptqr-meta{height:32px}
 .ptqr-review-row{min-height:36px;padding-block:3px}.ptqr-legend{height:18px}.ptqr-legend em{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.ptqr-error-row{height:32px}
+.ptqr-meta .segment-actions>.ptqr-meta-legend,.ptq-editor-meta-row .segment-actions>.ptqr-meta-legend{margin:0 auto 0 0;cursor:default;white-space:nowrap}
 .ptqw-current-heading{display:flex;align-items:center;gap:10px;height:24px}
 post-rework-training-quality-workspace .ptqw-current-title,
 post-rework-training-quality-workspace .ptqw-feedback summary{font-family:inherit;font-size:11px;font-weight:400;line-height:24px;color:var(--ptq-text)}
@@ -77,3 +78,25 @@ post-rework-training-quality-sidebar .ptq-list-item{min-height:48px}
 .ptqr-simple-confirm{width:min(340px,calc(100vw - 32px))}
 .ptqr-simple-confirm>div{min-height:72px;padding:16px}
 .ptqr-simple-confirm>div>p{margin:0;font-size:14px;color:var(--ptqr-text)}
+/* Business conclusions share one palette in every quality-workbench footer. */
+:is(.ptq-video-conclusion,.prq-video-conclusion,.ptqr-result){height:34px;gap:10px}
+:is(.ptq-video-conclusion,.prq-video-conclusion,.ptqr-result) output{height:31px;min-width:0;flex:1;display:grid;place-items:center;padding:0 10px;border:1px solid #51616d;border-radius:6px;background:#111a22;font-size:12px;font-weight:600;box-sizing:border-box}
+:is(.ptq-video-conclusion,.prq-video-conclusion,.ptqr-result) output.is-mistake{border-color:#9c7922;color:#ffe18a}
+:is(.ptq-video-conclusion,.prq-video-conclusion,.ptqr-result) output.is-rejected{border-color:#9b354b;color:#ffb7c4}
+:is(.ptq-video-conclusion,.prq-video-conclusion,.ptqr-result) output.is-pass{border-color:#51616d;color:#fff}
+html[data-theme=light] :is(.ptq-video-conclusion,.prq-video-conclusion,.ptqr-result) output{background:#fff}
+html[data-theme=light] :is(.ptq-video-conclusion,.prq-video-conclusion,.ptqr-result) output.is-mistake{color:#8b690b}
+html[data-theme=light] :is(.ptq-video-conclusion,.prq-video-conclusion,.ptqr-result) output.is-rejected{color:#a42e49}
+html[data-theme=light] :is(.ptq-video-conclusion,.prq-video-conclusion,.ptqr-result) output.is-pass{border-color:#cbd6de;color:#263640}
+:is(.ptq-conclusion-switch,.prq-conclusion-switch) label.is-active.is-mistake{border-color:#9c7922;background:#66500d;color:#ffe18a}
+:is(.ptq-conclusion-switch,.prq-conclusion-switch) label.is-active.is-rejected{border-color:#9b354b;background:#681d30;color:#ffb7c4}
+.workbench-quality-conclusion label{font-size:12px}
+.workbench-quality-conclusion__control,.workbench-quality-conclusion__control select{height:31px}
+.workbench-quality-conclusion__control select{border-radius:6px;font-size:12px;font-weight:600;background:#111a22}
+.workbench-quality-conclusion__control select:has(option[value="合格"]:checked){border-color:#51616d;color:#fff}
+.workbench-quality-conclusion__control select:has(option[value="不合格"]:checked){border-color:#9b354b;color:#ffb7c4}
+.workbench-quality-conclusion__control img{top:10px}
+html[data-theme=light] .workbench-quality-conclusion__control select{background:#fff}
+html[data-theme=light] .workbench-quality-conclusion__control select:has(option[value="合格"]:checked){border-color:#cbd6de;color:#263640}
+html[data-theme=light] .workbench-quality-conclusion__control select:has(option[value="不合格"]:checked){color:#a42e49}
+:is(post-training-quality-sidebar,post-rework-training-quality-sidebar,post-training-quality-review-sidebar,post-training-quality-second-review-sidebar) :is(.ptq-sidebar,.ptqr-sidebar)>header{height:32px;min-height:32px;flex:0 0 32px}
