@@ -3408,7 +3408,7 @@ class DataPlatformArchitectureTests(unittest.TestCase):
             flags=re.S,
         )
         self.assertIsNotNone(drawer)
-        self.assertIn("用结果建数据集", drawer.group(0))
+        self.assertIn("用圈选结果创建数据集", drawer.group(0))
         self.assertIn('id="buildDsTags"', drawer.group(0))
         self.assertIn("<label>标签</label>", drawer.group(0))
         self.assertIn('name="dataset_tag"', drawer.group(0))
