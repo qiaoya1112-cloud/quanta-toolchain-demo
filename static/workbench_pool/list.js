@@ -12,6 +12,17 @@
   const selectAll = document.getElementById('wpSelectAll');
   const batch = document.getElementById('wpBatch');
   let activeFilters = {}, busy = false;
+  const pretraining = task.id.startsWith('WB-PRETRAINING-');
+  const acceptance = task.id === 'WB-PRETRAINING-ACCEPTANCE';
+  function history(item) {
+    const entries = [
+      {label:'采集', name:item.collector, supplier:item.supplier_id, time:item.collected_at},
+      {label:'采集自检', name:item.self_checker, supplier:item.self_checker_supplier_id || item.supplier_id, time:item.self_checked_at},
+    ];
+    if (acceptance) entries.push({label:'采集质检', name:item.collection_qc_operator, supplier:item.collection_qc_supplier_id, time:item.collection_qc_at});
+    else if (!pretraining) entries.push({label:'采集质检', name:item.result ? item.operators?.['质检人'] : '', supplier:item.reviewer_supplier_id || item.supplier_id, time:item.reviewed_at});
+    return entries;
+  }
   const escape = value => String(value).replace(/[&<>"']/g, value => ({'&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;'}[value]));
   const details = entries => '<div class="wp-details">' + entries.map(([label, value]) =>
     '<div><span>' + escape(label) + '：</span>' + escape(Array.isArray(value) ? value.join('、') || '--' : value || '--') + '</div>'
@@ -20,9 +31,14 @@
     return records.filter(item => item.status !== 'completed').filter(item => {
       return Object.entries(activeFilters).every(([key, value]) => {
         if (!value) return true;
-        if (key === 'from') return item.collected_at.slice(0, 10) >= value;
-        if (key === 'to') return item.collected_at.slice(0, 10) <= value;
-        if (['supplier', 'status', 'auto_reason'].includes(key)) return item[key] === value;
+        if (key === 'time_node') return true;
+        if (key === 'from' || key === 'to') {
+          const time = activeFilters.time_node === 'collection_qc' ? item.collection_qc_at : activeFilters.time_node === 'self_check' ? item.self_checked_at : item.collected_at;
+          return Boolean(time) && (key === 'from' ? time.slice(0, 10) >= value : time.slice(0, 10) <= value);
+        }
+        if (key === 'status') return item.status === value;
+        if (key === 'supplier_id') return String(item.supplier_id || '').toLowerCase().includes(value.toLowerCase());
+        if (key === 'operator') return history(item).some(entry => String(entry.name || '').toLowerCase().includes(value.toLowerCase()));
         return String(item[key]).toLowerCase().includes(value.toLowerCase());
       });
     }).sort((a, b) => Number(b.status === 'processing') - Number(a.status === 'processing'));
@@ -40,16 +56,21 @@
     rows.innerHTML = visible.length ? visible.map(item => {
       const processing = item.status === 'processing';
       const images = ['头部', '左臂', '右臂'].map(view => '<div class="wp-view"><img src="/static/annotation_workbench/assets/frame.png" alt="' + view + '视角示例帧"><span>' + view + ' · 示例</span></div>').join('');
-      const conclusions = details([['自动化质检', item.auto_result], ['采集质检', item.result || '未质检']]);
-      const operators = details([['采集', item.collector], ['采集质检', item.result ? item.operators?.['质检人'] : '--']]);
-      const operationTimes = details([['采集', item.collected_at], ['采集质检', item.reviewed_at]]);
-      const buttons = (processing && !item.occupied ? '<button data-action="合格">合格</button><button data-action="不合格" class="wp-reject">不合格</button>' : '') + '<button class="wp-process" data-action="process">处理</button>';
+      const conclusion = value => !value || ['未自检', '未质检'].includes(value) ? '-' : value;
+      const conclusionEntries = [['采集自检', conclusion(item.self_check_result)], ['自动化质检', conclusion(item.auto_result)]];
+      if (acceptance) conclusionEntries.push(['采集质检', conclusion(item.collection_qc_result)]);
+      else if (!pretraining) conclusionEntries.push(['采集质检', conclusion(item.result)]);
+      const conclusions = details(conclusionEntries);
+      const entries = history(item);
+      const operators = details(entries.map(entry => [entry.label, entry.name ? entry.name + '（' + (entry.supplier || '--') + '）' : '--']));
+      const operationTimes = details(entries.map(entry => [entry.label, entry.time]));
+      const buttons = (processing && !item.occupied ? '<button data-action="不合格" class="wp-reject">不合格</button>' : '') + '<button class="wp-process" data-action="process">处理</button>';
       return '<tr data-record-id="' + escape(item.id) + '" class="' + (processing ? 'wp-processing' : '') + '">' +
         '<td><input type="checkbox" aria-label="选择 ' + escape(item.id) + '" ' + ((processing || busy) ? 'disabled ' : '') + (selected.has(item.id) ? 'checked ' : '') + '></td>' +
         '<td class="wp-task-id">' + escape(item.task_id) + '</td><td class="wp-data-id"><b>' + escape(item.id) + '</b></td>' +
         '<td><div class="wp-preview"><div class="wp-instruction"><b>' + escape(item.instruction) + '</b>：<span>' + escape(item.description) + '</span></div><div class="wp-views">' + images + '</div></div></td>' +
         '<td>' + escape(item.device) + '</td>' +
-        '<td class="wp-conclusions">' + conclusions + '</td><td class="wp-operators">' + operators + '</td><td class="wp-operation-times">' + operationTimes + '</td>' +
+        '<td class="wp-operators">' + operators + '</td><td class="wp-operation-times">' + operationTimes + '</td><td class="wp-conclusions">' + conclusions + '</td>' +
         '<td><span class="wp-status ' + (processing ? 'processing' : '') + '">' + (processing ? '已领取' : '待领取') + '</span></td>' +
         '<td><div class="wp-row-actions">' + buttons + '</div></td></tr>';
     }).join('') : '<tr><td colspan="10" class="wp-empty">当前没有匹配的数据</td></tr>';
@@ -107,7 +128,8 @@
   filters.addEventListener('submit', event => {
     event.preventDefault();
     const values = Object.fromEntries(new FormData(filters));
-    if (values.from && values.to && values.from > values.to) { report('采集开始时间不能晚于结束时间'); return; }
+    if ((values.from || values.to) && !values.time_node) { report('请先选择操作节点，再设置时间范围'); return; }
+    if (values.from && values.to && values.from > values.to) { report('操作开始时间不能晚于结束时间'); return; }
     activeFilters = values; selected.clear(); report(''); render();
   });
   filters.addEventListener('reset', () => { activeFilters = {}; selected.clear(); report(''); render(); });

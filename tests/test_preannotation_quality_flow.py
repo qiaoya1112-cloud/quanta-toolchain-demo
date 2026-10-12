@@ -35,11 +35,11 @@ class PreannotationQualityFlowTests(unittest.TestCase):
 
     def test_list_and_operator_catalog(self):
         listing = self.client.get('/data/pipelines?stage=质检').get_data(as_text=True)
-        for title in ['预标注数据质检自动化流程', '预标注数据质检人工流程']:
+        for title in ['预训练自动化质检流程', '预训练人工质检流程']:
             self.assertIn('<td><b>' + title + '</b>', listing)
         editor = self.client.get('/data/pipelines/pl-preannotation-qc?version=draft').get_data(as_text=True)
         self.assertIn('data-processing-flow="pl-preannotation-qc"', editor)
-        self.assertIn('id="flowEditName" value="预标注数据质检自动化流程">', editor)
+        self.assertIn('id="flowEditName" value="预训练自动化质检流程">', editor)
         for name in ['后处理执行算子', '自动化质检算子']:
             self.assertIn(name, editor)
         operators = self.client.get('/data/operators').get_data(as_text=True)

@@ -3,6 +3,7 @@
     <h3 id="wpDecisionTitle"></h3>
     <div id="wpRejectionFields" hidden>
       <fieldset id="wpReason" class="wp-reason-options"><legend>不合格原因 <em>*</em> <span>（可多选）</span></legend>{% for reason in reasons %}<label><input type="checkbox" name="rejection_reason" value="{{ reason }}"><span>{{ reason }}</span></label>{% endfor %}</fieldset>
+      <label>说明（选填）<textarea id="wpRemark" name="remark" placeholder="请输入说明" rows="3"></textarea></label>
     </div>
     <p id="wpDecisionError" class="wp-error" role="alert" hidden></p>
     <footer><button type="button" class="btn" id="wpCancelDecision">取消</button><button type="button" class="btn btn-primary" id="wpConfirmDecision">确认</button></footer>

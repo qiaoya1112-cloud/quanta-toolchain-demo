@@ -357,7 +357,7 @@ MANAGED_OPERATORS = [
             "image": "frontdesk-py3.10:latest", "script": "post_processing.py",
             "params": "--recording-id / --quality-rule / --flow-version",
             "returns": "后处理数据与自动化质检结果 JSON",
-            "references": ["预标注数据质检自动化流程"],
+            "references": ["预训练自动化质检流程"],
             "note": "支持预标注数据后处理与自动化质检。",
         }],
     }
@@ -523,7 +523,7 @@ for _pipeline in PIPELINES:
 _review_flows = [
     {
         "id": "pl-preannotation-qc-manual", "ident": "preannotation-data-quality-manual",
-        "name": "预标注数据质检人工流程", "creator": "ben", "status": "草稿",
+        "name": "预训练人工质检流程", "creator": "ben", "status": "草稿",
         "updated": "2026-10-08 18:00", "show_in_management": True, "fit_canvas": True,
         "input_name": "开始", "output_name": "完成", "stages": [], "schedules": [],
         "business_stage": "质检", "input_contract": "自检合格数据",
@@ -542,7 +542,7 @@ _review_flows = [
     {
         "id": "pl-preannotation-qc",
         "ident": "preannotation-data-quality",
-        "name": "预标注数据质检自动化流程",
+        "name": "预训练自动化质检流程",
         "creator": "ben",
         "status": "草稿",
         "updated": "2026-10-08 13:40",
