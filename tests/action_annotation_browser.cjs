@@ -8,7 +8,7 @@ const previewUrl = process.env.PREVIEW_URL || 'http://127.0.0.1:5004/data/workbe
 const debugPort = Number(process.env.DEBUG_PORT || 9337);
 (async () => {
   const profile = fs.mkdtempSync(path.join(os.tmpdir(), 'quanta-action-'));
-  const chrome = spawn(process.env.BROWSER_EXE || 'C:/Program Files/Google/Chrome/Application/chrome.exe', ['--headless=old','--disable-gpu','--no-sandbox','--no-first-run','--no-default-browser-check','--window-size=1574,900',`--user-data-dir=${profile}`,`--remote-debugging-port=${debugPort}`,previewUrl], {stdio:'ignore'});
+  const chrome = spawn(process.env.BROWSER_EXE || 'C:/Program Files/Google/Chrome/Application/chrome.exe', ['--headless=old','--disable-gpu','--no-sandbox','--no-first-run','--no-default-browser-check',`--window-size=${process.env.WINDOW_SIZE || '1440,900'}`,`--user-data-dir=${profile}`,`--remote-debugging-port=${debugPort}`,previewUrl], {stdio:'ignore'});
   try {
     let target;
     for (let i=0;i<100;i+=1) { try { const pages=await fetch(`http://127.0.0.1:${debugPort}/json/list`).then(r=>r.json()); target=pages.find(p=>p.type==='page'&&p.url.includes('optimized')); if(target)break; } catch(_){} await delay(100); }
@@ -24,12 +24,16 @@ const debugPort = Number(process.env.DEBUG_PORT || 9337);
     assert.equal(await evaluate("document.querySelector('workbench-segment-editor[variant=variant-3]')._actionData.every(item=>item.descriptions.length<=1)"),true);
     assert.equal(await evaluate("document.querySelectorAll('workbench-segment-editor[variant=variant-3] .action-element-group').length"),5);
     assert.deepEqual(await evaluate("[...document.querySelectorAll('workbench-segment-editor[variant=variant-3] .action-element-group__title')].map(e=>e.textContent)"),['物体Object','位置Location','容器Container','水果Fruit','工具Tool']);
+    assert.equal(await evaluate("document.querySelector('workbench-segment-editor[variant=variant-3] [data-multi-option=书本] .action-bilingual').textContent"),'书本Book');
+    assert.equal(await evaluate("document.querySelector('workbench-segment-editor[variant=variant-3] [data-multi-option=整理两个物体] .action-bilingual').textContent.includes('Organize {Object} and {Object}')"),true);
+    assert.equal(await evaluate("getComputedStyle(document.querySelector('workbench-segment-editor[variant=variant-3] [data-multi-option=书本] [lang=en]')).visibility"),'visible');
     assert.equal(await evaluate("[...document.querySelectorAll('workbench-segment-editor[variant=variant-3] workbench-multi-select[aria-label=\"动作描述\"] [data-multi-option]')].some(e=>e.textContent.includes('{Object}'))"),true);
     await evaluate(`(()=>{const e=document.querySelector('workbench-segment-editor[variant=variant-3]');const a=e.querySelector('workbench-multi-select[aria-label="动作元素"]'),d=e.querySelector('workbench-multi-select[aria-label="动作描述"]');a.querySelector('.workbench-multi-select__clear').click();d.querySelector('.workbench-multi-select__clear').click();a.querySelector('[data-multi-option="书本"]').click();a.querySelector('[data-multi-option="笔记本"]').click();d.querySelector('.workbench-multi-select__trigger').click()})()`);
-    assert.deepEqual(await evaluate("[...document.querySelectorAll('workbench-segment-editor[variant=variant-3] workbench-multi-select[aria-label=\"动作描述\"] [data-multi-option]:not([hidden])')].map(e=>e.textContent)"),['整理 {Object} 和 {Object}✓']);
+    assert.equal(await evaluate("[...document.querySelectorAll('workbench-segment-editor[variant=variant-3] workbench-multi-select[aria-label=\"动作描述\"] [data-multi-option]:not([hidden])')].map(e=>e.textContent).some(text=>text.includes('整理 {Object} 和 {Object}')&&text.includes('Organize {Object} and {Object}'))"),true);
     assert.equal(await evaluate("document.querySelector('workbench-segment-editor[variant=variant-3] workbench-multi-select[aria-label=\"动作描述\"] [data-multi-option=\"整理\"]').hidden"),true);
     await evaluate(`document.querySelector('workbench-segment-editor[variant=variant-3] workbench-multi-select[aria-label="动作描述"] [data-multi-option="整理两个物体"]').click()`);
-    assert.equal(await evaluate("document.querySelector('workbench-segment-editor[variant=variant-3] workbench-multi-select[aria-label=\"动作描述\"] .workbench-multi-select__tag').textContent.replace('×','').trim()"),'整理 {书本} 和 {笔记本}');
+    assert.equal(await evaluate("document.querySelector('workbench-segment-editor[variant=variant-3] workbench-multi-select[aria-label=\"动作描述\"] .workbench-multi-select__tag').textContent.replace('×','').includes('整理 {书本} 和 {笔记本}')"),true);
+    assert.equal(await evaluate("document.querySelector('workbench-segment-editor[variant=variant-3] workbench-multi-select[aria-label=\"动作描述\"] .workbench-multi-select__tag').textContent.includes('Organize {Book} and {Notebook}')"),true);
     assert.equal(await evaluate("document.querySelector('workbench-segment-editor[variant=variant-3] workbench-multi-select[aria-label=\"动作描述\"] .workbench-multi-select__options').getAttribute('aria-multiselectable')"),'false');
     await evaluate(`(()=>{const e=document.querySelector('workbench-segment-editor[variant=variant-3]');const a=e.querySelector('workbench-multi-select[aria-label="动作元素"]'),d=e.querySelector('workbench-multi-select[aria-label="动作描述"]');a.setValues(['书本','桌面'],true);d.querySelector('[data-multi-option="观察并整理桌面物品"]').click();d.querySelector('[data-multi-option="移动"]').click()})()`);
     assert.deepEqual(await evaluate("document.querySelector('workbench-segment-editor[variant=variant-3] workbench-multi-select[aria-label=\"动作描述\"]').values"),['移动']);
@@ -48,8 +52,11 @@ const debugPort = Number(process.env.DEBUG_PORT || 9337);
     assert.deepEqual(await evaluate("[...document.querySelectorAll('workbench-segment-editor[variant=variant-3] .action-element-group:not([hidden])')].map(e=>e.dataset.elementType)"),['Object','Location','Container','Fruit','Tool']);
     assert.equal(await evaluate("document.querySelector('workbench-segment-editor[variant=variant-3] [data-multi-option=\"香蕉\"]').disabled"),false);
     assert.equal(await evaluate("document.querySelector('workbench-segment-editor[variant=variant-3] [data-multi-option=\"碗\"]').disabled"),false);
-    assert.equal(await evaluate("document.querySelector('workbench-segment-editor[variant=variant-3] workbench-multi-select[aria-label=\"动作描述\"] .workbench-multi-select__tag').textContent.replace('×','').trim()"),'将 {苹果}、{草莓} 放入 {杯子}');
+    assert.equal(await evaluate("document.querySelector('workbench-segment-editor[variant=variant-3] workbench-multi-select[aria-label=\"动作描述\"] .workbench-multi-select__tag').textContent.includes('将 {苹果}、{草莓} 放入 {杯子}')"),true);
+    assert.equal(await evaluate("document.querySelector('workbench-segment-editor[variant=variant-3] workbench-multi-select[aria-label=\"动作描述\"] .workbench-multi-select__tag').textContent.includes('Put {Apple} and {Strawberry} into {Cup}')"),true);
     assert.equal(await evaluate("window.ActionAnnotationRules.validate(document.querySelector('workbench-segment-editor[variant=variant-3]')._actionData[1]).valid"),true);
+    assert.equal(await evaluate("[...document.querySelectorAll('workbench-segment-editor[variant=variant-3] .workbench-multi-select__tag')].every(tag=>tag.scrollWidth<=tag.clientWidth+1)"),true,'中英文已选标签不得水平裁切');
+    if(process.env.CAPTURE_BILINGUAL){const shot=await call('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});fs.writeFileSync(path.resolve(process.env.CAPTURE_BILINGUAL),Buffer.from(shot.data,'base64'));}
     assert.deepEqual(errors,[]);
     console.log('PASS: grouped elements, single description selection, one-way filtering, placeholder filling and submit blocking.');
   } finally {

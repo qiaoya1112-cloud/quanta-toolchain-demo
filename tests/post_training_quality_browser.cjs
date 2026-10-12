@@ -40,7 +40,7 @@ async function main(){
     socket.onmessage=event=>{const message=JSON.parse(event.data);if(message.method==='Runtime.exceptionThrown')pageErrors.push(message.params.exceptionDetails?.exception?.description||message.params.exceptionDetails?.text||'Runtime exception');if(message.method==='Log.entryAdded'&&message.params.entry.level==='error'&&!String(message.params.entry.url||'').endsWith('/favicon.ico'))pageErrors.push(message.params.entry.text);if(message.id&&pending.has(message.id)){const task=pending.get(message.id);pending.delete(message.id);message.error?task.reject(new Error(message.error.message)):task.resolve(message.result);}};
     await new Promise((resolve,reject)=>{socket.onopen=resolve;socket.onerror=reject;});
     const call=(method,params={})=>new Promise((resolve,reject)=>{const id=++sequence;pending.set(id,{resolve,reject});socket.send(JSON.stringify({id,method,params}));});
-    const evaluate=async expression=>{const result=await call('Runtime.evaluate',{expression,awaitPromise:true,returnByValue:true});if(result.exceptionDetails)throw new Error(result.exceptionDetails.text);return result.result.value;};
+    const evaluate=async expression=>{expression=expression.replace(/document\.querySelector(All)?\('(\.ptq-[^']*)'/g,(_,all,selector)=>`document.querySelector${all||''}(':is(post-training-quality-workspace,post-training-quality-timeline,post-training-quality-sidebar) ${selector}'`);const result=await call('Runtime.evaluate',{expression,awaitPromise:true,returnByValue:true});if(result.exceptionDetails)throw new Error(result.exceptionDetails.text);return result.result.value;};
     await call('Runtime.enable');await call('Log.enable');await call('Page.enable');
     for(let index=0;index<100;index+=1){if(await evaluate("document.querySelector('.main')?.getAttribute('aria-busy')==='false'"))break;await delay(100);}
 
@@ -60,6 +60,13 @@ async function main(){
     assert.equal(await evaluate("document.querySelectorAll('.ptq-block').length"),8,'所有片段都应直接显示在三条轨道中');
     assert.equal(await evaluate("document.querySelectorAll('.ptq-cluster').length"),0,'新规则不得显示聚合入口');
     assert.equal(await evaluate("document.querySelectorAll('.ptq-list-item').length"),8,'右侧列表应显示全部片段');
+    assert.equal(await evaluate("[...document.querySelectorAll('.ptq-list-summary strong')].every(item=>item.dataset.fullDescription===item.textContent)"),true,'右侧列表应为每个片段保存完整失误描述');
+    await evaluate("(()=>{const target=document.querySelector('.ptq-list-summary strong');target.dispatchEvent(new PointerEvent('pointerover',{bubbles:true,clientX:1100,clientY:180}));})()");
+    assert.equal(await evaluate("document.querySelector('#ptqDescriptionTooltip')?.hidden"),false,'hover 失误描述时应显示完整内容提示');
+    assert.equal(await evaluate("document.querySelector('#ptqDescriptionTooltip b')===null"),true);
+    assert.ok((await evaluate("document.querySelector('#ptqDescriptionTooltip span')?.textContent.length"))>0,'完整内容提示不得为空');
+    await evaluate("document.querySelector('.ptq-list-summary strong').dispatchEvent(new PointerEvent('pointerout',{bubbles:true,relatedTarget:document.body}))");
+    assert.equal(await evaluate("document.querySelector('#ptqDescriptionTooltip')?.hidden"),true,'移出描述后应隐藏完整内容提示');
     assert.deepEqual(await evaluate("[...document.querySelectorAll('.ptq-list-item')].map(row=>row.dataset.segmentId)"),['A','B','C','D','E','F','G','H'],'右侧列表应按开始时间、结束时间和创建时间排序');
     await evaluate("document.querySelector('.ptq-list-item[data-segment-id=B]').click()");
     assert.equal(await evaluate("document.querySelector('.ptq-id').textContent.trim()"),'02','排序第二的片段应在编辑栏显示 02');

@@ -28,5 +28,8 @@ clock.setMode('log');
 now = 99000;
 assert.equal(clock.running, false);
 assert.equal(clock.elapsed('action'), 3000);
+clock.setMode('post-quality-review');
+now = 101000;
+assert.equal(clock.elapsed('post-quality-review'), 2000, '后训练质检审核独立计时');
 assert.equal(new OperationClock({totals:clock.totals}).elapsed('pre-quality'), 35000, '计时可以独立恢复');
 console.log('Operation timer: idle cutoff, resume, separate modes, background pause and restore passed');

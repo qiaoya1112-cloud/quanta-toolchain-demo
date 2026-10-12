@@ -1,9 +1,9 @@
-(() => {
-  const trainingType = 'post';
+window.createPostTrainingQualityWorkspace = (options = {}) => {
+  const trainingType = options.trainingType || 'post';
   const label = '后训练';
   const eventName = suffix => `${trainingType}-quality-${suffix}`;
   const elementName = suffix => `${trainingType}-training-quality-${suffix}`;
-  const domPrefix = 'ptq';
+  const domPrefix = options.domPrefix || 'ptq';
   const recordId = document.querySelector('workbench-task-header')?.dataset?.id || 'DT202609070126';
   const DURATION = 40;
   const TRACK_COUNT = 3;
@@ -68,7 +68,7 @@
   const REVIEW_ERROR_REASONS = ['片段范围错误','片段范围错位','动作开始边界偏早','动作开始边界偏晚','动作结束边界偏早','动作结束边界偏晚','描述与画面不一致'];
   const reasonSummary = segment => {
     const names = [...segment.rejectedReasons, ...segment.mistakeReasons].map(reasonName);
-    return names.length ? names.join('、') : '请选择必选原因';
+    return names.length ? names.join('、') : '请选择原因';
   };
   const sortSegments = list => list.slice().sort((a,b) => a.start - b.start || a.end - b.end || a.order - b.order);
   const segmentNumber = item => Math.max(1, sortSegments(state.segments).findIndex(candidate => candidate.id === item.id) + 1);
@@ -91,7 +91,7 @@
   }
 
   const state = {
-    segments: assignInitial(seedSegments()), selectedId:'A', submitted:false,
+    segments: options.segments ? clone(options.segments) : assignInitial(seedSegments()), selectedId:options.selectedId || 'A', submitted:false,
     dirty:false, revision:1, rangeStart:23, rangeEnd:26
   };
   const byId = id => state.segments.find(item => item.id === id);
@@ -109,7 +109,8 @@
       conclusion:raw.conclusion === 'rejected' ? 'rejected' : 'mistake',
       mistakeReasons:Array.isArray(raw.mistakeReasons) ? raw.mistakeReasons : [],
       rejectedReasons:Array.isArray(raw.rejectedReasons) ? raw.rejectedReasons : [], reviewErrorReason:REVIEW_ERROR_REASONS.includes(String(raw.reviewErrorReason ?? raw.note ?? '')) ? String(raw.reviewErrorReason ?? raw.note ?? '') : '',
-      order:Number(raw.order) || index + 1, track:clamp(Number(raw.track ?? raw.lane) || 0,0,2)
+      order:Number(raw.order) || index + 1, track:clamp(Number(raw.track ?? raw.lane) || 0,0,2),
+      ...(options.trainingType ? {feedback:clone(raw.feedback || null)} : {})
     };
   }
 
@@ -121,6 +122,7 @@
       state.selectedId = state.segments.some(item => item.id === saved.selectedId) ? saved.selectedId : state.segments[0]?.id || '';
       state.revision = Number(saved.revision) || 1;
       state.dirty = false;
+      if(options.trainingType)state.submitted=options.restoreSubmitted===false?false:Boolean(saved.submitted);
     } catch (_) {}
   }
   restore();
@@ -370,6 +372,7 @@
       const playButton=this.querySelector('.segmented-timeline__play');
       if(playButton)playButton.setAttribute('aria-label',this.playing?'暂停':'播放');
       this.updatePlayback();
+      options.decorateTimeline?.(this, state);
     }
   }
 
@@ -455,7 +458,7 @@
       const rejected=item.rejectedReasons.map(id=>`<span class="ptq-reason-chip is-rejected"><span>${escape(reasonName(id))}</span><span class="ptq-reason-remove" data-action="remove-reason" data-kind="rejected" data-reason-id="${escape(id)}" role="button" aria-label="删除${escape(reasonName(id))}" title="删除此原因">×</span></span>`);
       const mistake=item.mistakeReasons.map(id=>`<span class="ptq-reason-chip is-mistake"><span>${escape(reasonName(id))}</span><span class="ptq-reason-remove" data-action="remove-reason" data-kind="mistake" data-reason-id="${escape(id)}" role="button" aria-label="删除${escape(reasonName(id))}" title="删除此原因">×</span></span>`);
       const chips=[...rejected,...mistake].join('');
-      return chips?`${chips}<span class="ptq-reasons-clear" data-action="clear-reasons" role="button" aria-label="清空全部原因" title="清空全部原因">×</span>`:'<span class="ptq-reason-empty">请选择必选原因</span>';
+      return chips?`${chips}<span class="ptq-reasons-clear" data-action="clear-reasons" role="button" aria-label="清空全部原因" title="清空全部原因">×</span>`:'<span class="ptq-reason-empty">请选择原因</span>';
     }
     render(){
       const item=selected();
@@ -474,6 +477,7 @@
         <div class="ptq-editor-fields-row"><div class="ptq-conclusion-switch" aria-label="片段结论"><label class="is-mistake${item.conclusion==='mistake'?' is-active':''}"><input type="radio" name="${domPrefix}-conclusion" data-field="conclusion" value="mistake" ${item.conclusion==='mistake'?'checked':''} ${state.submitted?'disabled':''}>失误</label><label class="is-rejected${item.conclusion==='rejected'?' is-active':''}"><input type="radio" name="${domPrefix}-conclusion" data-field="conclusion" value="rejected" ${item.conclusion==='rejected'?'checked':''} ${state.submitted?'disabled':''}>不合格</label></div><span class="ptq-reason-label">失误描述</span><div class="ptq-reason-select"><button class="ptq-reason-trigger" type="button" data-action="toggle-reasons" aria-expanded="${this.reasonsOpen}" ${state.submitted?'disabled':''}><span class="ptq-selected-reasons" aria-label="已选原因">${this.reasonChips(item)}</span><img src="/static/annotation_workbench/assets/icon-chevron.svg" alt=""></button>${menu}</div></div>
         <div class="ptq-editor-lower"><label><span>错误原因</span><div class="ptq-review-error-select"><button type="button" data-action="toggle-review-error" aria-expanded="${this.reviewErrorOpen}" ${state.submitted?'disabled':''}><span>${escape(reviewTrigger)}</span><img src="/static/annotation_workbench/assets/icon-chevron.svg" alt=""></button>${reviewMenu}</div></label></div>
       </section>${this.ruleDialog()}`;
+      options.decorateWorkspace?.(this, item, state);
     }
     ruleDialog(){return `<dialog id="${domPrefix}RuleDialog" class="ptq-dialog"><header><div><h2>${label}采集质检规则</h2><p>${RULE.name} · ${RULE.id} · ${RULE.version}</p></div><button type="button" onclick="this.closest('dialog').close()" aria-label="关闭">×</button></header><div class="ptq-rule-body"><section><h3>失误标准</h3>${RULE.mistake.map(item=>`<article><b>${escape(item.name)}</b><p>${escape(item.detail)}</p></article>`).join('')}</section><section><h3>不合格标准</h3>${RULE.rejected.map(item=>`<article><b>${escape(item.name)}</b><p>${escape(item.detail)}</p></article>`).join('')}</section><div class="ptq-fixed-rule"><b>固定汇总规则</b><p>无问题片段为合格；只有失误片段为失误；存在任意不合格片段为不合格。</p></div></div></dialog>`;}
   }
@@ -489,6 +493,9 @@
         this.querySelectorAll('.ptq-list-item').forEach(row=>row.classList.toggle('is-hit',this.hits.includes(row.dataset.segmentId)));
       });
       this.addEventListener('click',event=>this.onClick(event));
+      this.addEventListener('pointerover',event=>this.showDescriptionTooltip(event));
+      this.addEventListener('pointermove',event=>this.positionDescriptionTooltip(event));
+      this.addEventListener('pointerout',event=>{if(event.target.closest('[data-full-description]')&&!event.relatedTarget?.closest?.('[data-full-description]'))this.hideDescriptionTooltip();});
       this.addEventListener('confirm-dialog-confirm',event=>{
         if(event.detail.variant!=='reject')return;
         event.stopPropagation();
@@ -499,9 +506,29 @@
       });
       this.render();
     }
+    descriptionTooltip(){
+      let tooltip=document.getElementById(`${domPrefix}DescriptionTooltip`);
+      if(!tooltip){tooltip=document.createElement('div');tooltip.id=`${domPrefix}DescriptionTooltip`;tooltip.className='ptq-description-tooltip';tooltip.setAttribute('role','tooltip');tooltip.hidden=true;document.body.append(tooltip);}
+      return tooltip;
+    }
+    showDescriptionTooltip(event){
+      const target=event.target.closest('[data-full-description]');
+      if(!target)return;
+      const tooltip=this.descriptionTooltip(),text=target.dataset.fullDescription;
+      tooltip.innerHTML=`<span>${escape(text)}</span>`;
+      tooltip.hidden=false;target.setAttribute('aria-describedby',tooltip.id);this.positionDescriptionTooltip(event);
+    }
+    positionDescriptionTooltip(event){
+      const tooltip=document.getElementById(`${domPrefix}DescriptionTooltip`);
+      if(!tooltip||tooltip.hidden)return;
+      const margin=10,width=tooltip.offsetWidth,height=tooltip.offsetHeight;
+      tooltip.style.left=`${Math.max(margin,Math.min(window.innerWidth-width-margin,event.clientX+12))}px`;
+      tooltip.style.top=`${Math.max(margin,Math.min(window.innerHeight-height-margin,event.clientY+14))}px`;
+    }
+    hideDescriptionTooltip(){const tooltip=document.getElementById(`${domPrefix}DescriptionTooltip`);if(tooltip)tooltip.hidden=true;this.querySelectorAll('[aria-describedby]').forEach(node=>node.removeAttribute('aria-describedby'));}
     toast(message){document.dispatchEvent(new CustomEvent(eventName('toast'),{detail:{message}}));}
     save(){
-      try{localStorage.setItem(DRAFT_KEY,JSON.stringify({segments:state.segments,selectedId:state.selectedId,revision:state.revision,savedAt:new Date().toISOString()}));state.dirty=false;notify();this.toast('草稿已保存');return true;}
+      try{localStorage.setItem(DRAFT_KEY,JSON.stringify({segments:state.segments,selectedId:state.selectedId,revision:state.revision,submitted:state.submitted,savedAt:new Date().toISOString()}));state.dirty=false;notify();this.toast('草稿已保存');return true;}
       catch(_){this.toast('保存失败，请重试');return false;}
     }
     onClick(event){
@@ -521,19 +548,21 @@
       if(action==='confirm-submit'){
         if(invalidCount())return;
         state.submitted=true;state.dirty=false;state.revision+=1;
-        try{localStorage.removeItem(DRAFT_KEY);}catch(_){}
-        this.querySelector(`#${domPrefix}SubmitDialog`)?.close();notify();this.toast('质检已提交');
+        try{if(options.trainingType)this.save();else localStorage.removeItem(DRAFT_KEY);}catch(_){}
+        this.querySelector(`#${domPrefix}SubmitDialog`)?.close();notify();this.toast(options.trainingType?'已重新提交审核':'质检已提交');
       }
     }
     render(){
       const ordered=sortSegments(state.segments),canSubmit=!state.submitted;
       const conclusion=calculatedConclusion(),conclusionClass=conclusion==='合格'?'is-pass':conclusion==='失误'?'is-mistake':conclusion==='不合格'?'is-rejected':'is-pending';
       const rows=ordered.map(item=>{
-        return `<button type="button" data-segment-id="${escape(item.id)}" class="ptq-list-item${item.id===state.selectedId?' is-active':''}${this.hits?.includes(item.id)?' is-hit':''}${valid(item)?'':' has-error'}"><span class="ptq-list-id">${String(ordered.indexOf(item)+1).padStart(2,'0')}</span><span class="ptq-list-main"><span class="ptq-list-time">${format(item.start)}–${format(item.end)} <em>${(item.end-item.start).toFixed(1)}s</em></span><span class="ptq-list-summary"><b class="is-${item.conclusion}">${conclusionLabel(item.conclusion)}</b><strong>${escape(reasonSummary(item))}</strong></span>${valid(item)?'':`<i>${escape(segmentErrors(item)[0])}</i>`}</span></button>`;
+        const summary=reasonSummary(item);
+        return `<button type="button" data-segment-id="${escape(item.id)}" class="ptq-list-item${item.id===state.selectedId?' is-active':''}${this.hits?.includes(item.id)?' is-hit':''}${valid(item)?'':' has-error'}"><span class="ptq-list-id">${String(ordered.indexOf(item)+1).padStart(2,'0')}</span><span class="ptq-list-main">${item.id===state.selectedId?`<span class="ptq-list-time">${format(item.start)}–${format(item.end)}</span>`:''}<span class="ptq-list-summary"><b class="is-${item.conclusion}">${conclusionLabel(item.conclusion)}</b><strong data-full-description="${escape(summary)}">${escape(summary)}</strong></span>${valid(item)?'':`<i>${escape(segmentErrors(item)[0])}</i>`}</span></button>`;
       }).join('');
       this.innerHTML=`<section class="ptq-sidebar"><header><div><b>质检列表</b><span>共 ${ordered.length} 个问题片段</span></div></header><div class="ptq-list">${ordered.length?rows:'<div class="ptq-list-empty">尚未记录问题片段</div>'}</div><footer><div class="ptq-conclusion-meta">系统自动计算 · 失误 ${state.segments.filter(item=>item.conclusion==='mistake').length} · 不合格 ${state.segments.filter(item=>item.conclusion==='rejected').length}</div><div class="ptq-video-conclusion"><span class="ptq-conclusion-label">质检结论</span><output id="${domPrefix}VideoConclusion" class="${conclusionClass}" aria-label="质检结论，由系统自动计算">${conclusion}</output></div><workbench-footer-actions hydrate><div class="workbench-footer-actions"><button type="button" data-action="save" ${state.submitted?'disabled':''}>保存</button><button type="button" data-action="leave" ${state.submitted?'disabled':''}>释放</button><button type="button" data-action="reject" ${state.submitted?'disabled':''}>驳回</button><button type="button" class="${canSubmit?'':'is-blocked'}" data-action="submit" ${canSubmit?'':'disabled'}>提交</button></div></workbench-footer-actions></footer></section><workbench-confirm-dialog variant="reject"></workbench-confirm-dialog>
         <dialog id="${domPrefix}ErrorDialog" class="ptq-dialog ptq-error-dialog"><header><h2>暂时无法提交</h2><button onclick="this.closest('dialog').close()" aria-label="关闭">×</button></header><div><b>标注有问题</b><p>${invalidCount()} 个问题片段存在必填项缺失，请检查后提交。</p></div><footer><button onclick="this.closest('dialog').close()">我知道了</button></footer></dialog>
-        <dialog id="${domPrefix}SubmitDialog" class="ptq-dialog ptq-submit-dialog ${conclusionClass}"><header><h2>确认提交质检</h2><button onclick="this.closest('dialog').close()" aria-label="关闭">×</button></header><div><span>系统计算的视频结论</span><strong data-result></strong><p data-counts></p><small>提交后将保存全部片段和本次质检结果。</small></div><footer><button onclick="this.closest('dialog').close()">取消</button><button class="is-primary" data-action="confirm-submit">确认提交</button></footer></dialog>`;
+        <dialog id="${domPrefix}SubmitDialog" class="ptq-dialog ptq-submit-dialog ${conclusionClass}"><header><h2>确认提交质检</h2><button onclick="this.closest('dialog').close()" aria-label="关闭">×</button></header><div><span>系统计算的视频结论</span><strong data-result></strong><p data-counts></p><small>提交后将保存全部片段和本次质检结果。</small></div><footer><button onclick="this.closest('dialog').close()">取消</button><button class="is-primary" data-action="confirm-submit">确认</button></footer></dialog>`;
+      options.decorateSidebar?.(this, state);
     }
   }
 
@@ -549,11 +578,14 @@
     clearTimeout(toastTimer);toastTimer=setTimeout(()=>{notice.hidden=true;},2600);
   });
 
-  window.__postTrainingQualityRules = {
+  if(!options.trainingType)window.__postTrainingQualityRules = {
     overlapDuration, trackOverlap, sortSegments, calculateConclusion, calculatedConclusion, pendingCount,
     placeSegment:(candidate,segments)=>placeSegment(clone(candidate),clone(segments)),
     segmentErrors:segment=>segmentErrors(clone(segment)),
     constants:{duration:DURATION,trackCount:TRACK_COUNT}
   };
-  window.PostTrainingQualityDemo = {state,addSegment,updateTime,selectSegment,segmentErrors,placeSegment};
-})();
+  const api = {state,addSegment,updateTime,selectSegment,segmentErrors,placeSegment,notify,reasonName};
+  if(!options.trainingType)window.PostTrainingQualityDemo = api;
+  return api;
+};
+window.createPostTrainingQualityWorkspace();
