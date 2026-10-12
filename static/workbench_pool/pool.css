@@ -11,3 +11,14 @@
 .wp-quality-pass{color:#28a36b}.wp-quality-mistake{color:#d6a019}.wp-quality-fail{color:#d94b55}.wp-quality-errors,.wp-quality-note{background:#fff1f0;border-radius:4px;padding:3px 6px;margin-top:5px;width:fit-content;color:#d94b55}
 
 #wpBatchActions{gap:16px;align-items:center}#wpBatchActions>div:first-child{flex:1;min-width:0}.wp-batch-reason{margin:0}#wpBatchActions>div:last-child{flex-shrink:0;white-space:nowrap}
+
+.wp-batch-header{position:sticky;top:52px;z-index:30;background:#f5f7fa;padding:10px 0 8px}.wp-batch-header>a{color:#149daa;font-size:12px}.wp-batch-header .wp-toolbar{margin:12px 0 0}.wp-batch-header .wp-error{position:static}.wp-quality-errors{white-space:nowrap}
+
+#wpBatchActions>div:first-child{display:flex;align-items:center;gap:14px}.wp-batch-count{white-space:nowrap;color:#718188;font-size:12px}
+
+.wp-validation-toast{position:fixed;top:72px;left:50%;transform:translateX(-50%);z-index:2100;padding:12px 18px;border:1px solid #ffe1ba;border-radius:7px;background:#fffaf0;color:#b47719;box-shadow:0 4px 18px #001a3020;font-size:13px;max-width:calc(100vw - 40px)}
+.wb-held-dialog{border:0;border-radius:9px;padding:24px;max-width:440px;color:#344b53}.wb-held-dialog::backdrop{background:#061d3255}.wb-held-dialog p{font-size:13px;line-height:1.7}.wb-held-dialog footer{display:flex;justify-content:flex-end;gap:10px}.wb-held-error{color:#c74d4d}
+
+.wp-modified{display:inline-block;margin-top:5px;padding:3px 6px;border-radius:4px;background:#e8f5fa;color:#1487a2;font-size:12px;white-space:nowrap}
+
+.wp-dialog footer .wp-continue-toggle{margin:0 auto 0 0;display:flex;align-items:center;gap:8px;font-size:12px;white-space:nowrap}.wp-continue-toggle input{width:30px;height:17px;accent-color:#149daa}

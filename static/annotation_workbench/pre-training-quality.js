@@ -15,7 +15,7 @@
       {id:'M02', name:'手部脱离夹爪', detail:'采集动作中手部未按规范保持夹持。'},
       {id:'M03', name:'其他身体部位辅助', detail:'使用规定外的身体部位辅助完成动作。'},
       {id:'M04', name:'无意义动作或假动作', detail:'出现与任务目标无关或未真实执行的动作。'},
-      {id:'M05', name:'可用时长太短', detail:'连续可用片段不足 3 秒，提交时自动标记为失误。'}
+      {id:'M05', name:'片段时长过短', detail:'连续可用片段不足 3 秒，提交时自动标记为失误。'}
     ],
     rejected: [
       {id:'U01', name:'视频损坏或相机卡死', detail:'任一必要视角无法连续正常播放。'},
@@ -167,7 +167,7 @@
   }
   function selectSegment(id, seek = true) {
     const item = byId(id);
-    if (!item || item.autoShortDuration) return;
+    if (!item) return;
     state.selectedId = id;
     state.rangeStart = item.start;
     state.rangeEnd = item.end;
@@ -388,8 +388,8 @@
         const otherDuration=candidate.end-candidate.start;
         return otherDuration>duration||(otherDuration===duration&&candidate.order<item.order);
       }).length;
-      const tag=item.autoShortDuration?'span':'button';
-      const identity=item.autoShortDuration?' aria-hidden="true" data-auto-short-duration="true"':` type="button" data-segment-id="${escape(item.id)}"`;
+      const tag='button';
+      const identity=` type="button" data-segment-id="${escape(item.id)}"${item.autoShortDuration?' data-auto-short-duration="true"':''}`;
       const title=item.autoShortDuration?'系统标记 · 合格片段不足 3 秒':`${String(segmentNumber(item)).padStart(2,'0')} · ${conclusionLabel(item.conclusion)}`;
       return `<${tag}${identity} class="prq-block is-${item.conclusion}${isShortDuration(item)?' is-short-duration':''}${isSelected?' is-selected':''}${overlaps?' is-overlap':''}${hits.includes(item.id)?' is-hit':''}${valid(item)?'':' has-error'}" style="left:${item.start/DURATION*100}%;width:${Math.max(0,(item.end-item.start)/DURATION*100)}%;z-index:${layer}" title="${title} · ${format(item.start)}–${format(item.end)}"></${tag}>`;
     }
@@ -450,6 +450,7 @@
       if(action){event.preventDefault();action();}
     }
     onClick(event){
+      if(selected()?.autoShortDuration)return;
       const action=event.target.closest('[data-action]')?.dataset.action;
       const reviewReason=event.target.closest('[data-review-error]')?.dataset.reviewError;
       if(reviewReason&&!state.submitted){const item=selected();if(item){item.reviewErrorReason=reviewReason;this.reviewErrorOpen=false;markDirty();}return;}
@@ -470,7 +471,7 @@
       if(action==='clear-review-error'&&!state.submitted){const item=selected();if(item){item.reviewErrorReason='';this.reviewErrorOpen=false;markDirty();}}
     }
     onChange(event){
-      const item=selected(); if(!item||state.submitted)return;
+      const item=selected(); if(!item||item.autoShortDuration||state.submitted)return;
       const field=event.target.dataset.field;
       if(field==='conclusion'){
         item.conclusion=event.target.value;
@@ -497,6 +498,11 @@
     render(){
       const item=selected();
       if(!item){this.innerHTML=`<section class="prq-editor card"><div class="prq-empty"><b>尚未记录问题片段</b><span>在时间轴刻度拖拽创建片段，或设置起止时间后点击添加。</span></div></section>${this.ruleDialog()}`;return;}
+      if(item.autoShortDuration){this.innerHTML=`<section class="prq-editor card prq-auto-editor">
+        <div class="prq-editor-meta-row"><div class="prq-editor-fields"><span class="prq-id is-mistake is-short-duration">自动</span><label>开始<span class="prq-time-field">${format(item.start)}</span></label><label>结束<span class="prq-time-field">${format(item.end)}</span></label><span>时长 <b>${(item.end-item.start).toFixed(1)}s</b></span></div><span class="prq-auto-readonly">系统判定 · 只读</span></div>
+        <div class="prq-editor-fields-row"><div class="prq-conclusion-switch" aria-label="片段结论"><label class="is-mistake is-active"><input type="radio" checked disabled>失误</label><label class="is-rejected"><input type="radio" disabled>不合格</label></div><span class="prq-reason-label">失误描述</span><div class="prq-reason-select"><button class="prq-reason-trigger" type="button" disabled><span class="prq-selected-reasons"><span class="prq-auto-reason">片段时长过短</span></span></button></div></div>
+      </section>`;return;}
+
       const ordered=sortSegments(state.segments),globalIndex=ordered.findIndex(candidate=>candidate.id===item.id);
       const trackItems=sortSegments(state.segments.filter(candidate=>candidate.track===item.track));
       const trackIndex=trackItems.findIndex(candidate=>candidate.id===item.id);
@@ -559,7 +565,7 @@
         const dialog=this.querySelector(`#${domPrefix}SubmitDialog`);
         dialog.querySelector('[data-result]').textContent=calculatedConclusion();
         dialog.querySelector('[data-counts]').textContent=`失误 ${state.segments.filter(item=>item.conclusion==='mistake').length} 条 · 不合格 ${state.segments.filter(item=>item.conclusion==='rejected').length} 条 · 规则 ${RULE.version}`;
-        dialog.querySelector('[data-duration-check]').textContent=shortCount?`检测到 ${shortCount} 处可用片段不足 3 秒，已自动标记为失误，原因：可用时长太短。`:'可用片段时长校验通过。';
+        dialog.querySelector('[data-duration-check]').textContent=shortCount?`检测到 ${shortCount} 处可用片段不足 3 秒，已自动标记为失误，原因：片段时长过短。`:'可用片段时长校验通过。';
         dialog.showModal();
       }
       if(action==='confirm-submit'){
@@ -581,7 +587,7 @@
       const rows=ordered.map(item=>{
         return `<button type="button" data-segment-id="${escape(item.id)}" class="prq-list-item${isShortDuration(item)?' is-short-duration':''}${item.id===state.selectedId?' is-active':''}${this.hits?.includes(item.id)?' is-hit':''}${valid(item)?'':' has-error'}"><span class="prq-list-id">${String(ordered.indexOf(item)+1).padStart(2,'0')}</span><span class="prq-list-main">${item.id===state.selectedId?`<span class="prq-list-time">${format(item.start)}–${format(item.end)}</span>`:''}<span class="prq-list-summary"><b class="is-${item.conclusion}">${conclusionLabel(item.conclusion)}</b><strong>${escape(reasonSummary(item))}</strong></span>${valid(item)?'':`<i>${escape(segmentErrors(item)[0])}</i>`}</span></button>`;
       }).join('');
-      this.innerHTML=`<section class="prq-sidebar"><header><div><b>质检列表</b><span>共 ${ordered.length} 个问题片段</span></div></header><div class="prq-list">${ordered.length?rows:'<div class="prq-list-empty">尚未记录问题片段</div>'}</div><footer><div class="prq-conclusion-meta">系统自动计算 · 失误 ${state.segments.filter(item=>item.conclusion==='mistake').length} · 不合格 ${state.segments.filter(item=>item.conclusion==='rejected').length}${pending?` · 待判定 ${pending}`:''}</div><div class="prq-video-conclusion"><span class="prq-conclusion-label">质检结论</span><output id="${domPrefix}VideoConclusion" class="${conclusionClass}" aria-label="质检结论，由系统自动计算">${conclusion}</output></div><workbench-footer-actions hydrate><div class="workbench-footer-actions"><button type="button" data-action="save" ${state.submitted?'disabled':''}>保存</button><button type="button" data-action="leave" ${state.submitted?'disabled':''}>释放</button><button type="button" data-action="reject" ${state.submitted?'disabled':''}>驳回</button><button type="button" class="${canSubmit?'':'is-blocked'}" data-action="submit" ${canSubmit?'':'disabled'}>提交</button></div></workbench-footer-actions></footer></section><workbench-confirm-dialog variant="reject"></workbench-confirm-dialog>
+      this.innerHTML=`<section class="prq-sidebar"><header><div><b>质检列表</b><span>共 ${ordered.length} 个问题片段</span></div></header><div class="prq-list">${ordered.length?rows:'<div class="prq-list-empty">尚未记录问题片段</div>'}</div><footer><div class="prq-conclusion-meta">系统自动计算 · 失误 ${state.segments.filter(item=>item.conclusion==='mistake').length} · 不合格 ${state.segments.filter(item=>item.conclusion==='rejected').length}${pending?` · 待判定 ${pending}`:''}</div><div class="prq-video-conclusion"><span class="prq-conclusion-label">质检结论</span><output id="${domPrefix}VideoConclusion" class="${conclusionClass}" aria-label="质检结论，由系统自动计算">${conclusion}</output></div><workbench-footer-actions hydrate><div class="workbench-footer-actions"><button type="button" data-action="save" ${state.submitted?'disabled':''}>保存</button></div></workbench-footer-actions></footer></section><workbench-confirm-dialog variant="reject"></workbench-confirm-dialog>
         <dialog id="${domPrefix}ErrorDialog" class="prq-dialog prq-error-dialog"><header><h2>暂时无法提交</h2><button onclick="this.closest('dialog').close()" aria-label="关闭">×</button></header><div><b>标注有问题</b><p>${invalidCount()} 个问题片段存在必填项缺失，请检查后提交。</p></div><footer><button onclick="this.closest('dialog').close()">我知道了</button></footer></dialog>
         <dialog id="${domPrefix}ReleaseDialog" class="prq-dialog prq-action-dialog"><header><h2>确认释放当前数据</h2><button onclick="this.closest('dialog').close()" aria-label="关闭">×</button></header><div><b>释放后将退出当前处理状态</b><p>确定要释放当前数据吗？</p></div><footer><button onclick="this.closest('dialog').close()">取消</button><button class="is-primary" data-action="confirm-release">确认释放</button></footer></dialog>
         <dialog id="${domPrefix}SubmitDialog" class="prq-dialog prq-submit-dialog ${conclusionClass}"><header><h2>确认提交质检</h2><button onclick="this.closest('dialog').close()" aria-label="关闭">×</button></header><div><span>系统计算的视频结论</span><strong data-result></strong><p data-counts></p><p data-duration-check></p><small>提交后将保存全部片段和本次质检结果。</small></div><footer><button onclick="this.closest('dialog').close()">取消</button><button class="is-primary" data-action="confirm-submit">确认</button></footer></dialog>

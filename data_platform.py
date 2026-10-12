@@ -6963,7 +6963,7 @@ def pipeline_editor(pid):
             <div class="wf-cfg-sec">处理模式</div>
             <div class="wf-choice-grid" id="wfhDataListEnabled" role="group" aria-label="处理模式">
               <label><input type="radio" name="wfhProcessingMode" value="batch" checked><span>批量处理</span></label>
-              <label><input type="radio" name="wfhProcessingMode" value="single"><span>单独处理</span></label>
+              <label><input type="radio" name="wfhProcessingMode" value="single"><span>单条处理</span></label>
             </div>
 
             <div class="wf-cfg-sec">工作台</div>

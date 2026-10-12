@@ -14,6 +14,7 @@ for(const mode of ['pre','post']){
  assert.deepEqual(Array.from(autos,r=>[r.start,r.end]),[[0,1],[8,9.4],[10.8,12]]);
  assert.ok(autos.every(r=>rules.isShortDuration(r)&&rules.segmentErrors(r).length===0));
  assert.equal(rules.visibleSegments().length,3,'系统自动标记不显示在质检列表');
+ demo.selectSegment(autos[0].id);assert.equal(demo.state.selectedId,autos[0].id,'特殊片段支持点击查看');
  const original=autos[0].start;demo.updateTime(autos[0].id,'start',original+.5);assert.equal(autos[0].start,original,'系统自动标记不支持调整');
  assert.equal(rules.validateUsableDuration(),3,'再次提交按当前时间重算，不重复添加');assert.equal(demo.state.segments.length,6);
  demo.state.segments=[problem(3,37)];assert.equal(rules.validateUsableDuration(),0,'恰好3秒保留为合格');

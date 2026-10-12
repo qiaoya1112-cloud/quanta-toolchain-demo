@@ -1853,8 +1853,13 @@ textarea.yaml-area:focus { border-color:#149DAA; box-shadow:0 0 0 2px rgba(20,15
 .wb-rule-box ol { margin:0; padding:0; list-style:none; counter-reset:wb-rule; }
 .wb-rule-box li { display:grid; grid-template-columns:28px minmax(0,1fr); gap:10px; padding:7px 0; color:rgba(0,0,0,.73); font-size:13px; line-height:1.65; counter-increment:wb-rule; }
 .wb-rule-box li::before { content:counter(wb-rule) "."; color:#1685a4; font-family:'SF Mono',Menlo,monospace; font-weight:600; }
+.wb-held-group { display:flex;align-items:center;gap:16px;flex:1;min-width:0;padding:14px 16px;background:#edf8fa;border:1px solid #d8edef;border-radius:7px; }
+.wb-held-first-row { display:flex;align-items:center;gap:12px; }
+.wb-held-notice { margin-right:auto;display:flex;flex-direction:column;gap:6px;color:#536970;font-size:12px; }
+.wb-task-home-actions { align-items:center; }
+.wb-collection-range { grid-column:span 2; }
 .wb-filter-inline-reset { align-self:end; }
-.wb-filter-grid.wb-v2-filter-grid { grid-template-columns:repeat(4,minmax(0,1fr)) auto; }
+.wb-filter-grid.wb-v2-filter-grid { grid-template-columns:repeat(4,minmax(0,1fr)); }
 .wb-filter-reset { margin:16px 20px 20px; }
 .wb-filter-config > .wb-filter-reset { margin:0 16px 16px; }
 .wb-task-home-actions { display:flex; justify-content:flex-end; gap:10px; margin-top:20px; padding-top:18px; border-top:1px solid #f0f0f0; }
@@ -4922,7 +4927,7 @@ WB_TASKS = [
 
 WB_PRIORITY_ORDER = {"P0": 0, "P1": 1, "P2": 2}
 WB_TASKS.extend(wb_pool.PRETRAINING_TASKS)
-# 处理模式由流程决定：预训练质检采用批量，其余标注流程采用单独处理。
+# 处理模式由流程决定：预训练质检采用批量，其余标注流程采用单条处理。
 for _task in WB_TASKS:
     _task.setdefault("execution_unit", "batch" if _task.get("stage") == "质检" else "single")
 
@@ -5323,6 +5328,16 @@ def _render_workbench_pool_home(pool_id, selected_task_id=None, version="v1"):
                 </select>
               </div>
     """
+    held_records = [record for record in _shared_pool_records(task) if record["status"] == "processing" and record.get("owner") in (None, "", _pool_owner())] if is_v2 else []
+    held_unit = "一批" if task.get("execution_unit") == "batch" else "一条"
+    held_notice = (f'<div class="wb-held-group"><div class="wb-held-notice"><div class="wb-held-first-row"><b>您有{held_unit}已领取的数据待完成。</b><button class="btn" type="button" id="wbReleaseHeld">释放</button></div><span>点击“开始处理”将优先继续处理；完成后，再按当前筛选条件领取新数据。</span></div></div>' if held_records else "")
+    if held_records and task.get("execution_unit") == "batch":
+        held_batch = _shared_pool_records(task)
+        if any(r.get("owner") == _pool_owner() for r in held_records):
+            held_batch = [r for r in held_batch if r.get("owner") == _pool_owner()]
+    else:
+        held_batch = held_records
+    release_payload = json.dumps({"url": f"{pool_url}/records/actions?source={task['id']}", "action": "batch_release" if task.get("execution_unit") == "batch" else "release", "ids": [r["id"] for r in held_batch]}, ensure_ascii=False) if held_records else "{}"
     content = f"""
     <div class="wb-task-home wb-pool-home{' wb-v2-pool-home' if is_v2 else ''}">
       <div class="wb-task-home-head">
@@ -5339,7 +5354,7 @@ def _render_workbench_pool_home(pool_id, selected_task_id=None, version="v1"):
           <div><span>流程</span><b>{html.escape(task['flow'])}</b></div>
           <div><span>节点</span><b>{html.escape(task['node'])}</b></div>
           <div><span>用户组</span><b>{html.escape(task['user_group'])}</b></div>
-          <div><span>处理模式</span><b>{'批量处理' if task.get('execution_unit') == 'batch' else '单独处理'}</b></div>
+          <div><span>处理模式</span><b>{'批量处理' if task.get('execution_unit') == 'batch' else '单条处理'}</b></div>
         </div>
       </section>''' if use_annotation_pool_layout else ('' if is_v2 else f'''<div class="wb-task-brief wb-pool-brief">
         <div><span>环节</span><b>{html.escape(task['stage'])}</b></div>
@@ -5386,7 +5401,7 @@ def _render_workbench_pool_home(pool_id, selected_task_id=None, version="v1"):
           <form class="wb-filter-form" id="wbFilterForm" action="{workbench_submit_url}" method="get">
             <input type="hidden" name="task" value="{html.escape(task['id'])}">
             <input type="hidden" name="entry" value="start">
-            <div class="wb-filter-grid wb-v2-filter-grid">{rule_selector}{task_id_filter}<div class="wb-filter-field"><label for="wbCollector">采集员</label><input id="wbCollector" name="collector" form="wbFilterForm" value="{html.escape(collector_query, quote=True)}" placeholder="请输入采集员"></div><div class="wb-filter-inline-reset"><button class="btn" type="reset" onclick="{reset_rule_details}">重置</button></div></div>
+            <div class="wb-filter-grid wb-v2-filter-grid">{rule_selector}{task_id_filter}<div class="wb-filter-field"><label for="wbCollector">采集员</label><input id="wbCollector" name="collector" form="wbFilterForm" value="{html.escape(collector_query, quote=True)}" placeholder="请输入采集员"></div><div class="wb-filter-field wb-collection-range"><label>采集时间</label><div class="wb-date-range"><input type="datetime-local" name="collected_from" aria-label="采集开始时间" value="{html.escape(request.args.get('collected_from', ''), quote=True)}"><span>至</span><input type="datetime-local" name="collected_to" aria-label="采集结束时间" value="{html.escape(request.args.get('collected_to', ''), quote=True)}"></div></div><div class="wb-filter-inline-reset"><button class="btn" type="reset" onclick="{reset_rule_details}">重置</button></div></div>
           </form>
         </section>''' if use_annotation_pool_layout else ('' if is_v2 else f'''<section class="wb-task-config wb-filter-config">
           <div class="wb-task-config-title">
@@ -5425,6 +5440,8 @@ def _render_workbench_pool_home(pool_id, selected_task_id=None, version="v1"):
       </div>
       {task_filter_error}
       <div class="wb-task-home-actions">
+        {held_notice}
+        {f'<input type="hidden" form="wbFilterForm" name="recording_id" value="{html.escape(held_records[0]["id"], quote=True)}">' if held_records and task.get("execution_unit") != "batch" else ""}
         {claim_control}
         {f'<button class="btn" form="wbFilterForm" type="reset" onclick="{reset_rule_details}">重置</button>' if not is_v2 else ''}
         <button class="btn btn-primary" form="wbFilterForm"
@@ -5432,6 +5449,8 @@ def _render_workbench_pool_home(pool_id, selected_task_id=None, version="v1"):
       </div>
     </div>
     """
+    if held_records:
+        content += '<script id="wbHeldPayload" type="application/json">' + release_payload.replace('<', chr(92) + 'u003c') + '</script><link rel="stylesheet" href="/static/workbench_pool/pool.css"><script src="/static/workbench_pool/home.js"></script>'
     return render_page(
         "工作台 · 任务池",
         content,
@@ -5516,6 +5535,12 @@ def data_workbench_pool_records(pool_id):
                 compact_list=request.args.get("entry") in ("todo", "start"),
                 hide_status=request.args.get("entry") in ("todo", "start"),
                 return_to_workbench=request.args.get("entry") == "todo")
+    if request.args.get("entry") == "start" and task["node"] == "采集质检":
+        with wb_pool.shared_state(_pool_db(), task, session.get("workbench_pool_states", {}), _pool_owner()) as saved:
+            states = saved[scope]
+            for index, record in enumerate(wb_pool.pool_records(task, saved)):
+                if index % 3 == 1 and not record.get("reviewed_at"):
+                    states.setdefault(record["id"], {}).update(result="", reason="", remark="")
     source_records = (wb_pool.prepare_todo_batch(_pool_db(), task, session.get("workbench_pool_states", {}), _pool_owner())
                       if task.get("return_to_workbench") or task["node"] == "采集验收" else _shared_pool_records(task))
     records = _pool_list_history(task, source_records)
@@ -5530,9 +5555,26 @@ def data_workbench_pool_records(pool_id):
         task["rejection_remark"] = "质检结果存在错误，请检查标记为错误的数据并修正后重新提交。"
     if task.get("return_to_workbench") and task["node"] == "采集验收" and request.args.get("todo_type") == "修正待审核":
         task["rejection_remark"] = "质检结果存在错误，请检查标记为错误的数据并修正后重新提交。"
-    collector_query = request.args.get("collector", "").strip().lower()
-    if collector_query:
-        records = [record for record in records if collector_query in str(record.get("collector", "")).lower() or collector_query in str(record.get("collector_id", "")).lower()]
+    owned = [r for r in records if r["status"] == "processing" and r.get("owner") in (None, "", _pool_owner())]
+    resume = request.args.get("entry") == "start" and bool(owned)
+    if not resume:
+        collector_query = request.args.get("collector", "").strip().lower()
+        if collector_query:
+            records = [r for r in records if collector_query in str(r.get("collector", "")).lower() or collector_query in str(r.get("collector_id", "")).lower()]
+        start_time = request.args.get("collected_from", "").replace("T", " ")
+        end_time = request.args.get("collected_to", "").replace("T", " ")
+        if start_time:
+            records = [r for r in records if r.get("collected_at", "") >= start_time]
+        if end_time:
+            records = [r for r in records if r.get("collected_at", "") <= end_time + (":59" if len(end_time) == 16 else " 23:59:59" if len(end_time) == 10 else "")]
+    elif any(r.get("owner") == _pool_owner() for r in owned):
+        records = [r for r in records if r.get("owner") == _pool_owner()]
+    if request.args.get("entry") == "start" and records:
+        ids = [r["id"] for r in records if r["status"] != "completed"]
+        if ids:
+            claimed = wb_pool.shared_transition(_pool_db(), task, session.get("workbench_pool_states", {}), _pool_owner(), "start", ids)
+            claimed_by_id = {r["id"]: r for r in claimed}
+            records = [dict(r, **{k: claimed_by_id[r["id"]][k] for k in ("status", "owner")}) if r["id"] in ids else r for r in records]
     records = wb_pool.public_records(records, _pool_owner())
     content = render_template("workbench_pool/list.html", task=task, records=records,
                               reasons=wb_pool.REJECTION_REASONS, notice=session.pop("workbench_pool_notice", ""))

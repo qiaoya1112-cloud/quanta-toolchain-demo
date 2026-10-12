@@ -54,8 +54,10 @@ html[data-theme=light] .prq-lane-rail{background-color:#fbfcfd}.prq-dialog{color
 
 .prq-block.is-short-duration,.prq-id.is-short-duration{border-color:#9daab4;background:#4c5963;color:#d6dde2}
 .prq-list-item.is-short-duration .prq-list-summary b{color:#9daab4}
-.prq-block.is-short-duration{pointer-events:none}
+.prq-block.is-short-duration{cursor:pointer}
 .prq-action-dialog,.prq-success-dialog{width:410px}
 .prq-action-dialog>div,.prq-success-dialog>div{min-height:120px;display:flex;align-items:center;justify-content:center;flex-direction:column;padding:18px;text-align:center}
 .prq-action-dialog b,.prq-success-dialog b{font-size:15px}.prq-action-dialog p,.prq-success-dialog p{margin:8px 0 0;color:var(--prq-muted);font-size:10px}
 .prq-success-dialog>div>span{width:42px;height:42px;display:grid;place-items:center;margin-bottom:12px;border-radius:50%;background:rgba(39,196,212,.14);color:var(--prq-brand);font-size:24px}
+
+.prq-auto-readonly{font-size:11px;color:var(--muted,#879ba9)}.prq-auto-editor .prq-reason-trigger:disabled{opacity:1;cursor:default}.prq-auto-reason{color:#d6dde2}.prq-auto-editor .prq-id{min-width:32px}
