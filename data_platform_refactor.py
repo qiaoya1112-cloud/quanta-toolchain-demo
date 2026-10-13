@@ -9814,7 +9814,7 @@ def render_workbench_v2():
         {"owner": "供应商 A", "pool": "端到端切分标注 · 供应商 A 任务池", "pool_id": "POOL-E2E-SUPPLIER-A", "flow": "端到端切分标注流程", "node": "供应商抽验", "priority": 9, "pending": 124, "processing": 31, "stalled_hours": 3.4, "priority_counts": {9: 88, 7: 36}},
         {"owner": "光轮智能", "pool": "端到端切分标注 · 光轮智能任务池", "pool_id": "POOL-E2E-GUAN", "flow": "端到端切分标注流程", "node": "供应商抽验", "priority": 9, "pending": 118, "processing": 28, "stalled_hours": 2.8, "priority_counts": {9: 76, 6: 42}},
         {"owner": "采集质检用户组", "pool_id": "POOL-PRETRAINING-QC", "flow": "预训练数据质检流程", "node": "采集质检", "pending": 4, "processing": 2, "stalled_hours": 0, "priority_counts": {9: 4}},
-        {"owner": "采集验收用户组", "pool_id": "POOL-PRETRAINING-ACCEPTANCE", "flow": "预训练数据质检流程", "node": "采集验收", "pending": 4, "processing": 2, "stalled_hours": 0, "priority_counts": {9: 4}},
+        {"owner": "质检验收用户组", "pool_id": "POOL-PRETRAINING-ACCEPTANCE", "flow": "预训练数据质检流程", "node": "质检验收", "pending": 4, "processing": 2, "stalled_hours": 0, "priority_counts": {9: 4}},
     ]
     pool_groups = {}
     for item in pool_items:
@@ -9918,13 +9918,13 @@ def render_workbench_v2():
         }
         for recording_id, flow_id, flow_name, current_node, source_node, source_operation, current_round, description, updated_at, task_id in rejected
     ]
-    for node, task_id, pool_id in (("采集质检", "WB-PRETRAINING-QC", "POOL-PRETRAINING-QC"), ("采集验收", "WB-PRETRAINING-ACCEPTANCE", "POOL-PRETRAINING-ACCEPTANCE")):
+    for node, task_id, pool_id in (("采集质检", "WB-PRETRAINING-QC", "POOL-PRETRAINING-QC"), ("质检验收", "WB-PRETRAINING-ACCEPTANCE", "POOL-PRETRAINING-ACCEPTANCE")):
         for todo_type in ("驳回待处理", "修正待审核", "其他分配任务"):
             if node == "采集质检" and todo_type == "修正待审核":
                 continue
-            if node == "采集验收" and todo_type == "驳回待处理":
+            if node == "质检验收" and todo_type == "驳回待处理":
                 continue
-            todo_items.append(dict(recording_id="7523785", record_ids=[str(7523785 + i) for i in range(10)], flow_id="flow.pretraining.qc", flow_name="预训练自动化质检流程", current_node=node, source_operation={"驳回待处理":"驳回", "修正待审核":"提交"}.get(todo_type, "分配"), todo_type=todo_type, processing_type="批量处理", current_round="第 2 轮", description="质检结果存在错误，请检查标记为错误的数据并修正后重新提交。" if todo_type == "驳回待处理" or (node == "采集验收" and todo_type == "修正待审核") else "", updated_at="2026-10-11 10:00", task_id=task_id, pool_id=pool_id))
+            todo_items.append(dict(recording_id="7523785", record_ids=[str(7523785 + i) for i in range(10)], flow_id="flow.pretraining.qc", flow_name="预训练自动化质检流程", current_node=node, source_operation={"驳回待处理":"驳回", "修正待审核":"提交"}.get(todo_type, "分配"), todo_type=todo_type, processing_type="批量处理", current_round="第 2 轮", description="质检结果存在错误，请检查标记为错误的数据并修正后重新提交。" if todo_type == "驳回待处理" or (node == "质检验收" and todo_type == "修正待审核") else "", updated_at="2026-10-11 10:00", task_id=task_id, pool_id=pool_id))
     for item in todo_items:
         if item["todo_type"] == "修正待审核":
             item["source_operation"] = "提交"

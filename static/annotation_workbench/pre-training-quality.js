@@ -15,7 +15,7 @@
       {id:'M02', name:'手部脱离夹爪', detail:'采集动作中手部未按规范保持夹持。'},
       {id:'M03', name:'其他身体部位辅助', detail:'使用规定外的身体部位辅助完成动作。'},
       {id:'M04', name:'无意义动作或假动作', detail:'出现与任务目标无关或未真实执行的动作。'},
-      {id:'M05', name:'片段时长过短', detail:'连续可用片段不足 3 秒，提交时自动标记为失误。'}
+      {id:'M05', name:'片段时长过短', detail:'连续可用片段不足 3 秒，实时自动标记为失误。'}
     ],
     rejected: [
       {id:'U01', name:'视频损坏或相机卡死', detail:'任一必要视角无法连续正常播放。'},
@@ -115,21 +115,26 @@
     if (cursor < duration) ranges.push({start:cursor, end:duration});
     return ranges;
   }
-  function validateUsableDuration() {
+  function validateUsableDuration(emit = true) {
+    const previousAuto = state.segments.filter(isShortDuration);
     const manual = manualSegments();
     const short = usableRanges(manual).filter(item => item.end - item.start < 3 - 1e-9);
     state.segments = manual;
     for (const range of short) {
-      const item = {...range, id:nextId(), conclusion:'mistake', mistakeReasons:['M05'], rejectedReasons:[], reviewErrorReason:'', autoShortDuration:true, order:Math.max(0,...state.segments.map(item=>item.order))+1};
+      const previous = previousAuto.find(item => Math.abs(item.start-range.start)<1e-9 && Math.abs(item.end-range.end)<1e-9);
+      const item = {...range, id:previous?.id || nextId(), conclusion:'mistake', mistakeReasons:['M05'], rejectedReasons:[], reviewErrorReason:'', autoShortDuration:true, order:Math.max(0,...state.segments.map(item=>item.order))+1};
       placeSegment(item, state.segments);
       state.segments.push(item);
     }
-    if (!manual.some(item=>item.id===state.selectedId)) state.selectedId=manual[0]?.id||'';
-    if (short.length) state.dirty = true;
-    notify();
+    if (!state.segments.some(item=>item.id===state.selectedId)) state.selectedId=manual[0]?.id||'';
+    if (emit) notify();
     return short.length;
   }
-  const calculateConclusion = (segments, completed) => segments.some(item => item.conclusion === 'rejected') ? '不合格'
+  function mistakeDuration(segments) {
+    const ranges = usableRanges(segments.filter(item => item.conclusion === 'mistake'));
+    return DURATION - ranges.reduce((total, item) => total + item.end - item.start, 0);
+  }
+  const calculateConclusion = (segments, completed) => (segments.some(item => item.conclusion === 'rejected') || mistakeDuration(segments) >= DURATION * .5 - 1e-9) ? '不合格'
     : segments.some(item => item.conclusion === 'mistake') ? '失误'
     : completed && segments.every(valid) ? '合格' : '待计算';
   const calculatedConclusion = () => calculateConclusion(state.segments, true);
@@ -157,8 +162,10 @@
     } catch (_) {}
   }
   restore();
+  validateUsableDuration(false);
 
   function notify() {
+    validateUsableDuration(false);
     document.dispatchEvent(new CustomEvent(eventName('state-change'), {detail:clone(state)}));
   }
   function markDirty() {
@@ -556,7 +563,7 @@
       const row=event.target.closest('[data-segment-id]');
       if(row){selectSegment(row.dataset.segmentId);return;}
       const action=event.target.closest('[data-action]')?.dataset.action;
-      if(action==='save'&&!state.submitted)this.save();
+      if(action==='save'&&!state.submitted){validateUsableDuration();this.save();}
       if(action==='leave'&&!state.submitted)this.querySelector(`#${domPrefix}ReleaseDialog`)?.showModal();
       if(action==='reject'&&!state.submitted)this.querySelector('workbench-confirm-dialog[variant="reject"]')?.show();
       if(action==='submit'&&!state.submitted){
@@ -587,7 +594,7 @@
       const rows=ordered.map(item=>{
         return `<button type="button" data-segment-id="${escape(item.id)}" class="prq-list-item${isShortDuration(item)?' is-short-duration':''}${item.id===state.selectedId?' is-active':''}${this.hits?.includes(item.id)?' is-hit':''}${valid(item)?'':' has-error'}"><span class="prq-list-id">${String(ordered.indexOf(item)+1).padStart(2,'0')}</span><span class="prq-list-main">${item.id===state.selectedId?`<span class="prq-list-time">${format(item.start)}–${format(item.end)}</span>`:''}<span class="prq-list-summary"><b class="is-${item.conclusion}">${conclusionLabel(item.conclusion)}</b><strong>${escape(reasonSummary(item))}</strong></span>${valid(item)?'':`<i>${escape(segmentErrors(item)[0])}</i>`}</span></button>`;
       }).join('');
-      this.innerHTML=`<section class="prq-sidebar"><header><div><b>质检列表</b><span>共 ${ordered.length} 个问题片段</span></div></header><div class="prq-list">${ordered.length?rows:'<div class="prq-list-empty">尚未记录问题片段</div>'}</div><footer><div class="prq-conclusion-meta">系统自动计算 · 失误 ${state.segments.filter(item=>item.conclusion==='mistake').length} · 不合格 ${state.segments.filter(item=>item.conclusion==='rejected').length}${pending?` · 待判定 ${pending}`:''}</div><div class="prq-video-conclusion"><span class="prq-conclusion-label">质检结论</span><output id="${domPrefix}VideoConclusion" class="${conclusionClass}" aria-label="质检结论，由系统自动计算">${conclusion}</output></div><workbench-footer-actions hydrate><div class="workbench-footer-actions"><button type="button" data-action="save" ${state.submitted?'disabled':''}>保存</button></div></workbench-footer-actions></footer></section><workbench-confirm-dialog variant="reject"></workbench-confirm-dialog>
+      this.innerHTML=`<section class="prq-sidebar"><header><div><b>质检列表</b><span>共 ${ordered.length} 个问题片段</span></div></header><div class="prq-list">${ordered.length?rows:'<div class="prq-list-empty">尚未记录问题片段</div>'}</div><footer><div class="prq-conclusion-meta">系统自动计算 · 失误 ${state.segments.filter(item=>item.conclusion==='mistake').length}${mistakeDuration(state.segments)>=DURATION*.5-1e-9?'（时长占比超50%）':''} · 不合格 ${state.segments.filter(item=>item.conclusion==='rejected').length}${pending?` · 待判定 ${pending}`:''}</div><div class="prq-video-conclusion"><span class="prq-conclusion-label">质检结论</span><output id="${domPrefix}VideoConclusion" class="${conclusionClass}" aria-label="质检结论，由系统自动计算">${conclusion}</output></div><workbench-footer-actions hydrate><div class="workbench-footer-actions"><button type="button" data-action="save" ${state.submitted?'disabled':''}>保存</button></div></workbench-footer-actions></footer></section><workbench-confirm-dialog variant="reject"></workbench-confirm-dialog>
         <dialog id="${domPrefix}ErrorDialog" class="prq-dialog prq-error-dialog"><header><h2>暂时无法提交</h2><button onclick="this.closest('dialog').close()" aria-label="关闭">×</button></header><div><b>标注有问题</b><p>${invalidCount()} 个问题片段存在必填项缺失，请检查后提交。</p></div><footer><button onclick="this.closest('dialog').close()">我知道了</button></footer></dialog>
         <dialog id="${domPrefix}ReleaseDialog" class="prq-dialog prq-action-dialog"><header><h2>确认释放当前数据</h2><button onclick="this.closest('dialog').close()" aria-label="关闭">×</button></header><div><b>释放后将退出当前处理状态</b><p>确定要释放当前数据吗？</p></div><footer><button onclick="this.closest('dialog').close()">取消</button><button class="is-primary" data-action="confirm-release">确认释放</button></footer></dialog>
         <dialog id="${domPrefix}SubmitDialog" class="prq-dialog prq-submit-dialog ${conclusionClass}"><header><h2>确认提交质检</h2><button onclick="this.closest('dialog').close()" aria-label="关闭">×</button></header><div><span>系统计算的视频结论</span><strong data-result></strong><p data-counts></p><p data-duration-check></p><small>提交后将保存全部片段和本次质检结果。</small></div><footer><button onclick="this.closest('dialog').close()">取消</button><button class="is-primary" data-action="confirm-submit">确认</button></footer></dialog>
@@ -613,7 +620,7 @@
   });
 
   window.__preTrainingQualityRules = {
-    overlapDuration, trackOverlap, sortSegments, calculateConclusion, calculatedConclusion, usableRanges, validateUsableDuration, pendingCount, isShortDuration,
+    overlapDuration, trackOverlap, sortSegments, mistakeDuration, calculateConclusion, calculatedConclusion, usableRanges, validateUsableDuration, pendingCount, isShortDuration,
     visibleSegments:()=>clone(manualSegments()),
     placeSegment:(candidate,segments)=>placeSegment(clone(candidate),clone(segments)),
     segmentErrors:segment=>segmentErrors(clone(segment)),

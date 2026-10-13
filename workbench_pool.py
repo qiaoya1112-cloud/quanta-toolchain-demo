@@ -25,7 +25,7 @@ PRETRAINING_TASKS = [
     }
     for task_id, pool_id, node, group in (
         ("WB-PRETRAINING-QC", "POOL-PRETRAINING-QC", "采集质检", "采集质检用户组"),
-        ("WB-PRETRAINING-ACCEPTANCE", "POOL-PRETRAINING-ACCEPTANCE", "采集验收", "采集验收用户组"),
+        ("WB-PRETRAINING-ACCEPTANCE", "POOL-PRETRAINING-ACCEPTANCE", "质检验收", "质检验收用户组"),
     )
 ]
 
@@ -86,7 +86,7 @@ def transition(task, saved, action, ids, result="", reason="", remark="", owner=
     if owner and any(records[item].get("owner") not in (None, "", owner) for item in ids):
         raise PoolConflict("数据已被其他人占用或处理，无法继续操作，请选择其他数据")
     if action in ("batch_release", "batch_reject", "batch_submit"):
-        if task.get("execution_unit") != "batch" or (action == "batch_reject" and task.get("node") != "采集验收"):
+        if task.get("execution_unit") != "batch" or (action == "batch_reject" and task.get("node") != "质检验收"):
             raise ValueError("当前节点不支持该整批操作")
         if action == "batch_reject" and not remark.strip():
             raise ValueError("请输入驳回说明")

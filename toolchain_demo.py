@@ -1853,9 +1853,11 @@ textarea.yaml-area:focus { border-color:#149DAA; box-shadow:0 0 0 2px rgba(20,15
 .wb-rule-box ol { margin:0; padding:0; list-style:none; counter-reset:wb-rule; }
 .wb-rule-box li { display:grid; grid-template-columns:28px minmax(0,1fr); gap:10px; padding:7px 0; color:rgba(0,0,0,.73); font-size:13px; line-height:1.65; counter-increment:wb-rule; }
 .wb-rule-box li::before { content:counter(wb-rule) "."; color:#1685a4; font-family:'SF Mono',Menlo,monospace; font-weight:600; }
-.wb-held-group { display:flex;align-items:center;gap:16px;flex:1;min-width:0;padding:14px 16px;background:#edf8fa;border:1px solid #d8edef;border-radius:7px; }
+.wb-held-group { display:flex;align-items:center;gap:12px;width:100%;box-sizing:border-box;min-width:0;padding:8px 12px;background:#edf8fa;border:1px solid #d8edef;border-radius:7px; }
+.wb-held-group { margin-top:16px; }
+.wb-held-group + .wb-task-home-actions { margin-top:10px;padding-top:0;border-top:0; }
 .wb-held-first-row { display:flex;align-items:center;gap:12px; }
-.wb-held-notice { margin-right:auto;display:flex;flex-direction:column;gap:6px;color:#536970;font-size:12px; }
+.wb-held-notice { margin-right:auto;display:flex;align-items:center;flex-wrap:wrap;gap:10px;color:#536970;font-size:12px; }
 .wb-task-home-actions { align-items:center; }
 .wb-collection-range { grid-column:span 2; }
 .wb-filter-inline-reset { align-self:end; }
@@ -5330,7 +5332,7 @@ def _render_workbench_pool_home(pool_id, selected_task_id=None, version="v1"):
     """
     held_records = [record for record in _shared_pool_records(task) if record["status"] == "processing" and record.get("owner") in (None, "", _pool_owner())] if is_v2 else []
     held_unit = "一批" if task.get("execution_unit") == "batch" else "一条"
-    held_notice = (f'<div class="wb-held-group"><div class="wb-held-notice"><div class="wb-held-first-row"><b>您有{held_unit}已领取的数据待完成。</b><button class="btn" type="button" id="wbReleaseHeld">释放</button></div><span>点击“开始处理”将优先继续处理；完成后，再按当前筛选条件领取新数据。</span></div></div>' if held_records else "")
+    held_notice = (f'<div class="wb-held-group"><div class="wb-held-notice"><div class="wb-held-first-row"><b>您有{held_unit}已领取的数据待完成。</b></div><span>开始处理将优先继续当前数据，完成后按筛选条件领取新数据。</span></div><button class="btn" type="button" id="wbReleaseHeld">释放</button></div>' if held_records else "")
     if held_records and task.get("execution_unit") == "batch":
         held_batch = _shared_pool_records(task)
         if any(r.get("owner") == _pool_owner() for r in held_records):
@@ -5401,7 +5403,7 @@ def _render_workbench_pool_home(pool_id, selected_task_id=None, version="v1"):
           <form class="wb-filter-form" id="wbFilterForm" action="{workbench_submit_url}" method="get">
             <input type="hidden" name="task" value="{html.escape(task['id'])}">
             <input type="hidden" name="entry" value="start">
-            <div class="wb-filter-grid wb-v2-filter-grid">{rule_selector}{task_id_filter}<div class="wb-filter-field"><label for="wbCollector">采集员</label><input id="wbCollector" name="collector" form="wbFilterForm" value="{html.escape(collector_query, quote=True)}" placeholder="请输入采集员"></div><div class="wb-filter-field wb-collection-range"><label>采集时间</label><div class="wb-date-range"><input type="datetime-local" name="collected_from" aria-label="采集开始时间" value="{html.escape(request.args.get('collected_from', ''), quote=True)}"><span>至</span><input type="datetime-local" name="collected_to" aria-label="采集结束时间" value="{html.escape(request.args.get('collected_to', ''), quote=True)}"></div></div><div class="wb-filter-inline-reset"><button class="btn" type="reset" onclick="{reset_rule_details}">重置</button></div></div>
+            <div class="wb-filter-grid wb-v2-filter-grid">{rule_selector}{task_id_filter}<div class="wb-filter-field"><label for="wbSupplierId">供应商</label><input id="wbSupplierId" name="supplier_id" placeholder="请输入供应商" value="{html.escape(request.args.get('supplier_id', ''), quote=True)}"></div><div class="wb-filter-field"><label for="wbCollector">采集员</label><input id="wbCollector" name="collector" form="wbFilterForm" value="{html.escape(collector_query, quote=True)}" placeholder="请输入采集员"></div><div class="wb-filter-field wb-collection-range"><label>采集时间</label><div class="wb-date-range"><input type="datetime-local" name="collected_from" aria-label="采集开始时间" value="{html.escape(request.args.get('collected_from', ''), quote=True)}"><span>至</span><input type="datetime-local" name="collected_to" aria-label="采集结束时间" value="{html.escape(request.args.get('collected_to', ''), quote=True)}"></div></div><div class="wb-filter-inline-reset"><button class="btn" type="reset" onclick="{reset_rule_details}">重置</button></div></div>
           </form>
         </section>''' if use_annotation_pool_layout else ('' if is_v2 else f'''<section class="wb-task-config wb-filter-config">
           <div class="wb-task-config-title">
@@ -5439,8 +5441,8 @@ def _render_workbench_pool_home(pool_id, selected_task_id=None, version="v1"):
         </section>'''}
       </div>
       {task_filter_error}
+      {held_notice}
       <div class="wb-task-home-actions">
-        {held_notice}
         {f'<input type="hidden" form="wbFilterForm" name="recording_id" value="{html.escape(held_records[0]["id"], quote=True)}">' if held_records and task.get("execution_unit") != "batch" else ""}
         {claim_control}
         {f'<button class="btn" form="wbFilterForm" type="reset" onclick="{reset_rule_details}">重置</button>' if not is_v2 else ''}
@@ -5542,18 +5544,22 @@ def data_workbench_pool_records(pool_id):
                 if index % 3 == 1 and not record.get("reviewed_at"):
                     states.setdefault(record["id"], {}).update(result="", reason="", remark="")
     source_records = (wb_pool.prepare_todo_batch(_pool_db(), task, session.get("workbench_pool_states", {}), _pool_owner())
-                      if task.get("return_to_workbench") or task["node"] == "采集验收" else _shared_pool_records(task))
+                      if task.get("return_to_workbench") or task["node"] == "质检验收" else _shared_pool_records(task))
     records = _pool_list_history(task, source_records)
+    if task.get("return_to_workbench"):
+        for index, record in enumerate(records):
+            if index in (0, 3):
+                record["modified"] = True
     if task.get("compact_list"):
         for index, record in enumerate(records):
-            if task["node"] == "采集验收" and not record.get("result"):
+            if task["node"] == "质检验收" and not record.get("result"):
                 record["result"] = record.get("collection_qc_result", "")
-            if (task["node"] == "采集验收" or task.get("return_to_workbench")) and index % 3 == 0:
+            if (task["node"] == "质检验收" or task.get("return_to_workbench")) and index % 3 == 0:
                 record["qc_error_count"] = len(record.get("reasons", [])) or 1
                 record["qc_error_description"] = ""
     if task.get("return_to_workbench") and task["node"] == "采集质检" and request.args.get("todo_type", "驳回待处理") == "驳回待处理":
         task["rejection_remark"] = "质检结果存在错误，请检查标记为错误的数据并修正后重新提交。"
-    if task.get("return_to_workbench") and task["node"] == "采集验收" and request.args.get("todo_type") == "修正待审核":
+    if task.get("return_to_workbench") and task["node"] == "质检验收" and request.args.get("todo_type") == "修正待审核":
         task["rejection_remark"] = "质检结果存在错误，请检查标记为错误的数据并修正后重新提交。"
     owned = [r for r in records if r["status"] == "processing" and r.get("owner") in (None, "", _pool_owner())]
     resume = request.args.get("entry") == "start" and bool(owned)
@@ -5561,6 +5567,14 @@ def data_workbench_pool_records(pool_id):
         collector_query = request.args.get("collector", "").strip().lower()
         if collector_query:
             records = [r for r in records if collector_query in str(r.get("collector", "")).lower() or collector_query in str(r.get("collector_id", "")).lower()]
+        supplier_query = request.args.get("supplier_id", "").strip()
+        if supplier_query:
+            def supplier_matches(record):
+                value = str(record.get("supplier_id", ""))
+                digits = "".join(char for char in value if char.isdigit())
+                short_id = str(int(digits)).zfill(2) if digits else value
+                return supplier_query.lower() == value.lower() or supplier_query == short_id or supplier_query.lower() in str(record.get("supplier", "")).lower()
+            records = [record for record in records if supplier_matches(record)]
         start_time = request.args.get("collected_from", "").replace("T", " ")
         end_time = request.args.get("collected_to", "").replace("T", " ")
         if start_time:
