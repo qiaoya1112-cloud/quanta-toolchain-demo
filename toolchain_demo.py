@@ -1510,7 +1510,16 @@ body.lineage-canvas-page .lineage-viewport { height:100%; min-height:0; }
 /* ── Drawer form: row 2-col ── */
 .fg-row { display:flex; gap:14px; }
 .fg-row > .fg { flex:1; }
-.train-runtime-priority-row > .fg { min-width:0; }
+#trainImageCustom .fg-row > .fg, .train-runtime-queue-row > .fg { min-width:0; }
+.train-runtime-priority-row > .fg { flex:0 0 calc((100% - 28px) / 3); min-width:0; }
+@media (max-width:720px) {
+  #trainImageCustom .fg-row > .fg, .train-runtime-queue-row > .fg { min-width:calc(50% - 7px); }
+  .train-runtime-priority-row > .fg { flex-basis:calc(50% - 7px); }
+}
+@media (max-width:480px) {
+  #trainImageCustom .fg-row > .fg, .train-runtime-queue-row > .fg { min-width:100%; }
+  .train-runtime-priority-row > .fg { flex-basis:100%; }
+}
 #trainInstanceSpec { width:100%; min-width:0; box-sizing:border-box; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .fg-hint { font-size:11px; color:rgba(0,0,0,0.4); margin-top:2px; }
 .fg-req::before { content:'*'; color:#cf1322; margin-right:4px; }
@@ -10286,20 +10295,18 @@ def experiments():
                 <div class="fg-row">
                   <div class="fg" style="margin-bottom:0;"><label>名称</label><select id="trainImageName" onchange="updateTrainImageVersions()"><option value="" selected disabled>镜像名称</option><option value="mozbrain_release">mozbrain_release</option><option value="mozbrain">mozbrain</option><option value="mozbrain_base">mozbrain_base</option></select></div>
                   <div class="fg" style="margin-bottom:0;"><label>版本</label><select id="trainImageVersion" onchange="updateTrainImagePath()"><option value="" selected disabled>镜像版本</option></select></div>
+                  <div class="fg" style="margin-bottom:0;"><label for="trainMozbrainVersion">mozbrain 版本</label><select id="trainMozbrainVersion"><option value="" selected disabled>请选择 mozbrain 版本</option><option value="mozbrain v1.0">mozbrain v1.0</option><option value="mozbrain v2.0">mozbrain v2.0</option></select></div>
                 </div>
               </div>
               <div class="image-path-hint"><span class="path" id="trainImagePath">spirit-ai-cn-beijing.cr.volces.com/spirit-ai/mozbrain:thor-v1.0.0</span></div>
             </div>
             <div class="fg train-runtime-code-row"><label>训练代码</label><div style="position:relative;"><input type="text" id="trainCodeInput" placeholder="输入 Commit ID 搜索（可选）" oninput="filterTrainCode(this)" onblur="hideTrainCodeMenu()" autocomplete="off" data-branch="" data-commit=""><div id="trainCodeMenu" class="tc-menu"></div></div></div>
             <div class="fg-row train-runtime-queue-row">
-              <div class="fg"><label class="fg-req">优先级 <span class="qi" data-tooltip="数值越大，优先级越大" tabindex="0" aria-label="数值越大，优先级越大">i</span></label><select id="trainPriority"><option value="2">2</option><option value="4" selected>4</option><option value="6">6</option></select></div>
               <div class="fg">
                 <div class="train-queue-label"><label for="trainQueueSelect" class="fg-req">训练队列 <span class="qi" data-tooltip="{queue_help}" tabindex="0" aria-label="{queue_help}">i</span></label><a href="/model/queues?view=readonly" target="_blank" rel="noopener">申请队列权限</a></div>
                 <select id="trainQueueSelect" aria-describedby="trainQueueBalanceHint" onchange="updateTrainQueueBalance()">{queue_options}</select>
                 <p id="trainQueueBalanceHint" role="status" hidden style="margin:8px 0 0;color:#ad6800;font-size:12px;line-height:1.6;overflow-wrap:anywhere">当前可用余额为 <strong>¥{_model_resource_balance(date.today()):,.2f}</strong>，余额耗尽后训练任务将自动停止。</p>
               </div>
-            </div>
-            <div class="fg-row train-runtime-priority-row">
               <div class="fg"><label class="fg-req">实例数</label><input id="trainInstanceCount" type="number" min="1" max="4" step="1" value="1" inputmode="numeric" oninput="validateTrainInstanceCount(this)"></div>
               <div class="fg"><label class="fg-req" for="trainInstanceSpec">实例规格</label><select id="trainInstanceSpec" onchange="this.title=this.options[this.selectedIndex].text" title="请选择实例规格">
                 <option value="" selected disabled>请选择实例规格</option>
@@ -10308,6 +10315,9 @@ def experiments():
                 <option value="A100-4x-80G">A100-4x-80G | 48 vCPU | 384 GB | Tesla-A100-80G × 4</option>
                 <option value="H100-8x-80G">H100-8x-80G | 96 vCPU | 768 GB | Tesla-H100-80G × 8</option>
               </select></div>
+            </div>
+            <div class="fg-row train-runtime-priority-row">
+              <div class="fg"><label class="fg-req">优先级 <span class="qi" data-tooltip="数值越大，优先级越大" tabindex="0" aria-label="数值越大，优先级越大">i</span></label><select id="trainPriority"><option value="2">2</option><option value="4" selected>4</option><option value="6">6</option></select></div>
             </div>
           </div>
         </section>
@@ -11293,9 +11303,9 @@ CKPT_STATUS_LABEL = {
 
 # Curated images shared by the image management page and the training drawer.
 TRAIN_IMAGE_CATALOG = [
-    {"name": "mozbrain_release", "version": "thor-v1.0.0", "description": "Spirit v1.6 推荐训练镜像", "creator": "tao.wang", "created": "2026-08-18 09:20"},
-    {"name": "mozbrain_release", "version": "thor-v0.9.8", "description": "Spirit v1.5 兼容镜像", "creator": "hannah.wang", "created": "2026-08-12 16:30"},
-    {"name": "mozbrain", "version": "thor-v1.0.0", "description": "基础训练镜像", "creator": "joanna.qiao", "created": "2026-08-08 09:20"},
+    {"name": "mozbrain_release", "version": "thor-v1.0.0", "mozbrain_version": "", "description": "Spirit v1.6 推荐训练镜像", "creator": "tao.wang", "created": "2026-08-18 09:20"},
+    {"name": "mozbrain_release", "version": "thor-v0.9.8", "mozbrain_version": "", "description": "Spirit v1.5 兼容镜像", "creator": "hannah.wang", "created": "2026-08-12 16:30"},
+    {"name": "mozbrain", "version": "thor-v1.0.0", "mozbrain_version": "", "description": "基础训练镜像", "creator": "joanna.qiao", "created": "2026-08-08 09:20"},
 ]
 
 def _train_image_path(image):
@@ -11303,25 +11313,83 @@ def _train_image_path(image):
 
 @app.route("/model/config/images")
 def model_config_images():
+    image_catalog_json = json.dumps(TRAIN_IMAGE_CATALOG, ensure_ascii=False).replace("<", "\\u003c")
     rows = "".join(
-        f"<tr><td>{html.escape(i['name'])}</td><td>{html.escape(i['version'])}</td>"
+        f"<tr><td>{html.escape(i['name'])}</td><td>{html.escape(i['version'])}</td><td>{html.escape(i.get('mozbrain_version') or '—')}</td>"
         f"<td>{html.escape(i['description'])}</td><td>{html.escape(i['creator'])}</td><td class='mono'>{html.escape(i['created'])}</td>"
-        f"<td><a href='#' onclick=\"openImageEditor('{html.escape(i['name'], quote=True)}','{html.escape(i['version'], quote=True)}','{html.escape(i['description'], quote=True)}');return false;\">编辑</a> "
-        f"<a href='#' onclick=\"openImageDelete('{html.escape(i['name'], quote=True)}','{html.escape(i['version'], quote=True)}');return false;\">删除</a></td></tr>"
-        for i in TRAIN_IMAGE_CATALOG
+        f"<td><a href='#' onclick=\"openImageEditor({index});return false;\">编辑</a> "
+        f"<a href='#' onclick=\"openImageDelete({index});return false;\">删除</a></td></tr>"
+        for index, i in enumerate(TRAIN_IMAGE_CATALOG)
     )
     content = f"""
     <button class="btn btn-primary" onclick="openImageEditor()">新增镜像</button>
-    <div class="card"><table class="ant-table"><thead><tr><th>镜像名称</th><th>版本</th><th>描述信息</th><th>创建人</th><th>创建时间</th><th>操作</th></tr></thead><tbody>{rows}</tbody></table></div>
-    <div class="drawer-mask" id="imageEditorModal" onclick="if(event.target===this)closeImageEditor()"><div class="drawer image-config-drawer" id="imageEditorDrawer"><div class="drawer-head"><h3 id="imageEditorTitle">新增镜像</h3><button class="drawer-close" onclick="closeImageEditor()">&times;</button></div><div class="drawer-body"><div class="fg"><label>镜像名称</label><input id="imageEditorName" placeholder="例如 mozbrain_release"></div><div class="fg"><label>版本</label><input id="imageEditorVersion" placeholder="例如 thor-v1.0.0"></div><div class="fg"><label>描述信息</label><textarea id="imageEditorDescription" rows="3" placeholder="填写镜像用途和兼容范围"></textarea></div></div><div class="drawer-foot"><button class="btn" onclick="closeImageEditor()">取消</button><button class="btn btn-primary" onclick="saveImageEditor()">保存</button></div></div></div>
+    <div class="card"><table class="ant-table"><thead><tr><th>镜像名称</th><th>版本</th><th>mozbrain 版本</th><th>描述信息</th><th>创建人</th><th>创建时间</th><th>操作</th></tr></thead><tbody id="imageCatalogRows">{rows}</tbody></table></div>
+    <div class="drawer-mask" id="imageEditorModal" onclick="if(event.target===this)closeImageEditor()"><div class="drawer image-config-drawer" id="imageEditorDrawer"><div class="drawer-head"><h3 id="imageEditorTitle">新增镜像</h3><button class="drawer-close" onclick="closeImageEditor()">&times;</button></div><div class="drawer-body"><div class="fg"><label>镜像名称</label><input id="imageEditorName" placeholder="例如 mozbrain_release"></div><div class="fg"><label>版本</label><input id="imageEditorVersion" placeholder="例如 thor-v1.0.0"></div><div class="fg"><label for="imageEditorMozbrainVersion">mozbrain 版本</label><select id="imageEditorMozbrainVersion"><option value="" selected>请选择 mozbrain 版本</option><option value="mozbrain v1.0">mozbrain v1.0</option><option value="mozbrain v2.0">mozbrain v2.0</option></select></div><div class="fg"><label>描述信息</label><textarea id="imageEditorDescription" rows="3" placeholder="填写镜像用途和兼容范围"></textarea></div></div><div class="drawer-foot"><button class="btn" onclick="closeImageEditor()">取消</button><button class="btn btn-primary" onclick="saveImageEditor()">保存</button></div></div></div>
     <div class="drawer-mask" id="imageDeleteModal" onclick="if(event.target===this)closeImageDelete()"><div class="drawer image-config-drawer" id="imageDeleteDrawer"><div class="drawer-head"><h3>删除镜像</h3><button class="drawer-close" onclick="closeImageDelete()">&times;</button></div><div class="drawer-body"><p>确认删除镜像 <b id="imageDeleteName"></b>？删除后不可恢复。</p></div><div class="drawer-foot"><button class="btn" onclick="closeImageDelete()">取消</button><button class="btn btn-danger" onclick="confirmImageDelete()">删除</button></div></div></div>
     <script>
-    function openImageEditor(name,version,description){{document.getElementById('imageEditorTitle').textContent=name?'编辑镜像':'新增镜像';document.getElementById('imageEditorName').value=name||'';document.getElementById('imageEditorVersion').value=version||'';document.getElementById('imageEditorDescription').value=description||'';document.getElementById('imageEditorModal').classList.add('active');document.getElementById('imageEditorDrawer').classList.add('active');}}
+    const IMAGE_CATALOG_STORAGE_KEY = 'quanta-image-catalog-v1';
+    const IMAGE_CATALOG_DEFAULTS = {image_catalog_json};
+    let imageCatalog = IMAGE_CATALOG_DEFAULTS;
+    let imageEditorIndex = -1;
+    let imageDeleteIndex = -1;
+    try {{ const saved = JSON.parse(localStorage.getItem(IMAGE_CATALOG_STORAGE_KEY)); if (Array.isArray(saved)) imageCatalog = saved; }} catch (error) {{ /* Use demo data when storage is unavailable. */ }}
+    function persistImageCatalog() {{
+      try {{ localStorage.setItem(IMAGE_CATALOG_STORAGE_KEY, JSON.stringify(imageCatalog)); }} catch (error) {{ toast('无法保存到浏览器本地数据'); }}
+    }}
+    function renderImageCatalog() {{
+      const tbody = document.getElementById('imageCatalogRows');
+      tbody.replaceChildren();
+      imageCatalog.forEach(function(image, index) {{
+        const row = document.createElement('tr');
+        [image.name, image.version, image.mozbrain_version || '—', image.description, image.creator, image.created].forEach(function(value) {{
+          const cell = row.insertCell(); cell.textContent = value || '';
+        }});
+        const actions = row.insertCell();
+        const edit = document.createElement('a'); edit.href = '#'; edit.textContent = '编辑';
+        edit.onclick = function(event) {{ event.preventDefault(); openImageEditor(index); }};
+        const del = document.createElement('a'); del.href = '#'; del.textContent = '删除';
+        del.onclick = function(event) {{ event.preventDefault(); openImageDelete(index); }};
+        actions.append(edit, ' ', del);
+        tbody.appendChild(row);
+      }});
+    }}
+    function openImageEditor(index) {{
+      imageEditorIndex = typeof index === 'number' ? index : -1;
+      const image = imageCatalog[imageEditorIndex] || {{}};
+      document.getElementById('imageEditorTitle').textContent = imageEditorIndex >= 0 ? '编辑镜像' : '新增镜像';
+      document.getElementById('imageEditorName').value = image.name || '';
+      document.getElementById('imageEditorVersion').value = image.version || '';
+      document.getElementById('imageEditorMozbrainVersion').value = image.mozbrain_version || '';
+      document.getElementById('imageEditorDescription').value = image.description || '';
+      document.getElementById('imageEditorModal').classList.add('active');
+      document.getElementById('imageEditorDrawer').classList.add('active');
+    }}
     function closeImageEditor(){{document.getElementById('imageEditorModal').classList.remove('active');document.getElementById('imageEditorDrawer').classList.remove('active');}}
-    function saveImageEditor(){{if(!document.getElementById('imageEditorName').value.trim()||!document.getElementById('imageEditorVersion').value.trim()){{toast('请填写镜像名称和版本');return;}}toast('Demo: 镜像已保存');closeImageEditor();}}
-    function openImageDelete(name,version){{document.getElementById('imageDeleteName').textContent=name+':'+version;document.getElementById('imageDeleteModal').classList.add('active');document.getElementById('imageDeleteDrawer').classList.add('active');}}
+    function saveImageEditor() {{
+      const name = document.getElementById('imageEditorName').value.trim();
+      const version = document.getElementById('imageEditorVersion').value.trim();
+      if (!name || !version) {{ toast('请填写镜像名称和版本'); return; }}
+      if (imageCatalog.some(function(image, index) {{ return index !== imageEditorIndex && image.name === name && image.version === version; }})) {{ toast('该镜像版本已存在'); return; }}
+      const original = imageCatalog[imageEditorIndex] || {{}};
+      const image = {{ name:name, version:version, mozbrain_version:document.getElementById('imageEditorMozbrainVersion').value,
+        description:document.getElementById('imageEditorDescription').value.trim(), creator:original.creator || 'Joanna Qiao',
+        created:original.created || new Date().toLocaleString('sv-SE').replace('T', ' ') }};
+      if (imageEditorIndex >= 0) imageCatalog[imageEditorIndex] = image; else imageCatalog.push(image);
+      persistImageCatalog(); renderImageCatalog(); closeImageEditor(); toast('镜像已保存');
+    }}
+    function openImageDelete(index) {{
+      imageDeleteIndex = index;
+      const image = imageCatalog[index]; if (!image) return;
+      document.getElementById('imageDeleteName').textContent = image.name + ':' + image.version;
+      document.getElementById('imageDeleteModal').classList.add('active');
+      document.getElementById('imageDeleteDrawer').classList.add('active');
+    }}
     function closeImageDelete(){{document.getElementById('imageDeleteModal').classList.remove('active');document.getElementById('imageDeleteDrawer').classList.remove('active');}}
-    function confirmImageDelete(){{toast('Demo: 镜像已删除');closeImageDelete();}}
+    function confirmImageDelete() {{
+      if (imageDeleteIndex < 0 || !imageCatalog[imageDeleteIndex]) return;
+      imageCatalog.splice(imageDeleteIndex, 1); persistImageCatalog(); renderImageCatalog(); closeImageDelete(); toast('镜像已删除');
+    }}
+    renderImageCatalog();
     </script>
     """
     return render_page('镜像管理', content, active='/model/config/images', module='model', breadcrumb='模型平台 / 配置 / <b>镜像管理</b>')

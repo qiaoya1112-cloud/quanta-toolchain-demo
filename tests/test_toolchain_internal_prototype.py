@@ -415,17 +415,21 @@ def test_train_drawer_uses_requested_field_rows_and_optional_fields():
     assert 'train-runtime-code-row' in drawer
     assert 'train-runtime-queue-row' in drawer
     assert 'train-runtime-priority-row' in drawer
+    custom_image_row = drawer.split('id="trainImageCustom"', 1)[1].split('</div>\n              </div>', 1)[0]
+    assert custom_image_row.index('id="trainImageName"') < custom_image_row.index('id="trainImageVersion"') < custom_image_row.index('id="trainMozbrainVersion"')
+    assert drawer.index('train-runtime-code-row') < drawer.index('train-runtime-queue-row')
 
 
-def test_train_drawer_orders_priority_queue_and_count_specification_as_requested():
+def test_train_drawer_orders_queue_count_specification_then_priority_as_requested():
     html = toolchain_demo.app.test_client().get('/model/experiments').get_data(as_text=True)
     drawer = html.split('<div class="drawer drawer-wide" id="drawerNewTrain">', 1)[1].split('</div>\n    """', 1)[0]
     queue_row_start = drawer.index('class="fg-row train-runtime-queue-row"')
     spec_row_start = drawer.index('class="fg-row train-runtime-priority-row"')
     queue_row = drawer[queue_row_start:spec_row_start]
-    assert queue_row.index('优先级') < queue_row.index('训练队列')
-    spec_row = drawer[spec_row_start:]
-    assert spec_row.index('实例数') < spec_row.index('实例规格')
+    assert queue_row.index('训练队列') < queue_row.index('实例数') < queue_row.index('实例规格')
+    assert 'id="trainPriority"' not in queue_row
+    priority_row = drawer[spec_row_start:]
+    assert 'id="trainPriority"' in priority_row
 
 
 def test_custom_yaml_keeps_only_restore_recommended_action():
@@ -503,7 +507,10 @@ def test_image_management_page_and_recommended_image_options_share_catalog():
     assert config.status_code == 200
     config_html = config.get_data(as_text=True)
     assert '镜像名称' in config_html
-    assert '版本' in config_html
+    assert '<th>版本</th><th>mozbrain 版本</th>' in config_html
+    assert 'id="imageEditorMozbrainVersion"' in config_html
+    assert '<option value="mozbrain v1.0">mozbrain v1.0</option>' in config_html
+    assert '<option value="mozbrain v2.0">mozbrain v2.0</option>' in config_html
     assert '描述信息' in config_html
     assert '创建人' in config_html
     assert '创建时间' in config_html
