@@ -1827,7 +1827,7 @@ textarea.yaml-area:focus { border-color:#149DAA; box-shadow:0 0 0 2px rgba(20,15
 .wb-v2-pool-home .wb-filter-config { order:2; }
 .wb-v2-pool-home .wb-rule-config { order:1; }
 .wb-v2-basic-config { margin:18px 0 16px; }
-.wb-v2-basic-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:0; padding:18px 20px; }
+.wb-v2-basic-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:0; padding:18px 20px; }
 .wb-v2-basic-grid > div { display:flex; min-width:0; flex-direction:column; gap:7px; padding:0 20px; border-right:1px solid #edf0f1; }
 .wb-v2-basic-grid > div:first-child { padding-left:0; }
 .wb-v2-basic-grid > div:last-child { padding-right:0; border-right:0; }
@@ -5355,7 +5355,6 @@ def _render_workbench_pool_home(pool_id, selected_task_id=None, version="v1"):
         <div class="wb-v2-basic-grid">
           <div><span>流程</span><b>{html.escape(task['flow'])}</b></div>
           <div><span>节点</span><b>{html.escape(task['node'])}</b></div>
-          <div><span>用户组</span><b>{html.escape(task['user_group'])}</b></div>
           <div><span>处理模式</span><b>{'批量处理' if task.get('execution_unit') == 'batch' else '单条处理'}</b></div>
         </div>
       </section>''' if use_annotation_pool_layout else ('' if is_v2 else f'''<div class="wb-task-brief wb-pool-brief">
@@ -5403,7 +5402,7 @@ def _render_workbench_pool_home(pool_id, selected_task_id=None, version="v1"):
           <form class="wb-filter-form" id="wbFilterForm" action="{workbench_submit_url}" method="get">
             <input type="hidden" name="task" value="{html.escape(task['id'])}">
             <input type="hidden" name="entry" value="start">
-            <div class="wb-filter-grid wb-v2-filter-grid">{rule_selector}{task_id_filter}<div class="wb-filter-field"><label for="wbSupplierId">供应商</label><input id="wbSupplierId" name="supplier_id" placeholder="请输入供应商" value="{html.escape(request.args.get('supplier_id', ''), quote=True)}"></div><div class="wb-filter-field"><label for="wbCollector">采集员</label><input id="wbCollector" name="collector" form="wbFilterForm" value="{html.escape(collector_query, quote=True)}" placeholder="请输入采集员"></div><div class="wb-filter-field wb-collection-range"><label>采集时间</label><div class="wb-date-range"><input type="datetime-local" name="collected_from" aria-label="采集开始时间" value="{html.escape(request.args.get('collected_from', ''), quote=True)}"><span>至</span><input type="datetime-local" name="collected_to" aria-label="采集结束时间" value="{html.escape(request.args.get('collected_to', ''), quote=True)}"></div></div><div class="wb-filter-inline-reset"><button class="btn" type="reset" onclick="{reset_rule_details}">重置</button></div></div>
+            <div class="wb-filter-grid wb-v2-filter-grid">{rule_selector}{task_id_filter}<div class="wb-filter-field"><label for="wbSupplierId">采集供应商</label><input id="wbSupplierId" name="supplier_id" placeholder="请输入采集供应商" value="{html.escape(request.args.get('supplier_id', ''), quote=True)}"></div><div class="wb-filter-field"><label for="wbCollector">采集员</label><input id="wbCollector" name="collector" form="wbFilterForm" value="{html.escape(collector_query, quote=True)}" placeholder="请输入采集员"></div><div class="wb-filter-field wb-collection-range"><label>采集时间</label><div class="wb-date-range"><input type="date" name="collected_from" aria-label="采集开始时间" value="{html.escape(request.args.get('collected_from', ''), quote=True)}"><span>至</span><input type="date" name="collected_to" aria-label="采集结束时间" value="{html.escape(request.args.get('collected_to', ''), quote=True)}"></div></div><div class="wb-filter-inline-reset"><button class="btn" type="reset" onclick="{reset_rule_details}">重置</button></div></div>
           </form>
         </section>''' if use_annotation_pool_layout else ('' if is_v2 else f'''<section class="wb-task-config wb-filter-config">
           <div class="wb-task-config-title">
@@ -5451,6 +5450,8 @@ def _render_workbench_pool_home(pool_id, selected_task_id=None, version="v1"):
       </div>
     </div>
     """
+    if is_v2:
+        content += '<script src="/static/workbench_pool/date-filter.js"></script>'
     if held_records:
         content += '<script id="wbHeldPayload" type="application/json">' + release_payload.replace('<', chr(92) + 'u003c') + '</script><link rel="stylesheet" href="/static/workbench_pool/pool.css"><script src="/static/workbench_pool/home.js"></script>'
     return render_page(
@@ -5523,6 +5524,16 @@ def _pool_list_history(task, records):
 
 @app.route("/data/workbench-v2/pools/<pool_id>/records")
 def data_workbench_pool_records(pool_id):
+    collected_from = request.args.get("collected_from", "")
+    collected_to = request.args.get("collected_to", "")
+    if collected_from or collected_to:
+        try:
+            start_date = date.fromisoformat(collected_from)
+            end_date = date.fromisoformat(collected_to)
+        except ValueError:
+            abort(400, description="请选择完整的采集日期范围")
+        if not 0 <= (end_date - start_date).days <= 29:
+            abort(400, description="采集时间范围最多30天，结束日期不能早于开始日期")
     task = _pool_list_task(pool_id)
     scope = task["pool"] + ":" + task["id"]
     selected_rule = request.args.get("rule") or session.get("workbench_pool_rules", {}).get(scope, "")
