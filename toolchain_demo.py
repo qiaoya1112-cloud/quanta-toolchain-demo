@@ -1854,6 +1854,7 @@ textarea.yaml-area:focus { border-color:#149DAA; box-shadow:0 0 0 2px rgba(20,15
 .wb-rule-box li { display:grid; grid-template-columns:28px minmax(0,1fr); gap:10px; padding:7px 0; color:rgba(0,0,0,.73); font-size:13px; line-height:1.65; counter-increment:wb-rule; }
 .wb-rule-box li::before { content:counter(wb-rule) "."; color:#1685a4; font-family:'SF Mono',Menlo,monospace; font-weight:600; }
 .wb-held-group { display:flex;align-items:center;gap:12px;width:100%;box-sizing:border-box;min-width:0;padding:8px 12px;background:#edf8fa;border:1px solid #d8edef;border-radius:7px; }
+.wb-start-blocked,.wb-start-blocked:hover { background:#e4e8eb!important;border-color:#dce2e6!important;color:#9ba6ad!important;cursor:not-allowed; }
 .wb-held-group { margin-top:16px; }
 .wb-held-group + .wb-task-home-actions { margin-top:10px;padding-top:0;border-top:0; }
 .wb-held-first-row { display:flex;align-items:center;gap:12px; }
@@ -5332,7 +5333,8 @@ def _render_workbench_pool_home(pool_id, selected_task_id=None, version="v1"):
     """
     held_records = [record for record in _shared_pool_records(task) if record["status"] == "processing" and record.get("owner") in (None, "", _pool_owner())] if is_v2 else []
     held_unit = "一批" if task.get("execution_unit") == "batch" else "一条"
-    held_notice = (f'<div class="wb-held-group"><div class="wb-held-notice"><div class="wb-held-first-row"><b>您有{held_unit}已领取的数据待完成。</b></div><span>开始处理将优先继续当前数据，完成后按筛选条件领取新数据。</span></div><button class="btn" type="button" id="wbReleaseHeld">释放</button></div>' if held_records else "")
+    held_process_url = (f"{pool_url}/records?source={quote(task['id'])}&entry=start" if task.get("execution_unit") == "batch" else f"{workbench_url}/edit?task={quote(task['id'])}&recording_id={quote(held_records[0]['id'])}") if held_records else ""
+    held_notice = (f'<div class="wb-held-group"><div class="wb-held-notice"><div class="wb-held-first-row"><b>您有{held_unit}已领取的数据待完成。</b></div></div><button class="btn" type="button" id="wbReleaseHeld">释放</button><a class="btn btn-primary" id="wbProcessHeld" href="{html.escape(held_process_url, quote=True)}">处理</a></div>' if held_records else "")
     if held_records and task.get("execution_unit") == "batch":
         held_batch = _shared_pool_records(task)
         if any(r.get("owner") == _pool_owner() for r in held_records):
@@ -5445,8 +5447,8 @@ def _render_workbench_pool_home(pool_id, selected_task_id=None, version="v1"):
         {f'<input type="hidden" form="wbFilterForm" name="recording_id" value="{html.escape(held_records[0]["id"], quote=True)}">' if held_records and task.get("execution_unit") != "batch" else ""}
         {claim_control}
         {f'<button class="btn" form="wbFilterForm" type="reset" onclick="{reset_rule_details}">重置</button>' if not is_v2 else ''}
-        <button class="btn btn-primary" form="wbFilterForm"
-          type="submit">{'开始处理' if is_v2 else '按筛选条件开始处理'}</button>
+        <button class="btn btn-primary{' wb-start-blocked' if held_records else ''}" form="wbFilterForm" {'id="wbStartBlocked" aria-disabled="true"' if held_records else ''}
+          type="{'button' if held_records else 'submit'}">{'开始处理' if is_v2 else '按筛选条件开始处理'}</button>
       </div>
     </div>
     """

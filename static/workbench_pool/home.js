@@ -1,4 +1,12 @@
 (function () {
+  let blockedTimer;
+  const blockedNotice = document.createElement('div');
+  blockedNotice.className = 'wp-validation-toast';blockedNotice.hidden = true;blockedNotice.setAttribute('role', 'alert');
+  document.body.appendChild(blockedNotice);
+  document.getElementById('wbStartBlocked')?.addEventListener('click', () => {
+    clearTimeout(blockedTimer);blockedNotice.textContent = '请先完成已领取的数据';blockedNotice.hidden = false;
+    blockedTimer = setTimeout(() => { blockedNotice.hidden = true; }, 3000);
+  });
   const payload = JSON.parse(document.getElementById('wbHeldPayload').textContent);
   const dialog = document.createElement('dialog');
   dialog.className = 'wb-held-dialog';
