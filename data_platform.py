@@ -3590,7 +3590,6 @@ def ds_progress():
             <div class="dk">质检结论</div><div class="dv">合格</div>
             <div class="dk">是否标注</div><div class="dv">是 · 标注版本 v2</div>
             <div class="dk">采集时间</div><div class="dv">2026-05-01 ~ 2026-05-31</div>
-            <div class="dk">Prompt 语言</div><div class="dv">中文</div>
             <div class="dk">Episode 上限</div><div class="dv">500</div>
           </div>
         </div>
@@ -3645,8 +3644,7 @@ def ds_progress():
           ['Highlevel Prompt',params.get('hl')],['Lowlevel Prompt',params.get('ll')],
           ['采集结论',{{success:'成功',fail:'失败'}}[params.get('quality')]||params.get('quality')],
           ['是否质检',yesNo(params.get('qc'))],['质检结论',params.getAll('qa').map(function(value){{return {{pass:'合格',fail:'不合格',warn:'操作失误'}}[value]||value;}}).join('、')],
-          ['是否标注',yesNo(params.get('anno'))],['Episode 上限',params.get('limit')],
-          ['Prompt 语言',{{en:'英文',zh:'中文'}}[params.get('lang')]||params.get('lang')],['高级条件',advanced],
+          ['是否标注',yesNo(params.get('anno'))],['Episode 上限',params.get('limit')],['高级条件',advanced],
           ['目录',task.folder],['标签',(task.tags||[]).join('、')]];
         fields.filter(function(item){{return item[1];}}).forEach(function(item){{
           var key=document.createElement('div'),value=document.createElement('div');key.className='dk';value.className='dv';
@@ -3849,7 +3847,6 @@ def query():
     f_from = request.args.get("from", "")
     f_to = request.args.get("to", "")
     f_limit = request.args.get("limit", "")
-    f_lang = request.args.getlist("lang") if "lang" in request.args else ["en"]
     f_hl = request.args.get("hl", "")
     f_ll = request.args.get("ll", "")
     nl = request.args.get("nl", "")
@@ -4005,7 +4002,6 @@ def query():
                 f'<option value="no" {"selected" if current == "no" else ""}>否</option></select>')
     quality_sel = sel("quality", f_quality, [("success", "成功"), ("fail", "失败")])
     annover_sel = f'<input type="number" min="0" name="annover" value="{html.escape(request.args.get("annover", ""), quote=True)}" placeholder="请输入标注版本">'
-    lang_sel = sel("lang", f_lang[0] if f_lang else "", [("en", "英文"), ("zh", "中文"), ("", "全部")])
 
     # 所有筛选条件默认全部展开 (不再折叠)
     adv_fd = ""
@@ -4060,8 +4056,7 @@ def query():
           </div></div>
           <div class="qf-group"><div class="qf-group-title" onclick="qfToggleGroup(this)"><span class="qf-caret">&#9662;</span>导出要求</div><div class="qf-group-body">
             <div class="q-filter-row q-adv-row qf-two">
-              <div class="q-field"><label>Episode 上限</label><input type="number" min="0" name="limit" value="{html.escape(f_limit, quote=True)}" placeholder="导出条数上限"></div>
-              <div class="q-field"><label>Prompt 语言</label>{lang_sel}</div>
+              <div class="q-field"><label for="qEpisodeLimit">Episode 上限</label><input id="qEpisodeLimit" type="number" min="0" name="limit" value="{html.escape(f_limit, quote=True)}" placeholder="留空则不限制"></div>
             </div>
           </div></div>
           <div class="qf-group qf-advanced"><div class="qf-group-title" onclick="qfToggleGroup(this)"><span class="qf-caret">&#9662;</span>高级条件</div>
