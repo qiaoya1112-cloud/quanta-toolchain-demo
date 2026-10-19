@@ -58,7 +58,7 @@ class DataPlatformArchitectureTests(unittest.TestCase):
                     "data_management",
                 ],
             ),
-            ("工作台", ["workbench_v2"]),
+            ("工作台", ["workbench_v2", "job_center_1", "job_center_2"]),
             (
                 "工作流",
                 [
@@ -101,7 +101,7 @@ class DataPlatformArchitectureTests(unittest.TestCase):
             },
             set(nav_keys),
         )
-        self.assertEqual(16, len(nav_keys))
+        self.assertEqual(18, len(nav_keys))
         self.assertEqual(len(nav_keys), len(set(nav_keys)))
         paths = [item["path"] for item in architecture.PAGE_SPECS.values()]
         self.assertEqual(len(paths), len(set(paths)))

@@ -46,21 +46,33 @@ async function main(){
     assert.deepEqual(await evaluate("[...document.querySelectorAll('.prq-conclusion-switch label')].map(item=>item.textContent.trim())"),['失误','不合格']);
     assert.equal(await evaluate("document.querySelector('.prq-editor-meta-row').contains(document.querySelector('.prq-editor-actions'))"),true,'基础信息和导航操作应在同一行');
     assert.equal(await evaluate("document.querySelector('.prq-editor-meta-row').compareDocumentPosition(document.querySelector('.prq-editor-fields-row'))&Node.DOCUMENT_POSITION_FOLLOWING"),4,'结论和原因应位于下一行');
+    assert.equal(await evaluate("document.querySelector('.prq-reason-label').textContent.trim()"),'失误描述');
+    assert.equal(await evaluate("document.querySelector('.prq-reason-trigger').contains(document.querySelector('.prq-selected-reasons'))"),true,'已选原因应显示在原因选择框内');
+    assert.ok(await evaluate("document.querySelector('.prq-reason-trigger').getBoundingClientRect().width>document.querySelector('.prq-conclusion-switch').getBoundingClientRect().width*3"),'原因选择框应占据该行主要宽度');
+    assert.equal(await evaluate("document.body.innerText.includes('当前片段已完善')"),false,'错误原因旁不应显示完成状态');
 
     await evaluate("document.querySelector('.prq-list-item[data-segment-id=B]').click()");
-    assert.deepEqual(await evaluate("[...document.querySelectorAll('.prq-selected-reasons .prq-reason-chip')].map(item=>item.textContent)"),['设备穿戴不规范','手部脱离夹爪'],'原因应全部平铺且不合格原因在前');
+    assert.deepEqual(await evaluate("[...document.querySelectorAll('.prq-selected-reasons .prq-reason-chip')].map(item=>item.firstElementChild.textContent)"),['设备穿戴不规范','手部脱离夹爪'],'原因应全部平铺且不合格原因在前');
     assert.equal(await evaluate("document.querySelector('.prq-selected-reasons').textContent.includes('+')"),false,'原因不应折叠成 +N');
+    assert.equal(await evaluate("document.querySelectorAll('.prq-selected-reasons .prq-reason-remove').length"),2,'每个已选原因应有独立删除按钮');
+    assert.equal(await evaluate("document.querySelectorAll('.prq-selected-reasons .prq-reasons-clear').length"),1,'全部已选原因应有统一清空按钮');
     await evaluate("document.querySelector('pre-training-quality-workspace [data-action=toggle-reasons]').click()");
     assert.deepEqual(await evaluate("[...document.querySelectorAll('.prq-reason-menu section>header b')].map(item=>item.textContent)"),['不合格原因','失误原因']);
     const menu=await evaluate("(()=>{const menu=document.querySelector('.prq-reason-menu'),rect=menu.getBoundingClientRect(),trigger=document.querySelector('pre-training-quality-workspace [data-action=toggle-reasons]').getBoundingClientRect();return{hidden:menu.hidden,top:rect.top,bottom:rect.bottom,triggerTop:trigger.top,viewport:innerHeight}})()");
     assert.equal(menu.hidden,false);assert.ok(menu.top>=0&&menu.bottom<=menu.triggerTop&&menu.bottom<=menu.viewport,'原因选择面板应向上完整展开');
+    await evaluate("document.querySelector('.prq-selected-reasons .prq-reason-remove[data-reason-id=U04]').click()");
+    assert.deepEqual(await evaluate("window.PreTrainingQualityDemo.state.segments.find(item=>item.id==='B').rejectedReasons"),[],'单个删除只移除目标原因');
+    assert.deepEqual(await evaluate("window.PreTrainingQualityDemo.state.segments.find(item=>item.id==='B').mistakeReasons"),['M02'],'单个删除不影响其他原因');
+    await evaluate("document.querySelector('.prq-selected-reasons .prq-reasons-clear').click()");
+    assert.deepEqual(await evaluate("(()=>{const item=window.PreTrainingQualityDemo.state.segments.find(item=>item.id==='B');return[item.rejectedReasons,item.mistakeReasons]})()"),[[],[]],'统一删除应清空全部原因');
 
     const before=await evaluate("window.PreTrainingQualityDemo.state.segments.length");
     await evaluate("window.PreTrainingQualityDemo.addSegment(30,32)");
     assert.equal(await evaluate("window.PreTrainingQualityDemo.state.segments.length"),before+1);
     assert.equal(await evaluate("(()=>{const item=window.PreTrainingQualityDemo.state.segments.at(-1);return item.conclusion})()"),'mistake','新片段默认失误');
     assert.deepEqual(await evaluate("(()=>{const item=window.PreTrainingQualityDemo.state.segments.at(-1);return item.mistakeReasons})()"),[],'新片段不自动选择失误原因');
-    assert.match(await evaluate("document.querySelector('.prq-field-state').textContent"),/请选择失误原因/,'缺少原因时显示待补充');
+    assert.equal(await evaluate("window.PreTrainingQualityDemo.segmentErrors(window.PreTrainingQualityDemo.state.segments.at(-1)).some(error=>error.includes('失误原因'))"),true,'缺少失误原因时仍应阻止提交');
+    assert.equal(await evaluate("window.PreTrainingQualityDemo.segmentErrors({...window.PreTrainingQualityDemo.state.segments.at(-1),mistakeReasons:['M01'],reviewErrorReason:''}).some(error=>error.includes('错误原因'))"),false,'审核错误原因应为选填');
     await evaluate("document.querySelector('pre-training-quality-sidebar [data-action=save]').click()");
     assert.match(await evaluate("document.querySelector('#workbenchNotice').textContent"),/草稿已保存/,'缺少原因时仍可保存草稿');
     await evaluate("document.querySelector('pre-training-quality-sidebar [data-action=submit]').click()");

@@ -43,6 +43,23 @@ TASKS = [
     {"id": "t2", "name": "tidy_the_desk", "zh": "整理桌面"},
     {"id": "t3", "name": "water_the_plant", "zh": "浇花"},
 ]
+# Bilingual prompt text attached to the demo recordings by task.
+QUERY_PROMPT_TEXT = {
+    "t1": {
+        "high": ("擦白板", "Clean the whiteboard"),
+        "low": ("拿起白板擦", "Pick up the whiteboard eraser", "擦拭白板", "Wipe the whiteboard"),
+    },
+    "t2": {
+        "high": ("整理桌面 (P0)", "Tidy the desk (P0)"),
+        "low": ("拾取红色糖果", "Pick up the red candy", "将糖果放入人手中", "Put the candy into the human's hand",
+                "拾取蓝色糖果", "Pick up the blue candy", "拾取绿色糖果", "Pick up the green candy"),
+    },
+    "t3": {
+        "high": ("浇花 (P0)", "Water the plant (P0)"),
+        "low": ("拾取浇水壶", "Pick up the watering can", "将水倒入花盆中", "Pour water into the flower pot",
+                "放回浇水壶", "Put the watering can back"),
+    },
+}
 
 # Demo segment weights; displayed ratios and counts are aggregated from annotations.
 LOWLEVEL_PROMPTS = [
@@ -363,7 +380,7 @@ MANAGED_OPERATORS = [
             "image": "frontdesk-py3.10:latest", "script": "post_processing.py",
             "params": "--recording-id / --quality-rule / --flow-version",
             "returns": "后处理数据与自动化质检结果 JSON",
-            "references": ["预标注数据质检自动化流程"],
+            "references": ["预训练自动化质检流程"],
             "note": "支持预标注数据后处理与自动化质检。",
         }],
     }
@@ -529,14 +546,14 @@ for _pipeline in PIPELINES:
 _review_flows = [
     {
         "id": "pl-preannotation-qc-manual", "ident": "preannotation-data-quality-manual",
-        "name": "预标注数据质检人工流程", "creator": "ben", "status": "草稿",
+        "name": "预训练人工质检流程", "creator": "ben", "status": "草稿",
         "updated": "2026-10-08 18:00", "show_in_management": True, "fit_canvas": True,
         "input_name": "开始", "output_name": "完成", "stages": [], "schedules": [],
         "business_stage": "质检", "input_contract": "自检合格数据",
         "output_contract": "quality_conclusion + quality_records",
-        "desc": "自检合格数据由采集验收节点进行全检。",
+        "desc": "自检合格数据由质检验收节点进行全检。",
         "flow_nodes": [{
-            "name": "采集验收", "ident": "collection_acceptance", "kind": "human",
+            "name": "质检验收", "ident": "collection_acceptance", "kind": "human",
             "meta": "全检全部数据并提交验收结果", "processing_percent": 100,
             "processing_rule_mode": "none", "allow_task_percent": False,
             "assignee_type": "user_group", "assignee_mode": "task_custom",
@@ -548,7 +565,7 @@ _review_flows = [
     {
         "id": "pl-preannotation-qc",
         "ident": "preannotation-data-quality",
-        "name": "预标注数据质检自动化流程",
+        "name": "预训练自动化质检流程",
         "creator": "ben",
         "status": "草稿",
         "updated": "2026-10-08 13:40",
@@ -559,7 +576,7 @@ _review_flows = [
         "business_stage": "质检",
         "input_contract": "自检合格数据",
         "output_contract": "quality_conclusion + quality_records",
-        "desc": "自检合格数据经自动化质检和采集质检后，进入采集验收。",
+        "desc": "自检合格数据经自动化质检和采集质检后，进入质检验收。",
         "flow_nodes": [
             {
                 "name": "自动化质检", "ident": "automatic_quality_check",
@@ -577,7 +594,7 @@ _review_flows = [
                 "allowed_actions": ["提交", "暂离"],
             },
             {
-                "name": "采集验收", "ident": "collection_acceptance",
+                "name": "质检验收", "ident": "collection_acceptance",
                 "kind": "human", "meta": "验收全部质检数据",
                 "processing_percent": 100,
                 "processing_rule_mode": "inherit", "inherit_processing_rule_node": "采集质检",
@@ -1002,6 +1019,42 @@ select option:disabled { color:rgba(0,0,0,0.32); }
 .q-adv-row .q-field .q-range input { flex:1; min-width:0; }
 .drawer-body .q-adv-row { margin-top:14px; }
 .q-filter-tools { display:flex; gap:8px; align-items:center; justify-content:flex-end; margin-top:14px; padding-top:14px; border-top:1px solid #f0f0f0; }
+.lake-query-page .q-filters { border-radius:4px; padding:14px 16px; }
+.lake-query-page .lake-query-heading { box-sizing:border-box; width:100%; background:#fff; color:#20252d; font-size:16px; font-weight:600; padding:16px 20px; margin-bottom:16px; border:1px solid #f0f0f0; border-radius:4px; }
+.lake-query-page .qf-group { background:#f5f6f9; border:0; border-radius:4px; padding:10px 14px 12px; margin-bottom:8px; }
+.lake-query-page .qf-group-title { color:#1F80A0; font-size:13px; margin-bottom:8px; position:relative; }
+.lake-query-page .qf-caret { float:right; transform:rotate(0); }
+.lake-query-page .qf-group.collapsed .qf-caret { transform:rotate(-90deg); }
+.lake-query-page .q-filter-row { display:grid; gap:8px 14px; margin-top:8px; }
+.lake-query-page .q-filter-row:first-child { margin-top:0; }
+.lake-query-page .qf-two { grid-template-columns:repeat(2,minmax(0,1fr)); }
+.lake-query-page .qf-three { grid-template-columns:repeat(3,minmax(0,1fr)); }
+.lake-query-page .qf-five { grid-template-columns:repeat(5,minmax(0,1fr)); }
+.lake-query-page .q-field { gap:4px; }
+.lake-query-page .q-field > label { font-size:13px; color:#656b75; }
+.lake-query-page .q-field select,.lake-query-page .q-field input:not([type=checkbox]),.lake-query-page .q-field .ms-trigger { height:32px; border-radius:4px; }
+.lake-query-page .q-field .ps-control { height:32px; min-height:32px; padding:0 8px; flex-wrap:nowrap; border-radius:4px; }
+.lake-query-page .q-field .ps-control .ps-input,.lake-query-page .q-field .ps-control .ps-input:hover,.lake-query-page .q-field .ps-control .ps-input:focus { height:30px; min-width:86px; padding:0; border:0; box-shadow:none; background:transparent; }
+.lake-query-page .q-field .ps-chips { display:flex; gap:4px; min-width:0; max-width:calc(100% - 90px); overflow-x:auto; scrollbar-width:none; }
+.lake-query-page .q-field .ps-chips::-webkit-scrollbar { display:none; }
+.lake-query-page .q-filter-tools { border-top:0; padding-top:0; margin-top:10px; }
+.lake-query-page .q-condition-group { border:1px solid #d9e4e8; border-left:3px solid #1F80A0; border-radius:4px; background:#fff; padding:8px 10px; margin:6px 0; }
+.lake-query-page .q-condition-group[data-op=or] { border-left-color:#b07832; }
+.lake-query-page .q-condition-head { display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:5px; }
+.lake-query-page .q-condition-head .q-condition-toggle { color:#1F80A0; border-color:#c6e1e8; background:#f4fafb; }
+.lake-query-page .q-condition-group[data-op=or]>.q-condition-head .q-condition-toggle { color:#a66d25; border-color:#eed9b7; background:#fffaf0; }
+.lake-query-page .q-condition-row { display:grid; grid-template-columns:minmax(150px,1.3fr) 110px minmax(160px,1.4fr) 38px; gap:8px; align-items:center; margin:8px 0; }
+.lake-query-page .q-condition-row select,.lake-query-page .q-condition-row input { min-width:0; width:100%; height:34px; border:1px solid #d9dfe5; border-radius:4px; padding:0 10px; box-sizing:border-box; background:#fff; }
+.lake-query-page .q-condition-row input:disabled { background:#f5f6f9; }
+.lake-query-page .q-condition-head button,.lake-query-page .q-condition-row button { border:1px solid #d9dfe5; background:#fff; border-radius:4px; min-height:30px; padding:0 9px; cursor:pointer; color:#356b7c; }
+.lake-query-page .q-condition-row button { color:#a64d4d; }
+.lake-query-page .q-condition-empty { color:#8b929c; font-size:12px; padding:6px 2px; }
+.lake-query-page .q-condition-error { color:#c43d3d; font-size:12px; margin-top:6px; }
+.lake-query-page .q-empty-state { display:grid; justify-items:center; gap:10px; padding:30px 0; color:#969da6; font-size:13px; }
+.lake-query-page .q-empty-icon { width:44px; height:28px; display:block; border-radius:5px 5px 9px 9px; background:linear-gradient(135deg,#74d2e4,#1F80A0); box-shadow:0 9px 16px rgba(31,128,160,.15); position:relative; }
+.lake-query-page .q-empty-icon:before { content:''; position:absolute; left:10px; right:10px; top:6px; height:9px; border-radius:3px; background:#d4f1f6; }
+@media(max-width:900px){.lake-query-page .qf-five{grid-template-columns:repeat(3,minmax(0,1fr))}.lake-query-page .qf-three{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:640px){.lake-query-page .qf-two,.lake-query-page .qf-three,.lake-query-page .qf-five{grid-template-columns:1fr}.lake-query-page .q-condition-row{grid-template-columns:1fr 100px}.lake-query-page .q-condition-row input{grid-column:1/-1}}
 .tools-divider { width:1px; height:22px; background:#e2e4e8; margin:0 6px; }
 .q-adv-note { flex-basis:100%; font-size:12px; margin-top:2px; }
 /* 配方助手 */
@@ -1196,18 +1249,8 @@ select option:disabled { color:rgba(0,0,0,0.32); }
 .status-with-reason { display:inline-flex; align-items:center; gap:6px; white-space:nowrap; }
 .status-reason-icon { width:18px; height:18px; padding:0; border:1px solid #f3d6d5; border-radius:50%; background:#fff; color:#d4504e; font-size:12px; line-height:16px; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; }
 .status-reason-icon:hover { border-color:#d4504e; background:#fdf3f3; }
-.ds-error-body { max-height:56vh; padding:22px 24px 26px; overflow:auto; }
-.ds-error-section + .ds-error-section { margin-top:22px; padding-top:22px; border-top:1px solid #f0f0f0; }
-.ds-error-section h4 { margin:0 0 16px; color:rgba(0,0,0,0.88); font-size:14px; font-weight:600; }
-.ds-error-format-group + .ds-error-format-group { margin-top:18px; padding-top:18px; border-top:1px solid #f3f3f3; }
-.ds-error-format-label { margin-bottom:12px; color:rgba(0,0,0,0.65); font-size:13px; font-weight:600; }
-.ds-error-task { display:grid; grid-template-columns:88px minmax(0,1fr); gap:5px 10px; align-items:start; }
-.ds-error-task + .ds-error-task { margin-top:16px; }
-.ds-error-field-label { color:rgba(0,0,0,0.45); font-size:12px; line-height:22px; }
-.ds-error-id-line { color:rgba(0,0,0,0.78); font-family:'SFMono-Regular',Consolas,Menlo,monospace; font-size:12.5px; line-height:22px; overflow-wrap:anywhere; }
-.ds-error-task-id { color:rgba(0,0,0,0.85); font-family:'SFMono-Regular',Consolas,Menlo,monospace; font-size:12.5px; font-weight:600; line-height:22px; }
-.ds-error-more { margin-left:8px; padding:0; border:0; background:transparent; color:#1F80A0; font-size:12px; line-height:22px; cursor:pointer; }
-.ds-error-more:hover { color:#176a88; text-decoration:underline; }
+.ds-error-body { max-height:56vh; padding:20px 24px 24px; overflow:auto; }
+.ds-error-detail { margin:0; color:rgba(0,0,0,0.78); font-size:13px; line-height:1.8; white-space:pre-wrap; overflow-wrap:anywhere; }
 
 /* ── Tags / status ── */
 .tag { display:inline-block; padding:1px 8px; border-radius:4px; font-size:12px; line-height:20px; border:1px solid transparent; }
@@ -2021,13 +2064,9 @@ function visibilitySyncPicker(input){
   if(picker.classList.contains('open')) datasetPickerPosition(picker);
 }
 function openBuildDsDrawer(){
+  if(window._qHasResult===false){toast('请先执行圈选');return;}
   var drawer=document.getElementById('buildDsDrawer');
   if(!drawer) return;
-  var visibility=document.getElementById('buildDsVisibility');
-  if(visibility) visibility.value='公开';
-  document.querySelectorAll('#buildDsGroups input').forEach(function(input){ input.checked=false; });
-  var first=document.querySelector('#buildDsGroups input'); if(first) visibilitySyncPicker(first);
-  datasetVisibilityToggle('buildDs');
   closeDatasetPickers();
   drawer.classList.add('active');
 }
@@ -2112,6 +2151,8 @@ async function dsCreating(modalId){
   }
   var ident=document.getElementById('buildDsIdent').value.trim(), name=document.getElementById('buildDsName').value.trim();
   if(!ident || !name){ toast('请填写标识和数据集名称'); return; }
+  var folder=document.getElementById('buildDsFolder');
+  if(!folder.value){toast('请选择目录');folder.focus();return;}
   if(!datasetVisibilitySave('buildDs',ident)) return;
   var modal=document.getElementById(modalId), button=modal.querySelector('.drawer-foot .btn-primary');
   if(button.disabled) return;
@@ -3482,96 +3523,89 @@ def ds_progress():
     tasks = dataset_task_records()
     st_map = {"done": ("tag-green", "成功"), "fail": ("imp-fail", "失败"), "running": ("tag-orange", "进行中"), "verify": ("tag-blue", "校验中")}
 
-    def failure_reason(did):
-        format_groups = {
-            80: [
-                {
-                    "task_11092": ["rec_0012", "rec_0018", "rec_0021", "rec_0024", "rec_0027", "rec_0030", "rec_0033", "rec_0036", "rec_0039", "rec_0042", "rec_0045", "rec_0048"],
-                    "task_11095": ["rec_0051", "rec_0056"],
-                },
-                {
-                    "task_11103": ["rec_0061", "rec_0066"],
-                    "task_11108": ["rec_0072"],
-                },
-            ],
-            76: [
-                {"task_11061": ["rec_0102", "rec_0108"], "task_11066": ["rec_0114"]},
-                {"task_11061": ["rec_0120"], "task_11073": ["rec_0126", "rec_0131"]},
-            ],
-            73: [
-                {"task_10984": ["rec_0201"], "task_10991": ["rec_0206", "rec_0210"]},
-                {"task_11002": ["rec_0217"], "task_11005": ["rec_0223"]},
-            ],
-        }.get(did, [])
-        missing_recordings = {
-            79: {"task_11092": ["rec_0012", "rec_0018"], "task_11103": ["rec_0041"]},
-            78: {"task_11078": ["rec_0136", "rec_0142", "rec_0147"]},
-            74: {"task_11031": ["rec_0064"], "task_11038": ["rec_0091", "rec_0095"]},
-            72: {"task_10972": ["rec_0023", "rec_0028"]},
-        }.get(did, {})
-        if not format_groups and not missing_recordings:
-            missing_recordings = {f"task_{did:05d}": [f"rec_{did:04d}_01", f"rec_{did:04d}_02"]}
-        return format_groups, missing_recordings
-
-    def recording_ids_html(recording_ids, element_id):
-        visible_ids = recording_ids[:10]
-        hidden_ids = recording_ids[10:]
-        visible_html = "、".join(html.escape(recording_id) for recording_id in visible_ids)
-        if not hidden_ids:
-            return visible_html
-        hidden_html = "、" + "、".join(html.escape(recording_id) for recording_id in hidden_ids)
-        more_label = f"还有 {len(hidden_ids)} 个"
-        return (
-            f'{visible_html}<span id="{element_id}" hidden>{hidden_html}</span>'
-            f'<button type="button" class="ds-error-more" data-more-label="{more_label}" '
-            f'aria-expanded="false" aria-controls="{element_id}" onclick="toggleDsErrorIds(this)">{more_label}</button>'
-        )
-
-    def task_recording_html(tasks, element_prefix):
-        return "".join(
-            '<div class="ds-error-task">'
-            '<div class="ds-error-field-label">TaskID</div>'
-            f'<div class="ds-error-task-id">{html.escape(task_id)}</div>'
-            '<div class="ds-error-field-label">RecordingID</div>'
-            f'<div class="ds-error-id-line">{recording_ids_html(recording_ids, f"{element_prefix}Task{task_index}")}</div>'
-            '</div>'
-            for task_index, (task_id, recording_ids) in enumerate(tasks.items(), 1)
-        )
+    failure_titles = {
+        "FEATURES_MISMATCH": "数据格式不一致",
+        "FILE_MISSING": "文件缺失",
+        "NO_VALID_RECORDINGS": "无有效数据",
+    }
+    # Mock the API's failure_reason and newline-delimited failure_detail fields.
+    failure_examples = {
+        80: ("FEATURES_MISMATCH", "\n".join([
+            "共 4 组不同配置的采集数据不一致",
+            "【采集任务内部不一致】",
+            "采集任务 220：内部包含 3 组不同配置",
+            "  • 设备 moz1-03, moz1-11 → RecordingID 2572, 2573, 2574 等共 1462 条",
+            "  • 设备 moz1-y02-infer → RecordingID 2581, 2582 等共 147 条",
+            "  • 设备 9e26527dfe3f → RecordingID 2843, 2844 等共 78 条",
+            "",
+            "【采集任务间不一致】",
+            "• 采集任务 220（设备 moz1-03, moz1-11, moz1-y02-infer）",
+            "• 采集任务 221（设备 moz1-50）",
+            "",
+            "筛选范围：采集任务 220、采集任务 221",
+        ])),
+        79: ("FILE_MISSING", "\n".join([
+            "共 3 个文件缺失或为空：",
+            "【视频(mp4)缺失】",
+            "  采集任务 220: RecordingID 1001, 1002",
+            "【数据(parquet)缺失】",
+            "  采集任务 220: RecordingID 1001",
+            "请核验相关批次数据后重新创建",
+        ])),
+        78: ("FILE_MISSING", "\n".join([
+            "共 2 个文件缺失或为空：",
+            "【视频(mp4)缺失】",
+            "  采集任务 218: RecordingID 136, 142",
+            "请核验相关批次数据后重新创建",
+        ])),
+        76: ("FEATURES_MISMATCH", "\n".join([
+            "共 2 组不同配置的采集数据不一致",
+            "【采集任务间不一致】",
+            "• 采集任务 12（设备 moz1-11, moz1-12）",
+            "• 采集任务 15（设备 moz1-21, ur10e-01）",
+            "筛选范围：采集任务 12、采集任务 15",
+        ])),
+        74: ("FILE_MISSING", "\n".join([
+            "共 2 个文件缺失或为空：",
+            "【视频(mp4)缺失】",
+            "  采集任务 11031: RecordingID 64",
+            "【数据(parquet)缺失】",
+            "  采集任务 11038: RecordingID 91",
+            "请核验相关批次数据后重新创建",
+        ])),
+        73: ("FEATURES_MISMATCH", "\n".join([
+            "共 2 组不同配置的采集数据不一致",
+            "【采集任务内部不一致】",
+            "采集任务 10984：内部包含 2 组不同配置",
+            "  • 设备 moz1-01 → RecordingID 201, 206",
+            "  • 设备 moz1-02 → RecordingID 217",
+            "筛选范围：采集任务 10984",
+        ])),
+        72: ("NO_VALID_RECORDINGS", "\n".join([
+            "没有找到有效的录制数据",
+            "筛选条件:",
+            "- task_ids=[220, 221]",
+            "- capture_device_sns=['moz1-03', 'moz1-11']",
+            "- has_annotation=True",
+        ])),
+    }
 
     def failure_template(did):
-        format_groups, missing_recordings = failure_reason(did)
-        sections = []
-        if format_groups:
-            groups_html = "".join(
-                '<div class="ds-error-format-group">'
-                f'<div class="ds-error-format-label">格式组 {group_index}</div>'
-                f'{task_recording_html(tasks, f"dpError{did}Format{group_index}")}'
-                '</div>'
-                for group_index, tasks in enumerate(format_groups, 1)
-            )
-            sections.append(
-                '<section class="ds-error-section">'
-                '<h4>数据格式不一致</h4>'
-                f'{groups_html}'
-                '</section>'
-            )
-        if missing_recordings:
-            sections.append(
-                '<section class="ds-error-section">'
-                '<h4>视频文件缺失</h4>'
-                f'{task_recording_html(missing_recordings, f"dpError{did}Video")}'
-                '</section>'
-            )
-        return f'<template id="dpErrorTemplate{did}">{"".join(sections)}</template>'
+        reason, detail = failure_examples[did]
+        title = failure_titles.get(reason, "创建失败")
+        return (f'<template id="dpErrorTemplate{did}" data-reason="{reason}" '
+                f'data-title="{html.escape(title, quote=True)}">'
+                f'<div class="ds-error-detail">{html.escape(detail)}</div></template>')
 
     def status_cell(did, name, st, at):
         cls, txt = st_map[st]
         tag = f'<span class="tag {cls}">{txt}</span>'
         if st != "fail":
             return tag
+        reason, _ = failure_examples[did]
         return (
             f'<span class="status-with-reason">{tag}'
-            f'<button type="button" class="status-reason-icon" title="查看异常原因" aria-label="查看异常原因" '
+            f'<button type="button" class="status-reason-icon" title="查看异常原因：{failure_titles.get(reason, "创建失败")}" aria-label="查看异常原因" '
             f'onclick="openDsProgressError({did})">i</button>'
             f'</span>'
         )
@@ -3769,6 +3803,8 @@ def ds_progress():
       function openDsProgressError(id){{
         var template=document.getElementById('dpErrorTemplate'+id);
         var body=document.getElementById('dpErrorBody');
+        var title=document.getElementById('dpErrorTitle');
+        if(title) title.textContent=template ? template.dataset.title : '异常原因';
         if(body) body.innerHTML=template ? template.innerHTML : '';
         openDrawerById('dpErrorModal');
       }}
@@ -3784,6 +3820,108 @@ def ds_progress():
     """
     return render_page("数据集创建进度", content, active="datasets",
                        breadcrumb='数据集 / <b>数据集创建进度</b>')
+
+
+# The live condition builder exposes many warehouse columns. The prototype keeps
+# the columns that have meaningful values in its in-memory recording fixtures.
+QUERY_FIELDS = [
+    ("recording_id", "Recording ID", "number"),
+    ("task_id", "任务 ID", "text"),
+    ("collection_id", "collection_id", "number"),
+    ("collection_device_sn", "设备 SN", "text"),
+    ("collection_operator_id", "操作员", "text"),
+    ("collection_robot_type", "采集类型", "text"),
+    ("recording_dagger_type", "Dagger 类型", "text"),
+    ("recording_created_at", "采集时间", "date"),
+    ("recording_status", "采集结论", "text"),
+    ("recording_length", "帧数", "number"),
+    ("recording_duration", "视频时长", "number"),
+    ("recording_fps", "帧率", "number"),
+    ("inspection_status", "是否质检", "text"),
+    ("inspection_result", "质检结论", "text"),
+    ("annotation_status", "是否标注", "text"),
+    ("recording_high_level_prompt", "Highlevel Prompt", "text"),
+]
+QUERY_FIELD_TYPES = {key: kind for key, _, kind in QUERY_FIELDS}
+
+
+def query_field_value(recording, field):
+    values = {
+        "recording_id": recording["id"],
+        "task_id": recording["task"],
+        "collection_id": recording["collection"],
+        "collection_device_sn": rec_device(recording),
+        "collection_operator_id": rec_operator(recording),
+        "collection_robot_type": rec_type_enum(recording),
+        "recording_dagger_type": "policy" if recording["type"] == "dagger" else None,
+        "recording_created_at": recording["at"][:10],
+        "recording_status": "失败" if recording["life"] == "quarantined" else "成功",
+        "recording_length": recording["frames"],
+        "recording_duration": recording["dur"],
+        "recording_fps": recording["fps"],
+        "inspection_status": "是" if rec_qc(recording) else "否",
+        "inspection_result": {"pass": "合格", "fail": "不合格", "warn": "操作失误"}[recording["qa"]],
+        "annotation_status": "是" if rec_anno(recording) else "否",
+        "recording_high_level_prompt": task_instr(recording["task"]),
+    }
+    return values.get(field)
+
+
+def query_matches_condition(recording, node):
+    """Evaluate the same nested AND/OR shape used by the page's builder."""
+    if not isinstance(node, dict):
+        return True
+    if "children" in node:
+        children = node.get("children", [])
+        if not isinstance(children, list) or not children:
+            return True
+        checks = [query_matches_condition(recording, child) for child in children]
+        return any(checks) if node.get("op") == "or" else all(checks)
+    field, operator = node.get("field"), node.get("operator")
+    if field not in QUERY_FIELD_TYPES:
+        return False
+    actual = query_field_value(recording, field)
+    if operator == "为空":
+        return actual is None or actual == ""
+    if operator == "不为空":
+        return actual is not None and actual != ""
+    if actual is None:
+        return False
+    raw = str(node.get("value", "")).strip()
+    kind = QUERY_FIELD_TYPES[field]
+    if operator in ("in", "not in"):
+        parts = [part.strip().casefold() for part in raw.split(",") if part.strip()]
+        found = str(actual).casefold() in parts
+        return found if operator == "in" else not found
+    if operator in ("包含", "不包含"):
+        found = raw.casefold() in str(actual).casefold()
+        return found if operator == "包含" else not found
+    if operator == "介于":
+        try:
+            bounds = [part.strip() for part in raw.split(",", 1)]
+            if len(bounds) != 2:
+                return False
+            current = float(actual) if kind == "number" else str(actual).casefold()
+            low, high = (float(part) for part in bounds) if kind == "number" else (part.casefold() for part in bounds)
+            return low <= current <= high
+        except ValueError:
+            return False
+    if kind == "number":
+        try:
+            value = float(raw)
+            current = float(actual)
+        except (TypeError, ValueError):
+            return False
+    else:
+        value, current = raw.casefold(), str(actual).casefold()
+    return {
+        "=": lambda: current == value,
+        "≠": lambda: current != value,
+        ">": lambda: current > value,
+        ">=": lambda: current >= value,
+        "<": lambda: current < value,
+        "<=": lambda: current <= value,
+    }.get(operator, lambda: False)()
 
 
 @app.route("/query")
@@ -3804,6 +3942,19 @@ def query():
         "highlevel_prompt": {"label": "Highlevel 提示词", "type": "text"},
         "tags": {"label": "任务标签", "type": "tags", "options": [(tid, name) for tid, name, _ in TAG_DEFS]},
     }
+    legacy_advanced = None
+    if request.args.get("advanced"):
+        try:
+            legacy_advanced = json.loads(request.args["advanced"])
+        except (ValueError, TypeError):
+            legacy_advanced = {"op": "and", "children": []}
+    legacy_high = request.args.get("hl", "").strip().casefold()
+    legacy_low = request.args.get("ll", "").strip().casefold()
+    # Prompt IDs remain handled by the portal's modern multi-select filters.
+    if legacy_high.startswith("p") and legacy_high[1:].isdigit():
+        legacy_high = ""
+    if legacy_low.startswith("ll") and legacy_low[2:].isdigit():
+        legacy_low = ""
     condition_error = ""
     include_tree = {"logic": "and", "children": []}
     exclude_tree = {"logic": "or", "children": []}
@@ -3873,6 +4024,13 @@ def query():
     # —— 过滤 ——
     res = []
     for r in RECORDINGS:
+        prompts = QUERY_PROMPT_TEXT.get(r["task"], {})
+        if legacy_high and not any(legacy_high in text.casefold() for text in prompts.get("high", ())):
+            continue
+        if legacy_low and not any(legacy_low in text.casefold() for text in prompts.get("low", ())):
+            continue
+        if legacy_advanced is not None and not query_matches_condition(r, legacy_advanced):
+            continue
         if task_list and r["task"] not in task_list:
             continue
         if processing_task_list and not set(processing_task_list).intersection(r.get("processing_task_ids", [])):
@@ -4279,7 +4437,7 @@ def query():
       </div>
     </div>
     """
-    build_folder_opts = "".join(f"<option>{f}</option>" for f in V2_FOLDERS)
+    build_folder_opts = '<option value="">请选择目录</option>' + "".join(f"<option>{f}</option>" for f in V2_FOLDERS)
     build_selected_tag_paths = [
         DATASET_TAG_PATH_BY_ID.get(tag_id, TAG_LABEL.get(tag_id, tag_id))
         for tag_id in f_tags
@@ -4298,7 +4456,7 @@ def query():
           <div class="fg"><label><span class="req">*</span>标识</label><input id="buildDsIdent" value="{html.escape(request.args.get('dataset_ident', ''), quote=True)}" placeholder="英文唯一标识" oninput="var n=document.getElementById('buildDsName'); if(n) n.value=this.value;"><div class="hint">全局唯一</div></div>
           <div class="fg"><label><span class="req">*</span>数据集名称</label><input id="buildDsName" value="{html.escape(request.args.get('dataset_name', ''), quote=True)}" placeholder="填写标识后自动带入, 可修改"></div>
           <div class="fg"><label for="buildDsFormat">生成格式</label><select id="buildDsFormat"><option>LeRobort</option><option>Mozdataset v2</option></select></div>
-          <div class="fg"><label>选择目录</label><select id="buildDsFolder">{build_folder_opts}</select></div>
+          <div class="fg"><label for="buildDsFolder"><span class="req">*</span>选择目录</label><select id="buildDsFolder" required>{build_folder_opts}</select></div>
           <div class="fg"><label>标签</label>{build_tag_selector}</div>
           {dataset_visibility_fields("buildDs")}
         </div>
@@ -5132,7 +5290,7 @@ def datasets():
       <div class="modal-box" style="width:780px;max-width:94vw;">
         <div class="drawer-head"><h3>新建数据集</h3><button class="drawer-close" onclick="closeDrawerById('newDsDrawer')">&times;</button></div>
         <div class="drawer-body">
-          <div class="ds-hint">&#128161; 可以前往 <a href="/query">数据查询</a> 页面使用 <b>AI 助手</b>, 筛选想要的数据, 一键生成数据集。</div>
+          <div class="ds-hint">&#128161; 可以前往 <a href="/query">数据湖圈选</a> 页面使用 <b>AI 助手</b>, 筛选想要的数据, 一键生成数据集。</div>
           <div class="section-label">数据集信息</div>
           <div class="fg-row">
             <div class="fg"><label><span class="req">*</span>标识</label><input id="newDsIdent" placeholder="英文唯一标识" oninput="var n=document.getElementById('newDsName'); if(n) n.value=this.value;"></div>
@@ -6827,7 +6985,7 @@ WF_CANVAS_JS = r"""
       wfRefreshProcessingRuleInheritance();
       document.getElementById('wfhProcessingPercent').value=n.processingPercent==null?'100':n.processingPercent;
       document.getElementById('wfhAllowTaskPercent').checked=!!n.allowTaskPercent;
-      document.querySelectorAll('input[name="wfhDataListEnabled"]').forEach(function(input){ input.checked=input.value===(n.dataListEnabled===false?'false':'true'); });
+      document.querySelectorAll('input[name="wfhProcessingMode"]').forEach(function(input){ input.checked=input.value===(n.processingMode || (n.businessStage==='质检'?'batch':'single')); });
       wfRefreshAssigneeInheritance();
       document.getElementById('wfhAssigneeInheritNode').value=n.inheritAssigneeNodeId||'';
       var previousNodes=previousHumanNodes(n);
@@ -7013,7 +7171,8 @@ WF_CANVAS_JS = r"""
       n.processingRuleMode=ruleMode;
       n.processingPercent=percent;
       n.allowTaskPercent=document.getElementById('wfhAllowTaskPercent').checked;
-      n.dataListEnabled=document.querySelector('input[name="wfhDataListEnabled"]:checked').value==='true';
+      n.processingMode=document.querySelector('input[name="wfhProcessingMode"]:checked').value;
+      n.dataListEnabled=n.processingMode==='batch';
       n.inheritProcessingRuleNodeId=n.processingRuleMode==='inherit'?document.getElementById('wfhProcessingRuleInheritNode').value:'';
       n.allowedActions=rejectEnabled?['驳回']:[];
       n.rejectEnabled=rejectEnabled;
@@ -7202,7 +7361,7 @@ WF_CANVAS_JS = r"""
       businessStage:'通用',workbench:'质检工作台 v2.0',workbenchType:'作业',workbenchModules:{质检:'可编辑',标注:'可编辑',标签:'仅查看',日志:'仅查看',基础信息:'仅查看'},userGroups:[],
       assigneeType:'supplier',assigneeMode:'task_custom',inheritAssigneeNodeId:'',
       processingRuleMode:'none',
-      dataListEnabled:true,
+      processingMode:'batch',dataListEnabled:true,
       allowedActions:['提交','暂离'],x:nodePosition.x,y:nodePosition.y
     };
     NODES.push(node);
@@ -7407,6 +7566,7 @@ def _processing_canvas_payload(pl):
             "processingRuleMode": node.get("processing_rule_mode", "none"),
             "processingPercent": node.get("processing_percent", 100),
             "allowTaskPercent": node.get("allow_task_percent", False),
+            "processingMode": "batch" if pl.get("business_stage") == "质检" else node.get("processing_mode", "single"),
             "dataListEnabled": node.get("data_list_enabled", True),
             "inheritProcessingRuleNodeId": node_name_to_id.get(node.get("inherit_processing_rule_node", ""), ""),
             "inheritAssigneeNodeId": node_name_to_id.get(
@@ -7794,10 +7954,10 @@ def pipeline_editor(pid):
             <div class="wf-cfg-sec" style="margin-top:16px;">处理比例</div>
             <div class="wf-human-grid"><label><span class="wf-human-label">比例（%）</span><input id="wfhProcessingPercent" class="wf-edit-field" type="number" min="1" max="100" step="1" value="100"></label><label style="display:flex;align-items:flex-end;padding-bottom:7px;gap:7px;"><input id="wfhAllowTaskPercent" type="checkbox"><span class="wf-human-label" style="margin:0;">支持任务自定义</span></label></div>
 
-            <div class="wf-cfg-sec">数据列表</div>
-            <div class="wf-choice-grid" id="wfhDataListEnabled" role="group" aria-label="数据列表">
-              <label><input type="radio" name="wfhDataListEnabled" value="true" checked><span>开启</span></label>
-              <label><input type="radio" name="wfhDataListEnabled" value="false"><span>关闭</span></label>
+            <div class="wf-cfg-sec">处理模式</div>
+            <div class="wf-choice-grid" id="wfhDataListEnabled" role="group" aria-label="处理模式">
+              <label><input type="radio" name="wfhProcessingMode" value="batch" checked><span>批量处理</span></label>
+              <label><input type="radio" name="wfhProcessingMode" value="single"><span>单条处理</span></label>
             </div>
 
             <div class="wf-cfg-sec">工作台</div>

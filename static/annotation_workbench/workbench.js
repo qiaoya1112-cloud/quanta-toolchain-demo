@@ -69,7 +69,7 @@ segmentList.addEventListener('segment-change', event => {
 
 segmentList.addEventListener('review-variant-change', event => {
   const variant = event.detail.variant;
-  if (['quality', 'pre-quality', 'post-quality', 'segments', 'action', 'tags'].includes(variant)) activeWorkbenchMode = variant;
+  if (['quality', 'pre-quality', 'post-quality', 'post-quality-review', 'post-quality-rework', 'post-quality-second-review', 'segments', 'action', 'tags'].includes(variant)) activeWorkbenchMode = variant;
   instruction.setMode(activeWorkbenchMode);
   const tagMode = activeWorkbenchMode === 'tags';
   tagsWorkspace.setVisible(tagMode);
@@ -77,7 +77,10 @@ segmentList.addEventListener('review-variant-change', event => {
   const qualityMode = activeWorkbenchMode === 'quality';
   const preQualityMode = activeWorkbenchMode === 'pre-quality';
   const postQualityMode = activeWorkbenchMode === 'post-quality';
-  const trainingQualityMode = preQualityMode || postQualityMode;
+  const postQualityReviewMode = activeWorkbenchMode === 'post-quality-review';
+  const postQualityReworkMode = activeWorkbenchMode === 'post-quality-rework';
+  const secondReviewMode=activeWorkbenchMode==='post-quality-second-review';
+  const trainingQualityMode = preQualityMode || postQualityMode || postQualityReviewMode || postQualityReworkMode || secondReviewMode;
   const actionMode = activeWorkbenchMode === 'action';
   mediaViewer.setAttribute('variant', qualityMode || trainingQualityMode || tagMode ? 'three-panel' : 'default');
   semanticTimeline.hidden = qualityMode || trainingQualityMode || actionMode || tagMode;
@@ -87,13 +90,19 @@ segmentList.addEventListener('review-variant-change', event => {
   timelineCard.classList.toggle('is-tags-mode', tagMode);
   timelineCard.classList.toggle('is-quality-mode', qualityMode);
   timelineCard.classList.toggle('is-pre-quality-mode', preQualityMode);
-  timelineCard.classList.toggle('is-post-quality-mode', postQualityMode);
+  timelineCard.classList.toggle('is-post-quality-mode', postQualityMode || postQualityReworkMode);
+  timelineCard.classList.toggle('is-post-quality-review-mode', postQualityReviewMode || secondReviewMode);
   timelineCard.classList.toggle('is-action-mode', actionMode);
   semanticEditor.hidden = qualityMode || trainingQualityMode || actionMode || tagMode;
   qualityEditor.hidden = !qualityMode;
   actionEditor.hidden = !actionMode;
   const postQualityWorkspace = document.querySelector('post-training-quality-workspace');
   if (postQualityWorkspace) postQualityWorkspace.hidden = !postQualityMode;
+  const postQualityReviewWorkspace = document.querySelector('post-training-quality-review-workspace');
+  if (postQualityReviewWorkspace) postQualityReviewWorkspace.hidden = !postQualityReviewMode;
+  const reworkWorkspace = document.querySelector('post-rework-training-quality-workspace');
+  if (reworkWorkspace) reworkWorkspace.hidden = !postQualityReworkMode;
+  const secondWorkspace=document.querySelector('post-training-quality-second-review-workspace');if(secondWorkspace)secondWorkspace.hidden=!secondReviewMode;
   const preQualityWorkspace = document.querySelector('pre-training-quality-workspace');
   if (preQualityWorkspace) preQualityWorkspace.hidden = !preQualityMode;
   requestAnimationFrame(() => { if (!trainingQualityMode) selectSegment(activeSegmentIndex, 'mode'); });

@@ -1,0 +1,180 @@
+{
+  "started": "2026-10-10T15:27:07.363842+08:00",
+  "samples": [
+    {
+      "time": "2026-10-10T15:27:07.363844+08:00",
+      "dns": {
+        "chatgpt.com": [
+          "198.18.0.19"
+        ],
+        "codex-cloud-backend.chatgpt.com": [
+          "198.18.0.10"
+        ],
+        "codex-cloud-environments.chatgpt.com": [
+          "198.18.0.18"
+        ],
+        "ws.chatgpt.com": [
+          "198.18.0.30"
+        ]
+      },
+      "https": {
+        "chatgpt.com": {
+          "exit_code": 0,
+          "http_tls_total": "403 0.177602 0.359531",
+          "error": ""
+        },
+        "codex-cloud-backend.chatgpt.com": {
+          "exit_code": 0,
+          "http_tls_total": "403 0.179953 0.359706",
+          "error": ""
+        }
+      }
+    },
+    {
+      "time": "2026-10-10T15:27:17.368940+08:00",
+      "dns": {
+        "chatgpt.com": [
+          "198.18.0.19"
+        ],
+        "codex-cloud-backend.chatgpt.com": [
+          "198.18.0.10"
+        ],
+        "codex-cloud-environments.chatgpt.com": [
+          "198.18.0.18"
+        ],
+        "ws.chatgpt.com": [
+          "198.18.0.30"
+        ]
+      },
+      "https": {
+        "chatgpt.com": {
+          "exit_code": 0,
+          "http_tls_total": "403 0.179854 0.673050",
+          "error": ""
+        },
+        "codex-cloud-backend.chatgpt.com": {
+          "exit_code": 0,
+          "http_tls_total": "403 0.180229 0.673426",
+          "error": ""
+        }
+      }
+    },
+    {
+      "time": "2026-10-10T15:27:27.368934+08:00",
+      "dns": {
+        "chatgpt.com": [
+          "198.18.0.19"
+        ],
+        "codex-cloud-backend.chatgpt.com": [
+          "198.18.0.10"
+        ],
+        "codex-cloud-environments.chatgpt.com": [
+          "198.18.0.18"
+        ],
+        "ws.chatgpt.com": [
+          "198.18.0.30"
+        ]
+      },
+      "https": {
+        "chatgpt.com": {
+          "exit_code": 0,
+          "http_tls_total": "403 0.459675 0.956038",
+          "error": ""
+        },
+        "codex-cloud-backend.chatgpt.com": {
+          "exit_code": 0,
+          "http_tls_total": "403 0.459218 0.941141",
+          "error": ""
+        }
+      }
+    },
+    {
+      "time": "2026-10-10T15:27:37.366592+08:00",
+      "dns": {
+        "chatgpt.com": [
+          "198.18.0.19"
+        ],
+        "codex-cloud-backend.chatgpt.com": [
+          "198.18.0.10"
+        ],
+        "codex-cloud-environments.chatgpt.com": [
+          "198.18.0.18"
+        ],
+        "ws.chatgpt.com": [
+          "198.18.0.30"
+        ]
+      },
+      "https": {
+        "chatgpt.com": {
+          "exit_code": 0,
+          "http_tls_total": "403 0.209222 0.375230",
+          "error": ""
+        },
+        "codex-cloud-backend.chatgpt.com": {
+          "exit_code": 0,
+          "http_tls_total": "403 0.208836 0.383381",
+          "error": ""
+        }
+      }
+    },
+    {
+      "time": "2026-10-10T15:27:47.368900+08:00",
+      "dns": {
+        "chatgpt.com": [
+          "198.18.0.19"
+        ],
+        "codex-cloud-backend.chatgpt.com": [
+          "198.18.0.10"
+        ],
+        "codex-cloud-environments.chatgpt.com": [
+          "198.18.0.18"
+        ],
+        "ws.chatgpt.com": [
+          "198.18.0.30"
+        ]
+      },
+      "https": {
+        "chatgpt.com": {
+          "exit_code": 0,
+          "http_tls_total": "403 0.169942 0.342424",
+          "error": ""
+        },
+        "codex-cloud-backend.chatgpt.com": {
+          "exit_code": 0,
+          "http_tls_total": "403 0.172888 0.356518",
+          "error": ""
+        }
+      }
+    },
+    {
+      "time": "2026-10-10T15:27:57.368936+08:00",
+      "dns": {
+        "chatgpt.com": [
+          "198.18.0.19"
+        ],
+        "codex-cloud-backend.chatgpt.com": [
+          "198.18.0.10"
+        ],
+        "codex-cloud-environments.chatgpt.com": [
+          "198.18.0.18"
+        ],
+        "ws.chatgpt.com": [
+          "198.18.0.30"
+        ]
+      },
+      "https": {
+        "chatgpt.com": {
+          "exit_code": 0,
+          "http_tls_total": "403 0.448956 0.614288",
+          "error": ""
+        },
+        "codex-cloud-backend.chatgpt.com": {
+          "exit_code": 0,
+          "http_tls_total": "403 0.470609 0.649374",
+          "error": ""
+        }
+      }
+    }
+  ],
+  "new_codex_errors": []
+}

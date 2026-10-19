@@ -319,7 +319,8 @@ EXPERIMENTS = [
      "dataset_ids": ["DEMO_DS_9001"], "tag": "—",
      "epochs": 50, "current_epoch": 50,
      "best_metric": 0.873, "metric_name": "成功率", "status": "done",
-     "started": "2026-06-17 03:00:00", "dur": "8h 30m", "owner": "joanna.qiao"},
+     "started": "2026-06-17 03:00:00", "dur": "8h 30m", "owner": "joanna.qiao",
+     "followers": ["Lance Li", "Maple Liu", "Min Chen", "tao.wang", "hannah.wang", "包媛桐", "Wei Zhang"]},
     {"id": "DEMO_EXP_9002", "name": "20260618_pi05_cleanwhiteboard_v5_ctrl",
      "model_type": "Spirit v1.7", "dataset": "clean_whiteboard", "dataset_id": "DEMO_DS_9001",
      "dataset_ids": ["DEMO_DS_9001"], "tag": "—",
@@ -331,7 +332,8 @@ EXPERIMENTS = [
      "dataset_ids": ["DEMO_DS_9002", "DEMO_DS_9003"], "tag": "—",
      "epochs": 50, "current_epoch": 50,
      "best_metric": 0.828, "metric_name": "成功率", "status": "done",
-     "started": "2026-06-18 14:00:00", "dur": "9h 10m", "owner": "Lance Li"},
+     "started": "2026-06-18 14:00:00", "dur": "9h 10m", "owner": "Lance Li",
+     "resume_from": {"task_id": "exp_7539", "task_name": "20260602_ManualDagger2_NarrowTable_Moz1WB", "step": 45000, "steps": 100000}},
     {"id": "DEMO_EXP_9004", "name": "20260620_pi05_cleantable_baseline",
      "model_type": "Spirit v1.7", "dataset": "clean_table_baseline", "dataset_id": "DEMO_DS_9004",
      "dataset_ids": ["DEMO_DS_9004"], "tag": "—",
@@ -343,12 +345,15 @@ EXPERIMENTS = [
      "dataset_ids": ["DEMO_DS_9001"], "tag": "—",
      "epochs": 50, "current_epoch": 0,
      "best_metric": 0.0, "metric_name": "成功率", "status": "queued",
-     "started": "2026-06-21 10:00:00", "dur": "—", "owner": "joanna.qiao"},
+     "started": "2026-06-21 10:00:00", "dur": "—", "owner": "joanna.qiao",
+     "followers": ["joanna.qiao"],
+     "resume_from": {"task_id": "DEMO_EXP_9001", "task_name": "20260617_pi05_cleanwhiteboard_v5_main", "step": 50000, "steps": 100000}},
     {"id": "exp_7916", "name": "robotwin_pi05_datamil_stack_blocks_two_top10pct_cotrain",
      "model_type": "Spirit v1.7", "dataset": "—", "dataset_id": "ds_505", "dataset_ids": ["ds_505", "ds_502", "ds_500"], "tag": "—",
      "epochs": 50, "current_epoch": 35,
      "best_metric": 0.852, "metric_name": "成功率", "status": "running",
-     "started": "2026-06-17 03:23:39", "dur": "—", "owner": "—"},
+     "started": "2026-06-17 03:23:39", "dur": "—", "owner": "—",
+     "followers": ["joanna.qiao", "Maple Liu"]},
     {"id": "exp_7757", "name": "20260615_pi05_oldft_sortpill_newobs_centercrop_manip2",
      "model_type": "Spirit v1.7", "dataset": "—", "dataset_id": "ds_505", "dataset_ids": ["ds_505", "ds_500"], "tag": "—",
      "epochs": 50, "current_epoch": 28,
@@ -477,7 +482,7 @@ CHECKPOINTS = [
      "status": "cached", "owner": "—", "created": "2026-06-13 00:00:02", "exp_id": "exp_7916",
      "parent_checkpoint_id": "7500", "parent_type": "dagger"},
     {"id": "7757", "name": "20260604_opd_exp1_sft_taskA_gpu8_50000",
-     "status": "not_cached", "owner": "—", "created": "2026-06-12 19:26:39", "exp_id": "exp_7757",
+     "status": "merged", "owner": "—", "created": "2026-06-12 19:26:39", "exp_id": "exp_7757",
      "parent_checkpoint_id": None, "parent_type": None},
     {"id": "7560", "name": "20260609_opd_exp5a_single_wobcloss_taskAB_gpu8_50000",
      "status": "cached", "owner": "—", "created": "2026-06-13 05:05:41", "exp_id": "exp_7560",
@@ -501,14 +506,37 @@ CHECKPOINTS = [
      "status": "cached", "owner": "Liquan Zheng", "created": "2026-06-08 18:12:22", "exp_id": "exp_6873",
      "parent_checkpoint_id": None, "parent_type": None},
     {"id": "6869", "name": "catl-liquanzheng-upload",
-     "status": "not_cached", "owner": "Liquan Zheng", "created": "2026-06-08 17:26:35", "exp_id": "exp_6869",
+     "status": "merged", "owner": "Liquan Zheng", "created": "2026-06-08 17:26:35", "exp_id": "exp_6869",
      "parent_checkpoint_id": None, "parent_type": None},
     {"id": "7467", "name": "20260615_pi05_oldft_sortpill_newobs_centercrop_30000",
      "status": "cached", "owner": "—", "created": "2026-06-15 22:10:00", "exp_id": "exp_7466",
      "parent_checkpoint_id": None, "parent_type": None},
+    {"id": "7432", "name": "20260612_HouseHold_stop_32_30000",
+     "status": "merged", "owner": "tao.wang", "created": "2026-06-12 21:05:00", "exp_id": "exp_7432",
+     "parent_checkpoint_id": None, "parent_type": None},
 ]
 
 CKPT_CACHE_OPERATIONS = []
+
+# ── 训练 · 外部导入的 Ckpt（经 Checkpoint 页「导入 Ckpt」登记）──
+UPLOADED_CKPTS = [
+    {"id": "UP8001", "name": "external_pi05_sft_robotwin_60000",
+     "status": "cached", "owner": "joanna.qiao",
+     "created": "2026-07-02 10:20:00", "source_platform": "外部上传",
+     "base_model": "pi05-base", "framework": "pi0 / LeRobot", "step": 60000,
+     "storage_address": "tos://spirit-ai-ckpt/external/robotwin/pi05_sft_60000.safetensors",
+     "file_size": "18.6 GB", "file_md5": "9f2c1d7a4b6e08f3a15c9d2e7b40a8c1", "import_status": "已导入",
+     "train_task_name": "robotwin_pi05_datamil_stack_blocks_two_top10pct_60000",
+     "description": "外部合作团队交付的 RoboTwin 微调 checkpoint, 手工上传登记。"},
+    {"id": "UP8002", "name": "external_gr00t_desk_sort_45000",
+     "status": "cached", "owner": "Lance Li",
+     "created": "2026-07-05 16:42:00", "source_platform": "火山云",
+     "base_model": "GR00T-N1.5", "framework": "GR00T", "step": 45000,
+     "storage_address": "s3://lance-lab/ckpt/gr00t_desk_sort_45000/",
+     "file_size": "24.1 GB", "file_md5": "3ab7e05c19d4f628e7301c9b8a2d5f40", "import_status": "已导入",
+     "train_task_name": "gr00t_n15_desk_sort_finetune_45000",
+     "description": "桌面分拣场景外部权重, 用于对照评测与部署前验证。"},
+]
 
 # ── 部署 · 模型转换 / 推理服务 ──
 
@@ -893,15 +921,16 @@ a { color:#149DAA; text-decoration:none; } a:hover { color:#0F8190; }
 
 /* ── Page title (inside module page) ── */
 .page-title { font-size:20px; font-weight:600; color:rgba(0,0,0,0.85); margin:0 0 4px; }
-.model-list-title { display:flex; align-items:center; justify-content:space-between; min-height:40px; margin:0 0 16px; }
-.model-list-title h1 { margin:0; font-size:20px; line-height:32px; font-weight:600; color:rgba(0,0,0,0.85); }
-.model-list-title-main { display:flex; align-items:center; gap:16px; min-width:0; }
+.model-list-title { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px 12px; min-height:40px; margin:0 0 16px; }
+.model-list-title h1 { margin:0; font-size:20px; line-height:32px; font-weight:600; color:rgba(0,0,0,0.85); white-space:nowrap; }
+.model-list-title-main { display:flex; align-items:center; gap:16px; min-width:0; flex-shrink:0; }
 .eval-project-switcher { display:inline-flex; align-items:center; height:36px; border:1px solid #b8cbd3; border-radius:8px; background:#fff; box-sizing:border-box; overflow:hidden; }
 .eval-project-switcher-label { padding:0 0 0 14px; color:#4d6a73; font-size:14px; line-height:34px; white-space:nowrap; }
 .eval-project-switcher select { height:34px; min-width:112px; padding:0 28px 0 10px; border:0; outline:none; background:#fff; color:rgba(0,0,0,0.65); font-size:14px; cursor:pointer; }
 .eval-project-switcher select:focus { box-shadow:none; }
 @media (max-width: 720px) { .model-list-title-main { gap:10px; flex-wrap:wrap; } .eval-project-switcher { height:34px; } .eval-project-switcher select { height:32px; } }
-.model-list-actions { display:flex; align-items:center; gap:8px; }
+.model-list-actions { display:flex; align-items:center; gap:8px; flex-shrink:0; }
+.model-list-actions .btn { white-space:nowrap; }
 .page-sub { font-size:13px; color:rgba(0,0,0,0.55); margin-bottom:20px; }
 .page-sub .deferred { color:rgba(0,0,0,0.35); }
 .welcome-card { background:#fff; border:1px solid #f0f0f0; border-radius:10px; padding:24px 28px; margin-bottom:20px; }
@@ -1032,17 +1061,10 @@ select option:disabled { color:rgba(0,0,0,0.32); }
 .model-queue-member-option:hover, .model-queue-member-option.selected { background:#EBF8FA; color:#149DAA; }
 .model-queue-member-option .check { visibility:hidden; font-size:13px; }
 .model-queue-member-option.selected .check { visibility:visible; }
-.ckpt-table { table-layout:fixed; min-width:1270px; }
+.ckpt-table { table-layout:fixed; min-width:1420px; }
 .ckpt-table-wrap { overflow-x:auto; overflow-y:hidden; }
 .ckpt-name-cell { display:block; max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:#149DAA; text-decoration:none; }
 .ckpt-name-cell:hover { color:#0F8190; }
-.ckpt-asset-tag { margin:0; }
-.ckpt-asset-form { display:inline; margin:0; }
-.ckpt-asset-trigger { gap:4px !important; white-space:nowrap; }
-.ckpt-asset-trigger svg { color:#999; }
-.ckpt-asset-trigger.is-filtered svg { color:#149DAA; }
-.ckpt-asset-menu[popover] { position:fixed; inset:auto; margin:0; }
-.ckpt-asset-menu:popover-open { display:block; }
 .ckpt-status-filter { position:relative; display:inline-flex; align-items:center; height:26px; }
 .ckpt-status-trigger { display:inline-flex; align-items:center; gap:6px; border:0; background:transparent; padding:0; color:rgba(0,0,0,0.85); font:inherit; font-weight:600; cursor:pointer; }
 .ckpt-status-trigger .caret { font-size:15px; line-height:1; transform:translateY(-1px); color:rgba(0,0,0,0.78); }
@@ -1054,6 +1076,7 @@ select option:disabled { color:rgba(0,0,0,0.32); }
 .qi { position:relative; display:inline-flex; align-items:center; justify-content:center; width:16px; height:16px; margin-left:3px; border:1.5px solid #71858d; border-radius:50%; color:#526971; font-size:11px; font-weight:700; line-height:1; cursor:help; vertical-align:-2px; outline:none; }
 .qi::after { content:attr(data-tooltip); position:absolute; left:0; top:calc(100% + 8px); z-index:260; width:220px; padding:8px 10px; border:1px solid rgba(31,45,51,.12); border-radius:6px; background:#25343a; color:#fff; font-size:12px; font-weight:400; line-height:1.5; text-align:left; white-space:normal; opacity:0; pointer-events:none; transform:translateY(4px); transition:opacity .16s ease, transform .16s ease; box-shadow:0 6px 16px rgba(17,31,36,.18); }
 .qi.robot-structure-tip::after { width:300px; white-space:pre-line; }
+.qi.perception-tip::after { width:300px; white-space:pre-line; }
 .qi:hover::after, .qi:focus-visible::after { opacity:1; transform:translateY(0); }
 .status-with-log { display:inline-flex; align-items:center; gap:6px; white-space:nowrap; }
 .status-log-icon { width:18px; height:18px; padding:0; border:1px solid #f3d6d5; border-radius:50%; background:#fff; color:#d4504e; font-size:12px; line-height:16px; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; }
@@ -1105,6 +1128,7 @@ select option:disabled { color:rgba(0,0,0,0.32); }
 .image-config-drawer { width:460px; max-width:100vw; }
 .fg { display:flex; flex-direction:column; gap:6px; margin-bottom:14px; }
 .fg label { font-size:13px; color:rgba(0,0,0,0.65); }
+.fg-tip { margin:0; color:rgba(0,0,0,.45); font-size:12px; line-height:1.6; }
 .fg input, .fg select, .fg textarea { padding:7px 12px; border:1px solid #d9d9d9; border-radius:8px; font-size:14px; outline:none; font-family:inherit; }
 .fg input:focus, .fg select:focus, .fg textarea:focus { border-color:#149DAA; box-shadow:0 0 0 2px rgba(20,157,170,0.12); }
 .dismiss { font-size:18px; color:rgba(0,0,0,0.45); cursor:pointer; line-height:1; }
@@ -1415,6 +1439,22 @@ body.lineage-canvas-page .lineage-viewport { height:100%; min-height:0; }
 .list-summarybar { display:flex; align-items:center; justify-content:space-between; gap:16px; margin:0 2px 14px; }
 .list-summarybar .txt { font-size:13.5px; color:rgba(0,0,0,0.62); }
 .list-summarybar .txt b { color:rgba(0,0,0,0.85); font-family:'SF Mono',Menlo,monospace; font-weight:600; }
+/* ── 训练任务列表页: 参考火山云的留白与字号优化 ── */
+.train-list-table .ant-table thead th { padding:13px 18px; background:#f7f8fa; font-size:13.5px; color:rgba(0,0,0,0.72); }
+.train-list-table .ant-table tbody td { padding:14px 18px; font-size:13.5px; }
+.train-list-table .ant-table tbody tr:hover td { background:#f6fbfc; }
+
+/* ── 训练任务「更多」菜单: 关注项 + hover 提示 ── */
+.follow-btn { position:relative; }
+.follow-btn::after { content:attr(data-tooltip); position:absolute; right:calc(100% + 8px); top:50%; transform:translateY(-50%) translateX(4px); z-index:260; width:220px; padding:8px 10px; border:1px solid rgba(31,45,51,.12); border-radius:6px; background:#25343a; color:#fff; font-size:12px; font-weight:400; line-height:1.5; text-align:left; white-space:normal; opacity:0; pointer-events:none; transition:opacity .16s ease, transform .16s ease; box-shadow:0 6px 16px rgba(17,31,36,.18); }
+.follow-btn:hover::after, .follow-btn:focus-visible::after { opacity:1; transform:translateY(-50%) translateX(0); }
+
+/* ── 训练任务详情: 飞书关注人 (复用队列管理的灰色标签) ── */
+.basic-info .bi-field-value .model-queue-members { width:100%; }
+.follower-more { position:relative; cursor:help; }
+.follower-more:hover { border-color:#149DAA; color:#149DAA; }
+.follower-more::after { content:attr(data-tooltip); position:absolute; left:50%; bottom:calc(100% + 8px); transform:translateX(-50%) translateY(4px); z-index:260; width:220px; padding:8px 10px; border:1px solid rgba(31,45,51,.12); border-radius:6px; background:#25343a; color:#fff; font-size:12px; font-weight:400; line-height:1.5; text-align:left; white-space:normal; opacity:0; pointer-events:none; transition:opacity .16s ease, transform .16s ease; box-shadow:0 6px 16px rgba(17,31,36,.18); }
+.follower-more:hover::after, .follower-more:focus-visible::after { opacity:1; transform:translateX(-50%) translateY(0); }
 
 /* ── Page actions (top-right primary button) ── */
 .page-actions { display:flex; justify-content:flex-end; margin-bottom:14px; }
@@ -1452,6 +1492,34 @@ body.lineage-canvas-page .lineage-viewport { height:100%; min-height:0; }
 .train-queue-label { display:flex; align-items:center; justify-content:space-between; gap:12px; font-size:13px; color:rgba(0,0,0,0.65); }
 .train-queue-label a { color:#149DAA; font-size:12px; font-weight:400; text-decoration:none; white-space:nowrap; }
 .train-queue-label a:hover { color:#0F8190; }
+/* ── 训练队列: 富信息下拉 ── */
+.train-queue-picker { position:relative; width:100%; }
+.train-queue-native { display:none; }
+.train-queue-trigger { width:100%; min-height:36px; padding:7px 34px 7px 11px; border:1px solid #d9d9d9; border-radius:6px; background:#fff; color:rgba(0,0,0,0.88); cursor:pointer; text-align:left; position:relative; }
+.train-queue-trigger:hover,
+.train-queue-picker.open .train-queue-trigger { border-color:var(--primary); }
+.train-queue-picker.open .train-queue-trigger { box-shadow:0 0 0 2px rgba(20,157,170,0.12); }
+.train-queue-trigger[disabled] { background:#f5f5f5; color:rgba(0,0,0,0.25); cursor:not-allowed; }
+.train-queue-trigger-name { display:block; font-size:13px; line-height:20px; overflow-wrap:anywhere; }
+.train-queue-trigger.is-placeholder .train-queue-trigger-name { color:rgba(0,0,0,0.35); }
+.train-queue-menu { display:none; position:absolute; z-index:40; top:calc(100% + 4px); left:0; right:0; padding:4px; border:1px solid #e5e7eb; border-radius:8px; background:#fff; box-shadow:0 6px 18px rgba(0,0,0,0.12); max-height:288px; overflow-y:auto; }
+.train-queue-picker.open .train-queue-menu { display:block; }
+.train-queue-option { display:flex; align-items:center; justify-content:space-between; gap:12px; width:100%; padding:8px 10px; border:0; border-radius:6px; background:#fff; cursor:pointer; text-align:left; }
+.train-queue-option:hover { background:#f5fafa; }
+.train-queue-option.selected { background:#eaf7f8; }
+.train-queue-option-main { display:flex; flex-direction:column; gap:4px; flex:1 1 auto; min-width:0; }
+.train-queue-option-name { font-size:13px; color:rgba(0,0,0,0.85); }
+.train-queue-option-usage { display:flex; align-items:center; gap:8px; }
+.train-queue-usage-text { flex:none; width:100px; font-size:11.5px; color:rgba(0,0,0,0.45); }
+.train-queue-usage-bar { flex:none; width:96px; height:6px; border-radius:3px; background:#eef0f2; overflow:hidden; }
+.train-queue-usage-fill { display:block; height:100%; border-radius:3px; background:#149DAA; }
+.train-queue-usage-fill.is-warn { background:#ff7d00; }
+.train-queue-usage-fill.is-danger { background:#f53f3f; }
+.train-queue-option-meta { display:flex; align-items:center; gap:6px; flex:none; }
+.train-queue-badge { display:inline-flex; align-items:center; height:20px; padding:0 8px; border-radius:10px; font-size:11.5px; line-height:1; white-space:nowrap; }
+.train-queue-badge.is-run { background:#f6ffed; color:#389e0d; border:1px solid #b7eb8f; }
+.train-queue-badge.is-queue { background:#fffbe6; color:#ad6800; border:1px solid #ffe58f; }
+.train-queue-badge.is-idle { background:#f5f5f5; color:rgba(0,0,0,0.45); border:1px solid #e8e8e8; }
 .train-recommended-picker { position:relative; width:100%; }
 .train-recommended-image { display:none; }
 .train-recommended-trigger { width:100%; min-height:36px; padding:7px 34px 7px 11px; border:1px solid #d9d9d9; border-radius:6px; background:#fff; color:rgba(0,0,0,0.88); cursor:pointer; text-align:left; position:relative; }
@@ -1580,11 +1648,68 @@ body.lineage-canvas-page .lineage-viewport { height:100%; min-height:0; }
 .custom-yaml-status.error { color:#cf1322; }
 .custom-yaml-area { min-height:460px !important; }
 
+/* ── 训练任务: 创建方式 / 续训来源 ── */
+.train-resume-notice { display:flex; align-items:flex-start; gap:8px; margin:0 0 16px; padding:10px 14px; border:1px solid #ffe0b2; border-radius:8px; background:#fffbe6; color:#ad6800; font-size:12.5px; line-height:1.7; }
+.train-resume-notice .trn-icon { flex:none; width:16px; height:16px; margin-top:1px; border-radius:50%; background:#faad14; color:#fff; font-size:12px; font-weight:700; line-height:16px; text-align:center; }
+.train-resume-notice code { padding:1px 6px; border-radius:4px; background:#fff7e6; font-family:'SF Mono',Menlo,monospace; font-size:12px; word-break:break-all; }
+.train-version-notice { display:flex; align-items:flex-start; gap:8px; margin:0 0 16px; padding:10px 14px; border:1px solid #bae0e6; border-radius:8px; background:#f0fafb; color:#0f8190; font-size:12.5px; line-height:1.7; }
+.train-resume-notice[hidden], .train-version-notice[hidden] { display:none; }
+/* ── 新建训练 / 续训 拆分按钮 ── */
+.split-btn { position:relative; display:inline-flex; }
+.split-btn .split-btn-main { border-top-right-radius:0; border-bottom-right-radius:0; }
+.split-btn .split-btn-toggle { padding:0 10px; border-top-left-radius:0; border-bottom-left-radius:0; border-left:1px solid rgba(255,255,255,0.4); }
+.split-caret { font-size:11px; line-height:1; }
+.split-menu { position:absolute; top:calc(100% + 6px); right:0; min-width:168px; padding:6px; border-radius:8px; border:1px solid #eef0f2; background:#fff; box-shadow:0 8px 24px rgba(0,0,0,0.14); display:none; z-index:60; }
+.split-menu.open { display:block; }
+.split-menu-item { display:block; width:100%; padding:9px 12px; border:0; border-radius:6px; background:transparent; color:rgba(0,0,0,0.86); font:inherit; font-size:13px; text-align:left; cursor:pointer; }
+.split-menu-item:hover { background:#eef7f8; color:#0f8190; }
+/* ── 金山云建训抽屉: 复用现有抽屉, 仅保留 任务信息 / 运行配置 / 训练配置(yaml + 入口命令) ── */
+body.ksyun-train-mode #resumeVersionNotice,
+body.ksyun-train-mode #resumeImageNotice,
+body.ksyun-train-mode #trainResumeSource,
+body.ksyun-train-mode #trainDatasetBlock,
+body.ksyun-train-mode #trainConfigModeTabs,
+body.ksyun-train-mode #trainModelRow,
+body.ksyun-train-mode #trainCustomConfig,
+body.ksyun-train-mode #envVarsBox,
+body.ksyun-train-mode #advConfigBox .adv-tabs { display:none !important; }
+.train-resume-source { display:none; margin:0 0 18px; padding:0; border:0; background:transparent; }
+.train-resume-source.resume-open { display:block; }
+.trs-title { display:flex; align-items:center; gap:8px; margin:0 0 14px; color:rgba(0,0,0,0.86); font-size:15px; font-weight:600; }
+.trs-title::before { content:''; width:3px; height:15px; border-radius:2px; background:#149DAA; }
+.trs-task-picker { position:relative; }
+.trs-task-trigger { width:100%; min-height:36px; padding:7px 34px 7px 11px; border:1px solid #d9d9d9; border-radius:6px; background:#fff; color:rgba(0,0,0,0.88); cursor:pointer; text-align:left; position:relative; }
+.trs-task-trigger:hover,
+.trs-task-picker.open .trs-task-trigger { border-color:var(--primary); }
+.trs-task-picker.open .trs-task-trigger { box-shadow:0 0 0 2px rgba(20,157,170,0.12); }
+.trs-task-trigger-text { display:block; font-size:13px; line-height:20px; overflow-wrap:anywhere; }
+.trs-task-trigger.is-placeholder .trs-task-trigger-text { color:rgba(0,0,0,0.35); }
+.trs-task-chevron { position:absolute; right:12px; top:50%; transform:translateY(-50%); color:rgba(0,0,0,0.35); font-size:11px; line-height:1; }
+.trs-task-menu { display:none; position:absolute; z-index:40; top:calc(100% + 4px); left:0; right:0; padding:4px; border:1px solid #e5e7eb; border-radius:8px; background:#fff; box-shadow:0 6px 18px rgba(0,0,0,0.12); max-height:288px; overflow-y:auto; }
+.trs-task-picker.open .trs-task-menu { display:block; }
+.trs-task-group { padding-bottom:4px; }
+.trs-task-group + .trs-task-group { margin-top:4px; padding-top:4px; border-top:1px solid #f0f0f0; }
+.trs-task-group-title { padding:8px 10px 4px; color:rgba(0,0,0,0.45); font-size:12px; line-height:20px; cursor:default; }
+.trs-task-option { display:block; width:100%; padding:6px 10px 6px 16px; border:0; border-radius:6px; background:#fff; cursor:pointer; text-align:left; }
+.trs-task-option:hover { background:#f5fafa; }
+.trs-task-option.selected { background:#eaf7f8; }
+.trs-task-option-name { font-size:13px; color:rgba(0,0,0,0.85); overflow-wrap:anywhere; }
+.trs-task-empty { padding:10px 12px; font-size:12.5px; color:rgba(0,0,0,0.4); }
+.trs-ckpt-hint { margin-top:8px; font-size:12px; line-height:1.6; color:rgba(0,0,0,0.5); }
+.train-resume-row .fg { margin-bottom:0; }
+.train-resume-row input[type="number"] { width:100%; height:36px; padding:0 11px; border:1px solid #d9d9d9; border-radius:6px; font-size:13px; outline:none; box-sizing:border-box; background:#fff; }
+.train-resume-row input[type="number"]:focus { border-color:#149DAA; box-shadow:0 0 0 2px rgba(20,157,170,0.12); }
+.train-section-body .fg.resume-locked select:disabled { background:#f5f7fa; color:rgba(0,0,0,0.65); cursor:not-allowed; }
+
 /* ── Drawer: advanced config tabs ── */
 .adv-tabs { display:flex; gap:6px; border-bottom:1px solid #e5e7eb; margin-bottom:12px; align-items:flex-end; }
 .adv-tabs .at { padding:8px 16px 10px; font-size:13.5px; color:rgba(0,0,0,0.6); border-bottom:2px solid transparent; margin-bottom:-1px; cursor:pointer; transition:all 0.2s ease; border-radius:6px 6px 0 0; }
 .adv-tabs .at:hover { color:rgba(0,0,0,0.88); background:rgba(20,157,170,0.04); }
 .adv-tabs .at.active { color:#149DAA; border-bottom-color:#149DAA; font-weight:600; background:rgba(20,157,170,0.06); }
+.at-help { display:inline-flex; align-items:center; font-size:12.5px; color:rgba(0,0,0,0.6); padding:5px 12px; border:1px solid #d9d9d9; border-radius:6px; text-decoration:none; background:#fff; transition:all 0.2s ease; }
+.at-help:hover { border-color:#149DAA; color:#149DAA; background:rgba(20,157,170,0.04); }
+.adv-tabs .at-help, .adv-sub-head .at-help { margin-left:auto; }
+.adv-tabs .at-help + .at-reset, .adv-sub-head .at-help + .at-reset { margin-left:6px; }
 .adv-tabs .at-reset { margin-left:auto; font-size:12.5px; color:rgba(0,0,0,0.6); padding:5px 12px; border:1px solid #d9d9d9; border-radius:6px; cursor:pointer; background:#fff; transition:all 0.2s ease; }
 .adv-tabs .at-reset:hover { border-color:#149DAA; color:#149DAA; background:rgba(20,157,170,0.04); }
 .adv-sub-head .at-reset { margin-left:auto; font-size:12.5px; color:rgba(0,0,0,0.6); padding:5px 12px; border:1px solid #d9d9d9; border-radius:6px; cursor:pointer; background:#fff; transition:all 0.2s ease; }
@@ -1651,6 +1776,7 @@ textarea.yaml-area:focus { border-color:#149DAA; box-shadow:0 0 0 2px rgba(20,15
 .ddp-menu { display:none; position:absolute; left:0; right:0; top:calc(100% + 6px); z-index:180; max-height:260px; overflow-y:auto; padding:6px; border:1px solid #e5e7eb; border-radius:8px; background:#fff; box-shadow:0 8px 24px rgba(0,0,0,0.12); }
 .deploy-device-picker.open .ddp-menu, .deploy-checkpoint-picker.open .ddp-menu { display:block; }
 .ddp-item { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; padding:9px 10px; border-radius:6px; cursor:pointer; color:rgba(0,0,0,0.72); }
+.deploy-cache-tip { margin:8px 0 0; padding:8px 12px; border:1px solid #ffe7ba; border-radius:6px; background:#fffbe6; color:#ad6800; font-size:12px; line-height:1.6; }
 .ddp-item:hover { background:#EBF8FA; }
 .ddp-item.on { background:#DEF6F9; color:#149DAA; }
 .ddp-copy { min-width:0; display:flex; flex-direction:column; gap:3px; }
@@ -1865,6 +1991,16 @@ textarea.yaml-area:focus { border-color:#149DAA; box-shadow:0 0 0 2px rgba(20,15
 .wb-rule-box ol { margin:0; padding:0; list-style:none; counter-reset:wb-rule; }
 .wb-rule-box li { display:grid; grid-template-columns:28px minmax(0,1fr); gap:10px; padding:7px 0; color:rgba(0,0,0,.73); font-size:13px; line-height:1.65; counter-increment:wb-rule; }
 .wb-rule-box li::before { content:counter(wb-rule) "."; color:#1685a4; font-family:'SF Mono',Menlo,monospace; font-weight:600; }
+.wb-held-group { display:flex;align-items:center;gap:12px;width:100%;box-sizing:border-box;min-width:0;padding:8px 12px;background:#edf8fa;border:1px solid #d8edef;border-radius:7px; }
+.wb-start-blocked,.wb-start-blocked:hover { background:#e4e8eb!important;border-color:#dce2e6!important;color:#9ba6ad!important;cursor:not-allowed; }
+.wb-held-group { margin-top:16px; }
+.wb-held-group + .wb-task-home-actions { margin-top:10px;padding-top:0;border-top:0; }
+.wb-held-first-row { display:flex;align-items:center;gap:12px; }
+.wb-held-notice { margin-right:auto;display:flex;align-items:center;flex-wrap:wrap;gap:10px;color:#536970;font-size:12px; }
+.wb-task-home-actions { align-items:center; }
+.wb-collection-range { grid-column:span 2; }
+.wb-filter-inline-reset { align-self:end; }
+.wb-filter-grid.wb-v2-filter-grid { grid-template-columns:repeat(4,minmax(0,1fr)); }
 .wb-filter-reset { margin:16px 20px 20px; }
 .wb-filter-config > .wb-filter-reset { margin:0 16px 16px; }
 .wb-task-home-actions { display:flex; justify-content:flex-end; gap:10px; margin-top:20px; padding-top:18px; border-top:1px solid #f0f0f0; }
@@ -2971,11 +3107,15 @@ function openCacheModal(step, location){
   });
   updateCacheNameCount();
   var notify=document.getElementById('cacheFeishuNotify'); if(notify) notify.checked=true;
+  var modeSelect=document.getElementById('cacheModeSelect'); if(modeSelect) modeSelect.value='cache';
+  updateCacheModeHint();
+  var demoSuccessBtn=document.getElementById('cacheDemoSuccessBtn'); if(demoSuccessBtn) demoSuccessBtn.textContent='演示缓存成功';
+  var demoCacheFailBtn=document.getElementById('cacheDemoCacheFailBtn'); if(demoCacheFailBtn) demoCacheFailBtn.style.display='';
   var preview=document.getElementById('cacheNotificationPreview'); if(preview) preview.innerHTML='';
   var demo=document.getElementById('cacheDemoPanel'); if(demo) demo.style.display='none';
   var error=document.getElementById('cacheSubmitError'); if(error){ error.textContent=''; error.hidden=true; }
-  var state=document.querySelector('#cacheModalDoing .cache-state h4'); if(state) state.textContent='缓存任务已提交';
-  var copy=document.querySelector('#cacheModalDoing .cache-state p'); if(copy) copy.textContent='缓存任务已提交，可在缓存记录中查看进度。';
+  var state=document.querySelector('#cacheModalDoing .cache-state h4'); if(state) state.textContent='合并任务已提交';
+  var copy=document.querySelector('#cacheModalDoing .cache-state p'); if(copy) copy.textContent='合并任务已提交，可在合并记录中查看进度。';
   var form=document.getElementById('cacheModalForm'); if(form) form.style.display='block';
   var doing=document.getElementById('cacheModalDoing'); if(doing) doing.style.display='none';
   var footForm=document.getElementById('cacheModalFootForm'); if(footForm) footForm.style.display='flex';
@@ -2985,6 +3125,13 @@ function openCacheModal(step, location){
 function updateCacheNameCount(){
   var name=document.getElementById('cacheName'), count=document.getElementById('cacheNameCount');
   if(name && count) count.textContent=name.value.length+' / 100';
+}
+function updateCacheModeHint(){
+  var select=document.getElementById('cacheModeSelect'), hint=document.getElementById('cacheModeHint');
+  if(!select || !hint) return;
+  hint.textContent = select.value==='cache'
+    ? '合并完成后同步缓存至本地服务器，加速端侧部署拉取。'
+    : '仅执行合并，不缓存到本地服务器，端侧部署拉取耗时较长。';
 }
 function confirmCacheModal(){
   if(cacheSubmitting || currentCacheOperationId) return;
@@ -3003,33 +3150,40 @@ function confirmCacheModal(){
   var errorBox=document.getElementById('cacheSubmitError');
   if(errorBox){ errorBox.textContent=''; errorBox.hidden=true; }
   var context=window.CKPT_CACHE_CONTEXT || {};
+  var modeSelect=document.getElementById('cacheModeSelect');
+  var cacheToServer=!modeSelect || modeSelect.value==='cache';
   fetch('/model/experiments/'+encodeURIComponent(context.experimentId || '')+'/cache-checkpoints', {
     method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({
       step:currentCacheStep, location:currentCacheLocation,
       name:document.getElementById('cacheName').value.trim(),
       description:(document.getElementById('cacheDesc') || {value:''}).value.trim(),
+      cache_server:cacheToServer,
       notify:!!(document.getElementById('cacheFeishuNotify') || {checked:false}).checked,
       operator:context.operator || 'joanna.qiao'
     })
-  }).then(function(response){ return response.json().catch(function(){ throw new Error('提交缓存失败，服务响应异常，请稍后重试。'); }).then(function(data){ return {ok:response.ok,data:data}; }); }).then(function(result){
-    if(!result.ok) throw new Error(result.data.error || '提交缓存失败');
+  }).then(function(response){ return response.json().catch(function(){ throw new Error('提交合并失败，服务响应异常，请稍后重试。'); }).then(function(data){ return {ok:response.ok,data:data}; }); }).then(function(result){
+    if(!result.ok) throw new Error(result.data.error || '提交合并失败');
     currentCacheOperationId=result.data.operation_id;
     updateCacheRow(result.data);
     var form=document.getElementById('cacheModalForm'); if(form) form.style.display='none';
     var doing=document.getElementById('cacheModalDoing'); if(doing) doing.style.display='block';
+    var state=document.querySelector('#cacheModalDoing .cache-state h4'); if(state) state.textContent='合并任务已提交';
+    var copy=document.querySelector('#cacheModalDoing .cache-state p'); if(copy) copy.textContent=cacheToServer?'合并任务已提交，合并完成后将同步缓存至本地服务器。':'合并任务已提交，可在合并记录中查看进度。';
+    var successBtn=document.getElementById('cacheDemoSuccessBtn'); if(successBtn) successBtn.textContent=cacheToServer?'演示缓存成功':'演示合并完成';
+    var cacheFailBtn=document.getElementById('cacheDemoCacheFailBtn'); if(cacheFailBtn) cacheFailBtn.style.display=cacheToServer?'':'none';
     var demo=document.getElementById('cacheDemoPanel'); if(demo) demo.style.display='block';
     var footForm=document.getElementById('cacheModalFootForm'); if(footForm) footForm.style.display='none';
     var footDoing=document.getElementById('cacheModalFootDoing'); if(footDoing) footDoing.style.display='flex';
     var link=document.getElementById('cacheRecordLink'); if(link) link.href=result.data.record_url;
   }).catch(function(error){
-    if(errorBox){ errorBox.textContent=error instanceof TypeError ? '提交缓存失败，网络连接异常，请检查网络后重试。' : (error.message || '提交缓存失败，请稍后重试。'); errorBox.hidden=false; }
+    if(errorBox){ errorBox.textContent=error instanceof TypeError ? '提交合并失败，网络连接异常，请检查网络后重试。' : (error.message || '提交合并失败，请稍后重试。'); errorBox.hidden=false; }
   }).finally(function(){
     cacheSubmitting=false;
-    if(button){ button.disabled=false; button.textContent='确认缓存'; }
+    if(button){ button.disabled=false; button.textContent='确认合并'; }
   });
 }
 function previewCacheResult(result){
-  if(!currentCacheOperationId){ toast('请先提交缓存操作'); return; }
+  if(!currentCacheOperationId){ toast('请先提交合并操作'); return; }
   fetch('/model/checkpoints/cache-operations/'+encodeURIComponent(currentCacheOperationId)+'/result', {
     method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({result:result})
   }).then(function(response){ return response.json().then(function(data){ return {ok:response.ok,data:data}; }); }).then(function(response){
@@ -3038,7 +3192,7 @@ function previewCacheResult(result){
     updateCacheRow(data);
     var preview=document.getElementById('cacheNotificationPreview'); if(preview) preview.innerHTML=data.card_html;
     var state=document.querySelector('#cacheModalDoing .cache-state h4'); if(state) state.textContent=data.result_label;
-    var copy=document.querySelector('#cacheModalDoing .cache-state p'); if(copy) copy.textContent='缓存记录已更新，可查看本次操作结果';
+    var copy=document.querySelector('#cacheModalDoing .cache-state p'); if(copy) copy.textContent='合并记录已更新，可查看本次操作结果';
     var link=document.getElementById('cacheRecordLink'); if(link) link.href=data.record_url;
     toast(data.duplicate ? '同一结果已生成过通知，本次不重复' : data.message);
   }).catch(function(error){ toast(error.message || '结果预览失败'); });
@@ -3211,14 +3365,54 @@ document.addEventListener('click', function(event){
   if (picker && picker.classList.contains('open') && !picker.contains(event.target)) closeTrainTagPicker();
   var imagePicker = document.getElementById('trainRecommendedPicker');
   if (imagePicker && imagePicker.classList.contains('open') && !imagePicker.contains(event.target)) closeTrainRecommendedImage();
+  var queuePicker = document.getElementById('trainQueuePicker');
+  if (queuePicker && queuePicker.classList.contains('open') && !queuePicker.contains(event.target)) closeTrainQueuePicker();
+  var resumePicker = document.getElementById('resumeTaskPicker');
+  if (resumePicker && resumePicker.classList.contains('open') && !resumePicker.contains(event.target)) closeResumeTaskPicker();
 });
+function toggleTrainQueuePicker(event){
+  if (event) event.stopPropagation();
+  var picker = document.getElementById('trainQueuePicker');
+  var trigger = document.getElementById('trainQueueTrigger');
+  if (!picker || !trigger || trigger.disabled) return;
+  var isOpen = picker.classList.toggle('open');
+  trigger.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+}
+function closeTrainQueuePicker(){
+  var picker = document.getElementById('trainQueuePicker');
+  var trigger = document.getElementById('trainQueueTrigger');
+  if (picker) picker.classList.remove('open');
+  if (trigger) trigger.setAttribute('aria-expanded', 'false');
+}
+function selectTrainQueue(value, event){
+  if (event) event.stopPropagation();
+  var select = document.getElementById('trainQueueSelect');
+  if (!select) return;
+  select.value = value;
+  updateTrainQueueBalance();
+  closeTrainQueuePicker();
+}
 function updateTrainQueueBalance(){
-  var queue = document.getElementById('trainQueueSelect');
-  var hint = document.getElementById('trainQueueBalanceHint');
-  if (queue && hint) hint.hidden = queue.value !== 'gpu-shared';
+  var select = document.getElementById('trainQueueSelect');
+  if (!select) return;
+  var trigger = document.getElementById('trainQueueTrigger');
+  var nameEl = document.getElementById('trainQueueTriggerName');
+  var selected = select.selectedIndex >= 0 ? select.options[select.selectedIndex] : null;
+  var value = selected ? selected.value : '';
+  // 同步触发按钮文案
+  if (trigger && nameEl){
+    trigger.classList.toggle('is-placeholder', !value);
+    nameEl.textContent = (selected && selected.dataset.name) ? selected.dataset.name : '请选择训练队列';
+  }
+  // 同步下拉菜单选中态
+  document.querySelectorAll('#trainQueueMenu .train-queue-option').forEach(function(option){
+    option.classList.toggle('selected', option.dataset.value === value);
+  });
 }
 function openTrainDrawer(){
+  setKsyunTrainMode(false);
   openDrawer('drawerNewTrain');
+  resetTrainResumeState();
   updateTrainQueueBalance();
   updateRecommendedImageVersions();
   updateTrainImagePath();
@@ -3244,12 +3438,56 @@ function openTrainDrawer(){
   initEnvRows();
   regenDefaultConfig();
 }
+/* 金山云建训: 复用现有建训抽屉, 仅保留 任务信息 / 运行配置 / 训练配置(yaml + 入口命令) */
+function setKsyunTrainMode(on){
+  document.body.classList.toggle('ksyun-train-mode', !!on);
+  var title = document.getElementById('trainDrawerTitle');
+  if (title) title.textContent = on ? '新增金山云训练任务' : '新增训练任务';
+  var entry = document.getElementById('entryCmdBox');
+  if (entry) entry.classList.toggle('collapsed', !on);
+  var adv = document.getElementById('advConfigBox');
+  if (adv && on) adv.classList.remove('collapsed');
+  var entryInput = document.getElementById('entryCmdInput');
+  if (entryInput){
+    if (on){
+      if (entryInput.dataset.ksyunDefault === undefined) entryInput.dataset.ksyunDefault = entryInput.value;
+      entryInput.value = '';
+    } else if (entryInput.dataset.ksyunDefault !== undefined){
+      entryInput.value = entryInput.dataset.ksyunDefault;
+      delete entryInput.dataset.ksyunDefault;
+    }
+  }
+  var yamlEditor = document.getElementById('yamlEditor');
+  if (yamlEditor){
+    if (on){
+      if (yamlEditor.dataset.ksyunSaved === undefined){
+        yamlEditor.dataset.ksyunSaved = yamlEditor.value;
+        yamlEditor.dataset.ksyunReadonly = yamlEditor.readOnly ? '1' : '0';
+      }
+      yamlEditor.value = '';
+      yamlEditor.readOnly = false;
+    } else if (yamlEditor.dataset.ksyunSaved !== undefined){
+      yamlEditor.value = yamlEditor.dataset.ksyunSaved;
+      yamlEditor.readOnly = yamlEditor.dataset.ksyunReadonly === '1';
+      delete yamlEditor.dataset.ksyunSaved;
+      delete yamlEditor.dataset.ksyunReadonly;
+    }
+  }
+}
+function openKsyunTrainDrawer(){
+  openTrainDrawer();
+  setKsyunTrainMode(true);
+}
 function validateTrainInstanceCount(input){
   if (!input) return;
   var value = Number(input.value || 1);
   input.setCustomValidity(value >= 1 && value <= 4 && Number.isInteger(value) ? '' : '实例数需为 1-4 的整数');
 }
 function validateTrainForm(){
+  if (TRAIN_CREATE_MODE === 'resume'){
+    if (!RESUME_TASK || !RESUME_CKPT){ toast('请先选择来源训练任务与来源 Checkpoint'); return false; }
+    if (!resumeStepsValid()){ toast('总训练步数需大于来源 Checkpoint 的步数。'); return false; }
+  }
   var name = document.getElementById('trainNameInput');
   if (name && !String(name.value || '').trim()){
     name.setCustomValidity('请输入任务名称'); name.reportValidity(); return false;
@@ -3458,6 +3696,7 @@ function regenDefaultConfig(){
   var ov = (document.getElementById('yamlOverride')||{}).value || '';
   yaml = mergeOverride(yaml, ov);
   editor.value = yaml;
+  applyResumeStepsOverride();
 }
 // 名称输入 → 同步 job_name
 function syncJobName(input){
@@ -3474,6 +3713,273 @@ function resetTrainConfig(){
   regenDefaultConfig();
   toast('Demo: 已恢复默认');
 }
+
+/* ── 续训: 创建方式 / 来源任务与 Checkpoint ── */
+var TRAIN_CREATE_MODE = 'new';
+var RESUME_TASK = null;
+var RESUME_CKPT = null;
+
+function resumeSourceData(){
+  var data = window.TRAIN_RESUME_SOURCES || [];
+  return Array.isArray(data) ? data : [];
+}
+function switchTrainCreateMode(button, mode){
+  TRAIN_CREATE_MODE = mode || 'new';
+  document.querySelectorAll('#drawerNewTrain .tcm-tab').forEach(function(tab){
+    var on = tab.dataset.createMode === TRAIN_CREATE_MODE;
+    tab.classList.toggle('active', on);
+    tab.setAttribute('aria-selected', on ? 'true' : 'false');
+  });
+  var title = document.getElementById('trainDrawerTitle');
+  if (title) title.textContent = TRAIN_CREATE_MODE === 'resume' ? '新建续训任务' : '新增训练任务';
+  var versionNotice = document.getElementById('resumeVersionNotice');
+  if (versionNotice) versionNotice.hidden = TRAIN_CREATE_MODE !== 'resume';
+  var source = document.getElementById('trainResumeSource');
+  if (source) source.classList.toggle('resume-open', TRAIN_CREATE_MODE === 'resume');
+  if (TRAIN_CREATE_MODE === 'resume'){
+    closeResumeTaskPicker();
+  } else {
+    setResumeLocks(false);
+  }
+  updateResumeState();
+}
+function resetTrainResumeState(){
+  TRAIN_CREATE_MODE = 'new';
+  RESUME_TASK = null;
+  RESUME_CKPT = null;
+  var title = document.getElementById('trainDrawerTitle');
+  if (title) title.textContent = '新增训练任务';
+  var versionNotice = document.getElementById('resumeVersionNotice');
+  if (versionNotice) versionNotice.hidden = true;
+  var source = document.getElementById('trainResumeSource'); if (source) source.classList.remove('resume-open');
+  var trigger = document.getElementById('resumeTaskTrigger'); if (trigger) trigger.classList.add('is-placeholder');
+  var triggerText = document.getElementById('resumeTaskTriggerText'); if (triggerText) triggerText.textContent = '请选择训练任务';
+  closeResumeTaskPicker();
+  var sel = document.getElementById('resumeCkptSelect');
+  if (sel){ sel.disabled = true; sel.innerHTML = '<option value="" selected>请先选择训练任务</option>'; }
+  var hint = document.getElementById('resumeCkptHint');
+  if (hint){ hint.textContent = ''; hint.className = 'trs-ckpt-hint'; }
+  var steps = document.getElementById('resumeStepsInput'); if (steps) steps.value = '';
+  var notice = document.getElementById('resumeImageNotice'); if (notice) notice.hidden = true;
+  var submit = document.getElementById('trainSubmitBtn'); if (submit) submit.disabled = false;
+  setResumeLocks(false);
+}
+function toggleResumeTaskPicker(event){
+  if (event) event.stopPropagation();
+  var picker = document.getElementById('resumeTaskPicker');
+  var trigger = document.getElementById('resumeTaskTrigger');
+  if (!picker || !trigger) return;
+  var open = picker.classList.toggle('open');
+  trigger.setAttribute('aria-expanded', open ? 'true' : 'false');
+  if (open) renderResumeTaskOptions();
+}
+function closeResumeTaskPicker(){
+  var picker = document.getElementById('resumeTaskPicker');
+  var trigger = document.getElementById('resumeTaskTrigger');
+  if (picker) picker.classList.remove('open');
+  if (trigger) trigger.setAttribute('aria-expanded', 'false');
+}
+function resumeTaskOptionHtml(t){
+  var selected = RESUME_TASK && RESUME_TASK.id === t.id;
+  return '<button type="button" class="trs-task-option' + (selected ? ' selected' : '') + '" onclick="selectResumeTask(\\'' + t.id + '\\')">' +
+    '<div class="trs-task-option-name">' + tcEsc(t.name) + '</div>' +
+    '</button>';
+}
+function renderResumeTaskOptions(){
+  var box = document.getElementById('resumeTaskMenu');
+  if (!box) return;
+  var all = resumeSourceData();
+  if (RESUME_TASK && !all.some(function(t){ return t.id === RESUME_TASK.id; })){
+    all = [RESUME_TASK].concat(all);
+  }
+  var mine = all.filter(function(t){ return t.scope === 'mine'; });
+  var groups = [{label: '我创建的', items: mine}, {label: '全部', items: all}];
+  box.innerHTML = groups.map(function(g){
+    var rows = g.items.length ? g.items.map(resumeTaskOptionHtml).join('') : '<div class="trs-task-empty">暂无可用任务</div>';
+    return '<div class="trs-task-group"><div class="trs-task-group-title">' + g.label + '</div>' + rows + '</div>';
+  }).join('');
+}
+function selectResumeTask(id, step){
+  var task = resumeSourceData().filter(function(t){ return t.id === id; })[0];
+  if (!task) return;
+  RESUME_TASK = task;
+  var trigger = document.getElementById('resumeTaskTrigger');
+  var text = document.getElementById('resumeTaskTriggerText');
+  if (text) text.textContent = task.name;
+  if (trigger) trigger.classList.remove('is-placeholder');
+  closeResumeTaskPicker();
+  regenResumeCkptOptions(step);
+  applyResumeSource();
+}
+function regenResumeCkptOptions(preferStep){
+  var sel = document.getElementById('resumeCkptSelect');
+  if (!sel) return;
+  if (!RESUME_TASK){
+    sel.disabled = true;
+    sel.innerHTML = '<option value="" selected>请先选择训练任务</option>';
+    RESUME_CKPT = null;
+    return;
+  }
+  sel.disabled = false;
+  var ckpts = RESUME_TASK.ckpts || [];
+  sel.innerHTML = ckpts.map(function(c){
+    var suffix = c.status_text ? (' · ' + tcEsc(c.status_text)) : '';
+    return '<option value="' + c.step + '">step ' + c.step + suffix + '</option>';
+  }).join('');
+  var chosen = null;
+  if (preferStep){
+    // 入口二预填指定的 step, 进入后仍可更换
+    chosen = ckpts.filter(function(c){ return String(c.step) === String(preferStep); })[0];
+  }
+  if (!chosen) chosen = ckpts[0];  // 默认最新的 step
+  if (chosen) sel.value = String(chosen.step);
+  onResumeCkptChange();
+}
+function onResumeCkptChange(){
+  var sel = document.getElementById('resumeCkptSelect');
+  if (!sel || !RESUME_TASK){ RESUME_CKPT = null; updateResumeState(); return; }
+  var step = sel.value;
+  RESUME_CKPT = (RESUME_TASK.ckpts || []).filter(function(c){ return String(c.step) === String(step); })[0] || null;
+  updateResumeState();
+  applyResumeSource();
+}
+function resumeTaskName(task, step){
+  var suffix = step ? ('_resume_' + step) : '_resume';
+  var base = String((task && task.name) || 'train');
+  var keep = 50 - suffix.length;
+  if (base.length > keep) base = base.slice(0, keep);
+  return base + suffix;
+}
+function setResumeLocks(locked){
+  ['trainModelSel'].forEach(function(id){
+    var el = document.getElementById(id);
+    if (!el) return;
+    el.disabled = !!locked;
+    var fg = el.closest ? el.closest('.fg') : null;
+    if (fg) fg.classList.toggle('resume-locked', !!locked);
+  });
+}
+function applyResumeSource(){
+  if (TRAIN_CREATE_MODE !== 'resume' || !RESUME_TASK) return;
+  var cfg = RESUME_TASK.config || {};
+  var nameInput = document.getElementById('trainNameInput');
+  if (nameInput){
+    nameInput.value = resumeTaskName(RESUME_TASK, RESUME_CKPT ? RESUME_CKPT.step : '');
+    updateNameCount(nameInput);
+  }
+  var dsSel = document.querySelector('#drawerNewTrain .ds-row select');
+  if (dsSel && cfg.dataset){
+    var found = Array.prototype.some.call(dsSel.options, function(o){ return o.value === cfg.dataset; });
+    if (!found){ var opt = document.createElement('option'); opt.value = cfg.dataset; opt.textContent = cfg.dataset; dsSel.appendChild(opt); }
+    dsSel.value = cfg.dataset;
+  }
+  var codeInput = document.getElementById('trainCodeInput');
+  if (codeInput && cfg.commit){ codeInput.value = cfg.commit; codeInput.dataset.commit = cfg.commit; }
+  // 镜像: 命中推荐镜像列表则选中对应项, 同步展示名与路径 (命中不到则留待顶部提示)
+  var imgSel = document.getElementById('trainRecommendedImage');
+  if (imgSel && cfg.image){
+    var imgIndex = -1;
+    Array.prototype.forEach.call(imgSel.options, function(o, i){ if (imgIndex < 0 && o.value === cfg.image) imgIndex = i; });
+    if (imgIndex >= 0){ imgSel.selectedIndex = imgIndex; syncTrainRecommendedImagePicker(); updateTrainImagePath(); }
+  }
+  // 队列: 有该队列权限则带入, 否则清空让用户自行选择
+  var qSel = document.getElementById('trainQueueSelect');
+  if (qSel && qSel.options.length && cfg.queue){
+    var qFound = Array.prototype.some.call(qSel.options, function(o){ return o.value === cfg.queue; });
+    if (qFound){
+      qSel.value = cfg.queue;
+    } else {
+      var hasPlaceholder = Array.prototype.some.call(qSel.options, function(o){ return o.value === ''; });
+      if (!hasPlaceholder){
+        var ph = document.createElement('option'); ph.value = ''; ph.textContent = '请选择训练队列';
+        qSel.insertBefore(ph, qSel.firstChild);
+      }
+      qSel.value = '';
+    }
+    if (typeof updateTrainQueueBalance === 'function') updateTrainQueueBalance();
+  }
+  var pri = document.getElementById('trainPriority'); if (pri && cfg.priority) pri.value = cfg.priority;
+  var spec = document.getElementById('trainInstanceSpec'); if (spec && cfg.instance_spec) spec.value = cfg.instance_spec;
+  setResumeLocks(true);
+  regenDefaultConfig();
+}
+function resumeStepsValue(){
+  var el = document.getElementById('resumeStepsInput');
+  var v = el ? parseInt(el.value, 10) : NaN;
+  return isFinite(v) ? v : null;
+}
+function resumeStepsValid(){
+  var v = resumeStepsValue();
+  return !!(v && RESUME_CKPT && v > Number(RESUME_CKPT.step));
+}
+function updateResumeState(){
+  var hint = document.getElementById('resumeCkptHint');
+  var submit = document.getElementById('trainSubmitBtn');
+  updateResumeImageNotice();
+  if (TRAIN_CREATE_MODE !== 'resume'){ if (submit) submit.disabled = false; return; }
+  var stepsOk = resumeStepsValid();
+  var ok = !!(RESUME_TASK && RESUME_CKPT && stepsOk);
+  if (hint){
+    if (!RESUME_TASK){ hint.textContent = '请选择来源训练任务'; hint.className = 'trs-ckpt-hint'; }
+    else if (!RESUME_CKPT){ hint.textContent = '请选择来源 Checkpoint'; hint.className = 'trs-ckpt-hint'; }
+    else if (!stepsOk){ hint.textContent = '总训练步数需大于来源 Checkpoint 的 step'; hint.className = 'trs-ckpt-hint'; }
+    else { hint.textContent = ''; hint.className = 'trs-ckpt-hint'; }
+  }
+  if (submit) submit.disabled = !ok;
+}
+// 来源镜像已下线(不在推荐镜像列表)时, 在抽屉顶部给出提示
+function updateResumeImageNotice(){
+  var box = document.getElementById('resumeImageNotice');
+  if (!box) return;
+  var path = '';
+  var missing = false;
+  if (TRAIN_CREATE_MODE === 'resume' && RESUME_TASK && RESUME_TASK.config){
+    path = RESUME_TASK.config.image || '';
+    var sel = document.getElementById('trainRecommendedImage');
+    var found = !!(sel && path && Array.prototype.some.call(sel.options, function(o){ return o.value === path; }));
+    missing = !!path && !found;
+  }
+  box.hidden = !missing;
+  if (missing){ var p = document.getElementById('resumeImageNoticePath'); if (p) p.textContent = path; }
+}
+// 总训练步数 → 覆盖训练配置中的 steps (用户无需在高级配置里手改)
+function applyResumeStepsOverride(){
+  var editor = document.getElementById('yamlEditor');
+  if (!editor || TRAIN_CREATE_MODE !== 'resume') return;
+  var total = resumeStepsValue();
+  if (!total) return;
+  editor.value = editor.value.replace(/^steps:.*$/m, 'steps: ' + total);
+}
+function onResumeStepsChange(){
+  regenDefaultConfig();
+  updateResumeState();
+}
+function openTrainResume(from, step){
+  openTrainDrawer();
+  switchTrainCreateMode(null, 'resume');
+  if (from) selectResumeTask(from, step);
+}
+/* ── 列表页: 新建训练 / 续训 拆分按钮 ── */
+function toggleTrainCreateSplit(event){
+  if (event) event.stopPropagation();
+  var menu = document.getElementById('trainCreateSplitMenu');
+  var wrap = document.getElementById('trainCreateSplit');
+  if (!menu) return;
+  var open = menu.classList.toggle('open');
+  if (wrap) wrap.classList.toggle('open', open);
+}
+function hideTrainCreateSplit(){
+  var menu = document.getElementById('trainCreateSplitMenu');
+  if (menu) menu.classList.remove('open');
+}
+function openTrainResumeCreate(){
+  hideTrainCreateSplit();
+  openTrainDrawer();
+  switchTrainCreateMode(null, 'resume');
+}
+document.addEventListener('click', function(event){
+  if (!event.target.closest('#trainCreateSplit')) hideTrainCreateSplit();
+});
 
 /* ── 训练代码模糊查询 ── */
 function tcEsc(s){
@@ -3600,7 +4106,9 @@ function updateTrainImageVersions(){
   var versionSel = document.getElementById('trainImageVersion');
   if (!nameSel || !versionSel) return;
   var versions = TRAIN_IMAGE_VERSIONS[nameSel.value] || [];
-  versionSel.innerHTML = '<option value="" selected disabled>镜像版本</option>' + versions.map(function(v){ return '<option value="' + v + '">' + v + '</option>'; }).join('');
+  versionSel.innerHTML = versions.map(function(v, index){
+    return '<option value="' + v + '"' + (index === 0 ? ' selected' : '') + '>' + v + '</option>';
+  }).join('');
   refreshSelectPlaceholderState(nameSel);
   refreshSelectPlaceholderState(versionSel);
   updateTrainImagePath();
@@ -3742,6 +4250,13 @@ function selectDeployCheckpoint(el){
   if(input) input.value = value;
   if(hidden) hidden.value = value;
   picker.classList.remove('open');
+  refreshDeployCacheTip(el);
+}
+function refreshDeployCacheTip(item){
+  var tip = document.getElementById('deployCacheTip');
+  if(!tip) return;
+  var selected = item || document.querySelector('.deploy-checkpoint-picker .ddp-item.on');
+  tip.hidden = !selected || selected.dataset.cached === '1';
 }
 function filterDeployCheckpoints(input){
   var q = (input.value || '').trim().toLowerCase();
@@ -3964,12 +4479,18 @@ def render_page(title, content, active="", breadcrumb=None, extra_script=None,
                 content = content.replace(action, '', 1)
         elif request.path == '/model/checkpoints':
             ckpt_actions = re.findall(
-                r'<a\b[^>]*class="[^"]*\bckpt-(?:cache|deploy)-action\b[^"]*"[^>]*>\s*[^<]+\s*</a>',
+                r'<a\b[^>]*class="[^"]*\bckpt-(?:import|cache|deploy)-action\b[^"]*"[^>]*>\s*[^<]+\s*</a>',
                 content,
             )
             title_action = ''.join(ckpt_actions)
             for action in ckpt_actions:
                 content = content.replace(action, '', 1)
+        elif request.path == '/model/experiments':
+            # 训练任务列表页: 整个「新建/续训」拆分按钮一起提升到标题行
+            split_match = re.search(r'<!--title-action-->([\s\S]*?)<!--/title-action-->', content)
+            title_action = split_match.group(1).strip() if split_match else ''
+            if split_match:
+                content = content.replace(split_match.group(0), '', 1)
         else:
             action_candidates = re.findall(r'<(?:a|button)\b[^>]*class="[^"]*\bbtn(?:\s|\")[^"]*"[^>]*>\s*(?:\+\s*)?(?:新增|新建|创建)[^<]*</(?:a|button)>', content)
             action_match = next((re.search(r'.*', item) for item in action_candidates if '评价标准' in item), None) if request.path.endswith('/criteria') else (re.search(r'.*', action_candidates[0]) if action_candidates else None)
@@ -4013,7 +4534,7 @@ def _render_data_refactor_page(page_key):
 
 
 for _data_page_key, _data_page_spec in data_refactor.PAGE_SPECS.items():
-    if _data_page_spec.get("legacy"):
+    if _data_page_spec.get("legacy") or _data_page_spec.get("custom_view"):
         continue
 
     def _data_page_view(page_key=_data_page_key):
@@ -4932,6 +5453,9 @@ WB_TASKS = [
 
 WB_PRIORITY_ORDER = {"P0": 0, "P1": 1, "P2": 2}
 WB_TASKS.extend(wb_pool.PRETRAINING_TASKS)
+# 处理模式由流程决定：预训练质检采用批量，其余标注流程采用单条处理。
+for _task in WB_TASKS:
+    _task.setdefault("execution_unit", "batch" if _task.get("stage") == "质检" else "single")
 
 WB_POOL_META = {
     "POOL-E2E-ACCEPTANCE": {
@@ -5127,6 +5651,13 @@ def _workbench_collection_task_id(task):
     return "COL-2026-0718"
 
 
+def _workbench_pool_rule_names(task):
+    if task["id"].startswith("WB-PRETRAINING-"):
+        return (f'预训练数据{task["node"]}规则 v1',)
+    return tuple(rule["name"] for rule in RULES
+                 if rule.get("enabled") and rule["stage"] == task["stage"])
+
+
 def _render_workbench_pool_home(pool_id, selected_task_id=None, version="v1"):
     is_v2 = version == "v2"
     workbench_url = "/data/workbench-v2" if is_v2 else "/data/workbench"
@@ -5144,6 +5675,7 @@ def _render_workbench_pool_home(pool_id, selected_task_id=None, version="v1"):
     )
     task_id_query = request.args.get("processing_task_id", request.args.get("task_id", "")).strip()
     collection_task_query = request.args.get("collection_task_id", "").strip() if is_v2 else ""
+    collector_query = request.args.get("collector", "").strip() if is_v2 else ""
     visible_pool_tasks = [
         item for item in pool_tasks
         if (not task_id_query or task_id_query.lower() in item["processing_task"].lower())
@@ -5161,6 +5693,7 @@ def _render_workbench_pool_home(pool_id, selected_task_id=None, version="v1"):
     if (task_id_query or collection_task_query) and visible_pool_tasks and task not in visible_pool_tasks:
         task = visible_pool_tasks[0]
     use_annotation_pool_layout = is_v2 and (task["stage"] == "标注" or task["id"].startswith("WB-PRETRAINING-"))
+    workbench_submit_url = (f"{pool_url}/records" if is_v2 and task.get("execution_unit") == "batch" else f"{workbench_url}/edit")
     meta = WB_POOL_META[pool_id]
     total_waiting = sum(item["count"] for item in pool_tasks)
     total_processing = sum(item["processing"] for item in pool_tasks)
@@ -5215,20 +5748,14 @@ def _render_workbench_pool_home(pool_id, selected_task_id=None, version="v1"):
     if is_v2:
         is_quality = task["stage"] == "质检"
         rule_label = "质检规则" if is_quality else "标注规则"
-        rule_names = tuple(
-            rule["name"]
-            for rule in RULES
-            if rule.get("enabled") and rule["stage"] == task["stage"]
-        )
-        if task["id"].startswith("WB-PRETRAINING-"):
-            rule_names = (f'预训练数据{task["node"]}规则 v1',)
+        rule_names = _workbench_pool_rule_names(task)
         show_rule_details = any(
             rule.get("rule_config") not in (None, "", "略")
             for rule in RULES
             if rule.get("enabled") and rule["stage"] == task["stage"]
         )
         rule_options = "".join(
-            f'<option value="{html.escape(name, quote=True)}">'
+            f'<option value="{html.escape(name, quote=True)}"{ " selected" if name == request.args.get("rule") else ""}>'
             f'{html.escape(name)}</option>'
             for name in rule_names
         )
@@ -5327,6 +5854,17 @@ def _render_workbench_pool_home(pool_id, selected_task_id=None, version="v1"):
                 </select>
               </div>
     """
+    held_records = [record for record in _shared_pool_records(task) if record["status"] == "processing" and record.get("owner") in (None, "", _pool_owner())] if is_v2 else []
+    held_unit = "一批" if task.get("execution_unit") == "batch" else "一条"
+    held_process_url = (f"{pool_url}/records?source={quote(task['id'])}&entry=start" if task.get("execution_unit") == "batch" else f"{workbench_url}/edit?task={quote(task['id'])}&recording_id={quote(held_records[0]['id'])}") if held_records else ""
+    held_notice = (f'<div class="wb-held-group"><div class="wb-held-notice"><div class="wb-held-first-row"><b>您有{held_unit}已领取的数据待完成。</b></div></div><button class="btn" type="button" id="wbReleaseHeld">释放</button><a class="btn btn-primary" id="wbProcessHeld" href="{html.escape(held_process_url, quote=True)}">处理</a></div>' if held_records else "")
+    if held_records and task.get("execution_unit") == "batch":
+        held_batch = _shared_pool_records(task)
+        if any(r.get("owner") == _pool_owner() for r in held_records):
+            held_batch = [r for r in held_batch if r.get("owner") == _pool_owner()]
+    else:
+        held_batch = held_records
+    release_payload = json.dumps({"url": f"{pool_url}/records/actions?source={task['id']}", "action": "batch_release" if task.get("execution_unit") == "batch" else "release", "ids": [r["id"] for r in held_batch]}, ensure_ascii=False) if held_records else "{}"
     content = f"""
     <div class="wb-task-home wb-pool-home{' wb-v2-pool-home' if is_v2 else ''}">
       <div class="wb-task-home-head">
@@ -5342,7 +5880,7 @@ def _render_workbench_pool_home(pool_id, selected_task_id=None, version="v1"):
         <div class="wb-v2-basic-grid">
           <div><span>流程</span><b>{html.escape(task['flow'])}</b></div>
           <div><span>节点</span><b>{html.escape(task['node'])}</b></div>
-          <div><span>用户组</span><b>{html.escape(task['user_group'])}</b></div>
+          <div><span>处理模式</span><b>{'批量处理' if task.get('execution_unit') == 'batch' else '单条处理'}</b></div>
         </div>
       </section>''' if use_annotation_pool_layout else ('' if is_v2 else f'''<div class="wb-task-brief wb-pool-brief">
         <div><span>环节</span><b>{html.escape(task['stage'])}</b></div>
@@ -5386,11 +5924,11 @@ def _render_workbench_pool_home(pool_id, selected_task_id=None, version="v1"):
           <div class="wb-task-config-title">
             <h3>筛选条件</h3>
           </div>
-          <form class="wb-filter-form" id="wbFilterForm" action="{workbench_url}/edit" method="get">
+          <form class="wb-filter-form" id="wbFilterForm" action="{workbench_submit_url}" method="get">
             <input type="hidden" name="task" value="{html.escape(task['id'])}">
-            <div class="wb-filter-grid wb-v2-filter-grid">{rule_selector}{task_id_filter}</div>
+            <input type="hidden" name="entry" value="start">
+            <div class="wb-filter-grid wb-v2-filter-grid">{rule_selector}{task_id_filter}<div class="wb-filter-field"><label for="wbSupplierId">采集供应商</label><input id="wbSupplierId" name="supplier_id" placeholder="请输入采集供应商" value="{html.escape(request.args.get('supplier_id', ''), quote=True)}"></div><div class="wb-filter-field"><label for="wbCollector">采集员</label><input id="wbCollector" name="collector" form="wbFilterForm" value="{html.escape(collector_query, quote=True)}" placeholder="请输入采集员"></div><div class="wb-filter-field wb-collection-range"><label>采集时间</label><div class="wb-date-range"><input type="date" name="collected_from" aria-label="采集开始时间" value="{html.escape(request.args.get('collected_from', ''), quote=True)}"><span>至</span><input type="date" name="collected_to" aria-label="采集结束时间" value="{html.escape(request.args.get('collected_to', ''), quote=True)}"></div></div><div class="wb-filter-inline-reset"><button class="btn" type="reset" onclick="{reset_rule_details}">重置</button></div></div>
           </form>
-          <div class="wb-filter-reset"><button class="btn" form="wbFilterForm" type="reset" onclick="{reset_rule_details}">重置</button></div>
         </section>''' if use_annotation_pool_layout else ('' if is_v2 else f'''<section class="wb-task-config wb-filter-config">
           <div class="wb-task-config-title">
             <h3>筛选条件</h3><span>设置本次进入工作台的数据范围</span>
@@ -5427,15 +5965,20 @@ def _render_workbench_pool_home(pool_id, selected_task_id=None, version="v1"):
         </section>'''}
       </div>
       {task_filter_error}
+      {held_notice}
       <div class="wb-task-home-actions">
+        {f'<input type="hidden" form="wbFilterForm" name="recording_id" value="{html.escape(held_records[0]["id"], quote=True)}">' if held_records and task.get("execution_unit") != "batch" else ""}
         {claim_control}
         {f'<button class="btn" form="wbFilterForm" type="reset" onclick="{reset_rule_details}">重置</button>' if not is_v2 else ''}
-        {f'<a class="btn" href="{pool_url}/records?{html.escape(urlencode({"source": task["id"]}), quote=True)}">数据列表</a>' if is_v2 else ''}
-        <button class="btn btn-primary" form="wbFilterForm"
-          type="submit">{'开始处理' if is_v2 else '按筛选条件开始处理'}</button>
+        <button class="btn btn-primary{' wb-start-blocked' if held_records else ''}" form="wbFilterForm" {'id="wbStartBlocked" aria-disabled="true"' if held_records else ''}
+          type="{'button' if held_records else 'submit'}">{'开始处理' if is_v2 else '按筛选条件开始处理'}</button>
       </div>
     </div>
     """
+    if is_v2:
+        content += '<script src="/static/workbench_pool/date-filter.js"></script>'
+    if held_records:
+        content += '<script id="wbHeldPayload" type="application/json">' + release_payload.replace('<', chr(92) + 'u003c') + '</script><link rel="stylesheet" href="/static/workbench_pool/pool.css"><script src="/static/workbench_pool/home.js"></script>'
     return render_page(
         "工作台 · 任务池",
         content,
@@ -5467,7 +6010,7 @@ def _pool_list_task(pool_id):
     tasks = [task for task in WB_TASKS if task["pool"] == pool_id]
     if not tasks:
         abort(404)
-    source = request.args.get("source")
+    source = request.args.get("source", request.args.get("task"))
     if source and not any(task["id"] == source for task in tasks):
         abort(404)
     return next((task for task in tasks if task["id"] == source), tasks[0])
@@ -5487,10 +6030,102 @@ def _shared_pool_records(task):
     return wb_pool.shared_records(_pool_db(), task, session.get("workbench_pool_states", {}), _pool_owner())
 
 
+def _pool_list_history(task, records):
+    if task["id"] != "WB-PRETRAINING-ACCEPTANCE":
+        return records
+    upstream_task = next(item for item in WB_TASKS if item["id"] == "WB-PRETRAINING-QC")
+    upstream = {item["id"]: item for item in _shared_pool_records(upstream_task)}
+    enriched = []
+    for index, record in enumerate(records):
+        previous = upstream.get(record["id"], {})
+        enriched.append(dict(record,
+            collection_qc_result=previous.get("result") or ("合格", "操作失误", "不合格")[index % 3],
+            collection_qc_at=previous.get("reviewed_at") or "2026-10-11 10:00:00",
+            collection_qc_operator=previous.get("operators", {}).get("质检人") or "王晓明",
+            collection_qc_operator_id=previous.get("operator_ids", {}).get("质检人") or "OP-028",
+            collection_qc_supplier_id=previous.get("reviewer_supplier_id", previous.get("supplier_id")) or "SUP-003"))
+    return enriched
+
+
 @app.route("/data/workbench-v2/pools/<pool_id>/records")
 def data_workbench_pool_records(pool_id):
+    collected_from = request.args.get("collected_from", "")
+    collected_to = request.args.get("collected_to", "")
+    if collected_from or collected_to:
+        try:
+            start_date = date.fromisoformat(collected_from)
+            end_date = date.fromisoformat(collected_to)
+        except ValueError:
+            abort(400, description="请选择完整的采集日期范围")
+        if not 0 <= (end_date - start_date).days <= 29:
+            abort(400, description="采集时间范围最多30天，结束日期不能早于开始日期")
     task = _pool_list_task(pool_id)
-    records = wb_pool.public_records(_shared_pool_records(task), _pool_owner())
+    scope = task["pool"] + ":" + task["id"]
+    selected_rule = request.args.get("rule") or session.get("workbench_pool_rules", {}).get(scope, "")
+    if request.args.get("entry") in ("todo", "start") and not selected_rule:
+        selected_rule = _workbench_pool_rule_names(task)[0]
+    if selected_rule not in _workbench_pool_rule_names(task):
+        return redirect(f'/data/workbench-v2/pools/{quote(pool_id)}?source={quote(task["id"])}')
+    selected_rules = dict(session.get("workbench_pool_rules", {}))
+    selected_rules[scope] = selected_rule
+    session["workbench_pool_rules"] = selected_rules
+    task = dict(task, selected_rule=selected_rule,
+                compact_list=request.args.get("entry") in ("todo", "start"),
+                hide_status=request.args.get("entry") in ("todo", "start"),
+                return_to_workbench=request.args.get("entry") == "todo")
+    if request.args.get("entry") == "start" and task["node"] == "采集质检":
+        with wb_pool.shared_state(_pool_db(), task, session.get("workbench_pool_states", {}), _pool_owner()) as saved:
+            states = saved[scope]
+            for index, record in enumerate(wb_pool.pool_records(task, saved)):
+                if index % 3 == 1 and not record.get("reviewed_at"):
+                    states.setdefault(record["id"], {}).update(result="", reason="", remark="")
+    source_records = (wb_pool.prepare_todo_batch(_pool_db(), task, session.get("workbench_pool_states", {}), _pool_owner())
+                      if task.get("return_to_workbench") or task["node"] == "质检验收" else _shared_pool_records(task))
+    records = _pool_list_history(task, source_records)
+    if task.get("return_to_workbench"):
+        for index, record in enumerate(records):
+            if index in (0, 3):
+                record["modified"] = True
+    if task.get("compact_list"):
+        for index, record in enumerate(records):
+            if task["node"] == "质检验收" and not record.get("result"):
+                record["result"] = record.get("collection_qc_result", "")
+            if (task["node"] == "质检验收" or task.get("return_to_workbench")) and index % 3 == 0:
+                record["qc_error_count"] = len(record.get("reasons", [])) or 1
+                record["qc_error_description"] = ""
+    if task.get("return_to_workbench") and task["node"] == "采集质检" and request.args.get("todo_type", "驳回待处理") == "驳回待处理":
+        task["rejection_remark"] = "质检结果存在错误，请检查标记为错误的数据并修正后重新提交。"
+    if task.get("return_to_workbench") and task["node"] == "质检验收" and request.args.get("todo_type") == "修正待审核":
+        task["rejection_remark"] = "质检结果存在错误，请检查标记为错误的数据并修正后重新提交。"
+    owned = [r for r in records if r["status"] == "processing" and r.get("owner") in (None, "", _pool_owner())]
+    resume = request.args.get("entry") == "start" and bool(owned)
+    if not resume:
+        collector_query = request.args.get("collector", "").strip().lower()
+        if collector_query:
+            records = [r for r in records if collector_query in str(r.get("collector", "")).lower() or collector_query in str(r.get("collector_id", "")).lower()]
+        supplier_query = request.args.get("supplier_id", "").strip()
+        if supplier_query:
+            def supplier_matches(record):
+                value = str(record.get("supplier_id", ""))
+                digits = "".join(char for char in value if char.isdigit())
+                short_id = str(int(digits)).zfill(2) if digits else value
+                return supplier_query.lower() == value.lower() or supplier_query == short_id or supplier_query.lower() in str(record.get("supplier", "")).lower()
+            records = [record for record in records if supplier_matches(record)]
+        start_time = request.args.get("collected_from", "").replace("T", " ")
+        end_time = request.args.get("collected_to", "").replace("T", " ")
+        if start_time:
+            records = [r for r in records if r.get("collected_at", "") >= start_time]
+        if end_time:
+            records = [r for r in records if r.get("collected_at", "") <= end_time + (":59" if len(end_time) == 16 else " 23:59:59" if len(end_time) == 10 else "")]
+    elif any(r.get("owner") == _pool_owner() for r in owned):
+        records = [r for r in records if r.get("owner") == _pool_owner()]
+    if request.args.get("entry") == "start" and records:
+        ids = [r["id"] for r in records if r["status"] != "completed"]
+        if ids:
+            claimed = wb_pool.shared_transition(_pool_db(), task, session.get("workbench_pool_states", {}), _pool_owner(), "start", ids)
+            claimed_by_id = {r["id"]: r for r in claimed}
+            records = [dict(r, **{k: claimed_by_id[r["id"]][k] for k in ("status", "owner")}) if r["id"] in ids else r for r in records]
+    records = wb_pool.public_records(records, _pool_owner())
     content = render_template("workbench_pool/list.html", task=task, records=records,
                               reasons=wb_pool.REJECTION_REASONS, notice=session.pop("workbench_pool_notice", ""))
     return render_page("任务池数据列表", content, active="/data/workbench-v2", module="data",
@@ -5512,7 +6147,7 @@ def data_workbench_pool_action(pool_id):
         return jsonify(error=str(error), code="record_occupied"), 409
     except ValueError as error:
         return jsonify(error=str(error)), 400
-    return jsonify(records=wb_pool.public_records(records, _pool_owner()))
+    return jsonify(records=wb_pool.public_records(_pool_list_history(task, records), _pool_owner()))
 
 
 @app.route("/data/workbench/tasks/<task_id>")
@@ -7027,7 +7662,7 @@ def data_workbench_edit(preview_mode=None):
         original_task = next(item for item in WB_TASKS if item["id"] == requested_task_id)
         workbench_task = dict(original_task, recording_id=recording_id, recording_device=pool_record["device"],
                               recording_collector=pool_record["collector"], collection_command=pool_record["description"])
-        workbench_mode = "quality"
+        workbench_mode = "annotation" if original_task["stage"] == "标注" else "quality"
     v2_workbench_page = request.path.startswith("/data/workbench-v2")
     style_preview = request.args.get("style_preview") == "1"
     style_config = WORKBENCH_STYLE_VARIANTS.get(request.args.get("style", ""))
@@ -8946,15 +9581,106 @@ MODEL_QUEUES = [
     },
 ]
 
+# ── 金山云星流平台 (Demo): 镜像与队列, 供镜像管理 / 队列管理的「金山云」分区使用 ──
+KSYUN_IMAGES = [
+    {"name": "pytorch", "version": "2.5-gpu-py39-cu112-ubuntu20.04", "description": "官方镜像 · PyTorch 2.5 / CUDA 11.2", "creator": "官方镜像", "created": "2026-09-01 10:12"},
+    {"name": "pytorch", "version": "2.6-gpu-py310-cu126-ubuntu22.04", "description": "官方镜像 · PyTorch 2.6 / CUDA 12.6", "creator": "官方镜像", "created": "2026-09-20 14:05"},
+    {"name": "mozbrain_release", "version": "ks-v1.7-panshi", "description": "KCR 自定义镜像 · 预训练对齐版本", "creator": "tao.wang", "created": "2026-09-22 09:30"},
+    {"name": "mozbrain", "version": "ks-harbor-v1.6", "description": "第三方镜像（Harbor）· 多机合训", "creator": "hannah.wang", "created": "2026-09-25 16:40"},
+]
+KSYUN_QUEUES = [
+    {"id": "ks-q-pretrain-a", "name": "q-pretrain-a", "admins": ["Tao Wang"], "members": ["Tao Wang", "Joanna Qiao", "Min Chen"]},
+    {"id": "ks-q-pretrain-b", "name": "q-pretrain-b", "admins": ["Min Chen"], "members": ["Min Chen", "Hannah Wang"]},
+    {"id": "ks-q-pretrain-h", "name": "q-pretrain-h", "admins": ["Rick Guo"], "members": ["Rick Guo", "Lance Li"]},
+]
+
+# ── 训练队列运行态 (Demo): GPU 算力占用 + 排队/运行任务数 ──
+# key 与建训表单「训练队列」选项 value 一致; 值为 (GPU 总量, GPU 已用, 运行中任务, 排队中任务)
+TRAIN_QUEUE_RUNTIME = {
+    "gpu-shared": (8, 6, 3, 2),
+    "gpu-quanta": (8, 8, 4, 5),
+    "pi05-train-a100": (4, 2, 1, 0),
+    "eval-shared-l40s": (4, 0, 0, 0),
+    "queue-default-eval": (4, 3, 2, 1),
+    "queue-regression": (4, 1, 1, 3),
+    "queue-edge-special": (2, 0, 0, 0),
+}
+
+
+def _train_queue_meta(value, name):
+    """单个训练队列的展示元数据 (供建训表单下拉渲染)."""
+    total, used, running, queued = TRAIN_QUEUE_RUNTIME.get(value, (0, 0, 0, 0))
+    return {"value": value, "name": name, "gpu_total": total, "gpu_used": used,
+            "running": running, "queued": queued}
+
+
+def _train_queue_choices(has_queue_access):
+    """建训表单可选的训练队列: 资源队列 + 用户有权限的队列."""
+    if not has_queue_access:
+        return []
+    choices = [("gpu-shared", "gpu-shared")]
+    choices.extend((queue[0], queue[0]) for queue in MODEL_EXCLUSIVE_QUEUES)
+    choices.extend((queue["id"], queue["name"]) for queue in MODEL_QUEUES)
+    return [_train_queue_meta(value, name) for value, name in choices]
+
+
+def _train_queue_options_html(queue_choices):
+    """隐藏 select 的 option: 承载真实表单值, data-name 供触发按钮显示."""
+    return "".join(
+        f'<option value="{html.escape(q["value"], quote=True)}"'
+        f' data-name="{html.escape(q["name"], quote=True)}">'
+        f'{html.escape(q["name"])}</option>'
+        for q in queue_choices
+    )
+
+
+def _train_queue_menu_html(queue_choices):
+    """富信息下拉的菜单项: 队列名 + GPU 占用定宽进度条(按占用分档配色) + 运行/排队徽标."""
+    items = ""
+    for q in queue_choices:
+        badges = ""
+        if q["running"]:
+            badges += f'<span class="train-queue-badge is-run">运行 {q["running"]}</span>'
+        if q["queued"]:
+            badges += f'<span class="train-queue-badge is-queue">排队 {q["queued"]}</span>'
+        if not badges:
+            badges = '<span class="train-queue-badge is-idle">空闲</span>'
+        pct = round(q["gpu_used"] / q["gpu_total"] * 100) if q["gpu_total"] else 0
+        pct = max(0, min(100, int(pct)))
+        # 占用越高越告警: <60% 正常(主题青) / >=60% 偏高(橙) / >=85% 紧张(红)
+        level = "is-danger" if pct >= 85 else ("is-warn" if pct >= 60 else "")
+        fill_cls = ("train-queue-usage-fill " + level).strip()
+        items += (
+            f'<button type="button" class="train-queue-option" role="option"'
+            f' data-value="{html.escape(q["value"], quote=True)}"'
+            f' onclick="selectTrainQueue(this.dataset.value, event)">'
+            f'<span class="train-queue-option-main">'
+            f'<span class="train-queue-option-name">{html.escape(q["name"])}</span>'
+            f'<span class="train-queue-option-usage">'
+            f'<span class="train-queue-usage-text">GPU 占用 {q["gpu_used"]}/{q["gpu_total"]} 卡</span>'
+            f'<span class="train-queue-usage-bar">'
+            f'<span class="{fill_cls}" style="width:{pct}%"></span>'
+            f'</span>'
+            f'</span>'
+            f'</span>'
+            f'<span class="train-queue-option-meta">{badges}</span>'
+            f'</button>'
+        )
+    return items
+
 
 @app.route("/model/queues")
 def model_queues():
     current_user = "Joanna Qiao"
     readonly = request.args.get("view") == "readonly"
     people = ["Joanna Qiao", "Lance Li", "Rick Guo", "Tao Wang", "Hannah Wang", "Min Chen"]
+    selected_resource = request.args.get("resource", "volcano")
+    if selected_resource not in RESOURCE_TAB_LABELS:
+        selected_resource = "volcano"
+    queues = KSYUN_QUEUES if selected_resource == "kingsoft" else MODEL_QUEUES
     rows = ""
     drawers = ""
-    for index, queue in enumerate(MODEL_QUEUES):
+    for index, queue in enumerate(queues):
         drawer_id = f"model-queue-drawer-{index}"
         picker_id = f"model-queue-member-picker-{index}"
         admin_chips = "".join(
@@ -9018,6 +9744,7 @@ def model_queues():
         if readonly else ""
     )
     content = f'''
+    {_resource_tabs('/model/queues', selected_resource)}
     {readonly_notice}
     <div class="table-wrap">
       <table class="ant-table">
@@ -9477,9 +10204,10 @@ def _make_eval_wrapper(orig_view):
         resp = orig_view(**kwargs)
         # 1) 若 handler 已经调用了 (被拦截的) render_page, 用我们的 chrome 包一次
         if _eval_capture.get("content") is not None:
+            content = _rewrite_ep_links(_eval_capture["content"])
             return render_page(
                 _eval_capture.get("title", ""),
-                _rewrite_ep_links(_eval_capture["content"]),
+                content,
                 active=_ep_active_for(request.path),
                 module="model",
             )
@@ -10071,10 +10799,122 @@ def _experiment_owner(exp):
     return owners[index % len(owners)]
 
 
+# 当前登录用户 (Demo 固定为门户展示的账号)
+CURRENT_USER = "joanna.qiao"
+
+
+def _experiment_followers(exp):
+    """关注该任务的用户列表 (Demo 内存态, 不持久化)。"""
+    return exp.get("followers", [])
+
+
+def _experiment_followers_html(exp):
+    """训练任务详情「飞书关注人」字段: 灰色标签展示关注人, 超过 5 人折叠为 +N。"""
+    followers = _experiment_followers(exp)
+    if not followers:
+        return '<span class="muted">暂无关注人</span>'
+    chips = "".join(
+        f'<span class="model-queue-member">{html.escape(str(name))}</span>'
+        for name in followers[:5]
+    )
+    if len(followers) > 5:
+        rest = "、".join(html.escape(str(name)) for name in followers[5:])
+        chips += (
+            f'<span class="model-queue-member follower-more" '
+            f'data-tooltip="{rest}" tabindex="0">+{len(followers) - 5}</span>'
+        )
+    return f'<span class="model-queue-members">{chips}</span>'
+
+
 def _experiment_numeric_id(exp):
     """Display the numeric task identifier while retaining the internal mock key."""
     match = re.search(r"(\d+)$", str(exp.get("id", "")))
     return match.group(1) if match else str(exp.get("id", ""))
+
+
+# ── 续训来源 (Demo mock) ──
+# 每个训练任务可选的 Checkpoint step; Demo 中所有 step 均可用。
+RESUME_CURRENT_USER = "joanna.qiao"
+
+# 演示: 该来源任务的镜像是已下线版本 (不在推荐镜像列表中), 用于验证顶部提示
+RESUME_RETIRED_IMAGES = {
+    "DEMO_EXP_9005": "spirit-ai-cn-beijing.cr.volces.com/spirit-ai/mozbrain:thor-v0.8.0",
+}
+# 演示: 来源任务使用的训练队列; 不在可用队列列表中的会被清空让用户重选
+RESUME_QUEUE_POOL = ["pi05-train-a100", "gpu-quanta", "gpu-h100-reserved", "queue-regression"]
+# 演示: 仅 Mozbrain v2.0 镜像的训练任务支持续训, 平台已有任务默认 v1.0
+RESUME_V2_TASKS = {"DEMO_EXP_9001", "DEMO_EXP_9003", "DEMO_EXP_9005"}
+CKPT_STATUS_TEXT = {
+    "unmerged": "未合并",
+    "merging": "合并中",
+    "merge_failed": "合并失败",
+    "merged": "已合并",
+    "caching": "缓存中",
+    "cached": "已缓存",
+    "cache_failed": "缓存失败",
+}
+RESUME_CKPT_STATUS_CYCLE = ["cached", "merged", "caching", "unmerged", "merge_failed", "merged", "cache_failed", "unmerged", "cached", "merged"]
+
+
+def _experiment_mozbrain_version(exp):
+    """训练任务使用的 Mozbrain 版本; 未显式声明时按演示规则推断."""
+    if exp.get("mozbrain_version"):
+        return exp["mozbrain_version"]
+    return "mozbrain v2.0" if exp["id"] in RESUME_V2_TASKS else "mozbrain v1.0"
+
+
+def _resume_ckpts(exp):
+    """返回某个训练任务可供续训的 Checkpoint (step + 缓存状态, 由大到小)."""
+    steps = list(range(50000, 0, -5000))
+    result = []
+    for i, step in enumerate(steps):
+        status = RESUME_CKPT_STATUS_CYCLE[i % len(RESUME_CKPT_STATUS_CYCLE)]
+        result.append({"step": step, "status": status, "status_text": CKPT_STATUS_TEXT[status]})
+    return result
+
+
+def _resume_task_config(exp):
+    """续训时从来源任务带入的配置 (供前端预填)."""
+    dataset = str(exp.get("dataset") or "").strip()
+    if not dataset or dataset == "—":
+        dataset = "clean_whiteboard_v4"
+    elif "+" in dataset:
+        dataset = dataset.split("+")[0].strip()
+    name = str(exp.get("name") or "").lower()
+    # 演示: 不同来源任务带出的镜像/队列不同, 便于观察带入与"已下线"提示
+    idx = next((i for i, item in enumerate(EXPERIMENTS) if item["id"] == exp["id"]), 0)
+    retired_image = RESUME_RETIRED_IMAGES.get(exp["id"])
+    image = _train_image_path(TRAIN_IMAGE_CATALOG[(idx + 1) % len(TRAIN_IMAGE_CATALOG)])
+    return {
+        "dataset": dataset,
+        "image": retired_image or image,
+        "commit": "a5ebbdd",
+        "model": "pi05" if "pi05" in name else "spiritv1_6",
+        "robot": "new",
+        "base": "wholebody",
+        "priority": str(exp.get("priority") or "4"),
+        "instance_spec": "A100-2x-80G",
+        "queue": RESUME_QUEUE_POOL[idx % len(RESUME_QUEUE_POOL)],
+    }
+
+
+def _train_resume_sources():
+    sources = []
+    for exp in EXPERIMENTS:
+        # 仅 Mozbrain v2.0 的任务可作为续训来源, v1.0 及更早不支持
+        if _experiment_mozbrain_version(exp) != "mozbrain v2.0":
+            continue
+        owner = _experiment_owner(exp)
+        sources.append({
+            "id": exp["id"],
+            "name": exp["name"],
+            "owner": owner,
+            "scope": "mine" if owner == RESUME_CURRENT_USER else "shared",
+            "mozbrain_version": "mozbrain v2.0",
+            "ckpts": _resume_ckpts(exp),
+            "config": _resume_task_config(exp),
+        })
+    return sources
 
 
 @app.route("/model/experiments")
@@ -10086,17 +10926,16 @@ def experiments():
     filter_owner = request.args.get("owner", "").strip()
     filter_tag = request.args.get("tag", "").strip()
     filter_dataset = request.args.get("dataset", "").strip()
+    resume_from = request.args.get("resume_from", "").strip()
+    resume_step = request.args.get("resume_step", "").strip()
     has_queue_access = request.args.get("queue_access") != "none"
-    queue_options = "".join(
-        f'<option value="{html.escape(queue["id"], quote=True)}">{html.escape(queue["name"])}</option>'
-        for queue in MODEL_QUEUES
-    ) if has_queue_access else '<option value="" selected hidden>请选择训练队列</option><option value="" disabled>暂无可用训练队列</option>'
+    queue_choices = _train_queue_choices(has_queue_access)
     if has_queue_access:
-        resource_queue_options = '<option value="gpu-shared">gpu-shared</option>' + "".join(
-            f'<option value="{html.escape(queue[0], quote=True)}">{html.escape(queue[0])}</option>'
-            for queue in MODEL_EXCLUSIVE_QUEUES
-        )
-        queue_options = resource_queue_options + queue_options
+        queue_options = _train_queue_options_html(queue_choices)
+    else:
+        queue_options = '<option value="" selected hidden>请选择训练队列</option><option value="" disabled>暂无可用训练队列</option>'
+    queue_menu_items = _train_queue_menu_html(queue_choices)
+    queue_is_empty = not queue_choices
     queue_help = '仅展示你有使用权限的训练队列。如需使用其他队列，请点击右上角「申请队列权限」，联系对应的队列管理员申请开通。'
     visible_experiments = [
         e for e in EXPERIMENTS
@@ -10131,6 +10970,19 @@ def experiments():
             if e["status"] == "running"
             else '<span class="action-link action-disabled">停止</span>'
         )
+        # 关注: 关注后通过飞书推送该任务的训练进度状态, 可随时取消关注 (放在「更多」菜单内)
+        following = CURRENT_USER in _experiment_followers(e)
+        follow_tip = (
+            "取消关注后将不再通过飞书推送训练进度状态" if following
+            else "关注后将通过飞书推送训练进度状态"
+        )
+        follow_item = (
+            f'<a href="#" class="follow-btn" role="menuitem" '
+            f'data-exp-id="{html.escape(e["id"], quote=True)}" '
+            f'data-tooltip="{follow_tip}" '
+            f'onclick="toggleExperimentFollow(this);return false;">'
+            f'{"取消关注" if following else "关注"}</a>'
+        )
         # 编辑仅在「排队中」状态显示，并放在「更多」菜单内
         edit_item = (
             '<a href="#" class="action-edit" '
@@ -10142,6 +10994,7 @@ def experiments():
             f'<span class="action-more">'
             f'<span class="action-more-trigger">更多<span class="caret">&#9662;</span></span>'
             f'<span class="action-menu">'
+            f'{follow_item}'
             f'<a href="/model/lineage/train/{e["id"]}">血缘</a>'
             f'{edit_item}'
             f'</span>'
@@ -10175,6 +11028,8 @@ def experiments():
         {"name": i["name"], "version": i["version"], "description": i["description"], "path": _train_image_path(i)}
         for i in TRAIN_IMAGE_CATALOG
     ], ensure_ascii=False)
+    resume_sources_json = json.dumps(_train_resume_sources(), ensure_ascii=False).replace("</", "<\\/")
+    resume_prefill_json = json.dumps({"from": resume_from, "step": resume_step}, ensure_ascii=False)
     recommended_image_options = "".join(
         f'<option value="{html.escape(_train_image_path(i), quote=True)}" '
         f'data-path="{html.escape(_train_image_path(i), quote=True)}" '
@@ -10212,12 +11067,22 @@ def experiments():
       </div>
     </form>
 
+    <!--title-action-->
+    <div class="split-btn" id="trainCreateSplit">
+      <button type="button" class="btn btn-primary split-btn-main" onclick="openTrainDrawer();return false;">新增训练任务</button>
+      <button type="button" class="btn btn-primary split-btn-toggle" onclick="toggleTrainCreateSplit(event)" aria-haspopup="menu" aria-expanded="false" aria-label="更多创建方式"><span class="split-caret">&#9662;</span></button>
+      <div class="split-menu" id="trainCreateSplitMenu" role="menu">
+        <button type="button" class="split-menu-item" role="menuitem" onclick="openTrainResumeCreate()">新建续训任务</button>
+      </div>
+    </div>
+    <button type="button" class="btn btn-secondary" onclick="openKsyunTrainDrawer();return false;">新增金山云训练任务</button>
+    <!--/title-action-->
+
     <div class="list-summarybar">
       <div class="txt">运行中任务 <b>{running_count}</b> 条，全部任务 <b>{total_count}</b> 条</div>
-      <a class="btn btn-primary" onclick="openTrainDrawer();return false;">新增训练任务</a>
     </div>
 
-    <div class="table-wrap">
+    <div class="table-wrap train-list-table">
       <table class="ant-table">
         <thead><tr>
           <th>ID</th>
@@ -10240,13 +11105,44 @@ def experiments():
       window.TRAIN_YAML_TEMPLATES = {train_yaml_json};
       window.TRAIN_CODE_REFS = {train_code_json};
       window.TRAIN_IMAGE_CATALOG = {train_image_catalog_json};
+      window.TRAIN_RESUME_SOURCES = {resume_sources_json};
+      window.TRAIN_RESUME_PREFILL = {resume_prefill_json};
+      function toggleExperimentFollow(btn){{
+        var expId = btn.getAttribute('data-exp-id');
+        if(!expId || btn.dataset.busy){{ return false; }}
+        btn.dataset.busy = '1';
+        fetch('/model/experiments/' + encodeURIComponent(expId) + '/follow', {{method:'POST'}})
+          .then(function(resp){{ return resp.json(); }})
+          .then(function(data){{
+            delete btn.dataset.busy;
+            var followed = !!data.followed;
+            btn.textContent = followed ? '取消关注' : '关注';
+            btn.setAttribute('data-tooltip', followed
+              ? '取消关注后将不再通过飞书推送训练进度状态'
+              : '关注后将通过飞书推送训练进度状态');
+            toast(followed ? '已关注，将通过飞书推送训练进度状态' : '已取消关注');
+          }})
+          .catch(function(){{ delete btn.dataset.busy; toast('操作失败，请稍后重试'); }});
+        return false;
+      }}
+      document.addEventListener('DOMContentLoaded', function(){{
+        var prefill = window.TRAIN_RESUME_PREFILL || {{}};
+        if (prefill.from) openTrainResume(prefill.from, prefill.step);
+      }});
     </script>
     <div class="drawer drawer-wide" id="drawerNewTrain">
       <div class="drawer-head train-drawer-head">
-        <div class="drawer-title-wrap"><h3>新增训练任务</h3><span class="drawer-title-sub">填写任务信息、运行资源和训练配置</span></div>
+        <div class="drawer-title-wrap"><h3 id="trainDrawerTitle">新增训练任务</h3></div>
         <span class="dismiss" onclick="closeDrawer()">&times;</span>
       </div>
       <div class="drawer-body train-drawer-body" id="trainDrawerBody">
+
+        <div class="train-version-notice" id="resumeVersionNotice" hidden>续训仅支持 Mozbrain v2.0 镜像的训练任务，Mozbrain v1.0 及更早版本暂不支持。</div>
+
+        <div class="train-resume-notice" id="resumeImageNotice" hidden>
+          <span class="trn-icon" aria-hidden="true">!</span>
+          <span>来源任务的训练镜像 <code id="resumeImageNoticePath"></code> 已不可用（可能已下线），无法自动带入。请重新选择镜像后再提交。</span>
+        </div>
 
         <section class="train-section" id="trainSectionMeta">
           <div class="train-section-head" onclick="toggleTrainSection(this)">
@@ -10293,6 +11189,31 @@ def experiments():
           </div>
         </section>
 
+        <div class="train-resume-source" id="trainResumeSource">
+          <div class="trs-title">来源配置</div>
+          <div class="fg">
+            <label class="fg-req">训练任务</label>
+            <div class="trs-task-picker" id="resumeTaskPicker">
+              <button type="button" class="trs-task-trigger is-placeholder" id="resumeTaskTrigger" aria-haspopup="listbox" aria-expanded="false" onclick="toggleResumeTaskPicker(event)">
+                <span class="trs-task-trigger-text" id="resumeTaskTriggerText">请选择训练任务</span>
+                <span class="trs-task-chevron" aria-hidden="true">&#9662;</span>
+              </button>
+              <div class="trs-task-menu" id="resumeTaskMenu" role="listbox" aria-label="训练任务"></div>
+            </div>
+          </div>
+          <div class="fg-row train-resume-row">
+            <div class="fg">
+              <label class="fg-req">来源 Checkpoint</label>
+              <select id="resumeCkptSelect" onchange="onResumeCkptChange()" disabled><option value="" selected>请先选择训练任务</option></select>
+              <div class="trs-ckpt-hint" id="resumeCkptHint"></div>
+            </div>
+            <div class="fg">
+              <label class="fg-req">总训练步数 <span class="qi" data-tooltip="本次续训要训练到的总步数，需大于来源 Checkpoint 的 step；平台据此写入训练配置的 steps" tabindex="0" aria-label="本次续训要训练到的总步数">i</span></label>
+              <input id="resumeStepsInput" type="number" min="1" step="1000" value="" placeholder="请输入总训练步数" inputmode="numeric" oninput="onResumeStepsChange()">
+            </div>
+          </div>
+        </div>
+
         <section class="train-section" id="trainSectionRuntime">
           <div class="train-section-head" onclick="toggleTrainSection(this)">
             <h4 class="train-section-title">运行配置</h4>
@@ -10328,12 +11249,20 @@ def experiments():
             <div class="fg train-runtime-code-row"><label>训练代码</label><div style="position:relative;"><input type="text" id="trainCodeInput" placeholder="输入 Commit ID 搜索（可选）" oninput="filterTrainCode(this)" onblur="hideTrainCodeMenu()" autocomplete="off" data-branch="" data-commit=""><div id="trainCodeMenu" class="tc-menu"></div></div></div>
             <div class="fg-row train-runtime-queue-row">
               <div class="fg">
-                <div class="train-queue-label"><label for="trainQueueSelect" class="fg-req">训练队列 <span class="qi" data-tooltip="{queue_help}" tabindex="0" aria-label="{queue_help}">i</span></label><a href="/model/queues?view=readonly" target="_blank" rel="noopener">申请队列权限</a></div>
-                <select id="trainQueueSelect" aria-describedby="trainQueueBalanceHint" onchange="updateTrainQueueBalance()">{queue_options}</select>
-                <p id="trainQueueBalanceHint" role="status" hidden style="margin:8px 0 0;color:#ad6800;font-size:12px;line-height:1.6;overflow-wrap:anywhere">当前可用余额为 <strong>¥{_model_resource_balance(date.today()):,.2f}</strong>，余额耗尽后训练任务将自动停止。</p>
+                <div class="train-queue-label"><label for="trainQueueTrigger" class="fg-req">训练队列 <span class="qi" data-tooltip="{queue_help}" tabindex="0" aria-label="{queue_help}">i</span></label><a href="/model/queues?view=readonly" target="_blank" rel="noopener">申请队列权限</a></div>
+                <div class="train-queue-picker{" is-empty" if queue_is_empty else ""}" id="trainQueuePicker">
+                  <button type="button" class="train-queue-trigger is-placeholder" id="trainQueueTrigger" aria-haspopup="listbox" aria-expanded="false" onclick="toggleTrainQueuePicker(event)"{" disabled" if queue_is_empty else ""}>
+                    <span class="train-queue-trigger-name" id="trainQueueTriggerName">请选择训练队列</span>
+                    <span class="train-recommended-chevron" aria-hidden="true">&#9662;</span>
+                  </button>
+                  <div class="train-queue-menu" id="trainQueueMenu" role="listbox" aria-label="训练队列">{queue_menu_items}</div>
+                  <select id="trainQueueSelect" class="train-queue-native" onchange="updateTrainQueueBalance()" tabindex="-1" aria-hidden="true">{queue_options}</select>
+                </div>
               </div>
-              <div class="fg"><label class="fg-req">实例数</label><input id="trainInstanceCount" type="number" min="1" max="4" step="1" value="1" inputmode="numeric" oninput="validateTrainInstanceCount(this)"></div>
-              <div class="fg"><label class="fg-req" for="trainInstanceSpec">实例规格</label><select id="trainInstanceSpec" onchange="this.title=this.options[this.selectedIndex].text" title="请选择实例规格">
+            </div>
+            <div class="fg-row train-runtime-priority-row">
+              <div class="fg"><label class="fg-req">实例数 <span class="qi" data-tooltip="本次训练启动几台机器，单任务一般填 1" tabindex="0" aria-label="本次训练启动几台机器，单任务一般填 1。">i</span></label><input id="trainInstanceCount" type="number" min="1" max="4" step="1" value="1" inputmode="numeric" oninput="validateTrainInstanceCount(this)"></div>
+              <div class="fg"><label class="fg-req" for="trainInstanceSpec">实例规格 <span class="qi" data-tooltip="每台机器配的 GPU 型号和数量，例如 A100-80G*8 表示单机 8 张 A100-80G&#10;卡越多算得越快，小任务选卡数少的规格即可" tabindex="0" aria-label="每台机器配的 GPU 型号和数量，例如 A100-80G*8 表示单机 8 张 A100-80G；卡越多算得越快，小任务选卡数少的规格即可。">i</span></label><select id="trainInstanceSpec" onchange="this.title=this.options[this.selectedIndex].text" title="请选择实例规格">
                 <option value="" selected disabled>请选择实例规格</option>
                 <option value="ml.hpcpni2.28xlarge">ml.hpcpni2.28xlarge | 112 vCPU | 1960 GiB | Tesla-A100-80G × 8</option>
                 <option value="A100-2x-80G">A100-2x-80G | 24 vCPU | 192 GB | Tesla-A100-80G × 2</option>
@@ -10353,7 +11282,7 @@ def experiments():
             <span class="train-section-toggle"><span class="train-section-caret">&#9660;</span></span>
           </div>
           <div class="train-section-body">
-            <div class="fg">
+            <div class="fg" id="trainDatasetBlock">
               <label>数据集及权重</label>
               <div class="ds-table"><div class="ds-head"><span>数据集名称</span><span>权重</span><span>操作</span></div><div class="ds-row"><select><option>请选择数据集</option><option>clean_whiteboard_v4</option><option>tidy_desk_v2</option><option>plant_pour_pilot</option></select><input value="1"><span class="ds-confirm" onclick="toast('Demo: 已添加')">确定</span></div></div>
             </div>
@@ -10362,19 +11291,19 @@ def experiments():
               <button type="button" class="train-config-mode-tab" data-train-config-mode="custom" onclick="switchTrainConfigMode(this,'custom')">自定义配置</button>
             </div>
             <div class="train-config-panel active" id="trainRecommendedConfig">
-            <div class="fg-row">
+            <div class="fg-row" id="trainModelRow">
               <div class="fg"><label class="fg-req">模型</label><select id="trainModelSel" onchange="regenDefaultConfig()"><option value="pi05">pi0.5</option><option value="spiritv1_6">spiritv1.6</option></select></div>
-              <div class="fg"><label class="fg-req">是否使用新感知</label><select id="trainRobotSel" onchange="regenDefaultConfig()"><option value="new">是</option><option value="old">否</option></select></div>
+              <div class="fg"><label class="fg-req">是否使用新感知 <span class="qi perception-tip" data-tooltip="是 = 新感知：使用鱼眼相机，广角视野&#10;否 = 旧感知：使用 RealSense 相机，支持深度信息" tabindex="0" aria-label="是 = 新感知，使用鱼眼相机、广角视野；否 = 旧感知，使用 RealSense 相机、支持深度信息。">i</span></label><select id="trainRobotSel" onchange="regenDefaultConfig()"><option value="new">是</option><option value="old">否</option></select></div>
               <div class="fg"><label class="fg-req">机器人结构 <span class="qi robot-structure-tip" data-tooltip="是否由 VLA 控制底盘移动&#10;控制底盘：wholebody&#10;仅控制双臂：wholebody_without_base" tabindex="0" aria-label="是否由 VLA 控制底盘移动；控制底盘选择 wholebody；仅控制双臂选择 wholebody_without_base。">i</span></label><select id="trainBaseSel" onchange="regenDefaultConfig()"><option value="wholebody">wholebody</option><option value="wholebody_without_base">wholebody_without_base</option></select></div>
             </div>
             <div class="adv-sub" id="advConfigBox">
               <div class="adv-sub-head" onclick="document.getElementById('advConfigBox').classList.toggle('collapsed')"><span class="caret">&#9660;</span><label>高级配置</label></div>
-              <div class="adv-sub-body"><div class="adv-tabs"><span class="at active" onclick="switchAdvTab(this,'default')">默认参数</span><span class="at" onclick="switchAdvTab(this,'override')">参数覆盖</span><button class="at-reset" onclick="resetTrainConfig()">恢复默认</button></div><textarea id="yamlEditor" class="yaml-area" spellcheck="false" readonly></textarea><textarea id="yamlOverride" class="yaml-area" spellcheck="false" style="display:none;" placeholder="# 只填写需要覆盖的参数, 例如:&#10;batch_size: 64&#10;steps: 300000&#10;&#10;# 这些值会覆盖到左侧「默认参数」中" oninput="applyOverride()"></textarea></div>
+              <div class="adv-sub-body"><div class="adv-tabs"><span class="at active" onclick="switchAdvTab(this,'default')">默认参数</span><span class="at" onclick="switchAdvTab(this,'override')">参数覆盖</span><a class="at-help" href="https://nwd4iy9rd2s.feishu.cn/wiki/WtN7wpNYbiJnq4kkt5zcuBzwnad" target="_blank" rel="noopener">帮助文档</a><button class="at-reset" onclick="resetTrainConfig()">恢复默认</button></div><textarea id="yamlEditor" class="yaml-area" spellcheck="false" readonly></textarea><textarea id="yamlOverride" class="yaml-area" spellcheck="false" style="display:none;" placeholder="# 只填写需要覆盖的参数, 例如:&#10;batch_size: 64&#10;steps: 300000&#10;&#10;# 这些值会覆盖到左侧「默认参数」中" oninput="applyOverride()"></textarea></div>
             </div>
             </div>
             <div class="train-config-panel" id="trainCustomConfig">
               <div class="adv-sub" id="customYamlBox">
-                <div class="adv-sub-head" onclick="document.getElementById('customYamlBox').classList.toggle('collapsed')"><span class="caret">&#9660;</span><label>高级配置</label><button type="button" class="at-reset" onclick="event.stopPropagation();restoreRecommendedYaml()">恢复推荐配置</button></div>
+                <div class="adv-sub-head" onclick="document.getElementById('customYamlBox').classList.toggle('collapsed')"><span class="caret">&#9660;</span><label>高级配置</label><a class="at-help" href="https://nwd4iy9rd2s.feishu.cn/wiki/WtN7wpNYbiJnq4kkt5zcuBzwnad" target="_blank" rel="noopener" onclick="event.stopPropagation()">帮助文档</a><button type="button" class="at-reset" onclick="event.stopPropagation();restoreRecommendedYaml()">恢复推荐配置</button></div>
                 <div class="adv-sub-body">
                   <div class="custom-yaml-status" id="customYamlStatus">切换到自定义配置后，可粘贴或编辑完整 YAML</div>
                   <textarea id="customYamlEditor" class="yaml-area custom-yaml-area" spellcheck="false" placeholder="# 粘贴完整 YAML 配置"></textarea>
@@ -10403,7 +11332,7 @@ bash lerobot/scripts/train_unified.sh /mnt/vepfs01/output/quanta/experiments/con
         </section>
 
       </div>
-      <div class="drawer-foot train-drawer-foot"><button class="btn" onclick="closeDrawer()">取消</button><button class="btn btn-primary" onclick="validateTrainForm()">提交创建</button></div>
+      <div class="drawer-foot train-drawer-foot"><button class="btn" onclick="closeDrawer()">取消</button><button class="btn btn-primary" id="trainSubmitBtn" onclick="validateTrainForm()">提交创建</button></div>
     </div>
     """
     for control, value in (("filterExperimentTag", filter_tag), ("filterExperimentDataset", filter_dataset)):
@@ -10415,13 +11344,33 @@ bash lerobot/scripts/train_unified.sh /mnt/vepfs01/output/quanta/experiments/con
                        breadcrumb='模型平台 / <b>训练任务</b>', mvp_note=None)
 
 
+@app.post("/model/experiments/<exp_id>/follow")
+def experiment_follow_toggle(exp_id):
+    """训练任务「关注」开关: 关注后通过飞书推送该任务的训练进度状态。
+
+    Demo 内存态, 不持久化; 当前登录用户为 CURRENT_USER。关注与任务创建时的
+    飞书通知开关无关, 任意用户均可关注或取消关注。
+    """
+    exp = next((item for item in EXPERIMENTS if item["id"] == exp_id), None)
+    if exp is None:
+        return jsonify({"error": "训练任务不存在"}), 404
+    followers = exp.setdefault("followers", [])
+    if CURRENT_USER in followers:
+        followers.remove(CURRENT_USER)
+        followed = False
+    else:
+        followers.append(CURRENT_USER)
+        followed = True
+    return jsonify({"followed": followed, "followers": followers})
+
+
 # ── 训练任务详情 (Checkpoint 列表) ──
 def _task_ckpts(exp):
     """根据训练任务生成它的 checkpoint 列表 (step 50000→5000, 每 5000 一档)."""
     prefix = exp["name"][:8]
     return [
         {"step": step, "storage": "18.99GB", "training_loss": "0",
-         "validation_loss": "0", "state": "not_cached",
+         "validation_loss": "0", "state": "unmerged",
          "location": f"{step:06d}-{prefix}..."}
         for step in range(50000, 0, -5000)
     ]
@@ -10598,12 +11547,23 @@ def experiment_detail(exp_id):
     cache_operations = {item["step"]: item for item in CKPT_CACHE_OPERATIONS if item["experiment_id"] == e["id"]}
     for c in ckpts:
         operation = cache_operations.get(str(c["step"]))
-        cache_state = CKPT_STATUS_LABEL[operation["status"] if operation else "not_cached"]
+        cache_state = CKPT_STATUS_LABEL[operation["status"] if operation else "unmerged"]
         cache_action = (
             f'<a href="{html.escape(_cache_operation_record_url(operation), quote=True)}" style="color:#149DAA">查看</a>'
             if operation else
-            f'<a href="#" style="color:#149DAA" onclick="openCacheModal(\'{c["step"]}\', \'{c["location"]}\');return false;">缓存</a>'
+            f'<a href="#" style="color:#149DAA" onclick="openCacheModal(\'{c["step"]}\', \'{c["location"]}\');return false;">合并</a>'
         )
+        if _experiment_mozbrain_version(e) == "mozbrain v2.0":
+            resume_action = (
+                f'<a href="/model/experiments?resume_from={html.escape(e["id"], quote=True)}'
+                f'&resume_step={c["step"]}" style="color:#149DAA">续训</a>'
+            )
+        else:
+            # Mozbrain v1.0 及更早版本不支持续训
+            resume_action = (
+                '<span style="color:#c9cdd4;cursor:not-allowed" '
+                'title="仅 Mozbrain v2.0 镜像的训练任务支持续训">续训</span>'
+            )
         ckpt_rows += f"""<tr id="taskCkpt{c['step']}">
           <td class="mono">{c['step']}</td>
           <td class="mono">{c['storage']}</td>
@@ -10611,7 +11571,7 @@ def experiment_detail(exp_id):
           <td class="mono">{c['validation_loss']}</td>
           <td class="task-ckpt-state">{cache_state}</td>
           <td><a class="ckpt-loc" href="#" onclick="toast('Demo: 已复制 TOS 路径');return false;"><span class="ll-ic">&#10697;</span>{c['location']}</a></td>
-          <td class="actions-cell">{cache_action}</td>
+          <td class="actions-cell">{cache_action}{resume_action}</td>
         </tr>"""
     tab_ckpt = f"""
     <h3 class="sec-title">Check point 列表</h3>
@@ -10744,23 +11704,39 @@ dataset:
 # === Basic configuration ===
 """
     ds_name = e["dataset"] if e["dataset"] != "—" else "clean_whiteboard_v4"
+    resume_from = e.get("resume_from") or {}
+    resume_block = ""
+    if resume_from:
+        resume_block = f"""
+      <div class="bi-sec">
+        <h4 class="bi-sec-title">来源配置</h4>
+        <div class="bi-field-row">
+          <div class="bi-field-item"><div class="bi-field-label">训练任务</div><div class="bi-field-value"><a href="/model/experiments/{html.escape(str(resume_from.get('task_id', '')), quote=True)}" style="color:#149DAA">{html.escape(str(resume_from.get('task_name', '—')))}</a></div></div>
+        </div>
+        <div class="bi-field-row bi-field-row-2">
+          <div class="bi-field-item"><div class="bi-field-label">来源 Checkpoint</div><div class="bi-field-value mono">step {html.escape(str(resume_from.get('step', '—')))}</div></div>
+          <div class="bi-field-item"><div class="bi-field-label">总训练步数</div><div class="bi-field-value">{html.escape(str(resume_from.get('steps', '—')))}</div></div>
+        </div>
+      </div>
+"""
     tab_basic = f"""
     <div class="basic-info">
-
+{resume_block}
       <!-- 基本信息 (字段顺序对齐「新增训练任务」表单) -->
       <div class="bi-sec">
         <h4 class="bi-sec-title">任务信息</h4>
         <div class="bi-field-row"><div class="bi-field-item"><div class="bi-field-label">任务名称</div><div class="bi-field-value">{html.escape(e['name'])}</div></div></div>
         <div class="bi-field-row"><div class="bi-field-item"><div class="bi-field-label">描述</div><div class="bi-field-value">{html.escape(_experiment_description(e))}</div></div></div>
-        <div class="bi-field-row bi-field-row-2"><div class="bi-field-item"><div class="bi-field-label">标签</div><div class="bi-field-value">{html.escape(e.get('tag', '—'))}</div></div><div class="bi-field-item"><div class="bi-field-label">飞书通知</div><div class="bi-field-value">默认开启</div></div></div>
+        <div class="bi-field-row bi-field-row-2"><div class="bi-field-item"><div class="bi-field-label">标签</div><div class="bi-field-value">{html.escape(e.get('tag', '—'))}</div></div><div class="bi-field-item"><div class="bi-field-label">飞书关注人</div><div class="bi-field-value">{_experiment_followers_html(e)}</div></div></div>
       </div>
 
       <div class="bi-sec">
         <h4 class="bi-sec-title">运行配置</h4>
         <div class="bi-field-row bi-field-row-2">
           <div class="bi-field-item"><div class="bi-field-label">镜像模式</div><div class="bi-field-value">推荐镜像</div></div>
-          <div class="bi-field-item"><div class="bi-field-label">镜像</div><div class="bi-field-value mono"><span class="bi-ellipsis" title="spirit-ai-cn-beijing.cr.volces.com/spirit-ai/mozbrain:thor-v1.0.0">spirit-ai-cn-beijing.cr.volces.com/spirit-ai/mozbrain:thor-v1.0.0</span></div></div>
+          <div class="bi-field-item"><div class="bi-field-label">Mozbrain 版本</div><div class="bi-field-value">{html.escape(_experiment_mozbrain_version(e))}</div></div>
         </div>
+        <div class="bi-field-row"><div class="bi-field-item"><div class="bi-field-label">镜像</div><div class="bi-field-value mono"><span class="bi-ellipsis" title="spirit-ai-cn-beijing.cr.volces.com/spirit-ai/mozbrain:thor-v1.0.0">spirit-ai-cn-beijing.cr.volces.com/spirit-ai/mozbrain:thor-v1.0.0</span></div></div></div>
         <div class="bi-field-row"><div class="bi-field-item"><div class="bi-field-label">训练代码</div><div class="bi-field-value"><span class="bi-commit">a5ebbdd</span></div></div></div>
         <div class="bi-field-row bi-field-row-2"><div class="bi-field-item"><div class="bi-field-label">训练队列</div><div class="bi-field-value">GPU-A100</div></div><div class="bi-field-item"><div class="bi-field-label">优先级</div><div class="bi-field-value">{e.get('priority', '4')}</div></div></div>
         <div class="bi-field-row bi-field-row-2"><div class="bi-field-item"><div class="bi-field-label">实例规格</div><div class="bi-field-value">2 × A100 80GB</div></div><div class="bi-field-item"><div class="bi-field-label">实例数</div><div class="bi-field-value">{e.get('instance_count', 1)}</div></div></div>
@@ -10884,12 +11860,12 @@ bash lerobot/scripts/train_unified.sh /mnt/vepfs01/output/quanta/experiments/con
     <div class="modal-mask" id="cacheModalMask" onclick="closeCacheModal()">
       <div class="modal" id="cacheModalBox" onclick="event.stopPropagation()">
         <div class="modal-head" id="cacheModalHead">
-          <h3>缓存</h3>
+          <h3>合并</h3>
           <span class="dismiss" onclick="closeCacheModal()">&times;</span>
         </div>
         <div class="modal-body">
           <div id="cacheModalForm">
-            <p class="cache-intro">是否要缓存至本地服务器，缓存后采集端将在30分钟后完成加载</p>
+            <p class="cache-intro">合并完成后可同步缓存至本地服务器，缓存后采集端将在30分钟后完成加载</p>
             <div class="fg">
               <label for="cacheName" class="fg-req">名称</label>
               <div class="cache-name-input">
@@ -10903,10 +11879,18 @@ bash lerobot/scripts/train_unified.sh /mnt/vepfs01/output/quanta/experiments/con
               <textarea id="cacheDesc" rows="4" required placeholder="请输入描述" aria-describedby="cacheDescError"></textarea>
               <div id="cacheDescError" class="cache-field-error" role="alert" hidden>请输入描述</div>
             </div>
+            <div class="fg">
+              <label class="fg-req">合并方式</label>
+              <select id="cacheModeSelect" onchange="updateCacheModeHint()">
+                <option value="cache" selected>合并+缓存</option>
+                <option value="merge">仅合并</option>
+              </select>
+              <p class="fg-tip" id="cacheModeHint">合并完成后同步缓存至本地服务器，加速端侧部署拉取。</p>
+            </div>
             <div class="cache-notify-row">
               <div class="cache-notify-copy">
                 <label for="cacheFeishuNotify">飞书通知</label>
-                <p>缓存成功或失败时，通过飞书通知本次操作人。</p>
+                <p>合并、缓存成功或失败时，通过飞书通知本次操作人。</p>
               </div>
               <label class="toggle-sw" title="飞书通知">
                 <input id="cacheFeishuNotify" type="checkbox" checked><span class="slider"></span>
@@ -10918,16 +11902,16 @@ bash lerobot/scripts/train_unified.sh /mnt/vepfs01/output/quanta/experiments/con
             <div class="cache-state">
               <span class="cache-hourglass">&#8987;</span>
               <div>
-                <h4>缓存任务已提交</h4>
-                <p>缓存任务已提交，可在缓存记录中查看进度。</p>
+                <h4>合并任务已提交</h4>
+                <p>合并任务已提交，可在合并记录中查看进度。</p>
               </div>
             </div>
             <div class="cache-demo-panel" id="cacheDemoPanel" style="display:none;">
-              <span>Mock 结果预览（选择结果后更新对应缓存记录）</span>
+              <span>Mock 结果预览（选择结果后更新对应合并记录）</span>
               <div class="cache-demo-actions">
-                <button type="button" class="btn btn-secondary" onclick="previewCacheResult('cached')">演示缓存成功</button>
+                <button type="button" class="btn btn-secondary" id="cacheDemoSuccessBtn" onclick="previewCacheResult('cached')">演示缓存成功</button>
                 <button type="button" class="btn btn-secondary" onclick="previewCacheResult('merge_failed')">演示合并失败</button>
-                <button type="button" class="btn btn-secondary" onclick="previewCacheResult('cache_failed')">演示缓存失败</button>
+                <button type="button" class="btn btn-secondary" id="cacheDemoCacheFailBtn" onclick="previewCacheResult('cache_failed')">演示缓存失败</button>
               </div>
             </div>
             <div class="cache-notification-preview" id="cacheNotificationPreview"></div>
@@ -10935,11 +11919,11 @@ bash lerobot/scripts/train_unified.sh /mnt/vepfs01/output/quanta/experiments/con
         </div>
         <div class="modal-foot" id="cacheModalFootForm">
           <button class="btn btn-tertiary" onclick="closeCacheModal()">取消</button>
-          <button class="btn btn-primary" id="cacheSubmitButton" onclick="confirmCacheModal()">确认缓存</button>
+          <button class="btn btn-primary" id="cacheSubmitButton" onclick="confirmCacheModal()">确认合并</button>
         </div>
         <div class="modal-foot" id="cacheModalFootDoing" style="display:none;">
           <button class="btn btn-secondary" onclick="closeCacheModal()">关闭</button>
-          <a class="btn btn-primary" id="cacheRecordLink" href="/model/checkpoints/cache-records">查看缓存记录</a>
+          <a class="btn btn-primary" id="cacheRecordLink" href="/model/checkpoints/cache-records">查看合并记录</a>
         </div>
       </div>
     </div>
@@ -10970,7 +11954,7 @@ def _cache_notification_card(operation, result_label):
         <span>Checkpoint / Step</span><b>{html.escape(operation['name'])} / {html.escape(operation['step'])}</b>
         {failure_row}
       </div>
-      <div class="cache-notification-foot"><small>Mock 卡片预览，不发送真实飞书消息</small><a class="btn btn-primary" href="{_cache_operation_record_url(operation)}">查看缓存记录</a></div>
+      <div class="cache-notification-foot"><small>Mock 卡片预览，不发送真实飞书消息</small><a class="btn btn-primary" href="{_cache_operation_record_url(operation)}">查看合并记录</a></div>
     </div>'''
 
 
@@ -10991,6 +11975,8 @@ def create_checkpoint_cache_operation(exp_id):
         return jsonify({"error": "请输入名称，且不超过100个字符"}), 400
     if not description:
         return jsonify({"error": "请输入描述"}), 400
+
+    cache_server = bool(payload.get("cache_server", True))
 
     number = len(CKPT_CACHE_OPERATIONS) + 1
     used_ids = {item["operation_id"] for item in CKPT_CACHE_OPERATIONS}
@@ -11013,6 +11999,7 @@ def create_checkpoint_cache_operation(exp_id):
         "experiment_name": experiment["name"],
         "step": step,
         "location": checkpoint["location"],
+        "cache_server": cache_server,
         "notify_enabled": bool(payload.get("notify", True)),
         "notified_results": [],
     }
@@ -11021,6 +12008,7 @@ def create_checkpoint_cache_operation(exp_id):
         "operation_id": operation["operation_id"],
         "record_url": _cache_operation_record_url(operation),
         "step": step,
+        "cache_server": cache_server,
         "status_html": CKPT_STATUS_LABEL[operation["status"]],
     })
 
@@ -11040,9 +12028,17 @@ def preview_checkpoint_cache_result(operation_id):
         return jsonify({"error": "不支持的演示结果"}), 400
 
     result_label, failure_reason = result_config[result]
+    cache_server = operation.get("cache_server", True)
+    if not cache_server and result == "cache_failed":
+        return jsonify({"error": "该操作未选择缓存到本地服务器，不支持缓存失败结果"}), 400
+    status = result
+    # Merge-only operations stop at "merged": nothing is written to the local cache server.
+    if not cache_server and result == "cached":
+        status = "merged"
+        result_label = "已合并"
     duplicate = result in operation["notified_results"]
     operation.update({
-        "status": result,
+        "status": status,
         "completed_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         "failure_reason": failure_reason,
     })
@@ -11181,9 +12177,10 @@ def deploy():
         value = c["name"]
         desc = _ckpt_desc(c)
         active = " on" if value == selected_deploy_ckpt else ""
+        cached_attr = "1" if c.get("status") == "cached" else "0"
         ckpt_items += (
             f'<div class="ddp-item{active}" data-value="{html.escape(value, quote=True)}" '
-            f'data-desc="{html.escape(desc, quote=True)}" onclick="selectDeployCheckpoint(this)">'
+            f'data-desc="{html.escape(desc, quote=True)}" data-cached="{cached_attr}" onclick="selectDeployCheckpoint(this)">'
             f'<span class="ddp-copy"><span class="ddp-main">{html.escape(value)}</span>'
             f'<span class="ddp-sub">{html.escape(desc)}</span></span>'
             f'<span class="ddp-check">已选</span></div>'
@@ -11243,6 +12240,7 @@ def deploy():
             </div>
             <div class="ddp-menu">{ckpt_items}</div>
           </div>
+          <p class="deploy-cache-tip" id="deployCacheTip" hidden>该 Checkpoint 未缓存到本地服务器，端侧设备拉取耗时较长，建议先在训练任务详情页完成合并并缓存。</p>
         </div>
         <div class="fg">
           <label>部署设备</label>
@@ -11266,6 +12264,7 @@ def deploy():
         <script>
         document.addEventListener('DOMContentLoaded', function(){
           openDrawer('drawerDeploy');
+          refreshDeployCacheTip();
         });
         </script>
         """
@@ -11374,7 +12373,7 @@ CKPT_STATUS_LABEL = {
     "unmerged":     '<span class="tag tag-gray">未合并</span>',
     "merging":      '<span class="tag tag-blue">合并中</span>',
     "merge_failed": '<span class="tag tag-red">合并失败</span>',
-    "not_cached":   '<span class="tag tag-gray">未缓存</span>',
+    "merged":       '<span class="tag tag-gray">已合并</span>',
     "caching":      '<span class="tag tag-blue">缓存中</span>',
     "cached":       '<span class="tag tag-green">已缓存</span>',
     "cache_failed": '<span class="tag tag-red">缓存失败</span>',
@@ -11392,21 +12391,26 @@ def _train_image_path(image):
 
 @app.route("/model/config/images")
 def model_config_images():
-    image_catalog_json = json.dumps(TRAIN_IMAGE_CATALOG, ensure_ascii=False).replace("<", "\\u003c")
+    selected_resource = request.args.get("resource", "volcano")
+    if selected_resource not in RESOURCE_TAB_LABELS:
+        selected_resource = "volcano"
+    image_catalog = KSYUN_IMAGES if selected_resource == "kingsoft" else TRAIN_IMAGE_CATALOG
+    image_catalog_json = json.dumps(image_catalog, ensure_ascii=False).replace("<", "\\u003c")
     rows = "".join(
         f"<tr><td>{html.escape(i['name'])}</td><td>{html.escape(i['version'])}</td><td>{html.escape(i.get('mozbrain_version') or '—')}</td>"
         f"<td>{html.escape(i['description'])}</td><td>{html.escape(i['creator'])}</td><td class='mono'>{html.escape(i['created'])}</td>"
         f"<td><a href='#' onclick=\"openImageEditor({index});return false;\">编辑</a> "
         f"<a href='#' onclick=\"openImageDelete({index});return false;\">删除</a></td></tr>"
-        for index, i in enumerate(TRAIN_IMAGE_CATALOG)
+        for index, i in enumerate(image_catalog)
     )
     content = f"""
+    {_resource_tabs('/model/config/images', selected_resource)}
     <button class="btn btn-primary" onclick="openImageEditor()">新增镜像</button>
     <div class="card"><table class="ant-table"><thead><tr><th>镜像名称</th><th>版本</th><th>mozbrain 版本</th><th>描述信息</th><th>创建人</th><th>创建时间</th><th>操作</th></tr></thead><tbody id="imageCatalogRows">{rows}</tbody></table></div>
     <div class="drawer-mask" id="imageEditorModal" onclick="if(event.target===this)closeImageEditor()"><div class="drawer image-config-drawer" id="imageEditorDrawer"><div class="drawer-head"><h3 id="imageEditorTitle">新增镜像</h3><button class="drawer-close" onclick="closeImageEditor()">&times;</button></div><div class="drawer-body"><div class="fg"><label>镜像名称</label><input id="imageEditorName" placeholder="例如 mozbrain_release"></div><div class="fg"><label>版本</label><input id="imageEditorVersion" placeholder="例如 thor-v1.0.0"></div><div class="fg"><label for="imageEditorMozbrainVersion">mozbrain 版本</label><select id="imageEditorMozbrainVersion"><option value="" selected>请选择 mozbrain 版本</option><option value="mozbrain v1.0">mozbrain v1.0</option><option value="mozbrain v2.0">mozbrain v2.0</option></select></div><div class="fg"><label>描述信息</label><textarea id="imageEditorDescription" rows="3" placeholder="填写镜像用途和兼容范围"></textarea></div></div><div class="drawer-foot"><button class="btn" onclick="closeImageEditor()">取消</button><button class="btn btn-primary" onclick="saveImageEditor()">保存</button></div></div></div>
     <div class="drawer-mask" id="imageDeleteModal" onclick="if(event.target===this)closeImageDelete()"><div class="drawer image-config-drawer" id="imageDeleteDrawer"><div class="drawer-head"><h3>删除镜像</h3><button class="drawer-close" onclick="closeImageDelete()">&times;</button></div><div class="drawer-body"><p>确认删除镜像 <b id="imageDeleteName"></b>？删除后不可恢复。</p></div><div class="drawer-foot"><button class="btn" onclick="closeImageDelete()">取消</button><button class="btn btn-danger" onclick="confirmImageDelete()">删除</button></div></div></div>
     <script>
-    const IMAGE_CATALOG_STORAGE_KEY = 'quanta-image-catalog-v1';
+    const IMAGE_CATALOG_STORAGE_KEY = {'quanta-image-catalog-v1' if selected_resource == 'volcano' else 'quanta-image-catalog-kingsoft-v1'!r};
     const IMAGE_CATALOG_DEFAULTS = {image_catalog_json};
     let imageCatalog = IMAGE_CATALOG_DEFAULTS;
     let imageEditorIndex = -1;
@@ -11496,6 +12500,17 @@ def _ckpt_train_step(ckpt):
     return m.group(1) if m else "—"
 
 
+def _ckpt_storage_address(ckpt):
+    """Checkpoint 存储地址: 外部导入展示登记的地址(TOS/KS3 等), 训练产出按平台约定拼接;
+    外部导入缺地址时返回 None 表示不展示该字段."""
+    address = ckpt.get("storage_address")
+    if address and address != "—":
+        return address
+    if ckpt.get("source_kind") == "upload":
+        return None
+    return f"tos://quanta-model/checkpoints/{ckpt['name']}.pt"
+
+
 def _ckpt_cache_operator(ckpt):
     operator = ckpt.get("cached_by") or ckpt.get("cache_owner")
     if operator:
@@ -11547,10 +12562,15 @@ def _ckpt_detail_drawers(items):
     drawers = ""
     for c in items:
         exp = _ckpt_exp(c)
-        train_name = exp["name"] if exp else "—"
-        base_model = exp["model_type"] if exp else "—"
+        train_name = exp["name"] if exp else c.get("train_task_name", "—")
+        base_model = exp["model_type"] if exp else c.get("base_model", "—")
         desc = _ckpt_desc(c)
         step = _ckpt_train_step(c)
+        storage = _ckpt_storage_address(c)
+        storage_row = (
+            f'<div class="ckpt-form-row"><label>存储地址</label><div class="ckpt-form-value mono">{storage}</div></div>'
+            if storage else ""
+        )
         drawers += f"""
         <div class="drawer" id="drawerCkpt{c['id']}">
           <div class="drawer-head"><h3>Checkpoint 详情</h3><span class="dismiss" onclick="closeDrawer()">&times;</span></div>
@@ -11562,12 +12582,13 @@ def _ckpt_detail_drawers(items):
               <div class="ckpt-form-row"><label>训练任务</label><div class="ckpt-form-value">{train_name}</div></div>
               <div class="ckpt-form-row"><label>基础模型</label><div class="ckpt-form-value">{base_model}</div></div>
               <div class="ckpt-form-row"><label>训练步数</label><div class="ckpt-form-value mono">{step}</div></div>
+              {storage_row}
               <div class="ckpt-form-row"><label>创建人</label><div class="ckpt-form-value">{c['owner']}</div></div>
               <div class="ckpt-form-row"><label>创建时间</label><div class="ckpt-form-value mono">{c['created']}</div></div>
             </div>
           </div>
           <div class="drawer-foot">
-            <a class="btn btn-secondary" href="/model/lineage/checkpoint/{c['id']}">查看血缘</a>
+            {'' if c.get('source_kind') == 'upload' else f'<a class="btn btn-secondary" href="/model/lineage/checkpoint/{c["id"]}">查看血缘</a>'}
             <button class="btn" onclick="closeDrawer()">关闭</button>
           </div>
         </div>
@@ -11575,28 +12596,53 @@ def _ckpt_detail_drawers(items):
     return drawers
 
 
-def _ckpt_rows_html(items, show_actions=True, show_status=True, status_logs=False):
+def _ckpt_list_items():
+    """Checkpoint 清单 = 训练产出 + 外部导入(上传登记); 两类同源, 便于统一管理."""
+    items = list(CHECKPOINTS)
+    for u in UPLOADED_CKPTS:
+        items.append({
+            "id": u["id"],
+            "name": u["name"],
+            "status": u.get("status", "cached"),
+            "owner": u.get("owner", "—"),
+            "created": u.get("created", "—"),
+            "description": u.get("description", "—"),
+            "base_model": u.get("base_model", "—"),
+            "storage_address": u.get("storage_address", "—"),
+            "train_task_name": u.get("train_task_name", "—"),
+            # 外部导入未经过合并流程: 合并人/合并时间留空.
+            "cached_by": "—",
+            "cached_at": "—",
+            "source_kind": "upload",
+            "source_platform": u.get("source_platform", "外部上传"),
+        })
+    return items
+
+
+def _ckpt_source_cell_html(c):
+    """Checkpoint 来源类型: 外部导入(上传登记) / 平台训练(训练产出)."""
+    if c.get("source_kind") == "upload":
+        return '<td><span class="tag tag-teal" style="white-space:nowrap;">外部导入</span></td>'
+    return '<td><span class="tag tag-blue" style="white-space:nowrap;">平台训练</span></td>'
+
+
+def _ckpt_rows_html(items, show_actions=True, show_status=True, status_logs=False, show_source=False):
     rows = ""
     for c in items:
         desc = _ckpt_desc(c)
         status_cell = f"<td>{_ckpt_status_cell_html(c, status_logs)}</td>" if show_status else ""
         actions_cell = ""
-        asset_badge = '<span class="tag tag-teal ckpt-asset-tag">资产</span>' if c.get("is_asset") else '<span class="muted">—</span>'
-        asset_cell = f'<td class="ckpt-asset-cell">{asset_badge}</td>' if show_actions else ""
         if show_actions:
-            asset_action = "取消标记" if c.get("is_asset") else "标记为资产"
             actions_cell = f"""<td class="actions-cell">
             <a href="#" onclick="openTaskCapabilityModal();return false;">TEST</a>
             <a href="#" onclick="openTaskCapabilityModal();return false;">DAgger</a>
-            <a href="/model/lineage/checkpoint/{c['id']}">血缘</a>
-            <form class="ckpt-asset-form" method="post" action="/model/checkpoints/{c['id']}/asset?{html.escape(urlencode(request.args))}">
-              <button class="tbtn" name="is_asset" value="{0 if c.get('is_asset') else 1}">{asset_action}</button>
-            </form>
+            {'' if c.get('source_kind') == 'upload' else f'<a href="/model/lineage/checkpoint/{c["id"]}">血缘</a>'}
           </td>"""
+        source_cell = _ckpt_source_cell_html(c) if show_source else ""
         rows += f"""<tr data-status="{c['status']}">
           <td class="mono">{c['id']}</td>
           <td><a class="ckpt-name-cell" href="#" onclick="openDrawer('drawerCkpt{c['id']}');return false;" title="{c['name']}">{c['name']}</a></td>
-          {asset_cell}
+          {source_cell}
           <td class="muted">{desc}</td>
           {status_cell}
           <td>{c['owner']}</td>
@@ -11605,10 +12651,81 @@ def _ckpt_rows_html(items, show_actions=True, show_status=True, status_logs=Fals
           <td class="muted mono">{_ckpt_cache_time(c)}</td>
           {actions_cell}
         </tr>"""
-    return rows or f'<tr><td colspan="{7 + int(show_status) + 2 * int(show_actions)}" style="text-align:center;padding:40px;color:#999;">暂无符合条件的 Checkpoint</td></tr>'
+    return rows or f'<tr><td colspan="{7 + int(show_status) + int(show_actions) + int(show_source)}" style="text-align:center;padding:40px;color:#999;">暂无符合条件的 Checkpoint</td></tr>'
 
 
-def _ckpt_table_html(items, show_actions=True, show_status=True, status_filter=False, status_logs=False, asset_mark=""):
+def _ckpt_import_modal_html():
+    """Checkpoint 页「导入 Ckpt」弹窗: 登记外部 Ckpt 进入 Checkpoint 池.
+
+    「合并方式」沿用训练任务详情「合并」弹窗的样式: select + 下方动态提示。
+    """
+    return """
+    <div class="modal-mask" id="ckptImportModal" onclick="if(event.target===this)closeCkptImportModal()">
+      <div class="modal" role="dialog" aria-modal="true" aria-labelledby="ckptImportTitle">
+        <form method="post" action="/model/checkpoints/upload" id="ckptImportForm">
+          <div class="modal-head"><h3 id="ckptImportTitle">导入 Ckpt</h3><span class="dismiss" onclick="closeCkptImportModal()">&times;</span></div>
+          <div class="modal-body">
+            <div class="fg"><label class="fg-req">Checkpoint 名称</label><input name="name" required placeholder="例如 external_pi05_sft_robotwin_60000"></div>
+            <div class="fg"><label class="fg-req">训练任务名称</label><input name="train_task_name" required placeholder="例如 robotwin_pi05_stack_blocks_two_top10pct_60000"></div>
+            <div class="fg"><label class="fg-req">来源平台</label>
+              <select name="source_platform" required>
+                <option value="火山云">火山云</option>
+                <option value="金山云">金山云</option>
+              </select>
+            </div>
+            <div class="fg"><label class="fg-req">存储地址</label><input name="storage_address" required placeholder="TOS/KS3地址"></div>
+            <div class="fg"><label class="fg-req">基础模型</label>
+              <select name="base_model" required>
+                <option value="pi0.5">pi0.5</option>
+                <option value="spirit v1.6">spirit v1.6</option>
+                <option value="spirit v1.7">spirit v1.7</option>
+              </select>
+            </div>
+            <div class="fg"><label class="fg-req">训练步数</label><input type="number" name="step" required placeholder="例如 60000"></div>
+            <div class="fg">
+              <label class="fg-req" for="ckptMergeMode">合并方式</label>
+              <select id="ckptMergeMode" name="merge_mode" required onchange="updateCkptMergeModeHint()">
+                <option value="cache" selected>合并+缓存</option>
+                <option value="cache_only">仅缓存</option>
+                <option value="merge">仅合并</option>
+              </select>
+              <p class="fg-tip" id="ckptMergeModeHint">适用于尚未合并的 Ckpt（来源仅存有分片）：平台先合并分片，再缓存到本地。</p>
+            </div>
+            <div class="fg"><label>描述</label><textarea name="description" rows="3" placeholder="说明该 Ckpt 的来源、适用场景与配套数据集"></textarea></div>
+          </div>
+          <div class="modal-foot">
+            <button type="button" class="btn" onclick="closeCkptImportModal()">取消</button>
+            <button type="submit" class="btn btn-primary">导入</button>
+          </div>
+        </form>
+      </div>
+    </div>
+    <script>
+      function updateCkptMergeModeHint() {
+        var select = document.getElementById('ckptMergeMode');
+        var hint = document.getElementById('ckptMergeModeHint');
+        if (!select || !hint) return;
+        var hints = {
+          cache: '适用于尚未合并的 Ckpt（来源仅存有分片）：平台先合并分片，再缓存到本地。',
+          cache_only: '适用于已经合并的 Ckpt（来源已是完整权重文件）：平台直接拉取缓存，不再合并。',
+          merge: '仅执行分片合并、不做缓存：适用于其他区域（如杭州）已有缓存，只需在本平台完成合并的场景。'
+        };
+        hint.textContent = hints[select.value] || '';
+      }
+      function openCkptImportModal() {
+        var form = document.getElementById('ckptImportForm');
+        if (form) form.reset();
+        updateCkptMergeModeHint();
+        document.getElementById('ckptImportModal').classList.add('active');
+      }
+      function closeCkptImportModal() {
+        document.getElementById('ckptImportModal').classList.remove('active');
+      }
+    </script>
+    """
+
+
+def _ckpt_table_html(items, show_actions=True, show_status=True, status_filter=False, status_logs=False, show_source=False):
     status_col = '<col style="width:150px;">' if show_status and status_filter else ('<col style="width:110px;">' if show_status else "")
     if show_status and status_filter:
         status_head = """<th>
@@ -11619,7 +12736,7 @@ def _ckpt_table_html(items, show_actions=True, show_status=True, status_filter=F
                 <button type="button" class="ckpt-status-option" data-value="unmerged" onclick="selectCkptStatusFilter(this)">未合并</button>
                 <button type="button" class="ckpt-status-option" data-value="merging" onclick="selectCkptStatusFilter(this)">合并中</button>
                 <button type="button" class="ckpt-status-option" data-value="merge_failed" onclick="selectCkptStatusFilter(this)">合并失败</button>
-                <button type="button" class="ckpt-status-option" data-value="not_cached" onclick="selectCkptStatusFilter(this)">未缓存</button>
+                <button type="button" class="ckpt-status-option" data-value="merged" onclick="selectCkptStatusFilter(this)">已合并</button>
                 <button type="button" class="ckpt-status-option" data-value="caching" onclick="selectCkptStatusFilter(this)">缓存中</button>
                 <button type="button" class="ckpt-status-option" data-value="cached" onclick="selectCkptStatusFilter(this)">已缓存</button>
                 <button type="button" class="ckpt-status-option" data-value="cache_failed" onclick="selectCkptStatusFilter(this)">缓存失败</button>
@@ -11630,30 +12747,15 @@ def _ckpt_table_html(items, show_actions=True, show_status=True, status_filter=F
         status_head = "<th>状态 &#9662;</th>" if show_status else ""
     actions_col = '<col style="width:280px;">' if show_actions else ""
     actions_head = "<th>操作</th>" if show_actions else ""
-    asset_head = ""
-    if show_actions:
-        options = "".join(
-            f'<button type="button" class="ckpt-status-option {"active" if asset_mark == value else ""}" '
-            f'aria-pressed="{str(asset_mark == value).lower()}" '
-            f'onclick="var field=document.getElementById(\'filterCheckpointAsset\');field.value=\'{value}\';field.form.requestSubmit()">{label}</button>'
-            for value, label in (("", "全部"), ("1", "已标记"), ("0", "未标记"))
-        )
-        asset_head = f"""<th>
-          <button type="button" id="checkpointAssetTrigger" class="ckpt-status-trigger ckpt-asset-trigger {'is-filtered' if asset_mark else ''}" popovertarget="checkpointAssetMenu" aria-label="筛选资产标记">
-            资产标记<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="m4 6 4 4 4-4"/></svg>
-          </button>
-          <div id="checkpointAssetMenu" class="ckpt-status-menu ckpt-asset-menu" popover
-            onbeforetoggle="if(event.newState==='open'){{var rect=document.getElementById('checkpointAssetTrigger').getBoundingClientRect();this.style.left=rect.left+'px';this.style.top=(rect.bottom+9)+'px';}}">
-            {options}
-          </div>
-        </th>"""
+    source_col = '<col style="width:110px;">' if show_source else ""
+    source_head = "<th>来源</th>" if show_source else ""
     return f"""
     <div class="table-wrap ckpt-table-wrap">
       <table class="ant-table ckpt-table">
         <colgroup>
           <col style="width:82px;">
           <col style="width:220px;">
-          {'<col style="width:110px;">' if show_actions else ''}
+          {source_col}
           <col>
           {status_col}
           <col style="width:100px;">
@@ -11665,16 +12767,16 @@ def _ckpt_table_html(items, show_actions=True, show_status=True, status_filter=F
         <thead><tr>
           <th>ID</th>
           <th>checkpoint</th>
-          {asset_head}
+          {source_head}
           <th>描述</th>
           {status_head}
           <th>创建人</th>
           <th>创建时间 &#x21F5;</th>
-          <th>缓存人</th>
-          <th>缓存时间</th>
+          <th>合并人</th>
+          <th>合并时间</th>
           {actions_head}
         </tr></thead>
-        <tbody>{_ckpt_rows_html(items, show_actions, show_status, status_logs)}</tbody>
+        <tbody>{_ckpt_rows_html(items, show_actions, show_status, status_logs, show_source)}</tbody>
       </table>
     </div>
     {_ckpt_detail_drawers(items)}
@@ -11725,7 +12827,7 @@ def _new_checkpoint_drawer_html():
               <option>未合并</option>
               <option>合并中</option>
               <option>合并失败</option>
-              <option>未缓存</option>
+              <option>已合并</option>
               <option>缓存中</option>
               <option>已缓存</option>
               <option>缓存失败</option>
@@ -11753,64 +12855,95 @@ def _new_checkpoint_drawer_html():
     """
 
 
-@app.post("/model/checkpoints/<checkpoint_id>/asset")
-def checkpoint_asset(checkpoint_id):
-    checkpoint = _ckpt_by_id(checkpoint_id)
-    if checkpoint is None:
-        return jsonify(error="Checkpoint 不存在"), 404
-    value = request.form.get("is_asset")
-    if value not in ("0", "1"):
-        return jsonify(error="资产标记值无效"), 400
-    # ponytail: shared in-memory demo state; use persistent storage for production.
-    checkpoint["is_asset"] = value == "1"
-    return redirect("/model/checkpoints?" + urlencode(request.args), code=303)
-
-
 @app.route("/model/checkpoints")
 def checkpoints():
     # 获取 URL 参数
     filter_name = request.args.get("name", "")
     filter_owner = request.args.get("owner", "")
     filter_cache_owner = request.args.get("cache_owner", "")
-    asset_mark = request.args.get("asset_mark", "")
-    if asset_mark not in ("", "1", "0"):
-        asset_mark = ""
     selected_resource = request.args.get("resource", "volcano")
     if selected_resource not in RESOURCE_TAB_LABELS:
         selected_resource = "volcano"
 
+    # Checkpoint 池 = 训练产出 + 外部导入; 外部导入不绑定算力资源, 各 Tab 均可见.
     visible_checkpoints = [
-        c for c in CHECKPOINTS
-        if c["status"] == "cached"
-        and _checkpoint_resource_key(c) == selected_resource
-        and (not asset_mark or bool(c.get("is_asset")) == (asset_mark == "1"))
+        c for c in _ckpt_list_items()
+        if (c.get("source_kind") == "upload" or (c["status"] in {"merged", "cached"} and _checkpoint_resource_key(c) == selected_resource))
         and (not filter_name or filter_name.lower() in c.get("name", "").lower())
         and (not filter_owner or filter_owner.lower() in c.get("owner", "").lower())
         and (not filter_cache_owner or filter_cache_owner.lower() in _ckpt_cache_operator(c).lower())
     ]
+    created = request.args.get("created", "").strip()
+    created_script = (
+        f"<script>document.addEventListener('DOMContentLoaded',function(){{toast({json.dumps('已导入 Ckpt: ' + created)});}});</script>"
+        if created else ""
+    )
     content = f"""
-    <a href="/model/checkpoints/cache-records" class="btn btn-secondary ckpt-cache-action">查看缓存记录</a>
-    <a href="/model/deploy?open=deploy" class="btn btn-primary ckpt-deploy-action">去部署</a>
+    <a class="btn btn-secondary ckpt-import-action" href="#" onclick="openCkptImportModal();return false;">导入 Ckpt</a>
+    <a href="/model/checkpoints/cache-records" class="btn btn-secondary ckpt-cache-action">查看合并记录</a>
+    <a href="/model/deploy?open=deploy" class="btn btn-secondary ckpt-deploy-action">去部署</a>
     {_resource_tabs('/model/checkpoints', selected_resource)}
     <form class="fb-labeled ownership-filters" method="get" action="/model/checkpoints">
       <input type="hidden" name="resource" value="{selected_resource}">
       <div class="ff"><label for="filterCheckpointName">checkpoint</label><input id="filterCheckpointName" name="name" value="{html.escape(filter_name)}" placeholder="请输入 checkpoint"></div>
       <div class="ff"><label for="filterCheckpointOwner">创建人</label><input id="filterCheckpointOwner" name="owner" value="{html.escape(filter_owner)}" placeholder="请输入创建人"></div>
-      <div class="ff"><label for="filterCheckpointCacheOwner">缓存人</label><input id="filterCheckpointCacheOwner" name="cache_owner" value="{html.escape(filter_cache_owner)}" placeholder="请输入缓存人"></div>
-      <input type="hidden" id="filterCheckpointAsset" name="asset_mark" value="{asset_mark}">
+      <div class="ff"><label for="filterCheckpointCacheOwner">合并人</label><input id="filterCheckpointCacheOwner" name="cache_owner" value="{html.escape(filter_cache_owner)}" placeholder="请输入合并人"></div>
       <div class="filter-actions">
         <a class="btn btn-tertiary" href="/model/checkpoints?resource={selected_resource}">清空</a>
         <button class="btn btn-primary" type="submit">查询</button>
       </div>
     </form>
 
-    {_ckpt_table_html(visible_checkpoints, show_status=False, asset_mark=asset_mark)}
+    {_ckpt_table_html(visible_checkpoints, show_status=True, show_source=True)}
 
     <div class="mini-pager"><span class="muted">共 {len(visible_checkpoints)} 条</span><span class="pg-btn active" aria-current="page">1</span></div>
 
+    {_ckpt_import_modal_html()}
+    {created_script}
     """
     return render_page("Checkpoint", content, active="/model/checkpoints", module="model",
                        breadcrumb='模型平台 / 训练 / <b>Checkpoint</b>', mvp_note=None)
+
+
+def _mock_ckpt_size_md5(name):
+    """Demo 用: 由名称确定性推导体积与 MD5 摘要, 避免演示时手填."""
+    seed = sum(ord(ch) for ch in str(name)) or 1
+    size_gb = f"{round(6 + (seed % 40) * 0.9, 1)} GB"
+    md5 = ("%032x" % (seed * 0x9E3779B1))[:32]
+    return size_gb, md5
+
+
+@app.post("/model/checkpoints/upload")
+def checkpoint_import_upload():
+    name = (request.form.get("name") or "").strip()
+    if not name:
+        return redirect("/model/checkpoints", code=303)
+    max_no = max([int(re.sub(r"\D", "", u["id"]) or 0) for u in UPLOADED_CKPTS] or [8000])
+    step_raw = (request.form.get("step") or "").strip()
+    storage_address = (request.form.get("storage_address") or "").strip()
+    # 合并方式: 合并+缓存 / 仅缓存 -> 已缓存; 仅合并 -> 已合并.
+    merge_mode = (request.form.get("merge_mode") or "cache").strip()
+    size_gb, file_md5 = _mock_ckpt_size_md5(name)
+    UPLOADED_CKPTS.append({
+        "id": f"UP{max_no + 1}",
+        "name": name,
+        "status": "merged" if merge_mode == "merge" else "cached",
+        # 由当前登录用户创建; 外部导入未经过合并流程, 合并人/合并时间留空.
+        "owner": "joanna.qiao",
+        "created": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "cached_by": "—",
+        "cached_at": "—",
+        "source_platform": (request.form.get("source_platform") or "火山云").strip(),
+        "base_model": (request.form.get("base_model") or "—").strip() or "—",
+        "step": int(step_raw) if step_raw.isdigit() else "—",
+        "train_task_name": (request.form.get("train_task_name") or "—").strip() or "—",
+        "description": (request.form.get("description") or "—").strip() or "—",
+        # 外部 Ckpt 存放于对象存储: 记录地址、体积与完整性摘要.
+        "storage_address": storage_address or "—",
+        "file_size": size_gb,
+        "file_md5": file_md5,
+    })
+    return redirect(f"/model/checkpoints?created={quote(name)}", code=303)
 
 
 @app.route("/model/checkpoints/cache-records")
@@ -11851,7 +12984,7 @@ def checkpoint_cache_records():
     content = f"""
     <div class="cache-page-head">
       <a class="btn" href="/model/checkpoints">&#8249; 返回</a>
-      <div class="cache-page-title">checkpoint 缓存记录</div>
+      <div class="cache-page-title">checkpoint 合并记录</div>
     </div>
 
     {_resource_tabs('/model/checkpoints/cache-records', selected_resource)}
@@ -11860,7 +12993,7 @@ def checkpoint_cache_records():
       <input type="hidden" name="operation_id" value="{html.escape(operation_id, quote=True)}">
       <div class="ff"><label>checkpoint</label><input id="filterCheckpointName" name="name" value="{html.escape(filter_name, quote=True)}" placeholder="请输入 checkpoint"></div>
       <div class="ff"><label>创建人</label><input id="filterCheckpointOwner" name="owner" value="{html.escape(filter_owner, quote=True)}" placeholder="请输入创建人"></div>
-      <div class="ff"><label>缓存人</label><input id="filterCheckpointCacheOwner" name="cache_owner" value="{html.escape(filter_cache_owner, quote=True)}" placeholder="请输入缓存人"></div>
+      <div class="ff"><label>合并人</label><input id="filterCheckpointCacheOwner" name="cache_owner" value="{html.escape(filter_cache_owner, quote=True)}" placeholder="请输入合并人"></div>
       <div class="filter-actions">
         <a class="btn btn-tertiary" href="?resource={selected_resource}">重置</a>
         <button class="btn btn-primary" type="submit">查询</button>
@@ -11882,8 +13015,8 @@ def checkpoint_cache_records():
     </div>
 
     """
-    return render_page("checkpoint 缓存记录", content, active="/model/checkpoints", module="model",
-                       breadcrumb='模型平台 / 训练 / Checkpoint / <b>checkpoint 缓存记录</b>', mvp_note="MVP 一期")
+    return render_page("checkpoint 合并记录", content, active="/model/checkpoints", module="model",
+                       breadcrumb='模型平台 / 训练 / Checkpoint / <b>checkpoint 合并记录</b>', mvp_note="MVP 一期")
 
 
 @app.route("/model/checkpoints/<ckpt_id>")
@@ -13201,7 +14334,11 @@ def _exp_by_id_or_name(value):
 
 
 def _ckpt_by_id(value):
-    return next((c for c in CHECKPOINTS if c["id"] == value or c["name"] == value), None)
+    found = next((c for c in CHECKPOINTS if c["id"] == value or c["name"] == value), None)
+    if found:
+        return found
+    # 外部导入(上传登记)的 Ckpt 也属于 Checkpoint 池.
+    return next((u for u in UPLOADED_CKPTS if u["id"] == value or u["name"] == value), None)
 
 
 def _evaluation_lineage_records():
@@ -13278,6 +14415,9 @@ def get_evals_for_checkpoint(ckpt_id):
 
 def _ckpt_exp(ckpt):
     if not ckpt:
+        return None
+    # 外部导入的 Ckpt 没有来源训练任务, 不回落到 EXPERIMENTS[0].
+    if any(u["id"] == ckpt.get("id") for u in UPLOADED_CKPTS):
         return None
     return _exp_by_id(f"exp_{ckpt['id']}") or EXPERIMENTS[0]
 
@@ -14949,6 +16089,7 @@ def checkpoint_history(ckpt_id):
 # 场景库维护与测试用例组合
 from eval_catalog import register_catalog
 register_catalog(app, render_page)
+
 
 
 # ════════════════════════════════════════════════════════════════

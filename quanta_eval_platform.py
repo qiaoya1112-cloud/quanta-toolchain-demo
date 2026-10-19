@@ -709,7 +709,6 @@ for _t in EVAL_TASKS:
     _t.setdefault("selected_prompt_ids", list(_benchmark.get("prompt_ids", [])))
     _t["completed_sessions"] = _t["eval_done"]
 
-
 def _gen_mock_sessions():
     """Generate mock evaluation sessions for ranking."""
     random.seed(42)
@@ -5513,7 +5512,6 @@ def tasks_page():
         else:
             action_btns = view_btn + data_btn + stats_btn
         action_btns += task_action(f'/model/lineage/eval/{t["id"]}', "血缘")
-
         # Enable switch: ON for started tasks, clickable only when 未开始
         is_enabled = st != "\u672a\u5f00\u59cb"
         if is_unpublished:
@@ -6279,6 +6277,15 @@ def tasks_page():
       if (modal) modal.hidden = false;
       var url = new URL(window.location.href);
       url.searchParams.delete('checkpoint_dispatch');
+      window.history.replaceState(null, '', url.pathname + url.search + url.hash);
+    }})();
+    (function autoOpenTaskView() {{
+      // \u4ece\u8bad\u7ec3\u8d44\u4ea7\u8be6\u60c5\u9875\u300c\u8be6\u60c5\u300d\u8df3\u8f6c\u8fc7\u6765\u65f6, \u81ea\u52a8\u5c55\u5f00\u5bf9\u5e94\u8bc4\u6d4b\u4efb\u52a1\u7684\u8be6\u60c5\u9762\u677f.
+      var tid = new URLSearchParams(window.location.search).get('open');
+      if (!tid || typeof openTaskView !== 'function') return;
+      setTimeout(function() {{ openTaskView(tid); }}, 0);
+      var url = new URL(window.location.href);
+      url.searchParams.delete('open');
       window.history.replaceState(null, '', url.pathname + url.search + url.hash);
     }})();
     document.addEventListener('click', function(e) {{

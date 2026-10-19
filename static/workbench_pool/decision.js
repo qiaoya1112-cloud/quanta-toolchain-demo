@@ -7,9 +7,10 @@
   const confirm = document.getElementById('wpConfirmDecision');
   const cancel = document.getElementById('wpCancelDecision');
   const reason = document.getElementById('wpReason');
+  const remark = document.getElementById('wpRemark');
   const error = document.getElementById('wpDecisionError');
   let pending = null, submitting = false, previousFocus = null;
-  const listUrl = '/data/workbench-v2/pools/' + encodeURIComponent(task.pool) + '/records?source=' + encodeURIComponent(task.id);
+  const listUrl = '/data/workbench-v2/pools/' + encodeURIComponent(task.pool) + '/records?source=' + encodeURIComponent(task.id) + (task.selected_rule ? '&rule=' + encodeURIComponent(task.selected_rule) : '');
   async function action(body) {
     const response = await fetch(listUrl.replace('/records?', '/records/actions?'), {
       method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body)
@@ -34,6 +35,7 @@
     document.getElementById('wpDecisionTitle').textContent = result === '合格' ? '确认标记为合格' : '标记为不合格';
     document.getElementById('wpRejectionFields').hidden = result !== '不合格';
     reason.querySelectorAll('input').forEach(input => { input.checked = false; });
+    remark.value = '';
     error.hidden = true;
     mask.hidden = false;
     (result === '不合格' ? reason.querySelector('input') : cancel).focus();
@@ -44,7 +46,7 @@
   mask.addEventListener('keydown', event => {
     if (event.key === 'Escape') close();
     if (event.key === 'Tab') {
-      const fields = [...mask.querySelectorAll('button,input')].filter(item => !item.disabled && item.getClientRects().length);
+      const fields = [...mask.querySelectorAll('button,input,textarea')].filter(item => !item.disabled && item.getClientRects().length);
       const first = fields[0], last = fields[fields.length - 1];
       if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
       else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
@@ -62,7 +64,7 @@
     try {
       const saved = pending;
       const records = await action({action: 'finish', ids: [saved.id], result: saved.result,
-                                    reasons});
+                                    reasons, remark: saved.result === '不合格' ? remark.value.trim() : ''});
       submitting = false; close(); saved.onComplete(records);
       if (typeof toast === 'function') toast('已提交 · ' + saved.result);
     } catch (err) { error.textContent = err.message; error.hidden = false; }

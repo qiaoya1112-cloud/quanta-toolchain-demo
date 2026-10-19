@@ -1,5 +1,5 @@
 (() => {
-  const MODES = {'pre-quality':'预训练质检','post-quality':'后训练质检',segments:'语义标注',action:'动作标注'};
+  const MODES = {'pre-quality':'预训练质检','post-quality':'后训练质检','post-quality-review':'后训练质检审核','post-quality-rework':'后训练质检驳回处理','post-quality-second-review':'二次审核',segments:'语义标注',action:'动作标注'};
   class OperationClock {
     constructor({now = Date.now, totals = {}, idleMs = 30000} = {}) {
       this.now = now;

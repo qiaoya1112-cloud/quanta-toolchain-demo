@@ -7,7 +7,6 @@
   const recordId = document.querySelector('workbench-task-header')?.dataset?.id || 'DT202609070126';
   const DURATION = 40;
   const TRACK_COUNT = 3;
-  const PERMISSIONS = { canReviewErrorReason: true };
   const DRAFT_KEY = `quanta.${trainingType}-training-quality.v4.${recordId}`;
   const RULE = {
     id: 'RL-PRQC-001', version: 'v1', name: `${label}采集质检规则`,
@@ -16,7 +15,7 @@
       {id:'M02', name:'手部脱离夹爪', detail:'采集动作中手部未按规范保持夹持。'},
       {id:'M03', name:'其他身体部位辅助', detail:'使用规定外的身体部位辅助完成动作。'},
       {id:'M04', name:'无意义动作或假动作', detail:'出现与任务目标无关或未真实执行的动作。'},
-      {id:'M05', name:'可用时长太短', detail:'连续可用片段不足 3 秒，提交时自动标记为失误。'}
+      {id:'M05', name:'片段时长过短', detail:'连续可用片段不足 3 秒，实时自动标记为失误。'}
     ],
     rejected: [
       {id:'U01', name:'视频损坏或相机卡死', detail:'任一必要视角无法连续正常播放。'},
@@ -63,7 +62,6 @@
     if (segment.conclusion === 'mistake' && !segment.mistakeReasons.length) errors.push('请选择失误原因');
     if (segment.conclusion === 'mistake' && segment.rejectedReasons.length) errors.push('请移除不合格原因');
     if (segment.conclusion === 'rejected' && !segment.rejectedReasons.length) errors.push('请选择不合格原因');
-    if (!segment.autoShortDuration && PERMISSIONS.canReviewErrorReason && ['mistake','rejected'].includes(segment.conclusion) && !segment.reviewErrorReason?.trim()) errors.push('请填写错误原因');
     return errors;
   };
   const valid = segment => segmentErrors(segment).length === 0;
@@ -71,7 +69,7 @@
   const REVIEW_ERROR_REASONS = ['片段范围错误','片段范围错位','动作开始边界偏早','动作开始边界偏晚','动作结束边界偏早','动作结束边界偏晚','描述与画面不一致'];
   const reasonSummary = segment => {
     const names = [...segment.rejectedReasons, ...segment.mistakeReasons].map(reasonName);
-    return names.length ? names.join('、') : '请选择必选原因';
+    return names.length ? names.join('、') : '请选择原因';
   };
   const sortSegments = list => list.slice().sort((a,b) => a.start - b.start || a.end - b.end || a.order - b.order);
   const segmentNumber = item => Math.max(1, sortSegments(state.segments).findIndex(candidate => candidate.id === item.id) + 1);
@@ -101,7 +99,8 @@
   const selected = () => byId(state.selectedId);
   const pendingCount = () => 0;
   const invalidCount = () => state.segments.filter(item => !valid(item)).length;
-  const isShortDuration = item => item.conclusion === 'mistake' && item.mistakeReasons.includes('M05');
+  const isShortDuration = item => item.autoShortDuration === true;
+  const manualSegments = () => state.segments.filter(item => !item.autoShortDuration);
 
   // Problem segments occupy the video; their complement is the usable footage.
   function usableRanges(segments, duration = DURATION) {
@@ -116,21 +115,26 @@
     if (cursor < duration) ranges.push({start:cursor, end:duration});
     return ranges;
   }
-  function validateUsableDuration() {
-    const manual = state.segments.filter(item => !item.autoShortDuration);
+  function validateUsableDuration(emit = true) {
+    const previousAuto = state.segments.filter(isShortDuration);
+    const manual = manualSegments();
     const short = usableRanges(manual).filter(item => item.end - item.start < 3 - 1e-9);
     state.segments = manual;
     for (const range of short) {
-      const item = {...range, id:nextId(), conclusion:'mistake', mistakeReasons:['M05'], rejectedReasons:[], reviewErrorReason:'', autoShortDuration:true, order:Math.max(0,...state.segments.map(item=>item.order))+1};
+      const previous = previousAuto.find(item => Math.abs(item.start-range.start)<1e-9 && Math.abs(item.end-range.end)<1e-9);
+      const item = {...range, id:previous?.id || nextId(), conclusion:'mistake', mistakeReasons:['M05'], rejectedReasons:[], reviewErrorReason:'', autoShortDuration:true, order:Math.max(0,...state.segments.map(item=>item.order))+1};
       placeSegment(item, state.segments);
       state.segments.push(item);
     }
-    if (!state.segments.some(item=>item.id===state.selectedId)) state.selectedId=state.segments[0]?.id||'';
-    if (short.length) state.dirty = true;
-    notify();
+    if (!state.segments.some(item=>item.id===state.selectedId)) state.selectedId=manual[0]?.id||'';
+    if (emit) notify();
     return short.length;
   }
-  const calculateConclusion = (segments, completed) => segments.some(item => item.conclusion === 'rejected') ? '不合格'
+  function mistakeDuration(segments) {
+    const ranges = usableRanges(segments.filter(item => item.conclusion === 'mistake'));
+    return DURATION - ranges.reduce((total, item) => total + item.end - item.start, 0);
+  }
+  const calculateConclusion = (segments, completed) => (segments.some(item => item.conclusion === 'rejected') || mistakeDuration(segments) >= DURATION * .5 - 1e-9) ? '不合格'
     : segments.some(item => item.conclusion === 'mistake') ? '失误'
     : completed && segments.every(valid) ? '合格' : '待计算';
   const calculatedConclusion = () => calculateConclusion(state.segments, true);
@@ -151,14 +155,17 @@
       const saved = JSON.parse(localStorage.getItem(DRAFT_KEY) || 'null');
       if (!saved || !Array.isArray(saved.segments)) return;
       state.segments = saved.segments.map(normalizeSaved);
-      state.selectedId = state.segments.some(item => item.id === saved.selectedId) ? saved.selectedId : state.segments[0]?.id || '';
+      const manual = manualSegments();
+      state.selectedId = manual.some(item => item.id === saved.selectedId) ? saved.selectedId : manual[0]?.id || '';
       state.revision = Number(saved.revision) || 1;
       state.dirty = false;
     } catch (_) {}
   }
   restore();
+  validateUsableDuration(false);
 
   function notify() {
+    validateUsableDuration(false);
     document.dispatchEvent(new CustomEvent(eventName('state-change'), {detail:clone(state)}));
   }
   function markDirty() {
@@ -196,7 +203,7 @@
   }
   function updateTime(id, edge, value) {
     const item = byId(id);
-    if (!item || state.submitted || !Number.isFinite(value)) return;
+    if (!item || item.autoShortDuration || state.submitted || !Number.isFinite(value)) return;
     const others = state.segments.filter(segment => segment.id !== id);
     const next = {...item, [edge]:Math.round(value * 10) / 10};
     placeSegment(next, others);
@@ -205,9 +212,9 @@
   }
   function removeSelected() {
     const item = selected();
-    if (!item || state.submitted || !window.confirm(`删除片段 ${segmentNumber(item)}（${format(item.start)}–${format(item.end)}）？`)) return;
+    if (!item || item.autoShortDuration || state.submitted || !window.confirm(`删除片段 ${segmentNumber(item)}（${format(item.start)}–${format(item.end)}）？`)) return;
     state.segments = state.segments.filter(segment => segment.id !== item.id);
-    state.selectedId = sortSegments(state.segments)[0]?.id || '';
+    state.selectedId = sortSegments(manualSegments())[0]?.id || '';
     markDirty();
   }
 
@@ -376,7 +383,7 @@
       document.dispatchEvent(new CustomEvent(eventName('playback'),{detail:{hits}}));
     }
     moveGlobal(direction) {
-      const ordered=sortSegments(state.segments), index=ordered.findIndex(item=>item.id===state.selectedId);
+      const ordered=sortSegments(manualSegments()), index=ordered.findIndex(item=>item.id===state.selectedId);
       const target=ordered[index+direction]; if(target)selectSegment(target.id);
     }
     block(item,hits) {
@@ -388,7 +395,10 @@
         const otherDuration=candidate.end-candidate.start;
         return otherDuration>duration||(otherDuration===duration&&candidate.order<item.order);
       }).length;
-      return `<button type="button" data-segment-id="${escape(item.id)}" class="prq-block is-${item.conclusion}${isShortDuration(item)?' is-short-duration':''}${isSelected?' is-selected':''}${overlaps?' is-overlap':''}${hits.includes(item.id)?' is-hit':''}${valid(item)?'':' has-error'}" style="left:${item.start/DURATION*100}%;width:${Math.max(0,(item.end-item.start)/DURATION*100)}%;z-index:${layer}" title="${String(segmentNumber(item)).padStart(2,'0')} · ${conclusionLabel(item.conclusion)} · ${format(item.start)}–${format(item.end)}"></button>`;
+      const tag='button';
+      const identity=` type="button" data-segment-id="${escape(item.id)}"${item.autoShortDuration?' data-auto-short-duration="true"':''}`;
+      const title=item.autoShortDuration?'系统标记 · 合格片段不足 3 秒':`${String(segmentNumber(item)).padStart(2,'0')} · ${conclusionLabel(item.conclusion)}`;
+      return `<${tag}${identity} class="prq-block is-${item.conclusion}${isShortDuration(item)?' is-short-duration':''}${isSelected?' is-selected':''}${overlaps?' is-overlap':''}${hits.includes(item.id)?' is-hit':''}${valid(item)?'':' has-error'}" style="left:${item.start/DURATION*100}%;width:${Math.max(0,(item.end-item.start)/DURATION*100)}%;z-index:${layer}" title="${title} · ${format(item.start)}–${format(item.end)}"></${tag}>`;
     }
     render() {
       const hits=state.segments.filter(item=>item.start<=this.playTime&&this.playTime<item.end).map(item=>item.id);
@@ -432,12 +442,12 @@
     set hidden(value){this.toggleAttribute('hidden',value);if(this.timeline){this.timeline.hidden=value;if(value)this.timeline.pause();}if(value)this.closeMenus();}
     get hidden(){return this.hasAttribute('hidden');}
     moveGlobal(direction){
-      const ordered=sortSegments(state.segments),index=ordered.findIndex(item=>item.id===state.selectedId),target=ordered[index+direction];
+      const ordered=sortSegments(manualSegments()),index=ordered.findIndex(item=>item.id===state.selectedId),target=ordered[index+direction];
       if(target)selectSegment(target.id);
     }
     moveTrack(direction){
       const item=selected(); if(!item)return;
-      const ordered=sortSegments(state.segments.filter(candidate=>candidate.track===item.track));
+      const ordered=sortSegments(manualSegments().filter(candidate=>candidate.track===item.track));
       const target=ordered[ordered.findIndex(candidate=>candidate.id===item.id)+direction]; if(target)selectSegment(target.id);
     }
     onKey(event){
@@ -447,6 +457,7 @@
       if(action){event.preventDefault();action();}
     }
     onClick(event){
+      if(selected()?.autoShortDuration)return;
       const action=event.target.closest('[data-action]')?.dataset.action;
       const reviewReason=event.target.closest('[data-review-error]')?.dataset.reviewError;
       if(reviewReason&&!state.submitted){const item=selected();if(item){item.reviewErrorReason=reviewReason;this.reviewErrorOpen=false;markDirty();}return;}
@@ -456,12 +467,18 @@
       if(action==='track-left')this.moveTrack(-1);
       if(action==='track-right')this.moveTrack(1);
       if(action==='delete')removeSelected();
+      if(action==='remove-reason'&&!state.submitted){
+        const item=selected(),target=event.target.closest('[data-reason-id]');
+        if(item&&target){const list=target.dataset.kind==='mistake'?item.mistakeReasons:item.rejectedReasons,index=list.indexOf(target.dataset.reasonId);if(index>=0)list.splice(index,1);item.autoShortDuration=false;markDirty();}
+        return;
+      }
+      if(action==='clear-reasons'&&!state.submitted){const item=selected();if(item){item.mistakeReasons=[];item.rejectedReasons=[];item.autoShortDuration=false;markDirty();}return;}
       if(action==='toggle-reasons'&&!state.submitted){this.reasonsOpen=!this.reasonsOpen;this.reviewErrorOpen=false;this.render();}
       if(action==='toggle-review-error'&&!state.submitted){this.reviewErrorOpen=!this.reviewErrorOpen;this.reasonsOpen=false;this.render();}
       if(action==='clear-review-error'&&!state.submitted){const item=selected();if(item){item.reviewErrorReason='';this.reviewErrorOpen=false;markDirty();}}
     }
     onChange(event){
-      const item=selected(); if(!item||state.submitted)return;
+      const item=selected(); if(!item||item.autoShortDuration||state.submitted)return;
       const field=event.target.dataset.field;
       if(field==='conclusion'){
         item.conclusion=event.target.value;
@@ -480,17 +497,22 @@
       return `<section><header><b>${title}</b><em class="${requirement==='必选'?'is-required':''}">${requirement}</em></header>${items.map(item=>`<label title="${escape(item.detail)}"><input type="checkbox" data-field="reason" data-kind="${kind}" value="${item.id}" ${values.includes(item.id)?'checked':''}><span>${escape(item.name)}</span></label>`).join('')}</section>`;
     }
     reasonChips(item){
-      const rejected=item.rejectedReasons.map(id=>`<span class="prq-reason-chip is-rejected">${escape(reasonName(id))}</span>`);
-      const mistake=item.mistakeReasons.map(id=>`<span class="prq-reason-chip is-mistake">${escape(reasonName(id))}</span>`);
+      const rejected=item.rejectedReasons.map(id=>`<span class="prq-reason-chip is-rejected"><span>${escape(reasonName(id))}</span><span class="prq-reason-remove" data-action="remove-reason" data-kind="rejected" data-reason-id="${escape(id)}" role="button" aria-label="删除${escape(reasonName(id))}" title="删除此原因">×</span></span>`);
+      const mistake=item.mistakeReasons.map(id=>`<span class="prq-reason-chip is-mistake"><span>${escape(reasonName(id))}</span><span class="prq-reason-remove" data-action="remove-reason" data-kind="mistake" data-reason-id="${escape(id)}" role="button" aria-label="删除${escape(reasonName(id))}" title="删除此原因">×</span></span>`);
       const chips=[...rejected,...mistake].join('');
-      return chips||'<span class="prq-reason-empty">请选择必选原因</span>';
+      return chips?`${chips}<span class="prq-reasons-clear" data-action="clear-reasons" role="button" aria-label="清空全部原因" title="清空全部原因">×</span>`:'<span class="prq-reason-empty">请选择原因</span>';
     }
     render(){
       const item=selected();
       if(!item){this.innerHTML=`<section class="prq-editor card"><div class="prq-empty"><b>尚未记录问题片段</b><span>在时间轴刻度拖拽创建片段，或设置起止时间后点击添加。</span></div></section>${this.ruleDialog()}`;return;}
+      if(item.autoShortDuration){this.innerHTML=`<section class="prq-editor card prq-auto-editor">
+        <div class="prq-editor-meta-row"><div class="prq-editor-fields"><span class="prq-id is-mistake is-short-duration">自动</span><label>开始<span class="prq-time-field">${format(item.start)}</span></label><label>结束<span class="prq-time-field">${format(item.end)}</span></label><span>时长 <b>${(item.end-item.start).toFixed(1)}s</b></span></div><span class="prq-auto-readonly">系统判定 · 只读</span></div>
+        <div class="prq-editor-fields-row"><div class="prq-conclusion-switch" aria-label="片段结论"><label class="is-mistake is-active"><input type="radio" checked disabled>失误</label><label class="is-rejected"><input type="radio" disabled>不合格</label></div><span class="prq-reason-label">失误描述</span><div class="prq-reason-select"><button class="prq-reason-trigger" type="button" disabled><span class="prq-selected-reasons"><span class="prq-auto-reason">片段时长过短</span></span></button></div></div>
+      </section>`;return;}
+
       const ordered=sortSegments(state.segments),globalIndex=ordered.findIndex(candidate=>candidate.id===item.id);
       const trackItems=sortSegments(state.segments.filter(candidate=>candidate.track===item.track));
-      const trackIndex=trackItems.findIndex(candidate=>candidate.id===item.id),errors=segmentErrors(item);
+      const trackIndex=trackItems.findIndex(candidate=>candidate.id===item.id);
       const rejectedGroup=item.conclusion==='rejected'
         ?this.reasonGroup('不合格原因','必选','rejected',RULE.rejected,item.rejectedReasons)
         :item.rejectedReasons.length?this.reasonGroup('不兼容原因','请移除','rejected',RULE.rejected.filter(reason=>item.rejectedReasons.includes(reason.id)),item.rejectedReasons):'';
@@ -499,8 +521,8 @@
       const reviewMenu=`<div class="prq-review-error-menu" ${this.reviewErrorOpen?'':'hidden'} role="listbox">${REVIEW_ERROR_REASONS.map(reason=>`<button type="button" data-review-error="${escape(reason)}" role="option" class="${item.reviewErrorReason===reason?'is-selected':''}">${escape(reason)}<span>✓</span></button>`).join('')}<button type="button" class="prq-review-error-clear" data-action="clear-review-error">清除错误原因</button></div>`;
       this.innerHTML=`<section class="prq-editor card">
         <div class="prq-editor-meta-row"><div class="prq-editor-fields"><span class="prq-id is-${item.conclusion}${isShortDuration(item)?' is-short-duration':''}">${String(globalIndex+1).padStart(2,'0')}</span><label>开始<span class="prq-time-field">${format(item.start)}</span></label><label>结束<span class="prq-time-field">${format(item.end)}</span></label><span>时长 <b>${Math.max(0,item.end-item.start).toFixed(1)}s</b></span></div><div class="segment-actions prq-editor-actions"><button class="segment-action segment-action--navigate" data-action="previous" ${globalIndex<=0?'disabled':''}>上一段 <kbd>⌘↑</kbd></button><button class="segment-action segment-action--navigate" data-action="next" ${globalIndex>=ordered.length-1?'disabled':''}>下一段 <kbd>⌘↓</kbd></button><button class="segment-action" data-action="track-left" ${trackIndex<=0?'disabled':''}>同轨左 <kbd>⌘←</kbd></button><button class="segment-action" data-action="track-right" ${trackIndex>=trackItems.length-1?'disabled':''}>同轨右 <kbd>⌘→</kbd></button><button class="segment-action segment-action--danger" data-action="delete" ${state.submitted?'disabled':''}>删除</button></div></div>
-        <div class="prq-editor-fields-row"><div class="prq-conclusion-switch" aria-label="片段结论"><label class="is-mistake${item.conclusion==='mistake'?' is-active':''}"><input type="radio" name="${domPrefix}-conclusion" data-field="conclusion" value="mistake" ${item.conclusion==='mistake'?'checked':''} ${state.submitted?'disabled':''}>失误</label><label class="is-rejected${item.conclusion==='rejected'?' is-active':''}"><input type="radio" name="${domPrefix}-conclusion" data-field="conclusion" value="rejected" ${item.conclusion==='rejected'?'checked':''} ${state.submitted?'disabled':''}>不合格</label></div><div class="prq-reason-select"><div class="prq-selected-reasons" aria-label="已选原因">${this.reasonChips(item)}</div><button type="button" data-action="toggle-reasons" aria-expanded="${this.reasonsOpen}" ${state.submitted?'disabled':''}><span>选择原因</span><img src="/static/annotation_workbench/assets/icon-chevron.svg" alt=""></button>${menu}</div></div>
-        <div class="prq-editor-lower"><label><span>错误原因</span><div class="prq-review-error-select"><button type="button" data-action="toggle-review-error" aria-expanded="${this.reviewErrorOpen}" ${state.submitted?'disabled':''}><span>${escape(reviewTrigger)}</span><img src="/static/annotation_workbench/assets/icon-chevron.svg" alt=""></button>${reviewMenu}</div></label><div class="prq-field-state ${errors.length?'has-error':'is-complete'}">${errors.length?'待补充：'+errors.map(escape).join('、'):'当前片段已完善'}</div></div>
+        <div class="prq-editor-fields-row"><div class="prq-conclusion-switch" aria-label="片段结论"><label class="is-mistake${item.conclusion==='mistake'?' is-active':''}"><input type="radio" name="${domPrefix}-conclusion" data-field="conclusion" value="mistake" ${item.conclusion==='mistake'?'checked':''} ${state.submitted?'disabled':''}>失误</label><label class="is-rejected${item.conclusion==='rejected'?' is-active':''}"><input type="radio" name="${domPrefix}-conclusion" data-field="conclusion" value="rejected" ${item.conclusion==='rejected'?'checked':''} ${state.submitted?'disabled':''}>不合格</label></div><span class="prq-reason-label">失误描述</span><div class="prq-reason-select"><button class="prq-reason-trigger" type="button" data-action="toggle-reasons" aria-expanded="${this.reasonsOpen}" ${state.submitted?'disabled':''}><span class="prq-selected-reasons" aria-label="已选原因">${this.reasonChips(item)}</span><img src="/static/annotation_workbench/assets/icon-chevron.svg" alt=""></button>${menu}</div></div>
+        <div class="prq-editor-lower"><label><span>错误原因</span><div class="prq-review-error-select"><button type="button" data-action="toggle-review-error" aria-expanded="${this.reviewErrorOpen}" ${state.submitted?'disabled':''}><span>${escape(reviewTrigger)}</span><img src="/static/annotation_workbench/assets/icon-chevron.svg" alt=""></button>${reviewMenu}</div></label></div>
       </section>${this.ruleDialog()}`;
     }
     ruleDialog(){return `<dialog id="${domPrefix}RuleDialog" class="prq-dialog"><header><div><h2>${label}采集质检规则</h2><p>${RULE.name} · ${RULE.id} · ${RULE.version}</p></div><button type="button" onclick="this.closest('dialog').close()" aria-label="关闭">×</button></header><div class="prq-rule-body"><section><h3>失误标准</h3>${RULE.mistake.map(item=>`<article><b>${escape(item.name)}</b><p>${escape(item.detail)}</p></article>`).join('')}</section><section><h3>不合格标准</h3>${RULE.rejected.map(item=>`<article><b>${escape(item.name)}</b><p>${escape(item.detail)}</p></article>`).join('')}</section><div class="prq-fixed-rule"><b>固定汇总规则</b><p>无问题片段为合格；只有失误片段为失误；存在任意不合格片段为不合格。</p></div></div></dialog>`;}
@@ -522,12 +544,17 @@
         event.stopPropagation();
         if(!state.submitted&&this.save()){
           document.dispatchEvent(new CustomEvent(eventName('reject'),{detail:{reason:event.detail.value,segments:state.segments}}));
-          this.toast('质检已驳回，草稿已保存');
+          state.submitted=true;state.dirty=false;notify();this.showSuccess('驳回');
         }
       });
       this.render();
     }
     toast(message){document.dispatchEvent(new CustomEvent(eventName('toast'),{detail:{message}}));}
+    showSuccess(action){
+      const dialog=this.querySelector(`#${domPrefix}SuccessDialog`);
+      dialog.querySelector('[data-success-message]').textContent=`${action}成功`;
+      if(!dialog.open)dialog.showModal();
+    }
     save(){
       try{localStorage.setItem(DRAFT_KEY,JSON.stringify({segments:state.segments,selectedId:state.selectedId,revision:state.revision,savedAt:new Date().toISOString()}));state.dirty=false;notify();this.toast('草稿已保存');return true;}
       catch(_){this.toast('保存失败，请重试');return false;}
@@ -536,8 +563,8 @@
       const row=event.target.closest('[data-segment-id]');
       if(row){selectSegment(row.dataset.segmentId);return;}
       const action=event.target.closest('[data-action]')?.dataset.action;
-      if(action==='save'&&!state.submitted)this.save();
-      if(action==='leave'&&!state.submitted&&this.save())this.toast('草稿已保存');
+      if(action==='save'&&!state.submitted){validateUsableDuration();this.save();}
+      if(action==='leave'&&!state.submitted)this.querySelector(`#${domPrefix}ReleaseDialog`)?.showModal();
       if(action==='reject'&&!state.submitted)this.querySelector('workbench-confirm-dialog[variant="reject"]')?.show();
       if(action==='submit'&&!state.submitted){
         if(invalidCount()){this.querySelector(`#${domPrefix}ErrorDialog`)?.showModal();return;}
@@ -545,25 +572,38 @@
         const dialog=this.querySelector(`#${domPrefix}SubmitDialog`);
         dialog.querySelector('[data-result]').textContent=calculatedConclusion();
         dialog.querySelector('[data-counts]').textContent=`失误 ${state.segments.filter(item=>item.conclusion==='mistake').length} 条 · 不合格 ${state.segments.filter(item=>item.conclusion==='rejected').length} 条 · 规则 ${RULE.version}`;
-        dialog.querySelector('[data-duration-check]').textContent=shortCount?`检测到 ${shortCount} 处可用片段不足 3 秒，已自动标记为失误，原因：可用时长太短。`:'可用片段时长校验通过。';
+        dialog.querySelector('[data-duration-check]').textContent=shortCount?`检测到 ${shortCount} 处可用片段不足 3 秒，已自动标记为失误，原因：片段时长过短。`:'可用片段时长校验通过。';
         dialog.showModal();
       }
       if(action==='confirm-submit'){
         if(invalidCount())return;
         state.submitted=true;state.dirty=false;state.revision+=1;
         try{localStorage.removeItem(DRAFT_KEY);}catch(_){}
-        this.querySelector(`#${domPrefix}SubmitDialog`)?.close();notify();this.toast('质检已提交');
+        this.querySelector(`#${domPrefix}SubmitDialog`)?.close();notify();this.showSuccess('提交');
       }
+      if(action==='confirm-release'&&!state.submitted){
+        this.querySelector(`#${domPrefix}ReleaseDialog`)?.close();
+        if(this.save()){state.submitted=true;state.dirty=false;notify();this.showSuccess('释放');}
+      }
+      if(action==='continue-work'){try{localStorage.removeItem(DRAFT_KEY);}catch(_){}window.location.reload();}
+      if(action==='exit-workbench'){try{localStorage.removeItem(DRAFT_KEY);}catch(_){}window.location.assign('/data/workbench-v2');}
     }
     render(){
-      const ordered=sortSegments(state.segments),pending=pendingCount(),canSubmit=!pending&&!state.submitted;
+      const ordered=sortSegments(manualSegments()),pending=pendingCount(),canSubmit=!pending&&!state.submitted;
       const conclusion=calculatedConclusion(),conclusionClass=conclusion==='合格'?'is-pass':conclusion==='失误'?'is-mistake':conclusion==='不合格'?'is-rejected':'is-pending';
       const rows=ordered.map(item=>{
-        return `<button type="button" data-segment-id="${escape(item.id)}" class="prq-list-item${isShortDuration(item)?' is-short-duration':''}${item.id===state.selectedId?' is-active':''}${this.hits?.includes(item.id)?' is-hit':''}${valid(item)?'':' has-error'}"><span class="prq-list-id">${String(ordered.indexOf(item)+1).padStart(2,'0')}</span><span class="prq-list-main"><span class="prq-list-time">${format(item.start)}–${format(item.end)} <em>${(item.end-item.start).toFixed(1)}s</em></span><span class="prq-list-summary"><b class="is-${item.conclusion}">${conclusionLabel(item.conclusion)}</b><strong>${escape(reasonSummary(item))}</strong></span>${valid(item)?'':`<i>${escape(segmentErrors(item)[0])}</i>`}</span></button>`;
+        return `<button type="button" data-segment-id="${escape(item.id)}" class="prq-list-item${isShortDuration(item)?' is-short-duration':''}${item.id===state.selectedId?' is-active':''}${this.hits?.includes(item.id)?' is-hit':''}${valid(item)?'':' has-error'}"><span class="prq-list-id">${String(ordered.indexOf(item)+1).padStart(2,'0')}</span><span class="prq-list-main">${item.id===state.selectedId?`<span class="prq-list-time">${format(item.start)}–${format(item.end)}</span>`:''}<span class="prq-list-summary"><b class="is-${item.conclusion}">${conclusionLabel(item.conclusion)}</b><strong>${escape(reasonSummary(item))}</strong></span>${valid(item)?'':`<i>${escape(segmentErrors(item)[0])}</i>`}</span></button>`;
       }).join('');
-      this.innerHTML=`<section class="prq-sidebar"><header><div><b>质检列表</b><span>共 ${ordered.length} 个问题片段</span></div></header><div class="prq-list">${ordered.length?rows:'<div class="prq-list-empty">尚未记录问题片段</div>'}</div><footer><div class="prq-conclusion-meta">系统自动计算 · 失误 ${state.segments.filter(item=>item.conclusion==='mistake').length} · 不合格 ${state.segments.filter(item=>item.conclusion==='rejected').length}${pending?` · 待判定 ${pending}`:''}</div><div class="prq-video-conclusion"><span class="prq-conclusion-label">质检结论</span><output id="${domPrefix}VideoConclusion" class="${conclusionClass}" aria-label="质检结论，由系统自动计算">${conclusion}</output></div><workbench-footer-actions hydrate><div class="workbench-footer-actions"><button type="button" data-action="save" ${state.submitted?'disabled':''}>保存</button><button type="button" data-action="leave" ${state.submitted?'disabled':''}>释放</button><button type="button" data-action="reject" ${state.submitted?'disabled':''}>驳回</button><button type="button" class="${canSubmit?'':'is-blocked'}" data-action="submit" ${canSubmit?'':'disabled'}>提交</button></div></workbench-footer-actions></footer></section><workbench-confirm-dialog variant="reject"></workbench-confirm-dialog>
+      this.innerHTML=`<section class="prq-sidebar"><header><div><b>质检列表</b><span>共 ${ordered.length} 个问题片段</span></div></header><div class="prq-list">${ordered.length?rows:'<div class="prq-list-empty">尚未记录问题片段</div>'}</div><footer><div class="prq-conclusion-meta">系统自动计算 · 失误 ${state.segments.filter(item=>item.conclusion==='mistake').length}${mistakeDuration(state.segments)>=DURATION*.5-1e-9?'（时长占比超50%）':''} · 不合格 ${state.segments.filter(item=>item.conclusion==='rejected').length}${pending?` · 待判定 ${pending}`:''}</div><div class="prq-video-conclusion"><span class="prq-conclusion-label">质检结论</span><output id="${domPrefix}VideoConclusion" class="${conclusionClass}" aria-label="质检结论，由系统自动计算">${conclusion}</output></div><workbench-footer-actions hydrate><div class="workbench-footer-actions"><button type="button" data-action="save" ${state.submitted?'disabled':''}>保存</button></div></workbench-footer-actions></footer></section><workbench-confirm-dialog variant="reject"></workbench-confirm-dialog>
         <dialog id="${domPrefix}ErrorDialog" class="prq-dialog prq-error-dialog"><header><h2>暂时无法提交</h2><button onclick="this.closest('dialog').close()" aria-label="关闭">×</button></header><div><b>标注有问题</b><p>${invalidCount()} 个问题片段存在必填项缺失，请检查后提交。</p></div><footer><button onclick="this.closest('dialog').close()">我知道了</button></footer></dialog>
-        <dialog id="${domPrefix}SubmitDialog" class="prq-dialog prq-submit-dialog ${conclusionClass}"><header><h2>确认提交质检</h2><button onclick="this.closest('dialog').close()" aria-label="关闭">×</button></header><div><span>系统计算的视频结论</span><strong data-result></strong><p data-counts></p><p data-duration-check></p><small>提交后将保存全部片段和本次质检结果。</small></div><footer><button onclick="this.closest('dialog').close()">取消</button><button class="is-primary" data-action="confirm-submit">确认提交</button></footer></dialog>`;
+        <dialog id="${domPrefix}ReleaseDialog" class="prq-dialog prq-action-dialog"><header><h2>确认释放当前数据</h2><button onclick="this.closest('dialog').close()" aria-label="关闭">×</button></header><div><b>释放后将退出当前处理状态</b><p>确定要释放当前数据吗？</p></div><footer><button onclick="this.closest('dialog').close()">取消</button><button class="is-primary" data-action="confirm-release">确认释放</button></footer></dialog>
+        <dialog id="${domPrefix}SubmitDialog" class="prq-dialog prq-submit-dialog ${conclusionClass}"><header><h2>确认提交质检</h2><button onclick="this.closest('dialog').close()" aria-label="关闭">×</button></header><div><span>系统计算的视频结论</span><strong data-result></strong><p data-counts></p><p data-duration-check></p><small>提交后将保存全部片段和本次质检结果。</small></div><footer><button onclick="this.closest('dialog').close()">取消</button><button class="is-primary" data-action="confirm-submit">确认</button></footer></dialog>
+        <dialog id="${domPrefix}SuccessDialog" class="prq-dialog prq-success-dialog"><div><span aria-hidden="true">✓</span><b data-success-message>操作成功</b><p>请选择继续处理下一条数据或退出工作台。</p></div><footer><button data-action="exit-workbench">退出工作台</button><button class="is-primary" data-action="continue-work">继续处理</button></footer></dialog>`;
+      this.querySelector(`#${domPrefix}SuccessDialog`)?.addEventListener('cancel',event=>event.preventDefault());
+      ['confirm-release','confirm-submit','continue-work','exit-workbench'].forEach(action=>{
+        const control=this.querySelector(`[data-action="${action}"]`);
+        control?.addEventListener('click',event=>{event.stopPropagation();this.onClick({target:control});});
+      });
     }
   }
 
@@ -580,7 +620,8 @@
   });
 
   window.__preTrainingQualityRules = {
-    overlapDuration, trackOverlap, sortSegments, calculateConclusion, calculatedConclusion, usableRanges, validateUsableDuration, pendingCount, isShortDuration,
+    overlapDuration, trackOverlap, sortSegments, mistakeDuration, calculateConclusion, calculatedConclusion, usableRanges, validateUsableDuration, pendingCount, isShortDuration,
+    visibleSegments:()=>clone(manualSegments()),
     placeSegment:(candidate,segments)=>placeSegment(clone(candidate),clone(segments)),
     segmentErrors:segment=>segmentErrors(clone(segment)),
     constants:{duration:DURATION,trackCount:TRACK_COUNT}
