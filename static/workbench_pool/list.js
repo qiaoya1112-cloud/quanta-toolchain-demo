@@ -30,6 +30,8 @@
   }
   function render() {
     const visible = visibleRecords();
+    const batchCount = document.getElementById('wpBatchCount');
+    if (batchCount) batchCount.textContent = '共 ' + records.length + ' 条数据';
     const pending = visible.filter(item => item.status === 'pending');
     for (const id of selected) if (!pending.some(item => item.id === id)) selected.delete(id);
     if (!task.job_center && !task.compact_list) {
@@ -43,8 +45,17 @@
     rows.innerHTML = window.WorkbenchPoolRows.render(visible, task, {busy, selected});
     rows.querySelectorAll('button').forEach(button => { button.disabled = busy; });
   }
+  let validationToastTimer;
   function report(message) {
     const error = document.getElementById('wpError');
+    if (message && message.includes('存在未质检的数据')) {
+      error.textContent = ''; error.hidden = true;
+      const notice = document.getElementById('wpValidationToast');
+      clearTimeout(validationToastTimer);
+      notice.textContent = message; notice.hidden = false;
+      validationToastTimer = setTimeout(() => { notice.hidden = true; }, 3000);
+      return;
+    }
     if (message && message.includes('数据已被其他人占用或处理')) {
       error.textContent = ''; error.hidden = true;
       if (typeof toast === 'function') toast('当前批次已变化，请刷新后重试');
@@ -116,7 +127,7 @@
       document.getElementById('wpBatchRemarkRequirement').textContent = requiresRemark ? '（必填）' : '（选填）';
       remark.value = ''; remark.required = requiresRemark; error.hidden = true;
       document.getElementById('wpBatchConfirmTitle').textContent = '确认' + button.textContent;
-      document.getElementById('wpBatchConfirmText').textContent = '确认' + button.textContent + '当前批次的 ' + ids.length + ' 条数据？';
+      document.getElementById('wpBatchConfirmText').textContent = '确认' + button.textContent + '当前批次的 ' + ids.length + ' 条数据？' + (button.dataset.batchAction === 'submit' && task.node === '质检验收' ? '提交后将清除本批数据的错误原因，请确认已完成核验。' : '');
       mask.hidden = false;
       const finish = value => { mask.hidden = true; resolve(value); button.focus(); };
       document.getElementById('wpBatchCancel').onclick = () => finish(false);
@@ -135,6 +146,17 @@
     try {
       records = await pool.action({action:'batch_' + button.dataset.batchAction, ids,
         remark:document.getElementById('wpBatchRemark').value.trim()});
+      if (!task.return_to_workbench) {
+        if (document.getElementById('wpContinueProcessing')?.checked) {
+          window.location.reload();
+        } else {
+          const next = new URL(window.location.href);
+          next.pathname = next.pathname.replace(/\/records$/, '');
+          next.searchParams.delete('entry');
+          window.location.assign(next.href);
+        }
+        return;
+      }
       selected.clear(); render();
       if (typeof toast === 'function') toast('操作成功，已加载新一批数据');
     } catch (error) { report(error.message); }

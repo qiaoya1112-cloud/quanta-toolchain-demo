@@ -31,11 +31,12 @@
       const qualityClass = {'合格':'pass','操作失误':'mistake','不合格':'fail'}[qualityResult] || '';
       const showQualityNotes = !(task.id === 'WB-PRETRAINING-QC' && !task.return_to_workbench);
       const qualityDetails = '<div class="wp-quality-'+qualityClass+'">'+escape(qualityResult)+'</div>' +
-        (showQualityNotes && (item.qc_error_count || item.reason || item.remark) ? '<div class="wp-quality-errors">'+escape(item.qc_error_count || item.reasons?.length || 1)+'条错误</div>' : '');
+        (showQualityNotes && (item.qc_error_count || item.reason || item.remark) ? '<div class="wp-quality-errors">'+escape(item.qc_error_count || item.reasons?.length || 1)+'条错误</div>' : '') +
+        (task.return_to_workbench && item.modified ? '<div class="wp-modified">已修改</div>' : '');
       const entries = history(item, task);
       const operators = details(entries.map(entry => [entry.label, entry.name ? entry.name + '（' + (entry.supplier ? String(Number(String(entry.supplier).replace(/\D/g, ''))).padStart(2, '0') : '--') + '）' : '--']));
       const operationTimes = details(entries.map(entry => [entry.label, entry.time]));
-      const buttons = '<button class="wp-process" data-action="process">处理</button>' + (!acceptance && (pretraining || processing) ? '<button data-action="不合格" class="wp-reject" '+(item.occupied?'disabled':'')+'>不合格</button>' : '');
+      const buttons = '<button class="wp-process" data-action="process">处理</button>' + (!acceptance && !task.return_to_workbench && (pretraining || processing) ? '<button data-action="不合格" class="wp-reject" '+(item.occupied?'disabled':'')+'>不合格</button>' : '');
       return '<tr data-record-id="' + escape(item.id) + '" class="' + (processing ? 'wp-processing' : '') + '">' +
         (task.job_center || task.compact_list ? '' : '<td><input type="checkbox" aria-label="选择 ' + escape(item.id) + '" ' + ((processing || busy) ? 'disabled ' : '') + (selected.has(item.id) ? 'checked ' : '') + '></td>') +
         '<td class="wp-task-id">' + escape(item.task_id) + '</td><td class="wp-data-id"><b>' + escape(item.id) + '</b></td>' +

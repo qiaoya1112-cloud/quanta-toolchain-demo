@@ -4,11 +4,12 @@ post-training-quality-second-review-workspace[hidden],post-training-quality-seco
 .workbench-review__tabs button[data-review-variant=post-quality-second-review]{font:inherit;line-height:18px}
 .ptqs-compare{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px;height:58px;box-sizing:border-box;padding-top:2px}
 .ptqs-current,.ptqs-previous{min-width:0;overflow:auto;scrollbar-width:thin}
+.ptqs-current{border-left:0;padding-left:0}
 .ptqs-previous{border-left:1px solid var(--ptqr-line);padding-left:8px}
 .ptqs-current-heading{display:flex;align-items:center;gap:8px;height:24px;font-size:11px;color:var(--ptqr-text)}
 .ptqs-current-heading .ptqr-conclusion{height:20px;min-width:42px;font-size:10px}
 .ptqs-current-heading .ptqr-conclusion-review{display:flex;align-items:center;gap:4px;min-width:0}
-.ptqs-current-heading .ptqr-original-conclusion{display:none}
+.ptqs-current-heading .ptqr-original-conclusion{display:inline-flex;align-items:center;gap:3px;color:var(--ptqr-text)}
 .ptqs-current-heading .ptqr-conclusion-switch button{height:20px;padding:0 5px;font-size:10px}
 .ptqr-suggested-result{flex:none;color:var(--ptqr-text);font-size:10px;white-space:nowrap}
 .ptqr-conclusion-switch .is-active.is-pass{background:#23323d;color:var(--ptqr-text)}
@@ -18,7 +19,9 @@ post-training-quality-second-review-workspace[hidden],post-training-quality-seco
 .ptqs-current .ptqr-add{flex:none}
 /* The add menu is positioned outside scrolling chips so it is never clipped. */
 .ptqs-current .ptqr-add-menu{position:fixed;z-index:150;bottom:auto;right:auto}
-.ptqs-previous .ptqw-feedback-chips{display:flex;gap:4px;flex-wrap:nowrap;min-width:0;overflow:auto;max-height:24px;margin:0;scrollbar-width:thin}
+.ptqs-previous .ptqr-add-menu{position:fixed;z-index:150;bottom:auto;right:auto}
+.ptqs-previous .ptqw-feedback-heading{gap:5px;overflow:hidden}
+.ptqs-previous .ptqw-feedback-heading .ptqw-feedback-chips{display:flex;gap:4px;flex-wrap:nowrap;flex:1 1 auto;min-width:0;overflow:auto;max-height:24px;margin:0;scrollbar-width:thin}
 .ptqs-previous .ptqw-chip{flex:none;padding:1px 5px;font-size:10px;line-height:18px;white-space:nowrap}
 .ptqs-previous .ptqw-chip small{font-size:9px}
 .ptqs-muted{font-size:10px;color:var(--ptqr-muted);white-space:nowrap}

@@ -1,6 +1,9 @@
 <link rel="stylesheet" href="/static/workbench_pool/pool.css">
 <section class="wp-page" id="wpPage">
+  {% if task.compact_list %}<div class="wp-batch-header">{% endif %}
   {% if task.job_center %}<a href="/data/job-centers/{{ task.job_center }}?task={{ task.id }}">← 返回作业中心{{ task.job_center }}</a>{% elif task.return_to_workbench %}<a href="/data/workbench-v2">← 返回工作台</a>{% else %}<a href="/data/workbench-v2/pools/{{ task.pool }}?source={{ task.id }}&rule={{ task.selected_rule|urlencode }}">← 返回任务池配置</a>{% endif %}
+  {% if task.compact_list %}<div class="wp-toolbar" id="wpBatchActions"><div><span id="wpBatchCount" class="wp-batch-count">共 {{ records|length }} 条数据</span>{% if task.rejection_remark %}<p class="wp-error wp-batch-reason">驳回原因：{{ task.rejection_remark }}</p>{% endif %}</div><div>{% if not task.return_to_workbench %}<button type="button" class="btn" data-batch-action="release">释放</button>{% endif %}{% if task.node == '质检验收' %}<button type="button" class="btn" data-batch-action="reject">驳回</button>{% endif %}<button type="button" class="btn btn-primary" data-batch-action="submit">{{ "重新提交" if task.return_to_workbench and task.node == "采集质检" else "提交" }}</button></div></div>{% endif %}
+  {% if task.compact_list %}</div>{% endif %}
   {% if not task.compact_list %}<div class="wp-heading"><div><h1>{{ '批量作业数据列表' if task.job_center or task.execution_unit == 'batch' else '任务池数据列表' }}</h1><p>{{ task.node + ' · ' + (records|length|string) + ' 条数据' }}</p></div></div>{% endif %}
   {% if not task.job_center and not task.compact_list %}<form id="wpFilters" class="wp-filters">
     <label>采集任务ID<input name="task_id" placeholder="请输入采集任务ID"></label>
@@ -15,9 +18,10 @@
     </div>
   </form>
   <div class="wp-toolbar"><div><b id="wpCount"></b><span id="wpSelected">已选0条，最多同时执行20条</span></div><button class="btn btn-primary" id="wpBatch" disabled>批量领取</button></div>{% endif %}
+  <div id="wpValidationToast" class="wp-validation-toast" role="alert" hidden></div>
   <p id="wpError" class="wp-error" role="alert" hidden></p>
-  {% if task.compact_list %}<div class="wp-toolbar" id="wpBatchActions"><div>{% if task.rejection_remark %}<p class="wp-error wp-batch-reason">驳回原因：{{ task.rejection_remark }}</p>{% endif %}</div><div>{% if not task.return_to_workbench %}<button type="button" class="btn" data-batch-action="release">释放</button>{% endif %}{% if task.node == '采集验收' %}<button type="button" class="btn" data-batch-action="reject">驳回</button>{% endif %}<button type="button" class="btn btn-primary" data-batch-action="submit">提交</button></div></div>{% endif %}
-  <div class="wp-mask" id="wpBatchConfirm" hidden><section class="wp-dialog" role="dialog" aria-modal="true" aria-labelledby="wpBatchConfirmTitle"><h3 id="wpBatchConfirmTitle">确认操作</h3><p id="wpBatchConfirmText"></p><label id="wpBatchRemarkField">说明 <span id="wpBatchRemarkRequirement"></span><textarea id="wpBatchRemark" rows="3" placeholder="请输入说明"></textarea></label><p id="wpBatchConfirmError" class="wp-error" role="alert" hidden></p><footer><button type="button" class="btn" id="wpBatchCancel">取消</button><button type="button" class="btn btn-primary" id="wpBatchConfirmButton">确认</button></footer></section></div>
+
+  <div class="wp-mask" id="wpBatchConfirm" hidden><section class="wp-dialog" role="dialog" aria-modal="true" aria-labelledby="wpBatchConfirmTitle"><h3 id="wpBatchConfirmTitle">确认操作</h3><p id="wpBatchConfirmText"></p><label id="wpBatchRemarkField">说明 <span id="wpBatchRemarkRequirement"></span><textarea id="wpBatchRemark" rows="3" placeholder="请输入说明"></textarea></label><p id="wpBatchConfirmError" class="wp-error" role="alert" hidden></p><footer>{% if not task.return_to_workbench %}<label class="wp-continue-toggle"><input type="checkbox" role="switch" id="wpContinueProcessing">自动领取下一批</label>{% endif %}<button type="button" class="btn" id="wpBatchCancel">取消</button><button type="button" class="btn btn-primary" id="wpBatchConfirmButton">确认</button></footer></section></div>
   <div class="wp-table-wrap"><table class="wp-table">
     <thead><tr>{% if not task.job_center and not task.compact_list %}<th class="wp-selection"><input id="wpSelectAll" type="checkbox" aria-label="全选当前待领取数据"></th>{% endif %}<th>采集任务ID</th><th>数据ID</th><th>视频区域（头部 | 左臂 | 右臂）</th><th>设备序列号</th><th>操作员</th><th>操作时间</th><th>操作结论</th>{% if not task.hide_status %}<th>状态</th>{% endif %}{% if task.compact_list %}<th>质检结论</th>{% endif %}<th class="wp-action-cell">操作</th></tr></thead>
     <tbody id="wpRows"></tbody>

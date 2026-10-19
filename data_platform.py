@@ -545,9 +545,9 @@ _review_flows = [
         "input_name": "开始", "output_name": "完成", "stages": [], "schedules": [],
         "business_stage": "质检", "input_contract": "自检合格数据",
         "output_contract": "quality_conclusion + quality_records",
-        "desc": "自检合格数据由采集验收节点进行全检。",
+        "desc": "自检合格数据由质检验收节点进行全检。",
         "flow_nodes": [{
-            "name": "采集验收", "ident": "collection_acceptance", "kind": "human",
+            "name": "质检验收", "ident": "collection_acceptance", "kind": "human",
             "meta": "全检全部数据并提交验收结果", "processing_percent": 100,
             "processing_rule_mode": "none", "allow_task_percent": False,
             "assignee_type": "user_group", "assignee_mode": "task_custom",
@@ -570,7 +570,7 @@ _review_flows = [
         "business_stage": "质检",
         "input_contract": "自检合格数据",
         "output_contract": "quality_conclusion + quality_records",
-        "desc": "自检合格数据经自动化质检和采集质检后，进入采集验收。",
+        "desc": "自检合格数据经自动化质检和采集质检后，进入质检验收。",
         "flow_nodes": [
             {
                 "name": "自动化质检", "ident": "automatic_quality_check",
@@ -588,7 +588,7 @@ _review_flows = [
                 "allowed_actions": ["提交", "暂离"],
             },
             {
-                "name": "采集验收", "ident": "collection_acceptance",
+                "name": "质检验收", "ident": "collection_acceptance",
                 "kind": "human", "meta": "验收全部质检数据",
                 "processing_percent": 100,
                 "processing_rule_mode": "inherit", "inherit_processing_rule_node": "采集质检",
@@ -7302,7 +7302,7 @@ def pipeline_editor(pid):
             <div class="wf-cfg-sec">处理模式</div>
             <div class="wf-choice-grid" id="wfhDataListEnabled" role="group" aria-label="处理模式">
               <label><input type="radio" name="wfhProcessingMode" value="batch" checked><span>批量处理</span></label>
-              <label><input type="radio" name="wfhProcessingMode" value="single"><span>单独处理</span></label>
+              <label><input type="radio" name="wfhProcessingMode" value="single"><span>单条处理</span></label>
             </div>
 
             <div class="wf-cfg-sec">工作台</div>

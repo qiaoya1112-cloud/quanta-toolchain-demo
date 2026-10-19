@@ -44,5 +44,5 @@
   requestAnimationFrame(render);
   }
   window.installQualityReviewNote=install;
-  install({api:window.PostTrainingQualityReviewDemo});
+  // 审核视角不再填写补充说明；历史反馈中的说明继续只读保留。
 })();

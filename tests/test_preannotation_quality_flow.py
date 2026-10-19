@@ -10,10 +10,10 @@ class PreannotationQualityFlowTests(unittest.TestCase):
     def test_automated_graph_has_no_sampling_or_rejection(self):
         nodes, edges, frames = data_platform._processing_canvas_payload(self.flow)
         self.assertEqual([], frames)
-        self.assertEqual(['开始', '自动化质检', '采集质检', '采集验收', '完成'], [node['name'] for node in nodes])
+        self.assertEqual(['开始', '自动化质检', '采集质检', '质检验收', '完成'], [node['name'] for node in nodes])
         self.assertEqual(4, len(edges))
         by_name = {node['name']: node for node in nodes}
-        qc, acceptance = by_name['采集质检'], by_name['采集验收']
+        qc, acceptance = by_name['采集质检'], by_name['质检验收']
         self.assertEqual(100, qc['processingPercent'])
         self.assertEqual(100, acceptance['processingPercent'])
         self.assertEqual(qc['id'], acceptance['inheritProcessingRuleNodeId'])
@@ -26,7 +26,7 @@ class PreannotationQualityFlowTests(unittest.TestCase):
     def test_manual_flow_is_acceptance_only_full_inspection(self):
         flow = next(item for item in data_platform.PIPELINES if item['id'] == 'pl-preannotation-qc-manual')
         nodes, edges, _ = data_platform._processing_canvas_payload(flow)
-        self.assertEqual(['开始', '采集验收', '完成'], [node['name'] for node in nodes])
+        self.assertEqual(['开始', '质检验收', '完成'], [node['name'] for node in nodes])
         self.assertEqual(2, len(edges))
         self.assertEqual(100, nodes[1]['processingPercent'])
         self.assertFalse(nodes[1]['allowTaskPercent'])

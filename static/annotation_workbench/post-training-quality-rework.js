@@ -35,17 +35,17 @@
     const reasonLabel=document.createElement('span');reasonLabel.textContent='错误原因';
     const reasonValue=document.createElement('span');reasonValue.className='ptqw-reason-value';reasonValue.textContent=feedback.reason||'无';
     reason.append(reasonLabel,reasonValue);feedbackRow.append(reason);details.append(feedbackRow);
-    if(feedback.note){
-      const note=document.createElement('div');note.className='ptqw-feedback-note';
-      const label=document.createElement('span');label.textContent='补充说明';
-      const text=document.createElement('div');text.className='ptqw-note-text';text.textContent=feedback.note;
-      text.dataset.fullDescription=feedback.note;
-      note.append(label,text);feedbackRow.append(note);
-    }
     const compare=document.createElement('div');compare.className='ptqw-compare';
     const current=document.createElement('div');current.className='ptqw-current';
-    const title=document.createElement('div');title.className='ptqw-current-title';title.textContent='当前质检结果';
+    const title=document.createElement('div');title.className='ptqw-current-title';title.textContent='质检结果';
     const fields=host.querySelector('.ptq-editor-fields-row');
+    const actions=host.querySelector('.ptq-editor-meta-row .segment-actions');
+    if(actions&&!actions.querySelector('.ptqr-meta-legend')){
+      const legend=document.createElement('span');legend.className='ptqr-meta-legend';legend.tabIndex=0;legend.setAttribute('aria-label','审核状态说明');
+      legend.dataset.tooltip='白色为正确项，紫色为错误项，蓝色为遗漏项。';
+      legend.innerHTML='<i class="is-correct">正确项</i><i class="is-error">错误项</i><i class="is-omitted">遗漏项</i>';
+      actions.prepend(legend);
+    }
     const heading=document.createElement('div');heading.className='ptqw-current-heading';
     heading.append(title,fields.querySelector('.ptq-conclusion-switch'));
     fields.querySelector('.ptq-reason-label')?.remove();
@@ -53,6 +53,7 @@
     details.querySelector('summary').remove();
     const feedbackHeading=document.createElement('div');feedbackHeading.className='ptqw-feedback-heading';
     const suggestion=document.createElement('span');suggestion.className='ptqr-suggested-result';suggestion.textContent=({pass:'合格',mistake:'失误',rejected:'不合格'}[feedback.suggestedConclusion||item.conclusion]);
+    suggestion.classList.add('ptqr-feedback-conclusion',`is-${feedback.suggestedConclusion||item.conclusion}`);
     feedbackHeading.append(feedbackTitle,suggestion,details.querySelector('.ptqw-feedback-chips'));
     details.prepend(feedbackHeading);
     current.append(heading,fields);compare.append(current,details);
@@ -64,7 +65,7 @@
     host.querySelector('.ptq-sidebar>header b').textContent='质检列表';
     const filters=document.createElement('div');filters.className='ptqr-list-tools';
     const issueCount=state.segments.filter(hasIssue).length;
-    filters.innerHTML=`<div><button type="button" data-rework-filter="all" class="${ui.filter==='all'?'is-active':''}">全部 ${state.segments.length}</button><button type="button" data-rework-filter="issues" class="${ui.filter==='issues'?'is-active':''}">仅看有问题 ${issueCount}</button></div>`;
+    filters.innerHTML=`<div><button type="button" data-rework-filter="all" class="${ui.filter==='all'?'is-active':''}">全部</button><button type="button" data-rework-filter="issues" class="${ui.filter==='issues'?'is-active':''}">仅看有问题</button></div>`;
     filters.addEventListener('click',event=>{const value=event.target.closest('[data-rework-filter]')?.dataset.reworkFilter;if(value){ui.filter=value;host.render();}});
     host.querySelector('.ptq-sidebar>header').after(filters);
     host.querySelectorAll('.ptq-list-item').forEach(row=>{
