@@ -1,0 +1,8 @@
+search-input{display:block;width:235px;max-width:100%;font-family:Inter,-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif}
+.search-input{height:32px;width:100%;display:flex;align-items:center;gap:4px;padding:6px 12px;border:1px solid var(--color-border,#dde3ea);border-radius:8px;background:transparent;box-sizing:border-box}
+.search-input svg{width:16px;height:16px;flex:none;fill:none;stroke:var(--color-text-placeholder,#9aacb6);stroke-width:2}
+.search-input input{flex:1;min-width:0;width:100%;border:0;outline:0;background:transparent;color:var(--color-text-primary,#0f1d24);font-family:inherit;font-size:14px;font-weight:400;line-height:20px}
+.search-input input::placeholder{color:var(--color-text-placeholder,#9aacb6)}
+.search-input:focus-within{border-color:var(--color-brand,#0095b6);box-shadow:0 0 0 2px var(--color-brand-soft,#e6f6fa)}
+html[data-theme=dark] .search-input{background:transparent;border-color:var(--color-text-secondary,#34475b)}
+html[data-theme=dark] .search-input input{color:var(--color-border,#dfe7ef)}

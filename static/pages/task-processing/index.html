@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="light">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>任务处理</title>
+  <link rel="stylesheet" href="../../styles.css">
+  <link rel="stylesheet" href="../../components/platform-sidebar/platform-sidebar.css?v=group-nav-20260922">
+  <link rel="stylesheet" href="../../components/platform-sidebar/platform-sidebar-variant.css?v=group-nav-20260922">
+  <link rel="stylesheet" href="../../components/task-page-header/task-page-header.css">
+  <link rel="stylesheet" href="../../components/input/input.css">
+  <link rel="stylesheet" href="../../components/button/button.css">
+  <link rel="stylesheet" href="../../components/task-filter-bar/task-filter-bar.css">
+  <link rel="stylesheet" href="../../components/task-data-table/task-data-table.css">
+  <link rel="stylesheet" href="../process-management/page.css">
+  <link rel="stylesheet" href="./page.css">
+  <script src="../../components/platform-sidebar/platform-sidebar.js?v=resource-library-20261015" defer></script>
+  <script src="../../components/task-page-header/task-page-header.js" defer></script>
+  <script src="../../components/input/input.js" defer></script>
+  <script src="../../components/button/button.js" defer></script>
+  <script src="../../components/task-filter-bar/task-filter-bar.js" defer></script>
+  <script src="../../components/task-data-table/task-data-table.js" defer></script>
+  <link rel="stylesheet" href="../../components/task-creator/task-creator.css">
+<link rel="stylesheet" href="./detail.css?v=detail-layout-2">
+<script src="../../components/task-creator/task-creator.js" defer></script>
+<script src="./detail.js" defer></script>
+<script src="./page.js?v=processing-detail-1" defer></script>
+<link rel="stylesheet" href="../../components/pagination/pagination.css"><script src="../../components/pagination/pagination.js"></script>  <link rel="stylesheet" href="../../components/table-examples/embed.css">
+  <script src="../../components/table-examples/embed.js"></script>
+  <link rel="stylesheet" href="../../components/table-examples/page-layout.css">
+<script src="../../components/task-data-table/table-columns.js" defer></script>
+</head>
+<body data-page-id="task-processing">
+  <div class="process-page">
+    <aside class="process-page__sidebar"><platform-sidebar variant="style-variant" palette="dark"></platform-sidebar></aside>
+    <main class="process-page__main" aria-label="任务处理内容区">
+      <task-page-header title="任务处理" action="新增处理任务" scene-filter></task-page-header>
+      <section class="task-processing-content">
+        <task-filter-bar variant="task-management"></task-filter-bar>
+        <task-data-table variant="task-management"></task-data-table>
+        <p id="task-empty" hidden>暂无符合条件的任务</p>
+        <p id="task-feedback" role="status" aria-live="polite"></p>
+      </section>
+      <list-pagination class="task-processing-pagination" total="1050" data-preview-total="1050"></list-pagination>
+    </main>
+  </div>
+</body></html>

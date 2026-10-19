@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>用户组管理</title>
+  <link rel="stylesheet" href="../../styles.css">
+  <link rel="stylesheet" href="../../components/platform-sidebar/platform-sidebar.css?v=group-nav-20260922">
+  <link rel="stylesheet" href="../../components/platform-sidebar/platform-sidebar-variant.css?v=group-nav-20260922">
+  <link rel="stylesheet" href="../../components/task-page-header/task-page-header.css">
+  <link rel="stylesheet" href="../../components/input/input.css">
+  <link rel="stylesheet" href="../../components/button/button.css">
+  <link rel="stylesheet" href="../../components/task-filter-bar/task-filter-bar.css">
+  <link rel="stylesheet" href="../../components/task-data-table/task-data-table.css">
+  <link rel="stylesheet" href="../../components/task-status-tabs/task-status-tabs.css">
+  <link rel="stylesheet" href="../process-management/page.css">
+  <link rel="stylesheet" href="../operations-list.css">
+  <script src="../../components/platform-sidebar/platform-sidebar.js?v=resource-library-20261015" defer></script>
+  <script src="../../components/task-page-header/task-page-header.js" defer></script>
+  <script src="../../components/input/input.js" defer></script>
+  <script src="../../components/button/button.js" defer></script>
+  <script src="../../components/task-filter-bar/task-filter-bar.js" defer></script>
+  <script src="../../components/task-data-table/task-data-table.js" defer></script>
+  <script src="../../components/task-status-tabs/task-status-tabs.js" defer></script>
+  <script src="../operations-list.js" defer></script>
+<link rel="stylesheet" href="../../components/pagination/pagination.css"><script src="../../components/pagination/pagination.js"></script><script src="../../components/task-data-table/table-columns.js" defer></script>
+<link rel="stylesheet" href="../../components/drawer/drawer.css">
+<link rel="stylesheet" href="../operations-edit.css?v=people-picker-2">
+<script src="../../components/drawer/drawer.js" defer></script>
+<script src="../operations-edit.js?v=people-picker-2" defer></script>
+</head>
+<body data-page-id="user-group-management">
+  <div class="process-page">
+    <aside class="process-page__sidebar"><platform-sidebar variant="style-variant" palette="dark"></platform-sidebar></aside>
+    <main class="process-page__main" aria-label="用户组管理内容区">
+      <task-page-header title="用户组管理" action="新增用户组"></task-page-header>
+      <section class="operations-content">
+        <task-filter-bar variant="user-group-management"></task-filter-bar>
+        <task-data-table variant="user-group-management"></task-data-table>
+        <p data-empty hidden>暂无符合条件的数据</p>
+        <p data-feedback role="status"></p>
+      </section>
+    </main>
+  </div>
+</body>
+</html>

@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>平台侧边导航组件</title>
+  <link rel="stylesheet" href="../../styles.css">
+  <link rel="stylesheet" href="../component-preview.css">
+  <link rel="stylesheet" href="./platform-sidebar.css?v=version-demo-20261015">
+  <link rel="stylesheet" href="./platform-sidebar-variant.css?v=version-demo-20261015">
+  <script src="./platform-sidebar.js?v=version-demo-20261015" defer></script>
+  <style>
+    .sidebar-examples{display:flex;flex-wrap:nowrap;gap:24px;overflow-x:auto;padding-bottom:12px}
+    .sidebar-preview-row{display:flex;align-items:flex-start;gap:24px;overflow-x:auto}
+    .sidebar-preview-row>.component-gallery__group{flex:0 0 auto}
+    .sidebar-example{min-width:0}
+    .sidebar-example .component-gallery__stage--sidebar{width:max-content;padding:0}
+    .sidebar-example h3{margin:0 0 16px;font-size:14px}
+    .sidebar-example p{margin:-8px 0 16px;color:#74818d;font-size:12px}
+  </style>
+</head>
+<body class="design-spec-page component-preview">
+  <main class="component-gallery">
+    <header class="component-gallery__header"><h1>导航</h1><p>本次采用深色导航，浅色方案仅供参考，本次不使用。</p><p>底部“新 / 旧”表示新版与旧版切换，不用于切换颜色；此处仅展示交互示例，不执行实际版本跳转。</p></header>
+    <div class="sidebar-preview-row">
+    <section class="component-gallery__group">
+      <h2>浅色导航 · 本次不使用</h2>
+      <div class="sidebar-examples">
+        <div class="sidebar-example"><h3>02 · 柔和青灰</h3><p>浅青灰底色，呼应品牌主色</p><div class="component-gallery__stage component-gallery__stage--sidebar"><platform-sidebar demo variant="style-variant" palette="mist"></platform-sidebar></div></div>
+      </div>
+    </section>
+    <section class="component-gallery__group">
+      <h2>深色导航 · 本次采用</h2>
+      <div class="sidebar-examples">
+        <div class="sidebar-example"><h3>03 · 沉静深色</h3><p>深蓝灰底色，清晰区分层次</p><div class="component-gallery__stage component-gallery__stage--sidebar"><platform-sidebar demo variant="style-variant" palette="dark"></platform-sidebar></div></div>
+      </div>
+    </section>
+    </div>
+  </main>
+  <script src="../component-preview.js"></script>
+</body>
+</html>

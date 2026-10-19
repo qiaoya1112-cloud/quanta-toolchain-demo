@@ -1,0 +1,22 @@
+stat-cards{display:block;flex:none;width:100%;font-family:Inter,-apple-system,BlinkMacSystemFont,"PingFang SC",sans-serif}
+.stat-cards{display:grid;grid-template-columns:2fr 3fr;gap:16px}
+.stat-cards>section{min-width:0;display:flex;flex-direction:column}
+.stat-cards>section+section{padding-left:16px;border-left:1px solid color-mix(in srgb,var(--color-border,#d7e0e7) 55%,transparent)}
+.stat-cards h2{margin:0 0 6px;font-size:14px;line-height:22px;font-weight:600;color:var(--color-text-secondary,#435D76)}
+.stat-cards-values{display:flex;flex:1;gap:12px}
+.stat-cards-values>div{flex:1;min-width:0;padding:6px 12px;border-radius:12px;border:1px solid var(--color-border,#d7e0e7);background:var(--color-bg-surface-subtle,#f5f8fa);--stat-accent:var(--color-accent-blue);--stat-bg:var(--color-accent-blue-soft)}
+.stat-cards-values>div:last-child{--stat-accent:var(--color-accent-mint);--stat-bg:var(--color-accent-mint-soft)}
+.stat-cards>section+section .stat-cards-values>div:first-child{--stat-accent:var(--color-accent-yellow);--stat-bg:var(--color-accent-yellow-soft)}
+.stat-cards span{display:flex;align-items:center;gap:8px;color:var(--color-text-secondary,#435D76);font-size:12px;line-height:18px}
+.stat-cards span::before{content:"";width:7px;height:7px;flex:none;border-radius:50%;background:var(--stat-accent)}
+.stat-cards strong{display:block;margin:2px 0 0;font-size:18px;line-height:24px;font-weight:600;color:var(--color-text-primary,#172B40)}
+.stat-cards small{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:11px;line-height:18px;color:var(--color-text-muted,#70849A)}
+
+.stat-cards--capacity{grid-template-columns:minmax(0,1fr)}
+.stat-cards--capacity .stat-cards-values{display:grid;grid-template-columns:minmax(240px,1.5fr) repeat(3,minmax(0,1fr))}
+.stat-cards--capacity .stat-card--period{--stat-accent:var(--color-accent-gray);--stat-bg:var(--color-accent-gray-soft)}
+.stat-cards--capacity .stat-card--period strong{font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.stat-cards--capacity .stat-card--consumed{--stat-accent:var(--color-accent-orange);--stat-bg:var(--color-accent-orange-soft)}
+@media(max-width:1100px){.stat-cards--capacity .stat-cards-values{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+.stat-cards--resources{grid-template-columns:1fr}.stat-cards--resources .stat-cards-values>div{padding:16px}.stat-cards--resources strong{margin:10px 0}.stat-cards--resources span::before{display:none}

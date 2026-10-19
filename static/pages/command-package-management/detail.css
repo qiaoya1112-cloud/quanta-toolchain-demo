@@ -1,0 +1,41 @@
+.package-detail{display:flex;flex-direction:column;flex:1;min-height:0;gap:0}
+.package-detail>task-status-tabs~*{margin-top:12px}
+.package-basic{padding:12px 16px;border:1px solid var(--color-border);border-radius:8px;flex:none}
+.package-basic-form{display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:12px;margin-top:12px;align-items:end}
+.package-basic-form>form-input,.package-basic-form>form-select{min-width:0}
+.package-basic-actions{display:flex;gap:8px}
+.package-basic-actions .text-button{height:32px;border-radius:8px}
+.package-detail>task-status-tabs,.package-detail>task-filter-bar{flex:none}
+.package-toolbar{display:flex;align-items:center;gap:12px;flex:none;min-height:32px}
+.package-toolbar h2{font-size:14px;margin:0}.package-toolbar>span{font-size:12px;color:var(--color-text-muted)}
+.package-toolbar>div{display:flex;gap:8px;margin-left:auto}
+.package-detail .command-table{min-height:0;flex:1}
+.package-detail .command-table table{min-width:100%;width:100%;table-layout:fixed}
+.package-detail td{overflow-wrap:anywhere}
+.package-description{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;white-space:normal;line-height:22px}
+.package-detail input[type=checkbox]{accent-color:var(--color-brand);width:16px;height:16px}
+.package-detail .command-table td>button:disabled{color:var(--color-text-placeholder);cursor:not-allowed}
+.package-message{font-size:12px;margin:0;color:var(--color-text-secondary)}.package-message:empty{display:none}
+.package-detail .task-data-table[data-fixed-right-count="0"] :is(th,td):last-child{right:auto;box-shadow:none;white-space:normal}
+.package-detail .task-data-table[data-fixed-right-count="0"] td:last-child{position:static}
+.package-detail .task-data-table[data-fixed-right-count="0"] th:last-child{position:sticky;top:0;z-index:1}
+@media(max-width:1000px){.package-basic-form{grid-template-columns:repeat(2,minmax(0,1fr))}.package-detail{overflow:auto}.package-detail .command-table{flex:1 0 280px}}
+
+/* Keep content edges and the table toolbar on a compact, consistent grid. */
+.package-basic{box-sizing:border-box;width:100%;padding-inline:16px}
+.package-basic-form{width:100%;min-width:0;box-sizing:border-box}
+.package-basic-actions .text-button{margin:0}
+.package-toolbar{margin-bottom:-4px;gap:8px}
+.package-toolbar .text-button{height:32px;border-radius:8px}
+.package-detail .command-table .package-drag-handle{display:flex;align-items:center;justify-content:center;width:24px;height:28px;padding:0;margin:0;color:var(--color-text-muted);cursor:grab;touch-action:none}
+.package-drag-handle svg{width:12px;height:16px;pointer-events:none}
+.package-dragging{opacity:.55}
+.package-drag-handle{user-select:none;-webkit-user-select:none}
+.package-detail .command-table .package-drag-handle:active{cursor:grabbing}
+.package-drag-handle:focus-visible{outline:2px solid var(--color-brand);outline-offset:2px}
+.package-detail .command-table .package-drop-target td{box-shadow:inset 0 2px var(--color-brand)}
+
+.package-info-dialog{width:min(560px,calc(100vw - 32px));background:#fff;max-height:calc(100dvh - 32px)}
+.package-info-dialog form{margin:0}.package-info-dialog .flow-info-fields{padding:24px;display:grid;gap:20px;max-height:calc(100dvh - 200px);overflow:auto}
+.package-info-dialog header>button{border:0;background:transparent;font-size:24px;color:var(--color-text-muted);cursor:pointer}.package-info-dialog footer{gap:12px}.package-info-dialog .action-dialog-feedback{margin-right:auto;color:var(--color-danger);font-size:14px}
+.package-title-edit{display:grid;place-items:center;flex:none;width:24px;height:24px;padding:3px;border:0;border-radius:4px;background:transparent;color:var(--color-text-muted);cursor:pointer}.package-title-edit svg{width:18px;height:18px}.package-title-edit:hover{background:var(--color-brand-soft);color:var(--color-brand)}

@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="light">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>任务数据</title>
+<link rel="stylesheet" href="../../styles.css">
+<link rel="stylesheet" href="../../components/platform-sidebar/platform-sidebar.css?v=group-nav-20260922">
+<link rel="stylesheet" href="../../components/platform-sidebar/platform-sidebar-variant.css?v=group-nav-20260922">
+<link rel="stylesheet" href="../../components/task-page-header/task-page-header.css">
+<link rel="stylesheet" href="../../components/input/input.css">
+<link rel="stylesheet" href="../../components/task-filter-bar/search-input.css">
+<link rel="stylesheet" href="../../components/task-filter-bar/task-filter-bar.css">
+<link rel="stylesheet" href="../../components/button/button.css">
+<link rel="stylesheet" href="../../components/task-data-table/task-data-table.css">
+<link rel="stylesheet" href="../../components/pagination/pagination.css">
+<link rel="stylesheet" href="../process-management/page.css">
+<link rel="stylesheet" href="../../components/table-examples/embed.css">
+<link rel="stylesheet" href="./data.css">
+<script src="../../components/table-examples/embed.js"></script>
+<script src="../../components/platform-sidebar/platform-sidebar.js?v=resource-library-20261015" defer></script>
+<script src="../../components/task-page-header/task-page-header.js" defer></script>
+<script src="../../components/task-filter-bar/search-input.js" defer></script>
+<script src="../../components/button/button.js" defer></script>
+<script src="../../components/pagination/pagination.js" defer></script>
+<script src="../../components/task-data-table/task-data-table.js" defer></script>
+<script src="../../components/task-data-table/table-columns.js" defer></script>
+<script src="./data.js" defer></script>
+</head>
+<body data-page-id="task-processing">
+<div class="process-page">
+<aside class="process-page__sidebar"><platform-sidebar variant="style-variant" palette="dark"></platform-sidebar></aside>
+<main class="process-page__main task-record-page">
+<task-page-header back back-label="返回处理任务" title="任务数据" status="运行中" status-tone="running"></task-page-header>
+<form class="task-record-filter"><div><span class="form-input__label">数据 ID</span><search-input aria-label="数据 ID" placeholder="请输入数据 ID"></search-input></div><div class="task-filter-actions"><button class="task-filter-refresh" type="button" aria-label="刷新列表" title="刷新列表" data-refresh><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 5v5h-5M20 10a8 8 0 1 0-.6 5"/></svg></button></div></form>
+<p class="task-record-summary" aria-live="polite"></p>
+<task-data-table variant="task-records"></task-data-table>
+<p data-empty hidden>暂无符合条件的数据</p>
+<list-pagination page-size="20"></list-pagination>
+</main>
+</div>
+</body></html>

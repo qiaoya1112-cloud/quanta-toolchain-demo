@@ -1,0 +1,99 @@
+task-creator{display:flex;flex-direction:column;height:100dvh;background:#fff;color:var(--color-text-primary);font:14px/1.5 Inter,-apple-system,BlinkMacSystemFont,'PingFang SC',sans-serif;border-radius:20px;overflow:hidden}task-creator *{box-sizing:border-box}task-creator [hidden]{display:none!important}task-creator task-page-header{padding:8px 24px;border-bottom:1px solid var(--color-border)}.creator-layout{display:flex;flex:1;min-height:0}task-step-nav{width:208px;flex:none;padding:16px 12px;border-right:1px solid var(--color-border)}task-step-nav nav{display:grid;gap:8px;align-content:start}task-step-nav button{display:flex;gap:12px;align-items:center;width:100%;min-height:44px;padding:12px;border:0;border-radius:8px;background:transparent;color:var(--color-text-muted);font:inherit;text-align:left;cursor:pointer}task-step-nav button span{display:grid;place-items:center;width:20px;height:20px;border-radius:50%;background:var(--color-bg-canvas);font-size:12px}task-step-nav .is-active{background:var(--color-brand-soft,#e8f6f8);color:var(--color-brand);font-weight:600}task-step-nav .is-active span{background:var(--color-brand);color:#fff}.creator-main{flex:1;min-width:0;overflow:auto;background:var(--color-bg-surface-subtle,#f5f8fa);padding:32px}.creator-main>section{max-width:1120px;margin:auto}.creator-main h2{font-size:18px;margin:0 0 8px}.creator-card{background:#fff;border:1px solid var(--color-border);border-radius:10px;padding:24px}.creator-basic{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:24px}.creator-basic [data-required] .form-input__label::before{content:'* ';color:#ef4356}.creator-hint,task-creator small{color:var(--color-text-muted);font-size:12px}.creator-hint{margin:8px 0 0}.creator-footer{border-top:1px solid var(--color-border);padding:16px 24px;display:flex;justify-content:flex-end;gap:12px;background:#fff}.creator-footer [role=alert]{margin-right:auto;color:#df4557;align-self:center}task-creator .creator-notice{margin-bottom:8px}.creator-empty{padding:20px;border:1px dashed var(--color-border);border-radius:8px;color:var(--color-text-muted);text-align:center;margin:12px 0}.creator-condition{display:grid;grid-template-columns:170px 120px minmax(120px,1fr) 24px;gap:8px;align-items:end;margin-bottom:16px}.creator-condition [data-remove] .text-button,.creator-assignee [data-remove] .text-button{min-width:24px;padding:0;width:24px;color:var(--color-text-muted)}.creator-stages{display:grid;grid-template-columns:280px minmax(0,1fr);gap:12px}.creator-stage-list{display:grid;gap:8px;align-content:start}.creator-stage-card{padding:16px}.creator-stage-card.is-active{border-color:#8dd4df;background:#f3fbfc}.creator-stage-heading{display:flex;align-items:center;justify-content:space-between;gap:8px}.creator-stage-heading>button{border:0;padding:0;background:none;color:inherit;font:600 14px inherit;cursor:pointer}.creator-stage-card [data-picker]{margin-top:16px}.creator-switch .form-choice{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--color-text-muted)}.creator-switch input.form-choice__control{appearance:none;width:30px;height:17px;border:0;border-radius:20px;background:#cbd5da;position:relative;cursor:pointer;flex:none}.creator-switch input.form-choice__control::before{content:'';position:absolute;width:13px;height:13px;left:2px;top:2px;border-radius:50%;background:#fff}.creator-switch input.form-choice__control:checked{background:var(--color-brand)}.creator-switch input.form-choice__control:checked::before{left:15px}.creator-stage-detail{min-height:460px;padding:18px;min-width:0}.creator-stage-detail h3{font-size:14px;margin:0 0 16px}.creator-section-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 0}.creator-flow{border:1px solid var(--color-border);border-radius:10px;overflow:hidden;margin-bottom:16px}.creator-flow>.creator-section-heading{padding:12px 16px;background:#fff}task-flow-preview{display:block;overflow:auto;background:radial-gradient(#dbe8ec 1px,transparent 1px) 0 0/16px 16px}.creator-node-section{padding:0;margin:0;background:transparent;border:0;border-radius:0}.creator-node-section>.creator-section-heading{padding-top:0}task-node-config{display:block;margin-top:12px;scroll-margin:20px}.creator-node{border:1px solid var(--color-border);background:#fff;border-radius:8px;padding:16px}.creator-node h4{margin:0;display:flex;align-items:center;gap:8px}.creator-node-tag{font-size:11px;color:#3498db;background:#e6f1f9;border-radius:10px;padding:1px 6px;font-weight:400}.creator-assignee{display:grid;grid-template-columns:100px minmax(100px,1fr) 24px;align-items:end;gap:8px;margin-bottom:8px}.creator-rule{border-top:1px solid var(--color-border);padding-top:16px;margin-top:16px}task-creator :focus-visible{outline:2px solid var(--color-brand);outline-offset:2px}
+@media(min-width:1800px){.creator-main{padding:36px 48px}.creator-main>section{max-width:1200px}}
+@media(max-width:1000px){task-step-nav{width:170px}.creator-main{padding:24px}.creator-stages{grid-template-columns:220px minmax(0,1fr)}.creator-condition{grid-template-columns:1fr 1fr}.creator-section-heading{flex-wrap:wrap}}
+@media(max-width:760px){.creator-layout{flex-direction:column}task-step-nav{width:100%;padding:8px;border-right:0;border-bottom:1px solid var(--color-border)}task-step-nav nav{grid-template-columns:repeat(3,1fr);gap:0}task-step-nav button{padding:8px;gap:6px}.creator-main{padding:16px}.creator-basic,.creator-stages{grid-template-columns:1fr}.creator-stage-list{grid-template-columns:1fr 1fr}.creator-card{padding:16px}.creator-footer{padding:12px}.creator-footer [role=alert]{font-size:12px}}
+
+.creator-switch input.form-choice__control::after{display:none}.creator-stage-heading>button{font-family:inherit;font-size:14px;font-weight:600}
+/* Align add-action icons with the form controls in their shared container. */
+:is(task-filter-conditions,task-node-config) text-button[data-add]{display:inline-flex;margin:0;padding:0}
+:is(task-filter-conditions,task-node-config) text-button[data-add] .text-button{min-width:0;padding-inline:0;border-inline-width:0;justify-content:flex-start}
+
+task-flow-preview.process-editor-components{display:block;width:100%;height:236px;overflow:auto;border-radius:0;background:#fff;--canvas-bg:#fff}
+
+/* Empty and populated flow panels share the same top inset and heading gap. */
+.creator-stage-detail [data-prompt]{margin:0}
+.creator-flow-hint{margin:0 0 16px;color:var(--color-text-muted);font-size:12px;line-height:21px;font-weight:400}
+.creator-node-section>.creator-section-heading{padding:0;margin:0 0 12px;min-height:21px}
+.creator-node-section>.creator-empty,.creator-node-section>[data-nodes]>.creator-empty{margin:0}
+.creator-node-section>[data-nodes]>task-node-config:first-child{margin-top:0}
+
+/* Use the workflow spacing scale without stacked margins and padding. */
+.creator-node{--node-space-label:8px;--node-space-field:12px;--node-space-section:18px;--node-space-add:4px;--node-space-title:8px;display:grid;gap:var(--node-space-section)}
+.creator-handler-section{display:grid;gap:var(--node-space-title);min-width:0}
+.creator-handler-section>.creator-section-heading{padding:0;margin:0}
+.creator-node .form-input__label{margin-bottom:var(--node-space-label);line-height:18px}
+.creator-node [data-assignees]{display:grid;gap:var(--node-space-field)}
+.creator-node [data-assignees]:empty{display:none}
+.creator-node .creator-assignee{gap:8px;margin:0}
+.creator-handler-section>text-button[data-add]{margin-top:calc(var(--node-space-add) - var(--node-space-title))}
+.creator-node .creator-rule{border-top:0;margin:0;padding:0}
+.creator-handler-section>p{margin:0}
+
+.creator-node:has(.creator-handler-section>text-button[data-add]){row-gap:8px}
+.creator-node:has(.creator-handler-section>text-button[data-add])>h4{margin-bottom:10px}
+
+/* Keep the content heading close to the top across screen sizes. */
+.creator-main{padding-top:16px}
+
+@media(max-width:1440px){.creator-main{padding-inline:16px}}
+@media(max-width:1000px){.creator-main{padding-inline:12px}}
+
+@media(min-width:1001px){.creator-main{padding-inline:16px}}
+
+/* Compact spacing for filters and stage selection. */
+.creator-card.creator-basic,task-filter-conditions>.creator-card{padding:16px}
+task-filter-conditions .creator-empty{padding:12px;margin:0 0 4px}
+task-filter-conditions .creator-condition{margin-bottom:12px}
+task-filter-conditions .creator-condition:last-child{margin-bottom:4px}
+.creator-stage-card{padding:12px}
+.creator-stage-detail{padding:12px 16px}
+.creator-flow-hint{margin-bottom:8px}
+
+.creator-main{padding-bottom:12px}
+
+/* Let the business-stage panel fill the available height above the footer. */
+.creator-main:has(>section[data-panel="2"]:not([hidden])){display:flex;flex-direction:column}
+.creator-main>section[data-panel="2"]:not([hidden]){display:flex;flex-direction:column;flex:1;width:100%;margin:0 auto}
+.creator-main>section[data-panel="2"]>task-business-stages{display:flex;flex-direction:column;flex:1}
+.creator-main>section[data-panel="2"] .creator-stages{flex:1}
+
+
+.creator-basic{gap:16px;align-items:start}
+.creator-basic-column{display:grid;gap:12px;align-content:start;min-width:0}
+
+.creator-condition>[data-remove]{height:32px;align-self:end;align-items:center}
+.creator-condition>[data-remove] .text-button{height:24px;min-height:24px;padding:0;display:inline-flex;align-items:center;justify-content:center;width:24px;min-width:24px;min-height:24px}
+
+/* Measure the 4px add gap to the hit area, keeping compact text and inner whitespace. */
+task-node-config text-button[data-add] .text-button{height:28px;min-height:28px;padding:4px 0;border:0;font-size:12px;line-height:12px;font-weight:400}
+
+.creator-assignee>[data-remove]{height:32px;align-self:end;align-items:center}
+.creator-assignee>[data-remove] .text-button{height:24px;min-height:24px;width:24px;min-width:24px;min-height:24px}
+
+/* Shared creation shell: compact chrome and inset white panels on a light canvas. */
+task-creator task-page-header{padding:0 24px;border-bottom:1px solid var(--color-border,#d7e0e7)}
+task-creator .task-page-header{height:64px}
+task-creator .task-page-header h1{color:var(--color-text-primary);font-size:20px;line-height:28px}
+task-creator .creator-layout{padding:8px;gap:8px;background:var(--color-bg-surface-subtle,#f5f8fa)}
+task-creator task-step-nav{width:184px;padding:12px 8px;border:0;border-radius:8px;background:#fff}
+task-creator task-step-nav nav{gap:4px}
+task-creator task-step-nav button{min-height:40px;padding:10px 12px;gap:8px}
+task-creator .creator-main{padding:16px;border:0;border-radius:8px;background:#fff}
+task-creator .creator-main>section{width:100%;max-width:none;margin:0}
+task-creator .creator-main h2{font-size:16px;line-height:24px;margin:0 0 12px}
+task-creator .creator-stages{grid-template-columns:260px minmax(0,1fr)}
+task-creator .creator-stage-detail{min-height:0}
+task-creator .creator-footer{border-top:1px solid var(--color-border,#d7e0e7);flex:none;min-height:64px;padding:12px 24px;align-items:center}
+task-creator .creator-footer .text-button{height:38px}
+@media(max-width:1000px){
+ task-creator task-step-nav{width:160px}
+ task-creator .creator-stages{grid-template-columns:220px minmax(0,1fr)}
+}
+@media(max-width:760px){
+ task-creator .creator-layout{padding:8px;gap:8px}
+ task-creator task-step-nav{width:100%;padding:8px}
+ task-creator .creator-main{padding:12px}
+ task-creator .creator-stages{grid-template-columns:1fr}
+ task-creator task-page-header{padding-inline:16px}
+ task-creator .creator-footer{padding-inline:16px}
+}

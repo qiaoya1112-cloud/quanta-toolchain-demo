@@ -1,0 +1,20 @@
+(() => {
+ function mount(){
+  const editor=document.querySelector('process-editor-page');
+  const anchor=editor?.querySelector('[data-process-action="parameters"]');
+  if(!anchor||editor.querySelector('[data-resource-check]'))return;
+  const trigger=document.createElement('button');trigger.type='button';trigger.className='process-actions__button';trigger.dataset.resourceCheck='';trigger.textContent='地图资源配置';anchor.before(trigger);
+  const dialog=document.createElement('dialog');dialog.className='resource-check-dialog';dialog.setAttribute('aria-labelledby','resource-check-title');
+  dialog.innerHTML=`<header><div><h2 id="resource-check-title">选择地图与版本</h2></div><text-button variant="text" icon="close" icon-only aria-label="关闭" data-close></text-button></header><div class="resource-check-body"><aside><div class="resource-check-list-heading"><strong>地图资源</strong><span>共 1 个资源</span></div><resource-list class="resource-check-list"></resource-list></aside><section class="resource-check-detail"><div class="resource-check-title"><h3>test_map</h3><span class="table-outline-tag table-outline-tag--success">校验通过</span></div><p class="resource-check-description">京东仓内导航地图，包含拣选区域 Point。</p><div class="resource-check-section"><h3>地图版本 <span>2</span></h3></div><task-data-table hydrate class="resource-check-table"><table><colgroup><col style="width:72px"><col><col style="width:108px"><col style="width:100px"></colgroup><thead><tr><th>版本</th><th>版本说明</th><th>Point 数量</th><th>推荐版本</th></tr></thead><tbody><tr data-row-version="V5"><td><button type="button" data-version="V5">V5</button></td><td>历史版本</td><td>10 Point</td><td><span class="resource-check-pin"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 3h6l-1 7 4 4v2H6v-2l4-4-1-7ZM12 16v5"/></svg>已置顶</span></td></tr><tr data-row-version="V6"><td><button type="button" data-version="V6">V6</button></td><td>最新上传</td><td>10 Point</td><td>—</td></tr></tbody></table></task-data-table><div class="resource-check-preview"><span data-preview-title></span>${resourceMapPreview()}${resourceMapOverview()}</div></section></div><footer><div><text-button variant="outline" data-close>取消</text-button><text-button variant="primary" data-confirm>确认选择</text-button></div></footer>`;
+  document.body.append(dialog);
+  const list=dialog.querySelector('resource-list');list.selected='MAP-001';list.items=[{id:'MAP-001',label:'test_map',status:'pass',meta:'V6 · PGM 地图 · Point 只读'}];
+  let selected='V6',saved='V6';
+  function render(){dialog.querySelectorAll('[data-row-version]').forEach(row=>row.classList.toggle('is-selected',row.dataset.rowVersion===selected));dialog.querySelectorAll('[data-version]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.version===selected)));dialog.querySelector('[data-preview-title]').textContent='地图示意 · '+selected;}
+  trigger.addEventListener('click',()=>{selected=saved;render();dialog.showModal();});
+  dialog.addEventListener('click',e=>{const version=e.target.closest('[data-version],[data-row-version]');if(version){selected=version.dataset.version||version.dataset.rowVersion;render();}if(e.target.closest('[data-close]'))dialog.close();if(e.target.closest('[data-confirm]')){saved=selected;editor.resourceSelection={id:'MAP-001',name:'test_map',version:saved};editor.dispatchEvent(new CustomEvent('resource-selected',{bubbles:true,detail:{...editor.resourceSelection}}));trigger.title='已选择 test_map / '+saved;dialog.close();}});
+  dialog.addEventListener('click',event=>{const marker=event.target.closest('[data-point]');if(marker)dialog.querySelector('.map-drawing').outerHTML=resourceMapPreview(marker.dataset.point);});
+  dialog.addEventListener('keydown',event=>{const marker=event.target.closest('[data-point]');if(marker&&['Enter',' '].includes(event.key)){event.preventDefault();marker.dispatchEvent(new MouseEvent('click',{bubbles:true}));}});
+  dialog.addEventListener('close',()=>trigger.focus());
+ }
+ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',mount,{once:true});else mount();
+})();

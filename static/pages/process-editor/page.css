@@ -1,0 +1,6 @@
+@import url("../../components/process-editor/process-editor.css?v=custom-input-alignment-20261010");
+process-editor-page{display:block;width:100%;height:100%}
+html,body{margin:0;width:100%;height:100%;overflow:hidden}
+
+/* All node configuration panels share a wider default on the editor page. */
+process-editor-page{--node-panel-width:480px}

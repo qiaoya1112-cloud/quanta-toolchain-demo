@@ -1,0 +1,7 @@
+/* Shared full-page header and action bar, aligned with task-creator. */
+.task-page-frame>task-page-header{flex:none;padding:0 24px;border-bottom:1px solid var(--color-border,#d7e0e7);background:#fff}
+.task-page-frame>task-page-header .task-page-header{height:64px}
+.task-page-frame>task-page-header h1{color:var(--color-text-primary);font-size:20px;line-height:28px}
+.task-page-frame>.task-page-footer{flex:none;display:flex;align-items:center;justify-content:flex-end;gap:12px;box-sizing:border-box;min-height:64px;padding:12px 24px;border-top:1px solid var(--color-border,#d7e0e7);background:#fff}
+.task-page-footer .text-button{height:38px}
+@media(max-width:700px){.task-page-frame>task-page-header,.task-page-frame>.task-page-footer{padding-inline:16px}}

@@ -1,0 +1,91 @@
+@import url('../scrollbar/scrollbar.css');
+.action-dialog-table-scroll{overflow:auto;border:1px solid #e2e9ee;border-radius:12px}
+.action-dialog-table{width:100%;min-width:860px;border-collapse:collapse;background:#fff}
+.action-dialog-table th{padding:18px 24px;text-align:left;background:#f7f9fa;color:#456170}
+.action-dialog-table td{padding:28px 24px;border-top:1px solid #e2e9ee;vertical-align:top}
+.action-dialog-table th:first-child,.action-dialog-table td:first-child{width:240px;border-right:1px solid #e2e9ee}
+.action-dialog-table td>p{font-size:12px;color:#78909c;margin-top:12px}
+process-action-dialog[preview]{display:block}
+process-action-dialog[preview] .action-dialog-frame{position:relative;display:block;margin:0;max-width:100%;max-height:none;box-sizing:border-box;border:1px solid #e2e9ee;box-shadow:0 4px 18px #23374708}
+.action-dialog-note{margin:0;font-size:13px;line-height:1.7;color:#6e8795}
+.flow-info-dialog.global-parameters-dialog{width:760px;max-width:calc(100vw - 32px);box-sizing:border-box}
+process-action-dialog[preview] .global-parameters-dialog{width:760px;max-width:100%}
+global-parameter-fields{display:grid;gap:12px}
+.global-parameter-list{display:grid;align-content:start;gap:12px;min-width:0;height:auto;max-height:40vh;overflow-y:auto;overflow-x:hidden;scrollbar-gutter:stable;padding-right:4px}
+.global-parameter-card{padding:12px;border:1px solid #dfe7ed;border-radius:8px;background:transparent;display:grid;gap:12px}
+.global-parameter-top{display:grid;grid-template-columns:minmax(0,1fr) 120px 64px;gap:12px;align-items:end}
+.global-parameter-item{display:grid;grid-template-columns:minmax(0,1fr) 24px;align-items:center;gap:8px;min-width:0}
+.global-parameter-item>[data-remove]{display:block;min-width:0;width:24px}
+.global-parameter-item>[data-remove] .text-button{position:static;box-sizing:border-box;min-width:0;width:24px;height:24px;padding:0;margin:0;font-size:20px;color:#8b9da8;width:24px;min-width:24px;min-height:24px}
+.global-parameter-bottom{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px}
+.global-parameters-dialog :is(.flow-info-form,.flow-info-fields,global-parameter-fields,.global-parameter-card,.global-parameter-top,.global-parameter-bottom){min-width:0;box-sizing:border-box;max-width:100%}
+.global-parameters-dialog global-parameter-fields .global-parameter-group>[data-add]{justify-self:start;margin:0;padding:0}
+.global-parameters-dialog global-parameter-fields .global-parameter-group>[data-add] .text-button{height:auto;min-height:0;padding:0;font-size:12px;font-weight:400;line-height:18px}
+.global-parameters-dialog .global-parameter-top .form-choice{white-space:nowrap}
+.global-parameter-top form-checkbox{padding-bottom:6px}
+.global-parameters-dialog .global-parameter-top [data-remove]{position:static;display:block;width:24px;min-width:0;max-width:24px;margin:0;padding:0;justify-self:end}
+.global-parameters-dialog .global-parameter-top [data-remove] .text-button{position:static;box-sizing:border-box;padding:0;width:24px;min-width:0;max-width:24px;height:24px;margin:0;color:#8b9da8;font-size:20px;width:24px;min-width:24px;min-height:24px}
+.global-parameter-card :is(form-input,form-select){min-width:0}
+@media(max-width:600px){.global-parameter-top{grid-template-columns:minmax(0,1fr) 100px}.global-parameter-bottom{grid-template-columns:1fr}}
+.flow-info-fields textarea{box-sizing:border-box;width:100%;padding:12px 14px;border:1px solid #e6e8ea;border-radius:10px;resize:vertical;font:14px/1.6 inherit;color:#263238}
+.action-parameter-row{display:grid;grid-template-columns:1.4fr 1fr 1fr;gap:10px;font-size:12px;color:#6e8795}
+.action-dialog-summary{display:grid;grid-template-columns:100px 1fr;gap:14px;background:#f7f9fa;padding:18px;border-radius:10px;font-size:13px;color:#6e8795}
+.action-dialog-summary strong{color:#405b68;font-weight:500}
+.flow-info-fields .action-dialog-check{display:flex;align-items:center;gap:8px;line-height:1.6}
+.flow-info-fields .action-dialog-check input{width:16px;height:16px;accent-color:#009bb6}
+.action-dialog-history{margin:0;padding-left:20px;color:#405b68}
+.action-dialog-history li{padding:0 0 24px 8px}.action-dialog-history li:last-child{padding-bottom:0}
+.action-dialog-history strong span{margin-left:8px;padding:3px 7px;border-radius:5px;background:#e6f6fa;color:#009bb6;font-size:12px;font-weight:400}
+.action-dialog-history p,.action-dialog-history small{font-size:13px;color:#6e8795}
+.action-dialog-feedback{align-self:center;margin-right:auto;font-size:12px;color:#6e8795}
+
+/* Compact global parameters: name/type/delete, then default value and description side by side. */
+.global-parameter-card{background:var(--color-bg-surface-subtle,#f5f7f8)}
+.global-parameter-top{grid-template-columns:minmax(0,1fr) 140px 40px;align-items:start}
+.global-parameter-bottom{grid-template-columns:repeat(2,minmax(0,1fr))}
+.global-parameters-dialog .global-parameter-top [data-remove]{width:40px;max-width:none;margin-top:26px}
+.global-parameters-dialog .global-parameter-top [data-remove] .text-button{width:40px;max-width:none;font-size:13px;color:var(--color-danger,#e34d59)}
+.global-parameter-name-error{display:block;margin-top:8px;color:var(--color-danger,#e34d59);font-size:12px}
+.global-parameter-name-error[hidden]{display:none}
+.global-parameter-card input[aria-invalid="true"]{border-color:var(--color-danger,#e34d59)}
+@media(max-width:600px){.global-parameter-top{grid-template-columns:minmax(0,1fr) 100px 40px}}
+
+.global-parameter-group{display:grid;gap:8px;min-width:0;margin:0;padding:0}
+.global-parameter-group>h3{margin:0;font-size:14px;line-height:20px;color:var(--color-text-primary,#0f1d24)}
+
+.workflow-function-group{border-top:1px solid var(--color-border,#dfe7ed);padding-top:18px;margin-top:6px}
+.workflow-function-list{display:grid;gap:12px;min-width:0}
+.workflow-function-card [data-code] textarea{min-height:128px;font-family:ui-monospace,SFMono-Regular,Consolas,monospace;line-height:1.5}
+.workflow-function-card>.global-parameter-name-error{margin:0}
+
+/* Shared workflow conventions: external centered removal and aligned add actions. */
+.global-parameter-top{grid-template-columns:minmax(0,1fr) 140px}
+.global-parameter-item{grid-template-columns:minmax(0,1fr) 24px;gap:6px;align-items:center}
+.global-parameter-item>[data-remove] .text-button{width:24px;height:24px;padding:0;color:#8b9da8;width:24px;min-width:24px;min-height:24px}
+.global-parameters-dialog .global-parameter-group>:is([data-add],[data-add-function]){justify-self:start;margin:0;padding:0}
+.global-parameters-dialog .global-parameter-group>:is([data-add],[data-add-function]) .text-button{height:auto;min-height:0;min-width:0;padding:0;border:0;font-size:12px;font-weight:400;line-height:18px;justify-content:flex-start}
+.workflow-function-list:empty{display:none}
+@media(max-width:600px){.global-parameter-top{grid-template-columns:minmax(0,1fr) 100px}}
+
+/* Keep dialog actions visible while long parameter/function forms scroll. */
+.flow-info-dialog.global-parameters-dialog,
+process-action-dialog[preview] .global-parameters-dialog{
+  max-height:min(720px,calc(100dvh - 32px));
+  overflow:hidden;
+}
+.global-parameters-dialog .flow-info-form{
+  display:flex;
+  flex-direction:column;
+  max-height:min(720px,calc(100dvh - 32px));
+  min-height:0;
+}
+.global-parameters-dialog .flow-info-form>header,
+.global-parameters-dialog .flow-info-form>footer{flex-shrink:0}
+.global-parameters-dialog .flow-info-fields{min-height:0;overflow-y:auto;overflow-x:hidden;scrollbar-gutter:stable;overscroll-behavior:contain}
+.global-parameters-dialog .global-parameter-list{max-height:none;overflow:visible;scrollbar-gutter:auto;padding-right:0}
+
+.workflow-function-group{gap:8px}
+.workflow-function-group>h3{margin-bottom:-4px}
+.workflow-function-group>.action-dialog-note{font-size:11px;line-height:16px;margin:0}
+
+@media(max-width:600px){.global-parameter-bottom{grid-template-columns:1fr}}

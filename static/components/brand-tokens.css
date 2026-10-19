@@ -1,0 +1,9 @@
+/* Shared brand defaults for standalone components and management pages. */
+:root{
+  --brand-navigation:#03264D;
+  --brand-primary:#0095B6;
+  --brand-hover:#007F9B;
+  --brand-active:#00687F;
+  --brand-soft:rgba(0,149,182,.06);
+  --brand-selected:rgba(0,149,182,.08);
+}

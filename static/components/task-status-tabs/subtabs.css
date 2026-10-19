@@ -1,0 +1,6 @@
+.task-status-subtabs{display:inline-flex;align-items:center;gap:8px;margin-top:12px;padding:0;background:transparent}
+.task-status-subtabs button{box-sizing:border-box;padding:3px 10px;border:1px solid var(--color-border,#d7e0e7);border-radius:999px;background:var(--color-bg-surface-subtle,#f3f6f8);color:var(--color-text-primary,#172B40);font:500 13px/20px Inter,-apple-system,BlinkMacSystemFont,"PingFang SC",sans-serif;white-space:nowrap;cursor:pointer}
+.task-status-subtabs button:hover{border-color:var(--color-brand);color:var(--color-brand)}
+.task-status-subtabs button.is-active{border-color:var(--color-brand);background:var(--color-brand);color:var(--color-text-inverse,#fff)}
+.task-status-subtabs button.is-active:hover{border-color:var(--color-brand-hover);background:var(--color-brand-hover)}
+.task-status-subtabs button:focus-visible{outline:2px solid var(--color-brand);outline-offset:2px}

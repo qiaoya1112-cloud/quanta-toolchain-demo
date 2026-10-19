@@ -1,0 +1,7 @@
+
+.map-stage,.resource-check-preview{position:relative;background:#fff!important}
+.resource-map-overview{position:absolute;left:12px;bottom:52px;width:112px;height:76px;border:1px solid #cce6ed;border-radius:9px;background:#fbfeff;box-shadow:0 3px 10px #17313b0a;display:grid;place-items:center;overflow:hidden}
+.resource-map-overview img{height:66px;width:64px;object-fit:contain}
+.resource-map-overview span{position:absolute;max-width:64px;max-height:66px;border:1px solid #0095b6;background:#0095b608;box-sizing:border-box}
+.resource-map-scale{position:absolute;left:12px;bottom:12px;display:flex;flex-direction:column;gap:6px;color:#708790;font-size:12px;line-height:16px}
+.resource-map-scale i{display:block;width:58px;height:7px;border:solid currentColor;border-width:0 2px 2px}

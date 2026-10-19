@@ -1,0 +1,42 @@
+.resource-check-dialog{width:min(1000px,calc(100vw - 48px));max-height:calc(100vh - 48px);padding:0;border:1px solid var(--color-border,#d7e0e7);border-radius:12px;background:#fff;color:var(--color-text-primary,#172b40);box-shadow:0 16px 40px #1f323f26;overflow:hidden}
+.resource-check-dialog[open]{display:flex;flex-direction:column}.resource-check-dialog::backdrop{background:#172b4066}
+.resource-check-dialog>header,.resource-check-dialog>footer{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:16px 20px;flex:none}
+.resource-check-dialog>header{border-bottom:1px solid var(--color-border,#d7e0e7)}.resource-check-dialog h2{font-size:20px;line-height:26px;margin:0;font-weight:600}.resource-check-dialog h3{font-size:16px;margin:0;font-weight:500}.resource-check-dialog header p{font-size:13px;margin:6px 0 0;color:var(--color-text-muted)}
+.resource-check-body{display:grid;grid-template-columns:260px minmax(0,1fr);min-height:0;overflow:auto}.resource-check-body>aside{padding:20px 12px;border-right:1px solid var(--color-border,#d7e0e7)}.resource-check-list-heading{display:flex;gap:12px;align-items:center;font-size:14px;padding:0 8px 16px}.resource-check-list-heading span,.resource-check-section span{font-size:12px;color:var(--color-text-muted)}
+.resource-check-map{display:flex;flex-direction:column;gap:8px;width:100%;padding:16px;border:1px solid var(--color-brand,#0095b6);border-radius:8px;background:var(--color-brand-soft,#eaf7fa);text-align:left;color:var(--color-brand,#0095b6);font:inherit}.resource-check-map span{font-size:12px;color:var(--color-text-muted)}
+.resource-check-detail{min-width:0;padding:20px}.resource-check-description{font-size:13px;line-height:20px;margin:12px 0 24px;color:var(--color-text-secondary)}.resource-check-section{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;gap:12px}
+.resource-check-versions{border:1px solid var(--color-border,#d7e0e7);border-radius:8px;overflow:hidden}.resource-check-versions button{display:grid;grid-template-columns:60px 1fr auto;gap:12px;width:100%;padding:14px 16px;background:#fff;border:0;text-align:left;font:inherit;font-size:13px;color:var(--color-text-secondary);cursor:pointer}.resource-check-versions button+button{border-top:1px solid var(--color-border,#d7e0e7)}.resource-check-versions button[aria-pressed=true]{background:var(--color-brand-soft,#eaf7fa);color:var(--color-brand,#0095b6)}
+.resource-check-preview{margin-top:16px;border-radius:8px;background:var(--color-bg-surface-subtle,#f3f6f9);padding:16px;display:flex;flex-direction:column;gap:16px;font-size:12px;color:var(--color-text-muted)}.resource-check-preview svg{height:180px;max-width:100%;align-self:center}
+.resource-check-dialog>footer{border-top:1px solid var(--color-border,#d7e0e7);font-size:13px;color:var(--color-text-secondary)}.resource-check-dialog footer>div{display:flex;gap:8px;margin-left:auto}
+@media(max-width:700px){.resource-check-body{grid-template-columns:180px minmax(0,1fr)}.resource-check-versions button{grid-template-columns:40px 1fr}.resource-check-versions button span:last-child{grid-column:2}}
+/* Match resource-library list, tags and shared table density. */
+.resource-check-dialog{font-family:Inter,-apple-system,BlinkMacSystemFont,'PingFang SC',sans-serif}
+.resource-check-dialog header p{color:var(--color-text-muted,#70849a)}
+.resource-check-list-heading{justify-content:space-between;padding:0 0 12px;font-size:14px}
+.resource-check-list-heading span{color:var(--color-text-muted,#70849a);font-size:12px}
+.resource-check-body>aside{padding:12px}
+.resource-check-list .resource-list__item{display:flex;flex-direction:column;align-items:stretch;gap:4px;padding:10px;margin:0;border:0;border-radius:8px}
+.resource-check-list .resource-list__heading{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.resource-check-list .resource-list__heading strong{font-size:14px;font-weight:600}
+.resource-check-list .resource-list__item>span{font-size:12px;line-height:20px;color:var(--color-text-muted,#70849a)}
+.resource-check-title{display:flex;align-items:center;gap:8px}
+.resource-check-detail{padding:16px}
+.resource-check-dialog .resource-check-description{margin:6px 0 16px;padding-bottom:16px;border-bottom:1px solid var(--color-border,#d7e0e7);font-size:13px;line-height:20px;color:var(--color-text-muted,#70849a)}
+.resource-check-section h3{font-size:14px;line-height:20px;font-weight:500}.resource-check-section h3 span{margin-left:6px;font-weight:400}
+.resource-check-table,.resource-check-table .task-data-table{height:auto;min-height:0}
+.resource-check-table .task-data-table__scroll{width:100%;margin:0;overflow:auto}
+.resource-check-table table{--table-min-width:0;min-width:0;width:100%;table-layout:fixed}
+.resource-check-table .task-data-table :is(th,td){width:auto;white-space:nowrap}
+.resource-check-table tr{cursor:pointer}.resource-check-table tr.is-selected td{background:var(--color-brand-soft,#eff9fb)}
+.resource-check-preview{border:1px solid var(--color-border,#d7e0e7);background:var(--color-bg-surface-subtle,#f5f7f9);color:var(--color-text-muted,#70849a)}
+/* Supply the same semantic tokens as the resource library on standalone editors. */
+.resource-check-dialog{--color-accent-mint:#1BB985;--color-accent-mint-soft:#E5F4EC;--color-accent-gray:#60788A;--color-accent-gray-soft:#EEF3F6;--color-danger:#cf3f4b;--color-danger-soft:rgba(207,63,75,.1);--color-text-muted:#70849A;--color-text-secondary:#435D76;--color-border:#d7e0e7;--color-brand:#0095B6;--color-brand-soft:rgba(0,149,182,.06)}
+.resource-check-dialog .table-outline-tag{color:var(--tag-color);background:var(--tag-bg)}
+.resource-check-dialog task-data-table.resource-check-table .task-data-table table{--table-min-width:0;width:100%;min-width:0;max-width:100%;table-layout:fixed}
+.resource-check-dialog task-data-table.resource-check-table .task-data-table :is(th,td){width:auto;min-width:0;box-sizing:border-box}
+.resource-check-dialog task-data-table.resource-check-table{min-width:0;max-width:100%}
+
+.resource-check-pin{display:inline-flex;align-items:center;gap:4px;height:28px;padding:0 8px;color:var(--color-brand);background:transparent;font-size:12px;line-height:18px;white-space:nowrap}
+.resource-check-pin svg{width:14px;height:14px;flex:none;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+
+.resource-check-preview .map-drawing{width:100%;height:auto;max-height:360px}

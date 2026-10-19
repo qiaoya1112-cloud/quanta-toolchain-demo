@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Common · 通用组件</title>
+  <link rel="stylesheet" href="./platform-sidebar/platform-sidebar.css?v=group-nav-20260922">
+  <link rel="stylesheet" href="./platform-sidebar/platform-sidebar-variant.css?v=group-nav-20260922">
+  <script src="./platform-sidebar/platform-sidebar.js?v=resource-library-20261015" defer></script>
+  <style>
+    *{box-sizing:border-box}
+    body{margin:0;background:#03264D;font-family:"PingFang SC",sans-serif}
+    .common-nav{position:fixed;inset:0 auto 0 0;width:var(--platform-sidebar-width,230px)}
+    main{margin-left:var(--platform-sidebar-width,230px);height:100vh;border-radius:20px 0 0 20px;overflow:hidden}
+    iframe{display:block;width:100%;height:100%;border:0}
+    body:has(platform-sidebar[palette="mist"]){background:#f2f3f5}
+    platform-sidebar [hidden]{display:none!important}
+    /* The clipped preview corners reveal the navigation shell, not the preview theme. */
+  </style>
+</head>
+<body>
+  <aside class="common-nav"><platform-sidebar variant="style-variant" catalog="components" palette="dark"></platform-sidebar></aside>
+  <main><iframe id="preview" title="通用组件预览"></iframe></main>
+  <script>
+    window.addEventListener('DOMContentLoaded',()=>{
+      const sidebar=document.querySelector('platform-sidebar');
+      const links=[...sidebar.querySelectorAll('.platform-sidebar__item')];
+      const frame=document.getElementById('preview');
+      const routes={workbench:'./workbench/segmented-track.html',workflow:'./process-editor/process-editor.html',input:'./process-editor/process-editor.html?view=forms'};
+      const applyTheme=theme=>{document.documentElement.dataset.theme=theme==='blue'?'dark':theme;document.documentElement.dataset.workbenchTheme=theme;};
+      applyTheme('light');
+      window.addEventListener('message',event=>{
+        if(location.hash!=='#workbench'||event.source!==frame.contentWindow||event.data?.type!=='common-preview-theme')return;
+        if(['light','dark','blue'].includes(event.data.theme))applyTheme(event.data.theme);
+      });
+      window.addEventListener('message',event=>{
+        if(event.source!==frame.contentWindow||event.data?.type!=='common-preview-navigate')return;
+        const destinations={'input/node-spacing-spec':true,'table-controls/table-dimensions':true};
+        if(destinations[event.data.destination])location.hash=event.data.destination;
+      });
+      frame.addEventListener('load',()=>frame.contentWindow.postMessage({type:'common-preview-theme-request'},'*'));
+      const update=()=>{
+        if(['#task-filter-bar','#task-status-tabs','#pagination','#task-data-table','#task-page-header'].includes(location.hash))history.replaceState(null,'','#table-controls');
+        const [pageId,sectionId]=location.hash.slice(1).split('/');
+        const active=links.find(link=>link.dataset.pageId===pageId)||links[0];
+        links.forEach(link=>{
+          link.classList.toggle('platform-sidebar__item--active',link===active);
+          if(link===active)link.setAttribute('aria-current','page');
+          else link.removeAttribute('aria-current');
+        });
+        const name=active.dataset.pageId;
+        applyTheme('light');
+        if(name==='workbench'){
+          applyTheme('dark');
+          try{applyTheme(localStorage.getItem('workbench-component-theme')||'dark');}catch(_){}
+        }
+        const base=routes[name]||'./'+name+'/'+name+'.html';
+        const src=base+(sectionId?'#'+encodeURIComponent(sectionId):'');
+        if(frame.getAttribute('src')!==src)frame.src=src;
+        frame.title=active.title+'组件预览';
+        document.title='Common · '+active.title;
+      };
+      sidebar.addEventListener('component-select',event=>{location.hash=event.detail.id;});
+      window.addEventListener('hashchange',update);
+      update();
+    });
+  </script>
+</body>
+</html>

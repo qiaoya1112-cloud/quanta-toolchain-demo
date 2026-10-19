@@ -1,0 +1,262 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>工作台组件</title>
+  <script>
+    (() => {
+      let theme = 'blue';
+      try { theme = localStorage.getItem('workbench-component-theme') || theme; } catch (_) {}
+      theme = theme === 'light' ? 'light' : 'blue';
+      const dark = theme !== 'light';
+      document.documentElement.dataset.workbenchTheme = theme;
+      document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+      document.documentElement.classList.toggle('component-dark', dark);
+      document.documentElement.classList.toggle('theme-light', !dark);
+    })();
+  </script>
+  <link rel="stylesheet" href="../../styles.css">
+  <link rel="stylesheet" href="../component-preview.css">
+  <link rel="stylesheet" href="./segmented-track.css?v=footer-button-states-20261014">
+<link rel="stylesheet" href="./loading.css?v=14">
+  <script src="./quality-form-controls.js?v=shared-reason-clear-component-20261014" defer></script><script src="./segmented-track.js?v=footer-button-states-20261014" defer></script>
+  <link rel="stylesheet" href="../secondary-nav.css">
+  <link rel="stylesheet" href="./quality-review.css?v=footer-button-states-20261014">
+  <script src="../../pages/workbench/quality-model.js?v=3" defer></script>
+  <script src="./quality-review.js?v=footer-button-states-20261014" defer></script>
+  <script src="./quality-review-preview.js?v=select-option-content-20261013" defer></script>
+<style>
+.component-theme-tabs{position:fixed;top:max(16px,env(safe-area-inset-top));right:max(24px,env(safe-area-inset-right));z-index:1000;display:flex;gap:3px;padding:4px;border:1px solid var(--color-border);border-radius:999px;background:var(--color-bg-surface)}
+.component-theme-tabs button{border:0;border-radius:999px;padding:7px 12px;background:transparent;color:var(--color-text-muted);font-family:inherit;font-size:12px;font-weight:500;line-height:18px;cursor:pointer}
+.component-theme-tabs button:hover{background:var(--color-bg-hover)}
+.component-theme-tabs button[aria-pressed=true]{background:var(--color-brand);color:var(--color-text-inverse)}
+.component-theme-tabs button:focus-visible{outline:2px solid var(--color-brand);outline-offset:2px}
+</style></head>
+<body class="design-spec-page component-preview workbench-component-preview">
+<div class="component-theme-tabs" data-component-theme role="group" aria-label="组件主题"><button type="button" data-preview-theme="light" aria-pressed="false">浅色</button><button type="button" data-preview-theme="blue" aria-pressed="false">深蓝</button></div>
+  <main class="component-gallery">
+    <header class="component-gallery__header">
+      <h1>工作台</h1>
+
+
+    </header>
+    <h2 class="component-gallery__major-title" id="component-major-task">任务信息</h2>
+    <section class="component-gallery__group">
+      <h2>任务信息栏</h2>
+      <div class="component-gallery__variants">
+        <div class="component-gallery__variant"><h3>默认</h3><div class="component-gallery__stage component-gallery__stage--track component-gallery__stage--unframed"><workbench-task-header data-processing-id="DP202609070018" data-id="DT202609070126"></workbench-task-header></div></div>
+        <div class="component-gallery__variant"><h3>长驳回原因</h3><div class="component-gallery__stage component-gallery__stage--track component-gallery__stage--unframed"><workbench-task-header variant="long-reject" data-processing-id="DP202609070018" data-id="DT202609070126"></workbench-task-header></div></div>
+      </div>
+    </section>
+    <h2 class="component-gallery__major-title" id="component-major-instruction">采集指令</h2>
+    <section class="component-gallery__group">
+      <h2>采集指令栏</h2>
+      <div class="component-gallery__variants">
+        <div class="component-gallery__variant"><h3>默认</h3><div class="component-gallery__stage component-gallery__stage--track component-gallery__stage--unframed"><workbench-instruction></workbench-instruction></div></div>
+        <div class="component-gallery__variant"><h3>长指令</h3><div class="component-gallery__stage component-gallery__stage--track component-gallery__stage--unframed"><workbench-instruction variant="long"></workbench-instruction></div></div>
+      </div>
+    </section>
+    <h2 class="component-gallery__major-title" id="component-major-media">媒体预览</h2>
+    <section class="component-gallery__group">
+      <h2>媒体预览</h2>
+      <div class="component-gallery__variants">
+        <div class="component-gallery__variant">
+          <h3>默认</h3>
+          <div class="component-gallery__stage component-gallery__stage--track component-gallery__stage--unframed"><workbench-media-viewer></workbench-media-viewer></div>
+        </div>
+        <div class="component-gallery__variant">
+          <h3>左二右一 · 3:2</h3>
+          <div class="component-gallery__stage component-gallery__stage--track component-gallery__stage--unframed"><workbench-media-viewer variant="three-panel"></workbench-media-viewer></div>
+        </div>
+      </div>
+    </section>
+    <h2 class="component-gallery__major-title" id="component-major-annotation">质检标注操作</h2>
+    <section class="component-gallery__group">
+      <h2>表单控件</h2>
+      <div class="component-gallery__stage component-gallery__stage--track component-gallery__stage--unframed">
+        <workbench-form-control-states></workbench-form-control-states><div class="component-gallery__variant"><h3>片段类型切换</h3><div class="quality-editor-preview quality-control-preview" data-quality-control="type" data-quality-editor-preview="pretraining"></div></div><div class="component-gallery__variant"><h3>质检原因多选</h3><div class="quality-editor-preview quality-control-preview" data-quality-control="reasons" data-quality-editor-preview="pretraining"></div></div><div class="component-gallery__variant"><h3>审核反馈多选（正确 / 错误 / 遗漏项）</h3><div class="quality-editor-preview quality-control-preview" data-quality-control="feedback" data-quality-editor-preview="posttraining-review"></div></div>
+      </div>
+    </section>
+    <section class="component-gallery__group component-gallery__group--overflow">
+      <h2>片段编辑器</h2>
+      <div class="component-gallery__variants">
+        <div class="component-gallery__variant">
+          <h3>语义标注</h3>
+          <div class="component-gallery__stage component-gallery__stage--track component-gallery__stage--unframed"><workbench-segment-editor></workbench-segment-editor></div>
+        </div>
+        <div class="component-gallery__variant">
+          <h3>质检</h3>
+          <div class="component-gallery__stage component-gallery__stage--track component-gallery__stage--unframed"><workbench-segment-editor variant="variant-2"></workbench-segment-editor></div>
+        </div>
+        <div class="component-gallery__variant">
+          <h3>动作标注</h3>
+          <div class="component-gallery__stage component-gallery__stage--track component-gallery__stage--unframed"><workbench-segment-editor variant="variant-3"></workbench-segment-editor></div>
+        </div>
+<div class="component-gallery__variant"><h3>预训练质检</h3><div class="component-gallery__stage component-gallery__stage--track component-gallery__stage--unframed"><div class="quality-editor-preview" data-quality-editor-preview="pretraining"></div></div></div>
+<div class="component-gallery__variant"><h3>后训练质检</h3><div class="component-gallery__stage component-gallery__stage--track component-gallery__stage--unframed"><div class="quality-editor-preview" data-quality-editor-preview="posttraining"></div></div></div>
+<div class="component-gallery__variant"><h3>后训练质检审核</h3><div class="component-gallery__stage component-gallery__stage--track component-gallery__stage--unframed"><div class="quality-editor-preview" data-quality-editor-preview="posttraining-review"></div></div></div>
+<div class="component-gallery__variant"><h3>驳回处理</h3><div class="component-gallery__stage component-gallery__stage--track component-gallery__stage--unframed"><div class="quality-editor-preview" data-quality-editor-preview="rejection"></div></div></div>
+<div class="component-gallery__variant"><h3>二次审核</h3><div class="component-gallery__stage component-gallery__stage--track component-gallery__stage--unframed"><div class="quality-editor-preview" data-quality-editor-preview="secondary-review"></div></div></div>
+      </div>
+    </section>
+    <h2 class="component-gallery__major-title" id="component-major-list">列表</h2>
+    <section class="component-gallery__group">
+      <h2>片段列表区</h2>
+      <div class="component-gallery__variants quality-list-gallery">
+        <div class="component-gallery__variant"><h3>语义标注</h3><div class="component-gallery__stage component-gallery__stage--track component-gallery__stage--unframed component-gallery__stage--review-panel"><workbench-segment-list-panel variant="segments"></workbench-segment-list-panel></div></div>
+        <div class="component-gallery__variant"><h3>动作标注</h3><div class="component-gallery__stage component-gallery__stage--track component-gallery__stage--unframed component-gallery__stage--review-panel"><workbench-quality-list title="标注列表" rows="6"></workbench-quality-list></div></div>
+        <div class="component-gallery__variant"><h3>质检</h3><div class="component-gallery__stage component-gallery__stage--track component-gallery__stage--unframed component-gallery__stage--review-panel"><workbench-annotation-list title="质检列表" rows="6"></workbench-annotation-list></div></div>
+        <div class="component-gallery__variant"><h3>预训练质检</h3><div data-quality-list-preview="pretraining"></div></div>
+        <div class="component-gallery__variant"><h3>后训练质检</h3><div data-quality-list-preview="posttraining"></div></div>
+        <div class="component-gallery__variant"><h3>后训练质检审核</h3><div data-quality-list-preview="posttraining-review"></div></div>
+        <div class="component-gallery__variant"><h3>驳回处理</h3><div data-quality-list-preview="rejection"></div></div>
+        <div class="component-gallery__variant"><h3>二次审核</h3><div data-quality-list-preview="secondary-review"></div></div>
+        <div class="component-gallery__variant"><h3>日志</h3><div class="component-gallery__stage component-gallery__stage--track component-gallery__stage--unframed component-gallery__stage--review-panel"><workbench-segment-list-panel variant="log"></workbench-segment-list-panel></div></div>
+        <div class="component-gallery__variant"><h3>基本信息</h3><div class="component-gallery__stage component-gallery__stage--track component-gallery__stage--unframed component-gallery__stage--review-panel"><workbench-segment-list-panel variant="info"></workbench-segment-list-panel></div></div>
+      </div>
+    </section>
+    <section class="component-gallery__group">
+      <h2>片段列表 Tab</h2>
+      <div class="component-gallery__stage component-gallery__stage--track component-gallery__stage--unframed component-gallery__stage--review-tabs"><workbench-segment-tabs active="segments"></workbench-segment-tabs></div>
+    </section>
+    <section class="component-gallery__group">
+      <h2>质检结论</h2>
+      <div class="component-gallery__stage component-gallery__stage--track component-gallery__stage--unframed component-gallery__stage--review-panel"><workbench-quality-conclusion></workbench-quality-conclusion></div>
+    </section>
+    <section class="component-gallery__group">
+      <h2>动作元素 · 分组菜单</h2>
+      <p>按日常物品、家具与部件分组；分组标题为辅助文字，不可选择，组间使用细线分隔。</p>
+      <workbench-multi-select bilingual grouped aria-label="动作元素分组示例" options="遥控器|纸盒|书本|笔记本|桌面|抽屉|把手|书架" value="遥控器" placeholder="请选择动作元素"></workbench-multi-select>
+    </section>
+    <section class="component-gallery__group">
+      <h2>底部操作栏</h2>
+      <div class="footer-button-states" aria-label="底部按钮默认和禁用样式">
+        <span>按钮类型</span><span>默认</span><span>禁用</span>
+        <strong>描边按钮</strong>
+        <workbench-footer-actions hydrate><div class="workbench-footer-actions"><button type="button" class="text-button text-button--outline">保存</button></div></workbench-footer-actions>
+        <workbench-footer-actions hydrate><div class="workbench-footer-actions"><button type="button" class="text-button text-button--outline" disabled aria-disabled="true">保存</button></div></workbench-footer-actions>
+        <strong>主按钮</strong>
+        <workbench-footer-actions hydrate><div class="workbench-footer-actions"><button type="button" class="text-button text-button--primary">提交</button></div></workbench-footer-actions>
+        <workbench-footer-actions hydrate><div class="workbench-footer-actions"><button type="button" class="text-button text-button--primary" disabled aria-disabled="true">提交</button></div></workbench-footer-actions>
+        <strong>危险按钮</strong>
+        <workbench-footer-actions hydrate><div class="workbench-footer-actions"><button type="button" class="text-button text-button--danger">驳回</button></div></workbench-footer-actions>
+        <workbench-footer-actions hydrate><div class="workbench-footer-actions"><button type="button" class="text-button text-button--danger" disabled aria-disabled="true">驳回</button></div></workbench-footer-actions>
+      </div>
+      <div class="quality-footer-gallery">
+        <div><h3>语义标注</h3><p class="quality-footer-description"></p><workbench-footer-actions></workbench-footer-actions></div>
+        <div><h3>动作标注</h3><p class="quality-footer-description"></p><workbench-footer-actions variant="action"></workbench-footer-actions></div>
+        <div><h3>质检</h3><p class="quality-footer-description"></p><workbench-footer-actions variant="quality"></workbench-footer-actions></div>
+        <div><h3>预训练质检</h3><p class="quality-footer-description"></p><div data-quality-footer-preview="pretraining"></div></div>
+        <div><h3>后训练质检</h3><p class="quality-footer-description"></p><div data-quality-footer-preview="posttraining"></div></div>
+        <div><h3>后训练质检审核</h3><p class="quality-footer-description">填写错误原因后，驳回按钮高亮，提交禁用并显示描边样式。</p><div data-quality-footer-preview="posttraining-review"></div></div>
+        <div><h3>驳回处理</h3><p class="quality-footer-description"></p><div data-quality-footer-preview="rejection"></div></div>
+        <div><h3>二次审核</h3><p class="quality-footer-description">提交默认禁用，显示描边样式；点击接受后，提交仍为描边禁用状态。</p><div data-quality-footer-preview="secondary-review"></div></div>
+      </div>
+    </section>
+    <h2 class="component-gallery__major-title" id="component-major-dialog">弹窗</h2>
+    <section class="component-gallery__group">
+      <h2>弹窗</h2>
+      <div class="component-gallery__variants component-gallery__variants--dialogs">
+        <div class="component-gallery__variant"><h3>提交确认</h3><div class="component-gallery__stage component-gallery__stage--track component-gallery__stage--unframed component-gallery__stage--dialog"><workbench-confirm-dialog preview></workbench-confirm-dialog></div></div>
+        <div class="component-gallery__variant"><h3>不合格确认</h3><div class="component-gallery__stage component-gallery__stage--track component-gallery__stage--unframed component-gallery__stage--dialog"><workbench-confirm-dialog variant="unqualified" preview></workbench-confirm-dialog></div></div>
+        <div class="component-gallery__variant"><h3>驳回原因</h3><div class="component-gallery__stage component-gallery__stage--track component-gallery__stage--unframed component-gallery__stage--dialog"><workbench-confirm-dialog variant="reject" preview></workbench-confirm-dialog></div></div>
+        <div class="component-gallery__variant"><h3>任务描述</h3><div class="component-gallery__stage component-gallery__stage--track component-gallery__stage--unframed component-gallery__stage--dialog"><workbench-confirm-dialog variant="task-description" preview></workbench-confirm-dialog></div></div>
+        <div class="component-gallery__variant"><h3>确认提交质检</h3><div class="component-gallery__stage component-gallery__stage--track component-gallery__stage--unframed component-gallery__stage--dialog"><workbench-confirm-dialog variant="quality-submit" preview></workbench-confirm-dialog></div></div>
+        <div class="component-gallery__variant"><h3>确认提交</h3><div class="component-gallery__stage component-gallery__stage--track component-gallery__stage--unframed component-gallery__stage--dialog"><workbench-confirm-dialog variant="simple-submit" preview></workbench-confirm-dialog></div></div>
+        <div class="component-gallery__variant"><h3>请补充错误原因</h3><div class="component-gallery__stage component-gallery__stage--track component-gallery__stage--unframed component-gallery__stage--dialog"><workbench-confirm-dialog variant="missing-reason" preview></workbench-confirm-dialog></div></div>
+        <div class="component-gallery__variant"><h3>质检标准</h3><div class="component-gallery__stage component-gallery__stage--track component-gallery__stage--unframed component-gallery__stage--dialog"><workbench-confirm-dialog variant="standards" preview></workbench-confirm-dialog></div></div>
+      </div>
+    </section>
+    <h2 class="component-gallery__major-title" id="component-major-shortcuts">快捷键</h2>
+    <section class="component-gallery__group">
+      <h2>快捷键弹窗</h2>
+      <div class="component-gallery__variants component-gallery__variants--shortcuts">
+        <div class="component-gallery__variant"><h3>Mac</h3><div class="component-gallery__stage component-gallery__stage--track component-gallery__stage--unframed component-gallery__stage--shortcut"><workbench-shortcut-dialog platform="mac"></workbench-shortcut-dialog></div></div>
+        <div class="component-gallery__variant"><h3>Windows</h3><div class="component-gallery__stage component-gallery__stage--track component-gallery__stage--unframed component-gallery__stage--shortcut"><workbench-shortcut-dialog platform="windows"></workbench-shortcut-dialog></div></div>
+      </div>
+      <p>备注：window快捷键无图标</p>
+    </section>
+    <h2 class="component-gallery__major-title" id="component-major-timeline">时间轴</h2>
+    <section class="component-gallery__group">
+      <h2>时间刻度 <span class="component-gallery__retained-label">暂不使用 · 暂时保留</span></h2>
+      <div class="component-gallery__stage component-gallery__stage--track"><div class="segmented-timeline segmented-timeline--sample"><div class="segmented-timeline__body"><timeline-time-scale></timeline-time-scale></div></div></div>
+    </section>
+    <section class="component-gallery__group">
+      <h2>范围选择</h2>
+      <div class="component-gallery__variants">
+        <div class="component-gallery__variant">
+          <h3>默认</h3>
+          <div class="component-gallery__stage component-gallery__stage--track"><div class="segmented-timeline segmented-timeline--sample segmented-timeline--range-sample"><div class="segmented-timeline__body"><timeline-range-selector></timeline-range-selector></div></div></div>
+        </div>
+        <div class="component-gallery__variant">
+          <h3>变体 2 · 选取与定位标记 <span class="component-gallery__retained-label">暂不使用 · 暂时保留</span></h3>
+          <div class="component-gallery__stage component-gallery__stage--track"><div class="segmented-timeline segmented-timeline--sample segmented-timeline--range-sample"><div class="segmented-timeline__body"><timeline-range-selector variant="marked"></timeline-range-selector></div></div></div>
+        </div>
+      </div>
+    </section>
+    <section class="component-gallery__group">
+      <h2>播放与工具栏</h2>
+      <div class="component-gallery__stage component-gallery__stage--track"><div class="segmented-timeline segmented-timeline--sample"><timeline-controls></timeline-controls></div></div>
+    </section>
+    <section class="component-gallery__group">
+      <h2>单轨质检时间轴</h2>
+      <div class="component-gallery__stage component-gallery__stage--track" data-quality-single-track-preview></div>
+    </section>
+    <section class="component-gallery__group">
+      <h2>多轨质检时间轴</h2>
+      <div class="component-gallery__stage component-gallery__stage--track" data-quality-track-preview></div>
+    </section>
+    <section class="component-gallery__group">
+      <h2>语义标注</h2>
+      <div class="component-gallery__stage component-gallery__stage--track">
+        <semantic-annotation-track label="14" position="19"></semantic-annotation-track>
+      </div>
+      <h2 class="track-gallery-quality-title">动作标注</h2>
+      <div class="component-gallery__stage component-gallery__stage--track">
+        <action-annotation-track variant="split-lane" label="14" position="19"></action-annotation-track>
+      </div>
+      <h2 class="track-gallery-quality-title">动作标注 · 彩色分割轨道变体</h2>
+      <div class="component-gallery__stage component-gallery__stage--track">
+        <action-annotation-track variant="split-lane-preview" label="14" position="19"></action-annotation-track>
+      </div>
+      <h3>分层条带 · 30 色柔和浅色色卡</h3>
+      <split-lane-palette></split-lane-palette>
+      <h2 class="track-gallery-quality-title">质检</h2>
+      <div class="component-gallery__stage component-gallery__stage--track">
+        <workbench-quality-track></workbench-quality-track>
+      </div>
+      <div class="timeline-interaction-notes" aria-label="时间轴交互逻辑">
+        <h3>时间轴交互逻辑</h3>
+        <ul>
+          <li><strong>选择片段（语义／动作标注）：</strong>点击彩色片段，针回到片段起点并暂停，上方黄绿色区域同步选中该范围。</li>
+          <li><strong>调整范围：</strong>拖动黄色三角或对应时间标签可调整左右边界，拖动黄绿色区域可平移范围；针的位置保持不变，并暂停播放。时间标签自动避让，三角允许重叠，范围可跨越多个彩色片段。</li>
+          <li><strong>定位：</strong>点击第一条轨道，针跳到点击处并暂停；拖动针也会暂停，松手后保持暂停，并保留边界吸附。点击定位或拖动针均不改变选中范围。</li>
+          <li><strong>播放／暂停：</strong>点击按钮切换状态。针在黄绿色范围内时，从当前位置播到右边界暂停；再次播放从该节点继续，不回到开头。</li>
+          <li><strong>范围外续播：</strong>针在范围外或右边界时，点击播放继续到时间轴末尾；黄绿色范围保持不变。</li>
+          <li><strong>质检：</strong>按完整时间轴播放，到末尾暂停。橙色、红色区段仅标记问题，不限制播放，也不产生全条高亮。</li>
+        </ul>
+      </div>
+      <h3 class="segment-color-palette__title">连续色值</h3>
+      <segment-color-palette count="50"></segment-color-palette>
+    </section>
+    <h2 class="component-gallery__major-title" id="component-major-empty">空状态</h2>
+    <section class="component-gallery__group">
+      <h2>空状态</h2>
+      <div class="component-gallery__variants">
+        <div class="component-gallery__variant"><h3>媒体与时间轴区 · 无媒体信息</h3><workbench-empty-state variant="media"></workbench-empty-state></div>
+        <div class="component-gallery__variant"><h3>片段编辑区 · 无选中片段</h3><workbench-empty-state variant="editor"></workbench-empty-state></div>
+        <div class="component-gallery__variant"><h3>列表区 · 无列表信息</h3><div class="empty-state-list-preview"><div class="empty-state-list-preview__header">标注列表</div><workbench-empty-state variant="list"></workbench-empty-state></div></div>
+      </div>
+    </section>
+    <h2 class="component-gallery__major-title" id="component-major-loading">加载状态</h2>
+    <section class="component-gallery__group">
+      <h2>工作台整体加载</h2>
+      <div class="workbench-loading-preview">
+        <div class="workbench-loading" role="status"><span class="workbench-loading__spinner" aria-hidden="true"><svg class="workbench-loading__pattern" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="6" width="42" height="36" rx="4"/><path d="M3 13h42M3 33h42" opacity=".55"/><circle cx="8" cy="9.5" r="1" fill="currentColor" stroke="none"/><circle cx="12" cy="9.5" r="1" fill="currentColor" stroke="none" opacity=".6"/><path d="M34 9.5h6" opacity=".65"/><circle cx="24" cy="23" r="7" opacity=".45"/><path d="m22 19.5 6 3.5-6 3.5Z" fill="currentColor" stroke="none"/><path d="M8 17h3m-3 0v3m32-3h-3m3 0v3" opacity=".5"/><path d="M8 37.5h22" opacity=".3"/><path d="M8 37.5h9"/><circle cx="18" cy="37.5" r="1.5" fill="currentColor" stroke="none"/><path d="M35 36v3m3-3v3M41 36v3" stroke-width="1" opacity=".7"/></svg><span class="workbench-loading__core"></span></span><span>工作台加载中…</span></div>
+      </div>
+    </section>
+  </main>
+  <script src="../component-preview.js?v=theme-sync-3"></script>
+</body>
+</html>

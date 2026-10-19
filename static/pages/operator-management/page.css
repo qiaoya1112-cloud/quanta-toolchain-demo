@@ -1,0 +1,6 @@
+.operator-content{flex:1;min-height:0;overflow:auto;background:#fff}
+.operator-content>task-data-table{min-height:0;border:0;border-radius:0;box-shadow:none}
+.operator-content [data-empty]{padding:32px 16px;text-align:center;color:#71828b}
+.operator-content [hidden]{display:none}
+.operator-content [data-feedback]{margin:12px 16px;color:#71828b;font-size:13px}
+.operator-content [data-feedback]:empty{display:none}

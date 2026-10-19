@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="light">
+<head>
+<link rel="stylesheet" href="../../components/resource-list/resource-list.css"><script src="../../components/resource-list/resource-list.js" defer></script>
+
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>分配管理</title>
+  <link rel="stylesheet" href="../../styles.css">
+  <link rel="stylesheet" href="../../components/platform-sidebar/platform-sidebar.css?v=group-nav-20260922">
+  <link rel="stylesheet" href="../../components/platform-sidebar/platform-sidebar-variant.css?v=group-nav-20260922">
+  <link rel="stylesheet" href="../../components/task-page-header/task-page-header.css">
+  <link rel="stylesheet" href="../../components/input/input.css">
+  <link rel="stylesheet" href="../../components/task-filter-bar/task-filter-bar.css">
+  <link rel="stylesheet" href="../process-management/page.css">
+  <link rel="stylesheet" href="../../components/button/button.css">
+  <link rel="stylesheet" href="../../components/task-status-tabs/task-status-tabs.css">
+  <link rel="stylesheet" href="../../components/task-data-table/task-data-table.css">
+  <link rel="stylesheet" href="../../components/assignment-board/assignment-board.css">
+  <style>
+/* Page owns the shared gutter; its three sections add no outer inset. */
+body[data-page-id="assignment-management"] .process-page__main{padding-left:24px;padding-right:24px}
+body[data-page-id="assignment-management"] .process-page__main>task-page-header{--task-page-content-edge:0px}
+body[data-page-id="assignment-management"] .task-filter-layout{padding-left:0;padding-right:0}
+body[data-page-id="assignment-management"] .process-page__main assignment-board{margin-left:0;margin-right:0}
+.assignment-content{display:flex;flex-direction:column;flex:1;min-height:0;overflow:auto;background:#fff}.assignment-content>task-filter-bar{flex:none}.assignment-content>assignment-board{display:flex;flex-direction:column;flex:1;min-height:min-content}.assignment-content .assignment-board{flex:1}</style>
+  <script src="../../components/platform-sidebar/platform-sidebar.js?v=resource-library-20261015" defer></script>
+  <script src="../../components/task-page-header/task-page-header.js" defer></script>
+  <script src="../../components/input/input.js" defer></script>
+  <script src="../../components/task-filter-bar/task-filter-bar.js" defer></script>
+  <script src="../../components/button/button.js" defer></script>
+  <script src="../../components/task-status-tabs/task-status-tabs.js" defer></script>
+  <script src="../../components/assignment-board/capacity-progress.js" defer></script>
+  <link rel="stylesheet" href="../../components/stat-cards/stat-cards.css?v=neutral-cards-2">
+  <script src="../../components/stat-cards/stat-cards.js" defer></script>
+  <script src="../../components/assignment-board/assignment-board.js" defer></script>
+  <script src="./page.js" defer></script>
+<link rel="stylesheet" href="../../components/pagination/pagination.css"><script src="../../components/pagination/pagination.js"></script>  <link rel="stylesheet" href="../../components/table-examples/embed.css">
+  <script src="../../components/table-examples/embed.js"></script>
+  <link rel="stylesheet" href="../../components/table-examples/page-layout.css">
+<script src="../../components/task-data-table/table-columns.js" defer></script>
+</head>
+<body data-page-id="assignment-management">
+  <div class="process-page">
+    <aside class="process-page__sidebar"><platform-sidebar variant="style-variant" palette="dark"></platform-sidebar></aside>
+    <main class="process-page__main" aria-label="分配管理内容区">
+      <task-page-header title="分配管理" scene-filter scene="质检" description="选择供应商或用户组查看产能分布"></task-page-header>
+      <section class="assignment-content" aria-label="分配管理">
+        <task-filter-bar variant="assignment-management"></task-filter-bar>
+        <assignment-board></assignment-board>
+      </section>
+    </main>
+  </div>
+</body>
+</html>

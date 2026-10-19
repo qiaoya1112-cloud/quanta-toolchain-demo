@@ -1,0 +1,48 @@
+/* Detail shell owns its insets; remove the list page padding while open. */
+body[data-page-id="collection-plan-management"] .process-page__main:has(>.plan-detail){padding:0}
+.plan-detail{display:flex;flex-direction:column;flex:1;min-height:0;margin:0;background:#fff}
+.plan-detail [hidden]{display:none!important}
+.plan-layout{display:flex;flex:1;min-height:0;padding:8px;gap:8px;background:var(--color-bg-surface-subtle,#f5f8fa)}
+.plan-nav{width:164px;flex:none;padding:8px;background:#fff;border-radius:8px;display:flex;flex-direction:column;gap:4px}
+.plan-nav button{border:0;background:none;color:var(--color-text-secondary);font:inherit;text-align:left;padding:12px;border-radius:6px;cursor:pointer}
+.plan-nav button.is-active{background:var(--color-brand-soft);color:var(--color-brand);font-weight:600}
+.plan-panel{flex:1;min-width:0;min-height:0;padding:16px;background:#fff;border-radius:8px;display:flex;flex-direction:column;gap:12px;overflow:auto}
+.plan-panel h2{font-size:16px;line-height:24px;margin:0}
+.plan-hint{color:var(--color-text-muted);font-size:12px;margin:0}
+.plan-basic{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+.plan-basic-actions{grid-column:1/-1;display:flex;justify-content:flex-end;gap:8px}
+.plan-basic-actions .text-button,.plan-toolbar .text-button{height:32px;border-radius:8px}
+.plan-toolbar{display:flex;align-items:center;gap:12px;flex:none}
+.plan-toolbar>div{margin-left:auto;display:flex;gap:8px}
+.plan-toolbar>span{font-size:12px;color:var(--color-text-muted)}
+.plan-filters{display:flex;align-items:end;gap:8px;flex:none;margin:0}
+.plan-filters form-input,.plan-filters form-select{width:180px;min-width:0}
+.plan-filters .text-button{height:32px;min-width:32px;padding:0 8px}
+.plan-panel .plan-table{flex:1;min-height:220px}
+.plan-panel .plan-table table{min-width:860px;width:100%;table-layout:auto}
+.plan-panel .plan-table td{white-space:normal;overflow-wrap:anywhere}
+.plan-table small{display:block;color:var(--color-text-muted);margin-top:4px}
+.plan-table :is(th,td):first-child{width:120px}
+.plan-table :is(th,td):last-child{width:112px;white-space:nowrap}
+.plan-footer [role=status]{margin-right:auto;font-size:12px;color:var(--color-text-secondary)}
+.plan-drawer .app-drawer{width:min(680px,100vw)}
+.plan-drawer .app-drawer__body{display:flex;flex-direction:column;gap:16px}
+.plan-drawer .command-table{flex:1;min-height:0}
+.plan-drawer .command-table table{width:100%;min-width:0;table-layout:auto}
+.plan-drawer .command-table :is(th,td):first-child{width:40px}
+.plan-drawer input[type=checkbox],.plan-detail input[type=checkbox]{accent-color:var(--color-brand)}
+.plan-strategy-form{display:grid;gap:16px}
+.plan-strategy-form [role=alert]{color:var(--color-danger)}
+@media(max-width:1100px){.plan-nav{width:140px}.plan-filters{flex-wrap:wrap}.plan-filters form-input,.plan-filters form-select{width:150px}}
+.plan-table th:has([data-all]),.plan-table td:has([data-check]){width:40px;min-width:40px;padding-inline:12px}
+.plan-table td:has([data-detail]){white-space:nowrap}
+.plan-nav button:focus-visible{outline:2px solid var(--color-brand);outline-offset:2px}
+/* Align the first tab label with the first navigation item. */
+.plan-panel>task-status-tabs{padding-top:4px}
+
+.plan-nav button:disabled{color:#b8c2cc;background:transparent;cursor:not-allowed;opacity:.65}
+
+.plan-table .plan-props-summary{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2;max-width:360px;overflow:hidden;white-space:normal;overflow-wrap:anywhere;line-height:22px;text-overflow:ellipsis}
+
+.plan-panel .plan-table table.plan-package-table{table-layout:fixed}
+.plan-panel .plan-table .plan-package-table th{white-space:nowrap;overflow-wrap:normal}

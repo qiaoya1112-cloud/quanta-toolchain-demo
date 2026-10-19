@@ -1,0 +1,5 @@
+/* Shared catalog/detail layout, matching the dataset browser. */
+.two-column-layout{display:grid;grid-template-columns:260px minmax(0,1fr);gap:0;flex:1;min-height:0;overflow:hidden}
+.two-column-layout__sidebar{min-height:0;overflow:auto;padding-right:16px;border:0;border-right:1px solid color-mix(in srgb,var(--color-border,#d7e0e7) 55%,transparent);border-radius:0;background:transparent}
+.two-column-layout__main{display:flex;flex-direction:column;min-width:0;min-height:0;overflow:hidden;padding-left:16px}
+@media(max-width:1200px){.two-column-layout{grid-template-columns:220px minmax(0,1fr)}}

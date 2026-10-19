@@ -1,0 +1,94 @@
+.eval-lineage{display:flex;flex:1;min-height:0;flex-direction:column;background:#fff;overflow:hidden}
+.eval-lineage>task-page-header{padding:0 20px;border-bottom:1px solid var(--color-border)}
+.eval-lineage-layout{display:flex;flex:1;min-height:0}
+.eval-lineage-canvas{position:relative;flex:1;min-width:0;overflow:hidden;min-height:420px;background-color:#f8fafc;background-image:radial-gradient(#e2e8ef 1.5px,transparent 1.5px);background-size:24px 24px;touch-action:none;cursor:grab}
+.eval-lineage-world{position:absolute;transform-origin:0 0}
+.eval-lineage-world svg{position:absolute;inset:0;pointer-events:none}
+.eval-lineage-node{position:absolute;display:flex;align-items:center;gap:12px;width:260px;min-height:72px;padding:12px;text-align:left;background:#fff;border:1px solid var(--color-border);border-radius:14px;color:var(--color-text-primary);font:inherit;cursor:pointer}
+.eval-lineage-node.is-selected{border:1.4px solid #0095b6;box-shadow:0 0 0 3px #cceef4}
+.eval-lineage-node strong{display:block;font-size:13px;line-height:20px;overflow-wrap:anywhere}
+.eval-lineage-node small,.eval-lineage-inspector small{display:block;margin-top:4px;font-size:12px;color:var(--color-text-muted)}
+.eval-lineage-icon{display:grid;place-items:center;width:32px;height:32px;flex:none;border-radius:8px;background:var(--color-brand-soft);color:var(--color-brand);font-size:22px}
+.eval-lineage-inspector{width:320px;flex:none;background:#fff;border-left:1px solid var(--color-border);overflow:auto}
+.eval-lineage-inspector[hidden]{display:none}
+.eval-lineage-inspector header{display:flex;justify-content:space-between;gap:12px;padding:16px;border-bottom:1px solid var(--color-border);font-size:14px}
+.eval-lineage-inspector section{padding:16px}
+.eval-lineage-inspector h3{border-left:3px solid var(--color-brand);padding-left:10px;font-size:14px;margin:0 0 20px}
+.eval-lineage-inspector dl{margin:0;display:grid;gap:16px}
+.eval-lineage-inspector dt{font-size:12px;color:var(--color-text-secondary);margin-bottom:8px}
+.eval-lineage-inspector dd{margin:0;padding:8px 10px;background:var(--color-bg-surface-subtle);border:1px solid var(--color-border);border-radius:8px;font-size:13px;overflow-wrap:anywhere}
+.eval-lineage-tools{position:absolute;right:16px;bottom:16px;display:flex;align-items:center;gap:8px;background:#fff;border:1px solid var(--color-border);padding:6px;border-radius:10px}
+.eval-lineage-tools output{min-width:44px;text-align:center;font-size:12px}
+.eval-lineage-note{position:absolute;left:16px;top:8px;font-size:12px;color:var(--color-text-muted);pointer-events:none}
+@media(max-width:1000px){.eval-lineage-inspector{width:260px}}
+
+/* Lineage is a full content-area canvas, without the list page inset. */
+.process-page__main:has(.eval-lineage){padding:0;gap:0}
+.eval-lineage>task-page-header{padding:0 24px}
+.eval-lineage-locate{display:flex;align-items:center;gap:12px;padding:12px 24px;margin:0;border-bottom:1px solid var(--color-border);flex:none;font-size:13px}
+.eval-lineage-locate label{white-space:nowrap;color:var(--color-text-secondary)}
+.eval-lineage-locate select,.eval-lineage-locate input{height:34px;border:1px solid var(--color-border);border-radius:6px;background:#fff;color:var(--color-text-primary);padding:0 12px;font:inherit;min-width:0}
+.eval-lineage-locate select{width:180px}.eval-lineage-locate input{flex:1}.eval-lineage-locate [role=status]:empty{display:none}
+.eval-lineage-locate [role=status]{color:#c34b37}
+.eval-lineage-canvas{min-height:0;background-size:20px 20px;background-image:radial-gradient(#dce5ed 1px,transparent 1px)}
+.eval-lineage-world svg path{fill:none;stroke:#ccd6df;stroke-width:1.5}
+.eval-lineage-column{position:absolute;top:12px;width:310px;text-align:center;font-size:14px;color:#526478;margin:0}
+.eval-lineage-node{display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:7px;width:310px;min-height:0;padding:14px 16px;border-radius:14px;box-shadow:0 2px 6px #172b4008}
+.eval-lineage-node strong{font-size:13px;line-height:20px}.eval-lineage-node small{margin:0;font-size:12px}
+.eval-lineage-node.is-current{background:#effafd;border:1.4px solid #0095b6;box-shadow:0 0 0 3px #cceef4}
+.eval-lineage-tag{font-size:10px;font-weight:600;line-height:18px;padding:0 6px;border:1px solid #c1e9ee;border-radius:3px;background:#eaf8fa;color:#0097a7}
+.eval-lineage-tag.tag-dagger{background:#fff7ea;border-color:#ffe1af;color:#dd8500}.eval-lineage-tag.tag-test{background:#eff4ff;border-color:#d4e1ff;color:#4e7cfe}
+.eval-lineage-current{position:absolute;top:-9px;left:12px;background:#009bb7;color:#fff;border-radius:3px;padding:2px 6px;font-size:10px}
+.eval-lineage-legend{position:absolute;z-index:2;top:16px;left:16px;border:1px solid var(--color-border);border-radius:8px;background:#fff;box-shadow:0 3px 10px #172b4008;font-size:12px;color:#62768b}
+.eval-lineage-legend summary{cursor:pointer;padding:10px 12px}.eval-lineage-legend>div{border-top:1px solid #eff2f5;padding:10px 12px;display:flex;gap:12px}
+.eval-lineage-legend span:before{content:'';display:inline-block;width:8px;height:8px;border:1px solid #dce5ed;margin-right:6px}.eval-lineage-legend .current-key:before{border:2px solid #009bb7;background:#effafd}
+.eval-lineage-tools{padding:0;gap:0;border-radius:8px;overflow:hidden}.eval-lineage-tools button{height:34px;padding:0 14px;background:white;border:0;border-left:1px solid #edf1f5;color:#496477;cursor:pointer;font:inherit;font-size:12px}.eval-lineage-tools output{padding:0 8px}
+.eval-lineage-hint{position:absolute;bottom:16px;left:50%;transform:translateX(-50%);margin:0;padding:7px 10px;border:1px solid #e5edf3;border-radius:6px;background:#ffffffdd;color:#7b8e9b;font-size:11px;pointer-events:none;white-space:nowrap}
+@media(max-width:1100px){.eval-lineage-hint{left:16px;transform:none;max-width:45%;white-space:normal}.eval-lineage-locate{padding:12px 16px}.eval-lineage-locate select{width:120px}}
+
+/* Match the process editor's compact floating canvas controls. */
+.eval-lineage-toolbar{position:absolute;left:16px;bottom:16px;display:flex;align-items:center;gap:4px;padding:4px;height:40px;box-sizing:border-box;background:#fff;border:1px solid var(--color-border,#d7e0e7);border-radius:12px;z-index:3}
+.eval-lineage-toolbar button,.eval-lineage-tools button{display:grid;place-items:center;width:28px;height:30px;padding:0;border:0;border-radius:6px;background:transparent;cursor:pointer;color:#7390a2}
+.eval-lineage-toolbar button:hover,.eval-lineage-tools button:hover{background:#eff7fa}.eval-lineage-toolbar button.active{color:#008ba8;background:#e6f6fa}.eval-lineage-toolbar button.active img{filter:none}
+.eval-lineage-toolbar button:disabled{opacity:.4;cursor:default}.eval-lineage-toolbar img,.eval-lineage-tools img{width:16px;height:16px}.eval-lineage-toolbar svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.eval-lineage-toolbar>span{height:20px;border-left:1px solid #e1e8ee;margin:0 5px}
+.eval-lineage-tools{height:41px;padding:4px;box-sizing:border-box;gap:4px;border-radius:12px;z-index:3}.eval-lineage-tools output{width:48px;min-width:0;padding:0;font:600 12px/18px 'JetBrains Mono',monospace;color:#172b40}
+.eval-lineage-minimap{position:absolute;right:16px;bottom:68px;width:176px;height:112px;box-sizing:border-box;padding:18px;border:1px solid #e1e6ed;border-radius:12px;background:#eaebf0;cursor:pointer;z-index:3}.eval-lineage-minimap svg{display:block;width:100%;height:100%;background:#fcfcfd}.eval-lineage-minimap[hidden]{display:none}
+
+/* Use the workflow node inspector's width and spacing. */
+.eval-lineage-inspector{width:360px;max-width:calc(100vw - 24px);box-sizing:border-box;display:flex;flex-direction:column;min-height:0;overflow:hidden;color:#0f1d24;border-color:#e2e9ee}
+.eval-lineage-inspector header{box-sizing:border-box;height:64px;min-height:64px;flex:none;align-items:center;gap:12px;padding:0 12px;border-color:#e2e9ee}
+.eval-lineage-panel-icon{width:40px;height:40px;flex:0 0 40px;display:grid;place-items:center;border-radius:10px;background:#e6f1f9}.eval-lineage-panel-icon img{width:20px;height:20px}
+.eval-lineage-panel-title{flex:1;min-width:0}.eval-lineage-panel-title strong{display:block;font-size:16px;line-height:22px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.eval-lineage-panel-title small{margin:2px 0 0;font-size:12px;line-height:18px;color:#6e8795}
+.eval-lineage-panel-actions{display:flex;gap:8px;flex:none}.eval-lineage-panel-actions button{display:grid;place-items:center;width:24px;height:24px;padding:2px;border:0;border-radius:5px;background:transparent;color:#6e8795;cursor:pointer}.eval-lineage-panel-actions button:hover{background:#edf1f3}.eval-lineage-panel-actions svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.eval-lineage-inspector section{padding:16px 12px;overflow:auto;min-height:0;flex:1}.eval-lineage-inspector h3{margin:0 0 12px;border-left:3px solid #0095b6;padding-left:10px;font-size:14px;line-height:20px;font-weight:600;color:#0f1d24}
+.eval-lineage-inspector dl{gap:12px}.eval-lineage-inspector dt{font-size:12px;line-height:18px;color:#456170;margin-bottom:8px}.eval-lineage-inspector dd{box-sizing:border-box;min-height:32px;padding:5px 10px;border:1px solid #e2e9ee;border-radius:8px;background:#f5f7f8;color:#456170;font-size:13px;line-height:20px}
+@media(max-width:1200px){.eval-lineage-inspector{width:320px}}@media(max-width:700px){.eval-lineage-inspector{width:300px}}
+
+/* Hover actions remain reachable from the card and by keyboard. */
+.eval-lineage-node-wrap{position:absolute;overflow:visible}
+.eval-lineage-node-wrap:hover,.eval-lineage-node-wrap:focus-within{z-index:4}
+.eval-lineage-node-actions{position:absolute;right:10px;bottom:10px;display:flex;gap:4px;padding:4px;border:1px solid #edf1f5;border-radius:10px;background:#fff;box-shadow:0 3px 12px #172b4014;opacity:0;visibility:hidden;pointer-events:none;transition:opacity .12s}
+.eval-lineage-node-wrap:hover .eval-lineage-node-actions,.eval-lineage-node-wrap:focus-within .eval-lineage-node-actions{opacity:1;visibility:visible;pointer-events:auto}
+.eval-lineage-node-actions button{position:relative;display:grid;place-items:center;width:28px;height:28px;padding:5px;border:1px solid #e2e9ee;border-radius:6px;background:#fff;color:#6e8795;cursor:pointer;box-shadow:0 1px 4px #172b400a}
+.eval-lineage-node-actions svg{position:static;width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;pointer-events:none}
+.eval-lineage-node-actions button:hover,.eval-lineage-node-actions button:focus-visible{background:#e6f6fa;border-color:#0095b6;color:#0095b6;outline:none}
+.eval-lineage-node-actions button[data-relation]:hover,.eval-lineage-node-actions button[data-relation]:focus-visible{background:#0095b6;color:#fff}
+.eval-lineage-node-actions button:is(:hover,:focus-visible)::before{content:attr(data-tooltip);position:absolute;bottom:calc(100% + 10px);left:50%;transform:translateX(-50%);white-space:nowrap;background:#191b1d;color:#fff;border-radius:7px;padding:8px 12px;font:13px/20px sans-serif;pointer-events:none}
+.eval-lineage-node-actions button:is(:hover,:focus-visible)::after{content:'';position:absolute;bottom:calc(100% + 4px);left:50%;transform:translateX(-50%);border:6px solid transparent;border-bottom:0;border-top-color:#191b1d;pointer-events:none}
+.eval-lineage-node.is-relation-focus{border-color:#0095b6;box-shadow:0 0 0 3px #cceef4}
+.eval-lineage-world>svg>path.is-related{stroke:#0095b6;stroke-width:2}.eval-lineage-node-wrap.is-unrelated,.eval-lineage-world>svg>path.is-unrelated{opacity:.3}
+@media(hover:none){.eval-lineage-node-actions{opacity:1;visibility:visible;pointer-events:auto}}
+
+.eval-lineage-topbar{display:flex;align-items:center;gap:28px;flex:none;min-height:64px;padding:0 24px;border-bottom:1px solid var(--color-border);background:#fff;box-sizing:border-box}
+.eval-lineage-topbar>task-page-header{flex:none;padding:0;border:0}
+.eval-lineage-topbar .eval-lineage-locate{flex:1;min-width:0;border:0;padding:0;gap:12px}
+.eval-lineage-topbar .eval-lineage-locate select{width:160px;flex:none}
+.eval-lineage-topbar .eval-lineage-locate input{width:0;min-width:80px}
+@media(max-width:900px){.eval-lineage-topbar{gap:16px;padding:0 16px}.eval-lineage-topbar .eval-lineage-locate select{width:110px}.eval-lineage-topbar .eval-lineage-locate label{display:none}}
+
+.eval-lineage-topbar .eval-lineage-locate>form-select{display:block;flex:0 0 160px;min-width:0}
+.eval-lineage-locate>form-select .form-input{margin:0}
+.eval-lineage-locate>form-select .form-input__label{position:absolute;width:1px;height:1px;padding:0;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+.eval-lineage-locate>form-select .form-select__trigger{height:34px;font-size:13px;box-sizing:border-box}
+@media(max-width:900px){.eval-lineage-topbar .eval-lineage-locate>form-select{flex-basis:110px}}

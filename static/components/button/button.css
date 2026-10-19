@@ -1,0 +1,40 @@
+@import url('../brand-tokens.css');
+/* Workflow action button variant. */
+process-actions{display:block;font-family:Inter,-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif}
+.process-actions{display:flex;align-items:center;gap:8px}
+.process-actions__button{height:38px;display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:0 14px;border:1px solid #c8d5e6;border-radius:10px;background:#fff;color:#405b68;line-height:20px;font-family:inherit;font-size:14px;font-weight:400;white-space:nowrap;cursor:pointer;box-sizing:border-box}
+.process-actions__button img,.process-actions__button svg{width:16px;height:16px;flex:none}
+.process-actions__button--primary{height:36px;background:var(--color-brand,var(--brand-primary));border-color:var(--color-brand,var(--brand-primary));color:#fff}
+.process-actions__button--icon{width:36px;height:36px;padding:0}
+.process-actions__button:hover{filter:brightness(.96)}
+.process-actions__button:focus-visible{outline:2px solid var(--color-brand,var(--brand-primary));outline-offset:3px}
+.process-actions__button:disabled{opacity:.45;cursor:not-allowed}
+.process-actions__button:active:not(:disabled){filter:brightness(.9)}
+text-button{display:inline-flex;vertical-align:middle}
+text-button .text-button{gap:6px}
+.text-button svg{width:16px;height:16px;flex:none;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.text-button{--button-bg:#fff;--button-fg:#405b68;--button-border:#c8d5e6;--button-hover:#f1f6f8;--button-active:#e2edf2;display:inline-flex;align-items:center;justify-content:center;min-width:76px;height:38px;padding:0 16px;border:1px solid var(--button-border);border-radius:var(--button-radius,10px);background:var(--button-bg);color:var(--button-fg);font:400 14px/20px Inter,-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;cursor:pointer;box-sizing:border-box;transition:background-color .15s,border-color .15s}
+.text-button--primary{--button-bg:var(--color-brand,var(--brand-primary));--button-fg:#fff;--button-border:transparent;--button-hover:var(--color-brand-hover,var(--brand-hover));--button-active:var(--brand-active)}
+.text-button--secondary{--button-bg:var(--color-brand-soft,var(--brand-soft));--button-fg:var(--color-brand-hover,var(--brand-hover));--button-border:transparent;--button-hover:var(--color-brand-selected,var(--brand-selected));--button-active:var(--color-brand-selected,var(--brand-selected))}
+.text-button--text{--button-bg:transparent;--button-fg:var(--color-brand,var(--brand-primary));--button-border:transparent;--button-hover:transparent;--button-active:transparent}
+.text-button--danger{--button-bg:#fff;--button-fg:#ce4051;--button-border:#efc7cd;--button-hover:#fff0f2;--button-active:#f9dde2}
+.text-button:hover:not(:disabled),text-button[data-preview-state="hover"] .text-button{background:var(--button-hover)}
+.text-button:active:not(:disabled),text-button[data-preview-state="active"] .text-button{background:var(--button-active)}
+.text-button:focus-visible{outline:2px solid var(--color-brand,var(--brand-primary));outline-offset:3px}
+.text-button:disabled{opacity:.45;cursor:not-allowed}
+.text-button--text:hover:not(:disabled),text-button[data-preview-state="hover"] .text-button--text{color:var(--color-brand-hover,var(--brand-hover))}
+.text-button--text:active:not(:disabled),text-button[data-preview-state="active"] .text-button--text{color:var(--brand-active)}
+
+/* Reusable atomic actions for forms. */
+text-button.form-add-action .text-button{min-width:0;height:28px;min-height:28px;padding:4px 0;border:0;font-size:12px;line-height:12px;font-weight:400;justify-content:flex-start}
+text-button.form-delete-action .text-button{width:24px;min-width:24px;height:24px;padding:0;border:0;color:var(--color-text-muted,#70849a);width:24px;min-width:24px;min-height:24px}
+
+/* Dark and blue skins share the application theme tokens. */
+html[data-theme="dark"] .text-button--outline{--button-bg:var(--color-bg-surface);--button-fg:var(--color-text-primary);--button-border:var(--color-border-strong);--button-hover:color-mix(in srgb,var(--color-bg-surface) 88%,white);--button-active:color-mix(in srgb,var(--color-bg-surface) 80%,white)}
+html[data-theme="dark"] .text-button--primary{--button-fg:var(--color-text-inverse);--button-active:color-mix(in srgb,var(--color-brand) 75%,black)}
+html[data-theme="dark"] .text-button--secondary{--button-fg:var(--color-brand);--button-hover:color-mix(in srgb,var(--color-brand) 20%,var(--color-bg-surface));--button-active:color-mix(in srgb,var(--color-brand) 30%,var(--color-bg-surface))}
+html[data-theme="dark"] .text-button--danger{--button-bg:transparent;--button-fg:var(--color-danger,#e7535d);--button-border:color-mix(in srgb,var(--color-danger,#e7535d) 45%,transparent);--button-hover:color-mix(in srgb,var(--color-danger,#e7535d) 14%,var(--color-bg-surface));--button-active:color-mix(in srgb,var(--color-danger,#e7535d) 24%,var(--color-bg-surface))}
+
+/* Compact icon buttons share the same sizing across dialogs. */
+text-button[icon-only] .text-button{min-width:32px;width:32px;height:32px;padding:0;border-radius:6px}
+text-button[icon-only][icon="close"][variant="text"] .text-button{--button-fg:var(--color-text-muted,#70849a);--button-hover:var(--color-bg-hover,#f1f6f8);--button-active:var(--color-bg-surface-subtle,#e2edf2)}

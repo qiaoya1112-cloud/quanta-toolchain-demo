@@ -1,0 +1,40 @@
+task-page-header{display:block;flex-shrink:0;--task-page-content-edge:0px}.task-page-header{height:54px;display:flex;align-items:center;justify-content:space-between;padding:0 var(--task-page-content-edge);border-bottom:0;background:#fff;box-sizing:border-box;font-family:Inter,-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif}.task-page-header h1{margin:0;color:#333;font-size:20px;font-weight:600;line-height:26px}html[data-theme=dark] .task-page-header{border-color:#263340;background:#10161d}html[data-theme=dark] .task-page-header h1{color:#e8eef5}
+.task-page-header__actions{display:flex;align-items:center;gap:12px;--button-radius:10px}
+.task-page-header__action--with-icon{display:inline-flex;align-items:center;justify-content:center;gap:8px}
+.task-page-header--with-filter{justify-content:flex-start;gap:16px}
+.task-page-header--with-filter>.task-page-header__action,.task-page-header--with-filter>.task-page-header__actions{margin-left:auto}
+.task-page-header__filter{display:block;width:132px;flex:0 0 132px}
+.task-page-header__filter .form-input{position:relative;margin:0}
+.task-page-header__filter .form-input__label{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap;border:0}
+.task-page-header__filter .form-select__trigger{height:28px;padding-left:12px;padding-right:28px;font-size:12px;font-weight:400;color:var(--color-text-primary,#172B40);border-color:var(--color-border,#d7e0e7);background-color:transparent}
+
+.task-page-header--with-description{gap:16px}
+.task-page-header__content{min-width:0;flex:1}
+.task-page-header__title-row{display:flex;align-items:center;flex-wrap:wrap;gap:12px}
+.task-page-header--with-description h1{color:var(--color-text-primary,#172B40)}
+.task-page-header__subtitle{color:var(--color-text-muted,#70849A);font-size:12px;line-height:20px}
+.task-page-header__description{margin:4px 0 0;color:var(--color-text-muted,#70849A);font-size:12px;line-height:22px}
+.task-page-header--with-description>.task-page-header__action{flex-shrink:0}
+
+.task-page-header--with-back{justify-content:flex-start;gap:8px}
+.task-page-header__back{flex:0 0 14px;margin:0}
+.task-page-header__back .text-button{width:14px;min-width:14px;height:32px;margin:0;padding:0;border:0;gap:0;justify-content:flex-start;color:var(--color-text-primary)}
+.task-page-header__back .text-button svg{width:18px;height:18px;stroke-width:2.8;transform:translateX(-5px)}
+.task-page-header__status{margin-left:auto;flex-shrink:0}
+.task-page-header__status[hidden]{display:none}
+
+/* Descriptive headers grow with wrapped titles and filters. */
+.task-page-header--with-description{height:auto;min-height:54px;padding-top:12px;padding-bottom:12px}
+.task-page-header .task-page-header__status[hidden]{display:none!important}
+
+/* Page actions consistently align to the trailing edge. */
+.task-page-header>.task-page-header__action,
+.task-page-header>.task-page-header__actions{margin-left:auto;flex-shrink:0}
+
+/* Compact column headings reuse the page-header action and event API. */
+task-page-header[variant="section"] .task-page-header h1{font-size:14px;line-height:20px}
+
+.task-page-header--with-status{justify-content:flex-start;gap:12px}
+.task-page-header--with-status .task-page-header__status{margin-left:0}
+
+task-page-header[appearance="plain"] .task-page-header{background:transparent;border:0}

@@ -1,0 +1,11 @@
+/* Shared header appearance for component tables and custom business tables. */
+:is(.task-data-table, .todo-table) thead th {
+  background: #f3f6f9;
+  color:var(--color-text-primary,#0f1d24);
+  font-weight: 600;
+  text-align: left;
+}
+html[data-theme="dark"] :is(.task-data-table, .todo-table) thead th {
+  background: #141c25;
+  color:var(--color-text-primary,#e8eef5);
+}

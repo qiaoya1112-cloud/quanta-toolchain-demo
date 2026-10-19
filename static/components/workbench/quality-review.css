@@ -1,0 +1,796 @@
+:root{--quality-tone-default:var(--color-text-primary,#dfe7f0);--quality-tone-blue:#7cbbff;--quality-tone-purple:#ba94ed;--quality-tone-orange:var(--color-severity-mistake,#F08D4A);--quality-tone-red:var(--color-severity-failure,#F04A69)}
+html[data-theme=light]{--quality-tone-default:#4d75a3;--quality-tone-blue:#2878c7;--quality-tone-purple:#8752bf;--quality-tone-orange:#bc601b;--quality-tone-red:#d52d53}
+/* Scoped to the quality workflow; existing themes and controls stay shared. */
+.quality-review-editor[hidden]{display:none!important}
+.quality-review-editor{flex:none;min-width:0}
+.quality-review-track .segmented-timeline__range{margin-top:18px}
+.quality-review-track .segmented-timeline__range-label{display:block}
+.quality-review-track .segmented-timeline__range-fragment{display:none}
+.quality-lanes{margin-top:12px;display:grid;gap:4px}
+.quality-lane{position:relative;height:14px;box-sizing:border-box;border:1px solid var(--line);border-radius:3px;background:transparent}
+.quality-lane>span{position:absolute;right:calc(100% + 7px);white-space:nowrap;color:var(--muted);font-size:10px;line-height:12px}
+.quality-fragment{position:absolute;top:1px;height:10px;box-sizing:border-box;min-width:4px;padding:0;border:1px solid var(--quality-color);border-radius:3px;background:color-mix(in srgb,var(--quality-color) 35%,var(--panel));cursor:pointer}
+.mistake{--quality-color:var(--workbench-severity-minor)}
+.failure{--quality-color:var(--workbench-severity-severe)}
+.quality-fragment.incomplete{border-style:dashed}
+.quality-fragment.selected{outline:none;background:color-mix(in srgb,var(--quality-color) 75%,var(--panel));box-shadow:0 0 0 1px rgba(255,255,255,.68)}
+.quality-fragment:hover{filter:brightness(1.2)}
+.quality-required{color:var(--flat-list-muted);font-size:13px}
+.quality-review-editor .segment-meta{flex-wrap:wrap;gap:10px}
+.quality-review-editor input[type=number]{width:76px;padding:4px 6px;border:1px solid var(--line);border-radius:5px;background:var(--panel);color:var(--text)}
+.quality-types{display:flex;gap:4px}
+.quality-types button{padding:7px 12px;border:1px solid var(--line);border-radius:5px;background:var(--panel);color:var(--muted);cursor:pointer;white-space:nowrap}
+.quality-types button[aria-pressed=true]{color:var(--quality-color);border-color:var(--quality-color);background:color-mix(in srgb,var(--quality-color) 15%,var(--panel))}
+.quality-reasons{position:relative;flex:1;min-width:0}
+.quality-reasons summary{cursor:pointer;list-style:none;display:flex;justify-content:space-between;gap:12px;min-height:36px}
+.quality-reasons summary::-webkit-details-marker{display:none}
+.quality-reason-popover{position:absolute;bottom:calc(100% + 8px);right:0;z-index:30;width:min(340px,75vw);max-height:50vh;overflow:auto;padding:12px;background:var(--panel-2);border:1px solid var(--line);border-radius:8px;box-shadow:0 10px 30px #0005}
+.quality-reason-popover fieldset{border:0;padding:4px 0 12px;margin:0}
+.quality-reason-popover legend{font-weight:600;font-size:12px;padding:4px 0}
+.quality-reason-popover legend small{margin-left:12px;color:var(--warn)}
+.quality-reason-popover label{display:flex;align-items:center;gap:10px;padding:8px 0;font-size:12px;color:var(--text)}
+.quality-reason-popover input{accent-color:var(--cyan)}
+.quality-summary,.quality-feedback{font-size:11px;color:var(--muted);padding:8px 12px;margin:0}
+.quality-feedback:empty{display:none}
+[data-conclusion]{padding:8px 16px;border:1px solid currentColor;border-radius:6px;color:var(--quality-color);flex:1;text-align:center}
+.quality-empty{color:var(--muted);padding:20px;font-size:13px}
+.quality-review-editor button:disabled{opacity:.4;cursor:default}
+:is([data-pretraining-actions],[data-posttraining-review-actions]) [aria-disabled=true]{opacity:.5}
+.quality-review-editor .form-row{flex-wrap:wrap}
+.quality-review-editor .quality-reasons{min-width:200px}
+.quality-review-track .segmented-timeline__playhead{pointer-events:auto}
+.quality-review-track .segmented-timeline__range-selection{background:var(--green);border-color:var(--green);border-radius:6px}
+
+:is([data-pretraining-list],[data-posttraining-review-list]){flex:1;min-height:0;overflow:hidden}
+:is([data-pretraining-list],[data-posttraining-review-list])[hidden]{display:none!important}
+/* Match the original thin range track, keeping the three issue lanes below. */
+.quality-review-track .segmented-timeline__range-rail{height:10px;border-radius:4px;background:transparent}
+.quality-review-track .segmented-timeline__range-selection{top:1px;height:6px;border:0;border-radius:4px;background:#b8ee4f}
+.quality-review-track .segmented-timeline__range-handle{top:-8px;width:0;height:0;padding:0;border:0;border-left:6px solid transparent;border-right:6px solid transparent;border-top:8px solid #f0bd4d;border-radius:0;background:none;transform:translateX(-50%)}
+.quality-review-track .segmented-timeline__range-handle::after{top:-15px;left:-10px;width:20px;height:24px}
+/* Balance the space above issue lanes and below them before the toolbar. */
+.quality-review-track .quality-lanes{margin-top:4px}
+/* Reserve a full toolbar row instead of offsetting it against fixed body height. */
+
+/* Use semantic annotation's natural height, 2px toolbar gap and 8px bottom inset. */
+.quality-review-track .segmented-timeline--quality{height:auto;display:block;padding:3px 10px 8px}
+.quality-review-track .segmented-timeline__body{display:flow-root;height:auto;padding-left:40px}
+.quality-review-track timeline-controls{display:block}
+.quality-review-track .segmented-timeline__tools{top:auto;height:28px;margin-top:2px}
+.media-timeline-group>.timeline-card.is-pretraining-mode{flex:0 0 auto}
+
+:is([data-pretraining-list],[data-posttraining-review-list]){width:100%;height:auto;max-height:none}
+:is([data-pretraining-list],[data-posttraining-review-list]) .workbench-flat-list__body{height:calc(100% - 36px);overflow:auto}
+.workbench-review-count{margin-left:auto;font-size:11px;color:var(--flat-list-muted);font-weight:400}
+.workbench-review-kind{white-space:nowrap;font-size:12px;font-weight:500}
+:is([data-pretraining-actions],[data-posttraining-review-actions]) [data-conclusion]{color:var(--conclusion-text);height:36px;padding:8px 10px;border:1px solid var(--conclusion-border);border-radius:8px;background:var(--conclusion-control);font:400 13px/19.5px Inter,sans-serif}
+
+/* Hydrate the shared editor shell so its theme tokens, rows and fields apply. */
+workbench-segment-editor.quality-review-editor .form-card{height:auto;min-height:136px;overflow:visible}
+workbench-segment-editor.quality-review-editor .quality-reasons summary{min-height:32px}
+workbench-segment-editor.quality-review-editor .quality-types button{height:30px;padding:0 10px;font-size:12px;font-weight:500;line-height:1;border-radius:6px}
+workbench-segment-editor.quality-review-editor input[type=number]{height:28px;border-color:var(--editor-border,#304256);background:var(--editor-input,#0f1720);color:var(--editor-text,#fff);font:400 12px/18px monospace}
+
+.quality-review-editor .quality-reasons summary>img{display:block;flex:none;width:14px;height:14px}
+.quality-review-editor .quality-reasons[open]>summary{border-color:var(--cyan)}
+
+/* Reuse the error selector's option rows and theme-aware panel. */
+workbench-segment-editor .quality-reason-popover.error-popover{position:absolute;left:0;right:0;bottom:calc(100% + 8px);top:auto;width:100%;max-height:45vh;overflow:auto;padding:8px;scrollbar-width:thin;scrollbar-color:#435568 transparent}
+workbench-segment-editor .quality-reason-popover label.error-option{position:relative;gap:8px;padding:0 9px;margin:3px 0;font-weight:400}
+workbench-segment-editor .quality-reason-popover label.error-option input{position:absolute;width:1px;height:1px;opacity:0}
+workbench-segment-editor .quality-reason-popover label.error-option:has(input:focus-visible){outline:1px solid var(--reason-color,var(--cyan));outline-offset:-1px}
+workbench-segment-editor .quality-reason-popover legend{padding:6px 9px;font-size:12px;font-weight:400;color:var(--muted)}
+
+workbench-segment-editor.quality-review-editor .segment-meta>.segment-current{margin-right:0}
+
+:is([data-pretraining-list],[data-posttraining-review-list]) .workbench-review-kind{display:inline-flex;align-items:center;gap:6px}
+:is([data-pretraining-list],[data-posttraining-review-list]) .workbench-review-kind::before{content:"";width:6px;height:6px;flex:0 0 6px;border-radius:50%;background:currentColor}
+:is([data-pretraining-list],[data-posttraining-review-list]) .workbench-flat-list__content,:is([data-pretraining-list],[data-posttraining-review-list]) .workbench-annotation-list__description{text-align:left}
+:is([data-pretraining-list],[data-posttraining-review-list]) .workbench-annotation-list__tag{white-space:normal;overflow-wrap:anywhere}
+:is([data-pretraining-actions],[data-posttraining-review-actions]) .quality-summary{padding:6px 12px 2px}
+:is([data-pretraining-actions],[data-posttraining-review-actions]) .workbench-quality-conclusion{height:48px;padding:4px 12px 8px}
+
+/* Category colors distinguish the two reason groups and their selected options. */
+.quality-reason-popover [data-reason-section=mistakes]{--reason-color:var(--workbench-severity-minor)}
+.quality-reason-popover [data-reason-section=failures]{--reason-color:var(--workbench-severity-severe)}
+workbench-segment-editor .quality-reason-popover [data-reason-section]+[data-reason-section]{border-top:1px solid var(--line);margin-top:8px;padding-top:12px}
+workbench-segment-editor .quality-reason-popover [data-reason-section] legend{color:var(--reason-color);font-size:14px;font-weight:600}
+workbench-segment-editor .quality-reason-popover [data-reason-section] legend small{display:inline-block;margin-left:8px;padding:0;border:0;border-radius:0;background:transparent;color:var(--color-text-muted,#91ACC7);font-size:11px;font-weight:400}
+
+/* Selection and hover emphasize text rather than filling the option row. */
+workbench-segment-editor.quality-review-editor .quality-reason-popover .error-option.is-selected{background:transparent;color:var(--cyan)}
+workbench-segment-editor.quality-review-editor .quality-reason-popover .error-option:hover{background:var(--color-bg-hover,#202c38)}
+workbench-segment-editor.quality-review-editor .quality-reason-popover .error-option span{color:inherit}
+
+/* Stack failure and mistake reasons when both groups are present. */
+workbench-segment-editor .quality-reason-popover:has(>[data-reason-section=failures]){display:grid;grid-template-columns:minmax(0,1fr);column-gap:0;align-items:start}
+workbench-segment-editor .quality-reason-popover:has(>[data-reason-section=failures])>[data-reason-section]{min-width:0;margin:0;padding:4px 0 12px}
+workbench-segment-editor .quality-reason-popover:has(>[data-reason-section=failures])>[data-reason-section]+[data-reason-section]{border-top:1px solid var(--line);border-left:0;padding-left:0}
+workbench-segment-editor .quality-reason-popover:has(>[data-reason-section=failures])>.error-popover__clear{grid-column:1/-1}
+
+/* Each reason column scrolls independently beneath its fixed heading. */
+workbench-segment-editor .quality-reason-popover:has(>[data-reason-section]){overflow:hidden}
+workbench-segment-editor .quality-reason-popover .quality-reason-options{height:min(240px,calc(45vh - 100px));min-height:0;overflow-y:auto;overscroll-behavior:contain;scrollbar-gutter:stable;scrollbar-width:thin;scrollbar-color:#435568 transparent}
+
+/* Shared hover treatment remains visible on both selected and unselected rows. */
+workbench-segment-editor.quality-review-editor .quality-reason-popover .error-option:hover{background:color-mix(in srgb,var(--cyan) 18%,transparent)}
+workbench-segment-editor .quality-reason-popover:has(>[data-reason-section]){padding-left:0;padding-right:0;column-gap:0}
+workbench-segment-editor .quality-reason-popover:has(>[data-reason-section=failures])>[data-reason-section]+[data-reason-section]{padding-left:0}
+workbench-segment-editor .quality-reason-popover [data-reason-section] legend{padding-left:12px}
+workbench-segment-editor .quality-reason-popover .quality-reason-options{scrollbar-gutter:auto}
+workbench-segment-editor .quality-reason-popover label.error-option{margin:3px 4px;padding:0 9px}
+.quality-reason-tags{display:flex;flex:1;min-width:0;flex-wrap:wrap;gap:4px}
+.quality-reason-tag{display:inline-flex;align-items:center;gap:4px;max-width:100%;padding:0 6px;border-radius:5px;background:var(--color-bg-surface-raised,#202d3a);color:var(--color-text-secondary,var(--text));font-size:10px;line-height:22px}
+workbench-segment-editor .quality-reason-tag button,workbench-segment-editor .quality-reasons-clear{display:inline-flex;align-items:center;justify-content:center;flex:none;width:18px;height:20px;padding:0;border:0;border-radius:3px;background:transparent;color:inherit;font-size:12px;cursor:pointer}
+workbench-segment-editor .quality-reason-tag button:hover,workbench-segment-editor .quality-reasons-clear:hover{background:color-mix(in srgb,var(--cyan) 20%,transparent);color:var(--cyan)}
+workbench-segment-editor.quality-review-editor .quality-reasons summary{height:32px;min-height:32px;box-sizing:border-box;align-items:center;padding-top:4px;padding-bottom:4px}
+
+.quality-reason-tags{flex-wrap:nowrap;align-items:center;overflow:hidden}
+.quality-reason-tag{flex:none;white-space:nowrap}
+.quality-reason-tags [hidden]{display:none!important}
+workbench-segment-editor .quality-reason-tags .quality-reasons-clear{height:22px;width:22px;padding:0;border-radius:5px;background:var(--color-bg-surface-raised,#202d3a);color:var(--color-text-secondary,var(--text))}
+
+workbench-segment-editor.quality-review-editor .quality-types button[aria-pressed=false],
+workbench-segment-editor.quality-review-editor .quality-reason-tag,
+workbench-segment-editor.quality-review-editor .quality-reason-tags .quality-reasons-clear{color:var(--editor-text)}
+
+/* Override theme hover selectors equally for checked and unchecked options. */
+workbench-segment-editor.quality-review-editor .quality-reason-popover [data-reason-section] label.error-option{background:transparent}
+workbench-segment-editor.quality-review-editor .quality-reason-popover [data-reason-section] label.error-option.is-selected{background:transparent;color:var(--cyan)}
+workbench-segment-editor.quality-review-editor .quality-reason-popover [data-reason-section] label.error-option:hover{background:color-mix(in srgb,var(--cyan) 18%,transparent)}
+workbench-segment-editor.quality-review-editor .quality-reason-popover [data-reason-section] label.error-option.is-selected:hover{background:color-mix(in srgb,var(--cyan) 18%,transparent);color:var(--cyan)}
+
+/* Light theme follows the shared error selector's neutral hover surface. */
+html[data-theme=light] workbench-segment-editor.quality-review-editor .quality-reason-popover .error-option:hover,
+html[data-theme=light] workbench-segment-editor.quality-review-editor .quality-reason-popover [data-reason-section] label.error-option:hover,
+html[data-theme=light] workbench-segment-editor.quality-review-editor .quality-reason-popover [data-reason-section] label.error-option.is-selected:hover{background:#f1f5f7}
+
+html :is([data-pretraining-actions],[data-posttraining-review-actions]).workbench-quality-actions,
+html :is([data-pretraining-actions],[data-posttraining-review-actions]) .workbench-quality-conclusion,
+html :is([data-pretraining-actions],[data-posttraining-review-actions]) .workbench-footer-actions{background:transparent;border-radius:0}
+
+:is([data-pretraining-list],[data-posttraining-review-list]) .workbench-flat-list{border-bottom-left-radius:0;border-bottom-right-radius:0}
+html[data-theme=light] :is([data-pretraining-actions],[data-posttraining-review-actions]).workbench-quality-actions,
+html[data-theme=light] :is([data-pretraining-actions],[data-posttraining-review-actions]) .workbench-quality-conclusion,
+html[data-theme=light] :is([data-pretraining-actions],[data-posttraining-review-actions]) .workbench-footer-actions{background:#fff}
+
+.quality-range-arrows{display:none;position:absolute;top:-12px;left:-19px;width:38px;color:#f0bd4d;font:700 18px/18px sans-serif;white-space:pre;pointer-events:none}
+workbench-quality-track.is-adjusting-range .segmented-timeline__range-handle{cursor:ew-resize;outline:none;border-top-color:#f0bd4d}
+workbench-quality-track.is-adjusting-range .segmented-timeline__range-handle .quality-range-arrows{display:block}
+workbench-quality-track.is-adjusting-range .segmented-timeline__range-handle:focus{filter:brightness(1.25)}
+
+.quality-draft{pointer-events:none;opacity:.8;border-style:dashed}
+
+.quality-create-boundary{display:none}
+workbench-quality-track.is-adjusting-range .segmented-timeline__range-label{visibility:hidden}
+workbench-quality-track.is-adjusting-range .quality-create-boundary{display:block;position:absolute;top:-15px;width:24px;height:22px;padding:0;border:0;background:transparent;cursor:ew-resize;touch-action:none;z-index:12}
+.quality-create-boundary.is-start{transform:translateX(-28px)}
+.quality-create-boundary.is-end{transform:translateX(4px)}
+.quality-create-boundary::before{content:"";display:block;width:0;height:0;margin:auto;border-top:5px solid transparent;border-bottom:5px solid transparent}
+.quality-create-boundary.is-start::before{border-right:7px solid var(--muted,#8fa9bf)}
+.quality-create-boundary.is-end::before{border-left:7px solid var(--muted,#8fa9bf)}
+.quality-create-boundary:hover{filter:brightness(1.2)}
+
+workbench-quality-track.is-adjusting-range.is-range-dragging .segmented-timeline__range-label{visibility:visible}
+workbench-quality-track.is-adjusting-range.is-range-dragging .quality-create-boundary{opacity:0;pointer-events:none}
+
+workbench-segment-editor.quality-review-editor .quality-reason-tag[data-reason-kind="mistakes"]{color:var(--workbench-severity-minor);background:color-mix(in srgb,var(--workbench-severity-minor) 16%,transparent)}
+workbench-segment-editor.quality-review-editor .quality-reason-tag[data-reason-kind="failures"]{color:var(--workbench-severity-severe);background:color-mix(in srgb,var(--workbench-severity-severe) 16%,transparent)}
+
+workbench-segment-editor.quality-review-editor .quality-reason-tag[data-reason-kind="mistakes"] button:hover{color:var(--workbench-severity-minor);background:color-mix(in srgb,var(--workbench-severity-minor) 20%,transparent)}
+workbench-segment-editor.quality-review-editor .quality-reason-tag[data-reason-kind="failures"] button:hover{color:var(--workbench-severity-severe);background:color-mix(in srgb,var(--workbench-severity-severe) 20%,transparent)}
+
+[data-no-error-reason] .workbench-annotation-list__reason-row,workbench-segment-editor[data-no-error-reason] .form-row--error{display:none}
+workbench-segment-editor.quality-review-editor[data-no-error-reason] .form-card{flex:0 0 auto;height:auto;min-height:0;gap:0;padding-bottom:0}
+workbench-segment-editor.quality-review-editor[data-no-error-reason] .form-row:not(.form-row--meta):not(.form-row--error){margin-bottom:0;padding-top:10px;padding-bottom:10px}
+
+workbench-segment-editor.quality-review-editor[data-no-error-reason]{margin-bottom:0;padding-bottom:0}
+
+/* Compare the original inspection with editable audit feedback. */
+workbench-segment-editor.quality-audit-editor .form-card{flex:0 0 auto;height:auto;min-height:0;padding-bottom:8px}
+.quality-audit-columns{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px}
+.quality-audit-original{min-width:0;padding-right:12px;border-right:1px solid var(--line)}
+.audit-original-heading{display:flex;align-items:center;gap:8px;min-height:32px;margin-bottom:4px;font-size:13px;font-weight:400;line-height:18px;color:var(--editor-muted)}
+.audit-original-tags{display:flex;align-items:center;flex-wrap:wrap;gap:4px;min-height:30px;padding:3px 0;border:0;border-radius:0;background:transparent;color:var(--editor-muted);box-sizing:border-box}
+.quality-audit-feedback{min-width:0;display:flex;flex-direction:column;gap:4px}
+workbench-segment-editor.quality-audit-editor .form-row:not(.form-row--meta){flex-wrap:nowrap;gap:8px}
+workbench-segment-editor.quality-audit-editor .quality-reasons{min-width:0;flex:1}
+.audit-status{display:inline-flex;align-items:center;justify-content:center;flex:none;padding:3px 9px;border-radius:4px;font-size:11px;line-height:18px}
+.audit-status.mistake{height:30px;box-sizing:border-box;padding:0 10px;border:1px solid var(--workbench-severity-minor);border-radius:6px;color:var(--workbench-severity-minor);background:color-mix(in srgb,var(--workbench-severity-minor) 15%,var(--panel));font-size:12px;font-weight:500;line-height:1}
+.audit-status.failure{height:30px;box-sizing:border-box;padding:0 10px;border:1px solid var(--workbench-severity-severe);border-radius:6px;color:var(--workbench-severity-severe);background:color-mix(in srgb,var(--workbench-severity-severe) 15%,var(--panel));font-size:12px;font-weight:500;line-height:1}
+.quality-audit-legend{display:flex;gap:8px;font-size:10px;color:var(--quality-tone-default)}
+.quality-audit-legend > span:nth-child(2){color:var(--quality-tone-purple)}
+.quality-audit-legend > span:nth-child(3){color:var(--quality-tone-blue)}
+workbench-segment-editor.quality-audit-editor .audit-tag,
+workbench-segment-editor.quality-audit-editor .audit-original-tags .quality-reason-tag{border:1px solid var(--tag-border);color:var(--tag-color);background:var(--tag-bg)}
+workbench-segment-editor.quality-audit-editor .audit-tag.is-removed{color:#ba94ed;border-color:#73549b;background:rgba(150,105,210,.17);text-decoration:line-through}
+workbench-segment-editor.quality-audit-editor .audit-tag.is-removed small{font-size:9px;text-decoration:none}
+workbench-segment-editor.quality-audit-editor .audit-tag.is-added{color:#7cbbff;border-color:#365f89;background:rgba(79,147,212,.17)}
+workbench-segment-editor.quality-audit-editor .audit-tag button:hover{color:inherit;background:rgba(255,255,255,.1)}
+.quality-audit-editor .quality-reason-tags{flex-wrap:nowrap;overflow-x:auto;overflow-y:hidden;white-space:nowrap;scrollbar-width:thin;scrollbar-color:var(--editor-border) transparent}
+workbench-segment-editor.quality-audit-editor .quality-reasons summary{height:auto;min-height:30px}
+:is([data-review-copy="posttraining-review"],[data-review-copy="rejection"],[data-review-copy="secondary-review"]) .workbench-flat-list__index{position:relative;overflow:visible}
+.quality-audit-alert{position:absolute;right:-5px;top:-5px;width:13px;height:13px;display:flex;align-items:center;justify-content:center;border-radius:50%;background:var(--quality-error-color);color:var(--panel,#061a29);font:bold 10px/1 sans-serif}
+
+/* Keep original and feedback tags on the same typography and sizing. */
+workbench-segment-editor.quality-audit-editor .quality-audit-columns .quality-reason-tag{font-size:11px;font-weight:400;line-height:22px;padding:0 6px;border-radius:5px;box-sizing:border-box}
+workbench-segment-editor.quality-audit-editor .audit-original-heading .field-label{color:var(--editor-muted)}
+
+/* Audit legend colors and comparison form text. */
+workbench-segment-editor.quality-audit-editor .form-card .form-row--meta .quality-audit-legend > span:first-child{color:var(--quality-tone-default)}
+workbench-segment-editor.quality-audit-editor .form-card .form-row--meta .quality-audit-legend > span:nth-child(2){color:var(--quality-tone-purple)}
+workbench-segment-editor.quality-audit-editor .form-card .form-row--meta .quality-audit-legend > span:nth-child(3){color:var(--quality-tone-blue)}
+workbench-segment-editor.quality-audit-editor .quality-audit-columns .field-label,
+workbench-segment-editor.quality-audit-editor .quality-audit-columns .audit-status,
+workbench-segment-editor.quality-audit-editor .quality-audit-columns .input-like,
+workbench-segment-editor.quality-audit-editor .quality-audit-columns .input-like>span,
+workbench-segment-editor.quality-audit-editor .quality-audit-columns .error-option{font-size:11px}
+
+/* Slim horizontal scrollbar for audit feedback tags. */
+@supports selector(::-webkit-scrollbar){
+  .quality-audit-editor .quality-reason-tags{scrollbar-width:auto;scrollbar-color:auto}
+  .quality-audit-editor .quality-reason-tags::-webkit-scrollbar{height:3px}
+  .quality-audit-editor .quality-reason-tags::-webkit-scrollbar-track{background:transparent}
+  .quality-audit-editor .quality-reason-tags::-webkit-scrollbar-thumb{background:var(--editor-border);border-radius:3px}
+}
+
+/* Keep the audit selector height stable when horizontal scrolling appears. */
+workbench-segment-editor.quality-audit-editor .quality-audit-feedback .quality-reasons:not(.quality-error-reasons)>summary{height:auto;min-height:32px;max-height:none;padding-top:3px;padding-bottom:3px;overflow:visible}
+workbench-segment-editor.quality-audit-editor .quality-audit-feedback .quality-reason-tags{height:auto;min-height:24px;box-sizing:border-box;align-items:center}
+
+.quality-fragment .quality-audit-alert--timeline{width:9px;height:9px;font-size:7px;border:0;box-sizing:border-box;left:0;right:auto;top:50%;transform:translateY(-50%);pointer-events:none;z-index:1}
+html[data-theme=light] .quality-audit-alert{background:var(--quality-error-color)}
+
+.quality-audit-original .audit-original-select{position:relative;display:block}
+workbench-segment-editor.quality-audit-editor .audit-original-select .quality-reason-tag{border:1px solid var(--tag-border);color:var(--tag-color);background:var(--tag-bg)}
+workbench-segment-editor.quality-audit-editor .audit-original-select>summary{height:auto;min-height:32px;max-height:none;overflow:visible;padding-block:3px}
+.quality-audit-original select.audit-status{cursor:pointer;font-family:inherit;outline:none}
+.quality-audit-original select.audit-status option{background:var(--editor-panel);color:var(--editor-text)}
+.audit-status.passed{height:30px;padding:0 10px;border:1px solid var(--cyan);color:var(--cyan);background:color-mix(in srgb,var(--cyan) 15%,var(--panel));border-radius:6px}
+
+workbench-segment-editor.quality-audit-editor .audit-readonly-value{cursor:default;min-width:0;height:32px;flex:1;overflow:hidden}
+workbench-segment-editor.quality-audit-editor .audit-readonly-value>span:not(.quality-reason-tags):not(.audit-overflow){overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* Rejection feedback is plain read-only content, with a clipped single-line preview. */
+workbench-segment-editor.quality-audit-editor .quality-audit-feedback--readonly .audit-readonly-value,
+workbench-segment-editor.quality-audit-editor .quality-audit-feedback--readonly .audit-readonly-value:hover{border:0;border-radius:0;background:transparent;box-shadow:none;padding:0}
+workbench-segment-editor.quality-audit-editor .quality-audit-feedback--readonly .quality-reason-tags{overflow:hidden;flex-wrap:nowrap;scrollbar-width:none;mask-image:linear-gradient(to right,#000 calc(100% - 24px),transparent)}
+workbench-segment-editor.quality-audit-editor .quality-audit-feedback--readonly .quality-reason-tags::-webkit-scrollbar{display:none}
+
+workbench-segment-editor.quality-audit-editor .quality-audit-feedback--readonly .audit-readonly-tags{position:relative;overflow:visible;justify-content:flex-start;gap:6px}
+workbench-segment-editor.quality-audit-editor .quality-audit-feedback--readonly .audit-readonly-tags>.quality-reason-tags{mask-image:none;flex:1;min-width:0}
+.audit-overflow{position:relative;flex:none;cursor:default}
+.audit-overflow[hidden]{display:none}
+.audit-overflow-count{display:inline-flex;align-items:center;justify-content:center;min-width:26px;height:24px;padding:0 5px;border:1px solid var(--editor-border);border-radius:5px;color:var(--editor-text);font-size:11px;box-sizing:border-box}
+.audit-overflow-popover{position:absolute;right:0;bottom:calc(100% + 8px);z-index:100;display:none;flex-wrap:wrap;gap:5px;width:max-content;max-width:min(580px,70vw);}
+.audit-overflow-popover::after{content:"";position:absolute;top:100%;left:0;right:0;height:10px}
+.audit-overflow:hover .audit-overflow-popover,.audit-overflow:focus-within .audit-overflow-popover{display:flex}
+
+workbench-segment-editor.quality-audit-editor .audit-readonly-tags>.audit-overflow{overflow:visible;white-space:normal}
+.audit-overflow-popover{white-space:normal}
+
+
+html .workbench-footer-actions.quality-mode-footer{display:grid;grid-template-columns:repeat(4,minmax(0,1fr))}
+html .workbench-footer-actions.quality-mode-footer--two{grid-template-columns:repeat(2,minmax(0,1fr))}
+html .quality-mode-footer button:disabled{opacity:.4;cursor:not-allowed;pointer-events:none}
+html .quality-mode-footer .quality-reject-primary{color:#fff;border-color:#ac2943;background:#ac2943}
+html .quality-mode-footer .quality-reject-primary:hover{background:#c0324f;border-color:#c0324f}
+
+/* Consistent slim horizontal scrollbars across editor tag selectors. */
+workbench-segment-editor :is(.quality-reason-tags,.workbench-multi-select__value){scrollbar-width:thin}
+@supports selector(::-webkit-scrollbar){
+  html workbench-segment-editor :is(.quality-reason-tags,.workbench-multi-select__value){scrollbar-width:auto;scrollbar-color:auto}
+  html workbench-segment-editor :is(.quality-reason-tags,.workbench-multi-select__value)::-webkit-scrollbar{height:3px}
+  html workbench-segment-editor :is(.quality-reason-tags,.workbench-multi-select__value)::-webkit-scrollbar-track{background:transparent}
+  html workbench-segment-editor :is(.quality-reason-tags,.workbench-multi-select__value)::-webkit-scrollbar-thumb{background:var(--editor-border);border:0;border-radius:2px}
+}
+
+/* The shared scrollbar skin reads this variable in its !important size rule. */
+workbench-segment-editor :is(.quality-reason-tags,.workbench-multi-select__value){--scrollbar-size:3px}
+
+/* Editable selected reasons stay on one line and scroll instead of collapsing. */
+workbench-segment-editor.quality-review-editor details .quality-reason-tags{flex-wrap:nowrap;overflow-x:auto;overflow-y:hidden;height:30px;align-items:center;box-sizing:border-box;--scrollbar-size:3px}
+workbench-segment-editor.quality-review-editor details>summary:has(.quality-reason-tags){height:32px;min-height:32px;padding-top:0;padding-bottom:0}
+
+/* Brighter failure accents throughout this workbench page. */
+html{--workbench-severity-severe:#f04a69}
+html[data-theme=light]{--workbench-severity-minor:var(--quality-tone-orange);--workbench-severity-severe:var(--quality-tone-red)}
+.segmented-timeline__location.is-severe{color:var(--workbench-severity-severe)}
+html .quality-mode-footer .quality-reject-primary{background:#f04a69;border-color:#f04a69}
+html .quality-mode-footer .quality-reject-primary:hover{background:#f47b89;border-color:#f47b89}
+
+.quality-editor-preview{width:100%;min-width:0;--panel:var(--color-bg-surface,#061a29);--line:var(--color-border,#234459);--text:var(--color-text-primary,#dfe7f0);--muted:var(--color-text-muted,#8fa0b3);--cyan:var(--color-brand,#22c1d2)}
+.quality-editor-preview>workbench-segment-editor{min-width:0}
+
+/* Editor typography is owned by the component, not the host page. */
+workbench-segment-editor.quality-review-editor .form-card,
+workbench-segment-editor.quality-review-editor .form-row,
+workbench-segment-editor.quality-review-editor .form-row span,
+workbench-segment-editor.quality-review-editor .form-row b,
+workbench-segment-editor.quality-review-editor .field-label,
+workbench-segment-editor.quality-review-editor .input-like,
+workbench-segment-editor.quality-review-editor .segment-action,
+workbench-segment-editor.quality-review-editor .segment-action kbd{font-size:12px;font-weight:400}
+workbench-segment-editor.quality-review-editor .quality-reason-tag{font-size:10px}
+workbench-segment-editor.quality-audit-editor .quality-audit-columns :is(.field-label,.audit-status,.input-like,.input-like>span,.quality-reason-tag){font-size:11px}
+workbench-segment-editor.quality-review-editor .form-card{flex:0 0 auto}
+
+/* Isolated live form-control previews use the same production editor controls. */
+.quality-control-preview{margin-block:12px 24px}
+.quality-control-preview .form-card{border:0!important;background:transparent!important;padding:0!important;min-height:0!important;gap:0!important;overflow:visible!important}
+.quality-control-preview .form-row--meta,.quality-control-preview .form-row--error{display:none!important}
+.quality-control-preview .field-label{display:none!important}
+.quality-control-preview[data-quality-control=type] .quality-reasons{display:none}
+.quality-control-preview[data-quality-control=reasons] .quality-types{display:none}
+.quality-control-preview .quality-audit-columns{display:block}
+.quality-control-preview .quality-audit-original{display:none}
+.quality-control-preview[data-quality-control=feedback] .audit-status{display:none}
+.quality-control-preview[data-quality-control=legend] .quality-audit-columns{display:none}
+.quality-control-preview[data-quality-control=legend] .form-row--meta{display:flex!important;margin:0!important;padding:0!important;background:transparent!important}
+.quality-control-preview[data-quality-control=legend] .segment-meta,.quality-control-preview[data-quality-control=legend] .segment-action{display:none!important}
+
+/* Match the isolated controls to the surrounding form showcase rhythm. */
+.workbench-control-showcase__group>.quality-control-preview{margin:0;min-width:0}
+.workbench-control-showcase__group .quality-control-preview .form-row:not(.form-row--meta){padding:0!important;margin:0!important;min-height:36px}
+.workbench-control-showcase__group .quality-control-preview .quality-audit-feedback{gap:0}
+.workbench-control-showcase__group .quality-control-preview[data-quality-control=legend] .form-row--meta{min-height:36px}
+.workbench-control-showcase__group .quality-control-preview .quality-audit-columns{min-width:0}
+
+/* Shared tag primitive: preview and production consume the same dimensions and tones. */
+html .quality-tag[data-tag-tone],
+html .quality-tag-examples .quality-tag,
+html workbench-segment-editor.quality-review-editor .quality-tag[data-tag-tone]{display:inline-flex;align-items:center;gap:4px;flex:none;width:max-content;max-width:100%;height:24px;box-sizing:border-box;padding:0 6px;border:1px solid var(--tag-border);border-radius:5px;background:var(--tag-bg);color:var(--tag-color);font:400 11px/22px Inter,-apple-system,BlinkMacSystemFont,"PingFang SC",sans-serif;text-decoration:none;white-space:nowrap}
+.quality-tag[data-tag-tone=default]{--tag-color:var(--quality-tone-default);--tag-border:var(--quality-default-border);--tag-bg:transparent}
+.quality-tag[data-tag-tone=blue]{--tag-color:var(--quality-tone-blue);--tag-border:rgba(124,187,255,.25);--tag-bg:rgba(79,147,212,.17)}
+.quality-tag[data-tag-tone=purple]{--tag-color:var(--quality-tone-purple);--tag-border:rgba(186,148,237,.25);--tag-bg:rgba(150,105,210,.17)}
+.quality-tag[data-tag-tone=orange]{--tag-color:var(--workbench-severity-minor);--tag-border:color-mix(in srgb,var(--workbench-severity-minor) 25%,transparent);--tag-bg:color-mix(in srgb,var(--workbench-severity-minor) 16%,transparent)}
+.quality-tag[data-tag-tone=red]{--tag-color:var(--workbench-severity-severe);--tag-border:color-mix(in srgb,var(--workbench-severity-severe) 25%,transparent);--tag-bg:color-mix(in srgb,var(--workbench-severity-severe) 16%,transparent)}
+html .quality-tag-examples .quality-tag__label,html workbench-segment-editor.quality-review-editor .quality-tag .quality-tag__label{font:inherit;color:inherit}
+.quality-tag[data-tag-tone=purple] .quality-tag__label{text-decoration:line-through}
+.quality-tag small{font-size:9px;line-height:1;color:inherit}
+html .quality-tag-examples .quality-tag button,html workbench-segment-editor.quality-review-editor .quality-tag button{display:inline-flex;align-items:center;justify-content:center;width:18px;height:20px;padding:0;border:0;border-radius:3px;background:transparent;color:inherit;font:400 12px/1 sans-serif;cursor:pointer}
+html .quality-tag button:hover{background:rgba(255,255,255,.1);color:inherit}
+.quality-tag-examples{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px}
+
+/* Override showcase caption colors on the tag itself, not just its children. */
+html .quality-tag-examples .workbench-control-state>span.quality-tag,
+html workbench-segment-editor.quality-review-editor .quality-tag[data-tag-tone]{color:var(--tag-color);height:24px;min-height:24px;max-height:24px;display:inline-flex;flex-direction:row;align-items:center;justify-content:center;flex-wrap:nowrap;line-height:22px}
+html .quality-tag-examples .quality-tag :is(.quality-tag__label,small,button),
+html workbench-segment-editor.quality-review-editor .quality-tag :is(.quality-tag__label,small,button){color:var(--tag-color);align-self:center}
+html .quality-tag-examples .quality-tag .quality-tag__label,
+html workbench-segment-editor.quality-review-editor .quality-tag .quality-tag__label{display:inline;white-space:nowrap;line-height:22px}
+html .quality-tag-examples .quality-tag button,
+html workbench-segment-editor.quality-review-editor .quality-tag button{flex:0 0 18px;height:20px;line-height:1;margin:0}
+
+/* Use geometric icons instead of font glyphs to avoid baseline drift. */
+html .quality-tag-examples .workbench-control-state>span.quality-tag,
+html workbench-segment-editor.quality-review-editor .quality-tag[data-tag-tone]{border-width:1px;border-style:solid;box-shadow:none}
+html .quality-tag-examples .quality-tag .quality-tag__label,
+html workbench-segment-editor.quality-review-editor .quality-tag .quality-tag__label{display:flex;align-items:center;height:20px;line-height:16px}
+html .quality-tag-examples .quality-tag small,
+html workbench-segment-editor.quality-review-editor .quality-tag small{display:flex;align-items:center;height:20px;line-height:12px}
+html .quality-tag-examples .quality-tag button,
+html workbench-segment-editor.quality-review-editor .quality-tag button{display:grid;place-items:center;padding:0;border:0;line-height:0}
+.quality-tag .quality-tag__icon{display:block;flex:none;width:14px;height:14px;vertical-align:middle}
+
+/* Preview cards must not clip dropdowns above or below their own bounds. */
+.workbench-component-preview .component-gallery__group:has(.quality-editor-preview),
+.workbench-component-preview .component-gallery__stage--track:has(.quality-editor-preview),
+.workbench-component-preview .component-gallery__stage--track:has(workbench-form-control-states){overflow:visible}
+.workbench-component-preview .component-gallery__variant:has(details[open]),
+.workbench-component-preview .workbench-control-showcase__group:has(details[open]){position:relative;z-index:110}
+.workbench-component-preview .quality-editor-preview:has(details[open]){position:relative;z-index:110}
+.workbench-component-preview .component-gallery__group:has(details[open]){position:relative;z-index:110}
+
+html .quality-tag-clear,
+html workbench-segment-editor.quality-review-editor .quality-reason-tags .quality-tag-clear{display:inline-grid;place-items:center;flex:0 0 24px;width:24px;height:24px;box-sizing:border-box;margin:0;padding:0;border:1px solid var(--quality-default-border);border-radius:5px;background:transparent;color:var(--color-text-primary,#dfe7f0);cursor:pointer}
+.quality-tag-clear svg{display:block;width:14px;height:14px}
+html .quality-tag-clear:hover{background:transparent}
+.quality-tag-clear:focus-visible{outline:2px solid var(--color-brand,#22c1d2);outline-offset:2px}
+
+html workbench-multi-select .workbench-multi-select__value{flex-wrap:nowrap;overflow-x:auto;overflow-y:hidden;white-space:nowrap;min-width:0;height:30px;align-items:center;--scrollbar-size:3px}
+html workbench-multi-select .workbench-multi-select__value .quality-tag{display:inline-flex;align-items:center;flex:none;gap:4px;height:24px;max-width:none;box-sizing:border-box;padding:0 6px;border:1px solid var(--tag-border);border-radius:5px;background:var(--tag-bg);color:var(--tag-color);font:400 11px/20px Inter,-apple-system,BlinkMacSystemFont,"PingFang SC",sans-serif}
+html workbench-multi-select .quality-tag .quality-tag__label{display:flex;align-items:center;gap:5px;color:inherit;font:inherit;white-space:nowrap}
+html workbench-multi-select .quality-tag button{display:grid;place-items:center;flex:0 0 18px;width:18px;height:20px;margin:0;padding:0;border:0;border-radius:3px;background:transparent;color:var(--tag-color);cursor:pointer}
+html workbench-multi-select .quality-tag-clear{display:grid;place-items:center;flex:0 0 24px;width:24px;height:24px;padding:0;border:1px solid var(--quality-default-border);border-radius:5px;background:transparent;color:var(--color-text-primary);cursor:pointer}
+html workbench-segment-editor.quality-review-editor .quality-reason-tag.quality-tag[data-tag-tone] button,
+html workbench-segment-editor.quality-review-editor .quality-reason-tag.quality-tag[data-tag-tone] button:hover{color:var(--tag-color);background:transparent}
+html workbench-segment-editor.quality-review-editor .quality-reason-tag.quality-tag[data-tag-tone] button:hover{background:color-mix(in srgb,var(--tag-color) 12%,transparent)}
+html workbench-multi-select .quality-tag button:hover{color:var(--tag-color);background:color-mix(in srgb,var(--tag-color) 12%,transparent)}
+html workbench-multi-select .workbench-multi-select__trigger{height:34px;min-height:34px;padding-block:0}
+
+/* Type switches and default tags share the same neutral border token. */
+:root{--quality-default-border:color-mix(in srgb,var(--color-border,#234459) 90%,var(--color-text-primary,#dfe7f0) 10%)}
+workbench-segment-editor.quality-review-editor .quality-types button[aria-pressed=false]{border:1px solid var(--quality-default-border);background:transparent;color:var(--editor-text)}
+
+/* Undo has a larger drawn footprint than the close icon; optically balance it. */
+.quality-tag[data-tag-tone=purple] .quality-tag__icon{width:12px;height:12px}
+
+/* Type-switch controls match the shared tag geometry and color strength. */
+workbench-segment-editor.quality-review-editor .quality-types button{display:inline-flex;align-items:center;justify-content:center;height:24px;min-height:24px;box-sizing:border-box;padding:0 6px;border-radius:5px;font-size:11px;font-weight:400;line-height:22px;box-shadow:none}
+workbench-segment-editor.quality-review-editor .quality-types button[aria-pressed=true]{color:var(--quality-color);border:1px solid color-mix(in srgb,var(--quality-color) 25%,transparent);background:color-mix(in srgb,var(--quality-color) 16%,transparent)}
+
+/* Audit result badges match the compact type-switch/tag styling. */
+workbench-segment-editor.quality-review-editor .audit-status:is(.mistake,.failure){--status-color:var(--workbench-severity-minor);display:inline-flex;align-items:center;justify-content:center;flex:none;height:24px;min-height:24px;max-height:24px;box-sizing:border-box;padding:0 6px;border:1px solid color-mix(in srgb,var(--status-color) 25%,transparent);border-radius:5px;background:color-mix(in srgb,var(--status-color) 16%,transparent);color:var(--status-color);font-size:11px;font-weight:400;line-height:22px;box-shadow:none}
+workbench-segment-editor.quality-review-editor .audit-status.failure{--status-color:var(--workbench-severity-severe)}
+
+/* Read-only values stay transparent, and the overflow count follows the tags. */
+html workbench-segment-editor.quality-audit-editor .quality-audit-feedback--readonly .audit-readonly-value,
+html workbench-segment-editor.quality-audit-editor .quality-audit-feedback--readonly .audit-readonly-value:hover,
+html workbench-segment-editor.quality-audit-editor .quality-audit-feedback--readonly .audit-readonly-value:focus{background:transparent!important;box-shadow:none;border:0}
+html workbench-segment-editor.quality-audit-editor .quality-audit-feedback--readonly .audit-readonly-tags>.quality-reason-tags{flex:0 1 auto;width:max-content}
+
+/* Shared audit legend and its hover/focus explanation. */
+html workbench-segment-editor .form-card .form-row--meta .quality-audit-legend,
+html workbench-segment-editor .form-card .form-row--meta .quality-audit-legend > span{font-size:10px;font-weight:400;line-height:1.5}
+.quality-audit-legend{position:relative;align-items:center;white-space:nowrap;cursor:default}
+.quality-audit-legend__item > .quality-audit-legend__tooltip{display:none;position:absolute;top:calc(100% + 10px);right:0;z-index:120;width:max-content;max-width:calc(100vw - 48px);box-sizing:border-box;color:var(--editor-text);white-space:normal;text-align:left;line-height:1.7;}
+.quality-audit-legend__item:hover > .quality-audit-legend__tooltip,
+.quality-audit-legend__item:focus-within > .quality-audit-legend__tooltip{display:block}
+.quality-audit-legend__tooltip::before{content:"";position:absolute;bottom:100%;left:0;right:0;height:11px}
+.quality-control-preview[data-quality-control=legend] .quality-audit-legend__item > .quality-audit-legend__tooltip{left:0;right:auto!important}
+workbench-segment-editor:has(.quality-audit-legend:hover),workbench-segment-editor:has(.quality-audit-legend:focus-within){position:relative;z-index:120}
+
+/* Shared surface for tag overflow and text hover hints. */
+.quality-hover-popover{box-sizing:border-box;padding:4px;border:1px solid var(--editor-border,var(--color-border,#1c3b50));border-radius:7px;background:var(--editor-panel,var(--color-bg-panel,#031729));color:var(--editor-text,var(--color-text-primary,#e3edf7));box-shadow:0 4px 18px #0005}
+
+.quality-hover-example{position:relative;display:inline-flex;font-size:10px;line-height:1.5}
+.quality-hover-example .quality-audit-legend__tooltip{left:0;right:auto;font-size:10px;font-weight:400}
+.quality-hover-popover{margin:0;text-indent:0}
+
+/* Separate the audit legend from the adjacent navigation controls. */
+workbench-segment-editor .segment-actions > .quality-audit-legend{margin-right:9px}
+workbench-segment-editor.quality-navigation-preview{display:block;min-height:0}
+workbench-segment-editor.quality-navigation-preview .segment-actions{justify-content:flex-start;flex-wrap:wrap}
+
+.quality-audit-legend__item{position:relative;display:inline-flex;align-items:center}
+.quality-audit-legend__item > .quality-audit-legend__tooltip{font-size:10px;font-weight:400}
+
+/* Form controls are compared in aligned table rows without clipping popovers. */
+.workbench-control-table{width:100%;table-layout:fixed;border-collapse:separate;border-spacing:0;font-size:12px;border:1px solid var(--color-border,#1c3b50);border-radius:8px}
+.workbench-control-table__name{width:160px}
+.workbench-control-table th,.workbench-control-table td{padding:16px;vertical-align:middle;text-align:left;border-bottom:1px solid var(--color-divider,#1c3b50);border-right:1px solid var(--color-divider,#1c3b50);overflow:visible;overflow-wrap:anywhere}
+.workbench-control-table thead th{font-weight:500;color:var(--color-text-muted,#91acc7);background:var(--color-bg-section-header,#0a2235)}
+.workbench-control-table tbody th{font-weight:500;color:var(--color-text-primary,#e3edf7)}
+.workbench-control-table tr>:last-child{border-right:0}
+.workbench-control-table tbody tr:last-child>*{border-bottom:0}
+.workbench-control-table .workbench-control-showcase__group{border:0;padding:0}
+.workbench-control-table .workbench-control-state{min-width:0;width:100%}
+.workbench-control-table .workbench-control-state>[hidden]{display:none}
+.workbench-control-table .workbench-control{width:100%;min-width:0;box-sizing:border-box;text-overflow:ellipsis}
+.workbench-control-table__empty{color:var(--color-text-muted,#91acc7)}
+.workbench-control-table .quality-tag-examples{grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:16px}
+@media(max-width:760px){.workbench-control-table__name{width:96px}.workbench-control-table th,.workbench-control-table td{padding:10px 6px}}
+
+/* Combine the related multiselect examples, without the workflow result badge. */
+.quality-multiselect-examples{display:grid;gap:16px;min-width:0}
+.quality-multiselect-example{display:grid;grid-template-columns:64px minmax(0,1fr);align-items:center;gap:12px;min-width:0}
+.quality-multiselect-example__label{font-size:11px;color:var(--color-text-muted,#91acc7)}
+html .quality-control-preview[data-quality-control=feedback] .audit-status{display:none!important}
+
+/* Audit headers must allow the shared hover surface above the following form rows. */
+html workbench-segment-editor.quality-audit-editor .form-row--meta:has(.quality-audit-legend__item:hover),
+html workbench-segment-editor.quality-audit-editor .form-row--meta:has(.quality-audit-legend__item:focus-within){position:relative;z-index:130;overflow:visible}
+html workbench-segment-editor.quality-audit-editor .quality-audit-legend__item > .quality-hover-popover{padding:4px;font-size:10px;font-weight:400;color:var(--editor-text,var(--color-text-primary));border:1px solid var(--editor-border);background:var(--editor-panel);border-radius:7px}
+
+/* Only preview sizing is local; rows, warnings, conclusion and actions are production components. */
+.quality-list-gallery{display:grid;grid-template-columns:repeat(auto-fit,minmax(360px,1fr));gap:24px}
+.quality-list-gallery>.component-gallery__variant{min-width:0}
+.quality-list-preview{display:block;width:100%;max-width:408px}
+.quality-list-preview .workbench-review{width:100%;height:860px}
+.quality-list-preview .workbench-review__main{width:100%;height:100%}
+.quality-list-preview .workbench-flat-list{border-radius:12px 12px 0 0}
+@media(max-width:760px){.quality-list-gallery{grid-template-columns:minmax(0,1fr)}}
+
+.quality-tag[data-tag-tone=yellow]{--tag-color:var(--quality-error-color);--tag-border:transparent;--tag-bg:transparent}
+
+/* Lists consume the shared tag primitive, including long read-only error reasons. */
+html .workbench-flat-list .quality-tag__label,html .workbench-review__tags .quality-tag__label{font:inherit;color:inherit;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+html .workbench-flat-list .quality-tag,html .workbench-review__tags .quality-tag{font-weight:400;text-align:left}
+
+/* Align all list previews horizontally, without stacked-section separators. */
+.component-gallery__variants.quality-list-gallery{display:grid;grid-template-columns:repeat(auto-fit,minmax(360px,1fr));gap:24px}
+.quality-list-gallery>.component-gallery__variant,.quality-list-gallery>.component-gallery__variant+.component-gallery__variant{margin:0;padding:0;border:0;min-width:0}
+.quality-list-gallery .component-gallery__stage--review-panel{width:380px;max-width:100%}
+@media(max-width:760px){.component-gallery__variants.quality-list-gallery{grid-template-columns:minmax(0,1fr)}}
+
+/* Gallery-only frames give every list the same available width. */
+.quality-list-gallery>.component-gallery__variant,.quality-list-gallery>.component-gallery__variant+.component-gallery__variant{box-sizing:border-box;padding:12px;border:1px solid var(--color-border,#1c3b50);border-radius:10px}
+.quality-list-gallery .component-gallery__stage--review-panel,
+.quality-list-gallery .quality-list-preview{width:100%;max-width:none;min-width:0;box-sizing:border-box}
+.quality-list-gallery .component-gallery__stage--review-panel>:is(workbench-segment-list-panel,workbench-quality-list,workbench-annotation-list),
+.quality-list-gallery .component-gallery__stage--review-panel .workbench-review__panel,
+.quality-list-gallery .component-gallery__stage--review-panel .workbench-flat-list{width:100%;max-width:none;min-width:0;box-sizing:border-box}
+
+/* The preview host must reserve its child's full height in the gallery grid. */
+.quality-list-gallery workbench-segment-list.quality-list-preview{height:860px;min-height:860px;max-height:none}
+.quality-list-gallery [data-quality-list-preview]{display:block;height:auto;min-height:860px}
+.quality-list-gallery>.component-gallery__variant{align-self:stretch;height:auto;min-height:0}
+
+/* Required-reason prompts share the exact status-tag foreground token. */
+html workbench-annotation-list[variant] .quality-item.mistake .workbench-annotation-list__description.quality-required{color:var(--workbench-severity-minor)}
+html workbench-annotation-list[variant] .quality-item.failure .workbench-annotation-list__description.quality-required{color:var(--workbench-severity-severe)}
+
+/* Every list renders reason indicators through the shared tag helpers. */
+.workbench-review__index,.workbench-flat-list__index{position:relative;overflow:visible}
+
+/* Reserve one status column so descriptions start at the same left edge. */
+html workbench-annotation-list .workbench-annotation-list__summary{display:grid;grid-template-columns:66px minmax(0,1fr);column-gap:8px;align-items:center;text-align:left}
+html workbench-annotation-list .workbench-annotation-list__summary>.quality-tag{justify-self:start}
+html workbench-annotation-list .workbench-annotation-list__summary .workbench-annotation-list__description{margin:0;padding:0;text-align:left;justify-self:stretch}
+html workbench-annotation-list[variant] .workbench-annotation-list__summary .workbench-annotation-list__description.quality-required{padding:0;width:auto;text-align:left}
+
+/* Error reasons are quiet text tags, without a pill surface. */
+html .quality-tag[data-tag-tone=yellow]{padding:0;border:0;border-radius:0;background:transparent;box-shadow:none}
+
+/* Three-character workflow tags need only 48px; keep the text column compact and aligned. */
+html workbench-annotation-list[variant="pretraining"] .workbench-annotation-list__summary{grid-template-columns:48px minmax(0,1fr);column-gap:6px}
+
+:root{--quality-error-color:#D8BC49}
+html[data-theme=light]{--quality-error-color:#C99A00}
+html[data-theme=light] .quality-audit-alert{color:#fff}
+
+/* List status tags use a dot and text; form tags keep their boxed appearance. */
+html workbench-annotation-list .workbench-annotation-list__summary>.quality-tag:is([data-tag-tone=orange],[data-tag-tone=red]){padding:0;border:0;border-radius:0;background:transparent;box-shadow:none;gap:4px}
+html workbench-annotation-list .workbench-annotation-list__summary>.quality-tag:is([data-tag-tone=orange],[data-tag-tone=red])::before{content:"";display:block;flex:0 0 6px;width:6px;height:6px;border-radius:50%;background:currentColor}
+
+html workbench-annotation-list .workbench-annotation-list__summary>.quality-tag:is([data-tag-tone=orange],[data-tag-tone=red]){font-size:12px}
+
+/* One spacing rule for error reasons across semantic, action and quality lists. */
+html .workbench-review__cell{gap:4px}
+html .workbench-review__tags{margin:0;padding:0}
+html .workbench-quality-list__summary{gap:4px}
+html .workbench-quality-list__preview{margin:0;padding:0}
+html workbench-annotation-list .workbench-annotation-list__reason-row,
+html workbench-annotation-list[variant] .workbench-annotation-list__reason-row{margin:4px 0 0;padding:0;line-height:20px}
+html :is(.workbench-review__tags,.workbench-quality-list__preview,.workbench-annotation-list__reason-row)>.quality-tag[data-tag-tone=yellow]{height:20px;min-height:20px;max-height:20px;line-height:20px;vertical-align:top}
+
+/* Footer examples mount the production mode controller with supporting views hidden. */
+.quality-footer-gallery{display:grid;grid-template-columns:repeat(auto-fit,minmax(380px,1fr));gap:24px}
+.quality-footer-gallery>div{min-width:0}
+.quality-footer-gallery h3{margin:0 0 14px;font-size:15px;font-weight:600}
+workbench-segment-list.quality-footer-preview{width:100%;max-width:none;height:auto}
+.quality-footer-preview .workbench-review,.quality-footer-preview .workbench-review__main{width:100%;height:auto;border:0;border-radius:0;overflow:visible}
+.quality-footer-preview workbench-annotation-list,.quality-footer-preview workbench-quality-conclusion,.quality-footer-preview .quality-summary{display:none}
+.quality-footer-preview .workbench-quality-actions{border:0}
+@media(max-width:760px){.quality-footer-gallery{grid-template-columns:minmax(0,1fr)}.quality-footer-gallery workbench-footer-actions{min-width:0}}
+
+.quality-footer-description{margin:0 0 12px;color:var(--color-text-secondary,#91ACC7);font-size:12px;line-height:18px}
+
+/* Feed the shared button theme instead of competing with its background rule. */
+html[data-theme] body .quality-mode-footer button.text-button.quality-reject-primary{--button-bg:var(--workbench-severity-severe,#f04a69);--button-border:var(--workbench-severity-severe,#f04a69);--button-fg:#fff;--button-hover:#f47b89;--button-active:#d83e5c;background:var(--button-bg);border-color:var(--button-border);color:var(--button-fg)}
+
+/* Gallery cards reserve a description row and align the live button bars. */
+.quality-footer-gallery{grid-template-columns:repeat(auto-fit,minmax(min(100%,400px),1fr));gap:20px;align-items:stretch}
+.quality-footer-gallery>div{display:grid;grid-template-rows:auto minmax(36px,1fr) auto;gap:8px;box-sizing:border-box;padding:16px;border:1px solid var(--color-border,#1c3b50);border-radius:10px}
+.quality-footer-gallery h3{margin:0;line-height:22px}
+.quality-footer-gallery .quality-footer-description{margin:0;min-height:36px;font-size:12px;line-height:18px;overflow-wrap:anywhere}
+.quality-footer-gallery>div>workbench-footer-actions,.quality-footer-gallery>div>[data-quality-footer-preview]{align-self:end;min-width:0;width:100%}
+.quality-footer-gallery workbench-footer-actions{min-width:0}
+@supports(grid-template-rows:subgrid){.quality-footer-gallery>div{grid-row:span 3;grid-template-rows:subgrid;row-gap:8px}}
+
+/* Limit original-result tags to one bounded row; overflow is available on hover/focus. */
+.audit-original-tags{max-width:320px;width:100%;flex-wrap:nowrap}
+.audit-original-tags>.quality-reason-tag{flex:0 0 auto}
+.audit-original-tags>.quality-reason-tag[hidden]{display:none}
+.audit-original-tags .audit-overflow-popover{right:auto;left:0}
+
+/* Keep the visible text rows compact so the shared 4px reason gap is not inflated. */
+html workbench-annotation-list .workbench-annotation-list__summary{min-height:20px;line-height:20px}
+html workbench-annotation-list .workbench-annotation-list__summary>.quality-tag{height:20px;min-height:20px;line-height:20px}
+html workbench-annotation-list .workbench-annotation-list__reason-row{display:flex;align-items:flex-start;margin:4px 0 0;padding:0;line-height:20px}
+
+/* Catalog-only expanded views; use the actual dropdown controls and handlers. */
+.form-dropdown-preview workbench-multi-select{display:block;max-width:680px}
+.form-dropdown-preview .workbench-multi-select__trigger{display:none}
+.form-dropdown-preview .workbench-multi-select__popover,
+.form-dropdown-preview workbench-segment-editor .quality-reason-popover.error-popover{display:block!important;position:relative!important;inset:auto!important;width:100%;box-sizing:border-box}
+.form-dropdown-preview .dropdown-panel-editor{display:block;max-width:100%}
+.form-dropdown-preview .dropdown-panel-editor .form-card{padding:0;border:0;background:transparent;height:auto;min-height:0}
+.form-dropdown-preview .dropdown-panel-editor .form-row--meta,
+.form-dropdown-preview .dropdown-panel-editor .field-label,
+.form-dropdown-preview .dropdown-panel-editor .quality-types,
+.form-dropdown-preview .dropdown-panel-editor summary{display:none!important}
+.form-dropdown-preview .dropdown-panel-editor .form-row{padding:0;margin:0;border:0;display:block}
+.form-dropdown-preview .dropdown-panel-editor[data-panel-kind=error] .form-row:not(.form-row--error){display:none}
+.form-dropdown-preview .dropdown-panel-editor:not([data-panel-kind=error]) .form-row--error{display:none}
+.form-dropdown-preview .dropdown-panel-editor .quality-reasons{width:100%}
+
+/* Match live dropdown dimensions and scrolling in expanded catalog examples. */
+html .form-dropdown-preview workbench-multi-select>.workbench-multi-select__trigger{display:none!important}
+html .form-dropdown-preview workbench-segment-editor.dropdown-panel-editor .form-card{display:block!important;height:auto!important;min-height:0!important;overflow:visible}
+html .form-dropdown-preview .dropdown-panel-editor .form-row--meta,
+html .form-dropdown-preview .dropdown-panel-editor .quality-types,
+html .form-dropdown-preview .dropdown-panel-editor summary{display:none!important}
+html .form-dropdown-preview .dropdown-panel-editor[data-panel-kind=error] .form-row--error{display:block!important}
+html .form-dropdown-preview .dropdown-panel-editor[data-panel-kind=combined] .quality-reason-popover{display:grid!important;grid-template-columns:minmax(0,1fr)}
+html .form-dropdown-preview .dropdown-panel-editor .quality-reason-popover{max-height:45vh}
+html .form-dropdown-preview .dropdown-panel-editor .quality-reason-options{height:min(240px,calc(45vh - 100px));overflow-y:auto}
+html .form-dropdown-preview workbench-multi-select .workbench-multi-select__options{max-height:190px;overflow-y:auto}
+
+.dropdown-long-copy-caption{margin:0 0 8px;color:var(--color-text-muted);font-size:12px}
+.form-dropdown-preview{--dropdown-example-width:680px}
+.form-dropdown-preview .dropdown-panel-editor{max-width:var(--dropdown-example-width)}
+html .form-dropdown-preview .dropdown-panel-editor[data-panel-kind=error] .form-row--error{visibility:visible!important;height:auto!important}
+.overflow-hover-examples{display:flex;flex-wrap:wrap;gap:32px;--editor-border:var(--color-border-strong,#28485d);--editor-text:var(--color-text-primary,#e3edf7)}
+.overflow-hover-example{display:flex;flex-direction:column;gap:10px;min-width:0;padding-top:48px}
+.overflow-hover-example>span{font-size:12px;color:var(--color-text-muted)}
+.overflow-hover-example__tags{display:flex;align-items:center;gap:4px}
+.overflow-hover-example .audit-overflow-popover{top:auto;bottom:calc(100% + 8px);left:auto;right:0;max-width:min(400px,60vw)}
+.overflow-hover-example .audit-overflow-popover::after{top:100%;bottom:auto}
+.overflow-hover-example .is-preview-open .audit-overflow-popover{display:flex}
+
+/* Neutral light-theme tags use the same tinted treatment as semantic tags. */
+html[data-theme=light] .quality-tag[data-tag-tone=default]{
+ --tag-color:var(--quality-tone-default);
+ --tag-border:color-mix(in srgb,var(--quality-tone-default) 25%,transparent);
+ --tag-bg:color-mix(in srgb,var(--quality-tone-default) 5%,transparent);
+}
+html[data-theme=light] body .quality-tag-clear,
+html[data-theme=light] body .quality-tag-clear:hover{
+ border-color:color-mix(in srgb,var(--quality-tone-default) 25%,transparent);
+ background:color-mix(in srgb,var(--quality-tone-default) 5%,transparent);
+ color:var(--quality-tone-default);
+}
+
+/* Keep fieldset headings in normal flow above each independent scroll area. */
+html workbench-segment-editor .quality-reason-popover [data-reason-section]{display:block;min-width:0;min-height:0}
+html workbench-segment-editor .quality-reason-popover [data-reason-section]>legend{float:left;position:static;width:100%;height:auto;min-height:32px;margin:0 0 4px;padding:6px 12px;box-sizing:border-box;line-height:20px}
+html workbench-segment-editor .quality-reason-popover [data-reason-section]>.quality-reason-options{clear:both;display:flex;flex-direction:column;gap:3px;padding:0 0 4px;box-sizing:border-box}
+html workbench-segment-editor .quality-reason-popover .quality-reason-options>.error-option{flex:0 0 auto;height:auto;min-height:34px;margin:0 4px;padding:7px 28px 7px 9px;line-height:20px}
+
+/* Stronger semantic tag contrast on light surfaces only. */
+html[data-theme=light] .quality-tag[data-tag-tone=blue]{--tag-color:var(--quality-tone-blue);--tag-border:rgba(40,120,199,.25);--tag-bg:rgba(40,120,199,.1)}
+html[data-theme=light] .quality-tag[data-tag-tone=purple]{--tag-color:var(--quality-tone-purple);--tag-border:rgba(135,82,191,.25);--tag-bg:rgba(135,82,191,.1)}
+html[data-theme=light] .quality-tag[data-tag-tone=orange]{--tag-color:var(--quality-tone-orange);--tag-border:rgba(188,96,27,.25);--tag-bg:rgba(188,96,27,.1)}
+html[data-theme=light] .quality-tag[data-tag-tone=red]{--tag-color:var(--quality-tone-red);--tag-border:rgba(213,45,83,.25);--tag-bg:rgba(213,45,83,.1)}
+
+.audit-overflow .quality-tag__label.audit-overflow-count{display:inline;min-width:0;height:auto;padding:0;border:0;border-radius:0;color:inherit;font:inherit}
+html[data-theme=light] .quality-hover-popover{background:var(--color-bg-surface,#fff);border-color:var(--color-border-strong,#cbd6de);color:var(--color-text-primary,#263640);box-shadow:0 6px 20px rgba(31,50,63,.12)}
+
+/* Light-theme type switches match the shared severity tags. */
+html[data-theme=light] .quality-types button.mistake{--quality-color:var(--quality-tone-orange)}
+html[data-theme=light] .quality-types button.failure{--quality-color:var(--quality-tone-red)}
+
+/* Required reason hints share the light-theme severity colors. */
+html[data-theme=light] workbench-annotation-list[variant] .quality-item.mistake .workbench-annotation-list__description.quality-required{color:var(--quality-tone-orange)}
+html[data-theme=light] workbench-annotation-list[variant] .quality-item.failure .workbench-annotation-list__description.quality-required{color:var(--quality-tone-red)}
+
+html .workbench-footer-actions.quality-mode-footer--single{grid-template-columns:minmax(0,1fr)}
+
+.quality-fragment--neutral{--quality-color:#91a0ab;background:rgba(145,160,171,.4);cursor:pointer;pointer-events:auto}
+html[data-theme=light] .quality-fragment--neutral{--quality-color:#9babb8;background:rgba(155,171,184,.24)}
+
+/* Selected light-theme fragments use the exact shared severity color. */
+html[data-theme=light] .quality-fragment.selected{background:var(--quality-color)}
+html[data-theme=light] .quality-fragment:hover{filter:none}
+
+/* Keep timeline warning symbols and outlines consistent across themes. */
+html[data-theme] .quality-fragment .quality-audit-alert--timeline{color:var(--panel,#061a29);box-shadow:0 0 0 1px color-mix(in srgb,var(--quality-error-color) 55%,#604800);font-weight:800}
+html[data-theme=light] .quality-fragment .quality-audit-alert--timeline{color:#fff}
+
+/* Review modes preserve recorded boundaries while allowing segment selection. */
+.quality-review-track--fixed-ranges timeline-range-selector{display:none!important}
+
+.quality-automatic-segment__notice{margin-left:auto;color:var(--editor-muted,var(--muted));font-size:11px;white-space:nowrap}
+.quality-automatic-segment__description{flex:1;min-width:0;display:flex;align-items:center}
+.quality-automatic-segment .quality-types button:disabled{cursor:default;opacity:1}
+
+.quality-description-tooltip{position:fixed;z-index:10000;max-width:min(420px,calc(100vw - 16px));padding:8px 12px;font-size:12px;line-height:1.6;white-space:normal;overflow-wrap:anywhere;pointer-events:none}
+
+/* Shared tag inputs expand to two rows, then scroll vertically. */
+html body workbench-multi-select .workbench-multi-select__trigger,
+html body workbench-segment-editor.quality-review-editor details>summary:has(.quality-reason-tags){height:auto;min-height:32px;padding-top:3px;padding-bottom:3px;box-sizing:border-box}
+html body workbench-multi-select .workbench-multi-select__value,
+html body workbench-segment-editor.quality-review-editor details .quality-reason-tags{display:flex;flex:1;flex-wrap:wrap;align-items:center;align-content:flex-start;gap:4px;height:auto;min-height:24px;max-height:52px;min-width:0;overflow-x:hidden;overflow-y:auto;white-space:normal;box-sizing:border-box;scrollbar-width:thin}
+html body workbench-multi-select .workbench-multi-select__value .quality-tag,
+html body workbench-segment-editor.quality-review-editor details .quality-reason-tags .quality-tag{max-width:100%;min-width:0;flex-shrink:0}
+html body :is(.workbench-multi-select__value,details .quality-reason-tags) .quality-tag__label{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+html body :is(.workbench-multi-select__value,details .quality-reason-tags)::-webkit-scrollbar{width:3px;height:0}
+/* Let wrapped controls determine row height instead of shrinking inside fixed cards. */
+html body workbench-segment-editor .form-card:has(workbench-multi-select){height:auto;flex-basis:auto;min-height:0}
+html body workbench-segment-editor .form-row:has(workbench-multi-select){flex-shrink:0;height:auto;min-height:32px}
+html body workbench-multi-select .workbench-multi-select__trigger{display:flex;flex:none;height:auto;max-height:none;min-height:32px;align-items:center;padding-block:3px}
+html body workbench-multi-select .workbench-multi-select__value{flex:1 1 0;align-self:auto}
+
+html body workbench-segment-editor.quality-review-editor .quality-reasons>summary:has(.quality-reason-tags){height:60px;max-height:60px;min-height:60px;align-items:center;padding-block:3px}
+html body workbench-segment-editor.quality-review-editor .quality-reasons>summary .quality-reason-tags{height:52px;min-height:52px;max-height:52px;margin-block:0;padding-block:0;align-self:center;align-items:flex-start;flex-shrink:1}
+
+/* Audit selectors use the same content height as the shared tag input. */
+html body workbench-segment-editor.quality-review-editor.quality-audit-editor .quality-audit-feedback .quality-reasons:not(.quality-error-reasons)>summary{height:60px;min-height:60px;max-height:60px;padding-block:3px;align-items:center}
+html body workbench-segment-editor.quality-review-editor.quality-audit-editor .quality-audit-feedback .quality-reasons .quality-reason-tags{height:52px;min-height:52px;max-height:52px;padding-block:0;align-content:flex-start;align-items:flex-start}
+
+.quality-multiselect-example>.quality-control-preview{margin:0;min-width:0;align-self:center}
+.quality-multiselect-example>.quality-multiselect-example__label{align-self:center;margin:0;line-height:20px}
+
+/* Overflow rows start at the top so every tag remains reachable by scrolling. */
+html body workbench-multi-select .workbench-multi-select__value,
+html body workbench-segment-editor.quality-review-editor.quality-audit-editor .quality-audit-feedback .quality-reasons .quality-reason-tags,
+html body workbench-segment-editor.quality-review-editor details .quality-reason-tags{align-content:flex-start;scroll-padding-block:2px;scroll-snap-type:y proximity}
+html body :is(.workbench-multi-select__value,details .quality-reason-tags)>.quality-tag{scroll-snap-align:start}
+
+/* Align audit labels and status with the first row of wrapped feedback tags. */
+html body workbench-segment-editor.quality-audit-editor .quality-audit-feedback>.form-row:has(.quality-reason-tags){align-items:flex-start}
+html body workbench-segment-editor.quality-audit-editor .quality-audit-feedback>.form-row:has(.quality-reason-tags)>.field-label{align-self:flex-start;margin-top:6px}
+html body workbench-segment-editor.quality-audit-editor .quality-audit-feedback>.form-row:has(.quality-reason-tags)>.audit-status{align-self:flex-start;margin-top:4px}
+
+/* Shared wrapping inputs keep their labels aligned with the first content row. */
+html body workbench-segment-editor .form-row:has(workbench-multi-select),
+html body workbench-segment-editor .form-row:has(details .quality-reason-tags){align-items:flex-start}
+html body workbench-segment-editor .form-row:has(workbench-multi-select)>.field-label,
+html body workbench-segment-editor .form-row:has(details .quality-reason-tags)>.field-label{align-self:flex-start;margin-top:6px}
+html body workbench-segment-editor .form-row:has(details .quality-reason-tags)>.quality-types,
+html body workbench-segment-editor .form-row:has(details .quality-reason-tags)>.audit-status{align-self:flex-start;margin-top:4px}
+.quality-multiselect-example{align-items:start}
+.quality-multiselect-example>.quality-multiselect-example__label{align-self:start;margin-top:6px}
+.quality-multiselect-example>.quality-control-preview{align-self:start}
+
+.quality-problem-tabs{display:flex;gap:4px;padding:4px 12px;border-bottom:1px solid var(--flat-list-line);flex-shrink:0}
+.quality-problem-tabs button{padding:3px 8px;border:1px solid transparent;border-radius:5px;background:transparent;color:var(--flat-list-muted);font:inherit;font-size:12px;cursor:pointer}
+.quality-problem-tabs button[aria-selected=true]{border-color:var(--color-brand,#27c4d4);background:var(--color-brand-soft,#123244);color:var(--color-brand,#27c4d4)}
+.quality-problem-tabs button:focus-visible{outline:2px solid var(--color-brand,#27c4d4);outline-offset:2px}
+.quality-item[hidden]{display:none!important}
+
+/* Preview captions align to the first 32px input row; wrapping grows downward. */
+html body .quality-multiselect-examples{align-content:start;grid-auto-rows:min-content}
+html body .quality-multiselect-example{align-items:start;align-content:start}
+html body .quality-multiselect-example>.quality-multiselect-example__label{display:flex;align-items:center;align-self:start;height:32px;min-height:32px;box-sizing:border-box;line-height:20px;margin:0;padding:0}
+html body .quality-multiselect-example>.quality-control-preview{display:block;align-self:start;margin:0;padding:0;height:auto;min-height:0}
+html body .quality-multiselect-example .form-card{height:auto!important;flex:none!important;justify-content:flex-start}
+html body .quality-multiselect-example .form-row:not(.form-row--meta){min-height:32px;align-items:flex-start;margin:0;padding:0}
+html body .workbench-control-table td:has(.quality-multiselect-examples){vertical-align:top}
+
+/* The showcase and live controls share intrinsic sizing, including plain selects. */
+html body .workbench-control-showcase workbench-multi-select .workbench-multi-select__trigger{height:auto;min-height:32px;max-height:none;padding:3px 10px;align-items:center;box-sizing:border-box}
+html body workbench-multi-select[plain-value] .workbench-multi-select__value{height:24px;min-height:24px;max-height:24px;flex-wrap:nowrap;align-content:center;align-items:center;overflow:hidden}
+html body workbench-multi-select[plain-value] .workbench-multi-select__placeholder{display:flex;align-items:center;min-height:24px;line-height:20px}
+
+/* Empty selects use one centered line, independent of wrapped tag alignment. */
+html body workbench-multi-select .workbench-multi-select__value:has(>.workbench-multi-select__placeholder){height:24px;min-height:24px;max-height:24px;flex-wrap:nowrap;align-items:center;align-content:center;overflow:hidden}
+html body workbench-multi-select .workbench-multi-select__placeholder{display:flex;align-items:center;height:24px;line-height:20px;box-sizing:border-box}
+
+/* Action fields share a top edge; labels center on the first input row. */
+html body workbench-segment-editor .workbench-editor-selects{align-items:flex-start}
+html body workbench-segment-editor .form-row:has(>.workbench-editor-selects)>.field-label,
+html body workbench-segment-editor .workbench-editor-selects>.workbench-action-description-label{display:flex;align-items:center;align-self:flex-start;height:32px;min-height:32px;margin-top:0;margin-bottom:0;line-height:20px;box-sizing:border-box}
+html body workbench-segment-editor .workbench-editor-selects>workbench-multi-select{align-self:flex-start}
+
+/* Both reason groups share the popover scroll area. */
+html body workbench-segment-editor .quality-reason-popover:has(>[data-reason-section]){overflow-x:hidden;overflow-y:auto;grid-auto-rows:max-content;overscroll-behavior:contain;padding-bottom:0}
+html body workbench-segment-editor .quality-reason-popover:has(>[data-reason-section]) .quality-reason-options{height:auto;max-height:none;overflow:visible}
+html body workbench-segment-editor .quality-reason-popover:has(>[data-reason-section])>.error-popover__clear{position:sticky;bottom:0;z-index:2;display:block;margin:0;box-sizing:border-box;background:inherit;font-family:inherit;font-weight:400;flex-shrink:0}
+
+/* Select and reason menus share the same flush, 30px clear footer. */
+html body workbench-multi-select .workbench-multi-select__popover{padding-bottom:0}
+html body workbench-multi-select .workbench-multi-select__clear,
+html body workbench-segment-editor .quality-reason-popover>.error-popover__clear{display:block;height:30px;min-height:30px;margin:0;padding:0;box-sizing:border-box;font-family:inherit;font-size:12px;font-weight:400;line-height:30px;background:inherit}
+
+/* Live editors and component previews use the same reason-menu footer. */
+html body workbench-segment-editor .error-popover,
+html body workbench-segment-editor .quality-reason-popover.error-popover{padding-left:0;padding-right:0;padding-bottom:0}
+html body workbench-segment-editor .error-popover>.error-popover__clear{position:sticky;bottom:0;z-index:2;display:block;width:100%;height:30px;min-height:30px;margin:0;padding:0;box-sizing:border-box;border:0;border-top:1px solid var(--editor-border,var(--line,#2b3a4a));background:inherit;color:var(--editor-muted,#8fa0b3);font-family:inherit;font-size:12px;font-weight:400;line-height:30px;cursor:pointer}
+html body workbench-segment-editor .error-popover>.error-popover__clear:hover{color:var(--color-text-primary,#e3edf7)}
+
+/* Audit reason inputs share two visible tag rows, including disabled values. */
+html body workbench-segment-editor.quality-audit-editor .audit-disabled-input{border:1px solid var(--editor-border);border-radius:7px;background:var(--color-bg-input,var(--editor-panel));padding:3px 10px;box-sizing:border-box;opacity:.62;cursor:not-allowed;min-width:0;flex:1}
+html body workbench-segment-editor.quality-audit-editor .quality-reasons:not(.quality-error-reasons)>summary,
+html body workbench-segment-editor.quality-audit-editor .audit-disabled-tags,
+html body workbench-segment-editor.quality-audit-editor .audit-original-tags.input-like{height:60px;min-height:60px;max-height:60px;align-items:flex-start;justify-content:flex-start;box-sizing:border-box}
+html body workbench-segment-editor.quality-audit-editor .quality-reasons:not(.quality-error-reasons)>summary .quality-reason-tags,
+html body workbench-segment-editor.quality-audit-editor .audit-disabled-tags>.quality-reason-tags{display:flex;flex:1;min-width:0;width:100%;height:52px;min-height:52px;max-height:52px;flex-wrap:wrap;align-items:flex-start;align-content:flex-start;justify-content:flex-start;gap:4px;overflow-x:hidden;overflow-y:auto;mask-image:none;scrollbar-width:thin}
+html body workbench-segment-editor.quality-audit-editor .audit-original-tags.input-like{width:100%;max-width:none;display:flex;flex-wrap:wrap;align-content:flex-start;gap:4px;overflow-x:hidden;overflow-y:auto;scrollbar-width:thin}
+html body workbench-segment-editor.quality-audit-editor .audit-disabled-input .quality-reason-tag{flex:0 0 auto}
+
+html body workbench-segment-editor.quality-audit-editor .quality-reasons:not(.quality-error-reasons)>summary>img{align-self:center}
+
+/* Disabled values never acquire the editable input interaction highlight. */
+html body workbench-segment-editor.quality-audit-editor .input-like.audit-disabled-input:is(:hover,:active,:focus,:focus-visible,:focus-within){border-color:var(--editor-border);background:var(--color-bg-input,var(--editor-panel));box-shadow:none;outline:none;cursor:not-allowed}
+
+/* The three footer button styles keep their identity when disabled. */
+html[data-theme] body .workbench-footer-actions button.text-button--danger{--button-bg:var(--workbench-severity-severe,#f04a69);--button-border:var(--workbench-severity-severe,#f04a69);--button-fg:#fff;--button-hover:#f47b89;--button-active:#d83e5c;background:var(--button-bg);border-color:var(--button-border);color:var(--button-fg)}
+html[data-theme] body .workbench-footer-actions button.text-button:disabled{opacity:.4;cursor:not-allowed;pointer-events:auto;box-shadow:none}
+.footer-button-states{display:grid;grid-template-columns:120px repeat(2,minmax(0,180px));align-items:center;gap:12px 20px;margin:20px 0 28px;font-size:13px;color:var(--color-text-secondary)}
+.footer-button-states>strong{font-weight:500}
+.footer-button-states workbench-footer-actions{min-width:0}
+.footer-button-states .workbench-footer-actions{height:auto;padding:0;border:0;background:transparent}
+@media(max-width:560px){.footer-button-states{grid-template-columns:80px repeat(2,minmax(0,1fr));gap:12px}}

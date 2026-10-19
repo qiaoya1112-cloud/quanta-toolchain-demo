@@ -1,0 +1,12 @@
+html.table-example-embedded,
+html.table-example-embedded body { min-width: 0; }
+.table-example-embedded .process-page__sidebar,
+.table-example-embedded .page-sidebar { display: none; }
+html.table-example-embedded .page-shell { grid-template-columns: minmax(0, 1fr); }
+html.table-example-embedded body .process-page__main,
+html.table-example-embedded body .page-workspace {
+  width: 100%;
+  max-width: none;
+  border: 0;
+  border-radius: 0;
+}

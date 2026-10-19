@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="light" data-workbench-theme="light" data-preview-theme-key="button-component-theme">
+<head><link rel="stylesheet" href="../../styles.css">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Button 按钮组件</title>
+  <link rel="stylesheet" href="../component-preview.css">
+  <link rel="stylesheet" href="./button.css?v=icon-close-20261016">
+  <script src="./button.js" defer></script>
+  <style>.button-states{width:100%;border-collapse:collapse;text-align:left}.button-states th,.button-states td{padding:12px;border-bottom:1px solid #e2e9ee}.button-states th{font-size:13px;color:#6b8593}.button-state-scroll{overflow-x:auto}</style>
+<style>.button-type-preview{display:flex;flex-wrap:wrap;gap:24px;align-items:flex-start}.button-type-preview>div{display:flex;flex-direction:column;align-items:flex-start;gap:16px}.button-type-preview h3{margin:16px 0 0}</style>
+<link rel="stylesheet" href="../common-preview.css"><style>
+html[data-workbench-theme="blue"]{
+  color-scheme:dark;
+  --color-bg-canvas:#020F1D;--color-bg-surface:#04172A;--color-bg-surface-raised:#082036;
+  --color-bg-surface-subtle:#061C30;--color-bg-input:#031425;--color-bg-hover:#0B2033;
+  --color-bg-section-header:#082036;--color-border:#173249;--color-border-strong:#23435D;
+  --color-divider:#173249;--color-text-primary:#E8F1FC;--color-text-secondary:#BCD0E4;
+  --color-text-muted:#91ACC7;--color-text-placeholder:#718DA9;--color-text-inverse:#0F1D24;
+  --color-brand:#27C4D4;--color-brand-hover:#55D5DD;--color-brand-soft:rgba(39,196,212,.14);--color-brand-selected:#102B40;
+  --bg:var(--color-bg-canvas);--panel:var(--color-bg-surface);--panel-2:var(--color-bg-surface-raised);
+  --panel-3:var(--color-bg-surface-subtle);--line:var(--color-border);--dash:var(--color-border-strong);
+  --text:var(--color-text-primary);--muted:var(--color-text-muted);--cyan:var(--color-brand);--cyan-soft:var(--color-brand-soft);
+}
+.button-theme-tabs{position:fixed;top:16px;right:24px;z-index:100;display:flex;align-items:center;gap:3px;padding:4px;border:1px solid var(--color-border);border-radius:999px;background:var(--color-bg-surface)}
+.component-gallery__header{display:flex;align-items:center;justify-content:space-between;gap:16px;padding-right:160px;flex-wrap:wrap}
+.button-theme-tabs button{min-width:48px;padding:7px 12px;border:0;border-radius:999px;background:transparent;color:var(--color-text-muted);cursor:pointer;font-family:inherit;font-size:13px;font-weight:600;line-height:18px}
+.button-theme-tabs button:hover{background:var(--color-bg-hover)}
+.button-theme-tabs button[aria-pressed=true]{background:var(--color-brand);color:var(--color-text-inverse)}
+.button-theme-tabs button:focus-visible{outline:2px solid var(--color-brand);outline-offset:2px}
+.button-states th,.button-states td{border-color:var(--color-border)}
+.button-states th{color:var(--color-text-muted)}
+</style></head>
+<body class="design-spec-page component-preview">
+  <main class="component-gallery">
+    <header class="component-gallery__header"><h1>按钮</h1><div class="button-theme-tabs" data-component-theme role="group" aria-label="按钮皮肤"><button type="button" data-preview-theme="light">浅色</button><button type="button" data-preview-theme="blue">深蓝</button></div></header>
+    <section class="component-gallery__group"><h2>按钮类型预览</h2><div class="button-type-preview"><div><h3>主按钮</h3><text-button variant="primary">保存</text-button><text-button variant="primary" icon="save">保存</text-button></div><div><h3>次按钮</h3><text-button variant="secondary">新建</text-button><text-button variant="secondary" icon="plus">新建</text-button></div><div><h3>描边按钮</h3><text-button variant="outline">取消</text-button><text-button variant="outline" icon="close">取消</text-button></div><div><h3>关闭按钮</h3><text-button variant="text" icon="close" icon-only aria-label="关闭"></text-button></div><div><h3>文字按钮</h3><text-button variant="text">查看详情</text-button><text-button variant="text" icon="eye">查看详情</text-button></div><div><h3>危险按钮</h3><text-button variant="danger">删除</text-button><text-button variant="danger" icon="delete">删除</text-button></div></div></section>
+    <section class="component-gallery__group"><h2>纯文字按钮变体</h2><div class="button-state-scroll"><table class="button-states"><thead><tr><th>变体</th><th>默认</th><th>悬浮</th><th>按下</th><th>禁用</th></tr></thead><tbody id="button-variants"></tbody></table></div></section>
+    <section class="component-gallery__group"><h2>图标文字按钮变体</h2><div class="button-state-scroll"><table class="button-states"><thead><tr><th>变体</th><th>默认</th><th>悬浮</th><th>按下</th><th>禁用</th></tr></thead><tbody id="icon-button-variants"></tbody></table></div></section>
+    <section class="component-gallery__group" id="add-buttons"><h2>添加</h2><text-button variant="text" icon="plus">添加条件与比例</text-button></section>
+  </main>
+  <script>
+    const variants = [['primary','主按钮','保存'],['secondary','次按钮','新建'],['outline','描边按钮','取消'],['text','文字按钮','查看详情'],['danger','危险按钮','删除']];
+    const buttonIcons = ['save','plus','close','eye','delete'];
+    document.getElementById('icon-button-variants').innerHTML = variants.map(([variant,name,label],index) => `<tr><th>${name}</th>${['default','hover','active','disabled'].map(state => `<td><text-button variant="${variant}" icon="${buttonIcons[index]}" ${state === 'disabled' ? 'disabled' : `data-preview-state="${state}"`}>${label}</text-button></td>`).join('')}</tr>`).join('');
+    document.getElementById('button-variants').innerHTML = variants.map(([variant,name,label]) => `<tr><th>${name}</th>${['default','hover','active','disabled'].map(state => `<td><text-button variant="${variant}" ${state === 'disabled' ? 'disabled' : `data-preview-state="${state}"`}>${label}</text-button></td>`).join('')}</tr>`).join('');
+  </script>
+  <script src="../component-preview.js?v=button-skins-20261010-2"></script>
+</body>
+</html>

@@ -1,0 +1,24 @@
+.operations-edit .app-drawer{width:min(560px,100vw)}
+.operations-edit-form{display:grid;gap:20px}
+.operations-edit-form textarea{min-height:100px}
+.operations-edit-form fieldset{border:0;padding:0;margin:0;display:flex;gap:12px}
+.operations-edit-form legend{font-size:12px;color:var(--color-text-secondary);margin-bottom:10px}
+.operations-edit-form form-checkbox{padding:8px 12px;border:1px solid var(--color-border);border-radius:8px}
+.operations-edit-form [role=alert]{color:var(--color-danger);margin:0;font-size:12px}
+
+.operations-edit [data-picker]{position:relative;min-width:0}
+.operations-picker-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:12px;line-height:20px;color:var(--color-text-secondary);margin-bottom:8px}
+.operations-picker-heading small{font-size:12px;color:var(--color-brand);white-space:nowrap}
+.operations-required{color:var(--color-danger,#e34d59)}
+.operations-picker-control{display:flex;align-items:center;flex-wrap:wrap;gap:6px;min-height:36px;box-sizing:border-box;padding:6px 32px 6px 10px;border:1px solid var(--color-border);border-radius:8px;background:#fff;position:relative}
+.operations-picker-control:focus-within{border-color:var(--color-brand);box-shadow:0 0 0 2px var(--color-brand-soft)}
+.operations-picker-tags{display:contents}
+.operations-picker-tags button{display:inline-flex;align-items:center;max-width:100%;overflow-wrap:anywhere;border:0;border-radius:4px;padding:2px 6px;background:var(--color-brand-soft);color:var(--color-text-secondary);font-family:inherit;font-size:12px;font-weight:400;line-height:20px;cursor:pointer}
+.operations-picker-search{flex:1;min-width:120px;width:120px;height:24px;padding:0;border:0;outline:0;background:transparent;color:var(--color-text-primary);font:inherit;font-size:13px;box-shadow:none}
+.operations-picker-search::placeholder{color:var(--color-text-placeholder)}
+.operations-picker-toggle{position:absolute;right:8px;top:8px;border:0;background:none;color:var(--color-text-muted);cursor:pointer}
+.operations-picker-options{max-height:180px;overflow:auto;display:grid;gap:2px;margin-top:4px;padding:6px;border:1px solid var(--color-border);border-radius:8px;background:#fff;font-size:13px}
+.operations-picker-options[hidden]{display:none}
+.operations-picker-options label{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:4px;cursor:pointer}
+.operations-picker-options label:hover{background:var(--color-bg-hover)}
+.operations-picker-options input{width:14px;height:14px;margin:0;accent-color:var(--color-brand)}

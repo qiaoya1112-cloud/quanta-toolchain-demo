@@ -1,0 +1,18 @@
+/* Shared secondary navigation for component galleries. */
+.component-quick-nav::before,.process-gallery-nav::before{content:"";position:fixed;left:0;top:0;bottom:0;width:1px;background:#d7e0e7;pointer-events:none}
+html[data-theme=dark] .component-quick-nav::before,html[data-theme=dark] .process-gallery-nav::before{background:rgba(159,181,204,.2)}
+.component-quick-nav,.process-gallery-nav{position:fixed;inset:0 auto 0 0;z-index:190;width:200px;max-height:none;padding:20px 12px;overflow:auto;box-sizing:border-box;border:0;border-right:1px solid #e2e9ee;border-radius:0;background:#fbfeff;box-shadow:none;font-family:Inter,-apple-system,BlinkMacSystemFont,"PingFang SC",sans-serif}
+.component-quick-nav strong,.process-gallery-nav h1{display:block;margin:0 8px 12px;color:#6e858d;font-size:12px;font-weight:600;line-height:20px}
+.process-gallery-nav p{display:none}
+.component-quick-nav div,.process-gallery-nav nav{display:flex;width:auto;flex-direction:column;gap:4px}
+.component-quick-nav a,.process-gallery-nav a{display:block;padding:8px;border-radius:6px;color:#536b75;font-size:13px;font-weight:400;line-height:20px;text-decoration:none;white-space:normal}
+.component-quick-nav a:hover,.process-gallery-nav a:hover{background:#edf7f9;color:#078ca8}
+.component-quick-nav a.is-active,.process-gallery-nav a[aria-current]{background:#e3f6f8;color:#0095b6;font-weight:600}
+.component-quick-nav a:focus-visible,.process-gallery-nav a:focus-visible{outline:2px solid #0095b6;outline-offset:1px}
+html[data-theme=dark] :is(.component-quick-nav,.process-gallery-nav){--secondary-nav-bg:#092D4D;--secondary-nav-text:#B8CBDF;--secondary-nav-muted:#8FAAC3;--secondary-nav-hover:#123D5D;--secondary-nav-selected:#164B68;background:var(--secondary-nav-bg);border-color:rgba(159,181,204,.2)}
+html[data-theme=dark] :is(.component-quick-nav strong,.process-gallery-nav h1){color:var(--secondary-nav-muted)}
+html[data-theme=dark] :is(.component-quick-nav a,.process-gallery-nav a){color:var(--secondary-nav-text)}
+html[data-theme=dark] :is(.component-quick-nav a:hover,.process-gallery-nav a:hover){background:var(--secondary-nav-hover);color:#E1EDF8}
+html[data-theme=dark] :is(.component-quick-nav a.is-active,.process-gallery-nav a[aria-current]){background:var(--secondary-nav-selected);color:#74D7EE}
+body.workbench-component-preview .component-gallery,body.component-preview .process-editor-components.component-gallery{width:calc(100% - 200px);max-width:none;margin:0 0 0 200px;padding:20px 16px 32px;box-sizing:border-box;min-width:0}
+@media(max-width:700px){.component-quick-nav,.process-gallery-nav{width:144px;padding:16px 8px}body.workbench-component-preview .component-gallery,body.component-preview .process-editor-components.component-gallery{width:calc(100% - 144px);margin-left:144px;padding:16px 12px 32px}}

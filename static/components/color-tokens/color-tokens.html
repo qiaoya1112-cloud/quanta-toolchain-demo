@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>通用 · 基础规范</title>
+  <link rel="stylesheet" href="../../styles.css">
+  <link rel="stylesheet" href="../component-preview.css">
+  <link rel="stylesheet" href="../common-preview.css">
+  <link rel="stylesheet" href="../input/input.css">
+  <link rel="stylesheet" href="./color-tokens.css?v=unified-shadow-20261015">
+</head>
+<body class="design-spec-page component-preview theme-light">
+  <main class="component-gallery">
+    <header class="component-gallery__header">
+      <h1>通用</h1>
+      <p class="general-intro">基于工作台待办页的字体、间距、圆角、阴影与色值规范。示例按实际 CSS 像素展示。</p>
+
+    </header>
+
+    <div class="general-typography-columns">
+    <section class="component-gallery__group general-section" id="typography"><h2>字体大小规范</h2><p>字体沿用 Inter、系统字体和 PingFang SC。字号示例统一使用 400 字重；字重梯度单独展示，便于分别比较大小与粗细。</p><div class="general-type-list"><article class="general-type-row"><div><strong>主标题</strong><code>20px / 26px · 字重 400</code></div><span style="font-size:20px;line-height:26px;font-weight:400">工作台任务信息 Workbench 0123456789</span></article><article class="general-type-row"><div><strong>次级标题</strong><code>16px / 24px · 字重 400</code></div><span style="font-size:16px;line-height:24px;font-weight:400">工作台任务信息 Workbench 0123456789</span></article><article class="general-type-row"><div><strong>正文</strong><code>14px / 20px · 字重 400</code></div><span style="font-size:14px;line-height:20px;font-weight:400">工作台任务信息 Workbench 0123456789</span></article><article class="general-type-row"><div><strong>控件文字</strong><code>13px / 20px · 字重 400</code></div><span style="font-size:13px;line-height:20px;font-weight:400">工作台任务信息 Workbench 0123456789</span></article><article class="general-type-row"><div><strong>辅助文字</strong><code>12px / 20px · 字重 400</code></div><span style="font-size:12px;line-height:20px;font-weight:400">工作台任务信息 Workbench 0123456789</span></article></div><p class="general-source">字号参考工作台及共用组件；这里统一字重用于对比，不改变业务页面的实际字重。</p></section><section class="component-gallery__group general-section" id="font-weights"><h2>字重梯度</h2><p>统一使用 16px 字号、24px 行高与相同文案，仅改变字重。</p><div class="general-type-list"><article class="general-type-row"><div><strong>常规 · 400</strong><code>正文、输入文字与提示</code></div><span style="font-size:16px;line-height:24px;font-weight:400">工作台任务信息 Workbench 0123456789</span></article><article class="general-type-row"><div><strong>中等 · 500</strong><code>控件标签与重点信息</code></div><span style="font-size:16px;line-height:24px;font-weight:500">工作台任务信息 Workbench 0123456789</span></article><article class="general-type-row"><div><strong>半粗 · 600</strong><code>标题与重要信息</code></div><span style="font-size:16px;line-height:24px;font-weight:600">工作台任务信息 Workbench 0123456789</span></article><article class="general-type-row"><div><strong>粗体 · 700</strong><code>强强调与关键数字</code></div><span style="font-size:16px;line-height:24px;font-weight:700">工作台任务信息 Workbench 0123456789</span></article></div></section>
+    </div>
+    <section class="component-gallery__group general-section" id="spacing"><h2>间距</h2><p>按内容关系选择间距：标签内部紧凑，控件之间留出空间，页面与分栏使用更大的留白。</p><div class="general-spec-grid"><article class="general-spec-card"><strong>4px</strong><div class="general-space-demo"><i></i><b style="width:4px" aria-label="4像素间距"></b><i></i></div><p>节点纵向间隔</p></article><article class="general-spec-card"><strong>6px</strong><div class="general-space-demo"><i></i><b style="width:6px" aria-label="6像素间距"></b><i></i></div><p>表单标签与输入框</p></article><article class="general-spec-card"><strong>8px</strong><div class="general-space-demo"><i></i><b style="width:8px" aria-label="8像素间距"></b><i></i></div><p>分类标签、筛选控件横向间距</p></article><article class="general-spec-card"><strong>12px</strong><div class="general-space-demo"><i></i><b style="width:12px" aria-label="12像素间距"></b><i></i></div><p>页面上下留白、筛选区与表格间距</p></article><article class="general-spec-card"><strong>14px</strong><div class="general-space-demo"><i></i><b style="width:14px" aria-label="14像素间距"></b><i></i></div><p>待办分类与下方内容间距</p></article><article class="general-spec-card"><strong>16px</strong><div class="general-space-demo"><i></i><b style="width:16px" aria-label="16像素间距"></b><i></i></div><p>侧栏分隔线两侧留白、表格左右内边距</p></article><article class="general-spec-card"><strong>24px</strong><div class="general-space-demo"><i></i><b style="width:24px" aria-label="24像素间距"></b><i></i></div><p>页面左右留白</p></article></div><nav class="general-spacing-links" aria-label="间距规范预览"><a href="../common.html#input/node-spacing-spec" target="_top" data-component-destination="input/node-spacing-spec">预览节点信息间距规范 →</a><a href="../common.html#table-controls/table-dimensions" target="_top" data-component-destination="table-controls/table-dimensions">预览表格页面布局规范 →</a></nav></section>
+    <section class="component-gallery__group general-section" id="radius"><h2>圆角</h2><p>圆角按控件职责保留，避免把标签、输入框和导航选中项统一成同一种形状。</p><div class="general-spec-grid"><article class="general-spec-card"><strong>4px</strong><div class="general-radius-application"><label class="form-choice"><input class="form-choice__control" type="checkbox" checked><span>选择当前数据</span></label></div><p>复选框：4px 圆角，可点击切换选中状态</p></article><article class="general-spec-card"><strong>6px</strong><nav class="general-radius-application general-pagination-example" aria-label="分页圆角示例"><button type="button" disabled aria-label="上一页">‹</button><button type="button" aria-current="page">1</button><button type="button">2</button><button type="button" aria-label="下一页">›</button></nav><p>待办分页按钮</p></article><article class="general-spec-card"><strong>8px</strong><label class="general-radius-application general-input-example"><span class="form-input__label">任务 ID</span><input class="form-input__control" placeholder="请输入任务 ID"></label><p>输入框、选择框与悬浮提示</p></article><article class="general-spec-card"><strong>12px</strong><div class="general-radius-application general-flow-example"><span>预训练自动化质检流程</span><button type="button" aria-pressed="true">采集质检 <small>1 条待办</small></button></div><p>流程节点选中项</p></article><article class="general-spec-card"><strong>20px</strong><div class="general-page-radius-demo" aria-label="页面左上、左下圆角20像素，右侧直角"><div><span>页面内容区</span><i></i><i></i></div></div><p>页面内容容器：左上、左下 20px，右侧直角</p><code class="general-radius-code">border-radius: 20px 0 0 20px</code></article></div></section>
+
+    <section class="component-gallery__group general-section" id="shadows">
+      <h2>阴影</h2>
+      <p>下拉菜单、确认弹窗和侧边抽屉统一使用同一组阴影参数。普通内容区以边框分隔。</p>
+      <div class="general-spec-grid">
+        <article class="general-spec-card"><strong>下拉浮层</strong><div class="general-shadow-stage"><div class="general-shadow-demo general-shadow-demo--menu">下拉菜单</div></div><p>用于选择器菜单等轻量浮层。</p><code class="general-radius-code">box-shadow: 0 16px 40px #1f323f26</code></article>
+        <article class="general-spec-card"><strong>确认弹窗</strong><div class="general-shadow-stage"><div class="general-shadow-demo general-shadow-demo--dialog">确认弹窗</div></div><p>用于需要集中注意力的确认对话框。</p><code class="general-radius-code">box-shadow: 0 16px 40px #1f323f26</code></article>
+        <article class="general-spec-card"><strong>侧边抽屉</strong><div class="general-shadow-stage"><div class="general-shadow-demo general-shadow-demo--drawer">侧边抽屉</div></div><p>与下拉浮层、确认弹窗使用相同阴影。</p><code class="general-radius-code">box-shadow: 0 16px 40px #1f323f26</code></article>
+      </div>
+    </section>
+
+    <h2 id="colors">色值</h2>
+    <div class="color-token-groups" data-color-token-groups></div>
+  </main>
+  <script src="./color-tokens.js?v=general-spec-20261015"></script>
+  <script src="../component-preview.js"></script>
+</body>
+</html>

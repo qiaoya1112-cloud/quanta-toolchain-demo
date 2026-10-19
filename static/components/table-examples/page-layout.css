@@ -1,0 +1,33 @@
+/* Shared outer gutters for the four live table layouts. */
+:is(body[data-page-id="task-processing"], body[data-page-id="data-management"], body[data-page-id="assignment-management"], body[data-page-id="action-annotation"]) {
+  --table-page-padding-block: 12px;
+  --table-page-padding-inline: 24px;
+}
+:is(body[data-page-id="task-processing"], body[data-page-id="data-management"], body[data-page-id="assignment-management"]) .process-page__main,
+body[data-page-id="action-annotation"][data-view="task-list"] .page-workspace {
+  padding: var(--table-page-padding-block) var(--table-page-padding-inline);
+}
+body[data-page-id="assignment-management"] assignment-board .assignment-detail {
+  padding-right: 0;
+}
+body[data-page-id="assignment-management"] assignment-board .assignment-resources {
+  padding-bottom: 0;
+}
+body[data-page-id="action-annotation"] .task-list-view > task-page-header {
+  margin-inline: 0;
+}
+body[data-page-id="action-annotation"] .task-list-view .task-list-view__main {
+  padding-inline: 0;
+}
+
+/* Keep pagination visible while each page scrolls inside its table viewport. */
+:is(body[data-page-id="task-processing"],body[data-page-id="data-management"],body[data-page-id="assignment-management"]) .process-page__main{overflow:hidden;min-height:0}
+body[data-page-id="assignment-management"] .assignment-content{min-height:0;overflow:hidden}
+body[data-page-id="assignment-management"] .assignment-content>assignment-board{min-height:0;overflow:hidden}
+body[data-page-id="assignment-management"] assignment-board .assignment-detail{overflow:hidden}
+:is(body[data-page-id="task-processing"],body[data-page-id="data-management"],body[data-page-id="assignment-management"],body[data-page-id="action-annotation"]) :is(.task-data-table__scroll,.assignment-table-wrap,.todo-table-wrap){overflow-y:auto;max-height:none;min-height:0;flex:1 1 0}
+:is(.task-processing-content,.data-page-content){display:flex;flex-direction:column;overflow:hidden;min-height:0}
+:is(.task-processing-content,.data-page-content)>:not(task-data-table){flex-shrink:0}
+:is(.task-processing-content,.data-page-content)>task-data-table{display:flex;flex:1;min-height:0;overflow:hidden}
+:is(.task-processing-content,.data-page-content)>task-data-table>.task-data-table{display:flex;flex:1;flex-direction:column;min-height:0;overflow:hidden}
+:is(.task-processing-content,.data-page-content) .task-data-table__frame{display:flex;flex-direction:column;flex:1;min-height:0;overflow:hidden}

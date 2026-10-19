@@ -1,0 +1,107 @@
+(() => {
+ const esc=v=>String(v??'—').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+ const badge=(v,t='neutral')=>`<span class="table-outline-tag table-outline-tag--${t}">${esc(v)}</span>`;
+ const input=(key,label,value='')=>`<form-input name="${key}" label="${label}" value="${esc(value)}" placeholder="请输入${label}"></form-input>`;
+ const select=(key,label,values)=>`<form-select name="${key}" label="${label}"><option value="">全部</option>${values.map(v=>`<option>${esc(v)}</option>`).join('')}</form-select>`;
+ const action=(name,id=name,disabled=false)=>`<text-button variant="outline" data-admin-action="${id}" ${disabled?'disabled':''}>${name}</text-button>`;
+ const link=(name,id)=>`<button type="button" data-row-action="${id}">${name}</button>`;
+ const stamp=()=>new Date().toLocaleString('sv-SE');
+ const images=[['i1','mozbrain_release','thor-v1.0.0','Spirit v1.6 推荐训练镜像','tao.wang','2026-08-18 09:20'],['i2','mozbrain_release','thor-v0.9.8','Spirit v1.5 兼容镜像','hannah.wang','2026-08-12 16:30'],['i3','mozbrain','thor-v1.0.0','基础训练镜像','joanna.qiao','2026-08-08 09:20']].map(([id,name,version,description,creator,created])=>({id,name,version,description,creator,created}));
+ const queues=[{id:'q1',name:'默认评测队列',admins:['Joanna Qiao','Lance Li'],members:['Joanna Qiao','Lance Li','Rick Guo'],editable:true},{id:'q2',name:'回归测试队列',admins:['Lance Li','Tao Wang'],members:['Lance Li','Tao Wang','Hannah Wang'],editable:false},{id:'q3',name:'端侧专项队列',admins:['Rick Guo'],members:['Rick Guo','Hannah Wang','Tao Wang'],editable:false}];
+ const prompts=[['p1','方位感知测试','Spatial Orientation Test',2,'动作标签 / 拿放类 / 放置'],['p2','整理桌面 (P0)','Tidy the desk (P0)',3,'动作标签 / 拿放类 / 拿取'],['p3','将特定颜色糖放在手上 (P0)','Place candy of specific color in hand (P0)',0,'动作标签 / 拿放类 / 拿取'],['p4','浇花 (P0)','Water the plant (P0)',1,'动作标签 / 拿放类 / 拿取'],['p5','摆花 (P0)','Arrange flowers (P0)',0,'动作标签 / 装配类 / 插入'],['p6','VP从抽屉移到顶格','Move VP from drawer to top shelf',0,'动作标签 / 开合类 / 关闭']].map(([id,name,en,media,tag],i)=>({id,name,en,media,tag,status:i===3?'未发布':'已发布',creator:i===5?'Rick Guo':'Lance Li',created:`2026-07-0${i+1} 10:00`,difficulty:'3（中等）',children:[]}));
+ prompts[2].children=[['拾取粉色糖果','pick up the pink candy'],['将糖果放入人手中',"put the candy into the human’s hand"],['拾取黄色糖果','pick up the yellow candy'],['将糖果放入人手中',"put the candy into the human’s hand"]].map(([name,en],i)=>({...prompts[2],id:'p3-'+(i+1),name,en,sequence:i+1,children:[]}));
+ const groups=[['g1','平台通用标签体系','由平台统一维护的标准标签体系，覆盖能力、动作、物体等基础语义，用于数据标注、检索、训练与评测',['joanna.qiao','Lance Li'],true],['g2','质量处理标签组','用于采集结论、质检结论和处理状态',['tao.wang','包媛桐'],true],['g3','项目交付标签组','用于项目、供应商和交付验收管理',['Lance Li','Joanna Qiao'],false],['g4','自定义标签','历史标签迁移',['Alan Li','Dream','Raleigh','Oasis','Joanna'],true]].map(([id,name,description,owners,enabled])=>({id,name,description,owners,enabled}));
+ const tags=[['能力标签','Capability Tags',null],['方位理解','Spatial Awareness','t0'],['左右','Left / Right','t1'],['前后','Front / Back','t1'],['上下','Up / Down','t1'],['内外','Inside / Outside','t1'],['远近','Near / Far','t1'],['动作理解','Action Understanding','t0'],['物体理解','Object Noun Understanding','t0'],['长程任务','Long Horizon','t0'],['推理能力','Reasoning','t0'],['精确性操控','Precision Manipulation','t0']].map(([name,en,parent],i)=>({id:'t'+i,name,en,parent,group:'g1',status:'已发布',creator:'joanna.qiao',created:`2026-07-${18+i%9} 09:00`}));
+ const usage=[{id:'u1',name:'Tesla-A100-80G',price:5,hours:375,fee:1875},{id:'u2',name:'Tesla-A800-80G',price:6,hours:142.5,fee:855},{id:'u3',name:'H800-80G',price:10,hours:68,fee:680}];
+ const names={'model-tags':'标签管理','model-prompts':'任务提示词','model-images':'镜像管理','model-resources':'资源管理','model-queues':'队列管理'};
+ window.renderAdminPage=(host,id)=>{
+ if(!names[id])return false;
+ const isTags=id==='model-tags',isPrompts=id==='model-prompts',isImages=id==='model-images',isResource=id==='model-resources',isQueue=id==='model-queues';
+ let page=1,size=isTags?20:10,filters={},activeGroup='g1',groupSearch='',expanded=new Set(['t0','t1']),promptOpen=new Set(),resourceTab='metered',range='全部';
+ const header=document.querySelector('[data-model-title]').closest('header'),tools=document.createElement('div');tools.dataset.modelActions='';tools.className='model-actions';header.append(tools);
+ header.hidden=isTags;
+ tools.innerHTML=isImages?action('新增镜像','add'):isPrompts?action('导入 JSON','import')+action('新增任务提示词','add'):isTags?action('全部展开','expand')+action('全部收起','collapse')+action('发布标签','publish'):'';
+ host.innerHTML=`<section class="model-page admin-page ${isTags?'admin-tags-page two-column-layout':''}">${isTags?'<aside class="admin-groups two-column-layout__sidebar"><div class="admin-group-heading"><h2>标签管理</h2>'+action('新增标签组','add-group')+'</div>'+input('groupSearch','标签组名称')+'<div data-groups></div></aside><div class="admin-tag-main two-column-layout__main"><div data-group-description><h2></h2></div>':''}${isResource?'<task-status-tabs variant="model-resources"></task-status-tabs><p class="admin-resource-note">计量付费按实际占用 GPU 卡时计费，训练任务选择 gpu-shared 队列。采用预付费模式，余额不足时任务停止；充值请联系销售人员。</p><stat-cards variant="resources"></stat-cards><div class="admin-resource-toolbar"><h2>训练用量与费用</h2><form-select name="range" label="时间范围"><option>全部</option><option>今日</option><option>7天</option><option>30天</option><option>自定义</option></form-select><div data-date-range hidden><input type="date" aria-label="开始日期"><span>至</span><input type="date" aria-label="结束日期"></div></div>':''}${isPrompts?'<task-filter-bar><form>'+input('id','用例 ID')+input('name','任务提示词')+input('en','Task-Prompt')+select('tag','标签',[...new Set(prompts.map(p=>p.tag))])+select('creator','创建人',['Lance Li','Rick Guo'])+'</form></task-filter-bar>':isTags?'<div class="admin-tag-filter">'+input('name','标签名称')+action('新增一级标签','add')+'</div>':''}<div class="task-data-table command-table"><div class="task-data-table__scroll"><table><colgroup></colgroup><thead></thead><tbody></tbody></table><p class="command-empty" data-empty hidden>暂无符合条件的数据</p></div><list-pagination total="0" page-size="${size}"></list-pagination></div>${isTags?'</div>':''}<p data-admin-feedback role="status"></p></section>`;
+ let dialog=document.querySelector('#model-dialog');if(!dialog){dialog=document.createElement('dialog');dialog.id='model-dialog';dialog.className='command-dialog';document.body.append(dialog);}
+ if(isTags){tools.prepend(host.querySelector('.admin-tag-filter [data-admin-action="add"]'));host.querySelector('[data-group-description]').append(tools);tools.classList.add('admin-tag-heading-actions');}
+ const feedback=t=>host.querySelector('[data-admin-feedback]').textContent=t;
+ function show(title,html){dialog.innerHTML=`<header><h2 id="admin-dialog-title">${esc(title)}</h2><text-button variant="text" data-close>关闭</text-button></header><div data-dialog-content>${html}</div>`;dialog.setAttribute('aria-labelledby','admin-dialog-title');dialog.querySelector('[data-close]').onclick=()=>dialog.close();dialog.showModal();}
+ function formDialog(title,fields,save){show(title,`<form class="eval-edit">${fields.map(([k,l,v])=>input(k,l,v)).join('')}<p>当前页面演示，不提交到后台。</p><p data-error role="alert"></p><button type="submit" class="model-submit">保存</button></form>`);dialog.querySelector('form').onsubmit=e=>{e.preventDefault();const data=Object.fromEntries(new FormData(e.target));if(Object.values(data).some(v=>!v.trim())){dialog.querySelector('[data-error]').textContent='请完整填写字段。';return;}const error=save(data);if(error){dialog.querySelector('[data-error]').textContent=error;return;}dialog.close();render();feedback('已保存（当前页面演示）');};}
+
+ function recordDrawer(row,editImage=false){
+  const drawer=document.createElement('app-drawer');
+  drawer.className='admin-record-drawer';
+  drawer.setAttribute('heading',editImage?'编辑镜像':'队列详情');
+  drawer.innerHTML=editImage?
+   '<form class="admin-record-form">'+input('name','镜像名称',row.name)+input('version','版本',row.version)+'<form-input name="description" label="描述信息" multiline value="'+esc(row.description)+'"></form-input><p data-error role="alert"></p></form><div drawer-footer><text-button variant="outline" data-cancel>取消</text-button><text-button variant="primary" data-save>保存</text-button></div>':
+   '<div class="admin-record-form"><form-input label="队列名称" value="'+esc(row.name)+'" disabled></form-input><form-input label="管理员" value="'+esc(row.admins.join(', '))+'" disabled></form-input><div><div class="form-input__label">成员</div><div class="admin-queue-members" aria-label="队列成员">'+row.members.map(member=>'<span class="table-person-tag">'+esc(member)+'</span>').join('')+'</div></div></div><div drawer-footer><text-button variant="outline" data-cancel>关闭</text-button></div>';
+  document.body.append(drawer);
+  drawer.querySelector('[data-cancel]').onclick=()=>drawer.close();
+  drawer.addEventListener('drawer-close',()=>drawer.remove(),{once:true});
+  if(editImage){
+   const form=drawer.querySelector('form');
+   const save=()=>{
+    const data=Object.fromEntries(new FormData(form));Object.keys(data).forEach(k=>data[k]=data[k].trim());
+    if(!data.name||!data.version){form.querySelector('[data-error]').textContent='请填写镜像名称和版本。';return;}
+    if(images.some(other=>other!==row&&other.name===data.name&&other.version===data.version)){form.querySelector('[data-error]').textContent='镜像名称和版本已存在。';return;}
+    Object.assign(row,data);drawer.close();render();feedback('镜像已保存（当前页面演示）');
+   };
+   drawer.querySelector('[data-save]').onclick=save;
+   form.onsubmit=e=>{e.preventDefault();save();};
+  }
+  drawer.show();
+ }
+ function confirmDelete(label,remove){show('确认删除',`<p>确定删除“${esc(label)}”？</p>${action('删除','confirm')}`);dialog.querySelector('[data-admin-action]').onclick=()=>{remove();dialog.close();render();};}
+ function promptForm(row,parent){formDialog(row?'编辑任务提示词':parent?'新增下级提示词':'新增任务提示词',[['name','任务提示词',row?.name||''],['en','Task-Prompt',row?.en||''],['tag','标签',row?.tag||parent?.tag||'']],data=>{if(row)Object.assign(row,data);else{const fresh={...data,id:'p'+Date.now(),media:0,difficulty:'3（中等）',creator:'当前用户',created:stamp(),status:'未发布',children:[]};if(parent){fresh.sequence=parent.children.length+1;parent.children.push(fresh);promptOpen.add(parent.id);}else prompts.unshift(fresh);}});}
+ function tagForm(parent){formDialog(parent?'新增子标签':'新增一级标签',[['name','标签名称',''],['en','英文名称','']],data=>{tags.push({...data,id:'t'+Date.now(),parent:parent?.id||null,group:activeGroup,status:'未发布',creator:'当前用户',created:stamp()});if(parent)expanded.add(parent.id);});}
+ function renderGroups(){const group=groups.find(g=>g.id===activeGroup);host.querySelector('[data-groups]').innerHTML=groups.filter(g=>g.name.includes(groupSearch)).map(g=>`<article class="admin-group-card ${g.id===activeGroup?'is-active':''}"><button class="admin-group-title" data-group="${g.id}">${esc(g.name)}</button><p>${esc(g.description)}</p><div>${g.owners.map(o=>badge(o)).join(' ')}</div><label><input type="checkbox" role="switch" data-group-switch="${g.id}" ${g.enabled?'checked':''}> ${g.enabled?'启用':'停用'}</label></article>`).join('');host.querySelector('[data-group-description] h2').textContent=group.name;}
+ function render(){
+ let cols,rows;
+ if(isImages){cols=[['name','镜像名称',180],['version','版本',130],['description','描述信息',null],['creator','创建人',140],['created','创建时间',180]];rows=images;}
+ if(isQueue){cols=[['name','队列名称',250],['admins','管理员',350],['members','成员',480]];rows=queues;}
+ if(isPrompts){cols=[['id','用例 ID',100],['name','任务提示词',240],['en','Task-Prompt',300],['media','场景示意图',140],['sequence','序号',70],['difficulty','难度',120],['tag','标签',260],['status','状态',100],['creator','创建人',130],['created','创建时间',170]];rows=prompts.filter(row=>Object.entries(filters).every(([k,v])=>!v||String(row[k]||'').toLowerCase().includes(v.toLowerCase())||row.children.some(c=>String(c[k]||'').toLowerCase().includes(v.toLowerCase()))));}
+ if(isTags){renderGroups();cols=[['name','标签名称',290],['level','层级',80],['en','英文名称',260],['status','状态',100],['created','创建时间',180],['creator','创建人 ID',150]];const groupTags=tags.filter(t=>t.group===activeGroup);rows=[];const walk=(parent,depth)=>groupTags.filter(t=>t.parent===parent).forEach(t=>{if(!filters.name||t.name.includes(filters.name))rows.push({...t,level:depth});if(expanded.has(t.id)||filters.name)walk(t.id,depth+1);});walk(null,1);}
+ if(isResource){cols=[['name','GPU 型号',270],['price','参考价格（元/卡时）',270],['hours','训练用量（卡时）',250],['fee','训练费用（元）',280]];rows=resourceTab==='metered'&&range==='全部'?usage:[];host.querySelector('stat-cards').hidden=resourceTab!=='metered';host.querySelector('.admin-resource-toolbar').hidden=resourceTab!=='metered';host.querySelector('.admin-resource-note').textContent=resourceTab==='metered'?'计量付费按实际占用 GPU 卡时计费，训练任务选择 gpu-shared 队列。采用预付费模式，余额不足时任务停止；充值请联系销售人员。':'当前示例未配置独占资源。';}
+ page=Math.min(page,Math.max(1,Math.ceil(rows.length/size)));const pageRows=rows.slice((page-1)*size,page*size);let visible=pageRows;
+ if(isPrompts)visible=pageRows.flatMap(row=>[row,...(promptOpen.has(row.id)||Object.values(filters).some(Boolean)?row.children.map(c=>({...c,isChild:true,parentId:row.id})):[])]);
+ host.querySelector('colgroup').innerHTML=cols.map(c=>c[2]===null?'<col>':`<col style="width:${c[2]}px">`).join('')+(isResource?'':`<col style="width:${isPrompts?184:112}px">`);host.querySelector('thead').innerHTML='<tr>'+cols.map(c=>`<th scope="col">${c[1]}</th>`).join('')+(isResource?'':'<th scope="col">操作</th>')+'</tr>';
+ host.querySelector('tbody').innerHTML=visible.map(row=>`<tr data-id="${row.id}" ${row.isChild?'class="admin-child-row"':''}>${cols.map(([key])=>{
+ let value=esc(row[key]);if(key==='status')value=badge(row.status,row.status==='已发布'?'active':'warning');
+ if(key==='members'||key==='admins')value=row[key].map(v=>badge(v)).join(' ');
+ if(isResource&&typeof row[key]==='number')value=row[key].toLocaleString('en-US',{minimumFractionDigits:key==='hours'?1:2,maximumFractionDigits:2});
+ if(isTags&&key==='level')value=badge(row.level,row.level===1?'paused':row.level===2?'warning':'running');
+ if(isTags&&key==='name'){const has=tags.some(t=>t.parent===row.id);value=`<div class="admin-tree-cell" style="padding-left:${(row.level-1)*20}px">${has?`<button data-row-action="expand" aria-label="展开或收起${esc(row.name)}" aria-expanded="${expanded.has(row.id)}">${expanded.has(row.id)?'▾':'▸'}</button>`:'<span class="admin-tree-spacer"></span>'}${value}</div>`;}
+ if(isPrompts&&key==='id')value=`<div class="admin-tree-cell">${!row.isChild?`<button data-row-action="expand" aria-label="展开${row.id}" aria-expanded="${promptOpen.has(row.id)}">${promptOpen.has(row.id)?'▾':'▸'}</button>`:'<span class="admin-tree-spacer"></span>'}${value}</div>`;
+ if(isPrompts&&key==='media')value=row.isChild?'继承上级':row.media?link(row.media+' 张','media'):'—';
+ if(isPrompts&&key==='difficulty')value=badge(row.difficulty,'warning');if(isPrompts&&key==='tag')value=badge(row.tag,'running');
+ return `<td class="model-wrap">${value}</td>`;
+ }).join('')}${isResource?'':`<td>${isImages?link('编辑','edit')+link('删除','delete'):isQueue?link('详情','detail')+(row.editable?link('编辑','edit'):'<button disabled title="当前用户无编辑权限">编辑</button>'):isTags?link('新增子标签','child'):row.isChild?link('删除','delete'):row.status==='未发布'?link('增加下级','child')+link('发布','publish')+link('编辑','edit'):link('复制','copy')}</td>`}</tr>`).join('');
+ host.querySelector('.command-table').classList.toggle('admin-image-table',isImages);
+ if(!isResource)customElements.get('task-data-table').enhanceFixedEdges(host.querySelector('.command-table'));
+ host.querySelector('[data-empty]').hidden=rows.length>0;host.querySelector('[data-empty]').textContent=isResource&&range!=='全部'?'当前示例仅提供累计用量，暂无此时间范围明细':'暂无符合条件的数据';const pagination=host.querySelector('list-pagination');pagination.setAttribute('total',rows.length);pagination.setAttribute('page',page);
+ }
+ host.querySelector('list-pagination').addEventListener('page-change',e=>{page=e.detail.page;size=e.detail.pageSize;render();});
+ host.querySelector('task-filter-bar')?.addEventListener('value-change',()=>{filters=Object.fromEntries(new FormData(host.querySelector('form')));page=1;render();});host.querySelector('task-filter-bar')?.addEventListener('filter-refresh',()=>{filters=Object.fromEntries(new FormData(host.querySelector('form')));render();});
+ if(isTags){host.querySelector('[name="groupSearch"]').addEventListener('value-change',e=>{groupSearch=e.detail.value;renderGroups();});host.querySelector('.admin-tag-filter form-input').addEventListener('value-change',e=>{filters.name=e.detail.value;page=1;render();});}
+ host.querySelector('tbody').onclick=e=>{const b=e.target.closest('[data-row-action]');if(!b||b.disabled)return;const rid=b.closest('tr').dataset.id;let row=isImages?images.find(r=>r.id===rid):isQueue?queues.find(r=>r.id===rid):isTags?tags.find(r=>r.id===rid):prompts.flatMap(p=>[p,...p.children]).find(r=>r.id===rid);const a=b.dataset.rowAction;
+ if(a==='expand'){const set=isTags?expanded:promptOpen;set.has(rid)?set.delete(rid):set.add(rid);render();if(isPrompts&&!row.children.length)feedback('此提示词暂无下级。');}
+ if(a==='child'){isTags?tagForm(row):promptForm(null,row);}
+ if(a==='publish'){row.status='已发布';render();}
+ if(a==='copy'){prompts.unshift({...row,id:'p'+Date.now(),name:row.name+' 副本',status:'未发布',children:row.children.map((c,i)=>({...c,id:'p'+Date.now()+'-'+i,children:[]}))});render();}
+ if(a==='media')show('场景示意图',`<p>${esc(row.name)} · ${row.media} 张</p><p>截图未提供原始场景图片，当前仅展示数量。</p>`);
+ if(a==='detail'&&isQueue)recordDrawer(row);
+ if(a==='edit'){if(isImages)recordDrawer(row,true);else if(isQueue&&row.editable)formDialog('编辑队列',[['name','队列名称',row.name],['admins','管理员（逗号分隔）',row.admins.join(',')],['members','成员（逗号分隔）',row.members.join(',')]],data=>{Object.assign(row,data,{admins:data.admins.split(/[,，]/).map(v=>v.trim()).filter(Boolean),members:data.members.split(/[,，]/).map(v=>v.trim()).filter(Boolean)});});else if(isPrompts)promptForm(row);}
+ if(a==='delete')confirmDelete(row.name,()=>{if(isImages)images.splice(images.indexOf(row),1);else{const parent=prompts.find(p=>p.children.includes(row));if(parent)parent.children.splice(parent.children.indexOf(row),1);}});
+ };
+ async function handleAction(e){const b=e.target.closest('[data-admin-action]');if(!b)return;const a=b.dataset.adminAction;
+ if(a==='add'){if(isTags)tagForm();else if(isPrompts)promptForm();else formDialog('新增镜像',[['name','镜像名称',''],['version','版本',''],['description','描述信息','']],data=>{if(images.some(r=>r.name===data.name&&r.version===data.version))return '镜像名称和版本已存在。';images.unshift({...data,id:'i'+Date.now(),creator:'当前用户',created:stamp()});});}
+ if(a==='add-group')formDialog('新增标签组',[['name','标签组名称',''],['description','描述',''],['owners','负责人（逗号分隔）','']],data=>{const g={...data,id:'g'+Date.now(),owners:data.owners.split(/[,，]/),enabled:true};groups.push(g);activeGroup=g.id;});
+ if(a==='expand'){tags.filter(t=>t.group===activeGroup).forEach(t=>expanded.add(t.id));render();}if(a==='collapse'){expanded.clear();render();}if(a==='publish'){tags.filter(t=>t.group===activeGroup).forEach(t=>t.status='已发布');render();feedback('当前标签组已发布（页面演示）');}
+ if(a==='import'){show('导入 JSON','<p>选择 JSON 数组文件，每条需包含 id、name、en，可选 tag。单次最多 500 条。</p><input type="file" accept=".json,application/json" aria-label="选择 JSON 文件"><p data-import-error role="alert"></p>');dialog.querySelector('input[type=file]').onchange=async event=>{const file=event.target.files[0];if(!file)return;try{if(file.size>2*1024*1024)throw Error('文件不能超过 2MB');const items=JSON.parse(await file.text());if(!Array.isArray(items)||!items.length||items.length>500)throw Error('请提供 1 至 500 条记录的数组');const ids=new Set(prompts.flatMap(p=>[p.id,...p.children.map(c=>c.id)]));const imported=items.map(item=>{if(!item||['id','name','en'].some(k=>typeof item[k]!=='string'||!item[k].trim())||ids.has(item.id))throw Error('id、name、en 必须为非空文本，ID 不可重复');ids.add(item.id);return {id:item.id,name:item.name,en:item.en,tag:typeof item.tag==='string'?item.tag:'未分类',media:0,difficulty:'3（中等）',status:'未发布',creator:'当前用户',created:stamp(),children:[]};});prompts.unshift(...imported);dialog.close();render();feedback(`已导入 ${imported.length} 条演示记录`);}catch(err){dialog.querySelector('[data-import-error]').textContent=err.message;}};}
+ }
+ tools.onclick=e=>{e.stopPropagation();handleAction(e);};host.addEventListener('click',handleAction);
+ if(isTags){host.querySelector('[data-groups]').onclick=e=>{const b=e.target.closest('[data-group]');if(b){activeGroup=b.dataset.group;page=1;render();}};host.querySelector('[data-groups]').onchange=e=>{const gid=e.target.dataset.groupSwitch;if(gid){groups.find(g=>g.id===gid).enabled=e.target.checked;renderGroups();}};}
+ if(isResource){host.querySelector('stat-cards').querySelector('[data-remaining-hours]').parentElement.insertAdjacentHTML('afterbegin', '<form-select class="admin-gpu-select" name="gpu" label="GPU 型号"><option value="5">A100</option><option value="6">A800</option><option value="10">H800</option></form-select>');host.querySelector('task-status-tabs').addEventListener('tab-change',e=>{resourceTab=e.detail.value;render();});host.querySelector('[name="range"]').addEventListener('value-change',e=>{range=e.detail.value;host.querySelector('[data-date-range]').hidden=range!=='自定义';render();});host.querySelector('[name="gpu"]').addEventListener('value-change',e=>host.querySelector('stat-cards').setAttribute('gpu-price',e.detail.value));}
+ render();return true;
+ };
+})();

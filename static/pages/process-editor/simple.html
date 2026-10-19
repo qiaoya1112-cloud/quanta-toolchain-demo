@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>端到端切分标注简洁版</title>
+  <link rel="stylesheet" href="../../components/platform-sidebar/platform-sidebar.css?v=group-nav-20260922">
+  <link rel="stylesheet" href="../../components/platform-sidebar/platform-sidebar-variant.css?v=group-nav-20260922">
+  <link rel="stylesheet" href="./page.css">
+  <link rel="stylesheet" href="../../components/input/input.css">
+  <link rel="stylesheet" href="../../components/task-filter-bar/search-input.css">
+  <link rel="stylesheet" href="../../components/button/button.css?v=icon-close-20261016">
+  <script src="../../components/resource-list/map-preview.js?v=point-direction-10" defer></script><script src="../../components/input/input.js?v=hidden-options-20261019" defer></script>
+  <link rel="stylesheet" href="../../components/process-editor/condition-panel.css">
+  <script src="../../components/process-editor/condition-panel.js" defer></script>
+  <script src="../../components/task-filter-bar/search-input.js" defer></script>
+  <script src="../../components/button/button.js?v=icon-only-1" defer></script>
+  <script src="../../components/platform-sidebar/platform-sidebar.js?v=resource-library-20261015" defer></script>
+  <script src="../../components/process-editor/process-editor.js?v=point-options-20261019" defer></script>
+  <script src="./simple.js" defer></script>
+  <script src="../../components/process-editor/controller.js?v=node-sync-3" defer></script>
+<link rel="stylesheet" href="../../components/process-editor/action-dialogs.css">
+<script src="../../components/process-editor/action-dialogs.js" defer></script>
+<link rel="stylesheet" href="../../components/process-editor/resource-check.css?v=white-map-7">
+<script src="../../components/process-editor/resource-check.js?v=map-config-title-8" defer></script>
+<link rel="stylesheet" href="../../components/resource-list/resource-list.css?v=table-tags-32">
+<link rel="stylesheet" href="../../components/task-data-table/task-data-table.css">
+<script src="../../components/resource-list/resource-list.js?v=optional-trailing-33" defer></script>
+<script src="../../components/task-data-table/task-data-table.js" defer></script>
+<link rel="stylesheet" href="../../components/resource-list/map-preview.css?v=white-map-2"></head>
+<body data-page-id="process-management">
+  <div class="editor-page process-editor-components">
+    <aside class="editor-page__sidebar"><platform-sidebar collapsed variant="style-variant" palette="dark"></platform-sidebar></aside>
+    <main class="workspace">
+      <process-editor-header></process-editor-header>
+      <div class="body">
+        <process-node-library variant="basic" no-flow></process-node-library>
+        <process-flow-canvas variant="basic"></process-flow-canvas>
+        <process-node-properties variant="basic"></process-node-properties>
+      </div>
+    </main>
+    <div class="toast" role="status" aria-live="polite"></div>
+  </div>
+</body>
+</html>

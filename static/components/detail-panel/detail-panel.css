@@ -1,0 +1,40 @@
+detail-section{display:block;border:1px solid var(--color-border,#d7e0e7);border-radius:10px;background:var(--color-bg-surface,#fff);overflow:hidden}
+detail-section+detail-section{margin-top:16px}
+.detail-section__header{display:flex;align-items:center;gap:10px;padding:12px 16px;border-bottom:1px solid var(--color-border,#d7e0e7)}
+.detail-section__header h3{margin:0;font-size:14px;line-height:22px;font-weight:600}
+.detail-section__header text-button{margin-left:auto}
+.detail-section__body{display:grid;gap:20px;padding:16px}
+detail-fields{display:block;min-width:0}
+detail-fields dl{display:grid;gap:14px;margin:0}
+detail-fields[columns="3"] dl{grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+detail-fields dt{margin-bottom:6px;color:var(--color-text-muted,#70849a);font-size:12px;line-height:18px}
+detail-fields dd{margin:0;font-size:14px;line-height:22px;color:var(--color-text-primary,#172d43);overflow-wrap:anywhere}
+metric-progress{display:block;min-width:0}
+.metric-progress__heading,.metric-progress__caption{display:flex;justify-content:space-between;gap:12px;align-items:baseline;font-size:12px;line-height:20px}
+.metric-progress__heading strong{font-size:14px;font-weight:600;font-variant-numeric:tabular-nums}
+metric-progress progress{display:block;width:100%;height:6px;margin:10px 0 8px;border:0;border-radius:4px;overflow:hidden;appearance:none;background:var(--color-border,#d7e0e7)}
+metric-progress progress::-webkit-progress-bar{background:var(--color-border,#d7e0e7)}
+metric-progress progress::-webkit-progress-value{background:var(--color-brand,#0095b6);border-radius:4px}
+metric-progress progress::-moz-progress-bar{background:var(--color-brand,#0095b6);border-radius:4px}
+.metric-progress__caption{color:var(--color-text-muted,#70849a)}
+
+/* Plain sections use spacing and typography instead of a card surface. */
+detail-section[variant="plain"]{border:0;border-radius:0;background:transparent;overflow:visible}
+detail-section[variant="plain"]>.detail-section__header{padding:0 0 16px;border:0;min-height:32px}
+detail-section[variant="plain"]>.detail-section__body{padding:0;gap:20px}
+detail-section[variant="plain"]+detail-section[variant="plain"]{margin-top:32px}
+detail-section[variant="plain"]>.detail-section__header text-button .text-button{padding-inline:0;min-width:0}
+
+/* Readable detail groups: explicit headings, aligned labels, compact metadata. */
+.detail-fields__heading{margin:0 0 12px;color:var(--color-text-primary,#172d43);font-size:13px;font-weight:600;line-height:20px}
+detail-fields[layout="inline"] dl>div{display:grid;grid-template-columns:64px minmax(0,1fr);gap:12px;align-items:baseline}
+detail-fields[layout="inline"] dt{margin:0;line-height:24px}
+detail-fields[layout="inline"] dd{line-height:24px}
+detail-section[density="readable"]>.detail-section__header{padding-bottom:20px;gap:8px}
+detail-section[density="readable"]>.detail-section__header h3{font-size:15px}
+detail-section[density="readable"]>.detail-section__body{gap:24px;min-width:0}
+detail-section[density="readable"] detail-fields[columns] dd{font-weight:500;font-variant-numeric:tabular-nums}
+detail-section[density="readable"] .metric-progress__heading>span{font-size:13px;font-weight:600}
+.detail-section__header,.detail-section__body,metric-progress{box-sizing:border-box;max-width:100%;min-width:0}
+.metric-progress__heading,.metric-progress__caption{flex-wrap:wrap}
+@media(max-width:420px){detail-fields[layout="inline"] dl>div{grid-template-columns:56px minmax(0,1fr);gap:8px}}

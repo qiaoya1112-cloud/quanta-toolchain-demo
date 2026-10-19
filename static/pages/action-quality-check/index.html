@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="light">
+<head>
+  <link rel="stylesheet" href="../../styles.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>工作台</title>
+  <link rel="stylesheet" href="../../components/platform-sidebar/platform-sidebar.css?v=group-nav-20260922" />
+  <link rel="stylesheet" href="../../components/platform-sidebar/platform-sidebar-variant.css?v=group-nav-20260922">
+  <script src="../../components/platform-sidebar/platform-sidebar.js?v=resource-library-20261015" defer></script>
+  <link rel="stylesheet" href="./page.css?v=split-pages-5" />
+  <link rel="stylesheet" href="../../components/input/input.css">
+  <link rel="stylesheet" href="../../components/task-filter-bar/task-filter-bar.css">
+  <link rel="stylesheet" href="../../components/button/button.css">
+  <link rel="stylesheet" href="./todo.css?v=shared-fixed-todo-actions-20261014">
+  <link rel="stylesheet" href="../../components/task-data-table/task-data-table.css?v=shared-frame-edge-alignment-20261014">
+  <link rel="stylesheet" href="../../components/task-data-table/table-heading.css">
+  <script src="../../components/input/input.js" defer></script>
+  <script src="../../components/task-filter-bar/task-filter-bar.js?v=workbench-content-3" defer></script>
+  <script src="../../components/button/button.js" defer></script>
+  <script src="../../components/task-data-table/task-data-table.js?v=pool-processing-type-20261013" defer></script>
+  <link rel="stylesheet" href="../../components/task-status-tabs/task-status-tabs.css">
+  <script src="../../components/task-status-tabs/task-status-tabs.js?v=task-view-1" defer></script>
+  <link rel="stylesheet" href="../../components/task-page-header/page-frame.css">
+  <link rel="stylesheet" href="./pool-setup.css?v=separate-modified-status-20261014"><script src="./pool-data.js?v=separate-modified-status-20261014" defer></script><script src="./pool-setup.js?v=confirm-release-20261013" defer></script>
+  <script src="./todo.js?v=restore-flow-counts-20261014" defer></script>
+  <link rel="stylesheet" href="../../components/pagination/pagination.css?v=table-footer-height-20261014">
+  <script src="../../components/pagination/pagination.js?v=total-only-20261014"></script>
+  <link rel="stylesheet" href="../../components/table-examples/embed.css">
+  <script src="../../components/table-examples/embed.js"></script>
+  <link rel="stylesheet" href="../../components/task-page-header/task-page-header.css">
+  <script src="../../components/task-page-header/task-page-header.js" defer></script>
+  <link rel="stylesheet" href="../../components/table-examples/page-layout.css">
+<script src="../../components/task-data-table/table-columns.js?v=balanced-pool-columns-20261013" defer></script>
+<link rel="stylesheet" href="../../components/confirm-dialog/confirm-dialog.css">
+<script src="../../components/confirm-dialog/confirm-dialog.js" defer></script>
+</head>
+<body data-page-id="action-annotation" data-view="task-list" data-theme="light">
+  <div class="page-shell">
+    <aside class="page-sidebar" data-block="platform-sidebar">
+      <platform-sidebar variant="style-variant" palette="dark"></platform-sidebar>
+    </aside>
+
+    <main class="page-workspace">
+      <section class="task-list-view" aria-label="工作台">
+        <task-page-header title="工作台"></task-page-header>
+        <div class="task-list-view__main">
+          <task-status-tabs variant="task-view" active="todo" data-view-tabs></task-status-tabs>
+          <section class="annotation-todo" aria-label="待办项">
+            <div class="todo-types task-status-subtabs" role="tablist" aria-label="待办分类"><button type="button" role="tab" data-type="rejected" class="is-active" aria-selected="true">驳回待处理</button><button type="button" role="tab" data-type="review" aria-selected="false">修正待审核</button><button type="button" role="tab" data-type="assigned" aria-selected="false">其他分配任务</button></div>
+            <task-filter-bar variant="annotation-todo"></task-filter-bar>
+            <div class="todo-layout"><aside class="todo-groups" aria-label="处理任务分组"></aside><div class="todo-results"><div class="todo-table-wrap"><table class="todo-table"><thead><tr><th>数据 ID</th><th>处理类型</th><th>来源操作</th><th>说明</th><th>当前轮次</th><th>更新时间 ↓</th><th>操作</th></tr></thead><tbody></tbody></table></div><div class="todo-pagination"><span>10 条/页</span><text-button disabled aria-label="上一页">‹</text-button><text-button variant="primary">1</text-button><text-button disabled aria-label="下一页">›</text-button></div><p class="todo-feedback" role="status"></p></div></div>
+          </section>
+          <section class="task-pool" aria-label="任务池" hidden>
+            <task-filter-bar variant="workbench-pool"></task-filter-bar>
+            <task-data-table variant="workbench-pool" rows="4"></task-data-table>
+          </section>
+        </div>
+      </section>
+    </main>
+  </div>
+</body>
+</html>

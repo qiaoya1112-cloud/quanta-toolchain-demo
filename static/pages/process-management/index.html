@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>流程管理</title>
+  <link rel="stylesheet" href="../../styles.css" />
+  <link rel="stylesheet" href="../../components/button/button.css" />
+  <script src="../../components/button/button.js" defer></script>
+  <link rel="stylesheet" href="../../components/platform-sidebar/platform-sidebar.css?v=group-nav-20260922" />
+  <link rel="stylesheet" href="../../components/platform-sidebar/platform-sidebar-variant.css?v=group-nav-20260922">
+  <link rel="stylesheet" href="../../components/task-page-header/task-page-header.css" />
+  <link rel="stylesheet" href="../../components/task-filter-bar/task-filter-bar.css" />
+  <link rel="stylesheet" href="../../components/task-data-table/task-data-table.css" />
+  <link rel="stylesheet" href="./page.css?v=create-drawer-1" />
+  <link rel="stylesheet" href="../../components/input/input.css">
+  <script src="../../components/input/input.js" defer></script>
+  <link rel="stylesheet" href="../../components/drawer/drawer.css">
+  <script src="../../components/drawer/drawer.js" defer></script>
+  <script src="../../components/platform-sidebar/platform-sidebar.js?v=resource-library-20261015" defer></script>
+  <script src="../../components/task-page-header/task-page-header.js" defer></script>
+  <script src="../../components/task-filter-bar/task-filter-bar.js" defer></script>
+  <script src="../../components/task-data-table/task-data-table.js" defer></script>
+  <script src="./page.js" defer></script>
+<link rel="stylesheet" href="../../components/pagination/pagination.css?v=footer-align-20261016"><script src="../../components/pagination/pagination.js"></script><script src="../../components/task-data-table/table-columns.js" defer></script>
+<script src="../../components/create-examples/embedded-example.js"></script>
+</head>
+<body data-page-id="process-management">
+  <div class="process-page">
+    <aside class="process-page__sidebar"><platform-sidebar variant="style-variant" palette="dark"></platform-sidebar></aside>
+    <main class="process-page__main" aria-label="流程管理内容区">
+      <task-page-header title="流程管理" action="新增流程" yaml-upload></task-page-header>
+      <section class="process-page__content" aria-label="流程管理">
+        <task-filter-bar variant="process-management"></task-filter-bar>
+        <task-data-table variant="process-management" editor-url="../process-editor/index.html"></task-data-table>
+      </section>
+    </main>
+  </div>
+<app-drawer id="create-process" heading="新增流程">
+    <form id="create-process-form" class="create-process-form">
+      <form-input label="流程名称" name="name" placeholder="请输入流程名称" data-required></form-input>
+      <form-input label="流程标识" name="identifier" placeholder="请输入英文流程标识，如 e2e-split-annotation" data-required></form-input>
+      <form-select label="业务环节" name="stage" required data-required><option value="质检">质检</option><option value="标注">标注</option></form-select>
+      <form-input label="描述" name="description" multiline placeholder="请输入流程描述"></form-input>
+      <p class="create-process-feedback" role="alert"></p>
+    </form>
+    <text-button drawer-footer variant="outline" data-create-cancel>取消</text-button>
+    <text-button drawer-footer variant="primary" data-create-submit>创建并进入画布</text-button>
+  </app-drawer>
+</body>
+</html>

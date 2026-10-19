@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 920 530" role="img" aria-labelledby="title desc">
+<title id="title">列表页面分区与间距</title><desc id="desc">页面比例1440比900，内容上下12左右24；六个分区以浅色底与彩色线框区分，可选区域使用虚线，区域间距见标注。</desc>
+<style>text{font:13px Arial,'PingFang SC','Microsoft YaHei',sans-serif;fill:#59636c}.label{font-weight:600;fill:#303b44}.note{font-size:12px;fill:#79828a}.box{fill:#fff;stroke:#aeb7bf;stroke-width:1}.dash{fill:none;stroke:#c8ced3;stroke-dasharray:4 4}.lead{fill:none;stroke:#a6b3bd;stroke-width:1}.region{stroke-width:1.2}.header{fill:#eaf4ff;stroke:#72b6ee}.tabs{fill:#f5effa;stroke:#b99bd1;stroke-dasharray:4 3}.filter{fill:#fff7e6;stroke:#e5b354}.stats{fill:#eef8ee;stroke:#95bd88;stroke-dasharray:4 3}.table{fill:#f1fafb;stroke:#62b9c5}.pagination{fill:#fff0f4;stroke:#da91a8}.region-title{font-weight:600}.header-text{fill:#335f87}.tab-text{fill:#77578f}.filter-text{fill:#8f6826}.stats-text{fill:#57784c}.table-text{fill:#377c85}.page-text{fill:#985b70}</style>
+<!-- The 720 × 450 outline preserves the reference viewport's 1440 × 900 ratio. -->
+<rect x="46" y="56" width="720" height="450" rx="4" class="box"/>
+<path d="M50 57H161V505H50Q47 505 47 502V60Q47 57 50 57" fill="#f3f5f7"/><path d="M161 56V506" class="lead"/><text x="78" y="270" class="label">导航区</text><text x="76" y="292" class="note">230px</text>
+<rect x="173" y="62" width="581" height="27" class="region header"/><text x="185" y="81" class="region-title header-text">① 页面标题栏</text>
+<rect x="173" y="89" width="581" height="22" class="region tabs"/><text x="185" y="105" class="region-title tab-text">② Tab 切换 · 可选</text>
+<rect x="173" y="117" width="581" height="28" class="region filter"/><text x="185" y="136" class="region-title filter-text">③ 筛选区域</text>
+<rect x="173" y="151" width="581" height="32" class="region stats"/><text x="185" y="172" class="region-title stats-text">④ 统计区域 · 可选</text>
+<rect x="173" y="189" width="581" height="291" class="region table"/>
+<path d="M173 209H754M280 189V480M675 189V480" stroke="#b9dadd" fill="none"/>
+<path d="M173 247H754M173 285H754M173 323H754M173 361H754M173 399H754M173 437H754" stroke="#dbecee" fill="none"/>
+<text x="185" y="203" class="note">固定列</text><text x="305" y="203" class="note">内容列</text><text x="690" y="203" class="note">操作列</text>
+<rect x="323" y="306" width="280" height="68" rx="6" fill="#f1fafb"/><text x="345" y="330" class="region-title table-text">⑤ 表格 · 填充剩余高度</text><text x="345" y="352" class="note">超出内部滚动，行高随内容撑开</text>
+<rect x="173" y="480" width="581" height="20" class="region pagination"/><text x="185" y="495" class="region-title page-text">⑥ 分页</text>
+<path d="M173 45V32H754V45" class="lead"/><text x="355" y="25" class="note">内容区：上 / 下 12px，左 / 右 24px</text>
+<!-- Region heights stay inside each block; spacing dimensions point to boundaries in the outer gutter. -->
+<g text-anchor="end">
+<text x="740" y="80" class="note">高 54px</text>
+<text x="740" y="105" class="note">高 44px</text>
+<text x="740" y="136" class="note">单行 56px</text>
+<text x="740" y="172" class="note">示意 64px</text>
+<text x="740" y="495" class="note">高 40px</text>
+</g>
+<g fill="none" stroke="#899aa7" stroke-width="1">
+<path d="M756 89H784"/>
+<path d="M756 111H774M756 117H774M770 111V117M774 114H784"/>
+<path d="M756 145H774M756 151H774M770 145V151M774 148H784"/>
+<path d="M756 183H774M756 189H774M770 183V189M774 186H784"/>
+<path d="M756 480H784"/>
+</g>
+<g dominant-baseline="middle">
+<text x="792" y="89" class="note">相接 · 0px</text>
+<text x="792" y="114" class="note">间距 12px</text>
+<text x="792" y="148" class="note">间距 12px</text>
+<text x="792" y="186" class="note">间距 12px</text>
+<text x="792" y="480" class="note">相接 · 0px</text>
+</g>
+</svg>

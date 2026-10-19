@@ -1,0 +1,23 @@
+/* List components set display explicitly, so hidden needs an author-level rule. */
+body[data-page-id="task-processing"] .process-page__main.has-processing-detail{padding:0;gap:0}
+body[data-page-id="task-processing"] .process-page__main.has-processing-detail>[hidden]{display:none!important}
+.processing-detail{display:flex;flex:1;min-height:0;flex-direction:column;background:#fff;overflow:hidden}
+.processing-detail [hidden]{display:none!important}
+.processing-detail>task-page-header{padding:8px 24px;border-bottom:1px solid var(--color-border);flex:none}
+.processing-detail .creator-layout{min-height:0;flex:1}
+.processing-detail .creator-main{overflow:auto;min-width:0}
+.processing-detail-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px;margin:0}
+.processing-detail-fields dt{font-size:12px;color:var(--color-text-secondary);margin-bottom:8px}
+.processing-detail-fields dd{margin:0;padding:10px 12px;border:1px solid var(--color-border);border-radius:8px;overflow-wrap:anywhere}
+.processing-detail-stage+ .processing-detail-stage{margin-top:16px}
+.processing-detail h3{font-size:14px;margin:0 0 16px}
+.processing-detail-stage>h3:not(:first-child){margin-top:24px}
+.processing-detail .creator-footer{flex:none;border-top:1px solid var(--color-border);display:flex;justify-content:flex-end;padding:16px 24px;background:#fff}
+.processing-detail .task-data-table{min-height:0}
+@media(max-width:760px){.processing-detail-fields{grid-template-columns:1fr}}
+
+.processing-detail .creator-layout{padding:8px;gap:8px;background:var(--color-bg-surface-subtle)}
+.processing-detail task-step-nav{padding:12px 8px;border:0;border-radius:8px;background:#fff}
+.processing-detail .creator-main{padding:16px;border-radius:8px;background:#fff}
+.processing-detail .creator-main>section{width:100%;max-width:none;margin:0}
+.processing-detail h2{font-size:16px;line-height:24px;margin:0 0 12px}

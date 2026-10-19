@@ -2600,6 +2600,8 @@ def _table(
     row_attrs=None,
     wrap_class="table-wrap q-table-scroll",
     table_class="ant-table",
+    component_variant=None,
+    pagination=False,
 ):
     head = "".join(f"<th>{_e(item)}</th>" for item in headers)
     row_attrs = row_attrs or [""] * len(rows)
@@ -2610,13 +2612,17 @@ def _table(
     if not body:
         body = f'<tr><td colspan="{len(headers)}" class="dpr-empty">{_e(empty)}</td></tr>'
     table_id_attr = f' id="{_e(table_id)}"' if table_id else ""
+    wrapper_tag = "task-data-table" if component_variant else "div"
+    component_attrs = f' hydrate variant="{_e(component_variant)}"' if component_variant else ""
+    footer = f'<list-pagination class="task-data-table__pagination task-processing-pagination" total="{len(rows)}" page-size="20"></list-pagination>' if pagination else ""
     return f"""
-    <div class="{_e(wrap_class)}">
+    <{wrapper_tag} class="{_e(wrap_class)}"{component_attrs}>
       <table class="{_e(table_class)}"{table_id_attr}>
         <thead><tr>{head}</tr></thead>
         <tbody>{body}</tbody>
       </table>
-    </div>
+      {footer}
+    </{wrapper_tag}>
     """
 
 
@@ -3315,16 +3321,13 @@ def render_processing_tasks():
         stage_tones = {"质检": "blue", "标注": "teal"}
         flow_bindings = "".join(
             (
-                f'<div class="dpr-flow-binding-chip" data-progress-stage="{_e(stage)}">'
-                f'<span>{_e(stage)}</span><div class="dpr-flow-binding-name">'
-                f'<b>{_e(flow)}</b><code>{_e(_version)}</code></div>'
-                f'<div class="dpr-task-progress-line dpr-flow-progress-line">'
-                f'<i class="{_e(stage_tones[stage])}" '
-                f'style="width:{round(progress_by_stage[stage]["done"] / progress_by_stage[stage]["total"] * 100) if progress_by_stage[stage]["total"] else 0}%"></i>'
-                f'<b>{progress_by_stage[stage]["done"]:,} / '
-                f'{progress_by_stage[stage]["total"]:,} · '
-                f'{round(progress_by_stage[stage]["done"] / progress_by_stage[stage]["total"] * 100) if progress_by_stage[stage]["total"] else 0}%</b>'
-                f'</div></div>'
+                f'<div class="task-flow" data-progress-stage="{_e(stage)}">'
+                f'<span class="task-flow__name"><span class="table-outline-tag table-progress-type {"is-quality" if stage == "质检" else ""}">{_e(stage)}</span>'
+                f'{_e(flow)} <small>{_e(_version)}</small></span>'
+                f'<span class="task-flow__progress {"is-quality" if stage == "质检" else ""}" role="progressbar">'
+                f'<span class="task-flow__track"><b style="width:{round(progress_by_stage[stage]["done"] / progress_by_stage[stage]["total"] * 100) if progress_by_stage[stage]["total"] else 0}%"></b></span>'
+                f'<span class="task-flow__progress-label"><span>{progress_by_stage[stage]["done"]:,} / {progress_by_stage[stage]["total"]:,}</span>'
+                f'<span>{round(progress_by_stage[stage]["done"] / progress_by_stage[stage]["total"] * 100) if progress_by_stage[stage]["total"] else 0}%</span></span></span></div>'
             )
             for stage, flow, _version, *_ in visible_flow_bindings
         )
@@ -3335,21 +3338,28 @@ def render_processing_tasks():
             f'onchange="dprToggleProcessingTask(this, \'{_e(item["id"])}\')">'
             f'<i></i></label>'
         )
+        priority_number = {"P0": 9, "P1": 6, "P2": 3}.get(str(item["priority"]))
+        if priority_number is None:
+            try:
+                priority_number = max(1, min(9, int(item["priority"])))
+            except (TypeError, ValueError):
+                priority_number = 3
         rows.append(
             [
                 f'<code>{_e(item["id"])}</code>',
-                f'<a class="dpr-task-name" href="{detail_path}"><b>{_e(item["name"])}</b></a>',
+                f'<a class="task-data-table__name-link" href="{detail_path}"><b>{_e(item["name"])}</b></a>',
                 _e(project_label),
-                f'<div class="dpr-flow-binding-list">{flow_bindings}</div>',
+                f'<div class="dpr-flow-binding-list task-flow-list">{flow_bindings}</div>',
                 status_control,
-                _state(item.get("task_status", "unpublished")),
-                _priority_tag(item["priority"]),
+                (f'<span class="dpr-state table-outline-tag {"table-outline-tag--success" if item.get("task_status") == "published" else ""}">'
+                 f'{"已发布" if item.get("task_status") == "published" else "未发布"}</span>'),
+                f'<span class="task-priority" style="--priority-hue:{48 - (priority_number - 1) * 6}">{priority_number}</span>',
                 "非正式" if item.get("task_category") == "informal" else "正式",
-                _e(item["creator"]),
+                f'<span class="table-person-tag">{_e(item["creator"])}</span>',
                 _e(item["created"]),
                 (
                     f'<div class="dpr-task-actions">'
-                    f'<a href="{detail_path}">数据</a>'
+                    f'<a class="task-data-table__data-link" href="{detail_path}">数据</a>'
                     f'<button type="button" {drawer_data} '
                     f'onclick="dprOpenProcessingTaskDrawer(\'detail\', this)">详情</button>'
                     f'<button type="button" {drawer_data} '
@@ -3401,6 +3411,10 @@ def render_processing_tasks():
         rows,
         table_id="dpr-processing-task-table",
         row_attrs=row_attrs,
+        wrap_class="processing-task-table-wrap task-data-table--tasks",
+        table_class="processing-task-table",
+        component_variant="task-management",
+        pagination=True,
     )
     new_task_button = """
     <button type="button" class="btn btn-primary"
@@ -3408,11 +3422,44 @@ def render_processing_tasks():
     """
     body = f"""
     <style>
+      .q-main:has(#dpr-processing-task-table){{height:100vh;min-height:0;overflow:hidden;background:#fff;border-top-left-radius:20px}}
+      body:has(#dpr-processing-task-table){{--color-brand:#0095b6;--color-brand-hover:#007f9b;--color-brand-soft:rgba(0,149,182,.06);--color-brand-selected:rgba(0,149,182,.08)}}
+      .q-content:has(#dpr-processing-task-table){{display:flex;flex-direction:column;height:100%;min-height:0;box-sizing:border-box;padding:12px 24px;overflow:hidden;background:#fff;font-family:Inter,-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif}}
+      .q-content:has(#dpr-processing-task-table)>.dpr-intro{{height:54px;box-sizing:border-box;margin:0;padding:0;background:#fff}}
+      .q-content:has(#dpr-processing-task-table)>.dpr-intro h1{{margin:0;color:#172b40;font-size:20px;font-weight:600;line-height:26px;letter-spacing:0}}
+      .q-content:has(#dpr-processing-task-table)>.dpr-intro .btn-primary{{height:32px;padding:0 12px;border-radius:8px;font-size:14px}}
+      body:has(#dpr-processing-task-table) .btn-primary{{border-color:#0095b6;background:#0095b6;color:#fff}}
+      body:has(#dpr-processing-task-table) .btn-primary:hover{{border-color:#007f9b;background:#007f9b}}
+      body:has(#dpr-processing-task-table) :is(a,.dpr-link-button){{color:#0095b6}}
+      body:has(#dpr-processing-task-table) :is(a,.dpr-link-button):hover{{color:#007f9b}}
+      body:has(#dpr-processing-task-table) .dpr-task-enable input:checked+i{{background:#0095b6}}
+      body:has(#dpr-processing-task-table) > .dpr-task-more-menu button{{color:#0095b6}}
+      .q-content:has(#dpr-processing-task-table)>.dpr-task-filters{{margin:0;padding:0;border:0;border-radius:0;background:transparent;box-shadow:none}}
+      .q-content:has(#dpr-processing-task-table)>.dpr-task-filters .q-filter-row{{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:12px 8px;align-items:end}}
+      .q-content:has(#dpr-processing-task-table)>.dpr-task-filters .q-field{{width:auto;min-width:0;gap:4px}}
+      .q-content:has(#dpr-processing-task-table)>.dpr-task-filters .q-field label{{color:#435d76;font-size:12px;line-height:20px}}
+      .q-content:has(#dpr-processing-task-table)>.dpr-task-filters :is(input,select){{width:100%;height:32px;box-sizing:border-box;padding:5px 12px;border:1px solid #d7e0e7;border-radius:8px;background-color:transparent;color:#435d76;font:400 13px/20px inherit;box-shadow:none}}
+      .q-content:has(#dpr-processing-task-table)>.dpr-task-filters :is(input,select):focus{{border-color:#0095b6;outline:0;box-shadow:0 0 0 2px rgba(0,149,182,.09)}}
+      .q-content:has(#dpr-processing-task-table)>.dpr-task-filters input::placeholder{{color:#94a3b5}}
+      .q-content:has(#dpr-processing-task-table)>.dpr-task-filters .q-actions{{align-self:end;gap:8px}}
+      .q-content:has(#dpr-processing-task-table)>.dpr-task-filters .q-actions .btn{{height:32px;border-radius:8px;font-size:12px;padding:0 12px}}
+      .processing-task-table-wrap{{display:flex;flex:1 1 0;margin-top:12px;min-height:0;overflow:hidden;background:#fff}}
+      .processing-task-table-wrap>.task-data-table{{display:flex;flex:1;min-width:0;min-height:0}}
+      .processing-task-table-wrap .task-data-table__frame{{flex:1;min-width:0;min-height:0;margin:0}}
+      .processing-task-table-wrap .task-data-table__scroll{{flex:1 1 0;width:100%;min-width:0;min-height:0;max-height:none;overflow-y:auto}}
+      .processing-task-table-wrap .task-data-table__middle-scroll{{flex:0 0 auto}}
+      .processing-task-table-wrap thead th{{position:sticky;top:0;z-index:3}}
+      .processing-task-table-wrap .task-data-table--fixed-edges thead .task-table-fixed-left,.processing-task-table-wrap .task-data-table--fixed-edges thead .task-table-fixed-right{{z-index:4}}
+      #dpr-processing-task-table :is(th,td):last-child{{width:192px;min-width:192px;max-width:192px}}
+      #dpr-processing-task-table code{{color:#435d76;font:400 13px/20px ui-monospace,SFMono-Regular,Menlo,monospace}}
+      #dpr-processing-task-table .dpr-task-actions{{gap:12px}}
+      #dpr-processing-task-table .dpr-task-actions button+button{{margin-left:0}}
+      @media(max-width:1400px){{.q-content:has(#dpr-processing-task-table)>.dpr-task-filters .q-filter-row{{grid-template-columns:repeat(4,minmax(0,1fr))}}}}
       .dpr-processing-list-head{{display:flex;align-items:center;justify-content:flex-start;gap:18px}}
-      .dpr-processing-stage-filter{{display:flex;align-items:center;height:36px;padding:0 4px 0 12px;border:1px solid #aebfc3;border-radius:7px;background:transparent}}
-      .dpr-processing-stage-filter:hover,.dpr-processing-stage-filter:focus-within{{border-color:#149daa;background:transparent;box-shadow:0 0 0 2px rgba(20,157,170,.09)}}
+      .dpr-processing-stage-filter{{display:flex;align-items:center;height:28px;padding:0 4px 0 12px;border:1px solid #d7e0e7;border-radius:8px;background:transparent}}
+      .dpr-processing-stage-filter:hover,.dpr-processing-stage-filter:focus-within{{border-color:#0095b6;background:transparent;box-shadow:0 0 0 2px rgba(0,149,182,.09)}}
       .dpr-processing-stage-filter label{{margin:0;color:#527078;font-size:12px;font-weight:500;white-space:nowrap}}
-      .dpr-processing-stage-filter select{{height:34px;min-width:126px;padding:0 28px 0 9px;border:0;background:transparent;color:#126f78;font-size:13px;font-weight:650;outline:0;box-shadow:none}}
+      .dpr-processing-stage-filter select{{height:26px;min-width:126px;padding:0 28px 0 9px;border:0;background:transparent;color:#435d76;font-size:12px;font-weight:400;outline:0;box-shadow:none}}
       body > .dpr-task-more-menu{{position:fixed;z-index:500;right:auto;top:auto;min-width:86px}}
       body > .dpr-task-more-menu button{{width:100%;border:0;background:transparent;color:#149DAA;font:inherit;cursor:pointer}}
       body > .dpr-task-more-menu button:disabled{{color:#aeb9bc;cursor:not-allowed}}
@@ -3631,11 +3678,27 @@ def render_processing_tasks():
     var DPR_PROCESSING_FLOWS = {flow_catalog_json};
     var DPR_NODE_RULES = {node_rules_json};
     function dprFilterProcessingStage(stage) {{
-      document.querySelectorAll('#dpr-processing-task-table tbody tr[data-processing-task-stage]').forEach(function(row) {{
+      var rows = Array.from(document.querySelectorAll('#dpr-processing-task-table tbody tr[data-processing-task-stage]'));
+      var matched = rows.filter(function(row) {{
         var stages = String(row.dataset.processingTaskStage || '').split(/\s+/);
-        row.style.display = !stage || stages.indexOf(stage) >= 0 ? '' : 'none';
+        return !stage || stages.indexOf(stage) >= 0;
       }});
+      var pager = document.querySelector('.processing-task-table-wrap list-pagination');
+      if (!pager) return;
+      pager.setAttribute('total', matched.length);
+      if (pager.page > pager.pageCount) pager.setAttribute('page', pager.pageCount);
+      var start = (pager.page - 1) * pager.pageSize;
+      rows.forEach(function(row) {{ row.hidden = true; }});
+      matched.slice(start, start + pager.pageSize).forEach(function(row) {{ row.hidden = false; }});
     }}
+    customElements.whenDefined('list-pagination').then(function() {{
+      var pager = document.querySelector('.processing-task-table-wrap list-pagination');
+      if (!pager) return;
+      pager.addEventListener('page-change', function() {{
+        dprFilterProcessingStage(document.getElementById('dprProcessingStageFilter').value);
+      }});
+      dprFilterProcessingStage(document.getElementById('dprProcessingStageFilter').value);
+    }});
     var DPR_TASK_FILTER_FIELDS = {{
       '所属项目': {{type:'multi', options:['预训练采集', 'demo 项目', '宁德项目']}},
       '采集任务': {{type:'text', placeholder:'多个任务 ID 请用英文逗号隔开'}},
@@ -3810,7 +3873,7 @@ def render_processing_tasks():
       var row = DPR_OPEN_TASK_MORE && DPR_OPEN_TASK_MORE.closest('tr');
       var status = row && row.cells[5] && row.cells[5].querySelector('.dpr-state');
       if (status) {{
-        status.className = 'dpr-state green';
+        status.className = 'dpr-state table-outline-tag table-outline-tag--success';
         status.textContent = '已发布';
       }}
       button.disabled = true;
@@ -3823,13 +3886,18 @@ def render_processing_tasks():
         if (button.textContent.trim() === '发布' && published[button.dataset.taskId]) {{
           var row = button.closest('tr');
           var status = row && row.cells[5] && row.cells[5].querySelector('.dpr-state');
-          if (status) {{ status.className = 'dpr-state green'; status.textContent = '已发布'; }}
+          if (status) {{ status.className = 'dpr-state table-outline-tag table-outline-tag--success'; status.textContent = '已发布'; }}
           button.disabled = true;
         }}
       }});
     }}
     dprRestoreProcessingCloseStates();
     dprRestoreProcessingPublishStates();
+    customElements.whenDefined('task-data-table').then(function() {{
+      var host = document.querySelector('task-data-table.processing-task-table-wrap');
+      var frame = host && host.querySelector('.task-data-table');
+      if (frame) customElements.get('task-data-table').enhanceFixedEdges(frame, 2, 1);
+    }});
     function dprTaskFilterFieldName(field) {{
       return {{'是否质检':'是否完成质检', '是否标注':'是否完成标注', '质检结论':'质检结果', '是否完成自检':'是否完成采集自检', '自检结果':'采集自检结果'}}[field] || field;
     }}

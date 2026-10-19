@@ -1,0 +1,45 @@
+.command-filters .collection-filter-grid{grid-template-columns:repeat(var(--collection-filter-count),minmax(0,1fr))}
+.command-table table{min-width:1080px}
+.command-table td.collection-props{white-space:normal;line-height:22px;overflow-wrap:anywhere}
+.command-table td .collection-link{font:inherit;font-weight:600;text-align:left;white-space:normal;color:var(--color-detail-link,#174A78);text-decoration:none}
+.command-table td .collection-link:is(:hover,:focus-visible){color:var(--color-brand);text-decoration:underline;text-underline-offset:2px}
+.collection-created{display:block;color:var(--color-text-muted);font-size:12px;margin-top:6px}
+.collection-create-form{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.collection-create-form .collection-wide{grid-column:1/-1}
+.collection-create-form p{margin:0;font-size:12px;color:var(--color-text-muted)}
+.collection-create-form button[type=submit]{justify-self:end;padding:8px 20px;border:0;border-radius:8px;background:var(--color-brand);color:#fff;font:inherit;cursor:pointer}
+.command-details dd{overflow-wrap:anywhere}
+@media(max-width:1200px){.command-filters .collection-filter-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+
+/* Published collection plans use the shared page header, table and status tags. */
+.published-plan-detail{display:flex;flex-direction:column;flex:1;min-height:0}
+.published-plan-body{display:flex;flex:1;min-height:0;padding:0;background:#fff}
+.published-plan-body>.command-table{padding:0;min-height:0;background:#fff}
+
+.published-plan-body table{min-width:960px}
+
+.published-plan-body td:nth-child(2){font-weight:600}
+
+
+.published-plan-detail{gap:0}
+.published-plan-detail>task-filter-bar{flex:none;margin-top:0;margin-bottom:12px}
+.published-plan-detail [hidden]{display:none!important}
+
+/* Keep package rows on one line; the shared table owns fixed columns and shadows. */
+body[data-page-id="command-package-management"] .command-content .command-table table{width:max-content;min-width:100%;table-layout:auto}
+body[data-page-id="command-package-management"] .command-content .command-table :is(th,td),
+body[data-page-id="command-package-management"] .command-content .command-table .collection-link{white-space:nowrap;overflow-wrap:normal}
+
+/* Bound the props column so long lists wrap instead of widening the table. */
+body[data-page-id="command-package-management"] .command-content .collection-props-summary{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2;width:360px;max-width:360px;overflow:hidden;white-space:normal;overflow-wrap:anywhere;line-height:22px;text-overflow:ellipsis}
+
+.collection-confirm-dialog{width:min(480px,calc(100vw - 32px));background:#fff}.collection-confirm-dialog form{margin:0}.collection-confirm-dialog .flow-info-fields{padding:24px;font-size:14px;line-height:22px;overflow-wrap:anywhere}.collection-confirm-dialog .flow-info-fields p{margin:0}.collection-confirm-dialog .collection-confirm-note{margin-top:8px!important;color:var(--color-text-muted)}.collection-confirm-dialog header>button{border:0;background:transparent;color:var(--color-text-muted);font-size:24px;cursor:pointer}.collection-confirm-dialog footer{gap:12px}
+
+.published-plan-body .collection-props-summary{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2;overflow:hidden;white-space:normal;overflow-wrap:anywhere;line-height:22px;text-overflow:ellipsis}
+.published-plan-body table{table-layout:fixed;width:100%}
+
+/* Match the shared confirmation dialog: separate sections with spacing only. */
+.collection-confirm-dialog header{border-bottom:0}
+.collection-confirm-dialog footer{border-top:0}
+
+body[data-page-id="command-package-management"] .command-table button[data-action]:disabled{color:var(--color-text-placeholder,#9aacb6);cursor:not-allowed;text-decoration:none}

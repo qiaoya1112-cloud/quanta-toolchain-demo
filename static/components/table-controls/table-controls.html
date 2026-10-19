@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>表格配套</title>
+  <link rel="stylesheet" href="../../styles.css">
+  <link rel="stylesheet" href="../component-preview.css">
+  <link rel="stylesheet" href="../common-preview.css">
+  <link rel="stylesheet" href="../input/input.css">
+  <link rel="stylesheet" href="../task-filter-bar/task-filter-bar.css?v=grouped-width">
+  <link rel="stylesheet" href="../task-status-tabs/task-status-tabs.css">
+  <link rel="stylesheet" href="../pagination/pagination.css">
+  <link rel="stylesheet" href="../task-data-table/task-data-table.css?v=semantic-tags-6">
+  <script src="../task-data-table/task-data-table.js?v=semantic-tags-5" defer></script>
+  <link rel="stylesheet" href="../task-page-header/task-page-header.css">
+  <link rel="stylesheet" href="../button/button.css">
+  <script src="../button/button.js" defer></script>
+  <script src="../task-page-header/task-page-header.js" defer></script>
+  <script src="../input/input.js" defer></script>
+  <script src="../task-filter-bar/task-filter-bar.js?v=grouped-filters" defer></script>
+  <script src="../task-status-tabs/task-status-tabs.js" defer></script>
+  <script src="../pagination/pagination.js" defer></script>
+<style>.table-controls-example + .table-controls-example{margin-top:24px}.table-controls-example>p{margin:0 0 8px;font-size:12px;line-height:20px;font-weight:400;color:var(--color-text-muted)}.table-controls-example h3{margin:0 0 12px;font-size:14px;font-weight:500;color:var(--color-text-secondary)}#page-header .component-gallery__stage{border:0}#filters>.table-controls-example{width:100%;max-width:none}#cards>stat-cards{max-width:none;width:100%}.component-preview #table-basic>.table-tag-guide{max-width:none;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:28px 32px;margin:20px 0 24px}.table-tag-guide h3{margin:0;font-size:14px}.table-tag-guide p{margin:6px 0 10px;color:var(--color-text-muted);font-size:12px}.table-tag-guide__samples{display:flex;align-items:center;flex-wrap:wrap;gap:8px}.table-tag-guide__category{min-width:0}.table-tag-guide__items{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:16px 24px;margin-top:16px}.table-tag-guide h4{margin:0;font-size:12px;font-weight:500;color:var(--color-text-secondary)}@media(max-width:800px){.component-preview #table-basic>.table-tag-guide{grid-template-columns:1fr}}.table-tab-guidance{margin:0 0 12px;color:var(--color-text-muted);font-size:12px;line-height:20px}
+</style>
+<link rel="stylesheet" href="../stat-cards/stat-cards.css?v=neutral-cards-2">
+<script src="../stat-cards/stat-cards.js" defer></script>
+<script src="../task-data-table/table-columns.js" defer></script>
+<style>
+.component-preview #table-basic>.table-tag-appearance-preview{max-width:none;margin:24px 0;padding:20px 0;border-top:1px solid var(--color-border)}
+.table-tag-appearance-preview h3{margin:0;font-size:14px}.table-tag-appearance-preview h4{margin:0;font-size:13px;font-weight:500}.table-tag-appearance-preview p{margin:8px 0 12px;font-size:12px;color:var(--color-text-muted)}
+.table-tag-appearance-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:24px;margin-top:20px}
+.tag-appearance{display:inline-flex;align-items:center;box-sizing:border-box;min-height:24px;padding:1px 8px;border-radius:5px;font-size:12px;line-height:20px;white-space:nowrap;font-weight:400;color:var(--preview-tag-color)}
+.tag-appearance--solid{background:var(--preview-tag-color);color:#fff}
+.tag-appearance--outline{background:transparent;border:0.5px solid var(--preview-tag-color)}
+.tag-appearance--stripe{position:relative;overflow:hidden;padding:1px 9px 1px 15px;border-radius:5px;background:var(--preview-tag-bg)}
+.tag-appearance--stripe::before{content:"";position:absolute;left:6px;top:6px;bottom:6px;width:2px;border-radius:2px;background:var(--preview-tag-color)}
+@media(max-width:900px){.table-tag-appearance-grid{grid-template-columns:1fr}}
+</style><style>
+/* Semantic guide: consistent reading order and compact sample groups. */
+.component-preview #table-basic>.table-tag-guide{display:flex;flex-direction:column;gap:0;margin:24px 0;max-width:1200px}
+.table-tag-guide .table-tag-guide__category{display:grid;grid-template-columns:180px minmax(0,1fr);gap:28px;padding:22px 0;border-bottom:1px solid var(--color-border)}
+.table-tag-guide .table-tag-guide__category:first-child{padding-top:0}
+.table-tag-guide .table-tag-guide__category:last-child{border-bottom:0;padding-bottom:0}
+.table-tag-guide__intro h3{font-size:15px;line-height:22px}
+.table-tag-guide__intro p{line-height:20px;margin-top:6px;max-width:180px}
+.table-tag-guide .table-tag-guide__items{margin:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px 32px;align-items:start}
+.table-tag-guide__items h4{font-size:13px;line-height:20px;margin:0 0 10px;color:var(--color-text-secondary)}
+.table-tag-guide__items>div>p{margin:0 0 8px;line-height:20px}
+.table-tag-guide__items .table-tag-guide__samples+p{margin-top:16px}
+.table-tag-guide__samples{gap:8px 10px}
+.table-tag-guide__category:first-child .table-tag-guide__items,.table-tag-guide__category:last-child .table-tag-guide__items{grid-template-columns:1fr}
+.component-preview #table-basic>.table-tag-appearance-preview{max-width:1200px;margin:28px 0;padding:24px 0;border-top:1px solid var(--color-border)}
+.table-tag-appearance-grid{gap:24px;margin-top:18px}
+.table-tag-appearance-grid>section{padding:16px;background:var(--color-bg-input,#fff);border:1px solid var(--color-border);border-radius:10px;min-width:0}
+@media(max-width:700px){.table-tag-guide .table-tag-guide__category{grid-template-columns:1fr;gap:16px}.table-tag-guide__intro p{max-width:none}.table-tag-guide .table-tag-guide__items{grid-template-columns:1fr}.table-tag-appearance-grid{grid-template-columns:1fr}}
+</style><style>.component-preview #table-basic>.column-width-guide{max-width:none;margin-top:24px}.column-width-guide h3{font-size:14px;margin:0}.column-width-guide p{font-size:12px;color:var(--color-text-muted);line-height:20px}.column-width-guide__head,.column-width-guide__row{display:grid;grid-template-columns:140px minmax(240px,1fr) 100px 100px;gap:16px;padding:10px 12px;border-bottom:1px solid var(--color-border);font-size:13px}.column-width-guide__head{font-weight:600;background:var(--color-accent-gray-soft)}.column-width-guide{overflow-x:auto}.column-width-guide__row,.column-width-guide__head{min-width:620px}</style><style>
+.component-preview #table-basic>.table-tag-guide{max-width:none}
+.table-tag-guide .table-tag-guide__category{grid-template-columns:160px minmax(0,1fr);gap:24px;padding:20px 0}
+.table-tag-guide .table-tag-guide__items{grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:20px 28px}
+.table-tag-guide__category:first-child .table-tag-guide__items{grid-template-columns:repeat(2,minmax(0,1fr))}
+.table-tag-guide__category:last-child .table-tag-guide__items{grid-template-columns:1fr}
+.table-tag-guide__category:nth-child(2) .table-tag-guide__items{grid-template-columns:repeat(2,minmax(0,1fr))}
+.table-tag-guide__category:nth-child(3) .table-tag-guide__items{grid-template-columns:repeat(3,minmax(0,1fr))}
+@media(max-width:1000px){.table-tag-guide__category:nth-child(3) .table-tag-guide__items{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:700px){.table-tag-guide .table-tag-guide__category{grid-template-columns:1fr}.table-tag-guide .table-tag-guide__category .table-tag-guide__items{grid-template-columns:1fr}}
+</style><style>
+#column-width-rows{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px;margin-top:16px}
+.column-width-guide .column-width-guide__row{min-width:0;display:grid;grid-template-columns:1fr 1fr;gap:8px 12px;padding:12px 14px;border:1px solid var(--color-border);border-radius:8px;font-size:12px}
+.column-width-guide__row>span:first-child{grid-column:1/-1;font-size:13px;font-weight:600}
+.column-width-guide__row>span:nth-child(2){grid-column:1/-1;color:var(--color-text-muted);line-height:18px}
+.column-width-guide__row>span:nth-child(4){text-align:right}
+</style><style>
+/* Official semantic groups use cards; alternative appearances stay separate. */
+.component-preview #table-basic>.table-tag-guide{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin:24px 0}
+.table-tag-guide .table-tag-guide__category,.table-tag-guide .table-tag-guide__category:first-child,.table-tag-guide .table-tag-guide__category:last-child{display:block;padding:20px;border:1px solid var(--color-border);border-radius:12px;background:var(--color-bg-input,#fff);min-width:0}
+.table-tag-guide__intro p{max-width:none;margin:6px 0 18px}
+.table-tag-guide .table-tag-guide__category .table-tag-guide__items{grid-template-columns:repeat(2,minmax(0,1fr));gap:18px 24px}
+.table-tag-guide .table-tag-guide__category:first-child .table-tag-guide__items,.table-tag-guide .table-tag-guide__category:last-child .table-tag-guide__items{grid-template-columns:1fr}
+.component-preview #table-basic>.table-tag-appearance-preview{max-width:none}
+@media(max-width:850px){.component-preview #table-basic>.table-tag-guide{grid-template-columns:1fr}}
+@media(max-width:500px){.table-tag-guide .table-tag-guide__category .table-tag-guide__items{grid-template-columns:1fr}}
+</style><style>.table-page-blueprint{margin:0!important;max-width:none!important}.table-page-blueprint img{display:block;width:100%;max-width:960px;height:auto}.table-page-blueprint figcaption{font-size:12px;line-height:20px;color:var(--color-text-muted);margin-top:8px}.table-spacing-rules{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin:20px 0 24px;max-width:none!important}.table-spacing-rules h3{font-size:14px;margin:0 0 8px}.table-spacing-rules p{font-size:12px;line-height:20px;margin:4px 0;color:var(--color-text-secondary)}@media(max-width:700px){.table-spacing-rules{grid-template-columns:1fr}}</style><style>
+#table-dimensions>.table-spec-layout{max-width:none;display:grid;grid-template-columns:minmax(0,1.6fr) minmax(280px,1fr);gap:24px;align-items:start}
+.table-spec-layout .table-spacing-rules{grid-template-columns:1fr;gap:16px;margin:0;padding:12px 0}
+.table-spec-layout .table-page-blueprint img{max-width:960px}
+@media(max-width:900px){#table-dimensions>.table-spec-layout{grid-template-columns:1fr}.table-spec-layout .table-spacing-rules{padding:0}}
+</style><style>.table-tag-guide__legend{display:grid;gap:6px;margin-top:8px}.table-tag-guide__legend>div{display:flex;align-items:baseline;flex-wrap:wrap;gap:2px 8px}.table-tag-guide__legend p{font-size:12px;line-height:18px;margin:0}.table-tag-guide__intro:has(.table-tag-guide__legend)>p{margin-bottom:8px}</style>
+<style>
+.quality-status-table-wrap{overflow:auto}.quality-status-example{width:100%;min-width:460px;border-collapse:collapse;text-align:left;font-size:14px;color:var(--color-text-primary)}
+.quality-status-example th{padding:8px 16px;background:var(--color-bg-section-header);font-weight:600}.quality-status-example td{padding:12px 16px;border-bottom:1px solid var(--color-divider);vertical-align:middle}
+.table-quality-status{display:flex;flex-direction:column;align-items:flex-start;gap:5px;font-size:13px;line-height:20px}.table-quality-status .is-passed{color:#259966}.table-quality-status .is-mistake{color:#bc601b}.table-quality-status .is-failed{color:#d52d53}
+.table-quality-status__error{padding:1px 6px;border-radius:4px;background:#fff0f2;color:#d52d53;white-space:nowrap}.table-quality-status__modified{padding:0 6px;border:1px solid #91ccda;border-radius:4px;color:var(--color-brand);white-space:nowrap}
+</style></head>
+<body class="design-spec-page component-preview">
+<main class="component-gallery">
+  <header class="component-gallery__header"><h1>表格配套</h1></header>
+<section class="component-gallery__group" id="table-dimensions"><h2>表格尺寸规范与页面分区</h2><p style="font-size:12px;line-height:20px;color:var(--color-text-muted)">页面按真实视口比例展示，明确页面留白、组件高度与区域间距。尺寸单位为 CSS px。</p><div class="table-spec-layout"><figure class="table-page-blueprint"><img src="./table-page-blueprint.svg" alt="1440乘900页面分区原型：左侧导航230，内容区上下12、左右24；标题54，Tab44，筛选56，统计64，表格填满剩余空间，分页40。区域间距在图中标注。"></figure><div class="table-spacing-rules"><section><h3>页面尺寸与留白</h3><p>参考视口 1440 × 900，线框图等比缩小；标注单位均为实际 CSS px。</p><p>内容区上下 12px、左右 24px，不含左侧导航 230px。</p><p>单元格上下 12px、左右 16px。</p></section><section><h3>区域间距</h3><p>标题 → Tab：0px（组件自身保留内边距）</p><p>Tab → 筛选：12px</p><p>筛选 → 统计：12px</p><p>统计 → 表格：12px</p><p>表格 → 分页：0px（共用外框，以分隔线区分）</p></section><section><h3>可选区域与高度</h3><p>图为包含全部区域的布局参考，Tab、统计按需展示。</p><p>隐藏 Tab：标题直接接筛选，间距 0px。</p><p>隐藏统计：筛选直接接表格，仅保留一次 12px。</p><p>标题默认 54px；筛选单行 56px，可随换行增高；分页 40px。</p><p>表格承接剩余高度并在内部滚动；描述型标题随内容增高，副文本到下方字段为 8px。</p></section></div></div></section>
+<section class="component-gallery__group" id="page-header"><h2>页面标题栏</h2>
+  <div class="table-controls-example"><h3>基础样式</h3><div class="component-gallery__stage"><task-page-header title="采集任务列表"></task-page-header></div></div>
+  <div class="table-controls-example"><h3>返回与状态</h3><div class="component-gallery__stage"><task-page-header back back-label="返回处理任务" title="端到端切分标注" status="运行中" status-tone="running"></task-page-header></div></div>
+  <div class="table-controls-example"><h3>筛选与按钮</h3><div class="component-gallery__stage"><task-page-header title="任务处理" scene-filter action="新增处理任务"></task-page-header></div></div>
+  <div class="table-controls-example"><h3>筛选、副文本与操作</h3><p>统一使用页面标题栏：筛选、副文本和右侧操作按钮均为可选，不配置时不展示，也不保留占位。</p><div class="component-gallery__stage"><task-page-header title="分配管理" scene-filter scene="质检" description="选择供应商或用户组查看产能分布" action="产能分配"></task-page-header></div></div>
+</section>
+<section class="component-gallery__group" id="tabs"><h2>Tab 切换</h2><div class="table-controls-example"><h3>一级 Tab · 下划线样式</h3><p class="table-tab-guidance">用于页面主要内容切换，如设置 / 最近运行、固定筛选 / 执行 SQL、自采数据 / 三方数据、火山云 / 金山云。文字与内容左侧顶格对齐，容器无底色；选中项使用品牌色文字和底部短下划线。</p><div class="component-gallery__stage"><task-status-tabs variant="process" active="settings"></task-status-tabs></div></div><div class="table-controls-example"><h3>一级 / 二级 Tab · 双层任务状态</h3><p class="table-tab-guidance">一级使用下划线样式；二级状态筛选使用胶囊样式。</p><div class="component-gallery__stage"><task-status-tabs variant="layered" active="todo" sub-active="review"></task-status-tabs></div></div><div class="table-controls-example"><h3>Tab 切换 · 数据集</h3><div class="component-gallery__stage"><task-status-tabs surface="transparent" variant="dataset" active="preview"></task-status-tabs></div></div><div class="table-controls-example"><h3>Tab 切换 · Episode</h3><div class="component-gallery__stage"><task-status-tabs surface="transparent" variant="episode" active="trajectory"></task-status-tabs></div></div></section>
+<section class="component-gallery__group" id="filters"><h2>任务筛选栏</h2><div class="table-controls-example"><h3>任务筛选栏 · 少于六项（3 项）</h3><div class="component-gallery__stage"><task-filter-bar></task-filter-bar></div></div><div class="table-controls-example"><h3>任务筛选栏 · 超过六项（8 项）</h3><p>默认显示前六项，点击刷新右侧的“展开”查看其余筛选项。</p><div class="component-gallery__stage"><task-filter-bar variant="task-management"></task-filter-bar></div></div><div class="table-controls-example"><h3>任务筛选栏 · 分组筛选</h3><p>各组独立展开收起，保留筛选内容。</p><task-filter-bar variant="grouped"></task-filter-bar></div></section>
+<section class="component-gallery__group" id="cards"><h2>卡片</h2><stat-cards></stat-cards></section>
+<section class="component-gallery__group" id="table-basic"><h2>表格基础</h2><p>支持左右固定列和中间横向滚动。行高由本行最高内容撑开，上下各留 12px，左右各留 16px，其余内容垂直居中。</p><div class="table-tag-guide" aria-label="表格标签语义分类">
+<section class="table-tag-guide__category"><header class="table-tag-guide__intro"><h3>业务分类</h3><p>说明业务环节与类型 · 胶囊标签</p></header><div class="table-tag-guide__items"><div><p>业务环节</p><div class="table-tag-guide__samples"><span class="table-outline-tag table-progress-type is-collection">采集</span><span class="table-outline-tag table-progress-type">标注</span><span class="table-outline-tag table-progress-type is-quality">质检</span><span class="table-outline-tag table-progress-type is-inspection">抽检</span><span class="table-outline-tag table-progress-type is-acceptance">验收</span></div><p>标注子类型</p><div class="table-tag-guide__samples"><span class="table-outline-tag table-outline-tag--semantic">语义标注</span><span class="table-outline-tag table-outline-tag--motion">动作标注</span></div></div></div></section>
+<section class="table-tag-guide__category"><header class="table-tag-guide__intro"><h3>过程与来源</h3><p>说明当前阶段与操作来源 · 描边标签</p><div class="table-tag-guide__legend"><div><span class="table-outline-tag table-outline-tag--active">已生效 / 已完成</span><p>绿色 · 启用、上线、已标注、已归档</p></div><div><span class="table-outline-tag table-outline-tag--running">进行中</span><p>蓝色 · 标注中、处理中</p></div><div><span class="table-outline-tag table-outline-tag--warning">等待处理</span><p>黄色 · 待发布、待处理</p></div><div><span class="table-outline-tag table-outline-tag--paused">中断 / 需修正</span><p>橙色 · 暂停、驳回</p></div><div><span class="table-outline-tag table-outline-tag--neutral">中性 / 非活跃</span><p>灰色 · 草稿、下线、未标注、分配</p></div></div></header><div class="table-tag-guide__items"><div><h4>启用状态</h4><div class="table-tag-guide__samples"><span class="table-outline-tag table-outline-tag--active">启用</span><span class="table-outline-tag table-outline-tag--neutral">草稿</span></div></div><div><h4>发布状态</h4><div class="table-tag-guide__samples"><span class="table-outline-tag table-outline-tag--active">上线</span><span class="table-outline-tag table-outline-tag--warning">待发布</span><span class="table-outline-tag table-outline-tag--paused">暂停</span><span class="table-outline-tag table-outline-tag--neutral">下线</span></div></div><div><h4>处理状态</h4><div class="table-tag-guide__samples"><span class="table-outline-tag table-outline-tag--annotated">已标注</span><span class="table-outline-tag table-outline-tag--annotating">标注中</span><span class="table-outline-tag table-outline-tag--running">处理中</span><span class="table-outline-tag table-outline-tag--neutral">未标注</span><span class="table-outline-tag table-outline-tag--archived">已归档</span><span class="table-outline-tag table-outline-tag--warning">待处理</span><span class="table-empty-value">—</span></div></div><div><h4>来源标签</h4><div class="table-tag-guide__samples"><span class="table-source-tag table-source-tag--returned">驳回</span><span class="table-source-tag table-source-tag--assigned">分配</span></div></div></div></section>
+<section class="table-tag-guide__category"><header class="table-tag-guide__intro"><h3>属性信息</h3><p>补充关联信息与特征 · 浅底标签</p></header><div class="table-tag-guide__items"><div><h4>人员标签</h4><div class="table-tag-guide__samples"><span class="table-person-tag">Lance Li</span><span class="table-person-tag">Wei Zhang</span></div></div><div><h4>版本标签</h4><div class="table-tag-guide__samples"><span class="table-outline-tag table-outline-tag--version">v2</span></div></div><div><h4>优先级标签</h4><div class="table-tag-guide__samples"><span class="task-priority">9</span></div></div></div></section>
+<section class="table-tag-guide__category"><header class="table-tag-guide__intro"><h3>结果标识</h3><p>结果用图标与文字表达，无底色、无描边。</p></header><div class="table-tag-guide__items">
+
+<div><h4>质检结果</h4><div class="table-tag-guide__samples" style="margin-top:10px"><span class="task-data-table__status table-result--success table-result--passed">合格</span><span class="task-data-table__status table-result--danger table-result--failed">不合格</span><span class="task-data-table__status table-result--danger table-result--error">操作错误</span><span class="task-data-table__status table-result--neutral table-result--pending">待质检</span></div></div>
+</div></section>
+</div><div class="table-tag-appearance-preview"><h3>备选外观</h3><p>仅作样式比较，尚未应用到业务页面。</p><div class="table-tag-appearance-grid"><section><h4>实心标签</h4><p>深色底 · 白字 · 小圆角</p><div class="table-tag-guide__samples"><span class="tag-appearance tag-appearance--solid" style="--preview-tag-color:var(--color-accent-coral)">紧急</span><span class="tag-appearance tag-appearance--solid" style="--preview-tag-color:var(--color-accent-purple)">重要</span><span class="tag-appearance tag-appearance--solid" style="--preview-tag-color:var(--color-accent-teal)">重点关注</span></div></section><section><h4>纯描边标签</h4><p>透明底 · 细描边 · 同色文字</p><div class="table-tag-guide__samples"><span class="tag-appearance tag-appearance--outline" style="--preview-tag-color:var(--color-accent-blue)">可选分类</span><span class="tag-appearance tag-appearance--outline" style="--preview-tag-color:var(--color-accent-purple)">次要属性</span><span class="tag-appearance tag-appearance--outline" style="--preview-tag-color:var(--color-accent-gray)">自定义</span></div></section><section><h4>左侧色条标签</h4><p>浅底色 · 内嵌短竖线 · 无外框</p><div class="table-tag-guide__samples"><span class="tag-appearance tag-appearance--stripe" style="--preview-tag-color:var(--color-accent-teal);--preview-tag-bg:var(--color-accent-teal-soft)">视频数据</span><span class="tag-appearance tag-appearance--stripe" style="--preview-tag-color:var(--color-accent-indigo);--preview-tag-bg:var(--color-accent-indigo-soft)">第三方导入</span><span class="tag-appearance tag-appearance--stripe" style="--preview-tag-color:var(--color-accent-orange);--preview-tag-bg:var(--color-accent-orange-soft)">人工上传</span></div></section></div></div><div class="component-gallery__stage"><task-data-table variant="task-management-many"></task-data-table></div>
+<div class="column-width-guide"><h3>列宽定义</h3><p>以下宽度包含左右各 16px 内边距；“当前宽度”随容器变化实时更新。</p><p>短内容列不拉伸，剩余空间分给文字列；最小列宽总和超过容器时横向滚动。左侧两列与右侧操作列固定。</p><div id="column-width-rows"></div></div></section>
+<section class="component-gallery__group" id="pagination"><h2>分页</h2><div class="table-controls-example"><h3>分页 · 多页列表 · 1050 条</h3><list-pagination total="1050"></list-pagination></div><div class="table-controls-example"><h3>分页 · 单页 / 空列表</h3><list-pagination total="3"></list-pagination></div></section>
+
+<section class="component-gallery__group" id="quality-status"><h2>表格质检状态</h2><p class="table-tab-guidance">用于数据列表的质检结论单元格。结论、错误数量与修改状态分行展示；“已修改”位于错误数量下方，标签圆角为 4px。</p>
+<div class="quality-status-table-wrap"><table class="quality-status-example"><thead><tr><th>数据 ID</th><th>质检结论</th><th>说明</th></tr></thead><tbody>
+<tr><td>7523785</td><td><div class="table-quality-status"><span class="is-passed">合格</span><span class="table-quality-status__error">1条错误</span><span class="table-quality-status__modified">已修改</span></div></td><td>错误已修正，等待重新提交</td></tr>
+<tr><td>7523786</td><td><div class="table-quality-status"><span class="is-mistake">操作失误</span></div></td><td>仅显示质检结论</td></tr>
+<tr><td>7523787</td><td><div class="table-quality-status"><span class="is-failed">不合格</span><span class="table-quality-status__error">1条错误</span></div></td><td>存在错误，尚未修改</td></tr>
+</tbody></table></div></section>
+</main>
+<script src="../component-preview.js"></script>
+<script>
+document.addEventListener('column-widths-change',event=>{
+  if(!event.target.closest('task-data-table[variant="task-management-many"]'))return;
+  const target=document.getElementById('column-width-rows');
+  const rows=event.detail.map((col,index)=>{
+    let rule=col.flex?`承接剩余空间${col.max?'，最大 '+col.max+'px':''}`:'按表头与内容测量，不拉伸';
+    if(['序号','开关','优先级','日期时间'].includes(col.label))rule='固定宽度';
+    if(col.label==='进度条')rule='进度条 148px ＋ 左右内边距 32px';
+    if(col.label==='操作')rule='最宽一行的按钮文字＋图标＋12px 按钮间距＋32px 内边距';
+    const row=document.createElement('div');row.className='column-width-guide__row';
+    [String(index+1).padStart(2,'0')+' · '+col.label,rule,'基础 '+col.minimum+'px','当前 '+col.width+'px'].forEach(text=>{const span=document.createElement('span');span.textContent=text;row.append(span);});
+    return row;
+  });
+  const signature=JSON.stringify(event.detail);
+  if(target.dataset.signature!==signature){target.dataset.signature=signature;target.replaceChildren(...rows);}
+});
+</script><style>
+#table-dimensions>.table-layout-diagram,#table-dimensions>.column-width-guide{max-width:none}
+.table-layout-diagram{display:grid;gap:12px;padding:16px;border:1px solid var(--color-border);border-radius:10px;background:#fff;font-size:12px;line-height:20px;margin-bottom:24px}
+.table-layout-diagram>div{display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;padding:12px;border:1px dashed var(--color-border);border-radius:6px}
+.table-layout-diagram span,.table-layout-diagram p{color:var(--color-text-muted)}
+.table-layout-diagram>.table-layout-diagram__body{display:block;min-height:160px}
+.table-layout-diagram__columns{display:grid;grid-template-columns:1fr 2fr 1fr;margin-top:12px;background:var(--color-brand-soft)}
+.table-layout-diagram__columns>span{padding:12px;border:1px solid var(--color-border)}
+.table-layout-diagram p{margin:8px 0 0}
+</style>
+</body>
+</html>

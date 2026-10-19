@@ -1,0 +1,477 @@
+/* 独立样式变体：后续覆盖仅作用于此实例，不改变默认导航。 */
+platform-sidebar[variant="style-variant"][palette="mist"] .platform-sidebar__item:is(.platform-sidebar__item--active,[aria-current="page"]),
+platform-sidebar[variant="style-variant"][palette="mist"] .platform-sidebar__item:is(.platform-sidebar__item--active,[aria-current="page"]):hover{background:var(--platform-sidebar-active-bg);color:var(--platform-sidebar-active,#303943)}
+platform-sidebar[variant="style-variant"][palette="mist"] .platform-sidebar__item:is(.platform-sidebar__item--active,[aria-current="page"]) .platform-sidebar__icon img{filter:grayscale(1) brightness(.65);opacity:1}
+platform-sidebar[variant="style-variant"] .platform-sidebar[data-expanded="true"] .platform-sidebar__brand{display:flex;align-items:center;gap:8px;height:40px;min-height:40px;flex-basis:40px}
+platform-sidebar[variant="style-variant"] .platform-sidebar[data-expanded="true"] .platform-sidebar__brand-name{line-height:36px}
+platform-sidebar[variant="style-variant"] .platform-sidebar__pin{align-self:center}
+platform-sidebar[variant="style-variant"] .platform-sidebar__pin svg{display:block}
+platform-sidebar[variant="style-variant"] .platform-sidebar[data-expanded="true"] .platform-sidebar__platform-menu{width:calc(100% - 24px)}
+platform-sidebar[variant="style-variant"] .platform-sidebar__platform-option{gap:0;padding:8px 12px}
+platform-sidebar[variant="style-variant"] .platform-sidebar__platform-option>span{display:none}
+platform-sidebar[variant="style-variant"] .platform-sidebar{min-width:64px}
+platform-sidebar[variant="style-variant"] .platform-sidebar[data-expanded="false"]{padding-left:8px;padding-right:8px}
+platform-sidebar[variant="style-variant"] .platform-sidebar[data-expanded="false"] .platform-sidebar__nav{width:100%}
+platform-sidebar[variant="style-variant"] .platform-sidebar[data-expanded="false"] .platform-sidebar__item{width:100%}
+.platform-sidebar-theme-switch{position:fixed;right:16px;bottom:12px;z-index:60;display:flex;gap:2px;padding:3px;border:1px solid #dce5eb;border-radius:8px;background:#f4f7f9;box-shadow:0 2px 8px #2334420d}
+.platform-sidebar-theme-switch button{padding:5px 12px;border:0;border-radius:5px;background:transparent;color:#6e8290;font:400 12px/18px "PingFang SC",sans-serif;cursor:pointer}
+.platform-sidebar-theme-switch button.is-active{background:#fff;color:var(--color-brand,var(--brand-primary));box-shadow:0 1px 4px #20344012}
+.platform-sidebar-theme-switch button:focus-visible{outline:2px solid var(--color-brand,var(--brand-primary));outline-offset:1px}
+platform-sidebar[variant="style-variant"] .platform-sidebar__pin{display:grid;place-items:center;align-self:center;flex:0 0 24px;width:24px;height:36px;margin-left:auto;padding:0;border:0;border-radius:5px;background:transparent;color:var(--platform-sidebar-muted);line-height:0;cursor:pointer}
+platform-sidebar[variant="style-variant"] .platform-sidebar__pin:hover{background:#0095b61a;color:var(--platform-sidebar-active)}
+platform-sidebar[variant="style-variant"] .platform-sidebar[data-expanded="false"] .platform-sidebar__pin{display:none}
+platform-sidebar[variant="style-variant"] .platform-sidebar[data-expanded="true"] .platform-sidebar__brand-name{flex-shrink:1;min-width:0}
+platform-sidebar[variant="style-variant"]{position:relative;z-index:40;overflow:visible}
+platform-sidebar[variant="style-variant"] .platform-sidebar[data-expanded="false"] .platform-sidebar__label,
+platform-sidebar[variant="style-variant"] .platform-sidebar[data-expanded="false"] .platform-sidebar__platform-short,
+platform-sidebar[variant="style-variant"] .platform-sidebar[data-expanded="false"] .platform-sidebar__chevron,
+platform-sidebar[variant="style-variant"] .platform-sidebar[data-expanded="false"] .platform-sidebar__version{display:none}
+platform-sidebar[variant="style-variant"] .platform-sidebar[data-expanded="false"] .platform-sidebar__platform-icon{width:20px;height:20px;flex:0 0 20px;opacity:1;transform:none;background:transparent}
+platform-sidebar[variant="style-variant"] .platform-sidebar[data-expanded="false"] .platform-sidebar__platform-icon img{width:20px;height:20px}
+platform-sidebar[variant="style-variant"] .platform-sidebar[data-expanded="false"] .platform-sidebar__item{justify-content:center;flex-direction:row}
+platform-sidebar[variant="style-variant"] {
+  --platform-sidebar-bg: #f8fafc;
+  --platform-sidebar-border: #e7edf2;
+  --platform-sidebar-active-bg: var(--color-brand-soft,var(--brand-soft));
+  --platform-sidebar-active: var(--color-brand,var(--brand-primary));
+  --platform-sidebar-muted: #465465;
+  --platform-sidebar-text: #465465;
+}
+platform-sidebar[variant="style-variant"] .platform-sidebar{padding:12px 12px 8px;min-height:0}
+platform-sidebar[variant="style-variant"] .platform-sidebar__footer{display:flex;margin-top:8px;padding-top:4px;gap:6px}
+platform-sidebar[variant="style-variant"] .platform-sidebar[data-expanded="true"] .platform-sidebar__footer{padding-top:8px;gap:6px}
+platform-sidebar[variant="style-variant"] .platform-sidebar__avatar{width:24px;height:24px;flex:0 0 24px}
+platform-sidebar[variant="style-variant"] .platform-sidebar__version{padding:2px;border-radius:6px}
+platform-sidebar[variant="style-variant"] .platform-sidebar__version button{width:28px;height:22px;font-size:11px;font-weight:400;line-height:18px;border-radius:4px}
+platform-sidebar[variant="style-variant"] .platform-sidebar[data-expanded="true"] .platform-sidebar__version button{font-size:11px;font-weight:400}
+platform-sidebar[variant="style-variant"] .platform-sidebar__footer-divider{left:0;right:0;background:var(--nav-divider,#dce5e9)}
+platform-sidebar[variant="style-variant"] .platform-sidebar[data-expanded="true"] .platform-sidebar__footer-divider{left:0;right:0}
+platform-sidebar[variant="style-variant"] .platform-sidebar__version{background:#e8edf0;border-color:transparent}
+platform-sidebar[variant="style-variant"] .platform-sidebar__version button{color:var(--platform-sidebar-muted)}
+platform-sidebar[variant="style-variant"] .platform-sidebar__version button.is-active{background:var(--platform-sidebar-active-bg);color:var(--platform-sidebar-active)}
+platform-sidebar[palette="dark"] .platform-sidebar__footer-divider{background:var(--dark-divider,#34434e)}
+platform-sidebar[palette="dark"] .platform-sidebar__version{background:var(--dark-surface,#2a3843);border-color:var(--dark-border,#384954)}
+platform-sidebar[variant="style-variant"] .platform-sidebar__chevron img{filter:brightness(0) saturate(100%) invert(30%) sepia(12%) saturate(726%) hue-rotate(174deg) brightness(94%) contrast(89%)}
+platform-sidebar[variant="style-variant"] .platform-sidebar__brand-name{color:#253341;font-size:23px;font-weight:650;letter-spacing:-.6px}
+platform-sidebar[variant="style-variant"] .platform-sidebar__logo img{filter:brightness(0) saturate(100%) invert(17%) sepia(16%) saturate(915%) hue-rotate(168deg) brightness(94%) contrast(92%)}
+platform-sidebar[variant="style-variant"] .platform-sidebar__platform{background:#edf5f7;border-color:#dce9ed;border-radius:12px;color:#405b65;box-shadow:none;transition:background .15s,border-color .15s}
+platform-sidebar[variant="style-variant"] .platform-sidebar[data-expanded="true"] .platform-sidebar__platform{height:40px;flex-basis:40px;padding:5px 10px;gap:10px}
+platform-sidebar[variant="style-variant"] .platform-sidebar[data-expanded="true"] .platform-sidebar__platform-icon{width:28px;height:28px;flex-basis:28px;border-radius:9px;background:#dceff3}
+platform-sidebar[variant="style-variant"] .platform-sidebar[data-expanded="true"] .platform-sidebar__platform-icon img{width:17px;height:17px}
+platform-sidebar[variant="style-variant"] .platform-sidebar[data-expanded="true"] .platform-sidebar__platform-menu{top:122px}
+platform-sidebar[variant="style-variant"] .platform-sidebar__platform:hover{border-color:#c6e1e8;background:#e6f1f4}
+platform-sidebar[variant="style-variant"] .platform-sidebar__nav{gap:8px;max-width:none;margin-top:-8px}
+platform-sidebar[variant="style-variant"] .platform-sidebar__quick-links{display:flex;flex-direction:column;gap:6px;width:100%;padding-bottom:16px;margin-bottom:4px;border-bottom:1px solid #e7edf2}
+platform-sidebar[variant="style-variant"] .platform-sidebar__item{height:42px;max-width:none;font-size:14px;font-weight:400;gap:12px;border-radius:8px;transition:background .15s,color .15s}
+platform-sidebar[variant="style-variant"] .platform-sidebar__label{font-size:14px;line-height:20px}
+platform-sidebar[variant="style-variant"] .platform-sidebar__item:hover{background:#edf2f6}
+platform-sidebar[variant="style-variant"] button:focus-visible{outline:2px solid var(--platform-sidebar-active);outline-offset:2px}
+platform-sidebar[variant="style-variant"] .platform-sidebar__icon img{filter:brightness(0) saturate(100%) invert(30%) sepia(12%) saturate(726%) hue-rotate(174deg) brightness(94%) contrast(89%)}
+platform-sidebar[variant="style-variant"] .platform-sidebar__group-title{min-height:24px;max-height:24px;padding:4px 12px;gap:12px;font-size:11px;font-weight:400;line-height:16.5px;letter-spacing:.275px;color:#74818d}
+platform-sidebar[variant="style-variant"] .platform-sidebar__group-title>.platform-sidebar__icon{display:none}
+platform-sidebar[variant="style-variant"] .platform-sidebar__group-label{flex:1}
+platform-sidebar[variant="style-variant"] .platform-sidebar__group-items{position:relative;width:100%;margin-left:0;padding-left:0;gap:4px}
+platform-sidebar[variant="style-variant"] .platform-sidebar__group-items::before{content:none}
+platform-sidebar[variant="style-variant"] .platform-sidebar[data-expanded="false"] .platform-sidebar__group-title{display:none}
+platform-sidebar[variant="style-variant"] .platform-sidebar[data-expanded="false"] .platform-sidebar__group.is-collapsed{display:none}
+platform-sidebar[variant="style-variant"] .platform-sidebar[data-expanded] .platform-sidebar__item{height:42px}
+platform-sidebar[variant="style-variant"] .platform-sidebar[data-expanded="false"] .platform-sidebar__item{gap:12px;padding:10px 16px;justify-content:flex-start}
+platform-sidebar[variant="style-variant"] .platform-sidebar[data-expanded="false"] .platform-sidebar__main{gap:12px}
+platform-sidebar[variant="style-variant"] .platform-sidebar[data-expanded="false"] .platform-sidebar__brand{height:40px;flex-basis:40px}
+platform-sidebar[variant="style-variant"] .platform-sidebar[data-expanded="false"] .platform-sidebar__logo{width:28px;height:28px;flex-basis:28px}
+platform-sidebar[variant="style-variant"] .platform-sidebar[data-expanded="false"] .platform-sidebar__platform{height:38px;flex-basis:38px}
+platform-sidebar[variant="style-variant"] .platform-sidebar[data-expanded="false"] .platform-sidebar__group{gap:4px}
+platform-sidebar[variant="style-variant"] .platform-sidebar[data-expanded="false"] .platform-sidebar__group-items{gap:4px}
+platform-sidebar[variant="style-variant"] .platform-sidebar[data-expanded="false"] .platform-sidebar__group.is-collapsed .platform-sidebar__group-items{display:none}
+platform-sidebar[variant="style-variant"] .platform-sidebar[data-expanded="false"] .platform-sidebar__label{font-size:10px;line-height:14px}
+platform-sidebar[variant="style-variant"] .platform-sidebar__item--active,
+platform-sidebar[variant="style-variant"] .platform-sidebar__item--active:hover{background:var(--platform-sidebar-active-bg);color:var(--platform-sidebar-active);font-weight:600}
+platform-sidebar[variant="style-variant"] .platform-sidebar__item--active::before{content:none}
+platform-sidebar[variant="style-variant"] .platform-sidebar__item--active .platform-sidebar__icon img{filter:brightness(0) saturate(100%) invert(45%) sepia(96%) saturate(1226%) hue-rotate(150deg) brightness(88%) contrast(101%)}
+
+/* 三种底色方案共用品牌主色，信息结构与交互保持一致。 */
+platform-sidebar[palette="white"]{--platform-sidebar-bg:#fff;--platform-sidebar-muted:#465465}
+platform-sidebar[palette="white"] .platform-sidebar__platform{background:#f5f8fa;border-color:#e5ebef}
+platform-sidebar[palette="white"] .platform-sidebar__platform:hover{background:#eef5f7;border-color:#d1e4e9}
+platform-sidebar[palette="white"] .platform-sidebar__item:not(.platform-sidebar__item--active):hover{background:#f3f6f8}
+
+platform-sidebar[variant="style-variant"][palette="mist"]{--platform-sidebar-bg:#f2f3f5;--platform-sidebar-muted:#505862;--platform-sidebar-text:#505862;--platform-sidebar-active:#303943;--platform-sidebar-active-bg:#e0e3e7;--nav-divider:#dce0e4}
+platform-sidebar[palette="mist"] .platform-sidebar__platform{background:#e9ebee;border-color:#d8dce1;border-radius:8px}
+platform-sidebar[palette="mist"] .platform-sidebar__platform:hover{background:#e1e4e8;border-color:#cbd1d7}
+platform-sidebar[palette="mist"] .platform-sidebar[data-expanded="true"] .platform-sidebar__platform-icon{background:transparent}
+platform-sidebar[variant="style-variant"][palette="mist"] .platform-sidebar__platform-menu{background:#fff;border-color:#dce0e4;box-shadow:0 8px 24px #2027301f}
+platform-sidebar[variant="style-variant"][palette="mist"] .platform-sidebar__platform-option{color:#505862}
+platform-sidebar[variant="style-variant"][palette="mist"] .platform-sidebar__platform-option:hover{background:#f0f1f3}
+platform-sidebar[variant="style-variant"][palette="mist"] .platform-sidebar__platform-option.is-selected{background:#e0e3e7;color:#303943}
+platform-sidebar[variant="style-variant"][palette="mist"] .platform-sidebar__platform-option>span{background:#f0f1f3}
+platform-sidebar[variant="style-variant"][palette="mist"] .platform-sidebar__platform-option.is-selected>span{background:#d5d9df}
+platform-sidebar[variant="style-variant"][palette="mist"] .platform-sidebar__platform-option>span img{filter:grayscale(1) brightness(.65)}
+platform-sidebar[palette="mist"] .platform-sidebar__quick-links{border-color:#dce0e4}
+platform-sidebar[palette="mist"] .platform-sidebar__group-title{color:#7b838d}
+platform-sidebar[palette="mist"] .platform-sidebar__item:not(.platform-sidebar__item--active):hover{background:#e8eaed}
+platform-sidebar[variant="style-variant"][palette="mist"] .platform-sidebar__item--active .platform-sidebar__icon img,
+platform-sidebar[variant="style-variant"][palette="mist"] .platform-sidebar__platform-icon img{filter:grayscale(1) brightness(.65)}
+
+platform-sidebar[palette="dark"]{--platform-sidebar-bg:#05284D;--platform-sidebar-muted:#c2ccd4;--platform-sidebar-text:#dbe4ea;--platform-sidebar-active-bg:color-mix(in srgb,var(--color-brand,var(--brand-primary)) 18%,#05284D)}
+platform-sidebar[palette="dark"] .platform-sidebar__brand-name{color:#f0f5f8}
+platform-sidebar[palette="dark"] .platform-sidebar__logo img{filter:none}
+platform-sidebar[palette="dark"] .platform-sidebar__platform{background:#2a3843;border-color:#384954;color:#dbe4ea}
+platform-sidebar[palette="dark"] .platform-sidebar__platform:hover{background:#30414c;border-color:#49616c}
+platform-sidebar[palette="dark"] .platform-sidebar[data-expanded="true"] .platform-sidebar__platform-icon{background:color-mix(in srgb,var(--color-brand,var(--brand-primary)) 16%,#263640)}
+platform-sidebar[palette="dark"] .platform-sidebar__quick-links{border-color:#34434e}
+platform-sidebar[palette="dark"] .platform-sidebar__group-title{color:#8c9fab}
+platform-sidebar[palette="dark"] .platform-sidebar__item:not(.platform-sidebar__item--active):hover{background:#2c3a45}
+platform-sidebar[palette="dark"] .platform-sidebar__item:not(.platform-sidebar__item--active) .platform-sidebar__icon img,
+platform-sidebar[palette="dark"] .platform-sidebar__chevron img{filter:brightness(0) invert(.78)}
+
+/* 深色变体沿用同一品牌色，只调整中性背景与层次。 */
+platform-sidebar[palette="dark"][tone="graphite"]{--platform-sidebar-bg:#252f32;--platform-sidebar-muted:#c5d0d3;--dark-surface:#303e42;--dark-border:#415257;--dark-hover:#39494e;--dark-divider:#39494e;--dark-caption:#94a8ae}
+platform-sidebar[palette="dark"][tone="midnight"]{--platform-sidebar-bg:#192c32;--platform-sidebar-muted:#c5d0d3;--dark-surface:#243c44;--dark-border:#35515a;--dark-hover:#2e4851;--dark-divider:#30474f;--dark-caption:#94a8ae}
+platform-sidebar[palette="dark"][tone="pine"]{--platform-sidebar-bg:#304147;--platform-sidebar-muted:#c5d0d3;--dark-surface:#3a4e55;--dark-border:#4a626a;--dark-hover:#435b63;--dark-divider:#43575e;--dark-caption:#a4b7bd}
+platform-sidebar[palette="dark"][tone]{--platform-sidebar-active-bg:color-mix(in srgb,var(--color-brand,var(--brand-primary)) 18%,var(--platform-sidebar-bg))}
+platform-sidebar[palette="dark"][tone] .platform-sidebar__platform{background:var(--dark-surface);border-color:var(--dark-border);color:#dee9ec}
+platform-sidebar[palette="dark"][tone] .platform-sidebar__platform:hover{background:var(--dark-hover);border-color:var(--dark-caption)}
+platform-sidebar[palette="dark"][tone] .platform-sidebar[data-expanded="true"] .platform-sidebar__platform-icon{background:color-mix(in srgb,var(--color-brand,var(--brand-primary)) 14%,var(--dark-surface))}
+platform-sidebar[palette="dark"][tone] .platform-sidebar__quick-links{border-color:var(--dark-divider)}
+platform-sidebar[palette="dark"][tone] .platform-sidebar__group-title{color:var(--dark-caption)}
+platform-sidebar[palette="dark"][tone] .platform-sidebar__item:not(.platform-sidebar__item--active):hover{background:var(--dark-hover)}
+
+/* 低饱和中性底色；强调色继续引用品牌变量。 */
+platform-sidebar[palette="fog"]{--platform-sidebar-bg:#f6f7f8;--platform-sidebar-muted:#495560;--switch-bg:#fafbfc;--switch-border:#e2e7ea;--switch-icon-bg:#e8eef0;--nav-hover:#eceff1;--nav-divider:#e2e7eb;--group-text:#788590}
+platform-sidebar[palette="warm"]{--platform-sidebar-bg:#f5f5f2;--platform-sidebar-muted:#495560;--switch-bg:#fafaf8;--switch-border:#e3e4df;--switch-icon-bg:#e9ece7;--nav-hover:#eceee9;--nav-divider:#e2e4df;--group-text:#7c837f}
+platform-sidebar[palette="slate"]{--platform-sidebar-bg:#f0f3f6;--platform-sidebar-muted:#495560;--switch-bg:#f7f9fb;--switch-border:#dce3e9;--switch-icon-bg:#e4ebf0;--nav-hover:#e6ecf1;--nav-divider:#dde4ea;--group-text:#788692}
+platform-sidebar:is([palette="fog"],[palette="warm"],[palette="slate"]){--platform-sidebar-active-bg:color-mix(in srgb,var(--color-brand,var(--brand-primary)) 9%,var(--platform-sidebar-bg))}
+platform-sidebar:is([palette="fog"],[palette="warm"],[palette="slate"]) .platform-sidebar__platform{background:var(--switch-bg);border-color:var(--switch-border);color:var(--platform-sidebar-muted);box-shadow:0 2px 5px #25334104}
+platform-sidebar:is([palette="fog"],[palette="warm"],[palette="slate"]) .platform-sidebar__platform:hover{background:var(--nav-hover);border-color:var(--switch-border)}
+platform-sidebar:is([palette="fog"],[palette="warm"],[palette="slate"]) .platform-sidebar[data-expanded="true"] .platform-sidebar__platform-icon{background:var(--switch-icon-bg)}
+platform-sidebar:is([palette="fog"],[palette="warm"],[palette="slate"]) .platform-sidebar__quick-links{border-color:var(--nav-divider)}
+platform-sidebar:is([palette="fog"],[palette="warm"],[palette="slate"]) .platform-sidebar__group-title{color:var(--group-text)}
+platform-sidebar:is([palette="fog"],[palette="warm"],[palette="slate"]) .platform-sidebar__item:not(.platform-sidebar__item--active):hover{background:var(--nav-hover)}
+/* 深色导航选中项使用实心品牌色，保持文字和图标清晰。 */
+platform-sidebar[variant="style-variant"][palette="dark"] .platform-sidebar__item:is(.platform-sidebar__item--active,[aria-current="page"]),
+platform-sidebar[variant="style-variant"][palette="dark"] .platform-sidebar__item:is(.platform-sidebar__item--active,[aria-current="page"]):hover{background:var(--color-brand,var(--brand-primary));color:#fff}
+platform-sidebar[variant="style-variant"][palette="dark"] .platform-sidebar__item:is(.platform-sidebar__item--active,[aria-current="page"]) .platform-sidebar__icon img{filter:brightness(0) invert(1);opacity:1}
+
+/* 深灰蓝定稿：降低品牌区和选中文字的视觉重量。 */
+platform-sidebar[variant="style-variant"][palette="dark"]:not([tone]) .platform-sidebar__platform{background:#10415F;border-color:#28546E;border-radius:8px;box-shadow:none}
+platform-sidebar[variant="style-variant"][palette="dark"]:not([tone]) .platform-sidebar__platform:hover{background:#1A4D6B;border-color:#37667F}
+platform-sidebar[variant="style-variant"]:is([palette="dark"],[palette="mist"]):not([tone]) .platform-sidebar[data-expanded="true"] .platform-sidebar__platform{height:38px;flex-basis:38px;padding:6px 12px;gap:0}
+platform-sidebar[variant="style-variant"]:is([palette="dark"],[palette="mist"]):not([tone]) .platform-sidebar[data-expanded="true"] .platform-sidebar__platform-short{display:none}
+platform-sidebar[variant="style-variant"]:is([palette="dark"],[palette="mist"]):not([tone]) .platform-sidebar[data-expanded="true"] .platform-sidebar__chevron{width:12px;height:12px;flex-basis:12px;opacity:.8}
+platform-sidebar[variant="style-variant"]:is([palette="dark"],[palette="mist"]):not([tone]) .platform-sidebar[data-expanded="true"] .platform-sidebar__chevron img{width:12px;height:12px}
+platform-sidebar[variant="style-variant"]:is([palette="dark"],[palette="mist"]):not([tone]) .platform-sidebar[data-expanded="true"] .platform-sidebar__platform-icon{display:none}
+platform-sidebar[variant="style-variant"]:is([palette="dark"],[palette="mist"]):not([tone]) .platform-sidebar[data-expanded="true"] .platform-sidebar__platform-icon img{width:18px;height:18px}
+platform-sidebar[variant="style-variant"]:is([palette="dark"],[palette="mist"]):not([tone]) .platform-sidebar[data-expanded="true"] .platform-sidebar__platform-name{font-size:13px;font-weight:400;line-height:20px;color:var(--platform-sidebar-text)}
+platform-sidebar[variant="style-variant"]:is([palette="dark"],[palette="mist"]):not([tone]) .platform-sidebar[data-expanded="true"] .platform-sidebar__logo{width:28px;height:28px;flex-basis:28px}
+platform-sidebar[variant="style-variant"]:is([palette="dark"],[palette="mist"]):not([tone]) .platform-sidebar__brand-name{font-size:16px;font-weight:600;letter-spacing:0}
+platform-sidebar[variant="style-variant"]:is([palette="dark"],[palette="mist"]):not([tone]) .platform-sidebar__platform-name{font-weight:400}
+platform-sidebar[variant="style-variant"][palette="dark"]:not([tone]) .platform-sidebar__group-title{color:#a0b2bd}
+platform-sidebar[variant="style-variant"]:is([palette="dark"],[palette="mist"]):not([tone]) .platform-sidebar__item:is(.platform-sidebar__item--active,[aria-current="page"]){font-weight:400}
+platform-sidebar[variant="style-variant"]:is([palette="dark"],[palette="mist"]):not([tone]) .platform-sidebar__icon{width:16px;height:16px;flex-basis:16px}
+
+/* 参考深海蓝配色；只作用于此展示变体。 */
+platform-sidebar[palette="dark"][tone="ocean"]{--platform-sidebar-bg:#102e40;--platform-sidebar-muted:#c8dde5;--platform-sidebar-text:#e0edf2;--dark-surface:#193d4f;--dark-border:#2c5263;--dark-hover:#20495b;--dark-divider:#294b5d;--dark-caption:#86a8b8}
+platform-sidebar[palette="dark"][tone="ocean"] .platform-sidebar{background:linear-gradient(155deg,#15374c 0%,#102a3b 55%,#143747 100%)}
+platform-sidebar[palette="dark"][tone="ocean"] .platform-sidebar__footer{background:transparent}
+platform-sidebar[palette="dark"][tone="ocean"] .platform-sidebar__brand-name{color:#e9f3f7}
+platform-sidebar[variant="style-variant"][palette="dark"][tone="ocean"] .platform-sidebar__item:is(.platform-sidebar__item--active,[aria-current="page"]),
+platform-sidebar[variant="style-variant"][palette="dark"][tone="ocean"] .platform-sidebar__item:is(.platform-sidebar__item--active,[aria-current="page"]):hover{background:linear-gradient(100deg,#126079,#10516a);color:#f2fbff;box-shadow:inset 0 0 0 1px #65c9dd14}
+platform-sidebar[palette="dark"][tone="ocean"] .platform-sidebar__avatar{background:linear-gradient(135deg,#82bdcc,#4d92ab);box-shadow:0 0 0 1px #b6e6ee33}
+
+/* Prussian-blue navigation: coordinated platform and version switch surfaces. */
+platform-sidebar[variant="style-variant"][palette="dark"]:not([tone]) .platform-sidebar__version{background:#10415F;border-color:#28546E}
+platform-sidebar[variant="style-variant"][palette="dark"]:not([tone]) .platform-sidebar__version button{color:#B8CEDC}
+platform-sidebar[variant="style-variant"][palette="dark"]:not([tone]) .platform-sidebar__version button:hover{background:#1A4D6B;color:#F0F7FB}
+platform-sidebar[variant="style-variant"][palette="dark"]:not([tone]) .platform-sidebar__version button.is-active{background:#28627F;color:#FFFFFF}
+
+/* Muted blue separators and utility icons on the Prussian-blue palette. */
+platform-sidebar[variant="style-variant"][palette="dark"]:not([tone]){--dark-divider:#28516B;--nav-divider:#28516B}
+platform-sidebar[variant="style-variant"][palette="dark"]:not([tone]) .platform-sidebar__quick-links{border-color:var(--dark-divider)}
+platform-sidebar[variant="style-variant"][palette="dark"]:not([tone]) .platform-sidebar__footer-divider{background:var(--dark-divider)}
+platform-sidebar[variant="style-variant"][palette="dark"]:not([tone]) :is(.platform-sidebar__chevron,.platform-sidebar__group-chevron) img{filter:brightness(0) saturate(100%) invert(77%) sepia(15%) saturate(540%) hue-rotate(163deg) brightness(91%) contrast(88%);opacity:1}
+platform-sidebar[variant="style-variant"][palette="dark"]:not([tone]) .platform-sidebar[data-expanded="true"] .platform-sidebar__chevron{opacity:1}
+
+/* Coordinated menu hover and selection for the Prussian-blue navigation. */
+platform-sidebar[variant="style-variant"][palette="dark"]:not([tone]){--platform-sidebar-active-bg:var(--color-brand,var(--brand-primary));--platform-sidebar-active:#FFFFFF}
+platform-sidebar[variant="style-variant"][palette="dark"]:not([tone]) .platform-sidebar__item:not(.platform-sidebar__item--active):not([aria-current="page"]):hover{background:#10415F;color:#E2EEF5}
+platform-sidebar[variant="style-variant"][palette="dark"]:not([tone]) .platform-sidebar__item:is(.platform-sidebar__item--active,[aria-current="page"]){background:var(--platform-sidebar-active-bg);color:#FFFFFF}
+platform-sidebar[variant="style-variant"][palette="dark"]:not([tone]) .platform-sidebar__item:is(.platform-sidebar__item--active,[aria-current="page"]):hover{background:var(--color-brand,var(--brand-primary));color:#FFFFFF}
+
+/* Brand artwork sits above the footer without affecting navigation layout. */
+
+.platform-sidebar__brand-decoration{display:none}
+platform-sidebar[variant="style-variant"][palette="dark"] .platform-sidebar[data-expanded="true"] .platform-sidebar__brand-decoration{display:block;position:absolute;left:8px;right:8px;bottom:100%;height:auto;aspect-ratio:1.5;overflow:hidden;pointer-events:none}
+platform-sidebar[variant="style-variant"][palette="dark"] .platform-sidebar__brand-decoration img{display:block;width:140%;max-width:none;height:auto;margin-left:-20%;filter:brightness(0) saturate(100%) invert(32%) sepia(86%) saturate(1160%) hue-rotate(164deg) brightness(90%) contrast(101%);opacity:.2}
+
+/* Logo and two aligned brand lines share a 40px height. */
+.platform-sidebar__brand-copy{display:none}
+platform-sidebar[variant="style-variant"] .platform-sidebar[data-expanded="true"] .platform-sidebar__brand{overflow:visible;gap:4px;justify-content:flex-start}
+platform-sidebar[variant="style-variant"][palette]:not([tone]) .platform-sidebar[data-expanded="true"] .platform-sidebar__brand>.platform-sidebar__logo{width:40px;height:40px;flex:0 0 40px}
+platform-sidebar[variant="style-variant"] .platform-sidebar[data-expanded="true"] .platform-sidebar__brand-copy{display:flex;flex-direction:column;justify-content:space-between;align-items:flex-start;flex:1 1 104px;min-width:0;height:40px}
+.platform-sidebar__wordmark{display:block;width:104px;max-width:100%;height:27px;object-fit:contain;object-position:left center}
+.platform-sidebar__brand-caption{display:block;white-space:nowrap;color:var(--platform-sidebar-text);font-size:12px;font-weight:400;line-height:14px;letter-spacing:1px}
+
+platform-sidebar[variant="style-variant"][palette="dark"] .platform-sidebar__item:is(.platform-sidebar__item--active,[aria-current="page"]){border-radius:12px}
+
+platform-sidebar[variant="style-variant"] .platform-sidebar[data-expanded="true"] .platform-sidebar__pin{flex:0 0 20px;width:20px;margin-left:0}
+
+/* Inset the selected fill without shifting the navigation label or icon. */
+platform-sidebar[variant="style-variant"][palette="dark"] .platform-sidebar__item:is(.platform-sidebar__item--active,[aria-current="page"]){background-clip:padding-box;border-left:4px solid transparent;border-right:4px solid transparent;padding-left:12px;padding-right:12px}
+platform-sidebar[variant="style-variant"][palette="dark"] .platform-sidebar[data-expanded="true"] .platform-sidebar__item:is(.platform-sidebar__item--active,[aria-current="page"]){padding-left:8px;padding-right:8px}
+
+/* Trial: combine the product subtitle and platform switch. */
+platform-sidebar.platform-sidebar--compact-switch[variant="style-variant"][palette] .platform-sidebar[data-expanded="true"] .platform-sidebar__brand-copy .platform-sidebar__platform{display:flex;width:auto;max-width:100%;height:15px;min-height:15px;flex:0 0 15px;padding:0;gap:4px;border:0;border-radius:0;background:transparent;box-shadow:none;color:var(--platform-sidebar-text)}
+platform-sidebar.platform-sidebar--compact-switch[variant="style-variant"][palette] .platform-sidebar[data-expanded="true"] .platform-sidebar__brand-copy .platform-sidebar__platform-name{font-size:11px;line-height:15px;white-space:nowrap;font-weight:400}
+platform-sidebar.platform-sidebar--compact-switch[variant="style-variant"][palette] .platform-sidebar[data-expanded="true"] .platform-sidebar__brand-copy .platform-sidebar__chevron{width:10px;height:10px;flex:0 0 10px;margin-left:0}
+platform-sidebar.platform-sidebar--compact-switch[variant="style-variant"][palette] .platform-sidebar[data-expanded="true"] .platform-sidebar__brand-copy .platform-sidebar__chevron img{width:10px;height:10px}
+platform-sidebar.platform-sidebar--compact-switch .platform-sidebar__platform-menu{top:64px}
+
+/* Compact brand icon and a divider below the combined brand/switch header. */
+platform-sidebar.platform-sidebar--compact-switch[variant="style-variant"][palette]:not([tone]) .platform-sidebar[data-expanded="true"] .platform-sidebar__brand>.platform-sidebar__logo{width:34px;height:34px;flex:0 0 34px}
+platform-sidebar.platform-sidebar--compact-switch[variant="style-variant"] .platform-sidebar[data-expanded="true"] .platform-sidebar__brand{position:relative;margin-bottom:10px}
+platform-sidebar.platform-sidebar--compact-switch[variant="style-variant"] .platform-sidebar[data-expanded="true"] .platform-sidebar__brand::after{content:"";position:absolute;left:0;right:0;bottom:-10px;height:1px;background:var(--dark-divider,var(--nav-divider,#28516B));pointer-events:none}
+
+/* Compact brand spacing; section dividers retain 12px spacing. */
+platform-sidebar.platform-sidebar--compact-switch[variant="style-variant"][palette]:not([tone]) .platform-sidebar[data-expanded="true"] .platform-sidebar__brand>.platform-sidebar__logo{width:32px;height:32px;flex:0 0 32px}
+platform-sidebar.platform-sidebar--compact-switch[variant="style-variant"] .platform-sidebar[data-expanded="true"] .platform-sidebar__brand{margin-bottom:13px}
+platform-sidebar.platform-sidebar--compact-switch[variant="style-variant"] .platform-sidebar[data-expanded="true"] .platform-sidebar__brand::after{bottom:-13px}
+platform-sidebar.platform-sidebar--compact-switch[variant="style-variant"] .platform-sidebar[data-expanded="true"] .platform-sidebar__nav{margin-top:0;gap:12px}
+platform-sidebar.platform-sidebar--compact-switch[variant="style-variant"] .platform-sidebar[data-expanded="true"] .platform-sidebar__quick-links{padding-bottom:12px;margin-bottom:0}
+
+/* Make the compact platform switch visibly interactive. */
+platform-sidebar.platform-sidebar--compact-switch[variant="style-variant"] .platform-sidebar__pin svg{width:14px;height:14px}
+platform-sidebar.platform-sidebar--compact-switch[variant="style-variant"] .platform-sidebar__wordmark{width:94px;height:23px}
+platform-sidebar.platform-sidebar--compact-switch[variant="style-variant"] .platform-sidebar[data-expanded="true"] .platform-sidebar__brand-copy{height:44px}
+platform-sidebar.platform-sidebar--compact-switch[variant="style-variant"] .platform-sidebar[data-expanded="true"] .platform-sidebar__brand{height:46px;min-height:46px;flex-basis:46px}
+platform-sidebar.platform-sidebar--compact-switch[variant="style-variant"][palette] .platform-sidebar[data-expanded="true"] .platform-sidebar__brand-copy .platform-sidebar__platform{height:21px;min-height:21px;flex-basis:21px;padding:2px 5px;border:1px solid transparent;border-radius:4px;background:transparent;gap:4px}
+platform-sidebar.platform-sidebar--compact-switch[variant="style-variant"][palette] .platform-sidebar[data-expanded="true"] .platform-sidebar__brand-copy .platform-sidebar__platform:hover{background:transparent;border-color:transparent}
+platform-sidebar.platform-sidebar--compact-switch[variant="style-variant"][palette] .platform-sidebar[data-expanded="true"] .platform-sidebar__brand-copy .platform-sidebar__platform:focus-visible{outline:2px solid #8CB8D0;outline-offset:2px}
+
+/* Tighter vertical spacing within primary navigation items. */
+platform-sidebar[variant="style-variant"] .platform-sidebar[data-expanded] .platform-sidebar__item{height:36px;padding-top:7px;padding-bottom:7px}
+
+/* Square navigation toggle with a slightly larger icon. */
+platform-sidebar.platform-sidebar--compact-switch[variant="style-variant"] .platform-sidebar__pin svg{width:16px;height:16px}
+platform-sidebar.platform-sidebar--compact-switch[variant="style-variant"] .platform-sidebar[data-expanded="true"] .platform-sidebar__pin{width:24px;height:24px;flex-basis:24px;border-radius:4px}
+platform-sidebar.platform-sidebar--compact-switch[variant="style-variant"] .platform-sidebar__pin[aria-pressed="true"]{background:transparent;color:var(--platform-sidebar-muted)}
+
+/* Match hover and selected navigation corner radii. */
+platform-sidebar[variant="style-variant"][palette="dark"] .platform-sidebar__item:hover{border-radius:12px}
+
+/* Align the subtitle with the wordmark and slightly enlarge the brand icon. */
+platform-sidebar.platform-sidebar--compact-switch[variant="style-variant"][palette]:not([tone]) .platform-sidebar[data-expanded="true"] .platform-sidebar__brand>.platform-sidebar__logo{width:36px;height:36px;flex:0 0 36px}
+platform-sidebar.platform-sidebar--compact-switch[variant="style-variant"][palette] .platform-sidebar[data-expanded="true"] .platform-sidebar__brand-copy .platform-sidebar__platform{padding-left:0;padding-right:0;border:0}
+
+platform-sidebar.platform-sidebar--compact-switch[variant="style-variant"][palette="dark"] .platform-sidebar__pin:hover{background:#123A59;color:#FFFFFF}
+platform-sidebar.platform-sidebar--compact-switch[variant="style-variant"][palette="mist"] .platform-sidebar__pin:hover{background:#D3E0EB;color:#183454}
+platform-sidebar.platform-sidebar--compact-switch[variant="style-variant"][palette="mist"] .platform-sidebar__pin{color:var(--platform-sidebar-text)}
+
+/* Collapsed navigation keeps the brand size and square menu targets. */
+platform-sidebar.platform-sidebar--compact-switch[variant="style-variant"] .platform-sidebar[data-expanded="false"] .platform-sidebar__logo{width:36px;height:36px;flex:0 0 36px}
+platform-sidebar[variant="style-variant"][palette="dark"] .platform-sidebar[data-expanded="false"] .platform-sidebar__item{width:36px;height:36px;min-width:36px;max-width:36px;flex:0 0 36px;align-self:center;justify-content:center;padding:0;border:0}
+
+/* Match the main-menu spacing below and above its separator lines. */
+platform-sidebar.platform-sidebar--compact-switch[variant="style-variant"] .platform-sidebar[data-expanded="true"] .platform-sidebar__main{gap:12px}
+
+/* Reference palette: color changes only, scoped to the dark navigation. */
+platform-sidebar[variant="style-variant"][palette="dark"]:not([tone]){--platform-sidebar-bg:var(--brand-navigation,#03264D);--platform-sidebar-text:#F1F5FF;--platform-sidebar-muted:#E0E9F6;--platform-sidebar-active-bg:var(--color-brand,var(--brand-primary));--platform-sidebar-active:#FFFFFF;--dark-divider:#254A69;--nav-divider:#254A69}
+platform-sidebar[variant="style-variant"][palette="dark"]:not([tone]) .platform-sidebar__group-title{color:#9FB5CC}
+platform-sidebar[variant="style-variant"][palette="dark"]:not([tone]) .platform-sidebar__item:not(.platform-sidebar__item--active):not([aria-current="page"]):hover{background:#103D60;color:#F1F5FF}
+platform-sidebar[variant="style-variant"][palette="dark"]:not([tone]) .platform-sidebar__item:is(.platform-sidebar__item--active,[aria-current="page"]),
+platform-sidebar[variant="style-variant"][palette="dark"]:not([tone]) .platform-sidebar__item:is(.platform-sidebar__item--active,[aria-current="page"]):hover{background-color:var(--platform-sidebar-active-bg);color:#FFFFFF}
+platform-sidebar[variant="style-variant"][palette="dark"]:not([tone]) .platform-sidebar__item:not(.platform-sidebar__item--active) .platform-sidebar__icon img{filter:brightness(0) invert(1);opacity:.9}
+
+/* Quiet utility controls matching the deep-blue navigation surface. */
+platform-sidebar[variant="style-variant"][palette="dark"]:not([tone]) .platform-sidebar__version{background:#0C3052;border-color:#264865}
+platform-sidebar[variant="style-variant"][palette="dark"]:not([tone]) .platform-sidebar__version button{color:#9FB5CC}
+platform-sidebar[variant="style-variant"][palette="dark"]:not([tone]) .platform-sidebar__version button:hover{background:#193F60;color:#DCE7F5}
+platform-sidebar[variant="style-variant"][palette="dark"]:not([tone]) .platform-sidebar__version button.is-active{background:#234D6E;color:#EAF2FA}
+platform-sidebar[variant="style-variant"][palette="dark"]:not([tone]) .platform-sidebar__platform .platform-sidebar__chevron img{filter:brightness(0) saturate(100%) invert(76%) sepia(12%) saturate(660%) hue-rotate(173deg) brightness(91%) contrast(86%);opacity:.85}
+
+/* Separate the collapsed brand from the icon navigation. */
+platform-sidebar.platform-sidebar--compact-switch[variant="style-variant"] .platform-sidebar[data-expanded="false"] .platform-sidebar__brand{position:relative;overflow:visible;height:36px;flex-basis:36px;margin-bottom:13px}
+platform-sidebar.platform-sidebar--compact-switch[variant="style-variant"] .platform-sidebar[data-expanded="false"] .platform-sidebar__brand::after{content:"";position:absolute;left:0;right:0;bottom:-13px;height:1px;background:var(--dark-divider,var(--nav-divider,#254A69));pointer-events:none}
+platform-sidebar.platform-sidebar--compact-switch[variant="style-variant"] .platform-sidebar[data-expanded="false"] .platform-sidebar__nav{margin-top:0}
+
+/* Keep the product name in the brand lockup and give platform switching its own row. */
+platform-sidebar.platform-sidebar--compact-switch[variant="style-variant"] .platform-sidebar[data-expanded="true"] .platform-sidebar__brand::after{display:none}
+platform-sidebar.platform-sidebar--compact-switch[variant="style-variant"] .platform-sidebar[data-expanded="true"]>.platform-sidebar__main>.platform-sidebar__platform{
+  width:100%;
+  max-width:none;
+  height:38px;
+  min-height:38px;
+  flex:0 0 38px;
+  justify-content:flex-start;
+  gap:8px;
+  padding:6px 10px;
+  border:1px solid color-mix(in srgb,var(--platform-sidebar-text) 22%,transparent);
+  border-radius:9px;
+  background:color-mix(in srgb,var(--platform-sidebar-text) 8%,transparent);
+  color:var(--platform-sidebar-text);
+  box-shadow:0 1px 0 #ffffff0a inset;
+}
+platform-sidebar.platform-sidebar--compact-switch[variant="style-variant"] .platform-sidebar[data-expanded="true"]>.platform-sidebar__main>.platform-sidebar__platform:hover{
+  border-color:color-mix(in srgb,var(--color-brand,var(--brand-primary)) 62%,var(--platform-sidebar-text));
+  background:color-mix(in srgb,var(--color-brand,var(--brand-primary)) 14%,transparent);
+}
+platform-sidebar.platform-sidebar--compact-switch[variant="style-variant"] .platform-sidebar[data-expanded="true"]>.platform-sidebar__main>.platform-sidebar__platform .platform-sidebar__platform-icon{
+  width:24px;
+  height:24px;
+  flex-basis:24px;
+  border-radius:6px;
+}
+platform-sidebar.platform-sidebar--compact-switch[variant="style-variant"] .platform-sidebar[data-expanded="true"]>.platform-sidebar__main>.platform-sidebar__platform .platform-sidebar__platform-icon img{width:16px;height:16px}
+platform-sidebar.platform-sidebar--compact-switch[variant="style-variant"] .platform-sidebar[data-expanded="true"]>.platform-sidebar__main>.platform-sidebar__platform .platform-sidebar__platform-name{
+  max-width:none;
+  font-size:13px;
+  font-weight:600;
+  line-height:20px;
+}
+platform-sidebar.platform-sidebar--compact-switch[variant="style-variant"] .platform-sidebar[data-expanded="true"]>.platform-sidebar__main>.platform-sidebar__platform .platform-sidebar__chevron{
+  width:14px;
+  height:14px;
+  flex-basis:14px;
+  margin-left:auto;
+}
+platform-sidebar.platform-sidebar--compact-switch[variant="style-variant"] .platform-sidebar[data-expanded="true"] .platform-sidebar__brand-caption{
+  color:var(--platform-sidebar-text);
+  font-size:18px;
+  font-weight:600;
+  line-height:28px;
+  letter-spacing:0;
+}
+platform-sidebar.platform-sidebar--compact-switch[variant="style-variant"] .platform-sidebar[data-expanded="true"] .platform-sidebar__wordmark{display:none}
+platform-sidebar.platform-sidebar--compact-switch[variant="style-variant"] .platform-sidebar[data-expanded="true"] .platform-sidebar__brand>.platform-sidebar__logo{display:block;width:36px;height:36px;flex:0 0 36px}
+platform-sidebar.platform-sidebar--compact-switch[variant="style-variant"] .platform-sidebar[data-expanded="true"] .platform-sidebar__brand-copy{
+  display:flex;
+  height:28px;
+  flex:1 1 auto;
+  justify-content:center;
+}
+platform-sidebar.platform-sidebar--compact-switch[variant="style-variant"] .platform-sidebar[data-expanded="true"] .platform-sidebar__brand{
+  height:36px;
+  min-height:36px;
+  flex-basis:36px;
+  gap:8px;
+  margin-bottom:0;
+}
+platform-sidebar.platform-sidebar--compact-switch[variant="style-variant"] .platform-sidebar[data-expanded="true"]>.platform-sidebar__main>.platform-sidebar__platform{
+  position:relative;
+  margin-bottom:12px;
+}
+platform-sidebar.platform-sidebar--compact-switch[variant="style-variant"] .platform-sidebar[data-expanded="true"]>.platform-sidebar__main>.platform-sidebar__platform::after{
+  content:"";
+  position:absolute;
+  left:0;
+  right:0;
+  bottom:-12px;
+  height:1px;
+  background:var(--dark-divider,var(--nav-divider,#254A69));
+  pointer-events:none;
+}
+platform-sidebar.platform-sidebar--compact-switch[variant="style-variant"][palette="mist"] .platform-sidebar[data-expanded="true"]>.platform-sidebar__main>.platform-sidebar__platform::after{
+  background:color-mix(in srgb,var(--platform-sidebar-text) 22%,transparent);
+}
+platform-sidebar.platform-sidebar--compact-switch[variant="style-variant"] .platform-sidebar[data-expanded="true"]>.platform-sidebar__main>.platform-sidebar__platform .platform-sidebar__chevron{
+  margin-left:auto;
+}
+platform-sidebar[catalog="components"] .platform-sidebar__platform,
+platform-sidebar[catalog="components"] .platform-sidebar__platform-menu{display:none!important}
+
+/* Blue-gray light navigation with a monochrome brand lockup. */
+platform-sidebar[variant="style-variant"][palette="mist"]{--platform-sidebar-bg:#E8EFF5;--platform-sidebar-muted:#4C6275;--platform-sidebar-text:#344E63;--platform-sidebar-active:#29475E;--platform-sidebar-active-bg:#D3E0EB;--nav-divider:#CCD9E4}
+platform-sidebar[variant="style-variant"][palette="mist"] .platform-sidebar__item:not(.platform-sidebar__item--active):hover{background:#DFE8F0}
+platform-sidebar[variant="style-variant"][palette="mist"] .platform-sidebar__quick-links{border-color:#CCD9E4}
+platform-sidebar[variant="style-variant"][palette="mist"] .platform-sidebar__group-title{color:#7A8FA1}
+platform-sidebar[variant="style-variant"][palette="mist"] :is(.platform-sidebar__logo img,.platform-sidebar__wordmark){filter:brightness(0) saturate(100%) invert(27%) sepia(19%) saturate(897%) hue-rotate(165deg) brightness(94%) contrast(89%)}
+platform-sidebar[variant="style-variant"][palette="mist"] .platform-sidebar__version{background:#DCE6EF;border-color:#CCD9E4}
+
+/* Navigation labels retain regular weight in every state. */
+platform-sidebar[variant="style-variant"] .platform-sidebar .platform-sidebar__item,
+platform-sidebar[variant="style-variant"] .platform-sidebar .platform-sidebar__item:hover,
+platform-sidebar[variant="style-variant"] .platform-sidebar .platform-sidebar__item:is(.platform-sidebar__item--active,[aria-current="page"]),
+platform-sidebar[variant="style-variant"] .platform-sidebar .platform-sidebar__item .platform-sidebar__label{font-weight:400}
+
+/* Reference light palette; preserve all navigation geometry and elements. */
+platform-sidebar[variant="style-variant"][palette="mist"]{--platform-sidebar-bg:#E7EFF8;--platform-sidebar-muted:#486184;--platform-sidebar-text:#183454;--platform-sidebar-active:#183454;--platform-sidebar-active-bg:#FFFFFF;--nav-divider:#CDDBE9}
+platform-sidebar[variant="style-variant"][palette="mist"] .platform-sidebar__item:not(.platform-sidebar__item--active):hover{background:#F1F6FC}
+platform-sidebar[variant="style-variant"][palette="mist"] .platform-sidebar__quick-links{border-color:#CDDBE9}
+platform-sidebar[variant="style-variant"][palette="mist"] .platform-sidebar__group-title{color:#7A90AC}
+platform-sidebar[variant="style-variant"][palette="mist"] .platform-sidebar__icon img,
+platform-sidebar[variant="style-variant"][palette="mist"] .platform-sidebar__group-chevron img{filter:brightness(0) saturate(100%) invert(36%) sepia(19%) saturate(1058%) hue-rotate(176deg) brightness(94%) contrast(87%)}
+platform-sidebar[variant="style-variant"][palette="mist"] .platform-sidebar__item:is(.platform-sidebar__item--active,[aria-current="page"]) .platform-sidebar__icon img,
+platform-sidebar[variant="style-variant"][palette="mist"] :is(.platform-sidebar__logo img,.platform-sidebar__wordmark){filter:brightness(0) saturate(100%) invert(16%) sepia(26%) saturate(1292%) hue-rotate(176deg) brightness(96%) contrast(94%)}
+platform-sidebar[variant="style-variant"][palette="mist"] .platform-sidebar__version{background:#DCE7F2;border-color:#CDDBE9}
+
+/* Keep the existing brand decoration visible in the light palette too. */
+platform-sidebar[variant="style-variant"][palette="mist"] .platform-sidebar[data-expanded="true"] .platform-sidebar__brand-decoration{display:block;position:absolute;left:8px;right:8px;bottom:100%;height:auto;aspect-ratio:1.5;overflow:hidden;pointer-events:none}
+platform-sidebar[variant="style-variant"][palette="mist"] .platform-sidebar__brand-decoration img{display:block;width:140%;max-width:none;height:auto;margin-left:-20%;filter:brightness(0) saturate(100%) invert(36%) sepia(19%) saturate(1058%) hue-rotate(176deg) brightness(94%) contrast(87%);opacity:.12}
+
+/* Keep geometry stable while changing navigation state; avoid fading an old fill across a new clip. */
+platform-sidebar[variant="style-variant"][palette="dark"] .platform-sidebar__item{border-radius:12px;transition:color .15s}
+
+/* Softer corners for the version switch and its selected segment. */
+platform-sidebar[variant="style-variant"] .platform-sidebar__version{border-radius:10px}
+platform-sidebar[variant="style-variant"] .platform-sidebar__version button{border-radius:8px}
+
+/* Model platform keeps the same navigation shell and grouped menu rhythm. */
+platform-sidebar[platform="model"] .platform-sidebar__saas-badge{margin-left:auto;white-space:nowrap;padding:1px 5px;border-radius:10px;background:color-mix(in srgb,currentColor 12%,transparent);color:var(--platform-sidebar-muted);font-size:10px;line-height:16px}
+platform-sidebar[platform="model"] .platform-sidebar[data-expanded="false"] .platform-sidebar__saas-badge{display:none}
+
+/* The narrow sidebar shows group launchers; only their menus open on hover. */
+platform-sidebar.platform-sidebar--group-navigation[variant="style-variant"] .platform-sidebar[data-expanded="false"] .platform-sidebar__group{display:flex;gap:0}
+platform-sidebar.platform-sidebar--group-navigation[variant="style-variant"] .platform-sidebar[data-expanded="false"] .platform-sidebar__group-items{display:none}
+platform-sidebar.platform-sidebar--group-navigation[variant="style-variant"] .platform-sidebar[data-expanded="false"] .platform-sidebar__group-title{display:flex;flex-direction:column;align-self:center;align-items:center;justify-content:center;gap:4px;width:48px;min-height:52px;max-height:52px;padding:5px 0;opacity:1;overflow:visible;border-radius:8px;color:var(--platform-sidebar-muted)}
+platform-sidebar.platform-sidebar--group-navigation[variant="style-variant"] .platform-sidebar[data-expanded="false"] .platform-sidebar__group-title>.platform-sidebar__icon{display:block;width:20px;height:20px;flex:0 0 20px}
+platform-sidebar.platform-sidebar--group-navigation[variant="style-variant"] .platform-sidebar[data-expanded="false"] .platform-sidebar__group-label{display:block;flex:0 0 auto;white-space:nowrap;font-size:10px;font-weight:400;line-height:14px;letter-spacing:0;color:#9FB5CC}
+platform-sidebar.platform-sidebar--group-navigation[variant="style-variant"][palette="mist"] .platform-sidebar[data-expanded="false"] .platform-sidebar__group-label{color:#7A90AC}
+platform-sidebar.platform-sidebar--group-navigation[variant="style-variant"][palette="dark"] .platform-sidebar[data-expanded="false"] .platform-sidebar__group-title .platform-sidebar__icon img{filter:brightness(0) invert(1);opacity:.9}
+platform-sidebar.platform-sidebar--group-navigation[variant="style-variant"] .platform-sidebar[data-expanded="false"] .platform-sidebar__group-chevron{display:none}
+platform-sidebar.platform-sidebar--group-navigation[variant="style-variant"] .platform-sidebar[data-expanded="false"] .platform-sidebar__group-title:hover{background:#ffffff12;color:var(--platform-sidebar-text)}
+platform-sidebar.platform-sidebar--group-navigation[variant="style-variant"] .platform-sidebar[data-expanded="false"] .platform-sidebar__brand{flex-direction:row;justify-content:center;gap:0;height:36px;min-height:36px;flex-basis:36px}
+platform-sidebar.platform-sidebar--group-navigation[variant="style-variant"] .platform-sidebar[data-expanded="false"] .platform-sidebar__pin{display:grid;width:24px;height:24px;flex:0 0 24px;margin:0;border-radius:4px}
+platform-sidebar.platform-sidebar--group-navigation[variant="style-variant"] .platform-sidebar__group-flyout{position:fixed;z-index:80;width:188px;max-height:calc(100vh - 16px);overflow-y:auto;padding:8px;border:1px solid var(--dark-divider,#254A69);border-radius:10px;background:var(--platform-sidebar-bg);box-shadow:0 8px 24px #00152e40;box-sizing:border-box;color:var(--platform-sidebar-text)}
+platform-sidebar.platform-sidebar--group-navigation[variant="style-variant"] .platform-sidebar__group-flyout[hidden]{display:none}
+platform-sidebar.platform-sidebar--group-navigation[variant="style-variant"] .platform-sidebar__group-flyout-title{padding:5px 10px 9px;color:#9fb5cc;font-size:12px;line-height:18px}
+platform-sidebar.platform-sidebar--group-navigation[variant="style-variant"] .platform-sidebar__group-flyout-items{display:flex;flex-direction:column;gap:2px}
+platform-sidebar.platform-sidebar--group-navigation[variant="style-variant"] .platform-sidebar__group-flyout-item{width:100%;min-height:36px;display:flex;align-items:center;gap:12px;padding:8px 10px;border:0;border-radius:7px;background:transparent;color:#f1f5ff;font:inherit;font-size:13px;text-align:left;cursor:pointer}
+platform-sidebar.platform-sidebar--group-navigation[variant="style-variant"] .platform-sidebar__group-flyout-item:hover,
+platform-sidebar.platform-sidebar--group-navigation[variant="style-variant"] .platform-sidebar__group-flyout-item.is-selected,
+platform-sidebar.platform-sidebar--group-navigation[variant="style-variant"] .platform-sidebar__group-flyout-item:focus-visible{background:#103D60;outline:none}
+platform-sidebar.platform-sidebar--group-navigation[variant="style-variant"] .platform-sidebar__group-flyout-item .platform-sidebar__icon{width:16px;height:16px;flex:0 0 16px}
+platform-sidebar.platform-sidebar--group-navigation[variant="style-variant"] .platform-sidebar__group-flyout-item .platform-sidebar__icon img{filter:brightness(0) invert(1)}
+platform-sidebar.platform-sidebar--group-navigation[variant="style-variant"] .platform-sidebar[data-expanded="false"] .platform-sidebar__group-flyout-item .platform-sidebar__label{display:block;font-size:13px;line-height:20px}
+
+/* Platform switching shares the group-flyout surface and narrow-sidebar placement. */
+platform-sidebar[variant="style-variant"][palette] .platform-sidebar[data-expanded] .platform-sidebar__platform-menu{position:fixed;z-index:80;padding:8px;border-radius:10px;max-height:calc(100vh - 16px);overflow-y:auto}
+platform-sidebar[variant="style-variant"][palette="dark"] .platform-sidebar__platform-menu{background:var(--platform-sidebar-bg);border-color:var(--dark-divider,#254A69);box-shadow:0 8px 24px #00152e40}
+platform-sidebar[variant="style-variant"][palette="dark"] .platform-sidebar__platform-option{min-height:36px;padding:8px 10px;border-radius:7px;color:#f1f5ff}
+platform-sidebar[variant="style-variant"][palette="dark"] .platform-sidebar__platform-option+.platform-sidebar__platform-option{margin-top:2px}
+platform-sidebar[variant="style-variant"][palette="dark"] .platform-sidebar__platform-option:hover,
+platform-sidebar[variant="style-variant"][palette="dark"] .platform-sidebar__platform-option.is-selected{background:#103D60;color:#f1f5ff}
+
+platform-sidebar.platform-sidebar--group-navigation[palette="mist"] .platform-sidebar__group-flyout{background:#fff;border-color:#CDDBE9;box-shadow:0 8px 24px #2027301f;color:var(--platform-sidebar-text)}
+platform-sidebar.platform-sidebar--group-navigation[palette="mist"] .platform-sidebar__group-flyout-title{color:#7a90ac}
+platform-sidebar.platform-sidebar--group-navigation[palette="mist"] .platform-sidebar__group-flyout-item{color:var(--platform-sidebar-muted)}
+platform-sidebar.platform-sidebar--group-navigation[palette="mist"] .platform-sidebar__group-flyout-item.is-selected{background:var(--platform-sidebar-active-bg);color:var(--platform-sidebar-muted)}
+platform-sidebar.platform-sidebar--group-navigation[palette="mist"] .platform-sidebar__group-flyout-item:is(:hover,:focus-visible){background:var(--color-bg-hover,#f4f8fa);color:var(--platform-sidebar-muted)}
+platform-sidebar.platform-sidebar--group-navigation[palette="mist"] .platform-sidebar__group-flyout-item .platform-sidebar__icon img{filter:brightness(0) saturate(100%) invert(36%) sepia(19%) saturate(1058%) hue-rotate(176deg) brightness(94%) contrast(87%)}
+platform-sidebar.platform-sidebar--group-navigation[palette="mist"] .platform-sidebar[data-expanded="false"] .platform-sidebar__group-title:hover{background:#F1F6FC}
+platform-sidebar[variant="style-variant"][palette="mist"] .platform-sidebar__platform-menu{border-color:#CDDBE9}
+platform-sidebar[variant="style-variant"][palette="mist"] .platform-sidebar__platform-option{color:var(--platform-sidebar-muted)}
+platform-sidebar[variant="style-variant"][palette="mist"] .platform-sidebar__platform-option.is-selected{background:var(--platform-sidebar-active-bg);color:var(--platform-sidebar-active)}
+platform-sidebar[variant="style-variant"][palette="mist"] .platform-sidebar__platform-option:is(:hover,:focus-visible){background:var(--color-bg-hover,#f4f8fa);color:var(--platform-sidebar-active)}
+platform-sidebar[platform="model"].platform-sidebar--group-navigation .platform-sidebar[data-expanded="false"] .platform-sidebar__group-flyout .platform-sidebar__saas-badge{display:inline-block}
+platform-sidebar[variant="style-variant"][palette] .platform-sidebar[data-expanded="false"] .platform-sidebar__platform-icon img{filter:brightness(0) saturate(100%) invert(96%) sepia(7%) saturate(762%) hue-rotate(185deg) brightness(101%) contrast(101%);opacity:1}
+platform-sidebar[variant="style-variant"][palette="mist"] .platform-sidebar[data-expanded="false"] .platform-sidebar__platform{color:var(--platform-sidebar-text);background:color-mix(in srgb,var(--platform-sidebar-text) 8%,transparent);border-color:color-mix(in srgb,var(--platform-sidebar-text) 22%,transparent);box-shadow:0 1px 0 #ffffff0a inset}
+platform-sidebar[variant="style-variant"][palette="mist"] .platform-sidebar[data-expanded="false"] .platform-sidebar__platform:hover{border-color:color-mix(in srgb,var(--color-brand,var(--brand-primary)) 62%,var(--platform-sidebar-text));background:color-mix(in srgb,var(--color-brand,var(--brand-primary)) 14%,transparent)}
+platform-sidebar[variant="style-variant"][palette="mist"] .platform-sidebar[data-expanded="false"] .platform-sidebar__platform-icon img{filter:brightness(0) saturate(100%) invert(16%) sepia(26%) saturate(1292%) hue-rotate(176deg) brightness(96%) contrast(94%)}
+
+/* The light platform switch is an interactive control, distinct from the sidebar surface. */
+platform-sidebar.platform-sidebar--compact-switch[variant="style-variant"][palette="mist"] .platform-sidebar[data-expanded]>.platform-sidebar__main>.platform-sidebar__platform{background:#E0EAF5;border-color:#B8C9DC;box-shadow:none;color:var(--platform-sidebar-text)}
+platform-sidebar.platform-sidebar--compact-switch[variant="style-variant"][palette="mist"] .platform-sidebar[data-expanded]>.platform-sidebar__main>.platform-sidebar__platform:hover{background:#D5E3F1;border-color:#7A90AC;box-shadow:none}
+platform-sidebar.platform-sidebar--compact-switch[variant="style-variant"][palette="mist"] .platform-sidebar[data-expanded]>.platform-sidebar__main>.platform-sidebar__platform:focus-visible{outline:2px solid #486184;outline-offset:2px}
+platform-sidebar.platform-sidebar--compact-switch[variant="style-variant"][palette="mist"] .platform-sidebar__platform .platform-sidebar__chevron img{filter:brightness(0) saturate(100%) invert(36%) sepia(19%) saturate(1058%) hue-rotate(176deg) brightness(94%) contrast(87%);opacity:1}
+
+/* Keep the toggle on the same header row when the sidebar is collapsed. */
+platform-sidebar.platform-sidebar--group-navigation[variant="style-variant"] .platform-sidebar[data-expanded="false"] .platform-sidebar__brand>.platform-sidebar__logo{display:none}

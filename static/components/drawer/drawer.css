@@ -1,0 +1,18 @@
+.app-drawer{box-sizing:border-box;position:fixed;inset:0 0 0 auto;margin:0;width:min(480px,100vw);max-width:100vw;height:100dvh;max-height:100dvh;padding:0;border:0;border-radius:12px 0 0 12px;background:var(--color-bg-surface,#fff);color:var(--color-text-primary,#172d43);box-shadow:0 16px 40px #1f323f26;overflow:hidden}
+.app-drawer[open]{display:flex;flex-direction:column;animation:drawer-enter .18s ease-out}
+.app-drawer::backdrop{background:#10253855}
+.app-drawer__header{display:flex;align-items:center;justify-content:space-between;padding:16px 24px;border-bottom:1px solid var(--color-border,#d7e0e7);flex:none}
+.app-drawer__header h2{margin:0;font-size:20px;line-height:28px;font-weight:600}
+.app-drawer__header text-button[icon="close"]{display:flex;flex:none}
+.app-drawer__header text-button[icon="close"] .text-button{min-width:24px;width:24px;height:32px;padding:0;justify-content:flex-end;color:var(--color-text-muted,#8b969e)}
+.app-drawer__header text-button[icon="close"] .text-button:hover{color:var(--color-text-secondary,#405b68)}
+.app-drawer__body{flex:1;min-height:0;overflow:auto;padding:24px}
+.app-drawer__footer{padding:16px 24px;border-top:1px solid var(--color-border,#d7e0e7);display:flex;justify-content:flex-end;gap:12px;flex:none}
+.app-drawer__footer:empty{display:none}
+@keyframes drawer-enter{from{transform:translateX(100%)}to{transform:translateX(0)}}
+@media(prefers-reduced-motion:reduce){.app-drawer[open]{animation:none}}
+
+/* Light drawers use a white canvas rather than the tinted page surface. */
+html:not([data-theme=dark]) .app-drawer{background:#fff}
+/* Footer content is slotted as a wrapper; space its buttons as well. */
+.app-drawer__footer>[drawer-footer]{display:flex;align-items:center;justify-content:flex-end;flex-wrap:wrap;gap:inherit}

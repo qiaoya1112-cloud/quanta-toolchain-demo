@@ -1,0 +1,12 @@
+/* Body rows follow their tallest cell content plus equal vertical padding.
+   No fixed body-row height; shorter cells remain vertically centered. */
+:is(task-data-table .task-data-table, .assignment-table, .todo-table) thead th{height:36px;padding:8px 16px}
+:is(task-data-table .task-data-table, .assignment-table, .todo-table) tbody :is(th,td){height:auto;padding:var(--table-cell-padding-block) var(--table-cell-padding-inline);vertical-align:middle}
+
+/* Business tables share container width; minimum widths remain configurable. */
+:is(task-data-table .task-data-table table, .assignment-table, .todo-table){width:100%;min-width:var(--table-min-width,980px)}
+
+/* Shared business-table typography; compact tags and supporting text keep their own sizes. */
+:root{--table-font-size:14px;--table-cell-padding-block:12px;--table-cell-padding-inline:16px}
+:is(task-data-table .task-data-table table,.assignment-table,.todo-table){font-size:var(--table-font-size)}
+:is(task-data-table .task-data-table,.assignment-table,.todo-table) td :is(button,.text-button){font-size:var(--table-font-size);font-weight:400}

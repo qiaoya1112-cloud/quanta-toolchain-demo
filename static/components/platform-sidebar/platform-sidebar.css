@@ -1,0 +1,105 @@
+@import url('../brand-tokens.css');
+:root {
+  --platform-sidebar-bg: #05284D;
+  --platform-sidebar-border: #232a32;
+  --platform-sidebar-active-bg: var(--color-brand-soft,var(--brand-soft));
+  --platform-sidebar-active: #02c1cd;
+  --platform-sidebar-muted: #9aa6b2;
+  --platform-sidebar-text: #e7edf3;
+}
+
+platform-sidebar { display: block; width: var(--platform-sidebar-width, 200px); min-width: 0; height: 100%; transition: none; view-transition-name: platform-sidebar; }
+html.platform-sidebar-ready platform-sidebar { transition: width 240ms cubic-bezier(0.22, 1, 0.36, 1); }
+platform-sidebar.is-resizing-host { transition: none; }
+.platform-sidebar { position: relative; width: var(--platform-sidebar-width, 64px); min-width: 80px; height: 100%; min-height: 100vh; display: flex; flex-direction: column; justify-content: space-between; padding: 20px 10px; overflow: visible; background: var(--platform-sidebar-bg); box-sizing: border-box; color: var(--platform-sidebar-text); font-family: Inter, -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", "Segoe UI", sans-serif; transition: none; }
+html.platform-sidebar-ready .platform-sidebar { transition: width 240ms cubic-bezier(0.22, 1, 0.36, 1), padding 220ms ease; }
+.platform-sidebar.is-resizing { transition: none; user-select: none; }
+.platform-sidebar__main { width: 100%; min-width: 0; min-height: 0; flex: 1 1 auto; display: flex; flex-direction: column; align-items: center; gap: 12px; overflow-y: auto; overflow-x: hidden; scrollbar-width: none; }
+.platform-sidebar__main::-webkit-scrollbar { display: none; }
+.platform-sidebar__brand { width: 100%; height: 43px; flex: 0 0 43px; display: flex; align-items: center; justify-content: center; gap: 0; overflow: hidden; }
+.platform-sidebar__logo { position: relative; width: 43px; height: 43px; flex: 0 0 43px; overflow: hidden; }
+.platform-sidebar__logo img { position: absolute; width: 540.88%; height: 189.08%; max-width: none; left: -90.38%; top: -44.49%; display: block; }
+.platform-sidebar__brand-name { max-width: 0; overflow: hidden; color: #fff; font-size: 24px; font-weight: 600; line-height: normal; opacity: 0; transform: translateX(-4px); transition: max-width 220ms ease, opacity 160ms ease, transform 220ms ease; white-space: nowrap; }
+.platform-sidebar__platform { width: 40px; height: 40px; flex: 0 0 40px; display: flex; align-items: center; justify-content: center; gap: 2px; padding: 8px 4px; border: 1px solid #323d47; border-radius: 8px; background: #191e25; color: var(--platform-sidebar-text); cursor: pointer; font: inherit; transition: width 240ms cubic-bezier(0.22, 1, 0.36, 1), flex-basis 240ms cubic-bezier(0.22, 1, 0.36, 1), padding 220ms ease, gap 220ms ease; }
+.platform-sidebar__platform-icon { width: 0; height: 36px; flex: 0 0 0; display: grid; place-items: center; overflow: hidden; border-radius: 8px; background: rgba(2, 193, 205, 0.1); opacity: 0; transform: scale(0.88); transition: width 220ms ease, flex-basis 220ms ease, opacity 160ms ease, transform 220ms ease; }
+.platform-sidebar__platform-name { max-width: 0; overflow: hidden; opacity: 0; transform: translateX(-4px); transition: max-width 220ms ease, opacity 160ms ease, transform 220ms ease; white-space: nowrap; }
+.platform-sidebar__platform-icon img { width: 19px; height: 19px; display: block; }
+.platform-sidebar__platform-short { max-width: 20px; overflow: hidden; font-size: 14px; line-height: 20px; opacity: 1; transition: max-width 180ms ease, opacity 120ms ease; white-space: nowrap; }
+.platform-sidebar__chevron { width: 12px; height: 12px; flex: 0 0 12px; display: grid; place-items: center; color: #9aa6b2; transform: rotate(180deg); transition: transform 160ms ease; }
+.platform-sidebar__chevron img { width: 12px; height: 12px; display: block; }
+platform-sidebar .platform-sidebar .platform-sidebar__platform .platform-sidebar__chevron { transform:none; }
+.platform-sidebar__platform-menu { position: absolute; z-index: 30; top: 75px; left: calc(100% + 8px); width: 220px; padding: 4px; border: 1px solid #e2e9ee; border-radius: 8px; background: #fff; box-shadow: 0 4px 18px rgba(15, 29, 36, 0.2); box-sizing: border-box; }
+.platform-sidebar__platform-menu[hidden] { display: none; }
+.platform-sidebar__platform-option { width: 100%; min-height: 40px; display: flex; align-items: center; gap: 10px; padding: 4px 8px; border: 0; border-radius: 5px; color: #3d5561; background: transparent; cursor: pointer; font-family: inherit; text-align: left; }
+.platform-sidebar__platform-option:hover { background: rgba(0, 149, 182, 0.08); }
+.platform-sidebar__platform-option.is-selected { color: var(--color-brand,var(--brand-primary)); background: var(--color-brand-selected,var(--brand-selected)); }
+.platform-sidebar__platform-option > span { width: 30px; height: 30px; flex: 0 0 30px; display: grid; place-items: center; border-radius: 6px; background: rgba(0, 149, 182, 0.08); }
+.platform-sidebar__platform-option > span img,
+.platform-sidebar__platform-option.is-selected > span img { width: 18px; height: 18px; display: block; filter: brightness(0) saturate(100%) invert(42%) sepia(99%) saturate(1691%) hue-rotate(158deg) brightness(89%) contrast(101%); opacity: 1; }
+.platform-sidebar__platform-option b { font-size: 13px; font-weight: 400; line-height: 20px; white-space: nowrap; }
+.platform-sidebar.is-platform-menu-open .platform-sidebar__chevron { transform: rotate(0deg); }
+
+.platform-sidebar__nav { width: 54px; flex: 0 0 auto; display: flex; flex-direction: column; align-items: center; gap: 8px; overflow: visible; }
+.platform-sidebar__group { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 0; }
+.platform-sidebar__group-title { width: 100%; max-height: 0; display: flex; align-items: center; justify-content: space-between; padding: 0 12px; overflow: hidden; border: 0; background: transparent; color: #74818d; font-family: Inter, -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", "Segoe UI", sans-serif; font-size: 11px; font-weight: 400; line-height: 16.5px; letter-spacing: 0.275px; opacity: 0; cursor: pointer; text-align: left; transition: max-height 220ms ease, padding 220ms ease, opacity 160ms ease; }
+.platform-sidebar__group-items { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.platform-sidebar__divider { display: none; }
+.platform-sidebar__item { position: relative; width: 54px; height: 48px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; padding: 12px 4px; border: 0; border-radius: 8px; background: transparent; color: var(--platform-sidebar-muted); cursor: pointer; font: inherit; box-sizing: border-box; }
+.platform-sidebar__item--active, .platform-sidebar__item[aria-current="page"] { background: var(--color-brand,var(--brand-primary)); color: #fff; }
+.platform-sidebar__item:hover { background: rgba(0, 149, 182, 0.06); }
+.platform-sidebar__item--active:hover, .platform-sidebar__item[aria-current="page"]:hover { background: var(--color-brand,var(--brand-primary)); }
+.platform-sidebar__item--active::before, .platform-sidebar__item[aria-current="page"]::before { content: none; }
+.platform-sidebar__icon { width: 20px; height: 20px; flex: 0 0 20px; display: block; }
+.platform-sidebar__icon img { width: 100%; height: 100%; display: block; object-fit: contain; filter: none; opacity: 1; }
+.platform-sidebar__item--active .platform-sidebar__icon img,
+.platform-sidebar__item[aria-current="page"] .platform-sidebar__icon img { filter: brightness(0) invert(1); opacity: 1; }
+.platform-sidebar__label { font-size: 10px; line-height: 14px; white-space: nowrap; }
+.platform-sidebar__footer { position: relative; z-index: 2; width: 100%; flex: 0 0 auto; display: flex; flex-direction: column; align-items: center; gap: 8px; padding-top: 16px; background: var(--platform-sidebar-bg); }
+.platform-sidebar__footer-divider { position: absolute; top: 0; left: -10px; right: -10px; height: 1px; display: block; background: #323d47; }
+.platform-sidebar__profile { display: flex; align-items: center; gap: 0; }
+.platform-sidebar__profile { order: 2; }
+.platform-sidebar__avatar { width: 28px; height: 28px; flex-shrink: 0; display: grid; place-items: center; border-radius: 50%; background: linear-gradient(135deg, #8188f6 0%, #569ef8 55%, #35bced 100%); box-shadow: 0 0 10px rgba(86, 158, 248, .16); color: #fff; font: 500 11px/1 Inter, -apple-system, BlinkMacSystemFont, sans-serif; }
+.platform-sidebar__avatar::after { content: 'AP'; }
+.platform-sidebar__username { max-width: 0; overflow: hidden; color: var(--platform-sidebar-text); font-size: 12px; opacity: 0; transition: max-width 220ms ease, opacity 160ms ease; white-space: nowrap; }
+.platform-sidebar__version { display: flex; flex-direction: column; padding: 2px; border: 1px solid var(--platform-sidebar-border); border-radius: 8px; background: #171c22; }
+.platform-sidebar__version { order: 1; }
+.platform-sidebar__version button { width: 32px; height: 24px; padding: 0; border: 0; border-radius: 6px; background: transparent; color: #bac5ce; font: 500 10px/14px Inter, sans-serif; cursor: pointer; }
+.platform-sidebar__version button.is-active { background: var(--color-brand-selected,var(--brand-selected)); color: var(--color-brand,var(--brand-primary)); }
+.platform-sidebar__resize-handle { position: absolute; z-index: 10; top: 0; right: -4px; width: 8px; height: 100%; cursor: col-resize; outline: none; }
+.platform-sidebar__resize-handle::after { content: ""; position: absolute; top: 12px; bottom: 12px; right: 3px; width: 2px; border-radius: 2px; background: transparent; transition: background 120ms ease; }
+.platform-sidebar__resize-handle:hover::after, .platform-sidebar__resize-handle:focus-visible::after { background: var(--platform-sidebar-active); }
+
+.platform-sidebar[data-expanded="true"] { padding-inline: 12px; align-items: flex-start; }
+.platform-sidebar[data-expanded="true"] .platform-sidebar__main { align-items: flex-start; gap: 16px; }
+.platform-sidebar[data-expanded="true"] .platform-sidebar__brand { justify-content: flex-start; height: 40px; flex-basis: 40px; gap: 10px; }
+.platform-sidebar[data-expanded="true"] .platform-sidebar__logo { width: 40px; height: 40px; flex-basis: 40px; }
+.platform-sidebar[data-expanded="true"] .platform-sidebar__brand-name { flex:1;min-width:0;max-width:none;font-size:16px;line-height:24px;overflow:hidden;text-overflow:ellipsis;opacity:1;transform:translateX(0); }
+.platform-sidebar[data-expanded="true"] .platform-sidebar__platform { width: 100%; max-width: 206px; height: 54px; flex-basis: 54px; justify-content: flex-start; padding: 8px; gap: 8px; }
+.platform-sidebar[data-expanded="true"] .platform-sidebar__platform-menu { position: absolute; top: 138px; left: 12px; width: 206px; }
+.platform-sidebar[data-expanded="true"] .platform-sidebar__platform-icon { width: 36px; flex-basis: 36px; opacity: 1; transform: scale(1); background: var(--color-brand-selected,var(--brand-selected)); }
+.platform-sidebar[data-expanded="true"] .platform-sidebar__platform-icon img { width: 19px; height: 19px; filter: brightness(0) saturate(100%) invert(42%) sepia(99%) saturate(1691%) hue-rotate(158deg) brightness(89%) contrast(101%); }
+.platform-sidebar[data-expanded="true"] .platform-sidebar__platform-short { max-width: 0; opacity: 0; }
+.platform-sidebar[data-expanded="true"] .platform-sidebar__platform-name { max-width: 92px; opacity: 1; transform: translateX(0); font-size: 14px; line-height: 15px; }
+.platform-sidebar[data-expanded="true"] .platform-sidebar__chevron { width: 14px; height: 14px; flex-basis: 14px; margin-left: auto; transform: rotate(-90deg); }
+.platform-sidebar[data-expanded="true"] .platform-sidebar__chevron img { width: 14px; height: 14px; }
+.platform-sidebar[data-expanded="true"].is-platform-menu-open .platform-sidebar__chevron { transform: rotate(90deg); }
+.platform-sidebar[data-expanded="true"] .platform-sidebar__nav { width: 100%; max-width: 206px; align-items: flex-start; gap: 12px; }
+.platform-sidebar[data-expanded="true"] .platform-sidebar__group { align-items: flex-start; gap: 4px; }
+.platform-sidebar[data-expanded="true"] .platform-sidebar__divider { display: none; }
+.platform-sidebar[data-expanded="true"] .platform-sidebar__group-title { min-height: 24px; max-height: 24px; padding: 4px 12px; opacity: 1; }
+.platform-sidebar[data-expanded="true"] .platform-sidebar__group-chevron { width: 12px; height: 12px; flex: 0 0 12px; display: grid; place-items: center; transform: rotate(-90deg); }
+.platform-sidebar[data-expanded="true"] .platform-sidebar__group-chevron img { width: 12px; height: 12px; display: block; }
+.platform-sidebar[data-expanded="true"] .platform-sidebar__group.is-collapsed .platform-sidebar__group-chevron { transform: rotate(180deg); }
+.platform-sidebar[data-expanded="true"] .platform-sidebar__group-items { align-items: flex-start; gap: 2px; }
+.platform-sidebar[data-expanded="true"] .platform-sidebar__group.is-collapsed .platform-sidebar__group-items { display: none; }
+.platform-sidebar[data-expanded="true"] .platform-sidebar__item { width: 100%; max-width: 206px; height: 40px; flex-direction: row; justify-content: flex-start; gap: 12px; padding: 10px 12px; }
+.platform-sidebar[data-expanded="true"] .platform-sidebar__item--active::before, .platform-sidebar[data-expanded="true"] .platform-sidebar__item[aria-current="page"]::before { left: -12px; }
+.platform-sidebar[data-expanded="true"] .platform-sidebar__label { font-size: 14px; line-height: 20px; }
+.platform-sidebar[data-expanded="true"] .platform-sidebar__footer { width: 100%; flex-direction: row; align-items: center; gap: 8px; padding-top: 16px; }
+.platform-sidebar[data-expanded="true"] .platform-sidebar__footer-divider { left: -12px; right: -12px; }
+.platform-sidebar[data-expanded="true"] .platform-sidebar__profile { margin-right: auto; gap: 8px; }
+.platform-sidebar[data-expanded="true"] .platform-sidebar__profile { order: 1; }
+.platform-sidebar[data-expanded="true"] .platform-sidebar__username { max-width: 86px; opacity: 1; }
+.platform-sidebar[data-expanded="true"] .platform-sidebar__version { flex-direction: row; }
+.platform-sidebar[data-expanded="true"] .platform-sidebar__version { order: 2; }
+.platform-sidebar[data-expanded="true"] .platform-sidebar__version button { font-size: 14px; line-height: 18px; }

@@ -1,0 +1,10 @@
+.component-preview > .component-gallery{width:100%;max-width:none;margin:0;padding:32px 16px 48px}
+.component-preview > .component-gallery > .component-gallery__group{padding:16px}
+.component-preview > .component-gallery > .component-gallery__group > :not(h2){max-width:1082px}
+.component-preview > .component-gallery > .component-gallery__group > list-pagination{max-width:none;width:100%}
+.component-preview > .component-gallery > .component-gallery__group > .component-gallery__stage:has(>task-data-table){max-width:none;width:100%}
+.component-preview .task-data-table__pagination{overflow-x:auto;justify-content:flex-start}
+.component-preview .task-data-table__pagination>:first-child{margin-left:auto}
+.component-preview .task-data-table__pagination>*{flex-shrink:0}
+.component-preview .component-gallery__stage{border:0;border-radius:0}
+.component-preview .task-data-table--process table{min-width:0;width:100%;table-layout:fixed}

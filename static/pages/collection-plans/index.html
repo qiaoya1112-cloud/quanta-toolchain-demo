@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="light"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>采集方案</title>
+<link rel="stylesheet" href="../../styles.css">
+<link rel="stylesheet" href="../../components/platform-sidebar/platform-sidebar.css?v=group-nav-20260922">
+<link rel="stylesheet" href="../../components/platform-sidebar/platform-sidebar-variant.css?v=group-nav-20260922">
+<link rel="stylesheet" href="../../components/task-page-header/task-page-header.css">
+<link rel="stylesheet" href="../../components/input/input.css">
+<link rel="stylesheet" href="../../components/button/button.css">
+<link rel="stylesheet" href="../../components/task-filter-bar/task-filter-bar.css?v=collection-layout">
+<link rel="stylesheet" href="../../components/task-data-table/task-data-table.css?v=semantic-tags-6">
+<link rel="stylesheet" href="../../components/pagination/pagination.css">
+<link rel="stylesheet" href="../process-management/page.css">
+<link rel="stylesheet" href="../command-management/page.css">
+<link rel="stylesheet" href="../collection-pages.css?v=plan-props-2">
+<script src="../../components/platform-sidebar/platform-sidebar.js?v=resource-library-20261015" defer></script>
+<script src="../../components/button/button.js" defer></script>
+<script src="../../components/task-page-header/task-page-header.js" defer></script>
+<script src="../../components/input/input.js" defer></script>
+<script src="../../components/pagination/pagination.js" defer></script>
+<script src="../collection-pages.js?v=details-actions-8" defer></script><script src="../../components/task-filter-bar/task-filter-bar.js?v=collection-layout" defer></script></head>
+<body data-page-id="collection-plans"><div class="process-page">
+<aside class="process-page__sidebar"><platform-sidebar variant="style-variant" palette="dark"></platform-sidebar></aside>
+<main class="process-page__main" aria-label="采集方案内容区">
+<task-page-header title="采集方案"></task-page-header>
+<section class="command-content">
+<task-filter-bar variant="collection"><form class="command-filters" aria-label="采集方案筛选"><div class="task-filter-grid collection-filter-grid" style="--collection-filter-count:3"><form-input name="id" label="采集方案 ID" placeholder="输入采集方案 ID"></form-input><form-input name="name" label="采集方案名称" placeholder="输入采集方案名称"></form-input><form-select name="status" label="状态"><option value="">全部状态</option><option>上线</option><option>暂停</option><option>下线</option></form-select></div></form></task-filter-bar>
+<div class="task-data-table command-table"><div class="task-data-table__scroll">
+<table aria-label="采集方案列表"><colgroup><col style="width:150px"><col style="width:270px"><col style="width:180px"><col style="width:130px"><col style="width:130px"><col style="width:120px"></colgroup><thead><tr><th scope="col">采集方案 ID</th><th scope="col">采集方案名称</th><th scope="col">采集方案类型</th><th scope="col">场景</th><th scope="col">状态</th><th scope="col">操作</th></tr></thead><tbody></tbody></table>
+<p class="command-empty" data-empty hidden>暂无符合条件的数据</p>
+</div><list-pagination total="0" page="1" page-size="10"></list-pagination></div>
+<p data-feedback role="status" aria-live="polite"></p>
+</section></main></div>
+<dialog class="command-dialog" aria-labelledby="dialog-title"><header><h2 id="dialog-title"></h2><text-button variant="text" data-close aria-label="关闭弹窗">关闭</text-button></header><div data-dialog-content></div><footer><text-button variant="outline" data-close>关闭</text-button></footer></dialog>
+</body></html>
