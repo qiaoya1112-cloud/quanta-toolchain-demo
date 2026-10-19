@@ -1,0 +1,68 @@
+<!--title-action--><a class="btn btn-secondary" href="{{ url_for('checkpoints') }}">查看全部 checkpoint</a><!--/title-action-->
+<form class="filter-bar fb-labeled" method="get" action="{{ url_for('models') }}">
+  <div class="ff"><label for="modelCkptIdFilter">ckpt ID</label><input id="modelCkptIdFilter" name="ckpt_id" value="{{ filters.ckpt_id }}" placeholder="搜索 ckpt ID"></div>
+  <div class="ff"><label for="modelCheckpointFilter">checkpoint</label><input id="modelCheckpointFilter" name="checkpoint" value="{{ filters.checkpoint }}" placeholder="搜索 checkpoint"></div>
+  <div class="ff"><label for="modelNameFilter">模型名称</label><input id="modelNameFilter" name="name" value="{{ filters.name }}" placeholder="搜索模型名称"></div>
+  <div class="ff"><label for="modelBaseFilter">基础模型</label><select id="modelBaseFilter" name="base"><option value="">全部基础模型</option>{% for base in bases %}<option value="{{ base }}"{{ ' selected' if base == filters.base else '' }}>{{ base }}</option>{% endfor %}</select></div>
+  <div class="ff"><label for="modelRegistrarFilter">登记人</label><input id="modelRegistrarFilter" name="registered_by" value="{{ filters.registered_by }}" placeholder="搜索登记人"></div>
+  <div class="filter-actions"><a class="btn btn-tertiary" href="{{ url_for('models') }}">重置</a><button class="btn btn-primary" type="submit">查询</button></div>
+</form>
+<div class="table-wrap q-table-scroll"><table class="ant-table" aria-label="模型资产">
+  <thead><tr><th>ckpt ID</th><th>checkpoint</th><th>模型名称</th><th>基础模型</th><th>描述</th><th>登记人</th><th>登记时间</th><th>操作</th></tr></thead>
+  <tbody>{% for model in assets %}<tr>
+    <td class="mono">{{ model.id }}</td>
+    <td>{{ model.checkpoint_name }}</td>
+    <td><a href="{{ url_for('model_detail', model_id=model.id) }}">{{ model.name }}</a></td>
+    <td>{{ model.base }}</td><td>{{ model.description }}</td>
+    <td>{{ model.registered_by }}</td><td class="muted mono">{{ model.registered_at }}</td>
+    <td class="actions-cell"><button type="button" class="action-link" data-edit-url="{{ url_for('edit_model_asset', model_id=model.id) }}" data-model-name="{{ model.name }}" data-description="{{ model.description if model.description != '—' else '' }}" onclick="openModelEditor(this)">编辑</button></td>
+  </tr>{% else %}<tr><td colspan="8" class="muted" style="text-align:center;padding:32px;">暂无符合条件的模型</td></tr>{% endfor %}</tbody>
+</table></div>
+<div class="mini-pager" aria-label="模型列表分页">
+  <span class="muted">共 {{ total }} 条，10 条/页</span>
+  {% if page > 1 %}<a class="pg-btn" aria-label="上一页" href="{{ page_links[page - 1] }}">‹</a>{% endif %}
+  {% for number, link in page_links.items() %}<a class="pg-btn{{ ' active' if number == page else '' }}" href="{{ link }}"{% if number == page %} aria-current="page"{% endif %}>{{ number }}</a>{% endfor %}
+  {% if page < page_count %}<a class="pg-btn" aria-label="下一页" href="{{ page_links[page + 1] }}">›</a>{% endif %}
+</div>
+<form class="drawer" id="drawerModelEdit" role="dialog" aria-modal="true" aria-labelledby="modelEditTitle" onsubmit="saveModelDescription(event)">
+  <div class="drawer-head"><h3 id="modelEditTitle">编辑模型</h3><button type="button" class="dismiss action-link" aria-label="关闭" onclick="closeDrawer()">&times;</button></div>
+  <div class="drawer-body">
+    <div class="fg"><label>模型名称</label><div id="modelEditName"></div></div>
+    <div class="fg"><label for="modelEditDescription">描述</label><textarea id="modelEditDescription" name="description" rows="5" placeholder="请输入描述信息"></textarea></div>
+    <p id="modelEditError" class="fg-tip" role="alert" hidden></p>
+  </div>
+  <div class="drawer-foot"><button class="btn" type="button" onclick="closeDrawer()">取消</button><button class="btn btn-primary" id="modelEditSave" type="submit">保存</button></div>
+</form>
+<script>
+function openModelEditor(button) {
+  var form = document.getElementById('drawerModelEdit');
+  form.action = button.dataset.editUrl;
+  document.getElementById('modelEditName').textContent = button.dataset.modelName;
+  document.getElementById('modelEditDescription').value = button.dataset.description;
+  document.getElementById('modelEditError').hidden = true;
+  openDrawer('drawerModelEdit');
+  document.getElementById('modelEditDescription').focus();
+}
+async function saveModelDescription(event) {
+  event.preventDefault();
+  var save = document.getElementById('modelEditSave');
+  if (save.disabled) return;
+  var error = document.getElementById('modelEditError');
+  error.hidden = true;
+  save.disabled = true;
+  try {
+    var response = await fetch(event.currentTarget.action, {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({description: document.getElementById('modelEditDescription').value})
+    });
+    var result = await response.json();
+    if (!response.ok) throw new Error(result.error || '保存失败，请重试');
+    location.reload();
+  } catch (failure) {
+    error.textContent = failure.message || '保存失败，请重试';
+    error.hidden = false;
+  } finally {
+    save.disabled = false;
+  }
+}
+</script>

@@ -10,6 +10,7 @@
   const results = byId('qAppendTargetOptions');
   const datasetOptions = [...target.options].filter(option => option.value);
   const version = byId('qAppendVersion');
+  const mode = byId('qAppendMode');
   const versions = JSON.parse(byId('qAppendVersionsConfig').textContent);
   const description = byId('qAppendDescription');
   const error = byId('qAppendError');
@@ -80,16 +81,20 @@
     }
   });
   function updateVersionFields() {
-    const draft=(versions[target.value]||[]).find(item=>item.version===version.value);
-    description.value=draft?draft.description:'';
-    byId('qAppendVersionHint').textContent=draft
-      ? '数据将直接追加至 '+draft.version+'，版本保持未发布，版本描述同步更新。'
-      : target.value?'基于当前生效版本 '+target.selectedOptions[0].dataset.version+' 新建未发布版本，版本号自动生成。'
-      :'支持选择未发布版本，或新建一个版本。';
+    const selected=(versions[target.value]||[]).find(item=>item.version===version.value);
+    const isDraft=mode.value==='draft';
+    description.value=isDraft && selected?selected.description:'';
+    byId('qAppendVersionLabel').textContent=isDraft?'目标未发布版本':'来源已发布版本';
+    submit.textContent=isDraft?'确认添加':'新建版本并添加';
+    submit.disabled=!selected || !selected.ready;
+    byId('qAppendVersionHint').textContent=!target.value
+      ? '选择数据集后，可添加至未发布版本，或基于已发布版本新建。'
+      : !selected ? (isDraft?'暂无可添加的未发布版本，可切换为基于已发布版本新建。':'暂无已发布版本，可切换为添加至未发布版本。')
+      : !selected.ready ? '所选版本尚未完成处理，暂不能添加数据。'
+      : isDraft ? '数据直接追加至 '+selected.version+'，该版本保持未发布，版本描述同步更新。'
+      : '保留 '+selected.version+' 的已有数据，合并本次结果生成新的未发布版本；来源版本保持不变，版本号自动生成。';
   }
-  function updateVersions() {
-    byId('qAppendFormat').value = target.value ? target.selectedOptions[0].dataset.format : '';
-    search.setCustomValidity(target.value ? '' : '请选择我创建的数据集');
+  function updateVersionOptions() {
     version.replaceChildren();
     version.disabled=!target.value;
     function add(value,label,disabled=false) {
@@ -99,13 +104,25 @@
     }
     if(!target.value){add('','请先选择数据集');}
     else {
-      (versions[target.value]||[]).forEach(item=>add(item.version,item.version+' · 未发布'+(item.ready?'':'（尚未完成处理）'),!item.ready));
-      add('__new__','+ 新建版本');
-      version.value='__new__';
+      const publishStatus=mode.value==='draft'?'未发布':'已发布';
+      const options=(versions[target.value]||[]).filter(item=>item.publish_status===publishStatus);
+      options.forEach(item=>add(item.version,item.version+' · '+publishStatus+(item.status==='生效中'?' · 当前生效':'')+(item.ready?'':'（尚未完成处理）'),!item.ready));
+      if(!options.length) add('',mode.value==='draft'?'暂无未发布版本':'暂无已发布版本');
+      const preferred=options.find(item=>item.ready && item.status==='生效中') || options.find(item=>item.ready);
+      version.value=preferred?preferred.version:'';
     }
     updateVersionFields();
   }
+  function updateVersions() {
+    byId('qAppendFormat').value = target.value ? target.selectedOptions[0].dataset.format : '';
+    search.setCustomValidity(target.value ? '' : '请选择我创建的数据集');
+    mode.disabled=!target.value;
+    const catalog=versions[target.value]||[];
+    mode.value=catalog.some(item=>item.publish_status==='已发布' && item.ready)?'new':'draft';
+    updateVersionOptions();
+  }
   target.addEventListener('change',updateVersions);
+  mode.addEventListener('change',updateVersionOptions);
   version.addEventListener('change',updateVersionFields);
   function close() {
     if (pending) return;
@@ -144,21 +161,25 @@
     if (!target.value) {
       search.reportValidity(); search.focus(); return;
     }
+    if (!version.value) {
+      error.textContent='请选择可用的'+(mode.value==='draft'?'未发布版本':'已发布来源版本');
+      error.hidden=false; version.focus(); return;
+    }
     closePicker();
     if (!description.value.trim()) {
       error.textContent = '请填写版本描述'; error.hidden = false; description.focus(); return;
     }
     pending = true;
     submit.disabled = true;
-    search.disabled = target.disabled = version.disabled = description.disabled = true;
+    search.disabled = target.disabled = mode.disabled = version.disabled = description.disabled = true;
     submit.textContent = '添加中…';
     form.setAttribute('aria-busy','true');
     error.hidden = true;
     try {
       const response = await fetch(form.action, {
         method:'POST', headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({dataset_id:target.value, base_version:target.selectedOptions[0].dataset.version,
-          target_version:version.value==='__new__'?'':version.value,
+        body:JSON.stringify({dataset_id:target.value, base_version:mode.value==='new'?version.value:'',
+          target_version:mode.value==='draft'?version.value:'',
           description:description.value.trim(), source_token:byId('qAppendSource').value})
       });
       const result = await response.json();
@@ -167,7 +188,7 @@
       const drafts=versions[target.value]||(versions[target.value]=[]);
       const saved=drafts.find(item=>item.version===result.version);
       if(saved)saved.description=description.value.trim();
-      else drafts.unshift({version:result.version,description:description.value.trim(),ready:true});
+      else drafts.unshift({version:result.version,description:description.value.trim(),ready:true,publish_status:'未发布',status:'未生效'});
       const url = new URL(form.action);
       url.pathname = url.pathname.replace(/\/append$/,'');
       url.search = new URLSearchParams({sel:target.value,ver:result.version,tab:'version'}).toString();
@@ -179,10 +200,10 @@
       error.textContent = failure.message || '添加失败，请重试'; error.hidden = false;
     } finally {
       pending = false;
-      submit.disabled = false;
       search.disabled = target.disabled = description.disabled = false;
-      version.disabled = !target.value;
-      submit.textContent = '确认添加';
+      mode.disabled = version.disabled = !target.value;
+      submit.disabled = !version.value;
+      submit.textContent = mode.value==='draft'?'确认添加':'新建版本并添加';
       form.removeAttribute('aria-busy');
     }
   });

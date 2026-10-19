@@ -92,6 +92,41 @@ class QueryDatasetAppendTests(unittest.TestCase):
         self.assertEqual(self.append(payload).json, first.json)
         self.assertEqual(len(dp.ds_versions(self.dataset)), self.version_count + 1)
 
+    def test_new_version_can_copy_historical_published_source(self):
+        source = next(v for v in dp.ds_versions(self.dataset) if v['version']=='v1')
+        historical_rows = deepcopy(self.original[1:])
+        historical_rows[0]['instr'] = '历史版本独有的提示词'
+        source['snapshot'].update(episode_rows=historical_rows, labels=['历史版本标签'])
+        saved_versions = deepcopy(dp.ds_versions(self.dataset))
+        effective = deepcopy(self.dataset)
+        payload = {**self.payload(task='t2', limit='1'), 'base_version':'v1'}
+        response = self.append(payload)
+        self.assertEqual(response.status_code,200)
+        self.assertTrue(response.json['created'])
+        record = dp.ds_versions(self.dataset)[0]
+        snapshot = dp.dataset_version_snapshot(self.dataset,response.json['version'])
+        self.assertEqual(record['base_version'],'v1')
+        self.assertEqual(snapshot['episode_rows'][:-1],historical_rows)
+        self.assertEqual(snapshot['episode_rows'][-1]['rec'],121023)
+        self.assertEqual(snapshot['labels'],['历史版本标签'])
+        self.assertEqual(snapshot['publish_status'],'未发布')
+        self.assertEqual(snapshot['status'],'未生效')
+        self.assertEqual(dp.ds_versions(self.dataset)[1:],saved_versions)
+        self.assertEqual(self.dataset,effective)
+        self.assertEqual(self.append(payload).json,response.json)
+        self.assertEqual(len(dp.ds_versions(self.dataset)),self.version_count+1)
+
+    def test_new_version_requires_published_ready_source(self):
+        payload = self.payload(task='t2')
+        draft = dp.ds_versions(self.dataset)[0]
+        for base,status in [(draft['version'],409),('v999',409),('',400),(None,400),([],400)]:
+            with self.subTest(base=base):
+                self.assertEqual(self.append({**payload,'base_version':base}).status_code,status)
+        historical = next(v for v in dp.ds_versions(self.dataset) if v['version']=='v1')
+        historical['snapshot']['processing_status']='queued'
+        self.assertEqual(self.append({**payload,'base_version':'v1'}).status_code,409)
+        self.assertEqual(len(dp.ds_versions(self.dataset)),self.version_count)
+
     def test_append_only_selected_results_and_reject_out_of_scope_selection(self):
         payload = self.payload(task='t2')
         for selection in ([], [120489], [121023,120489], ['121023'], True):
@@ -154,7 +189,8 @@ class QueryDatasetAppendTests(unittest.TestCase):
         self.assertEqual(self.append({**payload,'target_version':target['version']}).status_code,409)
         page=self.client.get('/model/data/query').get_data(as_text=True)
         config=json.loads(re.search(r'id="qAppendVersionsConfig">(.*?)</script>',page,re.S)[1])
-        self.assertEqual([item['version'] for item in config['ds1']],[target['version']])
+        self.assertEqual([item['version'] for item in config['ds1'] if item['publish_status']=='未发布'],[target['version']])
+        self.assertEqual([item['version'] for item in config['ds1'] if item['publish_status']=='已发布'],['v3','v2','v1'])
         self.assertFalse(config['ds1'][0]['ready'])
         target['snapshot']['processing_status']='ready'
         self.client.post('/model/data/datasets/ds1/version/'+target['version']+'/publish')

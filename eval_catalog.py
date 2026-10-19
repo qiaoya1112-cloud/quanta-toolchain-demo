@@ -216,6 +216,8 @@ def seed_data():
 
 
 def register_catalog(app, render_page):
+    from eval_case_import import register_case_import
+    register_case_import(app)
     def catalog_page(kind, section='elements'):
         if kind not in ENTITIES:
             abort(404)

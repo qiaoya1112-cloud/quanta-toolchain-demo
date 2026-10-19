@@ -31,7 +31,7 @@ import secrets
 from decimal import Decimal
 from datetime import date, datetime, timedelta
 from urllib.parse import quote, urlencode
-from flask import Flask, render_template, render_template_string, request, redirect, jsonify, abort, session
+from flask import Flask, render_template, render_template_string, request, redirect, jsonify, abort, session, url_for
 
 from prototype_filters import filter_url
 
@@ -538,6 +538,11 @@ UPLOADED_CKPTS = [
      "description": "桌面分拣场景外部权重, 用于对照评测与部署前验证。"},
 ]
 
+# 已有资产作为历史登记数据保留，后续 Ckpt 通过「登记为模型」加入。
+REGISTERED_MODEL_CHECKPOINT_IDS = {
+    c["id"] for c in CHECKPOINTS + UPLOADED_CKPTS if c["status"] in {"merged", "cached"}
+}
+
 # ── 部署 · 模型转换 / 推理服务 ──
 
 CONVERT_JOBS = [
@@ -650,6 +655,7 @@ PLATFORMS = {
             ("训练", [
                 ("/model/experiments", "训练任务", "&#9881;", ""),
                 ("/model/checkpoints", "Checkpoint", "&#9783;", ""),
+                ("/model/models", "模型管理", "&#9783;", ""),
             ]),
             ("评测", [
                 ("/model/eval/tasks",        "评测任务", "&#9881;", ""),
@@ -659,10 +665,6 @@ PLATFORMS = {
                 ("/model/eval/criteria",     "评价标准", "&#9745;", ""),
                 ("/model/eval/evaluate2",    "端侧示意",   "&#9878;", ""),
             ]),
-            ("资产", [
-                ("/model/models",            "模型管理",      "&#9783;", ""),
-                ("/model/config/images",     "镜像管理",      "&#9881;", ""),
-            ]),
             ("配置", [
                 ("/model/eval/tags",         "标签管理",     "&#9873;", ""),
                 ("/model/eval/prompts",      "任务提示词",   "&#9998;", ""),
@@ -670,6 +672,7 @@ PLATFORMS = {
             ("管理", [
                 ("/model/resources",         "资源管理",     "&#9784;", "saas 专属"),
                 ("/model/queues",             "队列管理",     "&#9783;", ""),
+                ("/model/config/images",     "镜像管理",      "&#9881;", ""),
             ]),
         ],
     },
@@ -1034,9 +1037,16 @@ select option:disabled { color:rgba(0,0,0,0.32); }
 .action-more:hover::after { content:''; position:absolute; top:100%; right:0; width:100%; height:10px; }
 .action-menu { display:none; position:absolute; right:0; top:calc(100% + 8px); z-index:160; min-width:100%; padding:4px; background:#fff; border:1px solid #eef0f2; border-radius:8px; box-shadow:0 6px 20px rgba(0,0,0,0.10); animation:actionMenuIn 0.15s ease; }
 .action-more:hover .action-menu { display:block; }
-.action-menu a, .action-menu span { display:flex; align-items:center; justify-content:center; height:auto; padding:7px 10px; margin:0; color:rgba(0,0,0,0.72); font-size:13px; line-height:1.4; white-space:nowrap; text-decoration:none; border-radius:6px; transition:all 0.15s; }
-.action-menu a:hover { background:rgba(20,157,170,0.08); color:#149DAA; }
+.action-menu a, .action-menu span, .action-menu button.action-link { display:flex; align-items:center; justify-content:center; height:auto; padding:7px 10px; margin:0; color:rgba(0,0,0,0.72); font-size:13px; line-height:1.4; white-space:nowrap; text-decoration:none; border-radius:6px; transition:all 0.15s; }
+.action-menu a:hover, .action-menu button.action-link:hover { background:rgba(20,157,170,0.08); color:#149DAA; }
 .action-menu .disabled { color:rgba(0,0,0,0.28); cursor:not-allowed; }
+.ckpt-actions-menu:not(:popover-open) { display:none !important; }
+.ckpt-actions-menu:popover-open { display:block; position:fixed; inset:auto; margin:0; min-width:110px; }
+.ckpt-actions-menu button.action-link { width:100%; }
+.ckpt-actions-menu a, .ckpt-actions-menu span, .ckpt-actions-menu button.action-link { justify-content:flex-start; text-align:left; }
+.ckpt-row-actions { display:inline-flex; align-items:center; gap:14px; }
+.ckpt-row-actions > a, .ckpt-row-actions > .action-link, .ckpt-row-actions .action-more-trigger { margin:0; }
+.ckpt-row-actions button { font-family:inherit; }
 @keyframes actionMenuIn { from { opacity:0; transform:translateY(-4px); } to { opacity:1; transform:translateY(0); } }
 .mono { font-family:'SF Mono',Menlo,monospace; font-size:12.5px; color:rgba(0,0,0,0.55); }
 .table-wrap { background:#fff; border:1px solid #f0f0f0; border-radius:8px; overflow:visible; }
@@ -1061,10 +1071,11 @@ select option:disabled { color:rgba(0,0,0,0.32); }
 .model-queue-member-option:hover, .model-queue-member-option.selected { background:#EBF8FA; color:#149DAA; }
 .model-queue-member-option .check { visibility:hidden; font-size:13px; }
 .model-queue-member-option.selected .check { visibility:visible; }
-.ckpt-table { table-layout:fixed; min-width:1420px; }
+.ckpt-table { table-layout:fixed; min-width:1600px; }
+.ckpt-table td { white-space:nowrap; }
+.ckpt-table .ckpt-description { overflow:hidden; text-overflow:ellipsis; }
 .ckpt-table-wrap { overflow-x:auto; overflow-y:hidden; }
-.ckpt-name-cell { display:block; max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:#149DAA; text-decoration:none; }
-.ckpt-name-cell:hover { color:#0F8190; }
+.ckpt-name-cell { display:block; max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .ckpt-status-filter { position:relative; display:inline-flex; align-items:center; height:26px; }
 .ckpt-status-trigger { display:inline-flex; align-items:center; gap:6px; border:0; background:transparent; padding:0; color:rgba(0,0,0,0.85); font:inherit; font-weight:600; cursor:pointer; }
 .ckpt-status-trigger .caret { font-size:15px; line-height:1; transform:translateY(-1px); color:rgba(0,0,0,0.78); }
@@ -1468,13 +1479,11 @@ body.lineage-canvas-page .lineage-viewport { height:100%; min-height:0; }
 /* ── Wide drawer (for 新增训练任务) ── */
 .drawer.drawer-wide { width:760px; max-width:100vw; }
 .train-drawer-head { position:sticky; top:0; z-index:4; background:#fff; }
+.train-drawer-head, .train-drawer-foot { flex-shrink:0; }
+.train-drawer-body { min-height:0; }
 .train-drawer-head .drawer-title-wrap { display:flex; flex-direction:column; gap:3px; min-width:0; }
 .train-drawer-head .drawer-title-sub { color:rgba(0,0,0,0.45); font-size:12px; }
-.train-section-nav { position:sticky; top:0; z-index:3; display:flex; gap:3px; padding:8px 24px; border-bottom:1px solid #f0f0f0; background:#fff; }
-.train-section-nav button { flex:1; height:32px; border:0; border-radius:6px; background:transparent; color:rgba(0,0,0,0.58); font:inherit; font-size:13px; cursor:pointer; transition:all .16s ease; }
-.train-section-nav button:hover { color:#149DAA; background:#f1fbfc; }
-.train-section-nav button.active { color:#0f8190; background:#e6f7f8; font-weight:600; }
-.train-section { margin:0 0 18px; padding:0 0 18px; border-bottom:1px solid #f0f0f0; scroll-margin-top:52px; }
+.train-section { margin:0 0 18px; padding:0 0 18px; border-bottom:1px solid #f0f0f0; }
 .train-section:last-child { margin-bottom:0; padding-bottom:0; border-bottom:0; }
 .train-section-head { display:flex; align-items:center; justify-content:flex-start; gap:6px; margin-bottom:14px; cursor:pointer; user-select:none; }
 .train-section-title { display:flex; align-items:center; gap:8px; margin:0; color:rgba(0,0,0,0.86); font-size:15px; font-weight:600; }
@@ -1485,10 +1494,13 @@ body.lineage-canvas-page .lineage-viewport { height:100%; min-height:0; }
 .train-section.collapsed .train-section-body { display:none; }
 .train-section-body { min-width:0; }
 .train-meta-options-row { align-items:stretch; }
-.train-notify-field { display:flex; flex-direction:column; justify-content:flex-start; align-items:center; gap:0; min-height:58px; }
-.train-notify-title { width:max-content; text-align:center; }
+.train-notify-field { display:flex; flex-direction:column; justify-content:flex-start; align-items:flex-start; gap:0; min-height:58px; }
+.train-notify-title { width:max-content; }
 .train-notify-title label { display:block; }
 .train-notify-toggle { margin-top:14px; }
+#trainDescription { height:60px; min-height:60px; resize:vertical; }
+#drawerNewTrain .image-path-hint { margin-top:2px; padding:0; border:0; background:transparent; font-size:11px; }
+#entryCmdBox { margin-top:18px; }
 .train-queue-label { display:flex; align-items:center; justify-content:space-between; gap:12px; font-size:13px; color:rgba(0,0,0,0.65); }
 .train-queue-label a { color:#149DAA; font-size:12px; font-weight:400; text-decoration:none; white-space:nowrap; }
 .train-queue-label a:hover { color:#0F8190; }
@@ -1570,7 +1582,6 @@ body.lineage-canvas-page .lineage-viewport { height:100%; min-height:0; }
 .drawer-foot.train-drawer-foot { position:sticky; bottom:0; z-index:4; background:#fff; }
 @media (max-width:720px) {
   .drawer.drawer-wide { width:100vw; }
-  .train-section-nav { padding-left:16px; padding-right:16px; }
   .train-drawer-body { padding-left:16px; padding-right:16px; }
   .train-drawer-head, .drawer-foot.train-drawer-foot { padding-left:16px; padding-right:16px; }
   .fg-row { flex-wrap:wrap; }
@@ -1582,7 +1593,9 @@ body.lineage-canvas-page .lineage-viewport { height:100%; min-height:0; }
 .fg-row { display:flex; gap:14px; }
 .fg-row > .fg { flex:1; }
 #trainImageCustom .fg-row > .fg, .train-runtime-queue-row > .fg { min-width:0; }
-.train-runtime-priority-row > .fg { flex:0 0 calc((100% - 28px) / 3); min-width:0; }
+.train-runtime-queue-row { margin-bottom:14px; }
+.train-section .train-runtime-queue-row > .fg, .train-section .train-runtime-priority-row > .fg { margin-bottom:0; }
+.train-runtime-priority-row > .fg { flex:1; min-width:0; }
 @media (max-width:720px) {
   #trainImageCustom .fg-row > .fg, .train-runtime-queue-row > .fg { min-width:calc(50% - 7px); }
   .train-runtime-priority-row > .fg { flex-basis:calc(50% - 7px); }
@@ -1601,14 +1614,33 @@ body.lineage-canvas-page .lineage-viewport { height:100%; min-height:0; }
 .image-mode-panel.active { display:block; }
 .image-mode-panel input:disabled { background:#f5f7fa; color:rgba(0,0,0,0.58); cursor:not-allowed; }
 
-/* ── Drawer: dataset row table ── */
-.ds-table { border:1px solid #f0f0f0; border-radius:8px; overflow:hidden; }
-.ds-table .ds-head { display:grid; grid-template-columns:1fr 100px 80px; padding:10px 14px; background:#fafafa; font-size:13px; color:rgba(0,0,0,0.7); border-bottom:1px solid #f0f0f0; }
-.ds-table .ds-row { display:grid; grid-template-columns:1fr 100px 80px; padding:10px 14px; gap:8px; align-items:center; }
-.ds-table .ds-row select { height:32px; border:1px solid #d9d9d9; border-radius:6px; padding:0 10px; font-size:13px; outline:none; background:#fff; }
-.ds-table .ds-row input { height:32px; border:1px solid #d9d9d9; border-radius:6px; padding:0 10px; font-size:13px; outline:none; background:#fff; width:80px; }
-.ds-table .ds-confirm { color:#149DAA; cursor:pointer; font-size:13px; }
-.ds-table .ds-confirm:hover { color:#0F8190; }
+/* ── Drawer: 复用 Factor 配置的可增删子表格 ── */
+.train-dataset-table { table-layout:fixed; }
+.train-dataset-table thead th, .train-dataset-table tbody td { padding:8px 12px; }
+.train-dataset-table select, .train-dataset-table input { width:100%; min-width:0; box-sizing:border-box; }
+.train-dataset-table select, .train-dataset-table input { height:36px; }
+.train-dataset-table select { text-overflow:ellipsis; }
+.train-dataset-actions { display:flex; align-items:center; gap:14px; margin-top:6px; }
+.train-dataset-actions > .action-link { margin-right:0; }
+#trainDatasetImportBtn[hidden] { display:none; }
+#trainDatasetConfigSlot > #trainDatasetBlock { margin-bottom:14px; }
+#trainDatasetImportModal .modal { width:640px; max-height:calc(100vh - 40px); display:flex; flex-direction:column; }
+#trainDatasetImportModal .modal-body { overflow:auto; }
+#trainDatasetImportModal .modal-head, #trainDatasetImportModal .modal-foot { flex-shrink:0; }
+#trainDatasetJsonInput { height:280px; min-height:180px; margin-top:12px; }
+#trainDatasetJsonError { margin:8px 0 0; color:#cf1322; font-size:13px; line-height:1.6; }
+#trainConfigModeField { flex-direction:row; align-items:center; gap:14px; margin:20px 0 16px; }
+#trainConfigModeField > label { margin:0; flex-shrink:0; }
+#trainConfigModeField .train-config-mode-tabs { margin-bottom:0; }
+#trainModelRow { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px 20px; margin-bottom:18px; }
+#trainModelRow > .fg { min-width:0; margin-bottom:0; }
+#trainModelRow select { min-width:0; text-overflow:ellipsis; }
+#trainModelRow[hidden] { display:none; }
+@media (max-width:480px) {
+  #trainModelRow { grid-template-columns:minmax(0,1fr); }
+}
+#trainSectionConfig #advConfigBox { padding-top:14px; border-top:1px solid #f0f0f0; }
+body.ksyun-train-mode #trainSectionConfig #advConfigBox { padding-top:0; border-top:0; }
 
 /* ── Drawer: 更多配置 (可折叠) + 环境变量 key-value 表 ── */
 .more-cfg { border-top:1px solid #f0f0f0; margin-top:4px; padding-top:14px; }
@@ -1667,7 +1699,7 @@ body.lineage-canvas-page .lineage-viewport { height:100%; min-height:0; }
 body.ksyun-train-mode #resumeVersionNotice,
 body.ksyun-train-mode #resumeImageNotice,
 body.ksyun-train-mode #trainResumeSource,
-body.ksyun-train-mode #trainDatasetBlock,
+body.ksyun-train-mode #trainConfigModeField,
 body.ksyun-train-mode #trainConfigModeTabs,
 body.ksyun-train-mode #trainModelRow,
 body.ksyun-train-mode #trainCustomConfig,
@@ -2589,7 +2621,17 @@ button.tm-subtab { border:0; background:transparent; font-family:inherit; cursor
 .lc-icon { width:28px; height:28px; display:inline-flex; align-items:center; justify-content:center; color:rgba(0,0,0,0.55); border:1px solid #e5e7eb; border-radius:4px; cursor:pointer; background:#fff; }
 .lc-icon:hover { color:#149DAA; border-color:#149DAA; background:#f5f7fa; }
 .logs-body { background:#fafbfc; border:0; border-radius:0; padding:14px 16px; font-family:'SF Mono',Menlo,monospace; font-size:12px; line-height:1.7; color:rgba(0,0,0,0.85); max-height:620px; overflow:auto; white-space:pre; margin:0; }
-.logs-box { border:1px solid #e5e7eb; border-radius:6px; overflow:hidden; background:#fafbfc; }
+.logs-box { border:1px solid #e5e7eb; border-radius:6px; background:#fafbfc; }
+.log-time-picker { position:relative; }
+.log-time-menu { left:0; right:auto; min-width:134px; padding:4px; }
+.log-time-picker.open > .log-time-menu { display:block; }
+.log-time-menu .split-menu-item { padding:6px 10px; }
+.log-time-menu .split-menu-item[aria-checked="true"] { background:#eef7f8; color:#0f8190; }
+.log-time-custom { left:0; right:auto; width:360px; max-width:calc(100vw - 70px); padding:14px; box-sizing:border-box; }
+.log-time-picker.custom-open > .log-time-custom { display:block; }
+.log-time-custom .fg-row > .fg { min-width:0; }
+.log-time-custom input { width:100%; min-width:0; box-sizing:border-box; }
+.log-time-custom-actions { display:flex; justify-content:flex-end; gap:8px; }
 .logs-empty { min-height:260px; display:flex; flex-direction:column; align-items:center; justify-content:center; color:rgba(0,0,0,0.45); font-size:13px; border:1px solid #e5e7eb; border-top:0; border-radius:0 0 6px 6px; background:#fff; padding:0 16px; box-sizing:border-box; }
 .logs-empty .emp-icon { width:54px; height:68px; border:1px solid #e5e7eb; border-radius:6px; background:#fafbfc; color:#9aa5b1; display:flex; align-items:center; justify-content:center; font-size:12px; margin-bottom:10px; }
 .logs-pager { display:flex; justify-content:flex-end; gap:8px; padding:10px 0 0; align-items:center; color:rgba(0,0,0,0.55); font-size:12px; }
@@ -2675,7 +2717,7 @@ button.tm-subtab { border:0; background:transparent; font-family:inherit; cursor
 .bi-submodule-title { margin:16px 0 8px; padding-left:10px; border-left:3px solid #149DAA; color:rgba(0,0,0,0.75); font-size:13px; font-weight:600; }
 .dataset-ident-inline { font-size:13px; font-weight:400; color:rgba(0,0,0,0.45); }
 .bi-subsection { margin-top:18px; padding-top:14px; border-top:1px solid #f0f0f0; }
-.bi-subsection-title { margin:0 0 10px; color:rgba(0,0,0,0.68); font-size:13px; font-weight:600; }
+.bi-subsection-title { display:flex; align-items:center; margin:0 0 10px; color:rgba(0,0,0,0.68); font-size:13px; font-weight:600; cursor:pointer; user-select:none; }
 .basic-info { padding:2px 0 24px; }
 .basic-info .bi-sec { background:#fff; border:1px solid #e7edef; border-radius:10px; padding:20px 22px; margin:0 0 14px; box-shadow:0 2px 8px rgba(25,55,65,0.03); }
 .basic-info .bi-sec:last-child { margin-bottom:0; }
@@ -2699,6 +2741,9 @@ button.tm-subtab { border:0; background:transparent; font-family:inherit; cursor
 .basic-info .bi-collapsible .bi-collapse-content { padding:0 22px; }
 .basic-info .bi-collapsible:not(.collapsed) .bi-collapse-content { padding:16px 22px 20px; }
 .basic-info .bi-collapsible .yaml-readonly { border-radius:7px; background:#f7f9fa; box-shadow:none; }
+.basic-info .bi-subsection { padding-top:14px; }
+.basic-info .bi-subsection .bi-collapse-content { padding:0; }
+.basic-info .bi-subsection:not(.collapsed) .bi-collapse-content { padding:6px 0 0; }
 @media (max-width:760px) {
   .basic-info .bi-field-row-2 { grid-template-columns:1fr; }
   .basic-info .bi-field-item { grid-template-columns:84px minmax(0,1fr); }
@@ -3009,6 +3054,18 @@ document.addEventListener('click', function(e){
     if(!wrap.contains(e.target)) wrap.classList.remove('open');
   });
 });
+function toggleCkptActionMenu(button){
+  var menu = button.nextElementSibling;
+  menu.togglePopover();
+  if(!menu.matches(':popover-open')) return;
+  var anchor = button.getBoundingClientRect();
+  var bounds = menu.getBoundingClientRect();
+  menu.style.left = Math.max(8, Math.min(anchor.right - bounds.width, window.innerWidth - bounds.width - 8)) + 'px';
+  menu.style.top = (anchor.bottom + bounds.height + 8 > window.innerHeight ? Math.max(8, anchor.top - bounds.height - 8) : anchor.bottom + 8) + 'px';
+}
+document.addEventListener('scroll', function(){
+  document.querySelectorAll('.ckpt-actions-menu:popover-open').forEach(function(menu){ menu.hidePopover(); });
+}, true);
 function openTaskCapabilityModal(){
   var m=document.getElementById('taskCapabilityModalMask');
   if(m) m.classList.add('active');
@@ -3036,6 +3093,14 @@ function toggleCkptStatusFilter(btn){
 function selectCkptStatusFilter(btn){
   var filter = btn.closest('.ckpt-status-filter');
   if(!filter) return;
+  if(window.location.pathname === '/model/checkpoints'){
+    var url = new URL(window.location.href);
+    var status = btn.getAttribute('data-value') || '';
+    if(status) url.searchParams.set('status', status); else url.searchParams.delete('status');
+    url.searchParams.delete('page');
+    window.location.href = url.pathname + url.search;
+    return;
+  }
   filter.querySelectorAll('.ckpt-status-option').forEach(function(item){ item.classList.remove('active'); });
   btn.classList.add('active');
   filterCkptStatus(filter, btn.getAttribute('data-value') || '');
@@ -3115,7 +3180,7 @@ function openCacheModal(step, location){
   var demo=document.getElementById('cacheDemoPanel'); if(demo) demo.style.display='none';
   var error=document.getElementById('cacheSubmitError'); if(error){ error.textContent=''; error.hidden=true; }
   var state=document.querySelector('#cacheModalDoing .cache-state h4'); if(state) state.textContent='合并任务已提交';
-  var copy=document.querySelector('#cacheModalDoing .cache-state p'); if(copy) copy.textContent='合并任务已提交，可在合并记录中查看进度。';
+  var copy=document.querySelector('#cacheModalDoing .cache-state p'); if(copy) copy.textContent='合并任务已提交，可在 Ckpt 列表中查看进度。';
   var form=document.getElementById('cacheModalForm'); if(form) form.style.display='block';
   var doing=document.getElementById('cacheModalDoing'); if(doing) doing.style.display='none';
   var footForm=document.getElementById('cacheModalFootForm'); if(footForm) footForm.style.display='flex';
@@ -3168,7 +3233,7 @@ function confirmCacheModal(){
     var form=document.getElementById('cacheModalForm'); if(form) form.style.display='none';
     var doing=document.getElementById('cacheModalDoing'); if(doing) doing.style.display='block';
     var state=document.querySelector('#cacheModalDoing .cache-state h4'); if(state) state.textContent='合并任务已提交';
-    var copy=document.querySelector('#cacheModalDoing .cache-state p'); if(copy) copy.textContent=cacheToServer?'合并任务已提交，合并完成后将同步缓存至本地服务器。':'合并任务已提交，可在合并记录中查看进度。';
+    var copy=document.querySelector('#cacheModalDoing .cache-state p'); if(copy) copy.textContent=cacheToServer?'合并任务已提交，合并完成后将同步缓存至本地服务器。':'合并任务已提交，可在 Ckpt 列表中查看进度。';
     var successBtn=document.getElementById('cacheDemoSuccessBtn'); if(successBtn) successBtn.textContent=cacheToServer?'演示缓存成功':'演示合并完成';
     var cacheFailBtn=document.getElementById('cacheDemoCacheFailBtn'); if(cacheFailBtn) cacheFailBtn.style.display=cacheToServer?'':'none';
     var demo=document.getElementById('cacheDemoPanel'); if(demo) demo.style.display='block';
@@ -3283,29 +3348,9 @@ function initTrainCodeEditor(id, mode){
     ta._cm.refresh();
   }
 }
-function scrollTrainSection(button){
-  var targetId = button && button.dataset ? button.dataset.target : '';
-  var target = targetId ? document.getElementById(targetId) : null;
-  if (!target) return;
-  document.querySelectorAll('#trainSectionNav button').forEach(function(item){ item.classList.toggle('active', item === button); });
-  target.scrollIntoView({behavior:'smooth', block:'start'});
-}
 function toggleTrainSection(head){
   var section = head && head.closest ? head.closest('.train-section') : null;
   if (section) section.classList.toggle('collapsed');
-}
-function initTrainSectionNav(){
-  var body = document.getElementById('trainDrawerBody');
-  if (!body || body._sectionNavInited) return;
-  body._sectionNavInited = true;
-  body.addEventListener('scroll', function(){
-    var sections = Array.prototype.slice.call(body.querySelectorAll('.train-section'));
-    var current = sections.reduce(function(best, section){
-      var distance = Math.abs(section.getBoundingClientRect().top - body.getBoundingClientRect().top - 12);
-      return !best || distance < best.distance ? {section:section, distance:distance} : best;
-    }, null);
-    if (current) document.querySelectorAll('#trainSectionNav button').forEach(function(button){ button.classList.toggle('active', button.dataset.target === current.section.id); });
-  });
 }
 function toggleTrainTagPicker(event){
   if (event) event.stopPropagation();
@@ -3413,40 +3458,52 @@ function openTrainDrawer(){
   setKsyunTrainMode(false);
   openDrawer('drawerNewTrain');
   resetTrainResumeState();
+  resetTrainDatasetRows();
   updateTrainQueueBalance();
   updateRecommendedImageVersions();
   updateTrainImagePath();
   var instanceCount = document.getElementById('trainInstanceCount');
   if (instanceCount) instanceCount.value = '1';
   validateTrainInstanceCount(instanceCount);
+  var visualPrompt = document.getElementById('trainVisualPromptSel');
+  if (visualPrompt) visualPrompt.value = 'no';
   // 重置表单联动状态并生成默认配置
   var ov = document.getElementById('yamlOverride');
   if (ov) ov.value = '';
+  var defaultTab = document.querySelector('#advConfigBox .adv-tabs .at');
+  if (defaultTab) switchAdvTab(defaultTab, 'default');
   var tag = document.getElementById('trainTagPicker');
   if (tag){ tag.querySelectorAll('.ts-row.selected').forEach(function(row){ row.classList.remove('selected'); }); trainTagsSync(); closeTrainTagPicker(); }
-  document.querySelectorAll('#trainSectionNav button').forEach(function(item, index){ item.classList.toggle('active', index === 0); });
   document.querySelectorAll('#drawerNewTrain .train-section').forEach(function(section){ section.classList.remove('collapsed'); });
   var entry = document.getElementById('entryCmdBox'); if (entry) entry.classList.add('collapsed');
+  var advanced = document.getElementById('advConfigBox'); if (advanced) advanced.classList.add('collapsed');
+  var customBox = document.getElementById('customYamlBox'); if (customBox) customBox.classList.add('collapsed');
+  var drawerBody = document.getElementById('trainDrawerBody'); if (drawerBody) drawerBody.scrollTop = 0;
   TRAIN_CONFIG_MODE = 'recommended';
   CUSTOM_YAML_DIRTY = false;
   initCustomYamlEditor();
   var custom = document.getElementById('customYamlEditor'); if (custom) custom.value = '';
   var rec = document.getElementById('trainRecommendedConfig'); if (rec) rec.classList.add('active');
   var customPanel = document.getElementById('trainCustomConfig'); if (customPanel) customPanel.classList.remove('active');
+  var modelRow = document.getElementById('trainModelRow'); if (modelRow) modelRow.hidden = false;
   document.querySelectorAll('#trainConfigModeTabs [data-train-config-mode]').forEach(function(tab){ tab.classList.toggle('active', tab.dataset.trainConfigMode === 'recommended'); });
-  initTrainSectionNav();
   initEnvRows();
   regenDefaultConfig();
 }
 /* 金山云建训: 复用现有建训抽屉, 仅保留 任务信息 / 运行配置 / 训练配置(yaml + 入口命令) */
 function setKsyunTrainMode(on){
   document.body.classList.toggle('ksyun-train-mode', !!on);
+  var importButton = document.getElementById('trainDatasetImportBtn');
+  if (importButton) importButton.hidden = !on;
+  var datasetHeading = document.getElementById('trainDatasetNameHeading');
+  if (datasetHeading) datasetHeading.textContent = on ? '数据集名称 / 地址' : '数据集名称';
+  if (!on) closeTrainDatasetImport();
   var title = document.getElementById('trainDrawerTitle');
   if (title) title.textContent = on ? '新增金山云训练任务' : '新增训练任务';
   var entry = document.getElementById('entryCmdBox');
-  if (entry) entry.classList.toggle('collapsed', !on);
+  if (entry) entry.classList.add('collapsed');
   var adv = document.getElementById('advConfigBox');
-  if (adv && on) adv.classList.remove('collapsed');
+  if (adv) adv.classList.add('collapsed');
   var entryInput = document.getElementById('entryCmdInput');
   if (entryInput){
     if (on){
@@ -3478,6 +3535,130 @@ function openKsyunTrainDrawer(){
   openTrainDrawer();
   setKsyunTrainMode(true);
 }
+function addTrainDatasetRow(focus){
+  var rows = document.getElementById('trainDatasetRows');
+  var template = document.getElementById('trainDatasetRowTemplate');
+  if (!rows || !template) return;
+  var row = template.content.firstElementChild.cloneNode(true);
+  rows.appendChild(row);
+  updateTrainDatasetVersion(row.querySelector('.train-dataset-select'));
+  if (focus) row.querySelector('select').focus();
+  return row;
+}
+function updateTrainDatasetVersion(select){
+  var row = select && select.closest('.ds-row');
+  var versionSelect = row && row.querySelector('.train-dataset-version');
+  if (!versionSelect) return;
+  var dataset = (window.TRAIN_DATASET_CATALOG || []).find(function(item){ return item.name === select.value; });
+  var versions = dataset ? dataset.versions : [];
+  var isAddress = row.dataset.externalAddress === select.value && !!select.value;
+  if (!isAddress) delete row.dataset.externalAddress;
+  select.title = select.value;
+  versionSelect.replaceChildren();
+  versions.forEach(function(version){
+    var option = document.createElement('option');
+    option.value = version;
+    option.textContent = version;
+    versionSelect.appendChild(option);
+  });
+  if (!versions.length){
+    var placeholder = document.createElement('option');
+    placeholder.value = '';
+    placeholder.textContent = isAddress ? '—' : (select.value ? '暂无已发布版本' : '请先选择数据集');
+    versionSelect.appendChild(placeholder);
+  }
+  versionSelect.disabled = !versions.length;
+}
+function removeTrainDatasetRow(button){
+  var row = button.closest('.ds-row');
+  if (row) row.remove();
+}
+function resetTrainDatasetRows(){
+  var rows = document.getElementById('trainDatasetRows');
+  if (!rows) return;
+  rows.replaceChildren();
+  addTrainDatasetRow(false);
+  closeTrainDatasetImport();
+  var jsonInput = document.getElementById('trainDatasetJsonInput');
+  if (jsonInput) jsonInput.value = '';
+}
+function setTrainDatasetImportError(message){
+  var error = document.getElementById('trainDatasetJsonError');
+  var input = document.getElementById('trainDatasetJsonInput');
+  if (error){ error.textContent = message; error.hidden = !message; }
+  if (input) input.setAttribute('aria-invalid', message ? 'true' : 'false');
+}
+function openTrainDatasetImport(){
+  if (!document.body.classList.contains('ksyun-train-mode')) return;
+  var modal = document.getElementById('trainDatasetImportModal');
+  if (!modal) return;
+  setTrainDatasetImportError('');
+  modal.classList.add('active');
+  document.getElementById('trainDatasetJsonInput').focus();
+}
+function closeTrainDatasetImport(){
+  var modal = document.getElementById('trainDatasetImportModal');
+  if (!modal) return;
+  var wasOpen = modal.classList.contains('active');
+  modal.classList.remove('active');
+  var button = document.getElementById('trainDatasetImportBtn');
+  if (wasOpen && button && !button.hidden) button.focus();
+}
+function handleTrainDatasetImportKey(event){
+  if (event.key === 'Escape'){
+    event.preventDefault(); event.stopPropagation(); closeTrainDatasetImport();
+  }
+  if (event.key === 'Tab'){
+    var controls = event.currentTarget.querySelectorAll('button, textarea');
+    var first = controls[0], last = controls[controls.length - 1];
+    if (event.shiftKey && document.activeElement === first){ event.preventDefault(); last.focus(); }
+    else if (!event.shiftKey && document.activeElement === last){ event.preventDefault(); first.focus(); }
+  }
+}
+function parseTrainDatasetImport(text){
+  var items;
+  try { items = JSON.parse(text); }
+  catch (error){ throw new Error('JSON 格式不正确，请检查引号、逗号和括号。'); }
+  if (!Array.isArray(items) || !items.length) throw new Error('请输入非空数组，每项为 [数据集地址, 权重]。');
+  return items.map(function(item, index){
+    var prefix = '第 ' + (index + 1) + ' 项：';
+    if (!Array.isArray(item) || item.length !== 2) throw new Error(prefix + '格式应为 [数据集地址, 权重]。');
+    if (typeof item[0] !== 'string' || !item[0].trim()) throw new Error(prefix + '请填写数据集地址。');
+    if (typeof item[1] !== 'number' || !Number.isFinite(item[1]) || item[1] < 0) throw new Error(prefix + '权重须为大于或等于 0 的数字。');
+    return {address:item[0].trim(), weight:item[1]};
+  });
+}
+function importTrainDatasets(){
+  if (!document.body.classList.contains('ksyun-train-mode')) return;
+  var input = document.getElementById('trainDatasetJsonInput');
+  var items;
+  try { items = parseTrainDatasetImport(input.value); }
+  catch (error){ setTrainDatasetImportError(error.message); input.focus(); return; }
+  var rows = document.getElementById('trainDatasetRows');
+  Array.prototype.forEach.call(rows.querySelectorAll('.ds-row'), function(row){
+    if (!row.querySelector('.train-dataset-select').value && row.querySelector('input').value === '1') row.remove();
+  });
+  items.forEach(function(item){
+    var row = addTrainDatasetRow(false);
+    var select = row.querySelector('.train-dataset-select');
+    var dataset = (window.TRAIN_DATASET_CATALOG || []).find(function(entry){
+      return entry.address === item.address || entry.name === item.address;
+    });
+    if (dataset){ select.value = dataset.name; }
+    else {
+      var option = document.createElement('option');
+      option.value = item.address;
+      option.textContent = item.address;
+      select.appendChild(option);
+      select.value = item.address;
+      row.dataset.externalAddress = item.address;
+    }
+    updateTrainDatasetVersion(select);
+    row.querySelector('input').value = item.weight;
+  });
+  closeTrainDatasetImport();
+  toast('已导入 ' + items.length + ' 条数据集');
+}
 function validateTrainInstanceCount(input){
   if (!input) return;
   var value = Number(input.value || 1);
@@ -3498,6 +3679,11 @@ function validateTrainForm(){
     toast('暂无训练队列使用权限，请联系队列管理员申请。');
     return false;
   }
+  var unavailableDataset = Array.prototype.some.call(document.querySelectorAll('#trainDatasetRows .ds-row'), function(row){
+    var selected = row.querySelector('.train-dataset-select').value;
+    return selected && row.dataset.externalAddress !== selected && !row.querySelector('.train-dataset-version').value;
+  });
+  if (unavailableDataset){ toast('所选数据集暂无已发布版本，请先发布数据集版本。'); return false; }
   if (TRAIN_CONFIG_MODE === 'custom' && !validateCustomYaml()) return false;
   var input = document.getElementById('trainInstanceCount');
   if (input) validateTrainInstanceCount(input);
@@ -3545,6 +3731,12 @@ function switchTrainConfigMode(button, mode){
   var custom = document.getElementById('trainCustomConfig');
   if (rec) rec.classList.toggle('active', nextMode === 'recommended');
   if (custom) custom.classList.toggle('active', nextMode === 'custom');
+  var modelRow = document.getElementById('trainModelRow');
+  if (modelRow) modelRow.hidden = nextMode === 'custom';
+}
+function toggleTrainAdvancedConfig(){
+  var box = document.getElementById('advConfigBox');
+  if (box) box.classList.toggle('collapsed');
 }
 function initCustomYamlEditor(){
   var editor = document.getElementById('customYamlEditor');
@@ -3867,11 +4059,16 @@ function applyResumeSource(){
     nameInput.value = resumeTaskName(RESUME_TASK, RESUME_CKPT ? RESUME_CKPT.step : '');
     updateNameCount(nameInput);
   }
-  var dsSel = document.querySelector('#drawerNewTrain .ds-row select');
+  var dsSel = document.querySelector('#drawerNewTrain .train-dataset-select');
+  if (!dsSel){
+    addTrainDatasetRow(false);
+    dsSel = document.querySelector('#drawerNewTrain .train-dataset-select');
+  }
   if (dsSel && cfg.dataset){
     var found = Array.prototype.some.call(dsSel.options, function(o){ return o.value === cfg.dataset; });
     if (!found){ var opt = document.createElement('option'); opt.value = cfg.dataset; opt.textContent = cfg.dataset; dsSel.appendChild(opt); }
     dsSel.value = cfg.dataset;
+    updateTrainDatasetVersion(dsSel);
   }
   var codeInput = document.getElementById('trainCodeInput');
   if (codeInput && cfg.commit){ codeInput.value = cfg.commit; codeInput.dataset.commit = cfg.commit; }
@@ -4155,11 +4352,11 @@ function switchAdvTab(el, tab){
 }
 /* 详情页「基础信息 · 高级配置」只读双 pre 切换 */
 function switchDetAdv(el, tab){
-  var wrap = el.closest('.bi-sec');
+  var wrap = el.closest('.bi-subsection');
   if (!wrap) return;
   wrap.querySelectorAll('.at').forEach(function(t){ t.classList.remove('active'); });
   el.classList.add('active');
-  wrap.querySelectorAll('.yaml-readonly').forEach(function(p){
+  wrap.querySelectorAll('.yaml-readonly[data-adv]').forEach(function(p){
     p.style.display = (p.getAttribute('data-adv') === tab) ? '' : 'none';
   });
 }
@@ -4210,6 +4407,62 @@ function switchLogSubtab(el){
   if(target) target.classList.add('active');
 }
 function toggleLogToggle(el){ el.classList.toggle('on'); }
+function closeLogTimePicker(picker){
+  picker.classList.remove('open', 'custom-open');
+  picker.querySelector('.lc-btn').setAttribute('aria-expanded', 'false');
+}
+function toggleLogTimePicker(button){
+  var picker = button.closest('.log-time-picker');
+  var open = !picker.classList.contains('open');
+  closeLogTimePicker(picker);
+  picker.classList.toggle('open', open);
+  button.setAttribute('aria-expanded', String(open));
+}
+function selectLogTimeRange(button){
+  var picker = button.closest('.log-time-picker');
+  if (button.dataset.range === 'custom'){
+    picker.classList.remove('open');
+    picker.classList.add('custom-open');
+    var start = picker.querySelector('[data-log-time-start]');
+    var end = picker.querySelector('[data-log-time-end]');
+    if (!start.value || !end.value){
+      var now = new Date();
+      var localTime = function(date){ return new Date(date.getTime() - date.getTimezoneOffset() * 60000).toISOString().slice(0,16); };
+      end.value = localTime(now);
+      start.value = localTime(new Date(now.getTime() - 86400000));
+    }
+    start.focus();
+    return;
+  }
+  picker.dataset.range = button.dataset.range;
+  picker.querySelector('[data-log-time-label]').textContent = button.textContent;
+  picker.querySelector('.lc-btn').removeAttribute('title');
+  picker.querySelectorAll('[data-range]').forEach(function(item){ item.setAttribute('aria-checked', String(item === button)); });
+  closeLogTimePicker(picker);
+}
+function applyLogCustomTime(button){
+  var picker = button.closest('.log-time-picker');
+  var start = picker.querySelector('[data-log-time-start]');
+  var end = picker.querySelector('[data-log-time-end]');
+  end.setCustomValidity('');
+  if (!start.reportValidity() || !end.reportValidity()) return;
+  if (end.value < start.value){ end.setCustomValidity('结束时间不能早于开始时间'); end.reportValidity(); return; }
+  picker.dataset.range = 'custom';
+  picker.dataset.start = start.value;
+  picker.dataset.end = end.value;
+  picker.querySelector('[data-log-time-label]').textContent = '自定义';
+  picker.querySelector('.lc-btn').title = start.value.replace('T', ' ') + ' 至 ' + end.value.replace('T', ' ');
+  picker.querySelectorAll('[data-range]').forEach(function(item){ item.setAttribute('aria-checked', String(item.dataset.range === 'custom')); });
+  closeLogTimePicker(picker);
+}
+document.addEventListener('click', function(event){
+  document.querySelectorAll('.log-time-picker.open, .log-time-picker.custom-open').forEach(function(picker){
+    if (!picker.contains(event.target)) closeLogTimePicker(picker);
+  });
+});
+document.addEventListener('keydown', function(event){
+  if (event.key === 'Escape') document.querySelectorAll('.log-time-picker').forEach(closeLogTimePicker);
+});
 /* 基础信息「镜像 / 训练代码」值复制到剪贴板 */
 function copyBiField(btn, text){
   if(navigator.clipboard && navigator.clipboard.writeText){
@@ -4485,8 +4738,8 @@ def render_page(title, content, active="", breadcrumb=None, extra_script=None,
             title_action = ''.join(ckpt_actions)
             for action in ckpt_actions:
                 content = content.replace(action, '', 1)
-        elif request.path == '/model/experiments':
-            # 训练任务列表页: 整个「新建/续训」拆分按钮一起提升到标题行
+        elif request.path in ('/model/experiments', '/model/models'):
+            # 显式标记的列表操作整体提升到共享标题行。
             split_match = re.search(r'<!--title-action-->([\s\S]*?)<!--/title-action-->', content)
             title_action = split_match.group(1).strip() if split_match else ''
             if split_match:
@@ -4735,7 +4988,7 @@ def home():
     n_episodes = sum(p["ep_count"] for p in PROCESS_JOBS if p["status"] == "done")
     n_datasets_active = sum(1 for d in DATASETS if d["status"] == "active")
     n_exp_running = sum(1 for e in EXPERIMENTS if e["status"] == "running")
-    n_models = len(MODELS)
+    n_models = len(_model_asset_records())
     n_deployed = sum(1 for d in DEPLOYS if d["status"] == "deployed")
     n_devices_online = sum(1 for d in DEVICES if d["status"] in ("online", "in_use"))
     n_devices_total = len(DEVICES)
@@ -4751,7 +5004,7 @@ def home():
          ],
          ["处理任务", "工作台", "工作流"]),
         ("model", "模型平台", "训练 → 评测 → 部署", "/model", "模",
-         [("训练实验", len(EXPERIMENTS)), ("模型版本", n_models), ("已部署", n_deployed)],
+         [("训练实验", len(EXPERIMENTS)), ("模型资产", n_models), ("已部署", n_deployed)],
          ["训练实验", "评测", "部署", "模型管理"]),
         ("app", "应用编排平台", "模型服务 · 编排 · 资产", "/app", "应",
          [("模型服务", 0), ("编排", 0), ("资产", 0)],
@@ -4819,7 +5072,7 @@ def home():
     <div class="p-sec">资源概览</div>
     {stat_grid([
         ("数据集 (生效)", str(n_datasets_active), f"已切分 {n_episodes:,} EP"),
-        ("模型管理", str(n_models), f"已部署 {n_deployed} 台"),
+        ("模型管理", str(n_models), "已合并及已缓存 Checkpoint"),
         ("设备在线", f"{n_devices_online} / {n_devices_total}", f"今日预约 {n_bookings_today}"),
         ("GPU 资源池", "3 / 8", "由底座统一调度"),
     ])}
@@ -9583,10 +9836,10 @@ MODEL_QUEUES = [
 
 # ── 金山云星流平台 (Demo): 镜像与队列, 供镜像管理 / 队列管理的「金山云」分区使用 ──
 KSYUN_IMAGES = [
-    {"name": "pytorch", "version": "2.5-gpu-py39-cu112-ubuntu20.04", "description": "官方镜像 · PyTorch 2.5 / CUDA 11.2", "creator": "官方镜像", "created": "2026-09-01 10:12"},
-    {"name": "pytorch", "version": "2.6-gpu-py310-cu126-ubuntu22.04", "description": "官方镜像 · PyTorch 2.6 / CUDA 12.6", "creator": "官方镜像", "created": "2026-09-20 14:05"},
-    {"name": "mozbrain_release", "version": "ks-v1.7-panshi", "description": "KCR 自定义镜像 · 预训练对齐版本", "creator": "tao.wang", "created": "2026-09-22 09:30"},
-    {"name": "mozbrain", "version": "ks-harbor-v1.6", "description": "第三方镜像（Harbor）· 多机合训", "creator": "hannah.wang", "created": "2026-09-25 16:40"},
+    {"image_type": "pretrain", "name": "pytorch", "version": "2.5-gpu-py39-cu112-ubuntu20.04", "description": "官方镜像 · PyTorch 2.5 / CUDA 11.2", "creator": "官方镜像", "created": "2026-09-01 10:12"},
+    {"image_type": "pretrain", "name": "pytorch", "version": "2.6-gpu-py310-cu126-ubuntu22.04", "description": "官方镜像 · PyTorch 2.6 / CUDA 12.6", "creator": "官方镜像", "created": "2026-09-20 14:05"},
+    {"image_type": "pretrain", "name": "mozbrain_release", "version": "ks-v1.7-panshi", "description": "KCR 自定义镜像 · 预训练对齐版本", "creator": "tao.wang", "created": "2026-09-22 09:30"},
+    {"image_type": "posttrain", "name": "mozbrain", "version": "ks-harbor-v1.6", "description": "第三方镜像（Harbor）· 多机合训", "creator": "hannah.wang", "created": "2026-09-25 16:40"},
 ]
 KSYUN_QUEUES = [
     {"id": "ks-q-pretrain-a", "name": "q-pretrain-a", "admins": ["Tao Wang"], "members": ["Tao Wang", "Joanna Qiao", "Min Chen"]},
@@ -10774,7 +11027,7 @@ def _experiment_resource_key(exp):
 
 
 def _checkpoint_resource_key(ckpt):
-    explicit_source = ckpt.get("source")
+    explicit_source = ckpt.get("source") or ckpt.get("source_platform")
     if explicit_source:
         return _normalized_resource_key(explicit_source)
     exp = next((item for item in EXPERIMENTS if item["id"] == ckpt.get("exp_id")), None)
@@ -10917,6 +11170,28 @@ def _train_resume_sources():
     return sources
 
 
+def _train_dataset_catalog():
+    """Reuse managed training datasets and their published versions, newest first."""
+    catalog = []
+    for dataset in (dp.DATASETS if DP_AVAILABLE else DATASETS):
+        if dataset.get("type") != "train":
+            continue
+        records = dp.ds_versions(dataset) if DP_AVAILABLE else [dataset]
+        published = sorted(
+            (record for record in records if record.get("publish_status") == "已发布"),
+            key=lambda record: (tuple(int(part) for part in re.findall(r"\d+", record["version"])),
+                                record.get("created", "")),
+            reverse=True,
+        )
+        item = {"id": dataset["id"], "name": dataset["name"],
+                "versions": list(dict.fromkeys(record["version"] for record in published))}
+        address = str(dataset.get("tos") or "").strip()
+        if address and address != "—":
+            item["address"] = address
+        catalog.append(item)
+    return catalog
+
+
 @app.route("/model/experiments")
 def experiments():
     selected_resource = request.args.get("resource", "volcano")
@@ -10946,7 +11221,6 @@ def experiments():
         and (selected_resource != "volcano" or not filter_dataset or filter_dataset.lower() in e.get("dataset", "").lower())
     ]
     show_description = selected_resource == "volcano"
-    show_actions = selected_resource == "volcano"
     rows = ""
     priority_fallbacks = ["高", "中", "低"]
     for e in visible_experiments:
@@ -10970,19 +11244,6 @@ def experiments():
             if e["status"] == "running"
             else '<span class="action-link action-disabled">停止</span>'
         )
-        # 关注: 关注后通过飞书推送该任务的训练进度状态, 可随时取消关注 (放在「更多」菜单内)
-        following = CURRENT_USER in _experiment_followers(e)
-        follow_tip = (
-            "取消关注后将不再通过飞书推送训练进度状态" if following
-            else "关注后将通过飞书推送训练进度状态"
-        )
-        follow_item = (
-            f'<a href="#" class="follow-btn" role="menuitem" '
-            f'data-exp-id="{html.escape(e["id"], quote=True)}" '
-            f'data-tooltip="{follow_tip}" '
-            f'onclick="toggleExperimentFollow(this);return false;">'
-            f'{"取消关注" if following else "关注"}</a>'
-        )
         # 编辑仅在「排队中」状态显示，并放在「更多」菜单内
         edit_item = (
             '<a href="#" class="action-edit" '
@@ -10994,7 +11255,6 @@ def experiments():
             f'<span class="action-more">'
             f'<span class="action-more-trigger">更多<span class="caret">&#9662;</span></span>'
             f'<span class="action-menu">'
-            f'{follow_item}'
             f'<a href="/model/lineage/train/{e["id"]}">血缘</a>'
             f'{edit_item}'
             f'</span>'
@@ -11007,7 +11267,7 @@ def experiments():
             {stop_action}
             <a href="#" onclick="toast('Demo: 已复制配置');return false;">复制</a>
             {more_menu}
-          </td>""" if show_actions else ""
+          </td>"""
         rows += f"""<tr>
           <td class="mono muted">{_experiment_numeric_id(e)}</td>
           <td><a href="/model/experiments/{e['id']}{filter_url()}" style="color:#149DAA">{e['name']}</a></td>
@@ -11030,6 +11290,12 @@ def experiments():
     ], ensure_ascii=False)
     resume_sources_json = json.dumps(_train_resume_sources(), ensure_ascii=False).replace("</", "<\\/")
     resume_prefill_json = json.dumps({"from": resume_from, "step": resume_step}, ensure_ascii=False)
+    train_dataset_catalog = _train_dataset_catalog()
+    train_dataset_catalog_json = json.dumps(train_dataset_catalog, ensure_ascii=False).replace("</", "<\\/")
+    train_dataset_options = ''.join(
+        f'<option value="{html.escape(dataset["name"], quote=True)}">{html.escape(dataset["name"])}</option>'
+        for dataset in train_dataset_catalog
+    )
     recommended_image_options = "".join(
         f'<option value="{html.escape(_train_image_path(i), quote=True)}" '
         f'data-path="{html.escape(_train_image_path(i), quote=True)}" '
@@ -11050,6 +11316,20 @@ def experiments():
         for index, i in enumerate(TRAIN_IMAGE_CATALOG)
     )
     default_recommended_image = TRAIN_IMAGE_CATALOG[0]
+    if selected_resource == "volcano":
+        create_action = """
+    <div class="split-btn" id="trainCreateSplit">
+      <button type="button" class="btn btn-primary split-btn-main" onclick="openTrainDrawer();return false;">新增后训练任务</button>
+      <button type="button" class="btn btn-primary split-btn-toggle" onclick="toggleTrainCreateSplit(event)" aria-haspopup="menu" aria-expanded="false" aria-label="更多创建方式"><span class="split-caret">&#9662;</span></button>
+      <div class="split-menu" id="trainCreateSplitMenu" role="menu">
+        <button type="button" class="split-menu-item" role="menuitem" onclick="openTrainResumeCreate()">新建续训任务</button>
+      </div>
+    </div>
+        """
+    else:
+        create_action = """
+    <button type="button" class="btn btn-primary" onclick="openKsyunTrainDrawer();return false;">新增预训练任务</button>
+        """
     content = page_header(
         "训练任务",
         "数据集挂载 · 实验管理 · 超参 · Checkpoint",
@@ -11068,14 +11348,7 @@ def experiments():
     </form>
 
     <!--title-action-->
-    <div class="split-btn" id="trainCreateSplit">
-      <button type="button" class="btn btn-primary split-btn-main" onclick="openTrainDrawer();return false;">新增训练任务</button>
-      <button type="button" class="btn btn-primary split-btn-toggle" onclick="toggleTrainCreateSplit(event)" aria-haspopup="menu" aria-expanded="false" aria-label="更多创建方式"><span class="split-caret">&#9662;</span></button>
-      <div class="split-menu" id="trainCreateSplitMenu" role="menu">
-        <button type="button" class="split-menu-item" role="menuitem" onclick="openTrainResumeCreate()">新建续训任务</button>
-      </div>
-    </div>
-    <button type="button" class="btn btn-secondary" onclick="openKsyunTrainDrawer();return false;">新增金山云训练任务</button>
+    {create_action}
     <!--/title-action-->
 
     <div class="list-summarybar">
@@ -11093,7 +11366,7 @@ def experiments():
           <th>创建人</th>
           <th>创建时间 &#x21F5;</th>
           <th>运行时长</th>
-          {"<th>操作</th>" if show_actions else ""}
+          <th>操作</th>
         </tr></thead>
         <tbody>{rows or '<tr><td colspan="9" style="text-align:center;padding:40px;color:#999;">暂无符合条件的训练任务</td></tr>'}</tbody>
       </table>
@@ -11105,26 +11378,9 @@ def experiments():
       window.TRAIN_YAML_TEMPLATES = {train_yaml_json};
       window.TRAIN_CODE_REFS = {train_code_json};
       window.TRAIN_IMAGE_CATALOG = {train_image_catalog_json};
+      window.TRAIN_DATASET_CATALOG = {train_dataset_catalog_json};
       window.TRAIN_RESUME_SOURCES = {resume_sources_json};
       window.TRAIN_RESUME_PREFILL = {resume_prefill_json};
-      function toggleExperimentFollow(btn){{
-        var expId = btn.getAttribute('data-exp-id');
-        if(!expId || btn.dataset.busy){{ return false; }}
-        btn.dataset.busy = '1';
-        fetch('/model/experiments/' + encodeURIComponent(expId) + '/follow', {{method:'POST'}})
-          .then(function(resp){{ return resp.json(); }})
-          .then(function(data){{
-            delete btn.dataset.busy;
-            var followed = !!data.followed;
-            btn.textContent = followed ? '取消关注' : '关注';
-            btn.setAttribute('data-tooltip', followed
-              ? '取消关注后将不再通过飞书推送训练进度状态'
-              : '关注后将通过飞书推送训练进度状态');
-            toast(followed ? '已关注，将通过飞书推送训练进度状态' : '已取消关注');
-          }})
-          .catch(function(){{ delete btn.dataset.busy; toast('操作失败，请稍后重试'); }});
-        return false;
-      }}
       document.addEventListener('DOMContentLoaded', function(){{
         var prefill = window.TRAIN_RESUME_PREFILL || {{}};
         if (prefill.from) openTrainResume(prefill.from, prefill.step);
@@ -11155,8 +11411,8 @@ def experiments():
               <div class="train-name-control"><input id="trainNameInput" placeholder="请输入名称（A-z,0-9,_）" maxlength="50" oninput="updateNameCount(this);syncJobName(this)"><span class="train-name-count" id="nameCount">0 / 50</span></div>
             </div>
             <div class="fg">
-              <label>描述</label>
-              <textarea rows="3" placeholder="请输入训练任务描述，例如任务目标、数据范围或备注说明"></textarea>
+              <label for="trainDescription">描述</label>
+              <textarea id="trainDescription" rows="2" placeholder="请输入训练任务描述，例如任务目标、数据范围或备注说明"></textarea>
             </div>
             <div class="fg-row train-meta-options-row">
               <div class="fg">
@@ -11269,8 +11525,6 @@ def experiments():
                 <option value="A100-4x-80G">A100-4x-80G | 48 vCPU | 384 GB | Tesla-A100-80G × 4</option>
                 <option value="H100-8x-80G">H100-8x-80G | 96 vCPU | 768 GB | Tesla-H100-80G × 8</option>
               </select></div>
-            </div>
-            <div class="fg-row train-runtime-priority-row">
               <div class="fg"><label class="fg-req">优先级 <span class="qi" data-tooltip="数值越大，优先级越大" tabindex="0" aria-label="数值越大，优先级越大">i</span></label><select id="trainPriority"><option value="2">2</option><option value="4" selected>4</option><option value="6">6</option></select></div>
             </div>
           </div>
@@ -11282,29 +11536,52 @@ def experiments():
             <span class="train-section-toggle"><span class="train-section-caret">&#9660;</span></span>
           </div>
           <div class="train-section-body">
+            <div id="trainDatasetConfigSlot">
             <div class="fg" id="trainDatasetBlock">
               <label>数据集及权重</label>
-              <div class="ds-table"><div class="ds-head"><span>数据集名称</span><span>权重</span><span>操作</span></div><div class="ds-row"><select><option>请选择数据集</option><option>clean_whiteboard_v4</option><option>tidy_desk_v2</option><option>plant_pour_pilot</option></select><input value="1"><span class="ds-confirm" onclick="toast('Demo: 已添加')">确定</span></div></div>
+              <table class="ant-table train-dataset-table">
+                <colgroup><col><col style="width:152px"><col style="width:100px"><col style="width:80px"></colgroup>
+                <thead><tr><th id="trainDatasetNameHeading">数据集名称</th><th>版本</th><th>权重</th><th>操作</th></tr></thead>
+                <tbody id="trainDatasetRows"></tbody>
+              </table>
+              <div class="train-dataset-actions">
+                <button type="button" class="action-link" onclick="addTrainDatasetRow(true)">添加数据集</button>
+                <button type="button" class="action-link" id="trainDatasetImportBtn" onclick="openTrainDatasetImport()" hidden>JSON 导入</button>
+              </div>
+              <template id="trainDatasetRowTemplate">
+                <tr class="ds-row">
+                  <td><select class="train-dataset-select" aria-label="数据集名称" onchange="updateTrainDatasetVersion(this)"><option value="">请选择数据集</option>{train_dataset_options}</select></td>
+                  <td><select class="train-dataset-version" aria-label="数据集版本" disabled><option value="">请先选择数据集</option></select></td>
+                  <td><input type="number" min="0" step="any" value="1" aria-label="权重"></td>
+                  <td><button type="button" class="action-link" onclick="removeTrainDatasetRow(this)">移除</button></td>
+                </tr>
+              </template>
             </div>
-            <div class="train-config-mode-tabs" id="trainConfigModeTabs" role="tablist" aria-label="训练配置模式">
-              <button type="button" class="train-config-mode-tab active" data-train-config-mode="recommended" onclick="switchTrainConfigMode(this,'recommended')">推荐配置</button>
-              <button type="button" class="train-config-mode-tab" data-train-config-mode="custom" onclick="switchTrainConfigMode(this,'custom')">自定义配置</button>
+            </div>
+            <div class="fg" id="trainConfigModeField">
+              <label>配置方式</label>
+              <div class="train-config-mode-tabs" id="trainConfigModeTabs" role="tablist" aria-label="训练配置模式">
+                <button type="button" class="train-config-mode-tab active" data-train-config-mode="recommended" onclick="switchTrainConfigMode(this,'recommended')">推荐配置</button>
+                <button type="button" class="train-config-mode-tab" data-train-config-mode="custom" onclick="switchTrainConfigMode(this,'custom')">自定义配置</button>
+              </div>
             </div>
             <div class="train-config-panel active" id="trainRecommendedConfig">
-            <div class="fg-row" id="trainModelRow">
-              <div class="fg"><label class="fg-req">模型</label><select id="trainModelSel" onchange="regenDefaultConfig()"><option value="pi05">pi0.5</option><option value="spiritv1_6">spiritv1.6</option></select></div>
-              <div class="fg"><label class="fg-req">是否使用新感知 <span class="qi perception-tip" data-tooltip="是 = 新感知：使用鱼眼相机，广角视野&#10;否 = 旧感知：使用 RealSense 相机，支持深度信息" tabindex="0" aria-label="是 = 新感知，使用鱼眼相机、广角视野；否 = 旧感知，使用 RealSense 相机、支持深度信息。">i</span></label><select id="trainRobotSel" onchange="regenDefaultConfig()"><option value="new">是</option><option value="old">否</option></select></div>
+            <div id="trainModelRow">
+              <div class="fg"><label class="fg-req" for="trainModelSel">模型</label><select id="trainModelSel" onchange="regenDefaultConfig()"><option value="pi05">pi0.5</option><option value="spiritv1_6">spiritv1.6</option></select></div>
               <div class="fg"><label class="fg-req">机器人结构 <span class="qi robot-structure-tip" data-tooltip="是否由 VLA 控制底盘移动&#10;控制底盘：wholebody&#10;仅控制双臂：wholebody_without_base" tabindex="0" aria-label="是否由 VLA 控制底盘移动；控制底盘选择 wholebody；仅控制双臂选择 wholebody_without_base。">i</span></label><select id="trainBaseSel" onchange="regenDefaultConfig()"><option value="wholebody">wholebody</option><option value="wholebody_without_base">wholebody_without_base</option></select></div>
+              <div class="fg"><label class="fg-req">是否使用新感知 <span class="qi perception-tip" data-tooltip="是 = 新感知：使用鱼眼相机，广角视野&#10;否 = 旧感知：使用 RealSense 相机，支持深度信息" tabindex="0" aria-label="是 = 新感知，使用鱼眼相机、广角视野；否 = 旧感知，使用 RealSense 相机、支持深度信息。">i</span></label><select id="trainRobotSel" onchange="regenDefaultConfig()"><option value="new">是</option><option value="old">否</option></select></div>
+              <div class="fg"><label class="fg-req" for="trainVisualPromptSel">是否使用 visual prompt</label><select id="trainVisualPromptSel"><option value="no" selected>否</option><option value="yes">是</option></select></div>
             </div>
-            <div class="adv-sub" id="advConfigBox">
-              <div class="adv-sub-head" onclick="document.getElementById('advConfigBox').classList.toggle('collapsed')"><span class="caret">&#9660;</span><label>高级配置</label></div>
-              <div class="adv-sub-body"><div class="adv-tabs"><span class="at active" onclick="switchAdvTab(this,'default')">默认参数</span><span class="at" onclick="switchAdvTab(this,'override')">参数覆盖</span><a class="at-help" href="https://nwd4iy9rd2s.feishu.cn/wiki/WtN7wpNYbiJnq4kkt5zcuBzwnad" target="_blank" rel="noopener">帮助文档</a><button class="at-reset" onclick="resetTrainConfig()">恢复默认</button></div><textarea id="yamlEditor" class="yaml-area" spellcheck="false" readonly></textarea><textarea id="yamlOverride" class="yaml-area" spellcheck="false" style="display:none;" placeholder="# 只填写需要覆盖的参数, 例如:&#10;batch_size: 64&#10;steps: 300000&#10;&#10;# 这些值会覆盖到左侧「默认参数」中" oninput="applyOverride()"></textarea></div>
+            <div class="adv-sub collapsed" id="advConfigBox">
+              <div class="adv-sub-head" onclick="toggleTrainAdvancedConfig()"><span class="caret">&#9660;</span><label>高级配置</label></div>
+              <div class="adv-sub-body" id="trainAdvancedBody"><div class="adv-tabs"><span class="at active" onclick="switchAdvTab(this,'default')">默认参数</span><span class="at" onclick="switchAdvTab(this,'override')">参数覆盖</span><a class="at-help" href="https://nwd4iy9rd2s.feishu.cn/wiki/WtN7wpNYbiJnq4kkt5zcuBzwnad" target="_blank" rel="noopener">帮助文档</a><button class="at-reset" onclick="resetTrainConfig()">恢复默认</button></div><textarea id="yamlEditor" class="yaml-area" spellcheck="false" readonly></textarea><textarea id="yamlOverride" class="yaml-area" spellcheck="false" style="display:none;" placeholder="# 只填写需要覆盖的参数, 例如:&#10;batch_size: 64&#10;steps: 300000&#10;&#10;# 这些值会覆盖到左侧「默认参数」中" oninput="applyOverride()"></textarea></div>
             </div>
             </div>
             <div class="train-config-panel" id="trainCustomConfig">
-              <div class="adv-sub" id="customYamlBox">
-                <div class="adv-sub-head" onclick="document.getElementById('customYamlBox').classList.toggle('collapsed')"><span class="caret">&#9660;</span><label>高级配置</label><a class="at-help" href="https://nwd4iy9rd2s.feishu.cn/wiki/WtN7wpNYbiJnq4kkt5zcuBzwnad" target="_blank" rel="noopener" onclick="event.stopPropagation()">帮助文档</a><button type="button" class="at-reset" onclick="event.stopPropagation();restoreRecommendedYaml()">恢复推荐配置</button></div>
+              <div class="adv-sub collapsed" id="customYamlBox">
+                <div class="adv-sub-head" onclick="document.getElementById('customYamlBox').classList.toggle('collapsed')"><span class="caret">&#9660;</span><label>高级配置</label></div>
                 <div class="adv-sub-body">
+                  <div class="adv-tabs"><a class="at-help" href="https://nwd4iy9rd2s.feishu.cn/wiki/WtN7wpNYbiJnq4kkt5zcuBzwnad" target="_blank" rel="noopener">帮助文档</a><button type="button" class="at-reset" onclick="restoreRecommendedYaml()">恢复推荐配置</button></div>
                   <div class="custom-yaml-status" id="customYamlStatus">切换到自定义配置后，可粘贴或编辑完整 YAML</div>
                   <textarea id="customYamlEditor" class="yaml-area custom-yaml-area" spellcheck="false" placeholder="# 粘贴完整 YAML 配置"></textarea>
                 </div>
@@ -11333,6 +11610,23 @@ bash lerobot/scripts/train_unified.sh /mnt/vepfs01/output/quanta/experiments/con
 
       </div>
       <div class="drawer-foot train-drawer-foot"><button class="btn" onclick="closeDrawer()">取消</button><button class="btn btn-primary" id="trainSubmitBtn" onclick="validateTrainForm()">提交创建</button></div>
+    </div>
+    <div class="modal-mask" id="trainDatasetImportModal" onclick="if(event.target===this)closeTrainDatasetImport()" onkeydown="handleTrainDatasetImportKey(event)">
+      <div class="modal" role="dialog" aria-modal="true" aria-labelledby="trainDatasetImportTitle">
+        <div class="modal-head">
+          <h3 id="trainDatasetImportTitle">JSON 导入数据集</h3>
+          <button type="button" class="action-link dismiss" aria-label="关闭 JSON 导入" onclick="closeTrainDatasetImport()">&times;</button>
+        </div>
+        <div class="modal-body">
+          <p class="fg-tip" id="trainDatasetJsonHint">数组中每项为 [数据集地址, 权重]，导入后追加到列表。</p>
+          <textarea class="yaml-area" id="trainDatasetJsonInput" aria-label="数据集 JSON" aria-describedby="trainDatasetJsonHint trainDatasetJsonError" aria-invalid="false" spellcheck="false" placeholder="[&#10;  [&quot;ks3://datasets/pretrain_a&quot;, 1],&#10;  [&quot;ks3://datasets/pretrain_b&quot;, 0.5]&#10;]" oninput="setTrainDatasetImportError('')"></textarea>
+          <p id="trainDatasetJsonError" role="alert" hidden></p>
+        </div>
+        <div class="modal-foot">
+          <button type="button" class="btn" onclick="closeTrainDatasetImport()">取消</button>
+          <button type="button" class="btn btn-primary" onclick="importTrainDatasets()">确认导入</button>
+        </div>
+      </div>
     </div>
     """
     for control, value in (("filterExperimentTag", filter_tag), ("filterExperimentDataset", filter_dataset)):
@@ -11539,7 +11833,6 @@ def experiment_detail(exp_id):
         "operator": cache_operator,
         "resource": resource_key,
     }, ensure_ascii=False).replace("</", "<\\/")
-    show_experiment_dashboard = resource_key != "kingsoft"
 
     # ──── Tab 1: Checkpoint ────
     ckpts = _task_ckpts(e)
@@ -11553,7 +11846,9 @@ def experiment_detail(exp_id):
             if operation else
             f'<a href="#" style="color:#149DAA" onclick="openCacheModal(\'{c["step"]}\', \'{c["location"]}\');return false;">合并</a>'
         )
-        if _experiment_mozbrain_version(e) == "mozbrain v2.0":
+        if resource_key == "kingsoft":
+            resume_action = ""
+        elif _experiment_mozbrain_version(e) == "mozbrain v2.0":
             resume_action = (
                 f'<a href="/model/experiments?resume_from={html.escape(e["id"], quote=True)}'
                 f'&resume_step={c["step"]}" style="color:#149DAA">续训</a>'
@@ -11620,31 +11915,21 @@ def experiment_detail(exp_id):
 
     # ──── Tab 3: 日志 ────
     log_text = _log_lines()
-    tab_logs = f"""
-    <div class="logs-pane">
+    log_subtabs = """
       <div class="logs-subtabs">
         <span class="ls-tab active" data-log-tab="history" onclick="switchLogSubtab(this)">历史日志</span>
         <span class="ls-tab" data-log-tab="realtime" onclick="switchLogSubtab(this)">实时日志</span>
       </div>
-
-      <div class="log-subpane active" data-log-pane="history">
-        <div class="logs-box">
-          <div class="logs-controls">
-            <div class="lc-grp"><select><option>全部实例</option><option>worker-0</option><option>worker-1</option><option>worker-2</option></select></div>
-            <div class="lc-grp"><select><option>all</option><option>stdout</option><option>stderr</option></select></div>
-            <button class="lc-btn" onclick="toast('Demo: 选择时间范围')">&#9719; 近24小时</button>
+    """ if resource_key == "volcano" else ""
+    log_type_filter = """
+            <div class="lc-grp"><label for="trainLogType">类型</label><select id="trainLogType"><option>All</option><option>stdout</option><option>stderr</option></select></div>
+    """ if resource_key == "volcano" else ""
+    log_timestamp = """
             <div class="lc-right">
               <span>时间戳</span><span class="lc-toggle on" onclick="toggleLogToggle(this)"></span>
             </div>
-          </div>
-          <pre class="logs-body">{log_text}</pre>
-        </div>
-        <div class="logs-pager">
-          <span class="pg-btn active">1</span><span class="pg-btn">2</span><span class="muted">...</span><span class="pg-btn">&rsaquo;</span>
-          <select><option>500 条/页</option><option>100 条/页</option></select>
-        </div>
-      </div>
-
+    """ if resource_key == "volcano" else ""
+    log_realtime = """
       <div class="log-subpane" data-log-pane="realtime">
         <div class="logs-box">
           <div class="logs-controls">
@@ -11664,6 +11949,47 @@ def experiment_detail(exp_id):
           </div>
         </div>
       </div>
+    """ if resource_key == "volcano" else ""
+    log_time_options = [("15m", "近15分"), ("2h", "近2小时"), ("6h", "近6小时"),
+                        ("24h", "近24小时"), ("48h", "近48小时"), ("7d", "近7天"),
+                        ("14d", "近14天"), ("30d", "近30天"), ("custom", "自定义")]
+    log_time_items = "".join(
+        f'<button type="button" class="split-menu-item" role="menuitemradio" '
+        f'aria-checked="{str(key == "24h").lower()}" data-range="{key}" '
+        f'onclick="selectLogTimeRange(this)">{label}</button>'
+        for key, label in log_time_options
+    )
+    tab_logs = f"""
+    <div class="logs-pane">
+{log_subtabs}
+
+      <div class="log-subpane active" data-log-pane="history">
+        <div class="logs-box">
+          <div class="logs-controls">
+            <div class="lc-grp"><select><option>全部实例</option><option>worker-0</option><option>worker-1</option><option>worker-2</option></select></div>
+{log_type_filter}
+            <div class="log-time-picker" data-range="24h">
+              <button type="button" class="lc-btn" aria-haspopup="menu" aria-expanded="false" onclick="toggleLogTimePicker(this)"><span aria-hidden="true">&#9719;</span><span data-log-time-label>近24小时</span></button>
+              <div class="split-menu log-time-menu" role="menu" aria-label="日志时间范围">{log_time_items}</div>
+              <div class="split-menu log-time-custom" role="group" aria-label="自定义日志时间范围">
+                <div class="fg-row">
+                  <div class="fg"><label for="trainLogTimeStart">开始时间</label><input id="trainLogTimeStart" type="datetime-local" data-log-time-start required></div>
+                  <div class="fg"><label for="trainLogTimeEnd">结束时间</label><input id="trainLogTimeEnd" type="datetime-local" data-log-time-end required oninput="this.setCustomValidity('')"></div>
+                </div>
+                <div class="log-time-custom-actions"><button type="button" class="btn" onclick="closeLogTimePicker(this.closest('.log-time-picker'))">取消</button><button type="button" class="btn btn-primary" onclick="applyLogCustomTime(this)">确定</button></div>
+              </div>
+            </div>
+{log_timestamp}
+          </div>
+          <pre class="logs-body">{log_text}</pre>
+        </div>
+        <div class="logs-pager">
+          <span class="pg-btn active">1</span><span class="pg-btn">2</span><span class="muted">...</span><span class="pg-btn">&rsaquo;</span>
+          <select><option>500 条/页</option><option>100 条/页</option></select>
+        </div>
+      </div>
+
+{log_realtime}
     </div>
     """
 
@@ -11751,37 +12077,36 @@ dataset:
           <div class="bi-field-item"><div class="bi-field-label">是否新感知</div><div class="bi-field-value">是</div></div>
         </div>
         <div class="bi-field-row"><div class="bi-field-item"><div class="bi-field-label">机器人结构</div><div class="bi-field-value">wholebody</div></div></div>
-      </div>
 
-      <!-- 高级配置 - 可折叠 -->
-      <div class="bi-subsection bi-collapsible">
-        <h4 class="bi-subsection-title bi-sec-toggle" onclick="toggleBiSection(this)">
-          <span>高级配置</span>
-          <svg class="bi-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <polyline points="6 9 12 15 18 9"/>
-          </svg>
-        </h4>
-        <div class="bi-collapse-content">
-          <div class="adv-tabs">
-            <span class="at active" onclick="switchDetAdv(this,'default')">默认参数</span>
-            <span class="at" onclick="switchDetAdv(this,'override')">参数覆盖</span>
-          </div>
-          <pre class="yaml-readonly" data-adv="default">{yaml_text}</pre>
-          <pre class="yaml-readonly" data-adv="override" style="display:none;">batch_size: 64
+        <!-- 高级配置 - 可折叠 -->
+        <div class="bi-subsection bi-collapsible">
+          <h4 class="bi-subsection-title bi-sec-toggle" onclick="toggleBiSection(this)">
+            <span>高级配置</span>
+            <svg class="bi-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="6 9 12 15 18 9"/>
+            </svg>
+          </h4>
+          <div class="bi-collapse-content">
+            <div class="adv-tabs">
+              <span class="at active" onclick="switchDetAdv(this,'default')">默认参数</span>
+              <span class="at" onclick="switchDetAdv(this,'override')">参数覆盖</span>
+            </div>
+            <pre class="yaml-readonly" data-adv="default">{yaml_text}</pre>
+            <pre class="yaml-readonly" data-adv="override" style="display:none;">batch_size: 64
 steps: 300000</pre>
+          </div>
         </div>
-      </div>
 
-      <!-- 入口命令 - 可折叠 -->
-      <div class="bi-subsection bi-collapsible">
-        <h4 class="bi-subsection-title bi-sec-toggle" onclick="toggleBiSection(this)">
-          <span>入口命令</span>
-          <svg class="bi-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <polyline points="6 9 12 15 18 9"/>
-          </svg>
-        </h4>
-        <div class="bi-collapse-content">
-          <pre class="yaml-readonly entry-cmd-readonly"># 需要填写个人的WANDB_API_KEY，如export WANDB_API_KEY=aaffxxxx
+        <!-- 入口命令 - 可折叠 -->
+        <div class="bi-subsection bi-collapsible">
+          <h4 class="bi-subsection-title bi-sec-toggle" onclick="toggleBiSection(this)">
+            <span>入口命令</span>
+            <svg class="bi-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="6 9 12 15 18 9"/>
+            </svg>
+          </h4>
+          <div class="bi-collapse-content">
+            <pre class="yaml-readonly entry-cmd-readonly"># 需要填写个人的WANDB_API_KEY，如export WANDB_API_KEY=aaffxxxx
 # export WANDB_API_KEY=put_your_wandb_api_key_here
 # export WANDB_BASE_URL=https://api.bandw.top
 
@@ -11795,40 +12120,38 @@ export QUANTA_SERVICE_URL="https://quanta.i.spirit-ai.com"
 
 # Quanta会自动填充experiment_id为实际的experiment_id，请不要修改yaml文件路径
 bash lerobot/scripts/train_unified.sh /mnt/vepfs01/output/quanta/experiments/configs/{{e["id"]}}/customized.yaml</pre>
-        <div class="bi-sub" style="display:none;">环境变量 <span class="qi" title="以 key=value 形式注入训练容器，例如 wandb 相关配置">&#9432;</span></div>
-        <div class="bi-envtable" style="display:none;">
-          <div class="env-head"><span>变量名</span><span>变量值</span><span></span></div>
-          <div class="env-line"><span class="ek">WANDB_BASE_URL</span><span class="ev">https://api.wandb.ai</span><span></span></div>
-          <div class="env-line"><span class="ek">WANDB_API_KEY</span><span class="ev secret" data-real="wb_a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6">••••••••••••••••</span><span class="env-eye" onclick="toggleEnvSecret(this)">&#128065;</span></div>
-        </div>
+          <div class="bi-sub" style="display:none;">环境变量 <span class="qi" title="以 key=value 形式注入训练容器，例如 wandb 相关配置">&#9432;</span></div>
+          <div class="bi-envtable" style="display:none;">
+            <div class="env-head"><span>变量名</span><span>变量值</span><span></span></div>
+            <div class="env-line"><span class="ek">WANDB_BASE_URL</span><span class="ev">https://api.wandb.ai</span><span></span></div>
+            <div class="env-line"><span class="ek">WANDB_API_KEY</span><span class="ev secret" data-real="wb_a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6">••••••••••••••••</span><span class="env-eye" onclick="toggleEnvSecret(this)">&#128065;</span></div>
+          </div>
+          </div>
         </div>
       </div>
 
     </div>
     """
 
-    experiment_dashboard_tab = '<span class="det-tab" onclick="switchDetTab(this,\'data\')">实验看板</span>' if show_experiment_dashboard else ""
-    experiment_dashboard_pane = f'<div id="det-pane-data" class="det-pane">{tab_data}</div>' if show_experiment_dashboard else ""
+    experiment_dashboard_tab = '<span class="det-tab" onclick="switchDetTab(this,\'data\')">实验看板</span>'
+    experiment_dashboard_pane = f'<div id="det-pane-data" class="det-pane">{tab_data}</div>'
     detail_action = (
         '<a class="btn" href="#" onclick="toast(\'Demo: 已打开金山云训练任务\');return false;">前往金山云查看</a>'
         if resource_key == "kingsoft"
         else f'<a class="btn" href="/model/lineage/train/{e["id"]}">查看血缘</a>'
     )
-    detail_tabs_extra = ""
-    detail_panes_extra = ""
-    if resource_key != "kingsoft":
-        detail_tabs_extra = (
-            '<span class="det-tab" onclick="switchDetTab(this,\'logs\')">日志</span>'
-            '<span class="det-tab" onclick="switchDetTab(this,\'timeline\')">时间线</span>'
-            + experiment_dashboard_tab
-            + '<span class="det-tab" onclick="switchDetTab(this,\'basic\')">基础信息</span>'
-        )
-        detail_panes_extra = (
-            f'<div id="det-pane-logs" class="det-pane">{tab_logs}</div>'
-            f'<div id="det-pane-timeline" class="det-pane">{tab_timeline}</div>'
-            f'{experiment_dashboard_pane}'
-            f'<div id="det-pane-basic" class="det-pane">{tab_basic}</div>'
-        )
+    detail_tabs_extra = (
+        '<span class="det-tab" onclick="switchDetTab(this,\'logs\')">日志</span>'
+        '<span class="det-tab" onclick="switchDetTab(this,\'timeline\')">时间线</span>'
+        + experiment_dashboard_tab
+        + '<span class="det-tab" onclick="switchDetTab(this,\'basic\')">基础信息</span>'
+    )
+    detail_panes_extra = (
+        f'<div id="det-pane-logs" class="det-pane">{tab_logs}</div>'
+        f'<div id="det-pane-timeline" class="det-pane">{tab_timeline}</div>'
+        f'{experiment_dashboard_pane}'
+        f'<div id="det-pane-basic" class="det-pane">{tab_basic}</div>'
+    )
     detail_tabs = f'''
     <div class="det-tabs">
       <span class="det-tab active" onclick="switchDetTab(this,'ckpt')">Checkpoint</span>
@@ -11903,7 +12226,7 @@ bash lerobot/scripts/train_unified.sh /mnt/vepfs01/output/quanta/experiments/con
               <span class="cache-hourglass">&#8987;</span>
               <div>
                 <h4>合并任务已提交</h4>
-                <p>合并任务已提交，可在合并记录中查看进度。</p>
+                <p>合并任务已提交，可在 Ckpt 列表中查看进度。</p>
               </div>
             </div>
             <div class="cache-demo-panel" id="cacheDemoPanel" style="display:none;">
@@ -11923,7 +12246,7 @@ bash lerobot/scripts/train_unified.sh /mnt/vepfs01/output/quanta/experiments/con
         </div>
         <div class="modal-foot" id="cacheModalFootDoing" style="display:none;">
           <button class="btn btn-secondary" onclick="closeCacheModal()">关闭</button>
-          <a class="btn btn-primary" id="cacheRecordLink" href="/model/checkpoints/cache-records">查看合并记录</a>
+          <a class="btn btn-primary" id="cacheRecordLink" href="/model/checkpoints">查看 Ckpt</a>
         </div>
       </div>
     </div>
@@ -11933,7 +12256,7 @@ bash lerobot/scripts/train_unified.sh /mnt/vepfs01/output/quanta/experiments/con
 
 
 def _cache_operation_record_url(operation):
-    return "/model/checkpoints/cache-records?" + urlencode({
+    return "/model/checkpoints?" + urlencode({
         "resource": operation["source"],
         "name": operation["name"],
         "operation_id": operation["operation_id"],
@@ -11954,7 +12277,7 @@ def _cache_notification_card(operation, result_label):
         <span>Checkpoint / Step</span><b>{html.escape(operation['name'])} / {html.escape(operation['step'])}</b>
         {failure_row}
       </div>
-      <div class="cache-notification-foot"><small>Mock 卡片预览，不发送真实飞书消息</small><a class="btn btn-primary" href="{_cache_operation_record_url(operation)}">查看合并记录</a></div>
+      <div class="cache-notification-foot"><small>Mock 卡片预览，不发送真实飞书消息</small><a class="btn btn-primary" href="{_cache_operation_record_url(operation)}">查看 Ckpt</a></div>
     </div>'''
 
 
@@ -12042,6 +12365,9 @@ def preview_checkpoint_cache_result(operation_id):
         "completed_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         "failure_reason": failure_reason,
     })
+    for uploaded in UPLOADED_CKPTS:
+        if uploaded["id"] == operation.get("checkpoint_id"):
+            uploaded.update(status=status)
     if operation["notify_enabled"] and not duplicate:
         operation["notified_results"].append(result)
     card_html = (
@@ -12058,6 +12384,39 @@ def preview_checkpoint_cache_result(operation_id):
         "step": operation["step"],
         "status_html": CKPT_STATUS_LABEL[operation["status"]],
     })
+
+
+def _deployment_checkpoint_name(deployment):
+    return deployment.get("checkpoint_name") or f"{deployment['model']}_{deployment['version']}"
+
+
+def _deploy_device_picker_html():
+    """Ckpt 页面与部署页复用相同的设备多选组件。"""
+    purpose_map = {"moz1-001": "真机评测", "moz1-002": "部署验证", "moz1-003": "训练回归", "moz2-001": "采集", "moz2-002": "备用"}
+    device_items = ""
+    for d in DEVICES:
+        if d["status"] == "offline":
+            continue
+        serial = d["id"]
+        device_name = d["name"].replace(serial, "", 1).strip(" ·") or d["name"]
+        option_label = f"{device_name} · {serial}"
+        purpose = purpose_map.get(serial, "训练回归")
+        device_items += (
+            f'<div class="ddp-item" data-id="{html.escape(serial, quote=True)}" '
+            f'data-label="{html.escape(option_label, quote=True)}" onclick="toggleDeployDevice(this)">'
+            f'<span class="ddp-copy"><span class="ddp-main">{html.escape(device_name)} · '
+            f'<span class="serial">{html.escape(serial)}</span></span>'
+            f'<span class="ddp-sub">{html.escape(purpose)}</span></span>'
+            f'<span class="ddp-check">已选</span></div>'
+        )
+    return f"""
+    <div class="deploy-device-picker">
+      <div class="ddp-control ddp-chips" onclick="openDeployDevicePicker(this)">
+        <input class="ddp-search" aria-label="部署设备" placeholder="搜索设备序列号" onfocus="openDeployDevicePicker(this)" oninput="filterDeployDevices(this)">
+      </div>
+      <div class="ddp-menu">{device_items}</div>
+    </div>
+    """
 
 
 @app.route("/model/deploy")
@@ -12132,7 +12491,7 @@ def deploy():
     rows = ""
     for d in DEPLOYS:
         n = len(d["targets"])
-        ckpt_name = f"{d['model']}_{d['version']}"
+        ckpt_name = _deployment_checkpoint_name(d)
         if checkpoint_filters and not any(item.lower() in ckpt_name.lower() for item in checkpoint_filters):
             continue
         if people_filters and not any(item.lower() in d["operator"].lower() for item in people_filters):
@@ -12170,10 +12529,11 @@ def deploy():
           <td class="muted mono">{finished_at}</td>
         </tr>"""
     running_count = sum(1 for d in DEPLOYS if d["status"] == "in_progress")
-    deploy_ckpt_names = [c["name"] for c in CHECKPOINTS]
+    deploy_checkpoints = [c for c in _ckpt_list_items() if c["status"] in {"merged", "cached"}]
+    deploy_ckpt_names = [c["name"] for c in deploy_checkpoints]
     selected_deploy_ckpt = deploy_checkpoint if deploy_checkpoint in deploy_ckpt_names else ""
     ckpt_items = ""
-    for c in CHECKPOINTS:
+    for c in deploy_checkpoints:
         value = c["name"]
         desc = _ckpt_desc(c)
         active = " on" if value == selected_deploy_ckpt else ""
@@ -12185,26 +12545,9 @@ def deploy():
             f'<span class="ddp-sub">{html.escape(desc)}</span></span>'
             f'<span class="ddp-check">已选</span></div>'
         )
-    checkpoint_filter_options = sorted({f"{d['model']}_{d['version']}" for d in DEPLOYS})
+    checkpoint_filter_options = sorted({_deployment_checkpoint_name(d) for d in DEPLOYS})
     people_filter_options = sorted({d["operator"] for d in DEPLOYS})
     device_filter_options = sorted({target for d in DEPLOYS for target in d["targets"]})
-    purpose_map = {"moz1-001": "真机评测", "moz1-002": "部署验证", "moz1-003": "训练回归", "moz2-001": "采集", "moz2-002": "备用"}
-    device_items = ""
-    for d in DEVICES:
-        if d["status"] == "offline":
-            continue
-        serial = d["id"]
-        device_name = d["name"].replace(serial, "", 1).strip(" ·") or d["name"]
-        option_label = f"{device_name} · {serial}"
-        purpose = purpose_map.get(serial, "训练回归")
-        device_items += (
-            f'<div class="ddp-item" data-id="{html.escape(serial, quote=True)}" '
-            f'data-label="{html.escape(option_label, quote=True)}" onclick="toggleDeployDevice(this)">'
-            f'<span class="ddp-copy"><span class="ddp-main">{html.escape(device_name)} · '
-            f'<span class="serial">{html.escape(serial)}</span></span>'
-            f'<span class="ddp-sub">{html.escape(purpose)}</span></span>'
-            f'<span class="ddp-check">已选</span></div>'
-        )
     content = page_header(
         "部署任务",
         "Checkpoint 下发到指定设备 · 状态 + 操作历史",
@@ -12244,12 +12587,7 @@ def deploy():
         </div>
         <div class="fg">
           <label>部署设备</label>
-          <div class="deploy-device-picker">
-            <div class="ddp-control ddp-chips" onclick="openDeployDevicePicker(this)">
-              <input class="ddp-search" placeholder="搜索设备序列号" onfocus="openDeployDevicePicker(this)" oninput="filterDeployDevices(this)">
-            </div>
-            <div class="ddp-menu">{device_items}</div>
-          </div>
+          {_deploy_device_picker_html()}
         </div>
       </div>
       <div class="drawer-foot">
@@ -12273,99 +12611,105 @@ def deploy():
                        extra_script=extra_script)
 
 
+def _model_asset_records():
+    """Model assets are explicitly registered, available Checkpoints.
+
+    Keep IDs and explicit source relationships; never match old model fixtures by name.
+    """
+    records = []
+    uploads = {row["id"]: row for row in UPLOADED_CKPTS}
+    for checkpoint in _ckpt_list_items():
+        if checkpoint.get("status") not in {"merged", "cached"}:
+            continue
+        if checkpoint["id"] not in REGISTERED_MODEL_CHECKPOINT_IDS:
+            continue
+        uploaded = checkpoint["id"] in uploads
+        raw = uploads[checkpoint["id"]] if uploaded else checkpoint
+        experiment = _exp_by_id(checkpoint.get("exp_id", "")) if not uploaded else None
+        records.append({
+            **checkpoint,
+            "checkpoint_name": checkpoint["name"],
+            "name": raw.get("model_name") or checkpoint["name"],
+            "registered_by": raw.get("model_registered_by") or "—",
+            "registered_at": raw.get("model_registered_at") or "—",
+            "source": "upload" if uploaded else "training",
+            "source_label": "外部导入" if uploaded else "平台训练",
+            "base": raw.get("base_model", "—") if uploaded else (experiment or {}).get("model_type", "—"),
+            "step": raw.get("step", _ckpt_train_step(checkpoint)),
+            "description": raw.get("model_description", raw.get("description")) or "—",
+            "storage_address": _ckpt_storage_address(checkpoint) or "—",
+            "experiment": experiment,
+            "train_task_name": (experiment or {}).get("name") or raw.get("train_task_name") or checkpoint.get("exp_id") or "—",
+        })
+    return sorted(records, key=lambda row: (row.get("created", ""), row["id"]), reverse=True)
+
+
 @app.route("/model/models")
 def models():
-    name_filter = request.args.get("name", "").strip()
-    base_filter = request.args.get("base", "").strip()
-    filtered = [m for m in MODELS
-                if (not name_filter or name_filter.casefold() in m["name"].casefold())
-                and (not base_filter or m["base"] == base_filter)]
-    rows = ""
-    for m in filtered:
-        dataset = _dataset_by_id_or_name(_resolve_dataset_id(m["from_dataset"]))
-        dataset_html = (f'<a href="/model/data/datasets/{quote(dataset["id"], safe="")}">{html.escape(dataset["name"])}</a>'
-                        if dataset else html.escape(m["from_dataset"]))
-        experiment = _exp_by_id(m["from_exp"])
-        experiment_html = (f'<a href="/model/experiments/{quote(experiment["id"], safe="")}">{html.escape(experiment["id"])}</a>'
-                           if experiment else html.escape(m["from_exp"]))
-        detail_url = f'/model/models/{quote(m["id"], safe="")}'
-        deploy_html = " · ".join(f'<span class="tag tag-coral">{d}</span>' for d in m["deployed_to"]) if m["deployed_to"] else '<span class="muted">未部署</span>'
-        rows += f"""<tr>
-          <td class="mono">{m['id']}</td>
-          <td><a href="{detail_url}">{html.escape(m['name'])}</a></td>
-          <td class="mono">{m['version']}</td>
-          <td><span class="tag tag-purple">{m['base']}</span></td>
-          <td class="mono">{experiment_html}</td>
-          <td>{dataset_html}</td>
-          <td>{deploy_html}</td>
-          <td>{m['owner']}</td>
-          <td class="muted mono">{m['created']}</td>
-          <td class="actions-cell"><a href="{detail_url}">详情</a><a href="/model/lineage?model={m['id']}">血缘</a></td>
-        </tr>"""
-    rows = rows or '<tr><td colspan="10" class="muted" style="text-align:center;padding:32px;">暂无符合条件的模型</td></tr>'
-    base_options = ''.join(
-        f'<option value="{html.escape(base, quote=True)}"{" selected" if base == base_filter else ""}>{html.escape(base)}</option>'
-        for base in sorted({m["base"] for m in MODELS})
+    assets = _model_asset_records()
+    filters = {key: request.args.get(key, "").strip()
+               for key in ("ckpt_id", "checkpoint", "name", "base", "registered_by")}
+    text_fields = {"ckpt_id": "id", "checkpoint": "checkpoint_name",
+                   "name": "name", "registered_by": "registered_by"}
+    filtered = [row for row in assets
+                if all(not filters[key] or filters[key].casefold() in str(row[field]).casefold()
+                       for key, field in text_fields.items())
+                and (not filters["base"] or row["base"] == filters["base"])]
+    page_size = 10
+    page_count = max(1, (len(filtered) + page_size - 1) // page_size)
+    page = min(max(1, request.args.get("page", 1, type=int)), page_count)
+    content = render_template(
+        "model_assets/list.html", assets=filtered[(page - 1) * page_size:page * page_size],
+        filters=filters, bases=sorted({row["base"] for row in assets if row["base"] != "—"}),
+        total=len(filtered), page=page, page_count=page_count,
+        page_links={number: url_for("models", **filters, page=number) for number in range(1, page_count + 1)},
+        checkpoint_status=CKPT_STATUS_LABEL,
     )
-    content = f"""
-    <form class="filter-bar fb-labeled" method="get" action="/model/models">
-      <div class="ff"><label for="modelNameFilter">模型名称</label><input id="modelNameFilter" name="name" value="{html.escape(name_filter, quote=True)}" placeholder="搜索模型名称"></div>
-      <div class="ff"><label for="modelBaseFilter">基础模型</label><select id="modelBaseFilter" name="base"><option value="">全部基础模型</option>{base_options}</select></div>
-      <div class="filter-actions">
-        <a class="btn btn-tertiary" href="/model/models">清空</a>
-        <button class="btn btn-primary" type="submit">查询</button>
-      </div>
-    </form>
-    <div class="table-wrap q-table-scroll">
-      <table class="ant-table">
-        <thead><tr><th>ID</th><th>模型名</th><th>版本</th><th>基础模型</th><th>来源实验</th><th>来源数据集</th><th>已部署设备</th><th>负责人</th><th>创建时间</th><th>操作</th></tr></thead>
-        <tbody>{rows}</tbody>
-      </table>
-    </div>
-    """
     return render_page("模型管理", content, active="/model/models", module="model",
-                       breadcrumb='模型平台 / 资产 / <b>模型管理</b>', mvp_note="MVP 一期")
+                       breadcrumb='模型平台 / 训练 / <b>模型管理</b>')
+
+
+@app.post("/model/models/<model_id>/edit")
+def edit_model_asset(model_id):
+    if not any(row["id"] == model_id for row in _model_asset_records()):
+        return jsonify({"error": "模型不存在"}), 404
+    payload = request.get_json(silent=True)
+    if not isinstance(payload, dict) or not isinstance(payload.get("description"), str):
+        return jsonify({"error": "请填写有效的描述信息"}), 400
+    description = payload["description"].strip()
+    for item in CHECKPOINTS + UPLOADED_CKPTS + CKPT_CACHE_OPERATIONS:
+        if item["id"] == model_id or item.get("checkpoint_id") == model_id:
+            item["model_description"] = description
+    return jsonify({"message": "描述已保存"})
 
 
 def _model_asset_context(model):
-    """Resolve recorded asset relationships without guessing a checkpoint or version."""
-    same_version = lambda row, name_key: (row.get(name_key) == model["name"]
-                                          and row.get("version") == model["version"])
-    checkpoint = _ckpt_by_id(model.get("checkpoint_id", ""))
-    dataset = _dataset_by_id_or_name(_resolve_dataset_id(model["from_dataset"]))
-    evaluations = [row for row in _evaluation_lineage_records()
-                   if row.get("model_id") == model["id"]
-                   or (checkpoint and row.get("ckpt_id") == checkpoint["id"])]
+    experiment = model["experiment"]
     return {
         "model": model,
-        "dataset": dataset,
-        "experiment": _exp_by_id(model["from_exp"]),
-        "checkpoint": checkpoint,
-        "versions": sorted([row for row in MODELS if row["name"] == model["name"]],
-                           key=lambda row: row["created"], reverse=True),
-        "artifacts": [row for row in CONVERT_JOBS if same_version(row, "source")],
-        "services": [row for row in INFERENCE_SVCS if same_version(row, "model")],
-        "deployments": sorted([row for row in DEPLOYS if same_version(row, "model")],
-                              key=lambda row: row["at"], reverse=True),
-        "evaluations": sorted(evaluations, key=lambda row: row.get("at", ""), reverse=True),
+        "experiment": experiment,
+        # The current training form and training detail use a default weight of 1.
+        "datasets": [{**dataset, "weight": 1} for dataset in _exp_datasets(experiment)],
+        "evaluations": sorted(get_evals_for_checkpoint(model["id"]),
+                              key=lambda row: row.get("at", ""), reverse=True),
     }
 
 
 @app.route("/model/models/<model_id>")
 def model_detail(model_id):
-    model = next((row for row in MODELS if row["id"] == model_id), None)
+    model = next((row for row in _model_asset_records() if row["id"] == model_id), None)
     if model is None:
         abort(404)
-    context = _model_asset_context(model)
-    tabs = [("card", "Model Card"), ("artifacts", "模型产物"),
-            ("evaluations", "评测记录"), ("deployments", "部署记录"), ("versions", "版本记录")]
-    active_tab = request.args.get("tab", "card")
+    tabs = [("info", "基本信息"), ("evaluations", "评测信息"), ("lineage", "血缘关系")]
+    active_tab = request.args.get("tab", "info")
     if active_tab not in dict(tabs):
-        active_tab = "card"
-    content = render_template("model_assets/detail.html", **context, tabs=tabs,
-                              active_tab=active_tab, status_tag=status_tag)
+        active_tab = "info"
+    content = render_template("model_assets/detail.html", **_model_asset_context(model), tabs=tabs,
+                              active_tab=active_tab,
+                              lineage_html=_lineage_detail_html("checkpoint", model_id, view_path=request.path)
+                              if active_tab == "lineage" else "")
     return render_page(model["name"], content, active="/model/models", module="model",
-                       breadcrumb=f'模型平台 / 资产 / 模型管理 / <b>{html.escape(model["name"])}</b>')
+                       breadcrumb=f'模型平台 / 训练 / 模型管理 / <b>{html.escape(model["name"])}</b>')
 
 
 # ── 训练 · Checkpoint ──
@@ -12381,9 +12725,9 @@ CKPT_STATUS_LABEL = {
 
 # Curated images shared by the image management page and the training drawer.
 TRAIN_IMAGE_CATALOG = [
-    {"name": "mozbrain_release", "version": "thor-v1.0.0", "mozbrain_version": "", "description": "Spirit v1.6 推荐训练镜像", "creator": "tao.wang", "created": "2026-08-18 09:20"},
-    {"name": "mozbrain_release", "version": "thor-v0.9.8", "mozbrain_version": "", "description": "Spirit v1.5 兼容镜像", "creator": "hannah.wang", "created": "2026-08-12 16:30"},
-    {"name": "mozbrain", "version": "thor-v1.0.0", "mozbrain_version": "", "description": "基础训练镜像", "creator": "joanna.qiao", "created": "2026-08-08 09:20"},
+    {"image_type": "posttrain", "name": "mozbrain_release", "version": "thor-v1.0.0", "mozbrain_version": "", "description": "Spirit v1.6 推荐训练镜像", "creator": "tao.wang", "created": "2026-08-18 09:20"},
+    {"image_type": "posttrain", "name": "mozbrain_release", "version": "thor-v0.9.8", "mozbrain_version": "", "description": "Spirit v1.5 兼容镜像", "creator": "hannah.wang", "created": "2026-08-12 16:30"},
+    {"image_type": "pretrain", "name": "mozbrain", "version": "thor-v1.0.0", "mozbrain_version": "", "description": "基础训练镜像", "creator": "joanna.qiao", "created": "2026-08-08 09:20"},
 ]
 
 def _train_image_path(image):
@@ -12396,8 +12740,9 @@ def model_config_images():
         selected_resource = "volcano"
     image_catalog = KSYUN_IMAGES if selected_resource == "kingsoft" else TRAIN_IMAGE_CATALOG
     image_catalog_json = json.dumps(image_catalog, ensure_ascii=False).replace("<", "\\u003c")
+    image_type_labels = {'pretrain': '预训练镜像', 'posttrain': '后训练镜像'}
     rows = "".join(
-        f"<tr><td>{html.escape(i['name'])}</td><td>{html.escape(i['version'])}</td><td>{html.escape(i.get('mozbrain_version') or '—')}</td>"
+        f"<tr><td>{html.escape(i['name'])}</td><td>{image_type_labels.get(i.get('image_type'), '未设置')}</td><td>{html.escape(i['version'])}</td><td>{html.escape(i.get('mozbrain_version') or '—')}</td>"
         f"<td>{html.escape(i['description'])}</td><td>{html.escape(i['creator'])}</td><td class='mono'>{html.escape(i['created'])}</td>"
         f"<td><a href='#' onclick=\"openImageEditor({index});return false;\">编辑</a> "
         f"<a href='#' onclick=\"openImageDelete({index});return false;\">删除</a></td></tr>"
@@ -12406,16 +12751,22 @@ def model_config_images():
     content = f"""
     {_resource_tabs('/model/config/images', selected_resource)}
     <button class="btn btn-primary" onclick="openImageEditor()">新增镜像</button>
-    <div class="card"><table class="ant-table"><thead><tr><th>镜像名称</th><th>版本</th><th>mozbrain 版本</th><th>描述信息</th><th>创建人</th><th>创建时间</th><th>操作</th></tr></thead><tbody id="imageCatalogRows">{rows}</tbody></table></div>
-    <div class="drawer-mask" id="imageEditorModal" onclick="if(event.target===this)closeImageEditor()"><div class="drawer image-config-drawer" id="imageEditorDrawer"><div class="drawer-head"><h3 id="imageEditorTitle">新增镜像</h3><button class="drawer-close" onclick="closeImageEditor()">&times;</button></div><div class="drawer-body"><div class="fg"><label>镜像名称</label><input id="imageEditorName" placeholder="例如 mozbrain_release"></div><div class="fg"><label>版本</label><input id="imageEditorVersion" placeholder="例如 thor-v1.0.0"></div><div class="fg"><label for="imageEditorMozbrainVersion">mozbrain 版本</label><select id="imageEditorMozbrainVersion"><option value="" selected>请选择 mozbrain 版本</option><option value="mozbrain v1.0">mozbrain v1.0</option><option value="mozbrain v2.0">mozbrain v2.0</option></select></div><div class="fg"><label>描述信息</label><textarea id="imageEditorDescription" rows="3" placeholder="填写镜像用途和兼容范围"></textarea></div></div><div class="drawer-foot"><button class="btn" onclick="closeImageEditor()">取消</button><button class="btn btn-primary" onclick="saveImageEditor()">保存</button></div></div></div>
+    <div class="card"><table class="ant-table"><thead><tr><th>镜像名称</th><th>镜像类型</th><th>版本</th><th>mozbrain 版本</th><th>描述信息</th><th>创建人</th><th>创建时间</th><th>操作</th></tr></thead><tbody id="imageCatalogRows">{rows}</tbody></table></div>
+    <div class="drawer-mask" id="imageEditorModal" onclick="if(event.target===this)closeImageEditor()"><div class="drawer image-config-drawer" id="imageEditorDrawer"><div class="drawer-head"><h3 id="imageEditorTitle">新增镜像</h3><button class="drawer-close" onclick="closeImageEditor()">&times;</button></div><div class="drawer-body"><div class="fg"><label>镜像名称</label><input id="imageEditorName" placeholder="例如 mozbrain_release"></div><div class="fg"><label class="fg-req" for="imageEditorType">镜像类型</label><select id="imageEditorType" required><option value="" selected disabled>请选择镜像类型</option><option value="pretrain">预训练镜像</option><option value="posttrain">后训练镜像</option></select></div><div class="fg"><label>版本</label><input id="imageEditorVersion" placeholder="例如 thor-v1.0.0"></div><div class="fg"><label for="imageEditorMozbrainVersion">mozbrain 版本</label><select id="imageEditorMozbrainVersion"><option value="" selected>请选择 mozbrain 版本</option><option value="mozbrain v1.0">mozbrain v1.0</option><option value="mozbrain v2.0">mozbrain v2.0</option></select></div><div class="fg"><label>描述信息</label><textarea id="imageEditorDescription" rows="3" placeholder="填写镜像用途和兼容范围"></textarea></div></div><div class="drawer-foot"><button class="btn" onclick="closeImageEditor()">取消</button><button class="btn btn-primary" onclick="saveImageEditor()">保存</button></div></div></div>
     <div class="drawer-mask" id="imageDeleteModal" onclick="if(event.target===this)closeImageDelete()"><div class="drawer image-config-drawer" id="imageDeleteDrawer"><div class="drawer-head"><h3>删除镜像</h3><button class="drawer-close" onclick="closeImageDelete()">&times;</button></div><div class="drawer-body"><p>确认删除镜像 <b id="imageDeleteName"></b>？删除后不可恢复。</p></div><div class="drawer-foot"><button class="btn" onclick="closeImageDelete()">取消</button><button class="btn btn-danger" onclick="confirmImageDelete()">删除</button></div></div></div>
     <script>
     const IMAGE_CATALOG_STORAGE_KEY = {'quanta-image-catalog-v1' if selected_resource == 'volcano' else 'quanta-image-catalog-kingsoft-v1'!r};
     const IMAGE_CATALOG_DEFAULTS = {image_catalog_json};
+    const IMAGE_TYPE_LABELS = {{pretrain:'预训练镜像', posttrain:'后训练镜像'}};
     let imageCatalog = IMAGE_CATALOG_DEFAULTS;
     let imageEditorIndex = -1;
     let imageDeleteIndex = -1;
     try {{ const saved = JSON.parse(localStorage.getItem(IMAGE_CATALOG_STORAGE_KEY)); if (Array.isArray(saved)) imageCatalog = saved; }} catch (error) {{ /* Use demo data when storage is unavailable. */ }}
+    imageCatalog = imageCatalog.map(function(image) {{
+      if (image.image_type) return image;
+      const preset = IMAGE_CATALOG_DEFAULTS.find(function(item) {{ return item.name === image.name && item.version === image.version; }});
+      return Object.assign({{}}, image, {{image_type:preset ? preset.image_type : ''}});
+    }});
     function persistImageCatalog() {{
       try {{ localStorage.setItem(IMAGE_CATALOG_STORAGE_KEY, JSON.stringify(imageCatalog)); }} catch (error) {{ toast('无法保存到浏览器本地数据'); }}
     }}
@@ -12424,7 +12775,7 @@ def model_config_images():
       tbody.replaceChildren();
       imageCatalog.forEach(function(image, index) {{
         const row = document.createElement('tr');
-        [image.name, image.version, image.mozbrain_version || '—', image.description, image.creator, image.created].forEach(function(value) {{
+        [image.name, IMAGE_TYPE_LABELS[image.image_type] || '未设置', image.version, image.mozbrain_version || '—', image.description, image.creator, image.created].forEach(function(value) {{
           const cell = row.insertCell(); cell.textContent = value || '';
         }});
         const actions = row.insertCell();
@@ -12441,6 +12792,7 @@ def model_config_images():
       const image = imageCatalog[imageEditorIndex] || {{}};
       document.getElementById('imageEditorTitle').textContent = imageEditorIndex >= 0 ? '编辑镜像' : '新增镜像';
       document.getElementById('imageEditorName').value = image.name || '';
+      document.getElementById('imageEditorType').value = image.image_type || '';
       document.getElementById('imageEditorVersion').value = image.version || '';
       document.getElementById('imageEditorMozbrainVersion').value = image.mozbrain_version || '';
       document.getElementById('imageEditorDescription').value = image.description || '';
@@ -12451,10 +12803,12 @@ def model_config_images():
     function saveImageEditor() {{
       const name = document.getElementById('imageEditorName').value.trim();
       const version = document.getElementById('imageEditorVersion').value.trim();
+      const imageType = document.getElementById('imageEditorType').value;
+      if (!Object.prototype.hasOwnProperty.call(IMAGE_TYPE_LABELS, imageType)) {{ toast('请选择镜像类型'); return; }}
       if (!name || !version) {{ toast('请填写镜像名称和版本'); return; }}
       if (imageCatalog.some(function(image, index) {{ return index !== imageEditorIndex && image.name === name && image.version === version; }})) {{ toast('该镜像版本已存在'); return; }}
       const original = imageCatalog[imageEditorIndex] || {{}};
-      const image = {{ name:name, version:version, mozbrain_version:document.getElementById('imageEditorMozbrainVersion').value,
+      const image = {{ ...original, name:name, image_type:imageType, version:version, mozbrain_version:document.getElementById('imageEditorMozbrainVersion').value,
         description:document.getElementById('imageEditorDescription').value.trim(), creator:original.creator || 'Joanna Qiao',
         created:original.created || new Date().toLocaleString('sv-SE').replace('T', ' ') }};
       if (imageEditorIndex >= 0) imageCatalog[imageEditorIndex] = image; else imageCatalog.push(image);
@@ -12475,7 +12829,7 @@ def model_config_images():
     renderImageCatalog();
     </script>
     """
-    return render_page('镜像管理', content, active='/model/config/images', module='model', breadcrumb='模型平台 / 资产 / <b>镜像管理</b>')
+    return render_page('镜像管理', content, active='/model/config/images', module='model', breadcrumb='模型平台 / 管理 / <b>镜像管理</b>')
 
 CKPT_DESC_FALLBACKS = [
     "HouseHold stop 32 任务 40k step 稳定版本",
@@ -12561,34 +12915,35 @@ def _ckpt_status_cell_html(ckpt, with_log=False):
 def _ckpt_detail_drawers(items):
     drawers = ""
     for c in items:
+        escape = lambda value: html.escape(str(value), quote=True)
         exp = _ckpt_exp(c)
-        train_name = exp["name"] if exp else c.get("train_task_name", "—")
-        base_model = exp["model_type"] if exp else c.get("base_model", "—")
-        desc = _ckpt_desc(c)
-        step = _ckpt_train_step(c)
+        train_name = escape(exp["name"] if exp else c.get("train_task_name", "—"))
+        base_model = escape(exp["model_type"] if exp else c.get("base_model", "—"))
+        desc = escape(_ckpt_desc(c))
+        step = escape(c.get("step") or _ckpt_train_step(c))
         storage = _ckpt_storage_address(c)
         storage_row = (
-            f'<div class="ckpt-form-row"><label>存储地址</label><div class="ckpt-form-value mono">{storage}</div></div>'
+            f'<div class="ckpt-form-row"><label>存储地址</label><div class="ckpt-form-value mono">{escape(storage)}</div></div>'
             if storage else ""
         )
         drawers += f"""
-        <div class="drawer" id="drawerCkpt{c['id']}">
+        <div class="drawer" id="drawerCkpt{escape(c['id'])}" role="dialog" aria-modal="true" aria-label="Checkpoint 详情">
           <div class="drawer-head"><h3>Checkpoint 详情</h3><span class="dismiss" onclick="closeDrawer()">&times;</span></div>
           <div class="drawer-body">
-            <h2 class="ckpt-detail-title">{c['name']}</h2>
+            <h2 class="ckpt-detail-title">{escape(c['name'])}</h2>
             <div class="ckpt-form">
-              <div class="ckpt-form-row"><label>checkpoint</label><div class="ckpt-form-value">{c['name']}</div></div>
+              <div class="ckpt-form-row"><label>checkpoint</label><div class="ckpt-form-value">{escape(c['name'])}</div></div>
               <div class="ckpt-form-row"><label>描述</label><div class="ckpt-form-value">{desc}</div></div>
               <div class="ckpt-form-row"><label>训练任务</label><div class="ckpt-form-value">{train_name}</div></div>
               <div class="ckpt-form-row"><label>基础模型</label><div class="ckpt-form-value">{base_model}</div></div>
               <div class="ckpt-form-row"><label>训练步数</label><div class="ckpt-form-value mono">{step}</div></div>
               {storage_row}
-              <div class="ckpt-form-row"><label>创建人</label><div class="ckpt-form-value">{c['owner']}</div></div>
-              <div class="ckpt-form-row"><label>创建时间</label><div class="ckpt-form-value mono">{c['created']}</div></div>
+              <div class="ckpt-form-row"><label>创建人</label><div class="ckpt-form-value">{escape(c['owner'])}</div></div>
+              <div class="ckpt-form-row"><label>创建时间</label><div class="ckpt-form-value mono">{escape(c['created'])}</div></div>
             </div>
           </div>
           <div class="drawer-foot">
-            {'' if c.get('source_kind') == 'upload' else f'<a class="btn btn-secondary" href="/model/lineage/checkpoint/{c["id"]}">查看血缘</a>'}
+            {'' if c.get('source_kind') == 'upload' or c['status'] not in {'merged', 'cached'} else f'<a class="btn btn-secondary" href="/model/lineage/checkpoint/{quote(c["id"], safe="")}">查看血缘</a>'}
             <button class="btn" onclick="closeDrawer()">关闭</button>
           </div>
         </div>
@@ -12597,33 +12952,25 @@ def _ckpt_detail_drawers(items):
 
 
 def _ckpt_list_items():
-    """Checkpoint 清单 = 训练产出 + 外部导入(上传登记); 两类同源, 便于统一管理."""
-    items = list(CHECKPOINTS)
-    for u in UPLOADED_CKPTS:
-        items.append({
-            "id": u["id"],
-            "name": u["name"],
-            "status": u.get("status", "cached"),
-            "owner": u.get("owner", "—"),
-            "created": u.get("created", "—"),
-            "description": u.get("description", "—"),
-            "base_model": u.get("base_model", "—"),
-            "storage_address": u.get("storage_address", "—"),
-            "train_task_name": u.get("train_task_name", "—"),
-            # 外部导入未经过合并流程: 合并人/合并时间留空.
-            "cached_by": "—",
-            "cached_at": "—",
-            "source_kind": "upload",
-            "source_platform": u.get("source_platform", "外部上传"),
-        })
-    return items
+    """训练产出、外部导入与处理任务共用同一份 Ckpt 状态。"""
+    items = {c["id"]: dict(c) for c in CHECKPOINTS}
+    for uploaded in UPLOADED_CKPTS:
+        items[uploaded["id"]] = {**uploaded, "source_kind": "upload"}
+    for operation in CKPT_CACHE_OPERATIONS:
+        checkpoint_id = operation.get("checkpoint_id", operation["id"])
+        items[checkpoint_id] = {
+            **items.get(checkpoint_id, {}), **operation, "id": checkpoint_id,
+            "exp_id": operation.get("experiment_id", ""),
+            "train_task_name": operation.get("experiment_name", "—"),
+        }
+    return list(items.values())
 
 
 def _ckpt_source_cell_html(c):
     """Checkpoint 来源类型: 外部导入(上传登记) / 平台训练(训练产出)."""
     if c.get("source_kind") == "upload":
-        return '<td><span class="tag tag-teal" style="white-space:nowrap;">外部导入</span></td>'
-    return '<td><span class="tag tag-blue" style="white-space:nowrap;">平台训练</span></td>'
+        return '<td>外部导入</td>'
+    return '<td>平台训练</td>'
 
 
 def _ckpt_rows_html(items, show_actions=True, show_status=True, status_logs=False, show_source=False):
@@ -12633,17 +12980,43 @@ def _ckpt_rows_html(items, show_actions=True, show_status=True, status_logs=Fals
         status_cell = f"<td>{_ckpt_status_cell_html(c, status_logs)}</td>" if show_status else ""
         actions_cell = ""
         if show_actions:
+            if c["status"] in {"merged", "cached"}:
+                checkpoint_id = quote(c["id"], safe="")
+                register_url = f'/model/checkpoints/{checkpoint_id}/register-model'
+                model_description = c.get('model_description', desc)
+                if model_description == '—':
+                    model_description = ''
+                primary_actions = f"""
+                  <a href="#" onclick="openTaskCapabilityModal();return false;">评测</a>
+                  <a href="#" onclick="openTaskCapabilityModal();return false;">DAgger</a>
+                  <a href="#" data-checkpoint-id="{html.escape(c['id'], quote=True)}" data-checkpoint-name="{html.escape(c['name'], quote=True)}" onclick="openCkptDeployDrawer(this);return false;">部署</a>
+                """
+                more_actions = f"""
+                  <a href="/model/lineage/checkpoint/{checkpoint_id}">血缘</a>
+                  <button type="button" class="action-link" data-register-url="{register_url}" data-model-name="{html.escape(c.get('model_name') or c['name'], quote=True)}" data-description="{html.escape(model_description or '', quote=True)}" onclick="openCkptRegisterDrawer(this)">登记为模型</button>
+                """
+            else:
+                def disabled_action(label):
+                    return f'<span class="action-link action-disabled disabled" aria-disabled="true" title="仅已合并或已缓存的 Ckpt 可操作">{label}</span>'
+                primary_actions = ''.join(disabled_action(label) for label in ("评测", "DAgger", "部署"))
+                more_actions = ''.join(disabled_action(label) for label in ("血缘", "登记为模型"))
+            menu_id = html.escape('ckptMore' + c['id'], quote=True)
             actions_cell = f"""<td class="actions-cell">
-            <a href="#" onclick="openTaskCapabilityModal();return false;">TEST</a>
-            <a href="#" onclick="openTaskCapabilityModal();return false;">DAgger</a>
-            {'' if c.get('source_kind') == 'upload' else f'<a href="/model/lineage/checkpoint/{c["id"]}">血缘</a>'}
-          </td>"""
+              <div class="ckpt-row-actions">
+              <a href="#" data-detail-id="drawerCkpt{html.escape(c['id'], quote=True)}" onclick="openDrawer(this.dataset.detailId);return false;">详情</a>
+              {primary_actions}
+              <span class="action-more">
+                <button type="button" class="action-link action-more-trigger" aria-expanded="false" aria-controls="{menu_id}" onclick="toggleCkptActionMenu(this)">更多<span class="caret">&#9662;</span></button>
+                <div class="action-menu ckpt-actions-menu" id="{menu_id}" popover="auto" ontoggle="this.previousElementSibling.setAttribute('aria-expanded', String(this.matches(':popover-open')))">{more_actions}</div>
+              </span>
+              </div>
+            </td>"""
         source_cell = _ckpt_source_cell_html(c) if show_source else ""
         rows += f"""<tr data-status="{c['status']}">
           <td class="mono">{c['id']}</td>
-          <td><a class="ckpt-name-cell" href="#" onclick="openDrawer('drawerCkpt{c['id']}');return false;" title="{c['name']}">{c['name']}</a></td>
+          <td><span class="ckpt-name-cell" title="{html.escape(c['name'], quote=True)}">{html.escape(c['name'])}</span></td>
           {source_cell}
-          <td class="muted">{desc}</td>
+          <td class="muted ckpt-description" title="{html.escape(desc, quote=True)}">{html.escape(desc)}</td>
           {status_cell}
           <td>{c['owner']}</td>
           <td class="muted mono">{c['created']}</td>
@@ -12652,6 +13025,150 @@ def _ckpt_rows_html(items, show_actions=True, show_status=True, status_logs=Fals
           {actions_cell}
         </tr>"""
     return rows or f'<tr><td colspan="{7 + int(show_status) + int(show_actions) + int(show_source)}" style="text-align:center;padding:40px;color:#999;">暂无符合条件的 Checkpoint</td></tr>'
+
+
+def _ckpt_register_drawer_html():
+    return """
+    <div class="drawer" id="drawerCkptRegister" role="dialog" aria-modal="true" aria-labelledby="ckptRegisterTitle">
+      <div class="drawer-head"><h3 id="ckptRegisterTitle">登记为模型</h3><span class="dismiss" onclick="closeDrawer()">&times;</span></div>
+      <div class="drawer-body">
+        <form id="ckptRegisterForm" onsubmit="submitCkptRegister(event)">
+          <div class="fg"><label class="fg-req" for="ckptModelName">模型名称</label><input id="ckptModelName" name="model_name" required placeholder="请输入模型名称"></div>
+          <div class="fg"><label class="fg-req" for="ckptModelDescription">描述</label><textarea id="ckptModelDescription" name="description" rows="4" required placeholder="请输入模型描述"></textarea></div>
+          <p class="cache-field-error" id="ckptRegisterError" role="alert" hidden></p>
+        </form>
+      </div>
+      <div class="drawer-foot">
+        <button type="button" class="btn" onclick="closeDrawer()">取消</button>
+        <button type="submit" form="ckptRegisterForm" class="btn btn-primary" id="ckptRegisterSubmit">确认登记</button>
+      </div>
+    </div>
+    <div class="modal-mask" id="ckptRegisterResultModal" onclick="if(event.target===this)closeCkptRegisterResult()">
+      <div class="modal" role="dialog" aria-modal="true" aria-labelledby="ckptRegisterResultTitle">
+        <div class="modal-head"><h3 id="ckptRegisterResultTitle">模型创建成功</h3><span class="dismiss" onclick="closeCkptRegisterResult()">&times;</span></div>
+        <div class="modal-body">模型「<span id="ckptRegisteredModelName"></span>」已成功创建，可前往查看模型详情。</div>
+        <div class="modal-foot">
+          <button type="button" class="btn" onclick="closeCkptRegisterResult()">关闭</button>
+          <a class="btn btn-primary" id="ckptRegisteredModelLink" href="#">查看模型</a>
+        </div>
+      </div>
+    </div>
+    <script>
+    function openCkptRegisterDrawer(action) {
+      if (document.getElementById('ckptRegisterSubmit').disabled) return;
+      var menu = action.closest('.ckpt-actions-menu');
+      if (menu && menu.matches(':popover-open')) menu.hidePopover();
+      var form = document.getElementById('ckptRegisterForm');
+      form.reset();
+      form.action = action.dataset.registerUrl;
+      form.elements.model_name.value = action.dataset.modelName;
+      form.elements.description.value = action.dataset.description;
+      document.getElementById('ckptRegisterError').hidden = true;
+      openDrawer('drawerCkptRegister');
+      form.elements.model_name.focus();
+    }
+    async function submitCkptRegister(event) {
+      event.preventDefault();
+      var form = document.getElementById('ckptRegisterForm');
+      var button = document.getElementById('ckptRegisterSubmit');
+      var error = document.getElementById('ckptRegisterError');
+      if (button.disabled || !form.reportValidity()) return;
+      var name = form.elements.model_name.value.trim();
+      var description = form.elements.description.value.trim();
+      error.hidden = true;
+      if (!name || !description) {
+        error.textContent = !name ? '请输入模型名称' : '请输入模型描述';
+        error.hidden = false;
+        return;
+      }
+      button.disabled = true;
+      button.textContent = '登记中…';
+      try {
+        var response = await fetch(form.action, {
+          method: 'POST', headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({model_name: name, description: description})
+        });
+        var result = await response.json();
+        if (!response.ok) throw new Error(result.error || '登记失败，请重试');
+        closeDrawer();
+        document.getElementById('ckptRegisteredModelName').textContent = name;
+        document.getElementById('ckptRegisteredModelLink').href = result.model_url;
+        document.getElementById('ckptRegisterResultModal').classList.add('active');
+        document.getElementById('ckptRegisteredModelLink').focus();
+      } catch (failure) {
+        error.textContent = failure.message || '登记失败，请重试';
+        error.hidden = false;
+      } finally { button.disabled = false; button.textContent = '确认登记'; }
+    }
+    function closeCkptRegisterResult() { document.getElementById('ckptRegisterResultModal').classList.remove('active'); }
+    </script>
+    """
+
+
+def _ckpt_deploy_drawer_html():
+    return f"""
+    <div class="drawer" id="drawerCkptDeploy" role="dialog" aria-modal="true" aria-labelledby="ckptDeployTitle">
+      <div class="drawer-head"><h3 id="ckptDeployTitle">部署 Ckpt</h3><span class="dismiss" onclick="closeDrawer()">&times;</span></div>
+      <div class="drawer-body">
+        <div class="fg"><label>Checkpoint</label><div class="ckpt-form-value" id="ckptDeployName"></div></div>
+        <div class="fg"><label class="fg-req">部署设备</label>{_deploy_device_picker_html()}</div>
+        <p class="cache-field-error" id="ckptDeployError" role="alert" hidden></p>
+      </div>
+      <div class="drawer-foot">
+        <button class="btn" onclick="closeDrawer()">取消</button>
+        <button class="btn btn-primary" id="ckptDeploySubmit" onclick="submitCkptDeploy()">部署</button>
+      </div>
+    </div>
+    <div class="modal-mask" id="ckptDeployResultModal" onclick="if(event.target===this)closeCkptDeployResult()">
+      <div class="modal" role="dialog" aria-modal="true" aria-labelledby="ckptDeployResultTitle">
+        <div class="modal-head"><h3 id="ckptDeployResultTitle">部署任务已下发至设备平台</h3><span class="dismiss" onclick="closeCkptDeployResult()">&times;</span></div>
+        <div class="modal-body">可前往设备平台查看部署进度。</div>
+        <div class="modal-foot">
+          <button class="btn" onclick="closeCkptDeployResult()">关闭</button>
+          <a class="btn btn-primary" id="ckptDeployProgressLink" href="#" target="_blank" rel="noopener noreferrer">查看进度</a>
+        </div>
+      </div>
+    </div>
+    <script>
+    function openCkptDeployDrawer(action) {{
+      var drawer = document.getElementById('drawerCkptDeploy');
+      if (document.getElementById('ckptDeploySubmit').disabled) return;
+      drawer.dataset.checkpointId = action.dataset.checkpointId;
+      document.getElementById('ckptDeployName').textContent = action.dataset.checkpointName;
+      drawer.querySelectorAll('.picked').forEach(function(chip) {{ chip.remove(); }});
+      drawer.querySelectorAll('.ddp-item').forEach(function(item) {{ item.classList.remove('on'); item.style.display = ''; }});
+      drawer.querySelector('.deploy-device-picker').classList.remove('open');
+      drawer.querySelector('.ddp-search').value = '';
+      document.getElementById('ckptDeployError').hidden = true;
+      openDrawer('drawerCkptDeploy');
+    }}
+    async function submitCkptDeploy() {{
+      var drawer = document.getElementById('drawerCkptDeploy');
+      var button = document.getElementById('ckptDeploySubmit');
+      var error = document.getElementById('ckptDeployError');
+      if (button.disabled) return;
+      var devices = Array.from(drawer.querySelectorAll('.picked')).map(function(chip) {{ return chip.dataset.id; }});
+      error.hidden = true;
+      if (!devices.length) {{ error.textContent = '请选择部署设备'; error.hidden = false; return; }}
+      button.disabled = true;
+      button.textContent = '下发中…';
+      try {{
+        var response = await fetch('/model/checkpoints/' + encodeURIComponent(drawer.dataset.checkpointId) + '/deploy', {{
+          method: 'POST', headers: {{'Content-Type': 'application/json'}}, body: JSON.stringify({{devices: devices}})
+        }});
+        var result = await response.json();
+        if (!response.ok) throw new Error(result.error || '部署任务下发失败，请重试');
+        closeDrawer();
+        document.getElementById('ckptDeployProgressLink').href = result.progress_url;
+        document.getElementById('ckptDeployResultModal').classList.add('active');
+      }} catch (failure) {{
+        error.textContent = failure.message || '部署任务下发失败，请重试';
+        error.hidden = false;
+      }} finally {{ button.disabled = false; button.textContent = '部署'; }}
+    }}
+    function closeCkptDeployResult() {{ document.getElementById('ckptDeployResultModal').classList.remove('active'); }}
+    </script>
+    """
 
 
 def _ckpt_import_modal_html():
@@ -12666,13 +13183,13 @@ def _ckpt_import_modal_html():
           <div class="modal-head"><h3 id="ckptImportTitle">导入 Ckpt</h3><span class="dismiss" onclick="closeCkptImportModal()">&times;</span></div>
           <div class="modal-body">
             <div class="fg"><label class="fg-req">Checkpoint 名称</label><input name="name" required placeholder="例如 external_pi05_sft_robotwin_60000"></div>
-            <div class="fg"><label class="fg-req">训练任务名称</label><input name="train_task_name" required placeholder="例如 robotwin_pi05_stack_blocks_two_top10pct_60000"></div>
             <div class="fg"><label class="fg-req">来源平台</label>
               <select name="source_platform" required>
                 <option value="火山云">火山云</option>
                 <option value="金山云">金山云</option>
               </select>
             </div>
+            <div class="fg"><label class="fg-req">训练任务名称</label><input name="train_task_name" required placeholder="例如 robotwin_pi05_stack_blocks_two_top10pct_60000"></div>
             <div class="fg"><label class="fg-req">存储地址</label><input name="storage_address" required placeholder="TOS/KS3地址"></div>
             <div class="fg"><label class="fg-req">基础模型</label>
               <select name="base_model" required>
@@ -12685,9 +13202,8 @@ def _ckpt_import_modal_html():
             <div class="fg">
               <label class="fg-req" for="ckptMergeMode">合并方式</label>
               <select id="ckptMergeMode" name="merge_mode" required onchange="updateCkptMergeModeHint()">
-                <option value="cache" selected>合并+缓存</option>
-                <option value="cache_only">仅缓存</option>
                 <option value="merge">仅合并</option>
+                <option value="cache" selected>合并+缓存</option>
               </select>
               <p class="fg-tip" id="ckptMergeModeHint">适用于尚未合并的 Ckpt（来源仅存有分片）：平台先合并分片，再缓存到本地。</p>
             </div>
@@ -12707,7 +13223,6 @@ def _ckpt_import_modal_html():
         if (!select || !hint) return;
         var hints = {
           cache: '适用于尚未合并的 Ckpt（来源仅存有分片）：平台先合并分片，再缓存到本地。',
-          cache_only: '适用于已经合并的 Ckpt（来源已是完整权重文件）：平台直接拉取缓存，不再合并。',
           merge: '仅执行分片合并、不做缓存：适用于其他区域（如杭州）已有缓存，只需在本平台完成合并的场景。'
         };
         hint.textContent = hints[select.value] || '';
@@ -12743,6 +13258,11 @@ def _ckpt_table_html(items, show_actions=True, show_status=True, status_filter=F
               </div>
             </div>
           </th>"""
+        selected_status = request.args.get("status", "")
+        if selected_status in CKPT_STATUS_LABEL:
+            status_head = status_head.replace('ckpt-status-option active', 'ckpt-status-option')
+            status_head = status_head.replace(f'class="ckpt-status-option" data-value="{selected_status}"',
+                                              f'class="ckpt-status-option active" data-value="{selected_status}"')
     else:
         status_head = "<th>状态 &#9662;</th>" if show_status else ""
     actions_col = '<col style="width:280px;">' if show_actions else ""
@@ -12756,7 +13276,7 @@ def _ckpt_table_html(items, show_actions=True, show_status=True, status_filter=F
           <col style="width:82px;">
           <col style="width:220px;">
           {source_col}
-          <col>
+          <col style="width:240px;">
           {status_col}
           <col style="width:100px;">
           <col style="width:160px;">
@@ -12779,7 +13299,6 @@ def _ckpt_table_html(items, show_actions=True, show_status=True, status_filter=F
         <tbody>{_ckpt_rows_html(items, show_actions, show_status, status_logs, show_source)}</tbody>
       </table>
     </div>
-    {_ckpt_detail_drawers(items)}
     """
 
 
@@ -12857,52 +13376,7 @@ def _new_checkpoint_drawer_html():
 
 @app.route("/model/checkpoints")
 def checkpoints():
-    # 获取 URL 参数
-    filter_name = request.args.get("name", "")
-    filter_owner = request.args.get("owner", "")
-    filter_cache_owner = request.args.get("cache_owner", "")
-    selected_resource = request.args.get("resource", "volcano")
-    if selected_resource not in RESOURCE_TAB_LABELS:
-        selected_resource = "volcano"
-
-    # Checkpoint 池 = 训练产出 + 外部导入; 外部导入不绑定算力资源, 各 Tab 均可见.
-    visible_checkpoints = [
-        c for c in _ckpt_list_items()
-        if (c.get("source_kind") == "upload" or (c["status"] in {"merged", "cached"} and _checkpoint_resource_key(c) == selected_resource))
-        and (not filter_name or filter_name.lower() in c.get("name", "").lower())
-        and (not filter_owner or filter_owner.lower() in c.get("owner", "").lower())
-        and (not filter_cache_owner or filter_cache_owner.lower() in _ckpt_cache_operator(c).lower())
-    ]
-    created = request.args.get("created", "").strip()
-    created_script = (
-        f"<script>document.addEventListener('DOMContentLoaded',function(){{toast({json.dumps('已导入 Ckpt: ' + created)});}});</script>"
-        if created else ""
-    )
-    content = f"""
-    <a class="btn btn-secondary ckpt-import-action" href="#" onclick="openCkptImportModal();return false;">导入 Ckpt</a>
-    <a href="/model/checkpoints/cache-records" class="btn btn-secondary ckpt-cache-action">查看合并记录</a>
-    <a href="/model/deploy?open=deploy" class="btn btn-secondary ckpt-deploy-action">去部署</a>
-    {_resource_tabs('/model/checkpoints', selected_resource)}
-    <form class="fb-labeled ownership-filters" method="get" action="/model/checkpoints">
-      <input type="hidden" name="resource" value="{selected_resource}">
-      <div class="ff"><label for="filterCheckpointName">checkpoint</label><input id="filterCheckpointName" name="name" value="{html.escape(filter_name)}" placeholder="请输入 checkpoint"></div>
-      <div class="ff"><label for="filterCheckpointOwner">创建人</label><input id="filterCheckpointOwner" name="owner" value="{html.escape(filter_owner)}" placeholder="请输入创建人"></div>
-      <div class="ff"><label for="filterCheckpointCacheOwner">合并人</label><input id="filterCheckpointCacheOwner" name="cache_owner" value="{html.escape(filter_cache_owner)}" placeholder="请输入合并人"></div>
-      <div class="filter-actions">
-        <a class="btn btn-tertiary" href="/model/checkpoints?resource={selected_resource}">清空</a>
-        <button class="btn btn-primary" type="submit">查询</button>
-      </div>
-    </form>
-
-    {_ckpt_table_html(visible_checkpoints, show_status=True, show_source=True)}
-
-    <div class="mini-pager"><span class="muted">共 {len(visible_checkpoints)} 条</span><span class="pg-btn active" aria-current="page">1</span></div>
-
-    {_ckpt_import_modal_html()}
-    {created_script}
-    """
-    return render_page("Checkpoint", content, active="/model/checkpoints", module="model",
-                       breadcrumb='模型平台 / 训练 / <b>Checkpoint</b>', mvp_note=None)
+    return _render_checkpoint_records()
 
 
 def _mock_ckpt_size_md5(name):
@@ -12921,18 +13395,20 @@ def checkpoint_import_upload():
     max_no = max([int(re.sub(r"\D", "", u["id"]) or 0) for u in UPLOADED_CKPTS] or [8000])
     step_raw = (request.form.get("step") or "").strip()
     storage_address = (request.form.get("storage_address") or "").strip()
-    # 合并方式: 合并+缓存 / 仅缓存 -> 已缓存; 仅合并 -> 已合并.
+    # 两种方式均先创建合并任务，完成后按选择决定是否缓存。
     merge_mode = (request.form.get("merge_mode") or "cache").strip()
+    if merge_mode not in {"merge", "cache"}:
+        return jsonify({"error": "不支持的合并方式"}), 400
     size_gb, file_md5 = _mock_ckpt_size_md5(name)
-    UPLOADED_CKPTS.append({
+    created_at = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    uploaded = {
         "id": f"UP{max_no + 1}",
         "name": name,
-        "status": "merged" if merge_mode == "merge" else "cached",
-        # 由当前登录用户创建; 外部导入未经过合并流程, 合并人/合并时间留空.
+        "status": "merging",
         "owner": "joanna.qiao",
-        "created": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-        "cached_by": "—",
-        "cached_at": "—",
+        "created": created_at,
+        "cached_by": "joanna.qiao",
+        "cached_at": created_at,
         "source_platform": (request.form.get("source_platform") or "火山云").strip(),
         "base_model": (request.form.get("base_model") or "—").strip() or "—",
         "step": int(step_raw) if step_raw.isdigit() else "—",
@@ -12942,20 +13418,33 @@ def checkpoint_import_upload():
         "storage_address": storage_address or "—",
         "file_size": size_gb,
         "file_md5": file_md5,
-    })
-    return redirect(f"/model/checkpoints?created={quote(name)}", code=303)
+    }
+    UPLOADED_CKPTS.append(uploaded)
+    number = len(CKPT_CACHE_OPERATIONS) + 1
+    used_ids = {item["operation_id"] for item in CKPT_CACHE_OPERATIONS}
+    while f"cache-op-{number}" in used_ids:
+        number += 1
+    operation = {
+        **uploaded,
+        "operation_id": f"cache-op-{number}",
+        "checkpoint_id": uploaded["id"],
+        "source_kind": "upload",
+        "source": _checkpoint_resource_key(uploaded),
+        "experiment_id": "",
+        "experiment_name": uploaded["train_task_name"],
+        "step": str(uploaded["step"]),
+        "location": uploaded["storage_address"],
+        "cache_server": merge_mode == "cache",
+        "notify_enabled": False,
+        "notified_results": [],
+    }
+    CKPT_CACHE_OPERATIONS.append(operation)
+    return redirect(url_for('checkpoints', created=name, resource=operation['source']), code=303)
 
 
-@app.route("/model/checkpoints/cache-records")
-def checkpoint_cache_records():
-    selected_resource = request.args.get("resource", "volcano")
-    if selected_resource not in RESOURCE_TAB_LABELS:
-        selected_resource = "volcano"
-    filter_name = request.args.get("name", "").strip()
-    filter_owner = request.args.get("owner", "").strip()
-    filter_cache_owner = request.args.get("cache_owner", "").strip()
-    operation_id = request.args.get("operation_id", "").strip()
-    all_cache_items = [
+def _ckpt_processing_items():
+    """沿用合并记录中的进度示例，所有真实处理记录只展示一次。"""
+    examples = [
         {"id": "8032", "name": "20260701_opd_taskC_raw_shards",
          "description": "训练产物已登记, 尚未触发 checkpoint 合并。",
          "status": "unmerged", "source": "火山", "owner": "joanna.qiao", "created": "2026-07-01 10:30:00",
@@ -12964,59 +13453,157 @@ def checkpoint_cache_records():
          "description": "checkpoint 分片合并中, 完成后进入缓存流程。",
          "status": "merging", "source": "金山", "owner": "Min Chen", "created": "2026-06-30 22:18:44",
          "cached_by": "Min Chen", "cached_at": "2026-06-30 22:18:44"},
-        {"id": "7916", "name": "robotwin_pi05_datamil_stack_blocks_two_top10pct_cotrain_50000",
+        {"id": "7917", "name": "robotwin_pi05_datamil_stack_blocks_two_top10pct_cotrain_50000",
          "description": "训练任务详情手动发起缓存, 用于后续评测与部署前确认。",
          "status": "caching", "source": "金山", "owner": "tao.wang", "created": "2026-07-02 14:20:00",
          "cached_by": "tao.wang", "cached_at": "2026-07-02 14:20:00"},
-        {"id": "7757", "name": "20260604_opd_exp1_sft_taskA_gpu8_50000_cache",
+        {"id": "7758", "name": "20260604_opd_exp1_sft_taskA_gpu8_50000_cache",
          "description": "缓存任务拉取源文件失败, 待确认 TOS 路径与权限后重试。",
          "status": "cache_failed", "source": "火山", "owner": "Hannah Wang", "created": "2026-06-15 16:12:09",
          "cached_by": "Hannah Wang", "cached_at": "2026-06-15 16:12:09"},
-    ] + list(reversed(CKPT_CACHE_OPERATIONS)) + CHECKPOINTS
-    cache_items = [
-        c for c in all_cache_items
-        if _checkpoint_resource_key(c) == selected_resource
-        and (not operation_id or c.get("operation_id") == operation_id)
-        and (not filter_name or filter_name.lower() in c.get("name", "").lower())
-        and (not filter_owner or filter_owner.lower() in c.get("owner", "").lower())
-        and (not filter_cache_owner or filter_cache_owner.lower() in _ckpt_cache_operator(c).lower())
     ]
-    content = f"""
-    <div class="cache-page-head">
-      <a class="btn" href="/model/checkpoints">&#8249; 返回</a>
-      <div class="cache-page-title">checkpoint 合并记录</div>
-    </div>
+    items = {item["id"]: item for item in examples}
+    items.update({item["id"]: item for item in _ckpt_list_items()})
+    return sorted(items.values(), key=lambda item: (item.get("created", ""), item["id"]), reverse=True)
 
-    {_resource_tabs('/model/checkpoints/cache-records', selected_resource)}
-    <form class="fb-labeled ownership-filters" method="get">
+
+def _render_checkpoint_records():
+    selected_resource = request.args.get("resource", "volcano")
+    if selected_resource not in RESOURCE_TAB_LABELS:
+        selected_resource = "volcano"
+    filters = {key: request.args.get(key, "").strip()
+               for key in ("name", "owner", "cache_owner", "operation_id", "status")}
+    cache_items = [
+        c for c in _ckpt_processing_items()
+        if _checkpoint_resource_key(c) == selected_resource
+        and (not filters["name"] or filters["name"].casefold() in c.get("name", "").casefold())
+        and (not filters["owner"] or filters["owner"].casefold() in c.get("owner", "").casefold())
+        and (not filters["cache_owner"] or filters["cache_owner"].casefold() in _ckpt_cache_operator(c).casefold())
+        and (not filters["operation_id"] or c.get("operation_id") == filters["operation_id"])
+        and (not filters["status"] or c["status"] == filters["status"])
+    ]
+    total = len(cache_items)
+    page_size = request.args.get("page_size", 10, type=int)
+    if page_size not in (10, 20, 50):
+        page_size = 10
+    page_count = max(1, (total + page_size - 1) // page_size)
+    page = min(max(1, request.args.get("page", 1, type=int)), page_count)
+    def page_url(number):
+        return html.escape(url_for("checkpoints", resource=selected_resource,
+                                   **filters, page=number, page_size=page_size), quote=True)
+    pager = f'<div class="mini-pager"><span class="muted">共 {total} 条</span>'
+    pager += """<select aria-label="每页条数" onchange="var u=new URL(location.href);u.searchParams.set('page_size',this.value);u.searchParams.delete('page');location.href=u.pathname+u.search;">"""
+    pager += ''.join(f'<option value="{size}"{" selected" if size == page_size else ""}>{size}条/页</option>' for size in (10, 20, 50)) + '</select>'
+    if page > 1:
+        pager += f'<a class="pg-btn" aria-label="上一页" href="{page_url(page - 1)}">‹</a>'
+    pager += ''.join(f'<a class="pg-btn{" active" if number == page else ""}" href="{page_url(number)}">{number}</a>' for number in range(1, page_count + 1))
+    if page < page_count:
+        pager += f'<a class="pg-btn" aria-label="下一页" href="{page_url(page + 1)}">›</a>'
+    pager += '</div>'
+    created = request.args.get("created", "").strip()
+    notice = json.dumps('已提交合并任务：' + created, ensure_ascii=False).replace('<', '\\u003c')
+    created_script = f"<script>document.addEventListener('DOMContentLoaded',function(){{toast({notice});}});</script>" if created else ""
+    content = f"""
+    <a class="btn btn-secondary ckpt-import-action" href="#" onclick="openCkptImportModal();return false;">导入 Ckpt</a>
+    {_resource_tabs('/model/checkpoints', selected_resource)}
+    <form class="fb-labeled ownership-filters" method="get" action="/model/checkpoints">
       <input type="hidden" name="resource" value="{selected_resource}">
-      <input type="hidden" name="operation_id" value="{html.escape(operation_id, quote=True)}">
-      <div class="ff"><label>checkpoint</label><input id="filterCheckpointName" name="name" value="{html.escape(filter_name, quote=True)}" placeholder="请输入 checkpoint"></div>
-      <div class="ff"><label>创建人</label><input id="filterCheckpointOwner" name="owner" value="{html.escape(filter_owner, quote=True)}" placeholder="请输入创建人"></div>
-      <div class="ff"><label>合并人</label><input id="filterCheckpointCacheOwner" name="cache_owner" value="{html.escape(filter_cache_owner, quote=True)}" placeholder="请输入合并人"></div>
+      <input type="hidden" name="status" value="{html.escape(filters['status'], quote=True)}">
+      <input type="hidden" name="operation_id" value="{html.escape(filters['operation_id'], quote=True)}">
+      <div class="ff"><label>checkpoint</label><input id="filterCheckpointName" name="name" value="{html.escape(filters['name'], quote=True)}" placeholder="请输入 checkpoint"></div>
+      <div class="ff"><label>创建人</label><input id="filterCheckpointOwner" name="owner" value="{html.escape(filters['owner'], quote=True)}" placeholder="请输入创建人"></div>
+      <div class="ff"><label>合并人</label><input id="filterCheckpointCacheOwner" name="cache_owner" value="{html.escape(filters['cache_owner'], quote=True)}" placeholder="请输入合并人"></div>
       <div class="filter-actions">
         <a class="btn btn-tertiary" href="?resource={selected_resource}">重置</a>
         <button class="btn btn-primary" type="submit">查询</button>
       </div>
     </form>
-
-    {_ckpt_table_html(cache_items, show_actions=False, status_filter=True, status_logs=True)}
-    {_ckpt_pager_html()}
+    {_ckpt_table_html(cache_items[(page - 1) * page_size:page * page_size], status_filter=True, status_logs=True, show_source=True)}
+    {pager}
+    {_ckpt_detail_drawers(cache_items[(page - 1) * page_size:page * page_size])}
+    {_ckpt_import_modal_html()}
+    {_ckpt_deploy_drawer_html()}
+    {_ckpt_register_drawer_html()}
+    {created_script}
     <div class="modal-mask" id="ckptStatusLogModalMask" onclick="closeCkptStatusLog()">
       <div class="modal" onclick="event.stopPropagation()">
-        <div class="modal-head">
-          <h3 id="ckptStatusLogTitle">日志</h3>
-          <span class="dismiss" onclick="closeCkptStatusLog()">&times;</span>
-        </div>
-        <div class="modal-body">
-          <pre class="ckpt-log-pre" id="ckptStatusLogBody"></pre>
-        </div>
+        <div class="modal-head"><h3 id="ckptStatusLogTitle">日志</h3><span class="dismiss" onclick="closeCkptStatusLog()">&times;</span></div>
+        <div class="modal-body"><pre class="ckpt-log-pre" id="ckptStatusLogBody"></pre></div>
       </div>
     </div>
-
     """
-    return render_page("checkpoint 合并记录", content, active="/model/checkpoints", module="model",
-                       breadcrumb='模型平台 / 训练 / Checkpoint / <b>checkpoint 合并记录</b>', mvp_note="MVP 一期")
+    return render_page("Checkpoint", content, active="/model/checkpoints", module="model",
+                       breadcrumb='模型平台 / 训练 / <b>Checkpoint</b>', mvp_note=None)
+
+
+@app.route("/model/checkpoints/cache-records")
+def checkpoint_cache_records():
+    # 兼容训练任务、通知卡片及旧书签中的链接。
+    return redirect('/model/checkpoints' + ('?' + request.query_string.decode() if request.query_string else ''), code=302)
+
+
+@app.post("/model/checkpoints/<ckpt_id>/register-model")
+def register_checkpoint_model(ckpt_id):
+    checkpoint = _ckpt_by_id(ckpt_id)
+    if checkpoint is None:
+        return jsonify({"error": "Ckpt 不存在"}), 404
+    if checkpoint["status"] not in {"merged", "cached"}:
+        return jsonify({"error": "仅已合并或已缓存的 Ckpt 可以登记为模型"}), 409
+    payload = request.get_json(silent=True) if request.is_json else request.form
+    if request.is_json and not isinstance(payload, dict):
+        return jsonify({"error": "请填写模型名称和描述"}), 400
+    model_name = payload.get("model_name")
+    description = payload.get("description")
+    if not isinstance(model_name, str) or not model_name.strip():
+        return jsonify({"error": "请输入模型名称"}), 400
+    if not isinstance(description, str) or not description.strip():
+        return jsonify({"error": "请输入模型描述"}), 400
+    # 沿用资产模块的 Checkpoint ID，重复登记不产生重复资产。
+    first_registration = ckpt_id not in REGISTERED_MODEL_CHECKPOINT_IDS
+    registered_at = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    for item in CHECKPOINTS + UPLOADED_CKPTS + CKPT_CACHE_OPERATIONS:
+        if item["id"] == ckpt_id or item.get("checkpoint_id") == ckpt_id:
+            item["model_registered"] = True
+            item["model_name"] = model_name.strip()
+            item["model_description"] = description.strip()
+            if first_registration:
+                item["model_registered_by"] = CURRENT_USER
+                item["model_registered_at"] = registered_at
+    REGISTERED_MODEL_CHECKPOINT_IDS.add(ckpt_id)
+    if request.is_json:
+        return jsonify({"model_url": url_for('model_detail', model_id=ckpt_id)})
+    return redirect(url_for('model_detail', model_id=ckpt_id), code=303)
+
+
+@app.post("/model/checkpoints/<ckpt_id>/deploy")
+def deploy_checkpoint_to_devices(ckpt_id):
+    checkpoint = _ckpt_by_id(ckpt_id)
+    if checkpoint is None:
+        return jsonify({"error": "Ckpt 不存在"}), 404
+    if checkpoint["status"] not in {"merged", "cached"}:
+        return jsonify({"error": "仅已合并或已缓存的 Ckpt 可以部署"}), 409
+    payload = request.get_json(silent=True)
+    targets = payload.get("devices") if isinstance(payload, dict) else None
+    if not isinstance(targets, list) or not targets or any(not isinstance(target, str) for target in targets):
+        return jsonify({"error": "请选择部署设备"}), 400
+    targets = list(dict.fromkeys(targets))
+    available_devices = {device["id"] for device in DEVICES if device["status"] != "offline"}
+    if any(target not in available_devices for target in targets):
+        return jsonify({"error": "所选设备不存在或已离线，请重新选择"}), 400
+    number = max([int(re.sub(r"\D", "", item["id"]) or 0) for item in DEPLOYS] or [800]) + 1
+    deployment = {
+        "id": f"dp_{number}", "checkpoint_id": ckpt_id, "checkpoint_name": checkpoint["name"],
+        "model": checkpoint["name"], "version": "", "targets": targets,
+        "status": "in_progress", "progress": {"success": 0, "failed": 0, "running": len(targets)},
+        "device_statuses": {target: "in_progress" for target in targets},
+        "trigger": "Ckpt 部署", "created": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "at": "—", "operator": "joanna.qiao",
+    }
+    DEPLOYS.insert(0, deployment)
+    return jsonify({
+        "message": "部署任务已下发至设备平台", "deployment_id": deployment["id"],
+        "progress_url": url_for('device_deployment_progress', deployment_id=deployment["id"]),
+    }), 201
 
 
 @app.route("/model/checkpoints/<ckpt_id>")
@@ -13901,7 +14488,7 @@ def devices_list():
             "moz2-002": "—",
         }
         deploy = next((dp for dp in DEPLOYS if d["id"] in dp["targets"]), None)
-        model = f"{deploy['model']}_{deploy['version']}" if deploy else d["model"]
+        model = _deployment_checkpoint_name(deploy) if deploy else d["model"]
         return purpose_map.get(d["id"], "训练回归"), admin_map.get(d["id"], d["current_user"]), model, image_map.get(d["id"], "—")
 
     def deploy_record_status_tag(status):
@@ -13926,7 +14513,7 @@ def devices_list():
             "moz2-002": ["—"],
         }
         current_model_versions = model_version_map.get(d["id"]) or list(dict.fromkeys(
-            f"{dp['model']}_{dp['version']}" for dp in related_deploys if dp["status"] in ("deployed", "in_progress")
+            _deployment_checkpoint_name(dp) for dp in related_deploys if dp["status"] in ("deployed", "in_progress")
         )) or [deployed_model]
         software_version_map = {
             "moz1-001": [("thor-v0.9.8", "deployed"), ("runtime-v1.5.4", "deployed")],
@@ -13965,7 +14552,7 @@ def devices_list():
             body = "".join(
                 f"""<tr>
                   <td class="mono">{dp['id']}</td>
-                  <td>{dp['model']}_{dp['version']}</td>
+                  <td>{html.escape(_deployment_checkpoint_name(dp))}</td>
                   <td>{deploy_record_status_tag(dp['status'])}</td>
                   <td>{dp['operator']}</td>
                   <td class="muted mono">{dp['at']}</td>
@@ -14084,6 +14671,45 @@ def devices_list():
     """
     return render_page("设备管理", content, active="/device/devices", module="device",
                        breadcrumb='设备管理平台 / <b>设备管理</b>', mvp_note="MVP 一期")
+
+
+@app.route("/device/deployments/<deployment_id>")
+def device_deployment_progress(deployment_id):
+    deployment = next((item for item in DEPLOYS if item["id"] == deployment_id), None)
+    if deployment is None:
+        abort(404)
+    devices = {device["id"]: device for device in DEVICES}
+    statuses = deployment.get("device_statuses") or {}
+    labels = {
+        "in_progress": '<span class="tag tag-blue">部署中</span>',
+        "deployed": '<span class="tag tag-green">成功</span>',
+        "failed": '<span class="tag tag-red">失败</span>',
+        "pending": '<span class="tag tag-gray">未开始</span>',
+    }
+    rows = ''.join(
+        f'<tr><td class="mono">{html.escape(target)}</td>'
+        f'<td>{html.escape(devices.get(target, {}).get("name", "—"))}</td>'
+        f'<td>{labels.get(statuses.get(target, deployment["status"]), labels["pending"])}</td></tr>'
+        for target in deployment["targets"]
+    )
+    progress = deployment.get("progress") or {}
+    content = f"""
+    <div class="card"><div class="kv-grid">
+      <div class="kv"><span>部署任务</span><b class="mono">{html.escape(deployment_id)}</b></div>
+      <div class="kv"><span>Checkpoint</span><b>{html.escape(_deployment_checkpoint_name(deployment))}</b></div>
+      <div class="kv"><span>操作人</span><b>{html.escape(deployment['operator'])}</b></div>
+      <div class="kv"><span>下发时间</span><b>{html.escape(deployment.get('created', deployment['at']))}</b></div>
+    </div></div>
+    <div class="list-summarybar">
+      <div class="txt">共 {len(deployment['targets'])} 台设备 · 成功 {progress.get('success', 0)} · 失败 {progress.get('failed', 0)} · 部署中 {progress.get('running', 0)}</div>
+      <button class="btn btn-secondary" onclick="location.reload()">刷新进度</button>
+    </div>
+    <div class="table-wrap"><table class="ant-table" aria-label="设备部署进度">
+      <thead><tr><th>设备序列号</th><th>设备名称</th><th>部署状态</th></tr></thead><tbody>{rows}</tbody>
+    </table></div>
+    """
+    return render_page("部署进度", content, active="/device/devices", module="device",
+                       breadcrumb='设备管理平台 / 设备管理 / <b>部署进度</b>')
 
 
 @app.route("/device/booking")
@@ -14334,11 +14960,7 @@ def _exp_by_id_or_name(value):
 
 
 def _ckpt_by_id(value):
-    found = next((c for c in CHECKPOINTS if c["id"] == value or c["name"] == value), None)
-    if found:
-        return found
-    # 外部导入(上传登记)的 Ckpt 也属于 Checkpoint 池.
-    return next((u for u in UPLOADED_CKPTS if u["id"] == value or u["name"] == value), None)
+    return next((c for c in _ckpt_list_items() if c["id"] == value or c["name"] == value), None)
 
 
 def _evaluation_lineage_records():
@@ -14419,6 +15041,8 @@ def _ckpt_exp(ckpt):
     # 外部导入的 Ckpt 没有来源训练任务, 不回落到 EXPERIMENTS[0].
     if any(u["id"] == ckpt.get("id") for u in UPLOADED_CKPTS):
         return None
+    if ckpt.get("exp_id"):
+        return _exp_by_id(ckpt["exp_id"])
     return _exp_by_id(f"exp_{ckpt['id']}") or EXPERIMENTS[0]
 
 
@@ -14544,7 +15168,7 @@ def _lineage_context(anchor_type, anchor_id):
     }
 
 
-def _lineage_detail_html(anchor_type, anchor_id):
+def _lineage_detail_html(anchor_type, anchor_id, view_path=None):
     ctx = _lineage_context(anchor_type, anchor_id)
     datasets = ctx["datasets"]
     tasks = ctx["tasks"]
@@ -14849,7 +15473,7 @@ def _lineage_detail_html(anchor_type, anchor_id):
         "typeLabel": anchor_type_labels.get(anchor_type, anchor_type),
         "id": str(anchor_id),
         "label": input_value or str(anchor_id),
-        "path": f"/model/lineage/{anchor_type}/{anchor_id}",
+        "path": view_path or f"/model/lineage/{anchor_type}/{anchor_id}",
     }, ensure_ascii=False).replace("<", "\\u003c")
 
     filter_html = f"""
@@ -15987,7 +16611,7 @@ def lineage():
     </div>
     """
     return render_page("端到端血缘", content, active="/model/models", module="model",
-                       breadcrumb='模型平台 / 资产 / 模型管理 / <b>端到端血缘</b>', mvp_note="MVP 一期")
+                       breadcrumb='模型平台 / 训练 / 模型管理 / <b>端到端血缘</b>', mvp_note="MVP 一期")
 
 
 def _lineage_page(anchor_type, anchor_id):

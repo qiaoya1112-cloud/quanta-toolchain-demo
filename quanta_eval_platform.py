@@ -5504,14 +5504,20 @@ def tasks_page():
         data_btn = task_action(f'/tasks/{t["id"]}/data', "\u6570\u636e")
         st = t["status"]
         stats_btn = task_action(f'/tasks/{t["id"]}/statistics', "统计")
+        copy_btn = f'<a href="javascript:;" class="action-link" title="复制" onclick="openTaskCopy(\'{t["id"]}\')">复制</a>'
+        actions = [view_btn, copy_btn]
         if is_unpublished:
-            action_btns = view_btn
-            action_btns += f'<a href="javascript:;" class="action-link" title="编辑" onclick="openTaskEdit(\'{t["id"]}\')">编辑</a>'
-            action_btns += f'<a href="/tasks/{t["id"]}/publish" class="action-link" title="发布" onclick="return confirm(\'发布后将不能编辑或删除，确认发布吗？\')">发布</a>'
-            action_btns += f'<a href="/tasks/{t["id"]}/delete" class="action-link danger" title="删除" onclick="return confirm(\'确认删除该评测任务吗？\')">删除</a>'
+            actions.extend([
+                f'<a href="javascript:;" class="action-link" title="编辑" onclick="openTaskEdit(\'{t["id"]}\')">编辑</a>',
+                f'<a href="/tasks/{t["id"]}/publish" class="action-link" title="发布" onclick="return confirm(\'发布后将不能编辑或删除，确认发布吗？\')">发布</a>',
+                f'<a href="/tasks/{t["id"]}/delete" class="action-link danger" title="删除" onclick="return confirm(\'确认删除该评测任务吗？\')">删除</a>',
+            ])
         else:
-            action_btns = view_btn + data_btn + stats_btn
-        action_btns += task_action(f'/model/lineage/eval/{t["id"]}', "血缘")
+            actions = [data_btn, stats_btn, view_btn, copy_btn]
+        actions.append(task_action(f'/model/lineage/eval/{t["id"]}', "血缘"))
+        action_btns = ''.join(actions[:3])
+        if len(actions) > 3:
+            action_btns += '<span class="action-more-wrap"><a href="javascript:;" class="action-link">更多</a><span class="action-more-menu">' + ''.join(actions[3:]) + '</span></span>'
         # Enable switch: ON for started tasks, clickable only when 未开始
         is_enabled = st != "\u672a\u5f00\u59cb"
         if is_unpublished:
@@ -5679,7 +5685,7 @@ def tasks_page():
       <button class="ant-btn ant-btn-primary" onclick="openTaskCreate()">+ \u65b0\u589e\u8bc4\u6d4b\u4efb\u52a1</button>
     </div>
 
-    <div class="ant-card ant-card-bordered">
+    <div class="ant-card ant-card-bordered task-list-card">
       <table class="ant-table" id="eval-task-table">
         <thead><tr>
           <th style="width:50px;">ID</th><th>\u4efb\u52a1\u540d\u79f0</th><th>\u8bc4\u6d4b\u96c6</th><th>Checkpoint</th><th>状态</th><th>评测状态</th><th>\u8fdb\u5ea6</th><th>\u4f18\u5148\u7ea7</th><th>\u521b\u5efa\u4eba</th><th>\u64cd\u4f5c</th>
@@ -5778,6 +5784,8 @@ def tasks_page():
       #create-task-drawer #bm-case-table .bm-case-id {{ left:100px; }}
       #create-task-drawer #bm-case-table .task-case-selection {{ position:sticky;left:0;background:#fff;z-index:2; }}
       #create-task-drawer #bm-case-table th.task-case-selection {{ top:0;background:#fafafa;z-index:4; }}
+      .task-list-card, #eval-task-table, #eval-task-table .actions-cell {{ overflow:visible; }}
+      #eval-task-table .action-more-menu {{ top:auto;bottom:calc(100% + 4px);z-index:120; }}
       .task-eval-config-row {{ grid-template-columns:repeat(2,minmax(0,1fr)); }}
       .task-view-mode .form-group input:not([type="checkbox"]):disabled,
       .task-view-mode .form-group select:disabled,
@@ -5988,6 +5996,20 @@ def tasks_page():
       form.querySelector('[name="edit_id"]').value = tid;
       document.getElementById('task-drawer-title').textContent = '编辑评测任务';
       document.getElementById('task-drawer-submit').textContent = '保存';
+    }}
+    function openTaskCopy(tid) {{
+      if (!taskViewData[tid]) return;
+      openTaskView(tid);
+      setTaskDrawerReadonly(false);
+      var form = document.getElementById('task-drawer-form');
+      form.querySelector('[name="edit_id"]').value = '';
+      form.querySelector('[name="name"]').value = (taskViewData[tid].name || '') + ' - 副本';
+      form.querySelector('[name="publish_status"]').value = '未发布';
+      document.getElementById('task-publish-status-field').style.display = 'none';
+      benchmarkCaseFields = {benchmark_case_fields_json}.filter(function(field) {{ return field[0] !== 'visibility'; }});
+      previewBm(taskViewData[tid].benchmark_id || '', Array.from(taskSelectedCaseIds));
+      document.getElementById('task-drawer-title').textContent = '复制评测任务';
+      document.getElementById('task-drawer-submit').textContent = '创建任务';
     }}
     window.updateTaskResourceLinks = function() {{
       var ckptLink = document.getElementById('task-ckpt-view');

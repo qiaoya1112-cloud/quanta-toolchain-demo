@@ -2,7 +2,7 @@
 #datasetWorkspace .dataset-detail-actions, .dataset-save-actions { display:flex; align-items:center; gap:8px; }
 .dataset-preview-toolbar, .dataset-list-toolbar { display:flex; align-items:center; justify-content:space-between; gap:16px; margin-bottom:14px; }
 .dataset-preview-toolbar .dataset-view-tabs { margin:0; flex-shrink:0; }
-#datasetPreviewStatus { margin-bottom:14px; font-size:12px; line-height:1.8; }
+#datasetPreviewStatus { margin:0; min-width:0; text-align:right; font-size:12px; line-height:1.8; }
 #datasetListView { min-width:0; }
 #datasetListView .fb-labeled { margin-bottom:16px; }
 .dataset-editor-selection { display:flex; align-items:center; gap:12px; }
@@ -33,7 +33,10 @@
 #datasetWorkspace summary { cursor:pointer; color:#1F80A0; }
 #datasetWorkspace details div { overflow-wrap:anywhere; white-space:pre-wrap; }
 .dataset-operation-list { padding:0; margin:12px 0 0; list-style:none; }
-#datasetWorkspace .dataset-operation-item { padding:14px; margin-bottom:12px; }
+#datasetWorkspace .dataset-operation-item { padding:16px 0; border-bottom:1px solid #f0f0f0; }
+#datasetWorkspace .dataset-operation-item:first-child { padding-top:0; }
+#datasetWorkspace .dataset-operation-item:last-child { border-bottom:0; }
+.dataset-change-detail { white-space:pre-wrap; overflow-wrap:anywhere; line-height:1.8; }
 .dataset-operation-head { display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:8px; }
 .dataset-operation-head strong { font-size:13px; font-weight:500; }
 .dataset-operation-item > div { margin-bottom:6px; font-size:13px; }
@@ -42,7 +45,7 @@
 .dataset-automation-hint { font-size:12px; line-height:1.7; margin-top:14px; }
 .dataset-editor-footer { padding:16px 0; margin-top:16px; border-top:1px solid #f0f0f0; }
 .dataset-operation-error, #datasetEditError { color:#ff4d4f; font-size:12px; }
-#datasetOperationDrawer .dataset-operation-drawer { width:480px; max-width:96vw; }
+#datasetOperationDrawer .dataset-operation-drawer, .dataset-changes-dialog { width:520px; max-width:94vw; }
 .dataset-operation-form-actions { display:flex; justify-content:flex-end; gap:8px; margin-top:24px; }
 .dataset-operation-form .param-table td.pk { width:45%; overflow-wrap:anywhere; }
 .dataset-saving #datasetListView { pointer-events:none; opacity:.65; }
@@ -84,33 +87,29 @@
 #datasetWorkspace .dataset-version-picker summary:focus-visible { outline:2px solid #149DAA; outline-offset:2px; }
 
 #datasetListView .dataset-list-action-group, #datasetListView .dataset-list-edit-actions { display:flex; align-items:center; gap:12px; flex-wrap:wrap; justify-content:flex-end; }
-#datasetListView .dataset-list-action-group { margin-left:auto; }
+#datasetListView .dataset-list-action-group { margin-left:auto; min-width:0; flex:1; flex-wrap:nowrap; }
+#datasetListView .dataset-list-selection-summary, #datasetListView .dataset-editor-selection { flex-shrink:0; }
 #datasetListView .dataset-save-actions, #datasetListView .dataset-editor-selection { flex-wrap:wrap; justify-content:flex-end; }
 #datasetListView .dataset-list-action-group .btn { white-space:nowrap; flex-shrink:0; }
-#datasetListView .dataset-list-toolbar { flex-wrap:wrap; }
+#datasetListView .dataset-list-toolbar { flex-wrap:nowrap; }
 
 #datasetListView .dataset-edit-layout { display:grid; grid-template-columns:minmax(0,1fr); gap:20px; align-items:start; }
 #datasetListView .dataset-data-pane { min-width:0; }
 #datasetWorkspace .dataset-global-edit-layout { display:grid; grid-template-columns:minmax(0,1fr); }
-#datasetWorkspace.dataset-editing .dataset-global-edit-layout { grid-template-columns:minmax(0,1fr) 260px; }
 #datasetReadView { min-width:0; }
 #datasetReadView > .tabs { overflow-x:auto; }
 #datasetReadView > .tabs > .tab { flex-shrink:0; white-space:nowrap; }
-#datasetWorkspace .dataset-operations-pane { min-width:0; border-left:1px solid #f0f0f0; }
-#datasetWorkspace .dataset-editor-section-head { display:flex; align-items:center; gap:8px; min-height:47px; box-sizing:border-box; padding:11px 18px 12px; border-bottom:1px solid #f0f0f0; }
-#datasetWorkspace .dataset-editor-section-head h4 { margin:0; font-size:14px; line-height:22px; font-weight:500; white-space:nowrap; }
-#datasetWorkspace .dataset-operations-body { padding:20px 16px; }
-#datasetWorkspace .dataset-operation-list { max-height:620px; overflow-y:auto; }
+#datasetWorkspace .dataset-operation-list { margin:0; }
 #datasetWorkspace .dataset-operation-item { white-space:normal; overflow-wrap:anywhere; }
 #datasetWorkspace .dataset-save-actions { flex-wrap:wrap; justify-content:flex-end; }
-#datasetEditSummary { display:block; font-size:12px; line-height:1.8; }
+.dataset-edit-summary-bar { display:flex; align-items:center; flex-wrap:wrap; gap:16px; padding:10px 24px; border-bottom:1px solid #f0f0f0; font-size:13px; }
+#datasetEditSummary { line-height:1.8; }
 #datasetEditError:not(:empty) { padding:12px 24px; }
-@media(max-width:1000px) { #datasetWorkspace.dataset-editing .dataset-global-edit-layout { grid-template-columns:minmax(0,1fr); } #datasetWorkspace .dataset-operations-pane { border-left:0; border-top:1px solid #f0f0f0; } }
 
 /* Dataset task records reuse the shared table and keep each field on one line. */
-.dataset-task-table { min-width:1180px; }
+.dataset-task-table { min-width:1180px; table-layout:fixed; }
 .dataset-task-table th,
-.dataset-task-table td { white-space:nowrap; }
+.dataset-task-table td { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 
 .dataset-task-pager .pg-btn.active { background:#fff; }
 .dataset-task-pager .pg-btn:disabled { opacity:.4; cursor:not-allowed; }

@@ -1520,7 +1520,7 @@ select option:disabled { color:rgba(0,0,0,0.32); }
 .recipe-row .rbar { flex:1; height:22px; background:#f5f5f5; border-radius:4px; overflow:hidden; position:relative; }
 .recipe-row .rbar .fill { height:100%; background:#1F80A0; display:flex; align-items:center; padding-left:8px; color:#fff; font-size:12px; }
 .recipe-row .recipe-count { width:52px; text-align:right; white-space:nowrap; }
-.recipe-row .recipe-frames { width:72px; text-align:right; white-space:nowrap; }
+.recipe-row .recipe-duration { width:72px; text-align:right; white-space:nowrap; }
 
 /* ── 标签构成 饼图 (一行三个) ── */
 .lvl-sel { float:right; height:28px; font-size:12px; border:1px solid #e2e4e8; border-radius:6px; padding:0 28px 0 10px; color:rgba(0,0,0,0.7); background:#fff; cursor:pointer; -webkit-appearance:none; appearance:none; background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'><path d='M1 1l4 4 4-4' stroke='%23999' stroke-width='1.4' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>"); background-repeat:no-repeat; background-position:right 10px center; }
@@ -2169,7 +2169,7 @@ async function dsCreating(modalId){
     var result=await response.json(); if(!response.ok) throw new Error(result.error || '提交失败');
     var url=prefix+'/datasets/tasks?'+new URLSearchParams({dataset_id:result.dataset_id,version:result.version,task:result.task_id});
     modal.querySelector('.modal-box').innerHTML='<div style="padding:46px 28px;text-align:center;"><h3>数据集校验中</h3>'
-      +'<p class="muted">已提交数据集创建任务，可在「数据集创建进度」查看进度和结果。</p>'
+      +'<p class="muted">已提交数据集创建任务，可在「数据集任务列表」查看进度和结果。</p>'
       +'<div style="display:flex;gap:10px;justify-content:center;"><button class="btn" onclick="location.reload()">关闭</button>'
       +'<a class="btn btn-primary" href="'+url.replace(/&/g,'&amp;')+'">查看任务</a></div></div>';
   }catch(error){ toast(error.message || '提交失败，请重试'); button.disabled=false; }
@@ -2573,15 +2573,16 @@ def dataset_tag_composition(d):
             by[lab] = by.get(lab, 0) + r["frames"]
     return [{"name": lab, "ratio": fr / total} for lab, fr in sorted(by.items(), key=lambda x: -x[1])]
 
-def comp_rows_html(items, total_frames):
+def comp_rows_html(items, total_frames, fps):
     rows_html = ""
     for it in items:
         pct = round(it["ratio"] * 100)
         fr = it.get("frames", int(it["ratio"] * total_frames))
+        duration = f"{fr / fps:.0f}s" if fps > 0 else "—"
         prompt_id = html.escape(it.get("id", ""), quote=True)
         rows_html += (f'<div class="recipe-row" data-prompt-id="{prompt_id}"><div class="rname">{html.escape(it["name"])}</div>'
                       f'<div class="rbar"><div class="fill" style="width:{min(max(pct,4),100)}%">{pct}%</div></div>'
-                      f'<div class="muted recipe-frames">{fr:,}f</div>'
+                      f'<div class="muted recipe-duration" title="时长（秒）">{duration}</div>'
                       f'<div class="muted recipe-count">{it.get("episode_count", 0):,} 条</div></div>')
     return rows_html or '<div class="muted">—</div>'
 
@@ -3455,7 +3456,7 @@ def raw_data():
     return render_page("原始数据", content, active="raw", breadcrumb="数据湖 / <b>原始数据</b>")
 
 
-# Creation jobs retain their original status enum; processing jobs retain theirs too.
+# Preserve internal task states while sharing display labels across progress and versions.
 DATASET_CREATION_TASKS = [
     {"id": str(ident), "name": name, "version": version, "status": status, "at": at, "by": creator,
      "kind": "create", "dataset_id": "", "legacy_id": ident}
@@ -3473,8 +3474,9 @@ DATASET_CREATION_TASKS = [
         (72, "20260616_test", "v1", "fail", "2026-06-16 16:47:47", "Vivian Luo"),
     ]
 ]
-DATASET_PROCESSING_LABELS = {"ready": "已完成", "queued": "待处理", "running": "处理中", "failed": "处理失败"}
 DATASET_CREATION_LABELS = {"done": "成功", "fail": "失败", "running": "进行中", "verify": "校验中"}
+DATASET_PROCESSING_LABELS = {"ready": DATASET_CREATION_LABELS["done"], "queued": "待处理",
+                             "running": DATASET_CREATION_LABELS["running"], "failed": DATASET_CREATION_LABELS["fail"]}
 
 
 def dataset_task_records():
@@ -3520,7 +3522,8 @@ def ds_progress():
     def safe_json(value):
         return json.dumps(value, ensure_ascii=False).replace("<", "\\u003c").replace(">", "\\u003e").replace("&", "\\u0026")
 
-    tasks = dataset_task_records()
+    tasks = [{**task, "task_type": "create" if task["kind"] == "create" else "update"}
+             for task in dataset_task_records()]
     st_map = {"done": ("tag-green", "成功"), "fail": ("imp-fail", "失败"), "running": ("tag-orange", "进行中"), "verify": ("tag-blue", "校验中")}
 
     failure_titles = {
@@ -3614,13 +3617,15 @@ def ds_progress():
     keyword = request.args.get("keyword", "").strip()
     selected_version = request.args.get("version", "")
     selected_kind = request.args.get("task_type", "")
+    if selected_kind in ("append", "operator", "workflow"):
+        selected_kind = "update"
     selected_status = request.args.get("status", "")
     creators = request.args.getlist("creator")
     filtered = [task for task in tasks
                 if (not selected_dataset or task.get("dataset_id") == selected_dataset)
                 and (not keyword or keyword.casefold() in task["name"].casefold())
                 and (not selected_version or task["version"] == selected_version)
-                and (not selected_kind or task["kind"] == selected_kind)
+                and (not selected_kind or task["task_type"] == selected_kind)
                 and (not selected_status or task["label"] == selected_status)
                 and (not creators or task.get("by") in creators)]
     page_size = 10
@@ -3634,7 +3639,7 @@ def ds_progress():
     if opened:
         page = filtered.index(opened) // page_size + 1
     page_tasks = filtered[(page - 1) * page_size:page * page_size]
-    kind_labels = {"create": "创建数据集", "append": "追加数据", "operator": "执行算子", "workflow": "执行工作流"}
+    kind_labels = {"create": "创建数据集", "update": "更新数据集"}
     rows = ""
     failure_templates = [failure_template(task["legacy_id"]) for task in page_tasks if task.get("legacy_id") and task["status"] == "fail"]
     for task in page_tasks:
@@ -3651,12 +3656,12 @@ def ds_progress():
         if task.get("dataset_id"):
             href = "/datasets?" + urlencode({"sel": task["dataset_id"], "ver": task["version"], "tab": "version"})
             actions += f'<a href="{html.escape(href, quote=True)}">查看版本</a>'
-        rows += (f'<tr data-task-id="{safe_id}" data-status="{html.escape(task["status"])}"><td>{safe_id}</td>'
-                 f'<td>{name}</td><td>{kind_labels[task["kind"]]}</td><td>{version}</td><td>{status}</td>'
-                 f'<td>{html.escape(task.get("by", "—"))}</td><td>{html.escape(task["at"])}</td>'
+        rows += (f'<tr data-task-id="{safe_id}" data-status="{html.escape(task["status"])}"><td title="{safe_id}">{safe_id}</td>'
+                 f'<td title="{html.escape(task["name"], quote=True)}">{name}</td><td>{version}</td><td>{kind_labels[task["task_type"]]}</td><td>{status}</td>'
+                 f'<td title="{html.escape(task.get("by", "—"), quote=True)}">{html.escape(task.get("by", "—"))}</td><td>{html.escape(task["at"])}</td>'
                  f'<td class="actions-cell"><div class="dataset-version-actions">{actions}</div></td></tr>')
     if not rows:
-        rows = '<tr><td colspan="8" class="muted" style="text-align:center;padding:32px;">暂无创建进度记录</td></tr>'
+        rows = '<tr><td colspan="8" class="muted" style="text-align:center;padding:32px;">暂无数据集任务</td></tr>'
 
     def options(items, selected, base):
         return '<option value="">' + base + '</option>' + ''.join(
@@ -3698,7 +3703,7 @@ def ds_progress():
     task_configs = {}
     for task in page_tasks:
         task_configs[str(task["id"])] = {"id": str(task["id"]), "name": task["name"], "version": task["version"],
-            "kind": kind_labels[task["kind"]], "status": task["label"], "stage": task.get("stage", "—"),
+            "kind": kind_labels[task["task_type"]], "status": task["label"], "stage": task.get("stage", "—"),
             "by": task.get("by", "—"), "at": task["at"], "progress": task.get("progress"),
             "description": task.get("description") or (task.get("name") if task["kind"] != "create" else "数据完整性校验"),
             "retry": bool(task.get("dataset_id") and task["processing"] == "failed"),
@@ -3707,9 +3712,9 @@ def ds_progress():
     config_json = safe_json(task_configs)
     open_json = safe_json(str(opened["id"]) if opened else "")
     content = f"""
-    <link rel="stylesheet" href="/static/shared/dataset-editor.css">
+    <link rel="stylesheet" href="/static/shared/dataset-editor.css?v=20261020-task-columns">
     <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:18px;">
-      <div style="font-size:16px;font-weight:600;">数据集创建进度</div>
+      <div style="font-size:16px;font-weight:600;">数据集任务列表</div>
       <a href="{html.escape(return_url, quote=True)}" class="btn">返回数据集</a>
     </div>
     <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">{context_html}</div>
@@ -3727,11 +3732,12 @@ def ds_progress():
     <div class="muted" style="margin-bottom:12px;">共 {len(filtered)} 条记录</div>
     <div class="table-wrap">
       <table class="ant-table dataset-task-table" id="datasetTaskTable">
-        <thead><tr><th>任务 ID</th><th>数据集名称</th><th>任务类型</th><th>版本</th><th>状态</th><th>提交人</th><th>提交时间</th><th>操作</th></tr></thead>
+        <colgroup><col style="width:130px"><col style="width:280px"><col style="width:70px"><col style="width:110px"><col style="width:120px"><col style="width:110px"><col style="width:180px"><col style="width:180px"></colgroup>
+        <thead><tr><th>任务 ID</th><th>数据集名称</th><th>版本</th><th>任务类型</th><th>状态</th><th>提交人</th><th>提交时间</th><th>操作</th></tr></thead>
         <tbody>{rows}</tbody>
       </table>
     </div>
-    <nav class="mini-pager dataset-task-pager" aria-label="数据集创建进度分页"><span class="muted">共 {len(filtered)} 条 · 第 {page} / {pages} 页</span>{pagination}<span class="muted">{page_size} 条/页</span></nav>
+    <nav class="mini-pager dataset-task-pager" aria-label="数据集任务列表分页"><span class="muted">共 {len(filtered)} 条 · 第 {page} / {pages} 页</span>{pagination}<span class="muted">{page_size} 条/页</span></nav>
 
     <div class="drawer-mask" id="dpDetailModal" onclick="if(event.target===this)this.classList.remove('active')">
       <div class="drawer">
@@ -3749,8 +3755,6 @@ def ds_progress():
             <div class="dk">提交时间</div><div class="dv" data-task-detail="at"></div>
             <div class="dk">任务说明</div><div class="dv" data-task-detail="description"></div>
           </div>
-          <div class="section-label">请求参数 / 筛选条件</div><pre id="datasetTaskParameters" style="white-space:pre-wrap;overflow-wrap:anywhere;"></pre>
-          <div class="section-label">执行日志 / 异常原因</div><div id="datasetTaskLog" style="white-space:pre-wrap;overflow-wrap:anywhere;"></div>
         </div>
         <div class="drawer-foot">
           <button class="btn btn-secondary" onclick="closeDrawerById('dpDetailModal')">关闭</button>
@@ -3778,16 +3782,6 @@ def ds_progress():
           var key=field.dataset.taskDetail;
           field.textContent=key==='progress' ? (task.progress==null ? '—' : task.progress+'%') : (task[key] || '—');
         }});
-        document.getElementById('datasetTaskParameters').textContent=task.parameters==='{{}}' || task.parameters==='[]' ? '无记录' : task.parameters;
-        var log=document.getElementById('datasetTaskLog'), template=document.getElementById('dpErrorTemplate'+task.legacy_id);
-        log.replaceChildren();
-        if(template) {{
-          var fragment=template.content.cloneNode(true);
-          fragment.querySelectorAll('[id]').forEach(function(node){{ node.id='detail-'+node.id; }});
-          fragment.querySelectorAll('[aria-controls]').forEach(function(node){{ node.setAttribute('aria-controls','detail-'+node.getAttribute('aria-controls')); }});
-          log.appendChild(fragment);
-        }}
-        else log.textContent=task.error || '暂无执行日志';
         var retry=document.getElementById('datasetTaskRetry'); retry.hidden=!task.retry; retry.dataset.taskId=id;
         openDrawerById('dpDetailModal');
       }}
@@ -3818,8 +3812,8 @@ def ds_progress():
       }}
     </script>
     """
-    return render_page("数据集创建进度", content, active="datasets",
-                       breadcrumb='数据集 / <b>数据集创建进度</b>')
+    return render_page("数据集任务列表", content, active="datasets",
+                       breadcrumb='数据集 / <b>数据集任务列表</b>')
 
 
 # The live condition builder exposes many warehouse columns. The prototype keeps
@@ -4413,7 +4407,7 @@ def query():
           <span class="muted" id="qResMeta" style="font-size:13px;font-weight:400;">筛选命中 {len(candidates)} 条 · 已剔除 {len(removed)} 条 · 保留 {n_disp} 条{"（已应用数据量上限）" if (limit or duration_limit) and len(res) > n_disp else ""}</span>
         </h3>
         <div class="query-result-actions" data-has-results="{1 if disp else 0}">
-          <a href="/datasets/tasks" class="query-progress-link">查看数据集创建进度 <span aria-hidden="true">↗</span></a>
+          <a href="/datasets/tasks" class="query-progress-link">查看数据集任务列表 <span aria-hidden="true">↗</span></a>
           <button type="button" class="btn" id="qAppendDataset" {"disabled" if not disp else ""}>将结果添加至已有数据集</button>
           <button type="button" class="btn btn-secondary" id="qBuildDataset" onclick="openBuildDsDrawer()" {"disabled" if not disp else ""}>用结果新建数据集</button>
         </div>
@@ -4474,8 +4468,9 @@ def query():
         f'{html.escape(d["name"])}</option>' for d in append_datasets)
     append_versions = {d["id"]: [
         {"version": v["version"], "description": v.get("note", ""),
+         "publish_status": v["publish_status"], "status": v["status"],
          "ready": dataset_processing_status(v.get("snapshot", {})) == "ready"}
-        for v in ds_versions(d) if v["publish_status"] == "未发布"
+        for v in ds_versions(d)
     ] for d in append_datasets}
     append_source = URLSafeTimedSerializer(app.secret_key, salt="query-dataset-append").dumps([r["id"] for r in disp])
     append_ds_modal = f"""
@@ -4484,7 +4479,7 @@ def query():
         <div class="drawer-head"><h3 id="qAppendTitle">将结果添加至已有数据集</h3><button type="button" class="drawer-close" id="qAppendClose" aria-label="关闭添加数据弹窗">&times;</button></div>
         <form id="qAppendForm" action="/datasets/append" method="post" class="query-append-form">
           <div class="drawer-body">
-            <div class="prompt-scene-guidance" role="note"><span class="prompt-scene-guidance-icon" aria-hidden="true">i</span><span id="qAppendSelectionSummary">将本次查询结果中的 {n_disp} 条数据添加至已有未发布版本，或新建一个版本，重复数据自动跳过。</span></div>
+            <div class="prompt-scene-guidance" role="note"><span class="prompt-scene-guidance-icon" aria-hidden="true">i</span><span id="qAppendSelectionSummary">将本次查询结果中的 {n_disp} 条数据添加至未发布版本，或基于指定已发布版本新建版本，重复数据自动跳过。</span></div>
             <input type="hidden" id="qAppendSource" value="{html.escape(append_source, quote=True)}">
             <div class="fg"><label for="qAppendTargetSearch"><span class="req">*</span>目标数据集</label>
               <select id="qAppendTarget" hidden aria-hidden="true" tabindex="-1"><option value="">请选择已有数据集</option>{append_options}</select>
@@ -4494,7 +4489,8 @@ def query():
               </div>
             </div>
             <div class="fg"><label for="qAppendFormat">数据集格式</label><input id="qAppendFormat" readonly placeholder="选择数据集后自动带出"></div>
-            <div class="fg"><label for="qAppendVersion"><span class="req">*</span>目标版本</label><select id="qAppendVersion" required disabled><option value="">请先选择数据集</option></select><div class="hint" id="qAppendVersionHint">支持选择未发布版本，或新建一个版本。</div></div>
+            <div class="fg"><label for="qAppendMode"><span class="req">*</span>添加方式</label><select id="qAppendMode" disabled><option value="draft">添加至未发布版本</option><option value="new" selected>基于已发布版本新建</option></select></div>
+            <div class="fg"><label for="qAppendVersion"><span class="req">*</span><span id="qAppendVersionLabel">来源版本</span></label><select id="qAppendVersion" required disabled><option value="">请先选择数据集</option></select><div class="hint" id="qAppendVersionHint">选择数据集后，可添加至未发布版本，或基于已发布版本新建。</div></div>
             <div class="fg"><label for="qAppendDescription"><span class="req">*</span>版本描述</label><textarea id="qAppendDescription" required maxlength="1000" rows="4" placeholder="请填写本次添加的数据内容及版本变更说明"></textarea></div>
             <div id="qAppendError" class="query-condition-error" role="alert" hidden></div>
           </div>
@@ -4510,7 +4506,7 @@ def query():
     append_ds_modal += f'<script type="application/json" id="qAppendVersionsConfig">{safe_json(append_versions)}</script>'
     content = top_card + result_card + ai_panel + recipe_panel + prev_drawer + build_ds_drawer + append_ds_modal
     content += '<script src="/static/data_query/conditions.js?v=20261019-exclusion-id-first" defer></script>'
-    content += '<script src="/static/data_query/dataset-append.js?v=20261020-owned-search" defer></script>'
+    content += '<script src="/static/data_query/dataset-append.js?v=20261020-published-base" defer></script>'
     script = """<script>__RECIPE_DATA__
     function toggleAdv(){
       var p=document.getElementById('advPanel'), b=document.getElementById('advBtn');
@@ -4882,9 +4878,16 @@ def datasets_append():
             return jsonify(error="目标版本不存在，请刷新页面后重试"), 404
         if target["publish_status"] != "未发布":
             return jsonify(error="仅未发布版本支持添加数据，请重新选择版本"), 409
-    elif payload.get("base_version") != d["version"]:
-        return jsonify(error="目标数据集的生效版本已变化，请刷新页面后重试"), 409
-    source = dataset_version_snapshot(d, target_version)
+    else:
+        base_version = payload.get("base_version")
+        if not isinstance(base_version, str) or not base_version:
+            return jsonify(error="请选择已发布的来源版本"), 400
+        base = next((v for v in versions if v["version"] == base_version), None)
+        if base is None:
+            return jsonify(error="来源版本不存在，请刷新页面后重试"), 409
+        if base["publish_status"] != "已发布":
+            return jsonify(error="仅支持基于已发布版本新建，请重新选择来源版本"), 409
+    source = dataset_version_snapshot(d, target_version or base_version)
     if dataset_processing_status(source) != "ready":
         return jsonify(error="目标版本尚未完成处理，暂不能添加数据"), 409
     token = payload.get("source_token")
@@ -5435,7 +5438,6 @@ def dataset_detail_panel_v2(d, viewed_ver=""):
     data_list = f"""
     <div class="tab-pane" id="pane-list">
       <div id="datasetListView">
-        <div class="muted" id="datasetPreviewStatus" hidden></div>
         <div class="fb-labeled dpr-record-filters">
           <div class="ff"><label for="datasetDataQuery">数据 ID</label><input id="datasetDataQuery" placeholder="请输入数据 ID" onkeydown="if(event.key==='Enter')datasetEditor.filter()"></div>
           <div class="ff"><label for="datasetLowlevelZhQuery">lowlevel prompt（中文）</label><input id="datasetLowlevelZhQuery" placeholder="请输入关键词" onkeydown="if(event.key==='Enter')datasetEditor.filter()"></div>
@@ -5449,6 +5451,7 @@ def dataset_detail_panel_v2(d, viewed_ver=""):
             <button class="action-link" id="datasetClearSelection" onclick="datasetEditor.selectAll(false)" hidden>清空选择</button>
           </div>
           <div class="dataset-list-action-group">
+          <div class="muted" id="datasetPreviewStatus" hidden></div>
           <div class="dataset-editor-selection" data-edit-only hidden>
             <div class="dataset-batch-menu">
               <button class="btn btn-secondary" id="datasetSelectionAction" aria-haspopup="true" aria-expanded="false" aria-controls="datasetBatchMenu" onclick="datasetEditor.toggleBatchMenu()" disabled>批量操作 <span aria-hidden="true">▾</span></button>
@@ -5572,7 +5575,7 @@ def dataset_detail_panel_v2(d, viewed_ver=""):
       </div>
     </div>
     """
-    prompt_rows = comp_rows_html(_hl_items, d["frames"])
+    prompt_rows = comp_rows_html(_hl_items, d["frames"], d["fps"])
     # 按一级维度的标签帧数 (三个饼图 + 表格图例)
     _byp = {}
     for r in _dataset_recs(d):
@@ -5627,7 +5630,7 @@ def dataset_detail_panel_v2(d, viewed_ver=""):
                 '<option value="l3">展示层级：三级</option></select>')
     # Lowlevel(子动作)维度 prompt 构成 (demo)
     _low_items = dataset_lowlevel_prompt_composition(d)
-    low_prompt_rows = comp_rows_html(_low_items, d["frames"])
+    low_prompt_rows = comp_rows_html(_low_items, d["frames"], d["fps"])
     compose = f"""
     <div class="tab-pane" id="pane-compose">
       <div class="muted" style="margin-bottom:14px;">数据集共 {d['episodes']} episode · {len(_hl_items)} highlevel · {len(_low_items)} lowlevel <span style="color:rgba(0,0,0,0.3);">(highlevel / lowlevel 按去重计数)</span></div>
@@ -5704,29 +5707,28 @@ def dataset_detail_panel_v2(d, viewed_ver=""):
 
     vrows = ""
     for v in ds_versions(d):
-        view_link = f'<a href="/datasets{filter_url(sel=d["id"], ver=v["version"], edit="", tab="preview")}">查看</a>'
         active = v["status"] == "生效中"
         processing = dataset_processing_status(v.get("snapshot", {}))
-        processing_label = DATASET_PROCESSING_LABELS.get(processing, "处理中")
         linked_task = dataset_linked_task(v.get("snapshot", {}))
+        processing_label = linked_task["label"] if linked_task else DATASET_PROCESSING_LABELS.get(processing, "—")
         task_url = "/datasets/tasks?" + urlencode({"dataset_id": d["id"], "version": v["version"], **({"task": linked_task["id"]} if linked_task else {})})
         processing_cell = (f'<a href="{html.escape(task_url, quote=True)}">{processing_label}</a>' if linked_task else processing_label)
         name_cell = f'<b>{v["version"]}</b>' if active else v["version"]
         published = v["publish_status"] == "已发布"
         publish_cell = '<span class="tag tag-green">已发布</span>' if published else '<span class="tag tag-gray">未发布</span>'
         publish_op = ('<span class="muted" aria-disabled="true" title="已发布">发布</span>' if published else
-                      '<span class="muted" aria-disabled="true" title="需等待处理完成">发布</span>' if processing != "ready" else
+                      '<span class="muted" aria-disabled="true" title="仅处理状态为「成功」的版本支持发布">发布</span>' if processing != "ready" else
                       f'<form method="post" action="/datasets/{d["id"]}/version/{v["version"]}/publish" style="display:inline;">'
                       '<button type="submit" class="action-link">发布</button></form>')
         vrows += (f'<tr><td>{name_cell}</td><td class="muted">{html.escape(v.get("note",""))}</td>'
                   f'<td>{v["recordings"]}</td><td>{v.get("creator","—")}</td>'
                   f'<td class="muted">{v["created"]}</td><td>{publish_cell}</td><td>{processing_cell}</td>'
-                  f'<td class="actions-cell"><div class="dataset-version-actions">{view_link}{publish_op}</div></td></tr>')
+                  f'<td class="actions-cell"><div class="dataset-version-actions">{publish_op}</div></td></tr>')
     version = f"""
     <div class="tab-pane" id="pane-version">
       <div class="table-wrap dataset-version-table-wrap"><table class="ant-table dataset-version-table"><thead><tr><th>版本</th><th>说明</th><th>数据数</th><th>创建人</th><th>创建时间</th><th>发布状态</th><th>处理状态</th><th>操作</th></tr></thead>
       <tbody>{vrows}</tbody></table></div>
-      <div class="muted" style="margin-top:12px;">已发布版本编辑后仅可保存为新版本；未发布版本可保存至当前版本或另存为新版本。处理完成后可发布。</div>
+      <div class="muted" style="margin-top:12px;">已发布版本编辑后仅可保存为新版本；未发布版本可保存至当前版本或另存为新版本。仅处理状态为「成功」的版本支持发布。</div>
     </div>
     """
 
@@ -5759,6 +5761,11 @@ def dataset_detail_panel_v2(d, viewed_ver=""):
       <div class="dataset-detail-actions"><a class="action-link" href="/datasets/tasks">查看数据集更新进度</a><button class="btn btn-primary" id="datasetEditButton" onclick="datasetEditor.start()" {'disabled title="当前版本尚未完成处理"' if d.get('processing_status', 'ready') != 'ready' else ''}>编辑</button><span class="dataset-save-actions" data-edit-only hidden><button class="btn" onclick="datasetEditor.cancel()">取消编辑</button>{save_current_button}<button class="btn btn-primary" id="datasetSaveButton" onclick="datasetEditor.save()" disabled>保存为新版本</button></span></div>
     </div>
     <div id="datasetEditError" role="alert"></div>
+    <div class="dataset-edit-summary-bar" data-edit-only hidden>
+      <span id="datasetEditSummary" aria-live="polite"></span>
+      <button class="action-link" id="datasetViewChanges" onclick="datasetEditor.showChanges()">查看变更</button>
+      <button class="action-link" id="datasetUndoButton" onclick="datasetEditor.undo()">撤销上一步</button>
+    </div>
     <div class="dataset-global-edit-layout">
     <div id="datasetReadView">
     <div class="tabs">
@@ -5770,24 +5777,27 @@ def dataset_detail_panel_v2(d, viewed_ver=""):
     </div>
     <div class="pane-wrap">{preview}{data_list}{compose}{version}{info}</div>
     </div>
-    <aside class="dataset-operations-pane" id="datasetOperationPlan" aria-label="本次修改" data-edit-only hidden>
-      <div class="dataset-editor-section-head"><h4>本次修改 <span class="muted" id="datasetOperationCount">0</span></h4></div>
-      <div class="dataset-operations-body">
-        <span class="muted" id="datasetEditSummary" aria-live="polite"></span>
+    </div>
+    <div class="modal-mask" id="datasetChangesModal" onclick="if(event.target===this)datasetEditor.closeChanges()">
+      <div class="modal-box dataset-changes-dialog" role="dialog" aria-modal="true" aria-labelledby="datasetChangesTitle" tabindex="-1">
+      <div class="drawer-head"><h3 id="datasetChangesTitle">本次变更 <span class="muted" id="datasetOperationCount">0</span></h3><button class="drawer-close" aria-label="关闭变更" onclick="datasetEditor.closeChanges()">&times;</button></div>
+      <div class="drawer-body">
         <div id="datasetOperationEmpty" class="muted dataset-operation-empty">暂无修改。请在数据列表中筛选并勾选数据，再选择批量操作。</div>
         <ol id="datasetOperationList" class="dataset-operation-list"></ol>
         <div class="muted dataset-automation-hint" id="datasetAutomationHint" hidden>保存后提交这一项处理任务。处理完成后，可再次进入编辑并手动发起下一项。</div>
       </div>
-    </aside>
+      <div class="drawer-foot"><button class="btn" onclick="datasetEditor.closeChanges()">关闭</button></div>
+      </div>
     </div>
     </div>
-    <div class="drawer-mask" id="datasetOperationDrawer" onclick="if(event.target===this)datasetEditor.closeOperation()">
-      <div class="drawer dataset-operation-drawer" role="dialog" aria-modal="true" aria-labelledby="datasetOperationTitle" tabindex="-1">
+    <div class="modal-mask" id="datasetOperationDrawer" onclick="if(event.target===this)datasetEditor.closeOperation()">
+      <div class="modal-box dataset-operation-drawer" role="dialog" aria-modal="true" aria-labelledby="datasetOperationTitle" tabindex="-1">
         <div class="drawer-head"><h3 id="datasetOperationTitle">执行操作</h3><button class="drawer-close" aria-label="关闭操作配置" onclick="datasetEditor.closeOperation()">&times;</button></div>
         <div class="drawer-body">
               <div class="dataset-operation-form" id="datasetOperationForm" hidden>
                 <div class="fg" id="datasetOperationTypeField"><label for="datasetOperationType">操作类型</label><select id="datasetOperationType" onchange="datasetEditor.changeType()"><option value="">请选择操作类型</option><option value="remove">剔除数据</option><option value="prompt">修改 Prompt</option><option value="operator">执行算子</option><option value="workflow">执行工作流</option></select></div>
-                <div class="fg"><label for="datasetOperationScope">作用范围</label><select id="datasetOperationScope"><option value="all">全部保留数据</option><option value="selected" id="datasetSelectedScope">选中数据</option></select><div class="hint" id="datasetOperationScopeHint"></div></div>
+                <p id="datasetPromptSelection" class="muted" hidden></p>
+                <div class="fg" id="datasetOperationScopeField"><label for="datasetOperationScope">作用范围</label><select id="datasetOperationScope"><option value="all">全部保留数据</option><option value="selected" id="datasetSelectedScope">选中数据</option></select><div class="hint" id="datasetOperationScopeHint"></div></div>
                 <div class="fg" id="datasetPromptField" hidden><label for="datasetOperationPrompt">新 Prompt</label><textarea id="datasetOperationPrompt" rows="3" maxlength="10000" placeholder="填写本次操作要设置的 Prompt"></textarea></div>
                 <div id="datasetAutomationFields" hidden>
                   <div class="fg"><label for="datasetOperationTarget" id="datasetOperationTargetLabel">算子</label><select id="datasetOperationTarget" onchange="datasetEditor.changeTarget()"></select><div class="hint" id="datasetOperationTargetDescription"></div></div>
@@ -5823,7 +5833,7 @@ def datasets_publish(did, ver):
     if target is None:
         return redirect(f"/datasets?sel={did}&tab=version")
     if dataset_processing_status(target.get("snapshot", {})) != "ready":
-        return jsonify(error="当前版本尚未完成处理，不能发布"), 409
+        return jsonify(error="仅处理状态为「成功」的版本支持发布"), 409
     target["publish_status"] = "已发布"
     target["snapshot"]["publish_status"] = "已发布"
     if d["version"] == ver:

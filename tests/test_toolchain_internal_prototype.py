@@ -337,7 +337,7 @@ def test_new_train_drawer_exposes_tag_hierarchy_without_footer_status():
     assert 'data-level="三级标签"' in html
     assert 'id="trainSubmitState"' not in html
     assert 'function selectTrainTag' in html
-    assert 'function scrollTrainSection' in html
+    assert 'function scrollTrainSection' not in html
 
 
 def test_new_train_drawer_matches_benchmark_tag_picker_and_compact_controls():
@@ -383,6 +383,31 @@ def test_train_config_exposes_recommended_and_custom_modes():
     assert 'id="customYamlEditor"' in html
 
 
+def test_training_dataset_versions_use_latest_published_instead_of_active_or_draft():
+    from unittest.mock import patch
+
+    datasets = [{"id": "training", "name": "training", "type": "train"},
+                {"id": "draft", "name": "draft", "type": "train"},
+                {"id": "evaluation", "name": "evaluation", "type": "eval"}]
+    versions = {
+        "training": [
+            {"version": "v11", "publish_status": "未发布"},
+            {"version": "v2", "publish_status": "已发布", "status": "生效中"},
+            {"version": "v10", "publish_status": "已发布", "status": "未生效"},
+        ],
+        "draft": [{"version": "v1", "publish_status": "未发布"}],
+    }
+    with patch.object(toolchain_demo, 'DP_AVAILABLE', True), \
+         patch.object(toolchain_demo.dp, 'DATASETS', datasets), \
+         patch.object(toolchain_demo.dp, 'ds_versions', side_effect=lambda dataset: versions[dataset['id']]):
+        assert toolchain_demo._train_dataset_catalog() == [
+            {"id": "training", "name": "training", "versions": ["v10", "v2"]},
+            {"id": "draft", "name": "draft", "versions": []},
+        ]
+        versions['training'][0]['publish_status'] = '已发布'
+        assert toolchain_demo._train_dataset_catalog()[0]['versions'][0] == 'v11'
+
+
 def test_custom_yaml_mode_exposes_restore_action_only():
     client = toolchain_demo.app.test_client()
     response = client.get("/model/experiments")
@@ -426,10 +451,13 @@ def test_train_drawer_orders_queue_count_specification_then_priority_as_requeste
     queue_row_start = drawer.index('class="fg-row train-runtime-queue-row"')
     spec_row_start = drawer.index('class="fg-row train-runtime-priority-row"')
     queue_row = drawer[queue_row_start:spec_row_start]
-    assert queue_row.index('训练队列') < queue_row.index('实例数') < queue_row.index('实例规格')
+    assert '训练队列' in queue_row
+    assert 'id="trainInstanceCount"' not in queue_row
+    assert 'id="trainInstanceSpec"' not in queue_row
     assert 'id="trainPriority"' not in queue_row
-    priority_row = drawer[spec_row_start:]
-    assert 'id="trainPriority"' in priority_row
+    priority_row = drawer[spec_row_start:].split('</section>', 1)[0]
+    assert priority_row.count('class="fg-row') == 1
+    assert priority_row.index('id="trainInstanceCount"') < priority_row.index('id="trainInstanceSpec"') < priority_row.index('id="trainPriority"')
 
 
 def test_custom_yaml_keeps_only_restore_recommended_action():

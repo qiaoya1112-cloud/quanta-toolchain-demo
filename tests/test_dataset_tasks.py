@@ -63,7 +63,13 @@ class DatasetTaskTests(unittest.TestCase):
         self.assertEqual(self.client.post('/model/data/datasets/' + dataset['id'] + '/version/v1/publish').status_code, 409)
         self.assertEqual(self.client.get('/model/data/datasets?sel=' + dataset['id']).status_code, 200)
         task = next(t for t in dp.DATASET_CREATION_TASKS if t['id'] == result['task_id'])
-        task['status'] = 'done'
+        for state, label in [('verify', '校验中'), ('running', '进行中'), ('fail', '失败'), ('done', '成功')]:
+            task['status'] = state
+            for prefix in ('/model/data', '/data'):
+                _, config = self.tasks(prefix, dataset_id=dataset['id'], version='v1')
+                self.assertEqual(config[result['task_id']]['status'], label)
+                version_page = self.client.get(prefix + '/datasets', query_string={'sel': dataset['id'], 'tab': 'version'}).get_data(as_text=True)
+                self.assertIn('>' + label + '</a>', version_page)
         self.assertEqual(dp.dataset_version_snapshot(dataset)['processing_status'], 'ready')
         self.assertEqual(self.client.post('/model/data/datasets/' + dataset['id'] + '/version/v1/publish').status_code, 302)
 
@@ -79,8 +85,8 @@ class DatasetTaskTests(unittest.TestCase):
         result = self.automate()
         task = next(run for run in dp.RUNS if run['id'] == result['run_id'])
         dataset = dp.get_ds('ds1')
-        for status, processing, label in [('queued', 'queued', '待处理'), ('running', 'running', '处理中'),
-                                          ('failed', 'failed', '处理失败'), ('done', 'ready', '已完成')]:
+        for status, processing, label in [('queued', 'queued', '待处理'), ('running', 'running', '进行中'),
+                                          ('failed', 'failed', '失败'), ('done', 'ready', '成功')]:
             task['status'] = status
             snapshot = dp.dataset_version_snapshot(dataset, result['version'])
             self.assertEqual(snapshot['processing_status'], processing)
@@ -118,7 +124,24 @@ class DatasetTaskTests(unittest.TestCase):
         _, config = self.tasks(version='v999')
         self.assertEqual(config, {})
         self.assertEqual(dp.DATASET_CREATION_LABELS, {'done': '成功', 'fail': '失败', 'running': '进行中', 'verify': '校验中'})
-        self.assertEqual(dp.DATASET_PROCESSING_LABELS, {'ready': '已完成', 'queued': '待处理', 'running': '处理中', 'failed': '处理失败'})
+        self.assertEqual(dp.DATASET_PROCESSING_LABELS, {'ready': '成功', 'queued': '待处理', 'running': '进行中', 'failed': '失败'})
+
+    def test_task_types_group_updates_and_version_precedes_type(self):
+        created = self.create().json
+        updated = self.automate()
+        for prefix in ('/model/data', '/data'):
+            page, config = self.tasks(prefix, task_type='create', task=created['task_id'])
+            self.assertTrue('<title>数据集任务列表 - Quanta</title>' in page)
+            self.assertTrue('<th>版本</th><th>任务类型</th>' in page)
+            selector = re.search(r'id="datasetTaskType".*?</select>',page,re.S)[0]
+            self.assertEqual(re.findall(r'<option value="([^"]+)"',selector),['create','update'])
+            self.assertTrue(config)
+            self.assertEqual({task['kind'] for task in config.values()},{'创建数据集'})
+            page, config = self.tasks(prefix, task_type='update', task=updated['run_id'])
+            self.assertTrue(config)
+            self.assertEqual({task['kind'] for task in config.values()},{'更新数据集'})
+            self.assertTrue(updated['run_id'] in config)
+            self.assertTrue('<td>'+updated['version']+'</td><td>更新数据集</td>' in page)
 
     def test_manual_save_does_not_create_background_job(self):
         count = len(dp.dataset_task_records())

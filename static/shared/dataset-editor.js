@@ -16,6 +16,8 @@
   let pendingAction = null, previousOverflow = '', confirmFocus = null, operationFocus = null, query = '';
   let lowlevelZhQuery = '', lowlevelEnQuery = '';
   let batchMode = false;
+  let changesFocus = null, changesOverflow = '';
+  const changesOpen = () => byId('datasetChangesModal').classList.contains('active');
   const pageSize = 10;
   const nodes = new Map();
   const formOpen = () => !byId('datasetOperationForm').hidden;
@@ -83,7 +85,6 @@
       renderRows();
       renderOperations();
     }
-    const available = rows.filter(row => !row.deleted);
     byId('datasetPreviewStatus').hidden = !editing;
     byId('datasetPreviewStatus').textContent = editing ? '请先筛选并勾选数据，再通过「批量操作」选择要执行的操作。修改完成后，请在顶部保存。' : '';
     const visibleAvailable = pageRows().filter(row => !row.deleted);
@@ -113,7 +114,14 @@
     if (!selected.size && byId('datasetOperationScope').value === 'selected') byId('datasetOperationScope').value = 'all';
     byId('datasetOperationScopeHint').textContent = automatic ? '本次仅提交一个任务，处理完成后再手动发起下一项。' : '执行后立即更新列表，保存后生效。';
     const change = changes(), autoCount = operations.filter(isAuto).length;
-    byId('datasetEditSummary').textContent = operations.length + ' 项操作 · 保留 ' + available.length + ' 条 · 剔除 ' + change.deleted + ' 条 · 修改 ' + change.updated + ' 条';
+    const summary = [];
+    if (change.deleted) summary.push('已剔除 ' + change.deleted + ' 条');
+    if (change.updated) summary.push('已修改 Prompt ' + change.updated + ' 条');
+    if (autoCount) summary.push('待提交 ' + autoCount + ' 项处理任务');
+    byId('datasetEditSummary').textContent = summary.length ? summary.join(' · ') + '（未保存）' : '暂无修改';
+    byId('datasetViewChanges').hidden = !operations.length;
+    byId('datasetUndoButton').hidden = !operations.length;
+    byId('datasetUndoButton').disabled = saving || formOpen();
     byId('datasetSaveButton').disabled = saving || (!change.deleted && !change.updated && !autoCount);
     byId('datasetSaveButton').textContent = saving ? '提交中…' : '保存为新版本';
     const currentButton = byId('datasetSaveCurrentButton');
@@ -141,7 +149,7 @@
       const cell = () => tr.appendChild(document.createElement('td'));
       const checkbox = document.createElement('input');
       checkbox.type = 'checkbox';
-      checkbox.setAttribute('aria-label', '选择 Episode ' + row.idx);
+      checkbox.setAttribute('aria-label', '选择数据 ID ' + row.rec);
       checkbox.addEventListener('change', () => {
         checkbox.checked ? selected.add(row.idx) : selected.delete(row.idx);
         refresh();
@@ -151,7 +159,7 @@
       const videos = document.createElement('div'); videos.className = 'dpr-video-group';
       ['头部', '左臂', '右臂'].forEach(camera => {
         const thumb = document.createElement('button'); thumb.className = 'vid-thumb';
-        thumb.setAttribute('aria-label', '预览 Episode ' + row.idx + ' ' + camera + '视频');
+        thumb.setAttribute('aria-label', '预览数据 ID ' + row.rec + ' ' + camera + '视频');
         thumb.title = camera; thumb.addEventListener('click', () => window.datasetEditor.detail(row.idx));
         videos.appendChild(thumb);
       });
@@ -175,7 +183,7 @@
         } else {
           commitPlan([...operations, {type: 'remove', scope: 'selected', episode_ids: [row.idx]}]);
         }
-      }, (row.deleted ? '恢复' : '剔除') + ' Episode ' + row.idx);
+      }, (row.deleted ? '恢复' : '剔除') + '数据 ID ' + row.rec);
       action.disabled = saving || formOpen() || pendingAuto() || (!row.deleted && rows.filter(item => !item.deleted).length <= 1);
       const actions = cell(); actions.className = 'dataset-row-actions';
       actions.hidden = !editing;
@@ -194,7 +202,7 @@
     byId('datasetOperationList').replaceChildren();
     operations.forEach((step, index) => {
       const item = document.createElement('li');
-      item.className = 'card dataset-operation-item';
+      item.className = 'dataset-operation-item';
       const head = document.createElement('div');
       head.className = 'dataset-operation-head';
       head.appendChild(text('strong', labels[step.type]));
@@ -202,15 +210,16 @@
         head.appendChild(button('取消', () => {
           if (!saving && !formOpen()) commitPlan(operations.filter((_, i) => i !== index));
         }, '取消待提交任务'));
-      } else head.appendChild(text('span', '已执行', 'muted'));
+      } else head.appendChild(text('span', '未保存', 'muted'));
       item.appendChild(head);
       item.appendChild(text('div', step.scope === 'all' ? '范围：全部保留数据' : '范围：指定 ' + step.episode_ids.length + ' 条数据', 'muted'));
       if (isAuto(step)) item.appendChild(text('div', targetFor(step.type, step.target_id).name + ' · 保存后提交'));
-      if (step.type === 'prompt') item.appendChild(text('div', step.prompt, 'dataset-operation-value'));
-      const detail = document.createElement('details');
-      detail.appendChild(text('summary', '查看配置'));
-      if (step.scope === 'selected') detail.appendChild(text('div', 'Episode：' + step.episode_ids.join('、')));
-      if (step.type === 'prompt') detail.appendChild(text('div', step.prompt));
+      const detail = text('div', '', 'dataset-change-detail');
+      if (step.scope === 'selected') {
+        const dataIds = [...new Set(step.episode_ids.map(id => originalById.get(id).rec))];
+        detail.appendChild(text('div', '数据 ID：' + dataIds.join('、')));
+      } else detail.appendChild(text('div', '操作范围：全部保留数据'));
+      if (step.type === 'prompt') detail.appendChild(text('div', '修改后的 Prompt：\n' + step.prompt));
       if (isAuto(step)) {
         const entries = Object.entries(step.params).filter(([, value]) => value);
         entries.forEach(([key, value]) => detail.appendChild(text('div', key + '：' + value)));
@@ -235,6 +244,7 @@
   }
 
   function closeEditor() {
+    window.datasetEditor.closeChanges();
     editing = false;
     workspace.classList.remove('dataset-editing');
     window.datasetEditor.closeOperation();
@@ -249,6 +259,24 @@
   }
 
   window.datasetEditor = {
+    showChanges() {
+      if (!editing || saving || formOpen() || changesOpen()) return;
+      changesFocus = document.activeElement;
+      changesOverflow = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+      byId('datasetChangesModal').classList.add('active');
+      byId('datasetChangesModal').querySelector('.drawer-close').focus();
+    },
+    closeChanges() {
+      if (!changesOpen()) return;
+      byId('datasetChangesModal').classList.remove('active');
+      document.body.style.overflow = changesOverflow;
+      if (changesFocus) changesFocus.focus();
+    },
+    undo() {
+      if (!editing || saving || formOpen() || !operations.length) return;
+      commitPlan(operations.slice(0, -1));
+    },
     view(view) { setView(view); },
     detail(id) {
       setView('detail');
@@ -332,9 +360,7 @@
         if (ids.length >= rows.filter(row => !row.deleted).length) {
           byId('datasetEditError').textContent = '至少需要保留一条数据。'; return;
         }
-        requestConfirm('剔除选中的 ' + ids.length + ' 条数据？保存后生效。', () => {
-          commitPlan([...operations, {type: 'remove', scope: 'selected', episode_ids: ids}]);
-        });
+        commitPlan([...operations, {type: 'remove', scope: 'selected', episode_ids: ids}]);
       } else if (type === 'prompt') this.openOperation('selected', 'prompt');
     },
     openOperation(scope, type = '') {
@@ -348,7 +374,10 @@
       byId('datasetOperationForm').hidden = false;
       byId('datasetOperationType').value = type;
       byId('datasetOperationTypeField').hidden = batchMode;
-      byId('datasetOperationTitle').textContent = batchMode ? '批量修改 prompt' : '执行操作';
+      byId('datasetOperationScopeField').hidden = batchMode;
+      byId('datasetPromptSelection').hidden = !batchMode;
+      byId('datasetPromptSelection').textContent = '已选择 ' + selected.size + ' 条数据';
+      byId('datasetOperationTitle').textContent = batchMode ? '批量修改 Prompt' : '执行操作';
       byId('datasetOperationScope').value = scope;
       byId('datasetOperationPrompt').value = '';
       byId('datasetOperationError').textContent = '';
@@ -371,7 +400,7 @@
       byId('datasetPromptField').hidden = type !== 'prompt';
       byId('datasetAutomationFields').hidden = !automatic;
       byId('datasetOperationScope').disabled = automatic || batchMode;
-      byId('datasetExecuteOperation').textContent = automatic ? '确认任务' : '执行';
+      byId('datasetExecuteOperation').textContent = automatic ? '确认任务' : '确认修改';
       if (automatic) byId('datasetOperationScope').value = 'all';
       byId('datasetOperationError').textContent = '';
       const target = byId('datasetOperationTarget');
@@ -505,9 +534,10 @@
       event.preventDefault(); event.stopImmediatePropagation();
       if (confirming) window.datasetEditor.closeConfirm();
       else if (formOpen()) window.datasetEditor.closeOperation();
+      else if (changesOpen()) window.datasetEditor.closeChanges();
     }
-    if (event.key === 'Tab' && (confirming || formOpen())) {
-      const activeDialog = confirming ? byId('datasetConfirmModal') : dialog;
+    if (event.key === 'Tab' && (confirming || formOpen() || changesOpen())) {
+      const activeDialog = confirming ? byId('datasetConfirmModal') : changesOpen() ? byId('datasetChangesModal') : dialog;
       const focusable = Array.from(activeDialog.querySelectorAll('button,input,textarea,select,summary,[tabindex="0"]'))
         .filter(node => !node.disabled && node.getClientRects().length);
       const first = focusable[0], last = focusable[focusable.length - 1];
