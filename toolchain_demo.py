@@ -615,7 +615,7 @@ PLATFORMS = {
         "home": "/model",
         "nav": [
             ("数据", [
-                ("/model/data/query", "数据查询", "&#9906;", ""),
+                ("/model/data/query", "数据湖圈选", "&#9906;", ""),
                 ("/model/data/datasets", "数据集", "&#9776;", ""),
                 ("/model/data/raw", "原始数据", "&#9783;", ""),
             ]),
@@ -631,10 +631,13 @@ PLATFORMS = {
                 ("/model/eval/criteria",     "评价标准", "&#9745;", ""),
                 ("/model/eval/evaluate2",    "端侧示意",   "&#9878;", ""),
             ]),
+            ("资产", [
+                ("/model/models",            "模型管理",      "&#9783;", ""),
+                ("/model/config/images",     "镜像管理",      "&#9881;", ""),
+            ]),
             ("配置", [
                 ("/model/eval/tags",         "标签管理",     "&#9873;", ""),
                 ("/model/eval/prompts",      "任务提示词",   "&#9998;", ""),
-                ("/model/config/images",     "镜像管理",      "&#9881;", ""),
             ]),
             ("管理", [
                 ("/model/resources",         "资源管理",     "&#9784;", "saas 专属"),
@@ -3916,7 +3919,7 @@ def render_page(title, content, active="", breadcrumb=None, extra_script=None,
             device_models=None,
         )
     # 统一查询筛选器文案；保留 resetFilters 等行为函数及业务表单动作。
-    _list_paths = ("/model/experiments", "/model/checkpoints", "/model/deploy", "/model/queues",
+    _list_paths = ("/model/experiments", "/model/checkpoints", "/model/models", "/model/deploy", "/model/queues",
                    "/model/config/images",
                    "/model/eval/tasks", "/model/eval/eval-records",
                    "/model/eval/benchmarks", "/model/eval/scenes", "/model/eval/prompts",
@@ -4038,7 +4041,7 @@ _DATA_COMPAT_REDIRECTS = {
     "/data/workbench-schemas": "/data/workbench-management",
     "/data/operations": "/data/dashboard",
     "/data/query": "/data/recordings",
-    "/data/ds_progress": "/data/datasets",
+    "/data/ds_progress": "/data/datasets/tasks",
     "/data/lake": "/data/datasets",
 }
 
@@ -4228,7 +4231,7 @@ def home():
          ["处理任务", "工作台", "工作流"]),
         ("model", "模型平台", "训练 → 评测 → 部署", "/model", "模",
          [("训练实验", len(EXPERIMENTS)), ("模型版本", n_models), ("已部署", n_deployed)],
-         ["训练实验", "评测", "部署", "模型仓库"]),
+         ["训练实验", "评测", "部署", "模型管理"]),
         ("app", "应用编排平台", "模型服务 · 编排 · 资产", "/app", "应",
          [("模型服务", 0), ("编排", 0), ("资产", 0)],
          ["模型服务", "生态市场", "应用编排", "资产管理"]),
@@ -4295,7 +4298,7 @@ def home():
     <div class="p-sec">资源概览</div>
     {stat_grid([
         ("数据集 (生效)", str(n_datasets_active), f"已切分 {n_episodes:,} EP"),
-        ("模型仓库", str(n_models), f"已部署 {n_deployed} 台"),
+        ("模型管理", str(n_models), f"已部署 {n_deployed} 台"),
         ("设备在线", f"{n_devices_online} / {n_devices_total}", f"今日预约 {n_bookings_today}"),
         ("GPU 资源池", "3 / 8", "由底座统一调度"),
     ])}
@@ -9188,35 +9191,12 @@ def _render_shared_dataset_management(active, module, prefix):
     visible = dp.visible_datasets()
     selected = next((d for d in visible if d["id"] == request.args.get("sel")), None)
     selected_dataset = _resolve_dataset_id((selected or (visible[0] if visible else {})).get("id", ""))
-    action_open = '<div class="dataset-detail-actions">'
-    if module == "data":
-        lineage_btn = (
-            f'<a class="btn btn-secondary" '
-            f'href="/model/lineage/dataset/{selected_dataset}">查看血缘</a> '
-        )
-        inner = inner.replace(action_open, action_open + lineage_btn, 1)
-    else:
-        lineage_btn = (
-            f'<a class="btn btn-secondary" '
-            f'href="/model/lineage/dataset/{selected_dataset}">查看血缘</a> '
-        )
-        process_btn = (
-            '<button class="btn btn-secondary" onclick="document.getElementById('
-            "'procDrawer').classList.add('active')\">&#9881; 处理数据</button> "
-        )
-        export_btn = (
-            '<button class="btn btn-secondary" '
-            'onclick="toast(\'Demo: 已创建数据导出任务\')">导出数据</button>'
-        )
-        inner = inner.replace(process_btn, "", 1)
-        inner = inner.replace(action_open, action_open + lineage_btn, 1)
-        inner = re.sub(
-            r'(<div class="dataset-detail-actions">.*?)(</div>)',
-            rf'\1 {export_btn}\2',
-            inner,
-            count=1,
-            flags=re.S,
-        )
+    edit_button = '<button class="btn btn-primary" id="datasetEditButton"'
+    lineage_btn = (
+        f'<a class="btn btn-secondary" '
+        f'href="/model/lineage/dataset/{selected_dataset}">查看血缘</a> '
+    )
+    inner = inner.replace(edit_button, lineage_btn + edit_button, 1)
     platform_label = "数据平台" if module == "data" else "模型平台"
     return render_page(
         _dp_capture.get("title", "数据集管理"),
@@ -9272,31 +9252,54 @@ def model_data_datasets():
 
 def _run_data_dataset_action(handler, *args):
     """Keep reused data-platform.py actions inside the data-platform URL space."""
-    response = handler(*args)
+    response = app.make_response(handler(*args))
     location = response.headers.get("Location", "")
     if location.startswith("/datasets"):
-        response.headers["Location"] = f"/data{location}"
+        prefix = "/model/data" if request.path.startswith("/model/data/") else "/data"
+        response.headers["Location"] = f"{prefix}{location}"
     return response
 
 
-@app.route("/data/datasets/<did>/version/<ver>/publish")
+@app.route("/data/datasets/<did>/version/<ver>/publish", methods=["POST"])
+@app.route("/model/data/datasets/<did>/version/<ver>/publish", methods=["POST"])
 def data_datasets_publish(did, ver):
     return _run_data_dataset_action(dp.datasets_publish, did, ver)
 
 
-@app.route("/data/datasets/<did>/version/<ver>/rollback")
-def data_datasets_rollback(did, ver):
-    return _run_data_dataset_action(dp.datasets_rollback, did, ver)
+@app.route("/data/datasets/<did>/version/<ver>/activate", methods=["POST"])
+@app.route("/model/data/datasets/<did>/version/<ver>/activate", methods=["POST"])
+def data_datasets_activate(did, ver):
+    return _run_data_dataset_action(dp.datasets_activate, did, ver)
 
 
 @app.route("/data/datasets/<did>/process", methods=["POST"])
+@app.route("/model/data/datasets/<did>/process", methods=["POST"])
 def data_datasets_process(did):
     return _run_data_dataset_action(dp.datasets_process, did)
+
+
+@app.route("/model/data/datasets/<did>/save", methods=["POST"])
+@app.route("/data/datasets/<did>/save", methods=["POST"])
+def shared_datasets_save(did):
+    return dp.datasets_save(did)
+
+
+@app.route("/model/data/datasets/append", methods=["POST"])
+@app.route("/data/datasets/append", methods=["POST"])
+def shared_datasets_append():
+    return dp.datasets_append()
 
 
 @app.route("/model/data/datasets/<ds_id>")
 def model_data_dataset_detail(ds_id):
     ds = _dataset_by_id_or_name(_resolve_dataset_id(ds_id)) or DATASETS[0]
+    editable_ds = next((item for item in dp.DATASETS if item["id"] == ds_id
+                        or _resolve_dataset_id(item["id"]) == ds["id"]
+                        or item["name"] == ds["name"]), None) if DP_AVAILABLE else None
+    edit_action = (f'<a class="btn btn-primary" href="/model/data/datasets?sel={editable_ds["id"]}&amp;edit=1">编辑</a>'
+                   if editable_ds else '')
+    if editable_ds:
+        ds = {**ds, **{key: editable_ds[key] for key in ("version", "episodes", "frames", "status", "created")}}
     src_html = " · ".join(
         f'<span class="tag tag-teal">{resolve_task_name(s)}</span>'
         for s in ds["source_tasks"]
@@ -9329,7 +9332,7 @@ def model_data_dataset_detail(ds_id):
     <div class="lin-actions">
       <a class="btn" href="/model/data/datasets">返回数据集</a>
       <a class="btn btn-secondary" href="/model/lineage/dataset/{ds['id']}">查看血缘</a>
-      <button class="btn btn-secondary" onclick="showToast('已创建数据导出任务','success')">导出数据</button>
+      {edit_action}
     </div>
     {stat_grid([
         ("Episode", str(ds["episodes"]), ""),
@@ -9361,9 +9364,31 @@ def model_data_dataset_detail(ds_id):
                        breadcrumb=f'模型平台 / 数据集 / <b>{ds["name"]}</b>', mvp_note="MVP 一期")
 
 
+@app.route("/model/data/datasets/tasks")
+def model_dataset_tasks():
+    return _dp_render(dp.ds_progress, "/model/data/datasets")
+
+
+@app.route("/data/datasets/tasks")
+def data_dataset_tasks():
+    return _dp_render(dp.ds_progress, "/data/datasets", prefix="/data", module="data")
+
+
+@app.route("/model/data/datasets/tasks/<task_id>/retry", methods=["POST"])
+@app.route("/data/datasets/tasks/<task_id>/retry", methods=["POST"])
+def shared_dataset_task_retry(task_id):
+    return dp.dataset_task_retry(task_id)
+
+
+@app.route("/model/data/datasets/create", methods=["POST"])
+@app.route("/data/datasets/create", methods=["POST"])
+def shared_dataset_create():
+    return dp.datasets_create()
+
+
 @app.route("/model/data/ds_progress")
 def model_data_ds_progress():
-    return _dp_render(dp.ds_progress, "/model/data/query")
+    return _dp_render(dp.ds_progress, "/model/data/datasets")
 
 @app.route("/ds_progress")
 def legacy_ds_progress():
@@ -11251,43 +11276,97 @@ def deploy():
 
 @app.route("/model/models")
 def models():
+    name_filter = request.args.get("name", "").strip()
+    base_filter = request.args.get("base", "").strip()
+    filtered = [m for m in MODELS
+                if (not name_filter or name_filter.casefold() in m["name"].casefold())
+                and (not base_filter or m["base"] == base_filter)]
     rows = ""
-    for m in MODELS:
+    for m in filtered:
+        dataset = _dataset_by_id_or_name(_resolve_dataset_id(m["from_dataset"]))
+        dataset_html = (f'<a href="/model/data/datasets/{quote(dataset["id"], safe="")}">{html.escape(dataset["name"])}</a>'
+                        if dataset else html.escape(m["from_dataset"]))
+        experiment = _exp_by_id(m["from_exp"])
+        experiment_html = (f'<a href="/model/experiments/{quote(experiment["id"], safe="")}">{html.escape(experiment["id"])}</a>'
+                           if experiment else html.escape(m["from_exp"]))
+        detail_url = f'/model/models/{quote(m["id"], safe="")}'
         deploy_html = " · ".join(f'<span class="tag tag-coral">{d}</span>' for d in m["deployed_to"]) if m["deployed_to"] else '<span class="muted">未部署</span>'
         rows += f"""<tr>
           <td class="mono">{m['id']}</td>
-          <td><b>{m['name']}</b></td>
+          <td><a href="{detail_url}">{html.escape(m['name'])}</a></td>
           <td class="mono">{m['version']}</td>
           <td><span class="tag tag-purple">{m['base']}</span></td>
-          <td class="mono"><a href="/model/experiments">{m['from_exp']}</a></td>
-          <td class="mono"><a href="/data/datasets">{m['from_dataset']}</a></td>
+          <td class="mono">{experiment_html}</td>
+          <td>{dataset_html}</td>
           <td>{deploy_html}</td>
           <td>{m['owner']}</td>
           <td class="muted mono">{m['created']}</td>
-          <td class="actions-cell"><a href="/model/lineage?model={m['id']}">血缘</a></td>
+          <td class="actions-cell"><a href="{detail_url}">详情</a><a href="/model/lineage?model={m['id']}">血缘</a></td>
         </tr>"""
-    content = page_header(
-        "模型仓库",
-        "模型 Registry · 版本 · 血缘 (数据集 → 实验 → 模型)",
-        "Prompt 管理 · 镜像 · 标签体系",
-    ) + f"""
-    <div class="filter-bar">
-      <input class="grow" placeholder="搜索模型名...">
-      <select><option>全部基础模型</option><option>Spirit v1.7</option><option>Spirit v1.6</option></select>
+    rows = rows or '<tr><td colspan="10" class="muted" style="text-align:center;padding:32px;">暂无符合条件的模型</td></tr>'
+    base_options = ''.join(
+        f'<option value="{html.escape(base, quote=True)}"{" selected" if base == base_filter else ""}>{html.escape(base)}</option>'
+        for base in sorted({m["base"] for m in MODELS})
+    )
+    content = f"""
+    <form class="filter-bar fb-labeled" method="get" action="/model/models">
+      <div class="ff"><label for="modelNameFilter">模型名称</label><input id="modelNameFilter" name="name" value="{html.escape(name_filter, quote=True)}" placeholder="搜索模型名称"></div>
+      <div class="ff"><label for="modelBaseFilter">基础模型</label><select id="modelBaseFilter" name="base"><option value="">全部基础模型</option>{base_options}</select></div>
       <div class="filter-actions">
-        <button class="btn btn-tertiary" onclick="resetFilters(this)">重置</button>
-        <button class="btn btn-primary" onclick="queryFilters(this)">查询</button>
+        <a class="btn btn-tertiary" href="/model/models">清空</a>
+        <button class="btn btn-primary" type="submit">查询</button>
       </div>
-    </div>
-    <div class="table-wrap">
+    </form>
+    <div class="table-wrap q-table-scroll">
       <table class="ant-table">
         <thead><tr><th>ID</th><th>模型名</th><th>版本</th><th>基础模型</th><th>来源实验</th><th>来源数据集</th><th>已部署设备</th><th>负责人</th><th>创建时间</th><th>操作</th></tr></thead>
         <tbody>{rows}</tbody>
       </table>
     </div>
     """
-    return render_page("模型仓库", content, active="/model/models", module="model",
-                       breadcrumb='模型平台 / <b>模型仓库</b>', mvp_note="MVP 一期")
+    return render_page("模型管理", content, active="/model/models", module="model",
+                       breadcrumb='模型平台 / 资产 / <b>模型管理</b>', mvp_note="MVP 一期")
+
+
+def _model_asset_context(model):
+    """Resolve recorded asset relationships without guessing a checkpoint or version."""
+    same_version = lambda row, name_key: (row.get(name_key) == model["name"]
+                                          and row.get("version") == model["version"])
+    checkpoint = _ckpt_by_id(model.get("checkpoint_id", ""))
+    dataset = _dataset_by_id_or_name(_resolve_dataset_id(model["from_dataset"]))
+    evaluations = [row for row in _evaluation_lineage_records()
+                   if row.get("model_id") == model["id"]
+                   or (checkpoint and row.get("ckpt_id") == checkpoint["id"])]
+    return {
+        "model": model,
+        "dataset": dataset,
+        "experiment": _exp_by_id(model["from_exp"]),
+        "checkpoint": checkpoint,
+        "versions": sorted([row for row in MODELS if row["name"] == model["name"]],
+                           key=lambda row: row["created"], reverse=True),
+        "artifacts": [row for row in CONVERT_JOBS if same_version(row, "source")],
+        "services": [row for row in INFERENCE_SVCS if same_version(row, "model")],
+        "deployments": sorted([row for row in DEPLOYS if same_version(row, "model")],
+                              key=lambda row: row["at"], reverse=True),
+        "evaluations": sorted(evaluations, key=lambda row: row.get("at", ""), reverse=True),
+    }
+
+
+@app.route("/model/models/<model_id>")
+def model_detail(model_id):
+    model = next((row for row in MODELS if row["id"] == model_id), None)
+    if model is None:
+        abort(404)
+    context = _model_asset_context(model)
+    tabs = [("card", "Model Card"), ("artifacts", "模型产物"),
+            ("evaluations", "评测记录"), ("deployments", "部署记录"), ("versions", "版本记录")]
+    active_tab = request.args.get("tab", "card")
+    if active_tab not in dict(tabs):
+        active_tab = "card"
+    content = render_template("model_assets/detail.html", **context, tabs=tabs,
+                              active_tab=active_tab, status_tag=status_tag)
+    return render_page(model["name"], content, active="/model/models", module="model",
+                       breadcrumb=f'模型平台 / 资产 / 模型管理 / <b>{html.escape(model["name"])}</b>')
 
 
 # ── 训练 · Checkpoint ──
@@ -11392,7 +11471,7 @@ def model_config_images():
     renderImageCatalog();
     </script>
     """
-    return render_page('镜像管理', content, active='/model/config/images', module='model', breadcrumb='模型平台 / 配置 / <b>镜像管理</b>')
+    return render_page('镜像管理', content, active='/model/config/images', module='model', breadcrumb='模型平台 / 资产 / <b>镜像管理</b>')
 
 CKPT_DESC_FALLBACKS = [
     "HouseHold stop 32 任务 40k step 稳定版本",
@@ -11818,7 +11897,7 @@ def checkpoint_detail(ckpt_id):
     content = page_header(
         ckpt["name"],
         f'Checkpoint #{ckpt["id"]} · {ckpt["created"]}',
-        "训练产物 · 缓存状态 · 注册模型仓库 · 血缘",
+        "训练产物 · 缓存状态 · 登记为模型资产 · 血缘",
     ) + f"""
     <div class="lin-actions">
       <a class="btn" href="/model/checkpoints">返回 Checkpoint</a>
@@ -14768,7 +14847,7 @@ def lineage():
     </div>
     """
     return render_page("端到端血缘", content, active="/model/models", module="model",
-                       breadcrumb='模型平台 / 模型仓库 / <b>端到端血缘</b>', mvp_note="MVP 一期")
+                       breadcrumb='模型平台 / 资产 / 模型管理 / <b>端到端血缘</b>', mvp_note="MVP 一期")
 
 
 def _lineage_page(anchor_type, anchor_id):

@@ -452,7 +452,7 @@ def test_dataset_query_creation_modal_uses_validation_state_and_model_progress_r
     html = response.get_data(as_text=True)
     assert '数据集校验中' in html
     assert '数据集核验中' not in html
-    assert 'href="/model/data/ds_progress"' in html
+    assert 'href="/model/data/datasets/tasks"' in html
     assert '只保存' not in html
 
 
@@ -465,7 +465,8 @@ def test_dataset_progress_supports_validation_status_and_legacy_redirect():
     assert '进行中' in html
     assert 'data-value="todo"' not in html
     assert '未开始</button>' not in html
-    assert 'data-value="verify"' in html
+    assert '<option value="校验中"' in html
+    assert 'id="datasetTaskTable"' in html
     assert '<h3 id="dpErrorTitle">异常原因</h3>' in html
     assert '数据格式不一致' in html
     assert '格式组 1' in html

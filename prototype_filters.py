@@ -16,13 +16,16 @@ def filter_url(**changes):
     return "?" + html.escape(urlencode({k: v for k, v in args.items() if v}), quote=True)
 
 
-def ownership_tabs():
+def ownership_tabs(mine_first=False):
     mine = request.args.get("scope") == "mine"
+    options = (("all", "全部", not mine), ("mine", "我创建的", mine))
+    if mine_first:
+        options = options[::-1]
     links = "".join(
         f'<a href="{filter_url(scope=value, owner="", sel="", ver="")}" '
         f'aria-current="{"page" if active else "false"}" '
         f'class="ownership-option{" active" if active else ""}">{label}</a>'
-        for value, label, active in (("all", "全部", not mine), ("mine", "我创建的", mine))
+        for value, label, active in options
     )
     return '''<style>
     .ownership-tabs{display:inline-flex;width:max-content;gap:2px;padding:3px;margin:8px 0 12px;align-items:center;background:#f6f7f8;border-radius:5px}

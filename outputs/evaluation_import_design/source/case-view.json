@@ -1,0 +1,19 @@
+{
+  "ok": true,
+  "identity": "user",
+  "data": {
+    "view": {
+      "_meta": {
+        "filter": null,
+        "group": [
+          "fldygXuYsi"
+        ],
+        "sort": [],
+        "visible_fields": "17 fields"
+      },
+      "id": "vewi0Okt9f",
+      "name": "全量表",
+      "type": "grid"
+    }
+  }
+}

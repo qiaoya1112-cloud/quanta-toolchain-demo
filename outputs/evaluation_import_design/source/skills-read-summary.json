@@ -1,0 +1,122 @@
+{
+  "manifest_version": "v1",
+  "format": "ndjson",
+  "base_token": "OQ2UbV65natigrstPbXcwhWinyb",
+  "table_id": "tblT39AUgtbKTUDy",
+  "rev": 1,
+  "timezone": "Asia/Shanghai",
+  "query_context": {
+    "field_scope": "selected_fields",
+    "record_scope": "all_records"
+  },
+  "requested_limit": 2000,
+  "records_count": 198,
+  "page_count": 1,
+  "has_more": false,
+  "record_file": "/Users/joanna/Desktop/具身/具身智能-项目/模型平台/outputs/evaluation_import_design/source/skills.ndjson",
+  "record_file_size_bytes": 37483,
+  "manifest_file": "/Users/joanna/Desktop/具身/具身智能-项目/模型平台/outputs/evaluation_import_design/source/skills.manifest.json",
+  "columns": {
+    "Key Factor": {
+      "field_id": "fldYJil6hA",
+      "field_type": "text",
+      "physical_type": "string|null",
+      "stats": {
+        "null_count": 198,
+        "max_length": 0
+      },
+      "hint": "All values are empty; type inference may be ambiguous. Avoid analyzing this column unless required."
+    },
+    "SKill类别": {
+      "field_id": "fldgJG7B1e",
+      "field_type": "select",
+      "physical_type": "array\u003cstring\u003e",
+      "stats": {
+        "empty_count": 160,
+        "max_length": 1,
+        "avg_length": 0.1919191919191919
+      },
+      "example": [
+        "动作类 Skill"
+      ]
+    },
+    "Skill": {
+      "field_id": "fldGlAbYqc",
+      "field_type": "select",
+      "physical_type": "array\u003cstring\u003e",
+      "stats": {
+        "empty_count": 162,
+        "max_length": 1,
+        "avg_length": 0.18181818181818182
+      },
+      "example": [
+        "运动跟随"
+      ]
+    },
+    "Skill_EN": {
+      "field_id": "fldvZqUZYT",
+      "field_type": "text",
+      "physical_type": "string|null",
+      "stats": {
+        "null_count": 163,
+        "max_length": 20
+      },
+      "example": "Cut"
+    },
+    "Skill_中文": {
+      "field_id": "fld6aRQoD3",
+      "field_type": "text",
+      "physical_type": "string|null",
+      "stats": {
+        "null_count": 163,
+        "max_length": 6
+      },
+      "example": "翻"
+    },
+    "record_id": {
+      "physical_type": "string",
+      "stats": {
+        "max_length": 14
+      },
+      "example": "recvtcQv2DXExJ"
+    },
+    "可能的动作描述": {
+      "field_id": "fldasRKrZO",
+      "field_type": "select",
+      "physical_type": "array\u003cstring\u003e",
+      "stats": {
+        "empty_count": 167,
+        "max_length": 5,
+        "avg_length": 0.6262626262626263
+      },
+      "example": [
+        "fold",
+        "crease",
+        "bend"
+      ]
+    },
+    "备注": {
+      "field_id": "fldPFGLGOc",
+      "field_type": "text",
+      "physical_type": "string|null",
+      "stats": {
+        "null_count": 166,
+        "max_length": 17
+      },
+      "example": "叠放物品"
+    },
+    "工具使用": {
+      "field_id": "fldqD8EoHM",
+      "field_type": "select",
+      "physical_type": "array\u003cstring\u003e",
+      "stats": {
+        "empty_count": 194,
+        "max_length": 1,
+        "avg_length": 0.020202020202020204
+      },
+      "example": [
+        "工具操作（Tool Use）"
+      ]
+    }
+  }
+}

@@ -1,0 +1,140 @@
+{
+  "manifest_version": "v1",
+  "format": "ndjson",
+  "base_token": "OQ2UbV65natigrstPbXcwhWinyb",
+  "table_id": "tbl4uI23VnzwPMxy",
+  "rev": 0,
+  "timezone": "Asia/Shanghai",
+  "query_context": {
+    "field_scope": "selected_fields",
+    "record_scope": "all_records"
+  },
+  "requested_limit": 2000,
+  "records_count": 193,
+  "page_count": 1,
+  "has_more": false,
+  "record_file": "/Users/joanna/Desktop/具身/具身智能-项目/模型平台/outputs/evaluation_import_design/source/factors.ndjson",
+  "record_file_size_bytes": 41137,
+  "manifest_file": "/Users/joanna/Desktop/具身/具身智能-项目/模型平台/outputs/evaluation_import_design/source/factors.manifest.json",
+  "columns": {
+    "Factor": {
+      "field_id": "fldVKucYl3",
+      "field_type": "select",
+      "physical_type": "array<string>",
+      "stats": {
+        "empty_count": 156,
+        "max_length": 1,
+        "avg_length": 0.19170984455958548
+      },
+      "example": [
+        "环境条件-光学条件-色温"
+      ]
+    },
+    "default 标准值": {
+      "field_id": "fldSPRvmaz",
+      "field_type": "text",
+      "physical_type": "string|null",
+      "stats": {
+        "null_count": 156,
+        "max_length": 7
+      },
+      "example": "中"
+    },
+    "record_id": {
+      "physical_type": "string",
+      "stats": {
+        "max_length": 14
+      },
+      "example": "recvlrAqPHOcoh"
+    },
+    "一级": {
+      "field_id": "fldmZHHFJ7",
+      "field_type": "select",
+      "physical_type": "array<string>",
+      "stats": {
+        "empty_count": 155,
+        "max_length": 1,
+        "avg_length": 0.19689119170984457
+      },
+      "example": [
+        "任务结构"
+      ]
+    },
+    "三级": {
+      "field_id": "fldkH4Rsvk",
+      "field_type": "select",
+      "physical_type": "array<string>",
+      "stats": {
+        "empty_count": 156,
+        "max_length": 1,
+        "avg_length": 0.19170984455958548
+      },
+      "example": [
+        "尺寸"
+      ]
+    },
+    "二级": {
+      "field_id": "fldlz7yGD7",
+      "field_type": "select",
+      "physical_type": "array<string>",
+      "stats": {
+        "empty_count": 156,
+        "max_length": 1,
+        "avg_length": 0.19170984455958548
+      },
+      "example": [
+        "几何形态"
+      ]
+    },
+    "取值范围": {
+      "field_id": "fldVvYS0WS",
+      "field_type": "text",
+      "physical_type": "string|null",
+      "stats": {
+        "null_count": 156,
+        "max_length": 34
+      },
+      "example": "轻/中/重"
+    },
+    "取值说明": {
+      "field_id": "fldWLNg51Z",
+      "field_type": "link",
+      "physical_type": "array<struct<id string>>",
+      "stats": {
+        "empty_count": 179,
+        "max_length": 7,
+        "avg_length": 0.24352331606217617
+      },
+      "example": [
+        {
+          "id": "recvuv9cab0tr7"
+        },
+        {
+          "id": "recvuv9cabjE3Z"
+        }
+      ]
+    },
+    "场景库目录表": {
+      "field_id": "fldp5v0cCg",
+      "field_type": "link",
+      "physical_type": "array<struct<id string>>",
+      "stats": {
+        "empty_count": 193,
+        "max_length": 0,
+        "avg_length": 0
+      },
+      "hint": "All values are empty; type inference may be ambiguous. Avoid analyzing this column unless required."
+    },
+    "父记录": {
+      "field_id": "fldXQ4ugKq",
+      "field_type": "link",
+      "physical_type": "array<struct<id string>>",
+      "stats": {
+        "empty_count": 193,
+        "max_length": 0,
+        "avg_length": 0
+      },
+      "hint": "All values are empty; type inference may be ambiguous. Avoid analyzing this column unless required."
+    }
+  }
+}

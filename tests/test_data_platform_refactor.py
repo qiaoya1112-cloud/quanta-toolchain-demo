@@ -3072,9 +3072,9 @@ class DataPlatformArchitectureTests(unittest.TestCase):
                 "构成分析",
                 ">版本</div>",
                 "基本信息",
-                "处理数据",
+                "本次修改",
                 "查看血缘",
-                'id="procDrawer"',
+                'id="datasetOperationDrawer"',
                 'href="/data/datasets?sel=',
             ),
             "/data/suppliers": (
@@ -3344,7 +3344,7 @@ class DataPlatformArchitectureTests(unittest.TestCase):
             "摘要信息",
             "完整信息",
             'data-dataset-info-field="tags"',
-            "处理数据",
+            "本次修改",
             "新建目录",
             "新建数据集",
             'id="dsEditModal"',
@@ -3359,7 +3359,7 @@ class DataPlatformArchitectureTests(unittest.TestCase):
             ".dataset-tag-picker.readonly .dataset-tag-picker-control",
             "场景标签 &gt; 作业区域 &gt; 白板区",
             '"tags": [',
-            'id="procDrawer"',
+            'id="datasetOperationDrawer"',
             "HighLevel 维度",
             "Lowlevel 维度",
         )
@@ -3373,23 +3373,20 @@ class DataPlatformArchitectureTests(unittest.TestCase):
         self.assertNotIn('href="/model/data/datasets?sel=', data_html)
         self.assertIn(">查看血缘</a>", data_html)
         self.assertIn(">查看血缘</a>", model_html)
-        self.assertIn(">导出数据</button>", model_html)
+        self.assertNotIn(">导出数据</button>", model_html)
         model_actions = re.search(
             r'<div class="dataset-detail-actions">(.*?)</div>',
             model_html,
             flags=re.S,
         )
         self.assertIsNotNone(model_actions)
-        self.assertNotIn("处理数据", model_actions.group(1))
-        self.assertLess(
-            model_actions.group(1).index("查看血缘"),
-            model_actions.group(1).index("导出数据"),
-        )
+        self.assertNotIn("编辑操作", model_actions.group(1))
+        self.assertNotIn("导出数据", model_actions.group(1))
 
         standalone_detail = self.client.get(
             "/model/data/datasets/ds_501"
         ).get_data(as_text=True)
-        self.assertIn(">导出数据</button>", standalone_detail)
+        self.assertNotIn(">导出数据</button>", standalone_detail)
         self.assertIn(">查看血缘</a>", standalone_detail)
         self.assertIn('data-dataset-info-field="tags"', standalone_detail)
         self.assertIn("白板区", standalone_detail)
@@ -3408,7 +3405,7 @@ class DataPlatformArchitectureTests(unittest.TestCase):
             flags=re.S,
         )
         self.assertIsNotNone(drawer)
-        self.assertIn("用结果建数据集", drawer.group(0))
+        self.assertIn("用结果新建数据集", drawer.group(0))
         self.assertIn('id="buildDsTags"', drawer.group(0))
         self.assertIn("<label>标签</label>", drawer.group(0))
         self.assertIn('name="dataset_tag"', drawer.group(0))

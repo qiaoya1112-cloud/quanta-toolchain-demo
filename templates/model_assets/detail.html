@@ -1,0 +1,134 @@
+{% macro field(label, value) -%}
+<div class="bi-field-item"><div class="bi-field-label">{{ label }}</div><div class="bi-field-value">{{ value }}</div></div>
+{%- endmacro %}
+{% macro empty(columns, message) -%}
+<tr><td colspan="{{ columns }}" class="muted" style="text-align:center;padding:32px;">{{ message }}</td></tr>
+{%- endmacro %}
+
+<div class="tdh">
+  <div class="tdh-name">{{ model.name }} <span class="tag tag-blue">{{ model.version }}</span></div>
+  <div class="tdh-actions">
+    <a class="btn" href="{{ url_for('models') }}">返回模型管理</a>
+    <a class="btn" href="{{ url_for('lineage', model=model.id) }}">查看血缘</a>
+  </div>
+  <div class="tdh-meta">
+    <div><span class="lbl">模型 ID:</span><span class="val mono">{{ model.id }}</span></div>
+    <div><span class="lbl">负责人:</span><span class="val">{{ model.owner }}</span></div>
+    <div><span class="lbl">创建时间:</span><span class="val">{{ model.created }}</span></div>
+  </div>
+</div>
+
+<div class="stat-grid">
+  {% for label, value in [('模型版本', versions|length), ('转换产物', artifacts|length), ('关联评测', evaluations|length), ('已部署设备', model.deployed_to|length)] %}
+  <div class="stat-card"><div class="stat-label">{{ label }}</div><div class="stat-value">{{ value }}</div></div>
+  {% endfor %}
+</div>
+
+<div class="tm-bar"><div class="tm-tabs" aria-label="模型详情">
+  {% for key, label in tabs %}
+  <a class="tm-tab{{ ' active' if active_tab == key else '' }}" href="{{ url_for('model_detail', model_id=model.id, tab=key) }}"{% if active_tab == key %} aria-current="page"{% endif %}>{{ label }}</a>
+  {% endfor %}
+</div></div>
+
+{% if active_tab == 'card' %}
+<div class="basic-info">
+  <section class="bi-sec">
+    <h3 class="bi-sec-title">基本信息</h3>
+    <div class="bi-field-row bi-field-row-2">{{ field('模型名称', model.name) }}{{ field('模型 ID', model.id) }}</div>
+    <div class="bi-field-row bi-field-row-2">{{ field('模型版本', model.version) }}{{ field('基础模型', model.base) }}</div>
+    <div class="bi-field-row bi-field-row-2">{{ field('负责人', model.owner) }}{{ field('创建时间', model.created) }}</div>
+    <div class="bi-field-row">{{ field('模型描述', model.get('description') or '暂未填写') }}</div>
+  </section>
+
+  <section class="bi-sec">
+    <h3 class="bi-sec-title">来源与训练</h3>
+    <div class="bi-field-row">
+      <div class="bi-field-item"><div class="bi-field-label">来源训练任务</div><div class="bi-field-value">
+        {% if experiment %}<a href="{{ url_for('experiment_detail', exp_id=experiment.id) }}">{{ experiment.name }}</a>
+        {% else %}{{ model.from_exp }} <span class="muted">（暂无对应任务记录）</span>{% endif %}
+      </div></div>
+    </div>
+    <div class="bi-field-row">
+      <div class="bi-field-item"><div class="bi-field-label">Checkpoint</div><div class="bi-field-value">
+        {% if checkpoint %}<a href="{{ url_for('checkpoint_detail', ckpt_id=checkpoint.id) }}">{{ checkpoint.name }}</a>{% else %}暂未关联{% endif %}
+      </div></div>
+    </div>
+    {% if experiment %}
+    <div class="bi-field-row bi-field-row-2">{{ field('训练状态', experiment.status) }}{{ field('训练轮次', experiment.current_epoch ~ ' / ' ~ experiment.epochs) }}</div>
+    {% endif %}
+    <h4 class="bi-subsection-title">来源数据集</h4>
+    <div class="table-wrap q-table-scroll"><table class="ant-table" aria-label="来源数据集">
+      <thead><tr><th>数据集 ID</th><th>数据集名称</th><th>版本</th><th>Episode 数</th><th>帧数</th><th>负责人</th></tr></thead>
+      <tbody>{% if dataset %}<tr>
+        <td class="mono">{{ dataset.id }}</td>
+        <td><a href="{{ url_for('model_data_dataset_detail', ds_id=dataset.id) }}">{{ dataset.name }}</a></td>
+        <td>{{ dataset.version }}</td><td>{{ dataset.episodes }}</td><td>{{ '{:,}'.format(dataset.frames) }}</td><td>{{ dataset.owner }}</td>
+      </tr>{% else %}{{ empty(6, '暂无对应数据集记录：' ~ model.from_dataset) }}{% endif %}</tbody>
+    </table></div>
+  </section>
+
+  <section class="bi-sec">
+    <h3 class="bi-sec-title">运行与使用</h3>
+    <div class="bi-field-row">
+      <div class="bi-field-item"><div class="bi-field-label">已部署设备</div><div class="bi-field-value">
+        {% for device in model.deployed_to %}<span class="tag tag-coral">{{ device }}</span>{% else %}未部署{% endfor %}
+      </div></div>
+    </div>
+    <div class="bi-field-row">{{ field('推理格式', (services|map(attribute='format')|unique|join('、')) or '暂无推理服务') }}</div>
+    <div class="bi-field-row">{{ field('适用场景', model.get('intended_use') or '暂未填写') }}</div>
+    <div class="bi-field-row">{{ field('使用限制', model.get('limitations') or '暂未填写') }}</div>
+  </section>
+</div>
+
+{% elif active_tab == 'artifacts' %}
+<div class="table-wrap q-table-scroll"><table class="ant-table" aria-label="模型产物">
+  <thead><tr><th>转换任务 ID</th><th>目标格式</th><th>精度</th><th>大小（MB）</th><th>状态</th><th>创建人</th><th>创建时间</th></tr></thead>
+  <tbody>{% for item in artifacts %}<tr>
+    <td class="mono">{{ item.id }}</td><td>{{ item.target }}</td><td>{{ item.quant }}</td><td>{{ item.size_mb }}</td>
+    <td>{{ status_tag(item.status)|safe }}</td><td>{{ item.owner }}</td><td>{{ item.at }}</td>
+  </tr>{% else %}{{ empty(7, '暂无模型转换产物') }}{% endfor %}</tbody>
+</table></div>
+
+{% elif active_tab == 'evaluations' %}
+<div class="table-wrap q-table-scroll"><table class="ant-table" aria-label="评测记录">
+  <thead><tr><th>任务 ID</th><th>评测任务</th><th>Benchmark</th><th>状态</th><th>成功率</th><th>创建时间</th></tr></thead>
+  <tbody>{% for item in evaluations %}<tr>
+    <td class="mono">{{ item.id }}</td><td><a href="{{ url_for('task_detail', tid=item.id) }}">{{ item.name }}</a></td>
+    <td>{{ item.benchmark }}</td><td>{{ item.status }}</td>
+    <td>{{ '%.1f%%'|format(item.success_rate * 100) if item.get('success_rate') is not none else '—' }}</td><td>{{ item.at }}</td>
+  </tr>{% else %}{{ empty(6, '暂无关联评测记录') }}{% endfor %}</tbody>
+</table></div>
+
+{% elif active_tab == 'deployments' %}
+<div class="basic-info">
+  <section class="bi-sec"><h3 class="bi-sec-title">部署记录</h3>
+    <div class="table-wrap q-table-scroll"><table class="ant-table" aria-label="部署记录">
+      <thead><tr><th>部署 ID</th><th>目标设备</th><th>状态</th><th>成功数</th><th>失败数</th><th>执行中</th><th>触发方式</th><th>操作人</th><th>部署时间</th></tr></thead>
+      <tbody>{% for item in deployments %}<tr>
+        <td class="mono">{{ item.id }}</td><td>{{ item.targets|join('、') }}</td><td>{{ status_tag(item.status)|safe }}</td>
+        <td>{{ item.progress.success }}</td><td>{{ item.progress.failed }}</td><td>{{ item.progress.running }}</td>
+        <td>{{ item.trigger }}</td><td>{{ item.operator }}</td><td>{{ item.at }}</td>
+      </tr>{% else %}{{ empty(9, '暂无部署记录') }}{% endfor %}</tbody>
+    </table></div>
+  </section>
+  <section class="bi-sec"><h3 class="bi-sec-title">推理服务</h3>
+    <div class="table-wrap q-table-scroll"><table class="ant-table" aria-label="推理服务">
+      <thead><tr><th>服务 ID</th><th>设备</th><th>推理格式</th><th>状态</th><th>P95 延迟（ms）</th><th>RPS</th><th>上线时间</th></tr></thead>
+      <tbody>{% for item in services %}<tr>
+        <td class="mono">{{ item.id }}</td><td>{{ item.device }}</td><td>{{ item.format }}</td><td>{{ status_tag(item.status)|safe }}</td>
+        <td>{{ item.p95_ms }}</td><td>{{ item.rps }}</td><td>{{ item.since }}</td>
+      </tr>{% else %}{{ empty(7, '暂无推理服务') }}{% endfor %}</tbody>
+    </table></div>
+  </section>
+</div>
+
+{% elif active_tab == 'versions' %}
+<div class="table-wrap q-table-scroll"><table class="ant-table" aria-label="版本记录">
+  <thead><tr><th>模型 ID</th><th>版本</th><th>基础模型</th><th>已部署设备数</th><th>负责人</th><th>创建时间</th><th>操作</th></tr></thead>
+  <tbody>{% for item in versions %}<tr>
+    <td class="mono">{{ item.id }}</td><td>{{ item.version }}{% if item.id == model.id %} <span class="tag tag-blue">当前版本</span>{% endif %}</td>
+    <td>{{ item.base }}</td><td>{{ item.deployed_to|length }}</td><td>{{ item.owner }}</td><td>{{ item.created }}</td>
+    <td><a href="{{ url_for('model_detail', model_id=item.id) }}">详情</a></td>
+  </tr>{% endfor %}</tbody>
+</table></div>
+{% endif %}

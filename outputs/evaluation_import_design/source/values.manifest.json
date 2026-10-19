@@ -1,0 +1,236 @@
+{
+  "manifest_version": "v1",
+  "format": "ndjson",
+  "base_token": "OQ2UbV65natigrstPbXcwhWinyb",
+  "table_id": "tbltAFo6zZr09s0M",
+  "rev": 1,
+  "timezone": "Asia/Shanghai",
+  "query_context": {
+    "field_scope": "selected_fields",
+    "record_scope": "all_records"
+  },
+  "requested_limit": 2000,
+  "records_count": 206,
+  "page_count": 1,
+  "has_more": false,
+  "record_file": "/Users/joanna/Desktop/具身/具身智能-项目/模型平台/outputs/evaluation_import_design/source/values.ndjson",
+  "record_file_size_bytes": 86316,
+  "manifest_file": "/Users/joanna/Desktop/具身/具身智能-项目/模型平台/outputs/evaluation_import_design/source/values.manifest.json",
+  "columns": {
+    "Factor": {
+      "field_id": "fldWkv4FOQ",
+      "field_type": "link",
+      "physical_type": "array<struct<id string>>",
+      "stats": {
+        "empty_count": 159,
+        "max_length": 1,
+        "avg_length": 0.22815533980582525
+      },
+      "example": [
+        {
+          "id": "recvlxI9tCqLfv"
+        }
+      ]
+    },
+    "factor": {
+      "field_id": "fldjMzrrMa",
+      "field_type": "select",
+      "physical_type": "array<string>",
+      "stats": {
+        "empty_count": 79,
+        "max_length": 1,
+        "avg_length": 0.616504854368932
+      },
+      "example": [
+        "环境条件-光学条件-色温"
+      ]
+    },
+    "record_id": {
+      "physical_type": "string",
+      "stats": {
+        "max_length": 14
+      },
+      "example": "recvuv9b5aznd8"
+    },
+    "举例": {
+      "field_id": "fldnjW1ZwV",
+      "field_type": "text",
+      "physical_type": "string|null",
+      "stats": {
+        "null_count": 91,
+        "max_length": 27
+      },
+      "example": "水、饮料"
+    },
+    "取值": {
+      "field_id": "fldAi8Cu26",
+      "field_type": "text",
+      "physical_type": "string|null",
+      "stats": {
+        "null_count": 79,
+        "max_length": 7
+      },
+      "example": "小"
+    },
+    "字段 10": {
+      "field_id": "fldRLfIaNI",
+      "field_type": "text",
+      "physical_type": "string|null",
+      "stats": {
+        "null_count": 206,
+        "max_length": 0
+      },
+      "hint": "All values are empty; type inference may be ambiguous. Avoid analyzing this column unless required."
+    },
+    "字段 11": {
+      "field_id": "fldd0VBw2X",
+      "field_type": "text",
+      "physical_type": "string|null",
+      "stats": {
+        "null_count": 206,
+        "max_length": 0
+      },
+      "hint": "All values are empty; type inference may be ambiguous. Avoid analyzing this column unless required."
+    },
+    "字段 12": {
+      "field_id": "fld39m0kyD",
+      "field_type": "text",
+      "physical_type": "string|null",
+      "stats": {
+        "null_count": 206,
+        "max_length": 0
+      },
+      "hint": "All values are empty; type inference may be ambiguous. Avoid analyzing this column unless required."
+    },
+    "字段 13": {
+      "field_id": "fldFPT89Ek",
+      "field_type": "text",
+      "physical_type": "string|null",
+      "stats": {
+        "null_count": 206,
+        "max_length": 0
+      },
+      "hint": "All values are empty; type inference may be ambiguous. Avoid analyzing this column unless required."
+    },
+    "字段 14": {
+      "field_id": "fldS3pymd2",
+      "field_type": "text",
+      "physical_type": "string|null",
+      "stats": {
+        "null_count": 206,
+        "max_length": 0
+      },
+      "hint": "All values are empty; type inference may be ambiguous. Avoid analyzing this column unless required."
+    },
+    "字段 15": {
+      "field_id": "fldw9jZFQr",
+      "field_type": "text",
+      "physical_type": "string|null",
+      "stats": {
+        "null_count": 206,
+        "max_length": 0
+      },
+      "hint": "All values are empty; type inference may be ambiguous. Avoid analyzing this column unless required."
+    },
+    "字段 16": {
+      "field_id": "flde7Fsk8W",
+      "field_type": "text",
+      "physical_type": "string|null",
+      "stats": {
+        "null_count": 206,
+        "max_length": 0
+      },
+      "hint": "All values are empty; type inference may be ambiguous. Avoid analyzing this column unless required."
+    },
+    "字段 2": {
+      "field_id": "fldVMS3SPH",
+      "field_type": "text",
+      "physical_type": "string|null",
+      "stats": {
+        "null_count": 206,
+        "max_length": 0
+      },
+      "hint": "All values are empty; type inference may be ambiguous. Avoid analyzing this column unless required."
+    },
+    "字段 3": {
+      "field_id": "fldJwJBPZO",
+      "field_type": "text",
+      "physical_type": "string|null",
+      "stats": {
+        "null_count": 206,
+        "max_length": 0
+      },
+      "hint": "All values are empty; type inference may be ambiguous. Avoid analyzing this column unless required."
+    },
+    "字段 4": {
+      "field_id": "fldXPXT68J",
+      "field_type": "text",
+      "physical_type": "string|null",
+      "stats": {
+        "null_count": 206,
+        "max_length": 0
+      },
+      "hint": "All values are empty; type inference may be ambiguous. Avoid analyzing this column unless required."
+    },
+    "字段 5": {
+      "field_id": "fld1J8YklC",
+      "field_type": "text",
+      "physical_type": "string|null",
+      "stats": {
+        "null_count": 206,
+        "max_length": 0
+      },
+      "hint": "All values are empty; type inference may be ambiguous. Avoid analyzing this column unless required."
+    },
+    "字段 6": {
+      "field_id": "fldQhfMExm",
+      "field_type": "text",
+      "physical_type": "string|null",
+      "stats": {
+        "null_count": 206,
+        "max_length": 0
+      },
+      "hint": "All values are empty; type inference may be ambiguous. Avoid analyzing this column unless required."
+    },
+    "字段 7": {
+      "field_id": "fldCRAKAzI",
+      "field_type": "text",
+      "physical_type": "string|null",
+      "stats": {
+        "null_count": 206,
+        "max_length": 0
+      },
+      "hint": "All values are empty; type inference may be ambiguous. Avoid analyzing this column unless required."
+    },
+    "字段 8": {
+      "field_id": "fldZcQD2P3",
+      "field_type": "text",
+      "physical_type": "string|null",
+      "stats": {
+        "null_count": 206,
+        "max_length": 0
+      },
+      "hint": "All values are empty; type inference may be ambiguous. Avoid analyzing this column unless required."
+    },
+    "字段 9": {
+      "field_id": "fldEZn1WtU",
+      "field_type": "text",
+      "physical_type": "string|null",
+      "stats": {
+        "null_count": 206,
+        "max_length": 0
+      },
+      "hint": "All values are empty; type inference may be ambiguous. Avoid analyzing this column unless required."
+    },
+    "说明": {
+      "field_id": "fldXKXwA7h",
+      "field_type": "text",
+      "physical_type": "string|null",
+      "stats": {
+        "null_count": 80,
+        "max_length": 29
+      },
+      "example": "空容器"
+    }
+  }
+}
