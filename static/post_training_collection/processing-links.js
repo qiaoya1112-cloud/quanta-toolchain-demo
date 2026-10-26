@@ -198,7 +198,8 @@
         const sourceNotice=drawer.querySelector('.dpr-processing-filter-notice:not(.dpr-processing-filter-warning)');
         if(sourceNotice)sourceNotice.hidden=true;
         drawer.querySelector('[data-filter-group="processing"]').hidden=true;
-        document.getElementById('processingTaskName').value=(t.name.slice(0,85)+' · 数据处理');document.getElementById('processingTaskPriority').value=String(t.priority||3);
+        // 处理任务是独立对象，名称由处理负责人按本次处理目的填写；仅带入来源项目、任务 ID 和优先级。
+        document.getElementById('processingTaskName').value='';document.getElementById('processingTaskPriority').value=String(t.priority||3);
         window.dprRenderTaskFilters([['采集任务 ID','等于',t.id]]);
         // Make source condition fixed; extra conditions remain fully editable.
         const first=drawer.querySelector('.dpr-filter-row');first.querySelectorAll('input,select,button').forEach(el=>el.disabled=true);

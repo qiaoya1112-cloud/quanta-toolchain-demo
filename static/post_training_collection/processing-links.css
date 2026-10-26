@@ -70,8 +70,25 @@
 .dc-record-processing-card>span,.dc-processing-record-id{font-size:12px;color:#637985;overflow-wrap:anywhere}
 .dc-processing-stage-status{display:flex;align-items:center;gap:14px;font-size:13px;margin-top:10px}
 .dc-processing-stage-status strong{font-weight:500}
-.dc-detail-shell .dc-record-table{min-width:1480px}
-.dc-detail-shell .dc-record-table th:nth-last-child(2),.dc-detail-shell .dc-record-table td:nth-last-child(2){width:100px}
+/* Reserve every column, including the optional upload status and fixed actions. */
+@media(min-width:761px){
+  .dc-detail-shell .dc-record-table{min-width:1320px}
+  .dc-detail-shell .dc-record-table.dc-record-with-upload{min-width:1420px}
+  .dc-detail-shell .dc-record-table col:nth-child(1){width:210px}
+  .dc-detail-shell .dc-record-table col:nth-child(2){width:auto}
+  .dc-detail-shell .dc-record-table col:nth-child(3){width:100px}
+  .dc-detail-shell .dc-record-table col:nth-child(4){width:80px}
+  .dc-detail-shell .dc-record-table col:nth-child(5){width:124px}
+  .dc-detail-shell .dc-record-table col:nth-child(6){width:100px}
+  .dc-detail-shell .dc-record-table.dc-record-with-upload col:nth-child(7){width:100px}
+  .dc-detail-shell .dc-record-table col:nth-last-child(3){width:90px}
+  .dc-detail-shell .dc-record-table col:nth-last-child(2){width:100px}
+  .dc-detail-shell .dc-record-table col:last-child{width:72px}
+  .dc-detail-shell .dc-record-table th,.dc-detail-shell .dc-record-table td{text-align:left}
+  .dc-detail-shell .dc-record-table td[data-label="时长"]{white-space:nowrap;font-variant-numeric:tabular-nums}
+  .dc-detail-shell .dc-record-table th:nth-last-child(2),.dc-detail-shell .dc-record-table td:nth-last-child(2){right:72px;box-shadow:-1px 0 #edf0f4}
+  .dc-detail-shell .dc-record-table th:last-child,.dc-detail-shell .dc-record-table td:last-child{right:0}
+}
 @media(max-width:760px){
   #dc-processing-detail .dc-processing-sources a{min-width:0;overflow-wrap:anywhere;word-break:break-word}
   #dc-processing-detail .dc-processing-stage{display:grid;grid-template-columns:auto minmax(0,1fr);gap:7px 12px;align-items:start;overflow-wrap:anywhere}
@@ -108,7 +125,6 @@
   .dc-processing-summary>div{gap:8px}
   .dc-processing-tab-head{align-items:flex-start;flex-wrap:wrap}
   .dc-detail-shell .dc-record-table{min-width:0}
-  .dc-detail-shell .dc-record-table td:nth-last-child(2){width:auto}
   .dc-processing-source{display:block;font-size:12px}
   .dc-processing-source a{display:block;margin-top:5px}
   .dc-processing-message{max-width:100%;flex-basis:100%}
