@@ -32,6 +32,14 @@ from instruction_collection_demo import (
 # ---------------------------------------------------------------------------
 
 PAGE_SPECS = {
+    "post_training_collection": {
+        "path": "/data/post-training-collection",
+        "title": "数据采集",
+        "subtitle": "管理 UDAS、机器人遥操与 DAGGER 采集任务",
+        "icon": "&#9776;",
+        "nav_badge": "S028",
+        "custom_view": True,
+    },
     "instruction_management": {
         "path": "/data/instruction-management",
         "title": "指令管理",
@@ -245,7 +253,7 @@ PAGE_SPECS = {
         "subtitle": "配置数据处理与人工执行规则",
         "icon": "&#9745;",
         "legacy": True,
-        "nav_badge": "S027",
+        "nav_badge": "S028",
     },
     "scene_management": {
         "path": "/data/scenes",
@@ -304,6 +312,7 @@ NAV_GROUPS = [
             "instruction_packages",
             "collection_tasks",
             "supplier_collection_plans",
+            "post_training_collection",
         ],
     ),
     (

@@ -1,0 +1,10 @@
+.dc-share-dialog{max-width:640px}
+.dc-share-dialog .dc-dialog-body{padding:22px 24px;background:#fff}
+.dc-share-dialog .dc-share-card{padding:0;border:0;border-radius:0;background:transparent;box-shadow:none}
+.dc-share-text{white-space:pre-wrap;overflow-wrap:anywhere;color:#34485e;font-family:inherit;font-size:14px;line-height:1.85;user-select:text}
+.dc-share-text .dc-share-id{font:inherit;color:inherit;letter-spacing:0}
+.dc-share-live-links{display:flex;align-items:center;gap:16px;flex-wrap:wrap;padding-top:18px;font-size:13px}
+.dc-share-live-links .dc-link:last-child{margin-left:auto}
+.dc-share-dialog .dc-dialog-foot{gap:8px;justify-content:flex-end}
+.dc-share-dialog .dc-dialog-foot>.dc-btn:first-child{margin-right:0}
+@media(max-width:760px){.dc-share-dialog .dc-dialog-body{padding:18px 16px}.dc-share-dialog .dc-dialog-foot{display:flex;padding:12px}.dc-share-dialog .dc-dialog-foot .dc-btn{min-height:38px}.dc-share-live-links{gap:12px;font-size:12px}}

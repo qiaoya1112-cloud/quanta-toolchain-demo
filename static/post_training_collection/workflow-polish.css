@@ -1,0 +1,87 @@
+/* 【新】本轮选定优化；沿用公共字号、控件和列表比例。 */
+.dc-app .dc-refresh-button{gap:6px;font-size:13px;min-height:32px;padding:5px 10px}
+.dc-refresh-button.is-loading .dc-icon{animation:dc-video-spin 1s linear infinite}
+.dc-detail-shell>.dc-tabs .dc-detail-refresh{margin-left:auto;align-self:center}
+.dc-detail-refresh .dc-refresh-button{border-color:transparent;color:#52677b}
+.dc-detail-refresh .dc-refresh-button:hover{border-color:#dce3e8}
+.dc-head-actions [data-spec-shortcut]:empty{display:none}
+.dc-head-actions [data-spec-shortcut]{display:inline-flex}
+.dc-record-summary{display:flex;align-items:center;flex-wrap:wrap;gap:6px 16px}
+.dc-result-hours{color:#52677b;font-variant-numeric:tabular-nums}
+.dc-task-table .dc-task-id-cell .dc-task-id,.dc-task-table [data-label="最近采集"]{color:#52657b}
+.dc-app .dc-muted,.dc-detail-stats-inline .dc-stat-name{color:#63758a}
+.dc-dialog .dc-dialog-head h2{font-size:17px;font-weight:600;color:#243347}
+.dc-dialog .dc-confirm-metrics{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.dc-confirm-metrics>div:last-child{grid-column:1/-1}
+.dc-confirm-metrics>div:last-child dd{font-size:14px;line-height:1.6;margin-top:6px}
+.dc-generalization-dialog[open]{display:flex;flex-direction:column;overflow:hidden;box-sizing:border-box;max-height:90dvh}
+.dc-generalization-dialog>.dc-dialog-head,.dc-generalization-dialog>.dc-dialog-foot{flex:none}
+.dc-generalization-dialog>.dc-dialog-body{flex:1 1 auto;min-height:0;max-height:none;overflow:auto;overscroll-behavior:contain;box-sizing:border-box}
+body:has(.dc-app[data-view="form"]){overflow:hidden}
+.dc-app[data-view="form"] .dc-processing-content{padding:16px 28px}
+.dc-app[data-view="form"] .dc-processing-section{margin-bottom:14px}
+.dc-app[data-view="form"] .dc-section-head{margin-bottom:8px}
+.dc-app[data-view="form"] .dc-processing-section>.dc-fields{padding:14px 18px;gap:12px 20px}
+.dc-app[data-view="form"] .dc-fields+.dc-generalization{margin-top:14px}
+.dc-app[data-view="form"] .dc-label{margin-bottom:4px}
+.dc-app[data-view="form"] .dc-form-bottom{padding-top:10px;padding-bottom:10px}
+.dc-app[data-view="form"] .dc-prompt-preview{max-height:180px;overflow:auto}
+.dc-trajectory-frames{max-height:clamp(110px,22dvh,180px)}
+.dc-trajectory-frame{aspect-ratio:auto;height:clamp(110px,22dvh,180px)}
+.dc-trajectory-dialog .dc-dialog-head{padding:12px 22px}
+.dc-trajectory-dialog .dc-dialog-body{padding:12px 22px 16px}
+.dc-trajectory-meta{margin-bottom:10px}
+.dc-trajectory-toolbar{margin-top:12px}
+.dc-trajectory-timeline{margin:10px 0 8px}
+.dc-trajectory-chart{height:clamp(180px,28dvh,260px)}
+@media(max-width:760px){
+  .dc-detail-shell>.dc-tabs{gap:18px;padding-right:10px}
+  .dc-detail-refresh .dc-refresh-button{padding:4px 6px;min-width:30px}
+  .dc-detail-refresh .dc-refresh-button span{display:none}
+  .dc-record-summary{gap:2px 8px;font-size:11px}
+  .dc-app[data-view="form"] .dc-processing-content{padding:16px 12px}
+  .dc-app[data-view="form"] .dc-processing-section>.dc-fields{padding:14px;gap:14px}
+  .dc-dialog .dc-confirm-metrics{gap:12px}
+  .dc-trajectory-dialog .dc-dialog-body{padding:12px}
+  .dc-trajectory-frame{height:110px}
+  .dc-trajectory-chart{height:230px}
+}
+@media(prefers-reduced-motion:reduce){.dc-refresh-button.is-loading .dc-icon{animation:none}}
+/* 【新】上传异常按需查看；上传与采集结论分开，不增加主任务表备注。 */
+.dc-detail-shell .dc-record-filters .dc-upload-filter,.dc-detail-shell .dc-record-filters .dc-conclusion-filter{flex:0 0 136px;width:136px;min-height:34px;font-size:13px;padding-top:6px;padding-bottom:6px}
+.dc-upload-placeholder{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;min-height:120px;padding:14px;background:#f4f7f9;border:1px solid #e6ecef;border-radius:6px;color:#63758a;font-size:13px;box-sizing:border-box}
+.dc-upload-placeholder.is-failed{background:#fff8f7;border-color:#f1e0dc;color:#b34d44}
+.dc-upload-error{max-width:100%;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;font-size:12px;line-height:1.6;overflow-wrap:anywhere;text-align:center}
+.dc-detail-shell .dc-record-table.dc-record-with-upload{min-width:1180px}
+.dc-detail-shell .dc-record-with-upload col:nth-child(1){width:19%}
+.dc-detail-shell .dc-record-with-upload col:nth-child(2){width:27%}
+.dc-detail-shell .dc-record-with-upload col:nth-child(3){width:8%}
+.dc-detail-shell .dc-record-with-upload col:nth-child(4){width:6%}
+.dc-detail-shell .dc-record-with-upload col:nth-child(5){width:10%}
+.dc-detail-shell .dc-record-with-upload col:nth-child(6){width:9%}
+.dc-detail-shell .dc-record-with-upload col:nth-child(7){width:8%}
+.dc-detail-shell .dc-record-with-upload col:nth-child(8){width:7%}
+.dc-detail-shell .dc-record-with-upload col:nth-child(9){width:6%}
+.dc-detail-shell .dc-record-with-upload td:nth-last-child(2),.dc-detail-shell .dc-record-with-upload th:nth-last-child(2){right:calc(max(1180px,100%) * .06)}
+.dc-record-trajectory:disabled{color:#a2acb7;cursor:default;text-decoration:none}
+.dc-dialog .dc-note+.dc-note{margin-top:12px}
+.dc-dialog .dc-kv dd{overflow-wrap:anywhere}
+@media(max-width:760px){
+  .dc-detail-shell .dc-record-filters .dc-upload-filter,.dc-detail-shell .dc-record-filters .dc-conclusion-filter{width:100%;min-width:0;font-size:12px}
+  .dc-detail-shell .dc-record-filters .dc-upload-filter{grid-column:1}
+  .dc-detail-shell .dc-record-filters .dc-conclusion-filter{grid-column:2/4}
+  .dc-detail-shell .dc-record-table thead{display:none}
+  .dc-detail-shell .dc-record-table.dc-record-with-upload{min-width:0}
+  .dc-detail-shell .dc-record-with-upload td:nth-last-child(2){position:static}
+  .dc-upload-placeholder{min-height:94px}
+}
+/* 【新】筛选栏统一文字样式，避免原生下拉与搜索占位文字混用深浅颜色。 */
+.dc-app :is(.dc-record-filters,.dc-list-filters){--dc-filter-text:#63758a;--dc-filter-font-size:13px}
+.dc-app :is(.dc-record-filters,.dc-list-filters) :is(.dc-input,.dc-select){color:var(--dc-filter-text);font-family:inherit;font-size:var(--dc-filter-font-size);font-weight:400;line-height:1.6;letter-spacing:normal}
+.dc-app :is(.dc-record-filters,.dc-list-filters) .dc-input::placeholder{color:var(--dc-filter-text);font:inherit;letter-spacing:inherit;opacity:1}
+/* 公共壳会给全部选项添加select-empty，其!important仅在本模块筛选栏覆盖。 */
+.dc-app :is(.dc-record-filters,.dc-list-filters) select.dc-select.select-empty{color:var(--dc-filter-text)!important}
+.dc-app :is(.dc-record-filters,.dc-list-filters) select.dc-select option{color:var(--dc-filter-text);font:inherit}
+.dc-app :is(.dc-record-filters,.dc-list-filters) .dc-search>.dc-icon,.dc-detail-shell .dc-record-reset{color:var(--dc-filter-text,#63758a)}
+@media(max-width:760px){.dc-app .dc-record-filters{--dc-filter-font-size:12px}}
+.dc-spec-picker{display:flex;flex-direction:column;gap:6px}.dc-spec-picker .dc-spec-link-row{align-items:center}.dc-selected-spec{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:7px 10px;border-radius:6px;background:#f1f8f8;color:#42666b;font-size:12px}.dc-new-mark{color:#168e99;font-size:11px;font-weight:500}.dc-spec-library-head{display:flex;align-items:center;gap:10px;margin-bottom:10px}.dc-spec-library-head .dc-input{flex:1}.dc-spec-option{display:flex;width:100%;flex-direction:column;align-items:flex-start;gap:3px;padding:11px 12px;border:1px solid #e2e8ea;border-radius:6px;background:#fff;text-align:left;cursor:pointer}.dc-spec-option+.dc-spec-option{margin-top:7px}.dc-spec-option:hover,.dc-spec-option:focus{border-color:#80c3c5;background:#f4fbfb}.dc-spec-option strong{color:#30474f;font-size:13px}.dc-spec-option span{overflow:hidden;max-width:100%;color:#829197;font-size:11px;text-overflow:ellipsis;white-space:nowrap}.dc-spec-name{display:block;margin-bottom:4px;color:#3b5d63;font-size:12px}

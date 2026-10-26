@@ -48,6 +48,7 @@ class DataPlatformArchitectureTests(unittest.TestCase):
                     "instruction_packages",
                     "collection_tasks",
                     "supplier_collection_plans",
+                    "post_training_collection",
                 ],
             ),
             (
@@ -101,7 +102,7 @@ class DataPlatformArchitectureTests(unittest.TestCase):
             },
             set(nav_keys),
         )
-        self.assertEqual(18, len(nav_keys))
+        self.assertEqual(19, len(nav_keys))
         self.assertEqual(len(nav_keys), len(set(nav_keys)))
         paths = [item["path"] for item in architecture.PAGE_SPECS.values()]
         self.assertEqual(len(paths), len(set(paths)))

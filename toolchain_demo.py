@@ -7759,6 +7759,12 @@ def publish_rule(rule_id):
 
 @app.route("/data/rules")
 def data_rules():
+    # 【新】同一规则管理入口，采集规范与现有处理规则各自维护。
+    rules_category = request.args.get('category', 'processing')
+    rules_tabs = '<link rel="stylesheet" href="/static/post_training_collection/spec-catalog.css"><nav class="dc-rule-tabs" aria-label="规则分类"><a href="/data/rules" class="' + ('active' if rules_category != 'collection' else '') + '">处理规则</a><a href="/data/rules?category=collection" class="' + ('active' if rules_category == 'collection' else '') + '">采集规范</a></nav>'
+    if rules_category == 'collection':
+        return render_page('规则管理', rules_tabs + render_template('post_training_collection/spec-catalog.html'),
+                           active='/data/rules', module='data', breadcrumb='数据平台 / <b>规则管理</b>', mvp_note=None)
     rule_name = request.args.get("rule_name", "").strip()
     stage = request.args.get("stage", "").strip()
     rule_type = request.args.get("rule_type", "").strip()
@@ -8377,7 +8383,7 @@ def data_rules():
       #ruleStatusConfirm .modal-body p{{margin:0;color:#607178;font-size:13px;line-height:1.7}}
     </style>
     """
-    return render_page("规则管理", content, active="/data/rules", module="data",
+    return render_page("规则管理", rules_tabs + content, active="/data/rules", module="data",
                        breadcrumb='数据平台 / <b>规则管理</b>', mvp_note="MVP 一期")
 
 
@@ -14899,6 +14905,12 @@ def checkpoint_history(ckpt_id):
 # 场景库维护与测试用例组合
 from eval_catalog import register_catalog
 register_catalog(app, render_page)
+
+# Independent post-training collection routes reuse the original platform shell.
+from post_training_collection import DEMO_PROJECTS as COLLECTION_DEMO_PROJECTS, register_collection
+register_collection(app, render_page, COLLECTION_DEMO_PROJECTS, CHECKPOINTS)
+from collection_processing import register_processing
+register_processing(app, data_refactor.PROCESSING_FLOWS)
 
 
 
