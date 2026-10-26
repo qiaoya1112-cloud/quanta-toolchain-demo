@@ -32,6 +32,16 @@ python toolchain_demo.py
 # http://localhost:5004
 ```
 
+评测用例导入使用 Node.js 执行与页面共用的校验逻辑，需安装 Node.js 18+；
+若 `node` 不在 PATH 中，设置 `NODE_BINARY` 为 Node 可执行文件的绝对路径。
+导入任务、文件、评测目录数据保存在 `instance/eval_imports.sqlite3`，正式部署需挂载持久磁盘。
+校验通过才以数据库事务整批保存；关闭页面后任务仍执行，刷新可查看导入记录。
+
+导入记录按服务端认证的租户 ID / 用户 ID 隔离：支持宿主设置 `g.user_id`、
+`g.tenant_id`，或已验证的 session 中的同名字段，也可配置 `EVAL_IMPORT_IDENTITY` 回调。
+当前 Demo 没有真实登录，未登录时使用签名会话中的随机访客 ID，姓名仅作展示。
+接入正式登录时设置 `EVAL_IMPORT_DEMO_IDENTITY=False`，不得把访客会话当作跨设备账号。
+
 ## 验证
 
 ```bash

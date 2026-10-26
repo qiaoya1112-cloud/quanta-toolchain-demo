@@ -40,6 +40,80 @@
     document.getElementById('qQueryDirty').hidden = !queryDirty;
     updateResultActions();
   }
+  function fieldHasValue(field) {
+    const processing = field.querySelector('[data-processing-field]');
+    if (processing) {
+      const section = field.closest('[data-processing-kind]');
+      const index = Number(field.closest('[data-processing-row]').dataset.processingRow);
+      const group = config.processing[section.dataset.processingKind].groups[index];
+      const key = processing.dataset.processingField;
+      return key === 'rule' || key === 'flow' ? group[key][0] !== '*' :
+        key === 'results' ? group.results.length > 0 : !!group[key];
+    }
+    if (field.querySelector('.dataset-tag-picker')) return !!field.querySelector('.dataset-tag-picker-panel input:checked') || field.querySelector('select').value !== 'any';
+    if (field.querySelector('.ps-wrap')) return !!field.querySelector('.ps-chip');
+    if (field.querySelector('.ms-wrap')) return !!field.querySelector('.ms-panel input:checked');
+    return [...field.querySelectorAll('input:not([type=hidden]),select,textarea')].some(input => input.value !== '');
+  }
+  function clearField(field) {
+    const processing = field.querySelector('[data-processing-field]');
+    if (processing) {
+      const row = field.closest('[data-processing-row]');
+      row.closest('[data-processing-kind]').dispatchEvent(new CustomEvent('query-clear-field', {
+        detail:{index:Number(row.dataset.processingRow), key:processing.dataset.processingField}
+      }));
+      return;
+    }
+    const tagPicker = field.querySelector('.dataset-tag-picker');
+    if (tagPicker) {
+      tagPicker.querySelectorAll('.dataset-tag-picker-panel input:checked').forEach(input => { input.checked = false; });
+      datasetTagSyncPicker(tagPicker);
+      const match = field.querySelector('select');
+      if (match) match.value = 'any';
+    } else if (field.querySelector('.ps-wrap')) {
+      field.querySelectorAll('.ps-chip').forEach(chip => chip.remove());
+      field.querySelectorAll('.ps-wrap').forEach(wrap => {
+        wrap.querySelector('.ps-input').value = '';
+        wrap.classList.remove('open');
+        psCompact(wrap);
+      });
+    } else if (field.querySelector('.ms-wrap')) {
+      field.querySelectorAll('.ms-wrap').forEach(wrap => {
+        wrap.querySelectorAll('.ms-panel input:checked').forEach(input => { input.checked = false; });
+        const first = wrap.querySelector('.ms-panel input');
+        if (first) msUpdate(first);
+      });
+      field.querySelectorAll('.ms-wrap').forEach(wrap => wrap.classList.remove('open'));
+    } else {
+      field.querySelectorAll('input:not([type=hidden]),select,textarea').forEach(input => {
+        input.value = '';
+        input.classList.remove('has-value');
+        if (input.tagName === 'SELECT') input.dispatchEvent(new Event('change', {bubbles:true}));
+      });
+    }
+    if (field.contains(idsInput)) renderIds();
+    form.dispatchEvent(new Event('change', {bubbles:true}));
+    updateClearButtons();
+  }
+  function updateClearButtons() {
+    form.querySelectorAll('.query-field-clear').forEach(control => {
+      control.hidden = !fieldHasValue(control.closest('.q-field'));
+    });
+  }
+  function addClearButtons() {
+    form.querySelectorAll('.query-fixed-panel .q-field, .query-excluded-ids').forEach(field => {
+      if (field.querySelector('.query-field-clear')) return;
+      const label = field.querySelector(':scope > label');
+      if (!label) return;
+      const control = button('×', () => clearField(field), 'query-field-clear');
+      control.setAttribute('aria-label', '清空' + label.textContent.trim());
+      control.title = '清空' + label.textContent.trim();
+      field.classList.add('query-clearable');
+      if (field.querySelector('select, .ms-wrap, .dataset-tag-picker')) field.classList.add('query-clearable-menu');
+      field.append(control);
+    });
+    updateClearButtons();
+  }
   function sync() {
     Object.keys(trees).forEach(key => hidden[key].value = JSON.stringify(trees[key]));
     updateCounts();
@@ -187,27 +261,17 @@
     idsInput.value=ids().join(',');
     showError('');
   });
-  form.addEventListener('input',markDirty); form.addEventListener('change',markDirty);
-  const filterGroups=[...document.querySelectorAll('.query-fixed-group, .query-volume')];
-  function updateFilterCounts() {
-    filterGroups.forEach(group=>{
-      const panel=group.querySelector('.query-fixed-panel');
-      const count=[...panel.querySelectorAll('.q-field')].filter(field=>[...field.querySelectorAll('input,select')].some(input=>{
-        if(input.closest('.qf-off')||input.matches('.ms-search,.ps-input'))return false;
-        if(input.type==='checkbox')return input.checked;
-        return !!input.value;
-      })).length;
-      group.querySelector('.query-fixed-count').textContent=count?'已选 '+count+' 项':'';
-    });
-  }
-  form.addEventListener('input',updateFilterCounts);form.addEventListener('change',updateFilterCounts);
-  const pickerObserver=new MutationObserver(()=>{updateFilterCounts();markDirty();});
+  form.addEventListener('input',()=>{markDirty();updateClearButtons();});
+  form.addEventListener('change',()=>{markDirty();updateClearButtons();});
+  const pickerObserver=new MutationObserver(()=>{markDirty();updateClearButtons();});
   document.querySelectorAll('.query-fixed-panel .ps-chips').forEach(chips=>pickerObserver.observe(chips,{childList:true,subtree:true}));
-  updateFilterCounts();
   idsInput.addEventListener('input',renderIds);
   Object.keys(builders).forEach(key => builders[key].append(renderGroup(trees[key],key,0)));
   renderIds();
   document.getElementById('qClearExclusions').addEventListener('click',()=>{trees.exclusions=newGroup('exclusions');idsInput.value='';refresh('exclusions');renderIds();});
+  const clearObserver = new MutationObserver(addClearButtons);
+  clearObserver.observe(document.getElementById('qProcessingFilters'), {childList:true,subtree:true});
+  addClearButtons();
   function updateResultActions() {
     buildButton.disabled = appendButton.disabled = queryDirty || !originalCanBuild;
   }

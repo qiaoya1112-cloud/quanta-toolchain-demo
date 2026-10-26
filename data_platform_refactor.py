@@ -3439,7 +3439,7 @@ def render_processing_tasks():
         <fieldset class="dpr-status-options" onchange="dprUpdateProcessingCloseOptions()">
           <legend>已有数据</legend>
           <label><input type="radio" name="dprProcessingCloseMode" value="continue" checked><span>继续在当前任务处理</span></label>
-          <label><input type="radio" name="dprProcessingCloseMode" value="remove"><span>停止处理并移出当前任务</span></label>
+          <label><input type="radio" name="dprProcessingCloseMode" value="remove"><span>停止处理</span></label>
           <label><input type="radio" name="dprProcessingCloseMode" value="pending"><span>待处理数据转入新任务处理</span></label>
           <label><input type="radio" name="dprProcessingCloseMode" value="all"><span>全部已有数据转入新任务重新处理</span></label>
         </fieldset>
@@ -3738,7 +3738,7 @@ def render_processing_tasks():
       document.getElementById('dprProcessingInheritField').hidden = mode !== 'all';
       document.getElementById('dprProcessingCloseHelp').textContent = {{
         continue: '待处理和处理中数据继续在当前任务处理；已归档数据保持不变。',
-        remove: '待处理数据移出，处理中数据暂停并保留；已归档结果保留。',
+        remove: '待处理与处理中数据停止处理，已归档结果保留。',
         pending: '仅待处理数据转入新任务；处理中数据继续在当前任务完成，已归档结果保留。',
         all: '待处理、处理中和已归档数据将在新任务重新处理；当前任务已有结果保留。'
       }}[mode];

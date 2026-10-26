@@ -16,6 +16,7 @@ Usage:
   # Open http://localhost:5002
 """
 
+import io
 import os
 import json
 import datetime
@@ -23,12 +24,18 @@ import re
 import html
 import math
 import hashlib
+import sqlite3
+import uuid
 from urllib.parse import urlencode
 from copy import deepcopy
-from flask import Flask, render_template_string, request, redirect, jsonify
+from flask import Flask, render_template_string, request, redirect, jsonify, send_file, abort
 from itsdangerous import URLSafeTimedSerializer, BadSignature, SignatureExpired
+from werkzeug.utils import secure_filename
 from prototype_filters import CURRENT_USER, filter_url, ownership_tabs
 from query_conditions import OPERATORS as CONDITION_OPERATORS, TYPE_OPERATORS, matches, parse_tree, sql_literal, tree_sql
+from query_processing import parse_processing_filters, processing_matches, processing_sql
+import third_party_imports
+import dataset_import_parser
 
 app = Flask(__name__)
 app.secret_key = "embodied-data-platform-demo"
@@ -90,6 +97,27 @@ RECORDINGS = [
     {"id": 121120, "task": "t3", "processing_task_ids": ["20451"], "collection": 3760, "robot": "moz1", "type": "采集", "frames": 1521, "fps": 30, "dur": 50.7, "at": "2026-05-27 11:10", "qa": "pass", "collect_result": "成功", "has_visual_prompt": False, "life": "active"},
     {"id": 121131, "task": "t3", "processing_task_ids": ["20451"], "collection": 3760, "robot": "moz1", "type": "采集", "frames": 1098, "fps": 30, "dur": 36.6, "at": "2026-05-27 11:28", "qa": "pass", "collect_result": "成功", "has_visual_prompt": True, "life": "active"},
 ]
+
+# Fictional current per-rule snapshots for the processing-array query demo.
+# Each entry includes pending rules so “all rules” cannot pass vacuously.
+for _recording in RECORDINGS:
+    _quality_done = _recording["id"] % 7 != 0
+    _annotation_done = _recording["id"] % 3 == 0
+    _recording["quality_records"] = [
+        {"rule": "通用质检规则", "flow": "多级质检复核流程",
+         "done": _quality_done, "result": _recording["qa"] if _quality_done else None},
+        {"rule": "自动化质检规则", "flow": "标准训练数据自动质检流程",
+         "done": _quality_done and _recording["id"] != 121014,
+         "result": ("fail" if _recording["id"] in (120502, 121120) else "pass")
+         if _quality_done and _recording["id"] != 121014 else None},
+    ]
+    _recording["annotation_records"] = [
+        {"platform": "new", "rule": "端到端切分标注规则", "flow": "端到端切分标注流程",
+         "done": _annotation_done},
+        {"platform": "legacy", "version": "1" if _recording["task"] == "t1" else "2",
+         "done": _annotation_done},
+    ]
+del _recording, _quality_done, _annotation_done
 
 CAMERAS = ["cam_high", "cam_left_wrist", "cam_right_wrist"]
 # 14 维双臂特征 (左臂7 + 右臂7), 用于轨迹预览曲线分组
@@ -853,6 +881,8 @@ PIPELINES = sorted(_review_flows, key=lambda pipeline: pipeline["id"] != "pl3a")
 ]
 
 RUNS = [
+    {"id": "run_0626e", "pipeline": "pl1", "name": "预训练数据集增量更新", "target": "clean_whiteboard_v3", "status": "done", "progress": 100, "stage": "完成", "at": "2026-06-26 11:32:00", "dur": "12m 18s", "trigger": "manual", "by": "Joanna Qiao"},
+    {"id": "run_0625f", "pipeline": "pl2", "name": "后训练数据集增量更新", "target": "tidy_desk_mix_v1", "status": "done", "progress": 100, "stage": "完成", "at": "2026-06-25 17:05:00", "dur": "8m 45s", "trigger": "manual", "by": "Min Chen"},
     {"id": "run_0612a", "pipeline": "pl1", "name": "标准训练数据流水线", "target": "clean_whiteboard_v4", "status": "running", "progress": 62, "stage": "采样配比 (3/5)", "at": "2026-06-04 01:40", "dur": "进行中 8m", "trigger": "manual", "by": "joanna.qiao"},
     {"id": "run_0611b", "pipeline": "pl1", "name": "标准训练数据流水线", "target": "tidy_desk_mix_v1", "status": "done", "progress": 100, "stage": "完成", "at": "2026-06-01 09:02", "dur": "13m 24s", "trigger": "scheduled"},
     {"id": "run_0610c", "pipeline": "pl2", "name": "DAgger 数据流水线", "target": "whiteboard_dagger_v2", "status": "failed", "progress": 40, "stage": "质检 Doctor (FAIL: 缺帧)", "at": "2026-05-31 20:11", "dur": "4m 02s", "trigger": "scheduled"},
@@ -986,6 +1016,23 @@ select option:disabled { color:rgba(0,0,0,0.32); }
 .qf-dep { transition:opacity .15s; }
 .qf-dep.qf-off { opacity:.45; pointer-events:none; }
 .q-filter-row { display:flex; gap:14px 18px; flex-wrap:wrap; align-items:flex-end; }
+.third-source-filters .q-filter-row { display:grid; grid-template-columns:repeat(6,minmax(0,1fr)); gap:12px; }
+.third-source-filters .q-field { min-width:0; }
+.third-source-filters .q-field input, .third-source-filters .q-field select { width:100%; min-width:0; }
+.third-source-filters .third-source-filter-actions { grid-column:4/-1; align-self:end; justify-content:flex-end; margin:0; padding:0; border:0; }
+.third-source-title-copy { display:inline-flex; align-items:center; gap:4px; flex-wrap:wrap; min-width:0; }
+.third-source-title-copy .action-link { margin:0; }
+.third-source-title-note { color:rgba(0,0,0,.45); font-size:12px; white-space:nowrap; }
+.model-list-actions:has(.third-source-title-note) { flex-wrap:wrap; flex-shrink:1; justify-content:flex-end; min-width:0; }
+@media (max-width:1100px) {
+  .third-source-filters .q-filter-row { grid-template-columns:repeat(3,minmax(0,1fr)); }
+  .third-source-filters .third-source-filter-actions { grid-column:1/-1; }
+}
+@media (max-width:640px) {
+  .third-source-filters .q-filter-row { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .model-list-actions:has(.third-source-title-note) { width:100%; justify-content:flex-start; }
+  .third-source-title-note { white-space:normal; }
+}
 .q-field { display:flex; flex-direction:column; gap:6px; }
 .q-field > label { font-size:12px; color:rgba(0,0,0,0.45); padding-left:1px; }
 .q-field select, .q-field input:not([type=checkbox]) { height:36px; min-width:158px; box-sizing:border-box; border:1px solid #e2e4e8; border-radius:8px; padding:0 12px; font-size:13.5px; color:rgba(0,0,0,0.85); background:#fff; outline:none; }
@@ -1345,6 +1392,27 @@ select option:disabled { color:rgba(0,0,0,0.32); }
 #pane-preview .preview-split { height:calc(100vh - 230px); }
 #pane-preview .ep-strip { height:100%; max-height:none; }
 #pane-preview .preview-main { height:100%; overflow-y:auto; padding-right:4px; }
+@media (max-width:700px) {
+  body:has(.dataset-workspace) .q-sider { display:none; }
+  body:has(.dataset-workspace) .q-main { margin-left:0; }
+  body:has(.dataset-workspace) .q-content { padding:10px; }
+  .dataset-workspace { flex-direction:column; height:auto; }
+  .dataset-workspace .tree-panel { width:100%; min-width:0; height:180px; flex:none; }
+  .dataset-workspace .detail-panel { width:100%; height:auto; min-height:calc(100vh - 260px); overflow:visible; box-sizing:border-box; }
+  .dataset-workspace .detail-head { padding:14px; flex-wrap:wrap; gap:10px; }
+  .dataset-workspace .dh-title, .dataset-workspace .dataset-detail-actions { flex-wrap:wrap; }
+  .dataset-workspace .tabs { padding:0 8px; overflow-x:auto; }
+  .dataset-workspace .tab { white-space:nowrap; flex:none; }
+  .dataset-workspace .tab-pane { padding:14px; }
+  #pane-preview .preview-split { flex-direction:column; height:auto; }
+  #pane-preview .ep-strip { display:flex; width:100%; min-width:0; height:auto; overflow-x:auto; }
+  #pane-preview .ep-strip .ep-head { display:none; }
+  #pane-preview .ep-item { min-width:100px; flex:none; }
+  #pane-preview .preview-main { width:100%; height:auto; overflow:visible; }
+  #pane-preview .camera-row { grid-template-columns:1fr; }
+  #pane-preview .traj-bar { flex-wrap:wrap; }
+  #pane-preview .traj-tabs { flex-wrap:wrap; }
+}
 /* episode 预览子 tab */
 .ep-tabs { display:flex; gap:2px; border-bottom:1px solid #f0f0f0; margin-bottom:14px; }
 .raw-head { display:flex; align-items:flex-end; justify-content:space-between; border-bottom:1px solid #f0f0f0; margin-bottom:18px; }
@@ -1378,11 +1446,15 @@ select option:disabled { color:rgba(0,0,0,0.32); }
 .desc-grid { display:grid; grid-template-columns:max-content 1fr; gap:0; border:1px solid #f0f0f0; border-radius:8px; overflow:hidden; }
 .desc-grid .dk { background:#fafafa; padding:10px 16px; font-size:13px; color:rgba(0,0,0,0.45); border-bottom:1px solid #f0f0f0; border-right:1px solid #f0f0f0; white-space:nowrap; }
 .desc-grid .dv { padding:10px 16px; font-size:13px; color:rgba(0,0,0,0.85); border-bottom:1px solid #f0f0f0; }
+.desc-grid .dataset-storage-path { overflow-wrap:anywhere; }
 
 /* ── Camera + curve preview ── */
 .camera-row { display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; margin-bottom:16px; }
 .camera-cell { position:relative; background:#141414; height:150px; border-radius:8px; display:flex; align-items:center; justify-content:center; color:rgba(255,255,255,0.35); flex-direction:column; gap:6px; font-size:12px; }
 .camera-cell .cam-label { position:absolute; top:8px; left:8px; background:rgba(0,0,0,0.6); color:#fff; padding:2px 8px; border-radius:4px; font-size:11px; }
+.camera-cell video { width:100%; height:100%; object-fit:contain; }
+.camera-cell:has(video) .cam-label { z-index:1; }
+.camera-row:has(> :only-child) { grid-template-columns:1fr; }
 .play-bar { display:flex; align-items:center; gap:12px; background:#fafafa; border:1px solid #f0f0f0; border-radius:8px; padding:8px 14px; margin-bottom:16px; font-size:13px; color:rgba(0,0,0,0.65); }
 .play-bar .play-btn { width:30px; height:30px; border-radius:50%; background:#1F80A0; color:#fff; display:flex; align-items:center; justify-content:center; cursor:pointer; }
 .play-bar .track { flex:1; height:6px; background:#e8e8e8; border-radius:3px; position:relative; }
@@ -1521,6 +1593,29 @@ select option:disabled { color:rgba(0,0,0,0.32); }
 .recipe-row .rbar .fill { height:100%; background:#1F80A0; display:flex; align-items:center; padding-left:8px; color:#fff; font-size:12px; }
 .recipe-row .recipe-count { width:52px; text-align:right; white-space:nowrap; }
 .recipe-row .recipe-duration { width:72px; text-align:right; white-space:nowrap; }
+.dataset-compose-section { margin-top:16px; }
+.dataset-compose-section > summary { display:flex; align-items:center; gap:10px; padding:8px 0 10px; border-bottom:1px solid #f0f0f0; font-size:15px; font-weight:600; cursor:pointer; }
+.dataset-compose-section > summary .muted { font-size:12px; font-weight:400; }
+.dataset-compose-section .dataset-compose-meta { margin-left:auto; white-space:nowrap; }
+.dataset-compose-section > summary::marker, .pie-cell > summary::marker { color:#8c8c8c; font-size:11px; }
+.dataset-compose-section .pie-row { grid-template-columns:repeat(auto-fit,minmax(min(100%,280px),1fr)); align-items:start; margin-top:14px; }
+.dataset-compose-section .pie-cell { min-width:0; }
+.dataset-compose-section .pie-title { cursor:pointer; text-align:left; padding:2px 0 8px; }
+.dataset-compose-section .pie-title .muted { font-size:12px; font-weight:400; }
+.dataset-compose-section .pie-title .dataset-compose-meta { float:right; }
+.dataset-compose-section .pie-legend th { padding:6px 4px; color:rgba(0,0,0,.45); font-size:12px; font-weight:400; text-align:left; white-space:nowrap; }
+.dataset-compose-section .pie-legend th:not(:first-child), .dataset-compose-section .pie-legend td:not(:first-child) { text-align:right; white-space:nowrap; }
+.dataset-compose-section .pie-legend td:first-child { overflow-wrap:anywhere; }
+.dataset-compose-section .pie-box { height:180px; }
+.dataset-compose-toolbar { display:flex; justify-content:flex-end; margin-top:12px; }
+.dataset-compose-toolbar .lvl-sel { float:none; }
+.dataset-compose-section .recipe-header { display:flex; gap:12px; margin:14px 0 10px; color:rgba(0,0,0,.45); font-size:12px; }
+.dataset-compose-section .recipe-header span:first-child, .dataset-compose-section .recipe-row .rname { flex:0 0 160px; min-width:0; overflow-wrap:anywhere; }
+.dataset-compose-section .recipe-header span:nth-child(2) { flex:1; text-align:center; }
+.dataset-compose-section .recipe-header span:nth-child(3), .dataset-compose-section .recipe-row .recipe-count { flex:0 0 52px; text-align:right; }
+.dataset-compose-section .recipe-header span:nth-child(4), .dataset-compose-section .recipe-row .recipe-duration { flex:0 0 72px; text-align:right; }
+.dataset-compose-section .recipe-row .rbar { min-width:0; }
+@media(max-width:700px) { .dataset-compose-section .recipe-header span:first-child, .dataset-compose-section .recipe-row .rname { flex-basis:100px; } }
 
 /* ── 标签构成 饼图 (一行三个) ── */
 .lvl-sel { float:right; height:28px; font-size:12px; border:1px solid #e2e4e8; border-radius:6px; padding:0 28px 0 10px; color:rgba(0,0,0,0.7); background:#fff; cursor:pointer; -webkit-appearance:none; appearance:none; background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'><path d='M1 1l4 4 4-4' stroke='%23999' stroke-width='1.4' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>"); background-repeat:no-repeat; background-position:right 10px center; }
@@ -1987,14 +2082,14 @@ function datasetTagSyncPicker(picker){
   selected.forEach(function(cb){
     var chip=document.createElement('span');
     chip.className='dataset-tag-chip';
-    chip.setAttribute('data-path',cb.value);
+    chip.setAttribute('data-value',cb.value);
     var text=document.createElement('span');
     text.className='dataset-tag-chip-text';
-    text.textContent=cb.value;
+    text.textContent=cb.dataset.path || cb.value;
     var remove=document.createElement('button');
     remove.type='button';
     remove.className='dataset-tag-chip-remove';
-    remove.setAttribute('aria-label','移除 '+cb.value);
+    remove.setAttribute('aria-label','移除 '+text.textContent);
     remove.textContent='×';
     remove.onclick=function(event){ datasetTagRemove(event,remove); };
     chip.appendChild(text);
@@ -2029,11 +2124,21 @@ function datasetTagBranch(button){
   });
   button.parentNode.querySelectorAll('.dataset-tag-branch').forEach(function(item){ item.classList.toggle('active',item===button); });
   datasetPickerPosition(picker);
+  if(picker.id==='qManagedTags'){
+    var panel=picker.querySelector('.dataset-tag-picker-panel');
+    var next=Array.from(picker.querySelectorAll('.dataset-tag-column')).find(function(column){
+      return !column.hidden && column.dataset.parent===button.dataset.path;
+    });
+    if(next){
+      var overflow=next.getBoundingClientRect().right-panel.getBoundingClientRect().right;
+      if(overflow>0) panel.scrollLeft+=overflow;
+    }
+  }
 }
 function datasetPickerPosition(picker){
   var panel=picker.querySelector('.dataset-tag-picker-panel,.visibility-picker-panel');
   var control=picker.querySelector('.dataset-tag-picker-control,.visibility-picker-control');
-  var rect=control.getBoundingClientRect(), width=Math.min(rect.width,window.innerWidth-16);
+  var rect=control.getBoundingClientRect(), width=Math.min(picker.id==='qManagedTags'?Math.max(rect.width,460):rect.width,window.innerWidth-16);
   panel.style.width=width+'px';
   panel.style.left=Math.max(8,Math.min(rect.left,window.innerWidth-width-8))+'px';
   var below=window.innerHeight-rect.bottom-12, above=rect.top-12;
@@ -2073,9 +2178,10 @@ function openBuildDsDrawer(){
 function datasetTagRemove(event,button){
   event.stopPropagation();
   var picker=button.closest('.dataset-tag-picker');
-  var path=button.closest('.dataset-tag-chip').getAttribute('data-path');
-  picker.querySelectorAll('.dataset-tag-picker-panel input').forEach(function(cb){ if(cb.value===path) cb.checked=false; });
+  var value=button.closest('.dataset-tag-chip').getAttribute('data-value');
+  picker.querySelectorAll('.dataset-tag-picker-panel input').forEach(function(cb){ if(cb.value===value) cb.checked=false; });
   datasetTagSyncPicker(picker);
+  if(picker.id==='qManagedTags') picker.closest('form').dispatchEvent(new Event('change',{bubbles:true}));
   if(picker.classList.contains('open')) datasetPickerPosition(picker);
 }
 function datasetTagSetValues(id,values){
@@ -2169,7 +2275,7 @@ async function dsCreating(modalId){
     var result=await response.json(); if(!response.ok) throw new Error(result.error || '提交失败');
     var url=prefix+'/datasets/tasks?'+new URLSearchParams({dataset_id:result.dataset_id,version:result.version,task:result.task_id});
     modal.querySelector('.modal-box').innerHTML='<div style="padding:46px 28px;text-align:center;"><h3>数据集校验中</h3>'
-      +'<p class="muted">已提交数据集创建任务，可在「数据集任务列表」查看进度和结果。</p>'
+      +'<p class="muted">已提交数据集创建任务，可在「数据准备任务」查看进度和结果。</p>'
       +'<div style="display:flex;gap:10px;justify-content:center;"><button class="btn" onclick="location.reload()">关闭</button>'
       +'<a class="btn btn-primary" href="'+url.replace(/&/g,'&amp;')+'">查看任务</a></div></div>';
   }catch(error){ toast(error.message || '提交失败，请重试'); button.disabled=false; }
@@ -2444,15 +2550,17 @@ def dataset_visibility_fields(prefix):
       <div class="visibility-picker-panel">{options}</div></div></div>'''
 
 
-def dataset_tag_picker_html(element_id, selected_paths=None, editable=True, input_name=""):
+def dataset_tag_picker_html(element_id, selected_paths=None, editable=True, input_name="", options=None):
     """Render a reusable full-path multi-select for dataset labels."""
     selected_paths = [path for path in (selected_paths or []) if path]
     selected_set = set(selected_paths)
+    option_values = dict(options) if options is not None else {path: path for path in DATASET_TAG_PATH_OPTIONS}
+    labels_by_value = {value: label for label, value in option_values.items()}
     chips = "".join(
-        f'<span class="dataset-tag-chip" data-path="{html.escape(path, quote=True)}">'
-        f'<span class="dataset-tag-chip-text">{html.escape(path)}</span>'
+        f'<span class="dataset-tag-chip" data-value="{html.escape(path, quote=True)}" data-path="{html.escape(labels_by_value.get(path, path), quote=True)}">'
+        f'<span class="dataset-tag-chip-text">{html.escape(labels_by_value.get(path, path))}</span>'
         + (
-            f'<button type="button" class="dataset-tag-chip-remove" aria-label="移除 {html.escape(path, quote=True)}" '
+            f'<button type="button" class="dataset-tag-chip-remove" aria-label="移除 {html.escape(labels_by_value.get(path, path), quote=True)}" '
             'onclick="datasetTagRemove(event,this)">&times;</button>'
             if editable else ""
         )
@@ -2469,7 +2577,7 @@ def dataset_tag_picker_html(element_id, selected_paths=None, editable=True, inpu
     panel = ""
     if editable:
         tree = {}
-        for path in DATASET_TAG_PATH_OPTIONS:
+        for path in option_values:
             node = tree
             for part in path.split(" > "):
                 node = node.setdefault(part, {})
@@ -2487,11 +2595,12 @@ def dataset_tag_picker_html(element_id, selected_paths=None, editable=True, inpu
                         f'data-path="{escaped}" onclick="datasetTagBranch(this)">{html.escape(name)}</button>'
                     )
                 else:
-                    checked = " checked" if path in selected_set else ""
+                    value = option_values[path]
+                    checked = " checked" if value in selected_set else ""
                     name_attr = f' name="{html.escape(input_name, quote=True)}"' if input_name else ""
                     items.append(
                         f'<label class="dataset-tag-picker-option"><input type="checkbox"{name_attr} '
-                        f'value="{escaped}"{checked} onchange="datasetTagToggleOption(this)">'
+                        f'value="{html.escape(value, quote=True)}" data-path="{escaped}"{checked} onchange="datasetTagToggleOption(this)">'
                         f'<span title="{escaped}">{html.escape(name)}</span></label>'
                     )
             columns.append(
@@ -2517,30 +2626,14 @@ def dataset_tag_picker_html(element_id, selected_paths=None, editable=True, inpu
 
 def dataset_prompt_composition(d):
     """Return high-level prompt frame ratios and distinct episode counts."""
-    if "episode_rows" in d:
-        by_prompt = {}
-        for row in d["episode_rows"]:
-            item = by_prompt.setdefault(row["instr"], {"id": row["annotation"]["highlevel_prompt_id"],
-                                                     "name": row["instr"], "frames": 0, "episode_count": 0})
-            item["frames"] += row["length"]
-            item["episode_count"] += 1
-        return [{**item, "ratio": item["frames"] / (d["frames"] or 1)}
-                for item in sorted(by_prompt.values(), key=lambda item: -item["frames"])]
-    recs = _dataset_recs(d)
-    total = sum(r["frames"] for r in recs) or 1
-    episode_counts = dataset_episode_prompt_counts(d)["highlevel"]
-    by = {}
-    for r in recs:
-        by[r["task"]] = by.get(r["task"], 0) + r["frames"]
-    return [
-        {
-            "id": task_id,
-            "name": task_instr(task_id),
-            "ratio": frames / total,
-            "episode_count": episode_counts.get(task_id, 0),
-        }
-        for task_id, frames in sorted(by.items(), key=lambda item: -item[1])
-    ]
+    by_prompt = {}
+    for row in dataset_episodes(d):
+        item = by_prompt.setdefault(row["instr"], {"id": row["annotation"]["highlevel_prompt_id"],
+                                                  "name": row["instr"], "frames": 0, "episode_count": 0})
+        item["frames"] += row["length"]
+        item["episode_count"] += 1
+    return [{**item, "ratio": item["frames"] / (d["frames"] or 1)}
+            for item in sorted(by_prompt.values(), key=lambda item: -item["frames"])]
 
 
 def dataset_lowlevel_prompt_composition(d):
@@ -2548,10 +2641,15 @@ def dataset_lowlevel_prompt_composition(d):
     annotations = dataset_episode_prompt_annotations(d)
     episode_counts = prompt_episode_counts(annotations)["lowlevel"]
     frames_by_prompt = {}
+    imported_prompts = {}
     for annotation in annotations:
         for segment in annotation["lowlevel_segments"]:
             prompt_id = segment["prompt_id"]
             frames_by_prompt[prompt_id] = frames_by_prompt.get(prompt_id, 0) + segment["end_frame"] - segment["start_frame"]
+            if segment.get("name"):
+                imported_prompts[prompt_id] = {"id": prompt_id, "name": segment["name"]}
+    prompts = [*LOWLEVEL_PROMPTS, *(prompt for key, prompt in imported_prompts.items()
+                                    if key not in {item["id"] for item in LOWLEVEL_PROMPTS})]
     return [
         {
             **prompt,
@@ -2559,7 +2657,7 @@ def dataset_lowlevel_prompt_composition(d):
             "ratio": frames_by_prompt[prompt["id"]] / (d["frames"] or 1),
             "episode_count": episode_counts.get(prompt["id"], 0),
         }
-        for prompt in LOWLEVEL_PROMPTS
+        for prompt in prompts
         if frames_by_prompt.get(prompt["id"], 0) > 0
     ]
 
@@ -2582,26 +2680,34 @@ def comp_rows_html(items, total_frames, fps):
         prompt_id = html.escape(it.get("id", ""), quote=True)
         rows_html += (f'<div class="recipe-row" data-prompt-id="{prompt_id}"><div class="rname">{html.escape(it["name"])}</div>'
                       f'<div class="rbar"><div class="fill" style="width:{min(max(pct,4),100)}%">{pct}%</div></div>'
-                      f'<div class="muted recipe-duration" title="时长（秒）">{duration}</div>'
-                      f'<div class="muted recipe-count">{it.get("episode_count", 0):,} 条</div></div>')
+                      f'<div class="muted recipe-count">{it.get("episode_count", 0):,} 条</div>'
+                      f'<div class="muted recipe-duration" title="时长（秒）">{duration}</div></div>')
     return rows_html or '<div class="muted">—</div>'
 
 _TAG_GROUP = {tid: grp for tid, lab, grp in TAG_DEFS}
 
-def dataset_tag_tree(d):
-    """数据集标签按 维度(场景/技能/质量) → 标签 的树状构成 + 帧数占比。"""
-    recs = _dataset_recs(d)
-    total = sum(r["frames"] for r in recs) or 1
+def dataset_tag_tree(d, level=3):
+    """Aggregate a real tag-path level over the selected version's episodes."""
+    total = d["frames"] or 1
     by = {}
-    for r in recs:
-        for tid in rec_tags(r):
-            by[tid] = by.get(tid, 0) + r["frames"]
+    tag_paths = {name: (_TAG_GROUP[tid], DATASET_TAG_PATH_BY_ID.get(tid, name).split(" > "))
+                 for tid, name in TAG_LABEL.items()}
+    for row in dataset_episodes(d):
+        labels = set()
+        for name in set(row.get("tags", [])):
+            group, path = tag_paths.get(name, ("其他", [name]))
+            labels.add((group, path[min(level - 1, len(path) - 1)] if level == 2 else name))
+        for key in labels:
+            by.setdefault(key, {"frames": 0, "episode_count": 0})
+            by[key]["frames"] += row["length"]
+            by[key]["episode_count"] += 1
     groups = {}
-    for tid, fr in by.items():
-        groups.setdefault(_TAG_GROUP.get(tid, "其他"), []).append(
-            {"name": TAG_LABEL.get(tid, tid), "ratio": fr / total})
+    for (group, name), values in by.items():
+        groups.setdefault(group, []).append(
+            {"name": name, "frames": values["frames"], "episode_count": values["episode_count"],
+             "ratio": values["frames"] / total})
     out = []
-    for grp in TAG_GROUP_ORDER:
+    for grp in [*TAG_GROUP_ORDER, *sorted(set(groups) - set(TAG_GROUP_ORDER))]:
         if grp in groups:
             out.append({"group": grp, "tags": sorted(groups[grp], key=lambda x: -x["ratio"])})
     return out
@@ -2623,19 +2729,26 @@ def tag_tree_html(d):
 # 通用: lerobot 风格 episode 级预览 (数据湖 + 数据集详情共用)
 # 术语/结构对齐 out_182_unchecked: Episode / cam_high·cam_left_wrist·cam_right_wrist /
 #   leftarm·rightarm_state(cmd)_joint_pos / LANGUAGE INSTRUCTION
-def preview_block(prefix, eps):
+def preview_block(prefix, eps, media_url=None, fps=30):
     if not eps:
         return '<div class="muted">暂无数据</div>'
     ep0 = eps[0]
     ep_items = ""
     for e in eps:
         ep_items += (f'<div class="ep-item {"active" if e["idx"]==ep0["idx"] else ""}" data-episode-id="{e["idx"]}" onclick="window.setEp_{prefix}({e["idx"]})">'
-                     f'Episode {e["idx"]}<div class="er">{e["length"]:,}f · #{e["rec"]}</div></div>')
-    cams = "".join(
-        f'<div class="camera-cell"><span class="cam-label">{c}</span>'
-        f'&#9658; 240×320</div>'
-        for c in CAMERAS
-    )
+                     f'Episode {e["idx"]}<div class="er">{e["length"]:,}f · #{html.escape(str(e["rec"]))}</div></div>')
+    if media_url:
+        cams = "".join(
+            f'<div class="camera-cell"><span class="cam-label">{html.escape(str(camera))}</span>'
+            f'<video controls preload="metadata" playsinline src="{html.escape(media_url + "?" + urlencode({"episode": ep0["idx"], "camera": camera}), quote=True)}"></video></div>'
+            for camera in ep0.get("videos", {})
+        ) or '<div class="muted">暂无视频文件</div>'
+    else:
+        cams = "".join(
+            f'<div class="camera-cell"><span class="cam-label">{c}</span>'
+            f'&#9658; 240×320</div>'
+            for c in CAMERAS
+        )
 
     # —— 标注信息: highlevel / lowlevel 分段 (demo) ——
     HL_SEGS = [
@@ -2666,6 +2779,31 @@ def preview_block(prefix, eps):
     p_left = HL_SEGS[1][1] / seg_total * 100
     p_w = (HL_SEGS[1][2] - HL_SEGS[1][1]) / seg_total * 100
 
+    if media_url:
+        def mapped_annotation(row):
+            duration = row["length"] / fps if fps else 0
+            segments = [segment for segment in row.get("annotation", {}).get("lowlevel_segments", [])
+                        if segment.get("end_frame", 0) > segment.get("start_frame", 0)]
+            colors = ("#7ed3a2", "#f4d35e", "#e8a06a", "#5bc0be", "#9b8cce", "#5aa9e6")
+            bars = "".join(
+                f'<div class="seg" style="flex:{seg["end_frame"] - seg["start_frame"]} 1 0;background:{colors[i % len(colors)]};" '
+                f'title="{html.escape(str(seg.get("name") or seg.get("prompt_id") or "—"), quote=True)}"></div>'
+                for i, seg in enumerate(segments))
+            rows = (f'<tr class="ann-parent"><td><span class="ann-caret">&#9662;</span>{html.escape(row.get("instr") or "—")}</td>'
+                    f'<td>0.00s</td><td>{_fmt_t(duration)}</td><td>{_fmt_t(duration)}</td></tr>')
+            for i, seg in enumerate(segments, 1):
+                start = seg["start_frame"] / fps if fps else 0
+                end = seg["end_frame"] / fps if fps else 0
+                rows += (f'<tr><td><span class="ann-num">{i}</span>{html.escape(str(seg.get("name") or seg.get("prompt_id") or "—"))}</td>'
+                         f'<td>{_fmt_t(start)}</td><td>{_fmt_t(end)}</td><td>{_fmt_t(end - start)}</td></tr>')
+            return bars, rows, len(segments)
+
+        ll_bar, anno_rows, lowlevel_count = mapped_annotation(ep0)
+        hl_bars = '<div class="seg" style="flex:1;background:#7ed3a2;"></div>'
+        highlevel_count = 1
+    else:
+        highlevel_count, lowlevel_count = len(HL_SEGS), 1
+
     markup = f"""
     <div class="preview-split">
       <div class="ep-strip" id="{prefix}_strip">
@@ -2681,7 +2819,7 @@ def preview_block(prefix, eps):
 
         <!-- Tab① 轨迹信息: 视频 + 轨迹 -->
         <div class="ep-tabpane" id="{prefix}_tab_traj">
-        <div class="camera-row">{cams}</div>
+        <div class="camera-row" data-preview-cameras="{prefix}">{cams}</div>
 
         <!-- 轨迹 -->
         <div class="traj-bar">
@@ -2743,15 +2881,15 @@ def preview_block(prefix, eps):
 
         <!-- Tab② 标注信息: 视频 + highlevel / lowlevel 分段 + 标注表 -->
         <div class="ep-tabpane" id="{prefix}_tab_anno" style="display:none;">
-          <div class="camera-row">{cams}</div>
+          <div class="camera-row" data-preview-cameras="{prefix}">{cams}</div>
           <div class="seg-timeline">
-            <div class="seg-row"><span class="seg-badge" title="highlevel 分段数">{len(HL_SEGS)}</span><div class="seg-track">{hl_bars}</div></div>
-            <div class="seg-row"><span class="seg-badge">1</span><div class="seg-track">{ll_bar}</div></div>
+            <div class="seg-row"><span class="seg-badge" title="highlevel 分段数">{highlevel_count}</span><div class="seg-track" id="{prefix}_highSegments">{hl_bars}</div></div>
+            <div class="seg-row"><span class="seg-badge" id="{prefix}_lowCount">{lowlevel_count}</span><div class="seg-track" id="{prefix}_lowSegments">{ll_bar}</div></div>
           </div>
           <div class="anno-cap">highlevel / lowlevel 标注 <span class="muted" style="font-weight:400;font-size:12px;">点击分段查看对应标注</span></div>
           <table class="anno-table">
             <thead><tr><th>描述</th><th>开始</th><th>结束</th><th>时长</th></tr></thead>
-            <tbody>{anno_rows}</tbody>
+            <tbody id="{prefix}_annotationRows">{anno_rows}</tbody>
           </table>
         </div><!-- /Tab② 标注信息 -->
 
@@ -2769,14 +2907,16 @@ def preview_block(prefix, eps):
     </div>
     """
     eps_json = json.dumps(eps).replace("<", "\\u003c").replace(">", "\\u003e").replace("&", "\\u0026")
-    js = _PREVIEW_JS.replace("__PREFIX__", prefix).replace("__EPS__", eps_json)
+    media_json = json.dumps(media_url).replace("<", "\\u003c").replace(">", "\\u003e").replace("&", "\\u0026")
+    js = (_PREVIEW_JS.replace("__PREFIX__", prefix).replace("__EPS__", eps_json)
+          .replace("__MEDIA_URL__", media_json).replace("__FPS__", json.dumps(fps)))
     return markup + js
 
 
 _PREVIEW_JS = """
 <script>
 (function(){
-  var EPS = __EPS__, PREFIX = "__PREFIX__";
+  var EPS = __EPS__, PREFIX = "__PREFIX__", MEDIA_URL = __MEDIA_URL__, FPS = __FPS__;
   var mode = 'arm';                       // arm | base | moz
   var arms = new Set(['LeftArm','RightArm']);
   var curEp = EPS[0].idx, baseCharts = [], mozSrc = 'STATE';
@@ -2873,6 +3013,53 @@ _PREVIEW_JS = """
       else lg.innerHTML='';
     }
   }
+  function renderMappedPreview(){
+    if(!MEDIA_URL) return;
+    var row=EPS.find(function(item){return item.idx===curEp;});
+    if(!row) return;
+    document.querySelectorAll('[data-preview-cameras="'+PREFIX+'"]').forEach(function(container){
+      container.replaceChildren();
+      var cameras=Object.keys(row.videos||{});
+      if(!cameras.length){
+        var empty=document.createElement('div'); empty.className='muted'; empty.textContent='暂无视频文件';
+        container.appendChild(empty);
+      }
+      cameras.forEach(function(camera){
+        var cell=document.createElement('div'); cell.className='camera-cell';
+        var label=document.createElement('span'); label.className='cam-label'; label.textContent=camera;
+        var video=document.createElement('video'); video.controls=true; video.preload='metadata'; video.playsInline=true;
+        video.src=MEDIA_URL+'?episode='+encodeURIComponent(row.idx)+'&camera='+encodeURIComponent(camera);
+        cell.append(label,video); container.appendChild(cell);
+      });
+    });
+    var segments=((row.annotation||{}).lowlevel_segments||[]).filter(function(seg){return seg.end_frame>seg.start_frame;});
+    var colors=['#7ed3a2','#f4d35e','#e8a06a','#5bc0be','#9b8cce','#5aa9e6'];
+    var track=document.getElementById(PREFIX+'_lowSegments'); track.replaceChildren();
+    segments.forEach(function(seg,i){
+      var bar=document.createElement('div'); bar.className='seg';
+      bar.style.flex=(seg.end_frame-seg.start_frame)+' 1 0'; bar.style.background=colors[i%colors.length];
+      bar.title=seg.name||seg.prompt_id||'—'; track.appendChild(bar);
+    });
+    document.getElementById(PREFIX+'_lowCount').textContent=segments.length;
+    var body=document.getElementById(PREFIX+'_annotationRows'); body.replaceChildren();
+    function time(frame){
+      var seconds=FPS?frame/FPS:0;
+      if(seconds>=60) return Math.floor(seconds/60)+':'+(seconds%60).toFixed(2).padStart(5,'0');
+      return seconds.toFixed(2)+'s';
+    }
+    function addRow(label,start,end,parent,index){
+      var tr=document.createElement('tr'); if(parent) tr.className='ann-parent';
+      var name=document.createElement('td');
+      var marker=document.createElement('span'); marker.className=parent?'ann-caret':'ann-num';
+      marker.textContent=parent?'▾':index; name.append(marker,document.createTextNode(label)); tr.appendChild(name);
+      [time(start),time(end),time(end-start)].forEach(function(value){
+        var td=document.createElement('td'); td.textContent=value; tr.appendChild(td);
+      });
+      body.appendChild(tr);
+    }
+    addRow(row.instr||'—',0,row.length,true,0);
+    segments.forEach(function(seg,i){addRow(seg.name||seg.prompt_id||'—',seg.start_frame,seg.end_frame,false,i+1);});
+  }
   window['setMode_'+PREFIX]=function(m){ mode=m; updateUI(); if(m==='base') renderBase(); if(m==='moz') renderMoz(); };
   window['clickArm_'+PREFIX]=function(a){
     if(mode!=='arm'){ mode='arm'; arms=new Set([a]); }
@@ -2884,6 +3071,7 @@ _PREVIEW_JS = """
     curEp=i;
     var items=document.querySelectorAll('#'+PREFIX+'_strip .ep-item');
     items.forEach(function(e,idx){ e.classList.toggle('active', EPS[idx].idx===i); });
+    renderMappedPreview();
     if(mode==='arm') renderArm(); else if(mode==='base') renderBase(); else if(mode==='moz') renderMoz();
   };
   // ════ 可视化分析 ════
@@ -3236,17 +3424,61 @@ def rec_operator(r):
     return OPERATORS_LIST[r["id"] % 3]
 
 def rec_type_enum(r):
-    # 采集类型枚举: normal / dagger / test / eval (内部「采集」对应 normal)
+    # 采集类型枚举: normal / dagger / test / eval / assess (内部「采集」对应 normal)
     t = r.get("type", "")
     return "normal" if t in ("采集", "normal", "") else t
 
 def rec_qc(r):
+    if "quality_records" in r:
+        return any(entry.get("done") is True for entry in r["quality_records"])
     # 是否质检 (demo)
     return (r["id"] % 7) != 0
 
 def rec_anno(r):
+    if "annotation_records" in r:
+        return any(entry.get("done") is True for entry in r["annotation_records"])
     # 是否标注 (demo)
     return (r["id"] % 3) == 0
+
+
+def managed_tag_options():
+    """Use the group and dimension hierarchy shown by tag management."""
+    from quanta_eval_platform import tag_management_dimensions, tag_management_groups
+
+    options = {}
+    dimensions = {dimension["id"]: dimension for dimension in tag_management_dimensions()}
+    for group in tag_management_groups():
+        for dimension_id in group["dims"]:
+            dimension = dimensions.get(dimension_id)
+            if not dimension:
+                continue
+            for tag in dimension["tags"]:
+                children = tag.get("sub_tags") or []
+                for item in children or [tag]:
+                    path = [group["name"], dimension["name"], tag["name"]]
+                    if children:
+                        path.append(item["name"])
+                    options[" > ".join(path)] = item["id"]
+    return options
+
+
+def rec_managed_tags(r):
+    """Include explicit managed tags plus equivalents for the demo recordings."""
+    tags = set(r.get("managed_tags") or [])
+    tags.update(r.get("tags") or [])
+    if r.get("task") in ("t2", "t3"):
+        tags.add("act_pick")
+    if r.get("task") == "t2":
+        tags.add("act_place")
+    tags.add({"pass": "q_passed", "fail": "q_rejected", "warn": "q_need_review"}.get(r.get("qa"), ""))
+    tags.add("q_success" if r.get("collect_result") == "成功" else "q_failed")
+    if rec_qc(r):
+        tags.add("proc_qa")
+    if rec_anno(r):
+        tags.update(("proc_annotation", "proc_labeled"))
+    else:
+        tags.add("proc_unlabeled")
+    return tags
 
 
 def build_query_filters():
@@ -3318,8 +3550,160 @@ def build_query_filters():
     )
 
 
+def third_party_db_path():
+    return app.config.get("THIRD_PARTY_DB", os.path.join(app.instance_path, "third-party-imports.sqlite3"))
+
+
+def third_party_rows():
+    rows = third_party_imports.list_imports(third_party_db_path())
+    for row in rows:
+        if row["status"] != "done":
+            continue
+        parsed = json.loads(row.get("parsed_json") or "{}")
+        episode_rows = parsed.get("episodes", [])
+        existing = get_ds(row["dataset_id"])
+        if existing:
+            existing["third_party_storage_address"] = row["file_path"]
+            for version in DS_VERSIONS.get(existing["id"], []):
+                version["snapshot"]["third_party_storage_address"] = row["file_path"]
+            if parsed.get("sample_data") and existing.get("episode_rows"):
+                videos_by_idx = {item["idx"]: item.get("videos", {}) for item in episode_rows}
+                for version_data in [existing, *(v["snapshot"] for v in DS_VERSIONS.get(existing["id"], []))]:
+                    for item in version_data.get("episode_rows", []):
+                        current_videos = item.get("videos", {})
+                        if not current_videos or all(str(path).startswith("sample://") for path in current_videos.values()):
+                            item["videos"] = videos_by_idx.get(item["idx"], current_videos)
+                    if version_data.get("import_sample"):
+                        version_data["robot"] = parsed.get("robot") or version_data.get("robot", "—")
+                        version_data["import_info"] = parsed.get("info", version_data.get("import_info", {}))
+            if episode_rows and not existing.get("episode_rows"):
+                existing.update(episodes=len(episode_rows), frames=sum(item["length"] for item in episode_rows),
+                                fps=parsed.get("fps") or 0, robot=parsed.get("robot") or "—",
+                                episode_rows=episode_rows, import_info=parsed.get("info", {}),
+                                import_tasks=parsed.get("tasks", []), import_sample=parsed.get("sample_data", False),
+                                import_task_id=row["id"],
+                                processing_status="ready")
+                for version in DS_VERSIONS.get(existing["id"], []):
+                    if version["version"] == existing["version"] and not version["snapshot"].get("episode_rows"):
+                        version["snapshot"].update(deepcopy(existing))
+                        version["recordings"] = len(episode_rows)
+            continue
+        dataset = {
+            "id": row["dataset_id"], "ident": row["dataset_ident"], "name": row["dataset_name"],
+            "version": "v1", "type": "custom", "robot": parsed.get("robot") or "—", "fps": parsed.get("fps") or 0,
+            "episodes": len(episode_rows), "frames": sum(item["length"] for item in episode_rows),
+            "quality": "pass", "status": "未生效",
+            "publish_status": "未发布", "tos": row["file_path"] if row["file_path"].startswith("tos://") else "—",
+            "created": row["completed_at"] or row["created_at"], "owner": row["owner"],
+            "recordings": [], "tasks": [], "recipe": {"groups": [], "alpha": 1, "train_ratio": .95, "seed": 42},
+            "src": "开源数据集 " + row["source_id"], "used_by": [], "episode_rows": episode_rows,
+            "format": row["format"], "processing_status": "ready" if episode_rows else "queued",
+            "third_party_source_id": row["source_id"], "third_party_file_name": row["file_name"],
+            "third_party_storage_location": row["storage_location"],
+            "third_party_storage_address": row["file_path"],
+            "detected_episode_files": row["episode_count"],
+            "import_info": parsed.get("info", {}), "import_tasks": parsed.get("tasks", []),
+            "import_sample": parsed.get("sample_data", False), "import_task_id": row["id"],
+        }
+        DATASETS.insert(0, dataset)
+        V2_FOLDER_MAP.setdefault(row["folder"], []).insert(0, row["dataset_id"])
+        DS_VERSIONS[row["dataset_id"]] = [{
+            "version": "v1", "created": dataset["created"], "recordings": len(episode_rows),
+            "status": "未生效", "publish_status": "未发布", "note": "由开源数据集导入创建",
+            "creator": row["owner"], "snapshot": deepcopy(dataset),
+        }]
+    return rows
+
+
+@app.route("/raw/import", methods=["POST"])
+def third_party_import_create():
+    source_name = request.form.get("source_name", "").strip()
+    dataset_ident = request.form.get("dataset_ident", "").strip()
+    dataset_name = request.form.get("dataset_name", "").strip()
+    folder = request.form.get("folder", "")
+    ds_format = request.form.get("format", "")
+    storage_location = request.form.get("storage_location", "").strip().lower()
+    storage_address = request.form.get("storage_address", "").strip()
+    upload = request.files.get("file")
+    if not source_name or len(source_name) > 200 or not dataset_name or len(dataset_name) > 200:
+        return jsonify(error="请填写数据源名称和数据集名称，最多 200 字"), 400
+    if not re.fullmatch(r"[A-Za-z][A-Za-z0-9_-]{0,79}", dataset_ident):
+        return jsonify(error="标识须以英文字母开头，仅包含字母、数字、下划线或短横线，最多 80 字"), 400
+    if folder not in V2_FOLDERS or ds_format not in ("LeRobort", "Mozdataset v2"):
+        return jsonify(error="请选择有效的数据集目录和格式"), 400
+    if any(dataset["name"].casefold() == dataset_name.casefold() for dataset in DATASETS):
+        return jsonify(error="数据集名称已存在，请更换"), 409
+    if any(dataset["id"].casefold() == dataset_ident.casefold()
+           or dataset.get("ident", "").casefold() == dataset_ident.casefold() for dataset in DATASETS):
+        return jsonify(error="数据集标识已存在，请更换"), 409
+    if storage_location or storage_address:
+        try:
+            third_party_imports.validate_storage_address(storage_location, storage_address)
+        except ValueError as error:
+            return jsonify(error=str(error)), 400
+        file_name = storage_address.rstrip("/").rsplit("/", 1)[-1]
+        file_path, file_size = storage_address, 0
+    else:
+        if not upload or not upload.filename or not upload.filename.lower().endswith((".tar.gz", ".zip", ".parquet")):
+            return jsonify(error="请选择有效的存储位置和地址"), 400
+        file_name = os.path.basename(upload.filename)
+        safe_name = secure_filename(file_name)
+        if not safe_name:
+            return jsonify(error="文件名无效"), 400
+        upload_dir = os.path.join(os.path.dirname(third_party_db_path()), "third-party-uploads", uuid.uuid4().hex)
+        os.makedirs(upload_dir, exist_ok=True)
+        file_path = os.path.join(upload_dir, safe_name)
+        upload.save(file_path)
+        file_size = os.path.getsize(file_path)
+        if not file_size:
+            os.remove(file_path)
+            return jsonify(error="导入文件不能为空"), 400
+    try:
+        task = third_party_imports.create_import(
+            third_party_db_path(), source_name, dataset_ident, dataset_name, folder, ds_format,
+            file_name, file_path, file_size, CURRENT_USER, storage_location or "local")
+    except sqlite3.IntegrityError:
+        if file_size:
+            os.remove(file_path)
+        return jsonify(error="数据源、数据集标识或名称已存在，请更换"), 409
+    return jsonify(task_id=task["id"], source_id=task["source_id"]), 202
+
+
+@app.route("/raw/imports/<task_id>")
+def third_party_import_status(task_id):
+    task = third_party_imports.get_import(third_party_db_path(), task_id)
+    if not task:
+        return jsonify(error="导入任务不存在"), 404
+    return jsonify({key: task[key] for key in ("id", "source_id", "dataset_id", "status", "stage", "error")})
+
+
+@app.route("/datasets/<did>/media")
+def imported_dataset_media(did):
+    task = third_party_imports.get_import_by_dataset(third_party_db_path(), did)
+    if not task or task["status"] != "done":
+        abort(404)
+    episode = request.args.get("episode", type=int)
+    camera = request.args.get("camera", "")
+    parsed = json.loads(task.get("parsed_json") or "{}")
+    row = next((item for item in parsed.get("episodes", []) if item["idx"] == episode), None)
+    member = row.get("videos", {}).get(camera) if row else None
+    if not member or member not in parsed.get("video_members", []):
+        abort(404)
+    if parsed.get("sample_data") and member == "sample://dataset-sample-preview.webm":
+        return send_file(os.path.join(os.path.dirname(__file__), "static", "dataset-sample-preview.webm"),
+                         mimetype="video/webm", conditional=True)
+    if task["storage_location"] not in ("local", "vepfs"):
+        abort(404)
+    try:
+        content = dataset_import_parser.read_media_member(task["file_path"], member)
+    except (OSError, KeyError, ValueError):
+        abort(404)
+    mime = "video/webm" if member.lower().endswith(".webm") else "video/mp4"
+    return send_file(io.BytesIO(content), mimetype=mime, conditional=True)
+
+
 @app.route("/raw")
-def raw_data():
+def raw_data(third_party_only=False):
     # —— 自采数据 (demo) ——
     self_rows = ""
     _self = [
@@ -3355,16 +3739,159 @@ def raw_data():
 
     creator_ms = ms_search_html("creator", "全部", CREATOR_POOL, [])
     date_range = '<div class="q-range"><input type="date"><span class="q-range-sep">~</span><input type="date"></div>'
-    content = f"""
+    if third_party_only:
+        all_imports = third_party_rows()
+        source_id_keyword = request.args.get("id", "").strip()
+        source_keyword = request.args.get("name", "").strip()
+        creator = request.args.get("creator", "")
+        sources = [row for row in all_imports if row["status"] == "done"
+                   and (not source_id_keyword or source_id_keyword.casefold() in row["source_id"].casefold())
+                   and (not source_keyword or source_keyword.casefold() in row["source_name"].casefold())
+                   and (not creator or creator == row["owner"])]
+        try:
+            page = max(1, int(request.args.get("page", "1")))
+        except ValueError:
+            page = 1
+        pages = max(1, math.ceil(len(sources) / 10))
+        page = min(page, pages)
+        source_rows = ""
+        for row in sources[(page - 1) * 10:page * 10]:
+            detail_url = "?" + urlencode({"source": row["source_id"]})
+            dataset_url = "/model/data/datasets?" + urlencode({"sel": row["dataset_id"], "tab": "info"})
+            storage_address = row["file_path"] if row["storage_location"] != "local" else row["file_name"]
+            source_rows += (f'<tr><td>{html.escape(row["source_id"])}</td>'
+                            f'<td>{html.escape(row["source_name"])}</td>'
+                            f'<td>{html.escape(row["storage_location"].upper())}</td>'
+                            f'<td title="{html.escape(storage_address, quote=True)}">{html.escape(storage_address)}</td>'
+                            f'<td>{html.escape(row["format"])}</td>'
+                            f'<td><a href="{html.escape(dataset_url, quote=True)}">{html.escape(row["dataset_name"])}</a></td>'
+                            f'<td>{html.escape(row["owner"])}</td><td>{html.escape(row["completed_at"])}</td>'
+                            f'<td class="actions-cell"><a href="{html.escape(detail_url, quote=True)}">详情</a></td></tr>')
+        if not source_rows:
+            source_rows = '<tr><td colspan="9" class="muted" style="text-align:center;padding:32px;">暂无已导入的开源数据集</td></tr>'
+        source_choices = ''.join(f'<option value="{html.escape(name, quote=True)}"{" selected" if creator == name else ""}>{html.escape(name)}</option>'
+                                 for name in sorted({row["owner"] for row in all_imports if row["status"] == "done"}))
+        page_params = {key: value for key, value in request.args.items()
+                       if key in ("id", "name", "creator") and value}
+        page_links = ""
+        for number in range(1, pages + 1):
+            href = "?" + urlencode({**page_params, "page": number})
+            page_links += (f'<span class="pg-btn active" aria-current="page">{number}</span>' if number == page else
+                           f'<a class="pg-btn" href="{html.escape(href, quote=True)}">{number}</a>')
+        source_filter = f'''
+        <form class="q-filters third-source-filters" method="get" action="/model/data/raw" style="margin-bottom:16px;">
+          <div class="q-filter-row q-adv-row">
+            <div class="q-field"><label for="thirdSourceId">ID</label><input id="thirdSourceId" name="id" value="{html.escape(source_id_keyword, quote=True)}" placeholder="输入数据源 ID"></div>
+            <div class="q-field"><label for="thirdSourceName">数据源名称</label><input id="thirdSourceName" name="name" value="{html.escape(source_keyword, quote=True)}" placeholder="输入数据源名称"></div>
+            <div class="q-field"><label for="thirdSourceCreator">创建人</label><select id="thirdSourceCreator" name="creator"><option value="">全部</option>{source_choices}</select></div>
+            <div class="q-filter-tools third-source-filter-actions"><a class="btn" href="/model/data/raw">重置</a><button class="btn-primary btn" type="submit">查询</button></div>
+          </div>
+        </form>'''
+        third_table = (f'{source_filter}<div class="card"><div class="table-wrap">'
+                       f'<table class="ant-table"><thead><tr><th>ID</th><th>数据源名称</th><th>存储位置</th><th>存储地址</th>'
+                       f'<th>数据格式</th><th>关联数据集</th><th>创建人</th><th>导入完成时间</th><th>操作</th></tr></thead>'
+                       f'<tbody>{source_rows}</tbody></table></div></div>'
+                       f'<nav class="mini-pager" aria-label="数据源分页"><span class="muted">共 {len(sources)} 条 · 第 {page} / {pages} 页</span>{page_links}<span class="muted">10 条/页</span></nav>')
+        selected_source = next((row for row in all_imports if row["status"] == "done" and row["source_id"] == request.args.get("source")), None)
+        source_detail = ''
+        if selected_source:
+            dataset_url = "/model/data/datasets?" + urlencode({"sel": selected_source["dataset_id"], "tab": "info"})
+            storage_address = (selected_source["file_path"] if selected_source["storage_location"] != "local"
+                               else selected_source["file_name"])
+            source_detail = f'''
+            <div class="drawer-mask active" id="rawSourceDetail" onclick="if(event.target===this)location.href='/model/data/raw'">
+              <div class="drawer"><div class="drawer-head"><h3>开源数据集详情</h3><button class="drawer-close" onclick="location.href='/model/data/raw'">&times;</button></div>
+              <div class="drawer-body"><div class="desc-grid">
+                <div class="dk">数据源 ID</div><div class="dv">{html.escape(selected_source["source_id"])}</div>
+                <div class="dk">数据源名称</div><div class="dv">{html.escape(selected_source["source_name"])}</div>
+                <div class="dk">存储位置</div><div class="dv">{html.escape(selected_source["storage_location"].upper())}</div>
+                <div class="dk">存储地址</div><div class="dv">{html.escape(storage_address)}</div>
+                <div class="dk">数据格式</div><div class="dv">{html.escape(selected_source["format"])}</div>
+                <div class="dk">创建人</div><div class="dv">{html.escape(selected_source["owner"])}</div>
+                <div class="dk">完成时间</div><div class="dv">{html.escape(selected_source["completed_at"])}</div>
+                <div class="dk">关联数据集</div><div class="dv"><a href="{html.escape(dataset_url, quote=True)}">{html.escape(selected_source["dataset_name"])}</a></div>
+              </div></div></div></div>'''
+        folder_options = ''.join(f'<option value="{html.escape(folder, quote=True)}">{html.escape(folder)}</option>' for folder in V2_FOLDERS)
+        import_modal = f'''
+        <div class="drawer-mask" id="rawImportModal" onclick="if(event.target===this)closeDrawerById('rawImportModal')">
+          <form class="drawer" id="thirdImportForm" onsubmit="submitThirdImport(event)">
+            <div class="drawer-head"><h3>导入开源数据集</h3><button type="button" class="drawer-close" onclick="closeDrawerById('rawImportModal')">&times;</button></div>
+            <div class="drawer-body">
+              <div class="fg"><label for="rawSourceName"><span class="req">*</span>数据源名称</label><input id="rawSourceName" name="source_name" maxlength="200" required placeholder="如 Bridge Kitchen v2"></div>
+              <div class="fg"><label for="rawStorageLocation"><span class="req">*</span>存储位置</label><select id="rawStorageLocation" name="storage_location" required onchange="setThirdStoragePlaceholder(this.value)"><option value="tos">TOS</option><option value="vepfs">VEPFS</option><option value="ks3">KS3</option></select></div>
+              <div class="fg"><label for="rawStorageAddress"><span class="req">*</span>存储地址</label><input id="rawStorageAddress" name="storage_address" maxlength="2048" required placeholder="tos://bucket/path/to/dataset/"></div>
+              <div class="fg"><label for="rawDatasetIdent"><span class="req">*</span>数据集标识</label><input id="rawDatasetIdent" name="dataset_ident" maxlength="80" pattern="[A-Za-z][A-Za-z0-9_-]*" required placeholder="英文唯一标识" oninput="var target=document.getElementById('rawDatasetName');if(target&&!target.dataset.edited)target.value=this.value"><div class="hint">全局唯一</div></div>
+              <div class="fg"><label for="rawDatasetName"><span class="req">*</span>数据集名称</label><input id="rawDatasetName" name="dataset_name" maxlength="200" required placeholder="填写标识后自动带入, 可修改" oninput="this.dataset.edited='1'"></div>
+              <div class="fg"><label for="rawDatasetFolder"><span class="req">*</span>目录</label><select id="rawDatasetFolder" name="folder" required>{folder_options}</select></div>
+              <div class="fg"><label for="rawDatasetFormat"><span class="req">*</span>格式</label><select id="rawDatasetFormat" name="format" required><option value="Mozdataset v2" selected>Mozdataset v2</option><option value="LeRobort">LeRobort</option></select></div>
+              <div class="hint" role="alert" id="rawImportError"></div>
+            </div>
+            <div class="drawer-foot"><button class="btn" type="button" onclick="closeDrawerById('rawImportModal')">取消</button><button class="btn-primary btn" type="submit">开始导入</button></div>
+          </form>
+        </div>{source_detail}'''
+        import_script = '''
+      function setThirdStoragePlaceholder(location){
+        var input=document.getElementById('rawStorageAddress');
+        input.placeholder={tos:'tos://bucket/path/to/dataset/',vepfs:'/mnt/vepfs01/path/to/dataset/',ks3:'ks3://bucket/path/to/dataset/'}[location]||'';
+      }
+      async function submitThirdImport(event){
+        event.preventDefault();
+        var form=event.target, button=form.querySelector('[type="submit"]'), error=document.getElementById('rawImportError');
+        error.textContent=''; button.disabled=true;
+        try{
+          var response=await fetch('/model/data/raw/import',{method:'POST',body:new FormData(form)});
+          var result=await response.json();
+          if(!response.ok) throw new Error(result.error||'导入提交失败');
+          location.href='/model/data/tasks?task_type=import&task='+encodeURIComponent(result.task_id);
+        }catch(reason){ error.textContent=reason.message||'导入提交失败'; button.disabled=false; }
+      }
+        '''
+        raw_header = ('<!--title-action--><span class="third-source-title-copy">'
+                      '<span class="third-source-title-note">仅展示导入成功的开源数据集，</span>'
+                      '<a class="action-link" href="/model/data/tasks?task_type=import">查看全部导入记录</a></span>'
+                      '<button class="btn-primary btn" id="rawImportBtn" '
+                      'onclick="openDrawerById(\'rawImportModal\')">导入开源数据集</button><!--/title-action-->')
+    else:
+        raw_header = '''
     <div class="raw-head">
       <div class="ep-tabs raw-tabs">
         <button class="ep-tab active" onclick="rawTab(this,'self')">自采数据</button>
         <button class="ep-tab" onclick="rawTab(this,'third')">三方数据</button>
       </div>
       <button class="btn btn-secondary" id="rawCollectBtn" onclick="toast('Demo: 跳转至 采集任务列表')">查看采集任务</button>
-      <button class="btn-primary btn" id="rawImportBtn" style="display:none;" onclick="openDrawerById('rawImportModal')">&#43; 导入</button>
-    </div>
-    <div>
+      <button class="btn-primary btn" id="rawImportBtn" style="display:none;" onclick="openDrawerById('rawImportModal')">导入开源数据集</button>
+    </div>'''
+        third_table = f'''
+        <div class="q-filters" style="margin-bottom:16px;">
+          <div class="q-filter-row q-adv-row">
+            <div class="q-field"><label>数据集名称</label><input placeholder="数据集名称关键词"></div>
+            <div class="q-field"><label>导入状态</label><select><option value="">全部</option><option>导入中</option><option>导入完成</option><option>导入失败</option></select></div>
+            <div class="q-field"><label>创建人</label>{creator_ms}</div>
+            <div class="q-field"><label>创建时间</label>{date_range}</div>
+          </div>
+          <div class="q-filter-tools"><button type="button" class="btn" onclick="toast('Demo: 已重置')">重置</button><button type="button" class="btn-primary btn" onclick="toast('Demo: 已查询')">查询</button></div>
+        </div>
+        <div class="card"><table class="ant-table">
+          <thead><tr><th>任务 ID</th><th>任务名称</th><th>数据集名称</th><th>文件地址</th><th>导入状态</th><th>创建人</th><th>创建时间</th></tr></thead>
+          <tbody>{third_rows}</tbody>
+        </table></div>'''
+        import_modal = '''
+    <div class="modal-mask" id="rawImportModal" onclick="if(event.target===this)this.classList.remove('active')">
+      <div class="modal-box" style="width:460px;">
+        <div class="drawer-head"><h3>导入开源数据集</h3><button class="drawer-close" onclick="closeDrawerById('rawImportModal')">&times;</button></div>
+        <div class="drawer-body">
+          <div class="fg"><label><span class="req">*</span>任务名称</label><input placeholder="如 Open Pick-Place"></div>
+          <div class="fg"><label><span class="req">*</span>导入文件</label>
+            <label class="upload-box"><input type="file" id="rawFile" onchange="rawFilePick(this)" hidden><span class="up-icon">&#8679;</span><span class="up-text" id="rawFileText">点击选择文件</span></label>
+            <div class="hint">支持 .tar.gz / .zip / .parquet, 上传后开始异步导入</div>
+          </div>
+        </div>
+        <div class="drawer-foot"><button class="btn" onclick="closeDrawerById('rawImportModal')">取消</button><button class="btn-primary btn" onclick="closeDrawerById('rawImportModal');toast('Demo: 已开始异步导入, 可在列表查看导入状态')">开始导入</button></div>
+      </div>
+    </div>'''
+        import_script = ''
+    third_pane_style = '' if third_party_only else 'style="display:none;"'
+    self_pane = '' if third_party_only else f'''
       <div id="pane-self">
         <div class="q-filters" style="margin-bottom:16px;">
           <div class="q-filter-row q-adv-row">
@@ -3384,49 +3911,17 @@ def raw_data():
             <tbody>{self_rows}</tbody>
           </table>
         </div>
-      </div>
-      <div id="pane-third" style="display:none;">
-        <div class="q-filters" style="margin-bottom:16px;">
-          <div class="q-filter-row q-adv-row">
-            <div class="q-field"><label>数据集名称</label><input placeholder="数据集名称关键词"></div>
-            <div class="q-field"><label>导入状态</label><select><option value="">全部</option><option>导入中</option><option>导入完成</option><option>导入失败</option></select></div>
-            <div class="q-field"><label>创建人</label>{creator_ms}</div>
-            <div class="q-field"><label>创建时间</label>{date_range}</div>
-          </div>
-          <div class="q-filter-tools">
-            <button type="button" class="btn" onclick="toast('Demo: 已重置')">重置</button>
-            <button type="button" class="btn-primary btn" onclick="toast('Demo: 已查询')">查询</button>
-          </div>
-        </div>
-        <div class="card">
-          <table class="ant-table">
-            <thead><tr><th>任务 ID</th><th>任务名称</th><th>数据集名称</th><th>文件地址</th><th>导入状态</th><th>创建人</th><th>创建时间</th></tr></thead>
-            <tbody>{third_rows}</tbody>
-          </table>
-        </div>
+      </div>'''
+    content = f"""
+    {raw_header}
+    <div>
+      {self_pane}
+      <div id="pane-third" {third_pane_style}>
+        {third_table}
       </div>
     </div>
 
-    <div class="modal-mask" id="rawImportModal" onclick="if(event.target===this)this.classList.remove('active')">
-      <div class="modal-box" style="width:460px;">
-        <div class="drawer-head"><h3>导入三方数据</h3><button class="drawer-close" onclick="closeDrawerById('rawImportModal')">&times;</button></div>
-        <div class="drawer-body">
-          <div class="fg"><label><span class="req">*</span>任务名称</label><input placeholder="如 Open Pick-Place"></div>
-          <div class="fg"><label><span class="req">*</span>导入文件</label>
-            <label class="upload-box">
-              <input type="file" id="rawFile" onchange="rawFilePick(this)" hidden>
-              <span class="up-icon">&#8679;</span>
-              <span class="up-text" id="rawFileText">点击选择文件</span>
-            </label>
-            <div class="hint">支持 .tar.gz / .zip / .parquet, 上传后开始异步导入</div>
-          </div>
-        </div>
-        <div class="drawer-foot">
-          <button class="btn" onclick="closeDrawerById('rawImportModal')">取消</button>
-          <button class="btn-primary btn" onclick="closeDrawerById('rawImportModal');toast('Demo: 已开始异步导入, 可在列表查看导入状态')">开始导入</button>
-        </div>
-      </div>
-    </div>
+    {import_modal}
     <div class="modal-mask" id="rawDownloadModal" onclick="if(event.target===this)this.classList.remove('active')">
       <div class="modal-box" style="width:420px;">
         <div class="drawer-head"><h3>下载文件</h3><button class="drawer-close" onclick="closeDrawerById('rawDownloadModal')">&times;</button></div>
@@ -3441,6 +3936,7 @@ def raw_data():
       </div>
     </div>
     <script>
+      {import_script}
       function rawDownload(f){{ var el=document.getElementById('rawDlName'); if(el) el.textContent=f; openDrawerById('rawDownloadModal'); }}
       function rawFilePick(inp){{ var t=document.getElementById('rawFileText'), box=inp.closest('.upload-box'); if(inp.files&&inp.files.length){{ t.textContent=inp.files[0].name; box.classList.add('has-file'); }} else {{ t.textContent='点击选择文件'; box.classList.remove('has-file'); }} }}
       function rawTab(btn, which){{
@@ -3480,13 +3976,30 @@ DATASET_PROCESSING_LABELS = {"ready": DATASET_CREATION_LABELS["done"], "queued":
 
 
 def dataset_task_records():
-    """A single task view over creation jobs and existing execution records."""
+    """A single task view over imports, creation jobs and execution records."""
     records = []
+    for item in third_party_rows():
+        processing = {"queued": "queued", "running": "running", "fail": "failed", "done": "ready"}[item["status"]]
+        records.append({
+            "id": item["id"], "name": item["dataset_name"], "version": "v1", "kind": "import",
+            "data_source": "开源数据",
+            "status": item["status"], "processing": processing,
+            "label": {"queued": "待处理", "running": "进行中", "fail": "失败", "done": "成功"}[item["status"]],
+            "stage": item["stage"], "progress": {"queued": 0, "running": 50, "fail": 0, "done": 100}[item["status"]],
+            "dataset_id": item["dataset_id"] if item["status"] == "done" else "",
+            "source_id": item["source_id"], "at": item["created_at"], "by": item["owner"],
+            "storage_location": item["storage_location"],
+            "description": f'{item["source_name"]} · {item["file_path"] if item["storage_location"] != "local" else item["file_name"]}', "error": item["error"],
+            "query": {"数据源名称": item["source_name"], "存储位置": item["storage_location"].upper(),
+                      "存储地址": item["file_path"] if item["storage_location"] != "local" else item["file_name"],
+                      "数据格式": item["format"], "目标目录": item["folder"]},
+        })
     for task in DATASET_CREATION_TASKS:
         record = dict(task)
         record["label"] = DATASET_CREATION_LABELS[task["status"]]
         record["processing"] = {"done": "ready", "fail": "failed"}.get(task["status"], "running")
         record["stage"] = task.get("stage") or record["label"]
+        record["data_source"] = "自采数据"
         records.append(record)
     for run in RUNS:
         if not run.get("dataset_id"):
@@ -3500,7 +4013,8 @@ def dataset_task_records():
         kind = "workflow" if run.get("pipeline") else "operator"
         processing = {"done": "ready"}.get(run["status"], run["status"])
         records.append({**run, "name": dataset["name"], "kind": kind,
-                        "processing": processing, "description": run["name"], "label": DATASET_PROCESSING_LABELS[processing]})
+                        "processing": processing, "description": run["name"], "label": DATASET_PROCESSING_LABELS[processing],
+                        "data_source": "开源数据" if dataset.get("third_party_source_id") else "自采数据"})
     return sorted(records, key=lambda task: (task["at"], str(task["id"])), reverse=True)
 
 
@@ -3518,11 +4032,11 @@ def dataset_processing_status(snapshot):
 
 @app.route("/datasets/tasks")
 @app.route("/ds_progress")
-def ds_progress():
+def ds_progress(standalone=False):
     def safe_json(value):
         return json.dumps(value, ensure_ascii=False).replace("<", "\\u003c").replace(">", "\\u003e").replace("&", "\\u0026")
 
-    tasks = [{**task, "task_type": "create" if task["kind"] == "create" else "update"}
+    tasks = [{**task, "task_type": task["kind"] if task["kind"] in ("create", "import") else "update"}
              for task in dataset_task_records()]
     st_map = {"done": ("tag-green", "成功"), "fail": ("imp-fail", "失败"), "running": ("tag-orange", "进行中"), "verify": ("tag-blue", "校验中")}
 
@@ -3614,8 +4128,10 @@ def ds_progress():
         )
 
     selected_dataset = request.args.get("dataset_id", "")
+    task_id_keyword = request.args.get("task_id", "").strip()
     keyword = request.args.get("keyword", "").strip()
     selected_version = request.args.get("version", "")
+    selected_source = request.args.get("data_source", "")
     selected_kind = request.args.get("task_type", "")
     if selected_kind in ("append", "operator", "workflow"):
         selected_kind = "update"
@@ -3623,8 +4139,10 @@ def ds_progress():
     creators = request.args.getlist("creator")
     filtered = [task for task in tasks
                 if (not selected_dataset or task.get("dataset_id") == selected_dataset)
+                and (not task_id_keyword or task_id_keyword.casefold() in str(task["id"]).casefold())
                 and (not keyword or keyword.casefold() in task["name"].casefold())
                 and (not selected_version or task["version"] == selected_version)
+                and (not selected_source or task["data_source"] == selected_source)
                 and (not selected_kind or task["task_type"] == selected_kind)
                 and (not selected_status or task["label"] == selected_status)
                 and (not creators or task.get("by") in creators)]
@@ -3639,7 +4157,7 @@ def ds_progress():
     if opened:
         page = filtered.index(opened) // page_size + 1
     page_tasks = filtered[(page - 1) * page_size:page * page_size]
-    kind_labels = {"create": "创建数据集", "update": "更新数据集"}
+    kind_labels = {"import": "开源数据导入", "create": "创建数据集", "update": "更新数据集"}
     rows = ""
     failure_templates = [failure_template(task["legacy_id"]) for task in page_tasks if task.get("legacy_id") and task["status"] == "fail"]
     for task in page_tasks:
@@ -3655,13 +4173,13 @@ def ds_progress():
         actions = f'<button type="button" class="action-link" onclick="dpDetail({task_json})">任务详情</button>'
         if task.get("dataset_id"):
             href = "/datasets?" + urlencode({"sel": task["dataset_id"], "ver": task["version"], "tab": "version"})
-            actions += f'<a href="{html.escape(href, quote=True)}">查看版本</a>'
+            actions += f'<a href="{html.escape(href, quote=True)}">查看数据集</a>'
         rows += (f'<tr data-task-id="{safe_id}" data-status="{html.escape(task["status"])}"><td title="{safe_id}">{safe_id}</td>'
-                 f'<td title="{html.escape(task["name"], quote=True)}">{name}</td><td>{version}</td><td>{kind_labels[task["task_type"]]}</td><td>{status}</td>'
+                 f'<td title="{html.escape(task["name"], quote=True)}">{name}</td><td>{version}</td><td>{task["data_source"]}</td><td>{kind_labels[task["task_type"]]}</td><td>{status}</td>'
                  f'<td title="{html.escape(task.get("by", "—"), quote=True)}">{html.escape(task.get("by", "—"))}</td><td>{html.escape(task["at"])}</td>'
                  f'<td class="actions-cell"><div class="dataset-version-actions">{actions}</div></td></tr>')
     if not rows:
-        rows = '<tr><td colspan="8" class="muted" style="text-align:center;padding:32px;">暂无数据集任务</td></tr>'
+        rows = '<tr><td colspan="9" class="muted" style="text-align:center;padding:32px;">暂无数据集任务</td></tr>'
 
     def options(items, selected, base):
         return '<option value="">' + base + '</option>' + ''.join(
@@ -3669,11 +4187,14 @@ def ds_progress():
             for value, label in items)
 
     version_options = options([(value, value) for value in sorted({t["version"] for t in tasks})], selected_version, "全部版本")
+    source_options = options([(value, value) for value in ("自采数据", "开源数据")], selected_source, "全部来源")
     kind_options = options(list(kind_labels.items()), selected_kind, "全部任务类型")
     status_options = options([(label, label) for label in dict.fromkeys([*DATASET_CREATION_LABELS.values(), *DATASET_PROCESSING_LABELS.values()])], selected_status, "全部状态")
-    creator_ms = ms_search_html("creator", "请选择提交人", [(name, name) for name in sorted({t.get("by", "—") for t in tasks})], creators)
+    creator_ms = ms_search_html("creator", "请选择创建人", [(name, name) for name in sorted({t.get("by", "—") for t in tasks})], creators)
     dataset_input = f'<input type="hidden" name="dataset_id" value="{html.escape(selected_dataset, quote=True)}">' if selected_dataset else ""
-    return_url = "/datasets?" + urlencode({"sel": selected_dataset, "ver": selected_version, "tab": "version"}) if selected_dataset else "/datasets"
+    return_url = ("/raw" if selected_kind == "import" else
+                  "/datasets?" + urlencode({"sel": selected_dataset, "ver": selected_version, "tab": "version"}) if selected_dataset else "/datasets")
+    return_label = "返回开源数据集" if selected_kind == "import" else "返回数据集"
     context_dataset = get_ds(selected_dataset) if selected_dataset else None
     context_html = (f'<span class="muted">当前数据集：{html.escape(context_dataset["name"])}</span> <a href="/datasets/tasks">查看全部任务</a>' if context_dataset else "")
     reset_url = "/datasets/tasks" + ("?" + urlencode({"dataset_id": selected_dataset}) if selected_dataset else "")
@@ -3703,41 +4224,47 @@ def ds_progress():
     task_configs = {}
     for task in page_tasks:
         task_configs[str(task["id"])] = {"id": str(task["id"]), "name": task["name"], "version": task["version"],
+            "data_source": task["data_source"],
             "kind": kind_labels[task["task_type"]], "status": task["label"], "stage": task.get("stage", "—"),
             "by": task.get("by", "—"), "at": task["at"], "progress": task.get("progress"),
             "description": task.get("description") or (task.get("name") if task["kind"] != "create" else "数据完整性校验"),
-            "retry": bool(task.get("dataset_id") and task["processing"] == "failed"),
+            "retry": bool((task["task_type"] == "import" or task.get("dataset_id")) and task["processing"] == "failed"),
+            "storage_location": task.get("storage_location", ""),
             "error": task.get("error", ""), "legacy_id": task.get("legacy_id") if task["status"] == "fail" else None,
             "parameters": json.dumps(task.get("operations", task.get("query", {})), ensure_ascii=False, indent=2)}
     config_json = safe_json(task_configs)
     open_json = safe_json(str(opened["id"]) if opened else "")
+    task_page_header = ("" if standalone else
+                        f'<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:18px;">'
+                        f'<div style="font-size:16px;font-weight:600;">数据准备任务</div>'
+                        f'<a href="{html.escape(return_url, quote=True)}" class="btn">{return_label}</a></div>')
+    task_context = (f'<div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">{context_html}</div>'
+                    if context_html else "")
     content = f"""
-    <link rel="stylesheet" href="/static/shared/dataset-editor.css?v=20261020-task-columns">
-    <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:18px;">
-      <div style="font-size:16px;font-weight:600;">数据集任务列表</div>
-      <a href="{html.escape(return_url, quote=True)}" class="btn">返回数据集</a>
-    </div>
-    <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">{context_html}</div>
-    <form action="/datasets/tasks" method="get" class="q-filters" style="margin-bottom:16px;">
+    <link rel="stylesheet" href="/static/shared/dataset-editor.css?v=20261027-task-filters">
+    {task_page_header}
+    {task_context}
+    <form id="datasetTaskFilters" action="/datasets/tasks" method="get" class="q-filters dataset-task-filters" style="margin-bottom:16px;">
       {dataset_input}
       <div class="q-filter-row q-adv-row">
         <div class="q-field"><label for="datasetTaskKeyword">数据集名称</label><input id="datasetTaskKeyword" name="keyword" value="{html.escape(keyword, quote=True)}" placeholder="请输入数据集名称"></div>
         <div class="q-field"><label for="datasetTaskVersion">版本</label><select id="datasetTaskVersion" name="version">{version_options}</select></div>
+        <div class="q-field"><label for="datasetTaskSource">数据来源</label><select id="datasetTaskSource" name="data_source">{source_options}</select></div>
         <div class="q-field"><label for="datasetTaskType">任务类型</label><select id="datasetTaskType" name="task_type">{kind_options}</select></div>
         <div class="q-field"><label for="datasetTaskStatus">状态</label><select id="datasetTaskStatus" name="status">{status_options}</select></div>
-        <div class="q-field"><label>提交人</label>{creator_ms}</div>
+        <div class="q-field"><label>创建人</label>{creator_ms}</div>
       </div>
       <div class="q-filter-tools"><a href="{html.escape(reset_url, quote=True)}" class="btn">重置</a><button type="submit" class="btn btn-primary">查询</button></div>
     </form>
     <div class="muted" style="margin-bottom:12px;">共 {len(filtered)} 条记录</div>
     <div class="table-wrap">
       <table class="ant-table dataset-task-table" id="datasetTaskTable">
-        <colgroup><col style="width:130px"><col style="width:280px"><col style="width:70px"><col style="width:110px"><col style="width:120px"><col style="width:110px"><col style="width:180px"><col style="width:180px"></colgroup>
-        <thead><tr><th>任务 ID</th><th>数据集名称</th><th>版本</th><th>任务类型</th><th>状态</th><th>提交人</th><th>提交时间</th><th>操作</th></tr></thead>
+        <colgroup><col style="width:130px"><col style="width:280px"><col style="width:70px"><col style="width:110px"><col style="width:110px"><col style="width:120px"><col style="width:110px"><col style="width:180px"><col style="width:180px"></colgroup>
+        <thead><tr><th>任务 ID</th><th>数据集名称</th><th>版本</th><th>数据来源</th><th>任务类型</th><th>状态</th><th>创建人</th><th>创建时间</th><th>操作</th></tr></thead>
         <tbody>{rows}</tbody>
       </table>
     </div>
-    <nav class="mini-pager dataset-task-pager" aria-label="数据集任务列表分页"><span class="muted">共 {len(filtered)} 条 · 第 {page} / {pages} 页</span>{pagination}<span class="muted">{page_size} 条/页</span></nav>
+    <nav class="mini-pager dataset-task-pager" aria-label="数据准备任务分页"><span class="muted">共 {len(filtered)} 条 · 第 {page} / {pages} 页</span>{pagination}<span class="muted">{page_size} 条/页</span></nav>
 
     <div class="drawer-mask" id="dpDetailModal" onclick="if(event.target===this)this.classList.remove('active')">
       <div class="drawer">
@@ -3747,13 +4274,15 @@ def ds_progress():
             <div class="dk">任务 ID</div><div class="dv" data-task-detail="id"></div>
             <div class="dk">数据集名称</div><div class="dv" data-task-detail="name"></div>
             <div class="dk">版本</div><div class="dv" data-task-detail="version"></div>
+            <div class="dk">数据来源</div><div class="dv" data-task-detail="data_source"></div>
             <div class="dk">任务类型</div><div class="dv" data-task-detail="kind"></div>
             <div class="dk">状态</div><div class="dv" data-task-detail="status"></div>
             <div class="dk">当前阶段</div><div class="dv" data-task-detail="stage"></div>
             <div class="dk">进度</div><div class="dv" data-task-detail="progress"></div>
-            <div class="dk">提交人</div><div class="dv" data-task-detail="by"></div>
-            <div class="dk">提交时间</div><div class="dv" data-task-detail="at"></div>
+            <div class="dk">创建人</div><div class="dv" data-task-detail="by"></div>
+            <div class="dk">创建时间</div><div class="dv" data-task-detail="at"></div>
             <div class="dk">任务说明</div><div class="dv" data-task-detail="description"></div>
+            <div class="dk">失败原因</div><div class="dv" data-task-detail="error"></div>
           </div>
         </div>
         <div class="drawer-foot">
@@ -3783,17 +4312,45 @@ def ds_progress():
           field.textContent=key==='progress' ? (task.progress==null ? '—' : task.progress+'%') : (task[key] || '—');
         }});
         var retry=document.getElementById('datasetTaskRetry'); retry.hidden=!task.retry; retry.dataset.taskId=id;
+        retry.textContent=task.storage_location==='local'?'更换文件重试':'重试';
         openDrawerById('dpDetailModal');
       }}
       async function retryDatasetTask(button){{
+        var task=datasetTaskRecords[button.dataset.taskId];
+        if(task&&task.kind==='开源数据导入'&&task.storage_location==='local'){{
+          var picker=document.createElement('input'); picker.type='file'; picker.accept='.tar.gz,.zip,.parquet';
+          picker.onchange=async function(){{
+            if(!picker.files.length) return;
+            var body=new FormData(); body.append('file',picker.files[0]);
+            button.disabled=true;
+            try{{
+              var response=await fetch(document.getElementById('datasetTaskFilters').action+'/'+encodeURIComponent(button.dataset.taskId)+'/retry',{{method:'POST',body:body}});
+              var result=await response.json(); if(!response.ok) throw new Error(result.error||'重试失败');
+              location.reload();
+            }}catch(error){{ toast(error.message); button.disabled=false; }}
+          }};
+          picker.click(); return;
+        }}
         button.disabled=true;
         try{{
-          var response=await fetch(document.querySelector('form[action$="/datasets/tasks"]').getAttribute('action')+'/'+encodeURIComponent(button.dataset.taskId)+'/retry',{{method:'POST'}});
+          var response=await fetch(document.getElementById('datasetTaskFilters').action+'/'+encodeURIComponent(button.dataset.taskId)+'/retry',{{method:'POST'}});
           var result=await response.json(); if(!response.ok) throw new Error(result.error || '重试失败');
           location.reload();
         }}catch(error){{ toast(error.message); button.disabled=false; }}
       }}
       document.addEventListener('DOMContentLoaded',function(){{ var id={open_json}; if(id) dpDetail(id); }});
+      if(document.querySelector('tr[data-task-id^="import_"][data-status="queued"],tr[data-task-id^="import_"][data-status="running"]')){{
+        setInterval(async function(){{
+          var rows=document.querySelectorAll('tr[data-task-id^="import_"][data-status="queued"],tr[data-task-id^="import_"][data-status="running"]');
+          for(var i=0;i<rows.length;i++){{
+            try{{
+              var response=await fetch('/model/data/raw/imports/'+encodeURIComponent(rows[i].dataset.taskId));
+              var task=await response.json();
+              if(response.ok&&(task.status==='done'||task.status==='fail')){{ location.reload(); return; }}
+            }}catch(error){{}}
+          }}
+        }},2500);
+      }}
       function openDsProgressError(id){{
         var template=document.getElementById('dpErrorTemplate'+id);
         var body=document.getElementById('dpErrorBody');
@@ -3812,8 +4369,8 @@ def ds_progress():
       }}
     </script>
     """
-    return render_page("数据集任务列表", content, active="datasets",
-                       breadcrumb='数据集 / <b>数据集任务列表</b>')
+    return render_page("数据准备任务", content, active="tasks" if standalone else "datasets",
+                       breadcrumb='<b>数据准备任务</b>' if standalone else '数据集 / <b>数据准备任务</b>')
 
 
 # The live condition builder exposes many warehouse columns. The prototype keeps
@@ -3920,13 +4477,15 @@ def query_matches_condition(recording, node):
 
 @app.route("/query")
 def query():
+    tag_options = managed_tag_options()
+    managed_tag_ids = set(tag_options.values())
     fields = {
         "recording_id": {"label": "数据 ID", "type": "number"},
         "task": {"label": "采集任务 ID", "type": "text"},
         "collection_id": {"label": "采集批次 ID", "type": "number"},
         "capture_device": {"label": "设备", "type": "enum", "options": [(d, d) for d in DEVICES]},
         "operator": {"label": "操作员", "type": "enum", "options": [(o, o) for o in OPERATORS_LIST]},
-        "type": {"label": "采集类型", "type": "enum", "options": [(t, t) for t in ("normal", "dagger", "test", "eval")]},
+        "type": {"label": "采集类型", "type": "enum", "options": [(t, t) for t in ("normal", "dagger", "test", "eval", "assess")]},
         "qa_status": {"label": "质检结论", "type": "enum", "options": [("pass", "合格"), ("fail", "不合格"), ("warn", "操作失误")]},
         "is_qc": {"label": "是否质检", "type": "boolean"},
         "is_annotated": {"label": "是否标注", "type": "boolean"},
@@ -3956,8 +4515,38 @@ def query():
     limit = None
     duration_limit = None
     raw_duration_limit = request.args.get("duration_limit", "").strip()
+    f_recording_id = request.args.get("recording_id", "").strip()
+    recording_ids = []
     f_visual_prompt = request.args.get("has_visual_prompt", "")
+    f_managed_tags = list(dict.fromkeys(request.args.getlist("managed_tag")))
+    f_managed_tag_match = request.args.get("managed_tag_match", "any")
+    f_qc = request.args.get("is_qc", "")
+    f_annotated = request.args.get("is_annotated", "")
+    processing_filters = {name: request.args.get(name, "") for name in
+                          ("quality_rule", "quality_flow", "annotation_rule", "annotation_flow")}
+    default_processing = {
+        "quality": not any(key in request.args for key in
+                           ("quality_filters", "is_qc", "qa", "quality_rule", "quality_flow")),
+        "annotation": not any(key in request.args for key in
+                              ("annotation_filters", "is_annotated", "annotation_rule", "annotation_flow", "annover")),
+    }
+    processing_configs = {kind: {"logic": "and", "groups": []} for kind in ("quality", "annotation")}
     try:
+        if f_managed_tag_match not in ("any", "all"):
+            raise ValueError("标签匹配方式请选择任意标签或所有标签")
+        if any(tag not in managed_tag_ids for tag in f_managed_tags):
+            raise ValueError("标签信息包含无效标签，请重新选择")
+        if f_recording_id:
+            id_parts = [part.removeprefix('#') for part in re.split(r'[,，\s]+', f_recording_id) if part]
+            if (not id_parts or len(id_parts) > 1000
+                    or any(not re.fullmatch(r'[0-9]{1,19}', part) or int(part) < 1 for part in id_parts)):
+                raise ValueError("数据 ID 必须为正整数，多个用逗号分隔，最多支持 1000 条")
+            recording_ids = list(dict.fromkeys(int(part) for part in id_parts))
+        for kind in processing_configs:
+            processing_configs[kind] = parse_processing_filters(request.args, kind)
+        for label, value in (("是否质检", f_qc), ("是否标注", f_annotated)):
+            if value not in ("", "yes", "no"):
+                raise ValueError(f"{label}请选择是或否")
         if f_visual_prompt not in ("", "yes", "no"):
             raise ValueError("是否包含 visual prompt 请选择是或否")
         include_tree = parse_tree(request.args.get("conditions", ""), fields)
@@ -4006,7 +4595,7 @@ def query():
     f_operators = request.args.getlist("operator")  # 多选操作员
     f_types = request.args.getlist("type")          # 多选采集类型
     f_qas = request.args.getlist("qa")             # 多选: pass/fail/warn
-    f_collect_result = request.args.get("collect_result", "")
+    f_collect_result = request.args.get("collect_result", "成功")
     f_tags = request.args.getlist("tag")           # 多选标签
     f_from = request.args.get("from", "")
     f_to = request.args.get("to", "")
@@ -4018,6 +4607,8 @@ def query():
     # —— 过滤 ——
     res = []
     for r in RECORDINGS:
+        if recording_ids and r["id"] not in recording_ids:
+            continue
         prompts = QUERY_PROMPT_TEXT.get(r["task"], {})
         if legacy_high and not any(legacy_high in text.casefold() for text in prompts.get("high", ())):
             continue
@@ -4031,13 +4622,32 @@ def query():
             continue
         if f_tags and not any(t in rec_tags(r) for t in f_tags):
             continue
+        if f_managed_tags:
+            selected_tags = set(f_managed_tags)
+            record_tags = rec_managed_tags(r)
+            if not (selected_tags <= record_tags if f_managed_tag_match == "all"
+                    else selected_tags & record_tags):
+                continue
         if f_device and rec_device(r) != f_device:
             continue
         if f_operators and rec_operator(r) not in f_operators:
             continue
         if f_types and rec_type_enum(r) not in f_types:
             continue
-        if f_qas and r["qa"] not in f_qas:
+        if "quality_filters" not in request.args and f_qc and rec_qc(r) != (f_qc == "yes"):
+            continue
+        if "annotation_filters" not in request.args and f_annotated and rec_anno(r) != (f_annotated == "yes"):
+            continue
+        if any(value and f"{name.split('_')[0]}_filters" not in request.args and r.get(name) != value
+               for name, value in processing_filters.items()):
+            continue
+        if "quality_filters" not in request.args and f_qas and r["qa"] not in f_qas:
+            continue
+        if any((f"{kind}_filters" in request.args or default_processing[kind])
+               and not processing_matches(processing_configs[kind], kind, r, completed)
+               for kind, completed in (("quality", rec_qc(r)), ("annotation", rec_anno(r)))):
+            continue
+        if "annotation_filters" not in request.args and request.args.get("annover") and not processing_matches(processing_configs["annotation"], "annotation", r, rec_anno(r)):
             continue
         if f_collect_result and r.get("collect_result") != f_collect_result:
             continue
@@ -4089,6 +4699,8 @@ def query():
     # —— 生成 SQL (服务端, 反映当前筛选) ——
     qa_sql = {"pass": "PASS", "fail": "FAIL", "warn": "WARN"}
     conds = ["robot_type = 'moz1'"]
+    if recording_ids:
+        conds.append("recording_id IN (" + ", ".join(map(str, recording_ids)) + ")")
     if task_list:
         conds.append("task IN (" + ", ".join(sql_literal(t) for t in task_list) + ")")
     if processing_task_list:
@@ -4099,7 +4711,20 @@ def query():
         conds.append("operator IN (" + ", ".join(sql_literal(o) for o in f_operators) + ")")
     if f_types:
         conds.append("type IN (" + ", ".join(sql_literal(t) for t in f_types) + ")")
-    if f_qas:
+    for name, value in (("is_qc", f_qc), ("is_annotated", f_annotated)):
+        kind = "quality" if name == "is_qc" else "annotation"
+        if value and f"{kind}_filters" not in request.args:
+            conds.append(name + " = " + ("TRUE" if value == "yes" else "FALSE"))
+    for name, value in processing_filters.items():
+        if value and f"{name.split('_')[0]}_filters" not in request.args:
+            conds.append(name + " = " + sql_literal(value))
+    for kind, config in processing_configs.items():
+        if (f"{kind}_filters" in request.args or default_processing[kind]
+                or (kind == "annotation" and request.args.get("annover"))) and not condition_error:
+            expression = processing_sql(config, kind)
+            if expression:
+                conds.append(expression)
+    if f_qas and "quality_filters" not in request.args:
         conds.append("qa_status IN (" + ", ".join(sql_literal(q) for q in f_qas) + ")")
     if f_collect_result:
         conds.append("collect_result = " + sql_literal(f_collect_result))
@@ -4107,6 +4732,9 @@ def query():
         conds.append("has_visual_prompt = " + ("TRUE" if f_visual_prompt == "yes" else "FALSE"))
     if f_tags:
         conds.append("(" + " OR ".join(f"array_contains(tags, {sql_literal(t)})" for t in f_tags) + ")")
+    if f_managed_tags:
+        tag_operator = " AND " if f_managed_tag_match == "all" else " OR "
+        conds.append("(" + tag_operator.join(f"array_contains(tags, {sql_literal(t)})" for t in f_managed_tags) + ")")
     if f_from:
         conds.append("CAST(collected_at AS DATE) >= " + sql_literal(f_from))
     if f_to:
@@ -4145,11 +4773,12 @@ def query():
         opts = f'<option value="">{placeholder}</option>'
         for v, lab in options:
             s = " selected" if v == cur else ""
-            opts += f'<option value="{v}"{s}>{lab}</option>'
+            opts += f'<option value="{html.escape(str(v), quote=True)}"{s}>{html.escape(str(lab))}</option>'
         cls = "has-value" if cur else ""
         return f'<select name="{name}" class="{cls}">{opts}</select>'
 
     # 任务: 文本输入, 多个 task id 逗号隔开
+    recording_input = f'<input id="qRecordingId" name="recording_id" value="{html.escape(f_recording_id, quote=True)}" placeholder="如 120489,120502，多个逗号分隔">'
     task_cls = "has-value" if f_task else ""
     task_input = f'<input id="qCollectionTaskId" name="task" class="{task_cls}" value="{html.escape(f_task, quote=True)}" placeholder="如 t1,t2 多个逗号隔开">'
     processing_task_input = f'<input id="qProcessingTaskId" name="processing_task" value="{html.escape(f_processing_task, quote=True)}" placeholder="如 20454,20453 多个逗号隔开">'
@@ -4166,11 +4795,10 @@ def query():
                 f'onclick="this.closest(\'.ms-wrap\').classList.toggle(\'open\')">'
                 f'<span class="ms-label">{label}</span></div><div class="ms-panel">{checks}</div></div>')
 
-    qa_ms = ms("qa", "全部", [("pass", "合格"), ("fail", "不合格"), ("warn", "操作失误")], f_qas)
     dev_sel = sel("device", f_device, [(d, d) for d in DEVICES], "全部")
     collect_result_sel = sel("collect_result", f_collect_result, [("成功", "成功"), ("失败", "失败")], "全部")
     op_sel = ms_search_html("operator", "全部", OP_POOL, f_operators)
-    type_sel = ms("type", "全部", [("normal", "normal"), ("dagger", "dagger"), ("test", "test"), ("eval", "eval")], f_types)
+    type_sel = ms("type", "全部", [("normal", "normal"), ("dagger", "dagger"), ("test", "test"), ("eval", "eval"), ("assess", "assess")], f_types)
 
     # —— 新增分组字段 (与「新建数据集」弹窗一致; 部分为 demo 展示, 暂不参与后端过滤) ——
     batch_input = '<input name="batch" placeholder="如 B20250612-01">'
@@ -4191,14 +4819,33 @@ def query():
         prompt_filter_fields += f'<div class="q-field grow"><label>{label}（模糊搜索）</label>{control}</div>'
     dagger_ms = ms("dtype", "全部", [("policy", "policy"), ("teleop", "teleop")], [])
 
-    def tri_q(dep):  # 三态: 不限 / 是 / 否; 选「是」才启用依赖字段 dep
-        return (f'<select onchange="qfDep(\'{dep}\',this.value)">'
-                '<option value="">不限</option><option value="yes">是</option><option value="no">否</option></select>')
-    annover_sel = '<input type="number" min="1" name="annover" placeholder="留空默认最新版本">'
+    from data_platform_refactor import PROCESSING_RULES, PROCESSING_FLOWS
+    processing_options = {}
+    for stage, kind in (("质检", "quality"), ("标注", "annotation")):
+        processing_options[kind] = {
+            field: list(dict.fromkeys(item["name"] for item in catalog if item["stage"] == stage))
+            for field, catalog in (("rule", PROCESSING_RULES), ("flow", PROCESSING_FLOWS))
+        }
+    processing_panels = ""
+    for kind, label in (("quality", "质检"), ("annotation", "标注")):
+        processing_panels += f'''
+            <section class="query-processing-section" data-processing-kind="{kind}" aria-label="{label}信息">
+              <div class="query-condition-toolbar">
+                <span class="query-group-caption">{label}信息</span>
+                <p class="muted query-processing-help" data-processing-help></p>
+              </div>
+              <input type="hidden" name="{kind}_filters" value="{html.escape(safe_json(processing_configs[kind]), quote=True)}">
+              <div data-processing-rows></div>
+            </section>
+        '''
+    managed_tag_picker = dataset_tag_picker_html(
+        "qManagedTags", f_managed_tags, input_name="managed_tag", options=tag_options,
+    )
     visual_prompt_sel = sel("has_visual_prompt", f_visual_prompt, [("yes", "是"), ("no", "否")], "不限").replace('<select ', '<select id="qHasVisualPrompt" ', 1)
 
     advanced_config = {"fields": fields, "operators": CONDITION_OPERATORS, "typeOperators": TYPE_OPERATORS,
-                       "conditions": include_tree, "exclusions": exclude_tree, "excludedIds": excluded_ids}
+                       "conditions": include_tree, "exclusions": exclude_tree, "excludedIds": excluded_ids,
+                       "processing": processing_configs, "processingOptions": processing_options}
     error_html = (f'<div class="query-condition-error" role="alert">{html.escape(condition_error)}</div>'
                   if condition_error else '')
     complex_filters = f'''
@@ -4228,7 +4875,7 @@ def query():
     '''
     volume_filters = f'''
       <section class="query-volume" id="qVolume">
-        <div class="query-stage-heading"><span class="query-stage-icon" aria-hidden="true">≡</span><span>数据量</span><span class="query-config-count query-fixed-count"></span><span class="muted query-summary-help">对筛选及剔除后的结果设置上限</span></div>
+        <div class="query-stage-heading"><span class="query-stage-icon" aria-hidden="true">≡</span><span>数据量</span><span class="muted query-summary-help">对筛选及剔除后的结果设置上限</span></div>
         <div>
           <div class="query-fixed-panel" id="qExportFilters">
             <div class="q-filter-row q-adv-row query-fixed-grid query-fixed-grid-wide">
@@ -4241,7 +4888,7 @@ def query():
     '''
     top_card = f"""
     <link rel="stylesheet" href="/static/shared/scene-images.css">
-    <link rel="stylesheet" href="/static/data_query/conditions.css?v=20261020-owned-search">
+    <link rel="stylesheet" href="/static/data_query/conditions.css?v=20261027-inline-clear">
     <div class="q-filters query-workspace">
       <div class="q-mode-tabs">
         <button class="qm-tab active" data-m="filter" onclick="qSetMode('filter')">固定筛选</button>
@@ -4254,41 +4901,47 @@ def query():
           <section class="query-retain">
           <div class="query-stage-heading"><span class="query-stage-icon" aria-hidden="true">+</span><span>筛选保留</span><span class="muted">符合条件的数据进入结果集</span></div>
           <details class="qf-group query-fixed-group" open>
-            <summary class="qf-group-title"><span class="query-disclosure" aria-hidden="true"></span>任务信息<span class="query-config-count query-fixed-count"></span></summary>
+            <summary class="qf-group-title"><span class="query-disclosure" aria-hidden="true"></span>任务信息</summary>
           <div class="query-fixed-panel" id="qTaskFilters">
             <div class="q-filter-row q-adv-row query-fixed-grid">
+              <div class="q-field"><label for="qRecordingId">数据 ID（recording_id）</label>{recording_input}</div>
               <div class="q-field"><label for="qCollectionTaskId">采集任务 ID</label>{task_input}</div>
               <div class="q-field"><label for="qProcessingTaskId">处理任务 ID</label>{processing_task_input}</div>
               <div class="q-field"><label>批次编号</label>{batch_input}</div>
               <div class="q-field"><label>设备序列号</label>{dev_sel}</div>
-              <div class="q-field"><label>采集时间</label>
+              <div class="q-field query-date-field"><label>采集时间</label>
                 <div class="q-range">
-                  <input type="date" name="from" value="{f_from}">
+                  <input type="date" name="from" value="{f_from}" aria-label="采集开始日期">
                   <span class="q-range-sep">~</span>
-                  <input type="date" name="to" value="{f_to}">
+                  <input type="date" name="to" value="{f_to}" aria-label="采集结束日期">
                 </div>
               </div>
               <div class="q-field"><label>操作员</label>{op_sel}</div>
               <div class="q-field"><label>采集类型</label>{type_sel}</div>
               <div class="q-field"><label>Dagger 类型</label>{dagger_ms}</div>
-            </div>
-          </div>
-          </details>
-          <details class="qf-group query-fixed-group" open>
-            <summary class="qf-group-title"><span class="query-disclosure" aria-hidden="true"></span>处理信息<span class="query-config-count query-fixed-count"></span></summary>
-          <div class="query-fixed-panel" id="qProcessingFilters">
-            <div class="q-filter-row q-adv-row query-fixed-grid query-processing-grid">
               <div class="q-field"><label>采集结论</label>{collect_result_sel}</div>
-              <div class="q-field"><label>是否质检</label>{tri_q('q_dep_qc')}</div>
-              <div class="q-field qf-dep qf-off" id="q_dep_qc"><label>质检结论</label>{qa_ms}</div>
-              <div class="q-field"><label>是否标注</label>{tri_q('q_dep_anno')}</div>
-              <div class="q-field qf-dep qf-off" id="q_dep_anno"><label>标注版本</label>{annover_sel}</div>
               <div class="q-field"><label for="qHasVisualPrompt">是否包含 visual prompt</label>{visual_prompt_sel}</div>
             </div>
           </div>
           </details>
           <details class="qf-group query-fixed-group" open>
-            <summary class="qf-group-title"><span class="query-disclosure" aria-hidden="true"></span>提示词<span class="query-config-count query-fixed-count"></span></summary>
+            <summary class="qf-group-title"><span class="query-disclosure" aria-hidden="true"></span>处理信息</summary>
+          <div class="query-fixed-panel" id="qProcessingFilters">
+            {processing_panels}
+            <div class="q-filter-row q-adv-row query-fixed-grid query-managed-tag-row">
+              <div class="q-field"><label for="qManagedTagMatch">标签信息</label>
+                <div class="query-managed-tag-controls">
+                  <select id="qManagedTagMatch" name="managed_tag_match" aria-label="标签匹配方式">
+                    <option value="any"{" selected" if f_managed_tag_match == "any" else ""}>满足任意标签</option>
+                    <option value="all"{" selected" if f_managed_tag_match == "all" else ""}>满足所有标签</option>
+                  </select>{managed_tag_picker}
+                </div>
+              </div>
+            </div>
+          </div>
+          </details>
+          <details class="qf-group query-fixed-group" open>
+            <summary class="qf-group-title"><span class="query-disclosure" aria-hidden="true"></span>提示词</summary>
           <div class="query-fixed-panel" id="qPromptFilters">
             <div class="q-filter-row q-adv-row query-fixed-grid query-prompt-grid">
               {prompt_filter_fields}
@@ -4392,6 +5045,10 @@ def query():
         rows = '<tr><td colspan="9" class="muted" style="text-align:center;padding:30px;">无匹配 episode，可调整筛选条件或恢复已剔除数据</td></tr>'
     total_frames = sum(r["frames"] for r in disp)
     n_disp = len(disp)
+    total_seconds = int(sum(r["dur"] for r in disp) + 0.5)
+    hours, remainder = divmod(total_seconds, 3600)
+    minutes, seconds = divmod(remainder, 60)
+    result_duration = f"{hours:02d}:{minutes:02d}:{seconds:02d}"
     n_pages = max(1, (n_disp + PAGE_SIZE - 1) // PAGE_SIZE)
     pager = ""
     if n_pages > 1:
@@ -4404,10 +5061,10 @@ def query():
     <div class="card">
       <div class="query-result-tools">
         <h3 class="query-result-heading">查询结果
-          <span class="muted" id="qResMeta" style="font-size:13px;font-weight:400;">筛选命中 {len(candidates)} 条 · 已剔除 {len(removed)} 条 · 保留 {n_disp} 条{"（已应用数据量上限）" if (limit or duration_limit) and len(res) > n_disp else ""}</span>
+          <span class="muted" id="qResMeta" style="font-size:13px;font-weight:400;">筛选命中 {len(candidates)} 条 · 已剔除 {len(removed)} 条 · 保留 {n_disp} 条 · 总时长 {result_duration}{"（已应用数据量上限）" if (limit or duration_limit) and len(res) > n_disp else ""}</span>
         </h3>
         <div class="query-result-actions" data-has-results="{1 if disp else 0}">
-          <a href="/datasets/tasks" class="query-progress-link">查看数据集任务列表 <span aria-hidden="true">↗</span></a>
+          <a href="/datasets/tasks" class="query-progress-link">查看数据准备任务 <span aria-hidden="true">↗</span></a>
           <button type="button" class="btn" id="qAppendDataset" {"disabled" if not disp else ""}>将结果添加至已有数据集</button>
           <button type="button" class="btn btn-secondary" id="qBuildDataset" onclick="openBuildDsDrawer()" {"disabled" if not disp else ""}>用结果新建数据集</button>
         </div>
@@ -4479,7 +5136,7 @@ def query():
         <div class="drawer-head"><h3 id="qAppendTitle">将结果添加至已有数据集</h3><button type="button" class="drawer-close" id="qAppendClose" aria-label="关闭添加数据弹窗">&times;</button></div>
         <form id="qAppendForm" action="/datasets/append" method="post" class="query-append-form">
           <div class="drawer-body">
-            <div class="prompt-scene-guidance" role="note"><span class="prompt-scene-guidance-icon" aria-hidden="true">i</span><span id="qAppendSelectionSummary">将本次查询结果中的 {n_disp} 条数据添加至未发布版本，或基于指定已发布版本新建版本，重复数据自动跳过。</span></div>
+            <div class="prompt-scene-guidance" role="note"><span class="prompt-scene-guidance-icon" aria-hidden="true">i</span><span id="qAppendSelectionSummary">将本次查询结果中的 {n_disp} 条数据添加至未发布版本，或基于已有版本新建版本。</span></div>
             <input type="hidden" id="qAppendSource" value="{html.escape(append_source, quote=True)}">
             <div class="fg"><label for="qAppendTargetSearch"><span class="req">*</span>目标数据集</label>
               <select id="qAppendTarget" hidden aria-hidden="true" tabindex="-1"><option value="">请选择已有数据集</option>{append_options}</select>
@@ -4489,8 +5146,9 @@ def query():
               </div>
             </div>
             <div class="fg"><label for="qAppendFormat">数据集格式</label><input id="qAppendFormat" readonly placeholder="选择数据集后自动带出"></div>
-            <div class="fg"><label for="qAppendMode"><span class="req">*</span>添加方式</label><select id="qAppendMode" disabled><option value="draft">添加至未发布版本</option><option value="new" selected>基于已发布版本新建</option></select></div>
-            <div class="fg"><label for="qAppendVersion"><span class="req">*</span><span id="qAppendVersionLabel">来源版本</span></label><select id="qAppendVersion" required disabled><option value="">请先选择数据集</option></select><div class="hint" id="qAppendVersionHint">选择数据集后，可添加至未发布版本，或基于已发布版本新建。</div></div>
+            <div class="fg"><label for="qAppendMode"><span class="req">*</span>添加方式</label><select id="qAppendMode" disabled><option value="new" selected>基于已有版本新建</option><option value="draft">添加至未发布版本</option></select></div>
+            <div class="fg"><label for="qAppendVersion"><span class="req">*</span><span id="qAppendVersionLabel">来源版本</span></label><select id="qAppendVersion" required disabled><option value="">请先选择数据集</option></select><div class="hint" id="qAppendVersionHint">选择数据集后，可基于已有版本新建，或添加至未发布版本。</div></div>
+            <div class="fg"><label for="qAppendDuplicatePolicy">重复数据 ID 处理</label><select id="qAppendDuplicatePolicy"><option value="skip" selected>跳过</option><option value="update">更新</option></select></div>
             <div class="fg"><label for="qAppendDescription"><span class="req">*</span>版本描述</label><textarea id="qAppendDescription" required maxlength="1000" rows="4" placeholder="请填写本次添加的数据内容及版本变更说明"></textarea></div>
             <div id="qAppendError" class="query-condition-error" role="alert" hidden></div>
           </div>
@@ -4505,8 +5163,9 @@ def query():
     """
     append_ds_modal += f'<script type="application/json" id="qAppendVersionsConfig">{safe_json(append_versions)}</script>'
     content = top_card + result_card + ai_panel + recipe_panel + prev_drawer + build_ds_drawer + append_ds_modal
-    content += '<script src="/static/data_query/conditions.js?v=20261019-exclusion-id-first" defer></script>'
-    content += '<script src="/static/data_query/dataset-append.js?v=20261020-published-base" defer></script>'
+    content += '<script src="/static/data_query/processing.js?v=20261027-inline-clear" defer></script>'
+    content += '<script src="/static/data_query/conditions.js?v=20261027-inline-clear" defer></script>'
+    content += '<script src="/static/data_query/dataset-append.js?v=20261027-any-source-version" defer></script>'
     script = """<script>__RECIPE_DATA__
     function toggleAdv(){
       var p=document.getElementById('advPanel'), b=document.getElementById('advBtn');
@@ -4532,7 +5191,7 @@ def query():
       if(lab.scrollWidth > lab.clientWidth + 1){ lab.textContent=base+' ('+n+')'; }
     }
     document.addEventListener('DOMContentLoaded', function(){
-      document.querySelectorAll('.ms-wrap').forEach(function(w){ var c=w.querySelector('input:checked'); if(c) msUpdate(c); });
+      document.querySelectorAll('.ms-wrap:not(.query-processing-picker)').forEach(function(w){ var c=w.querySelector('input:checked'); if(c) msUpdate(c); });
     });
     document.addEventListener('click', function(e){
       document.querySelectorAll('.ms-wrap.open').forEach(function(w){ if(!w.contains(e.target)) w.classList.remove('open'); });
@@ -4747,7 +5406,7 @@ def ds_versions(d):
     active = next((v for v in vers if v["status"] == "生效中" and v["version"] == d["version"]), None)
     active = active or next((v for v in vers if v["status"] == "生效中"), None)
     active = active or next((v for v in vers if v["version"] == d["version"]), vers[0])
-    if d.get("created_from_query") and not any(v["publish_status"] == "已发布" for v in vers):
+    if (d.get("created_from_query") or d.get("third_party_source_id")) and not any(v["publish_status"] == "已发布" for v in vers):
         active = None
     for version in vers:
         version["status"] = "生效中" if version is active else "未生效"
@@ -4772,6 +5431,35 @@ def dataset_version_snapshot(d, version=""):
 
 @app.route("/datasets/tasks/<task_id>/retry", methods=["POST"])
 def dataset_task_retry(task_id):
+    if task_id.startswith("import_"):
+        task = third_party_imports.get_import(third_party_db_path(), task_id)
+        if not task:
+            return jsonify(error="导入任务不存在"), 404
+        if task["status"] != "fail":
+            return jsonify(error="仅失败的导入任务支持重试"), 409
+        upload = request.files.get("file")
+        replacement = (None, None, None)
+        if upload:
+            if not upload.filename or not upload.filename.lower().endswith((".tar.gz", ".zip", ".parquet")):
+                return jsonify(error="请选择 .tar.gz、.zip 或 .parquet 文件"), 400
+            file_name = os.path.basename(upload.filename)
+            safe_name = secure_filename(file_name)
+            if not safe_name:
+                return jsonify(error="文件名无效"), 400
+            upload_dir = os.path.join(os.path.dirname(third_party_db_path()), "third-party-uploads", uuid.uuid4().hex)
+            os.makedirs(upload_dir, exist_ok=True)
+            file_path = os.path.join(upload_dir, safe_name)
+            upload.save(file_path)
+            file_size = os.path.getsize(file_path)
+            if not file_size:
+                os.remove(file_path)
+                return jsonify(error="导入文件不能为空"), 400
+            replacement = (file_name, file_path, file_size)
+        if not third_party_imports.retry_import(third_party_db_path(), task_id, *replacement):
+            if replacement[1]:
+                os.remove(replacement[1])
+            return jsonify(error="任务状态已变化，请刷新后重试"), 409
+        return jsonify(task_id=task_id, version="v1")
     task = next((task for task in dataset_task_records() if str(task["id"]) == task_id), None)
     if not task or not task.get("dataset_id"):
         return jsonify(error="任务不存在或缺少重试所需的输入，请返回数据查询重新提交"), 404
@@ -4867,6 +5555,9 @@ def datasets_append():
     description = payload.get("description")
     if not isinstance(description, str) or not description.strip() or len(description) > 1000:
         return jsonify(error="请填写版本描述，最多 1000 字"), 400
+    duplicate_policy = payload.get("duplicate_policy", "skip")
+    if duplicate_policy not in ("skip", "update"):
+        return jsonify(error="重复数据 ID 处理方式无效"), 400
     target_version = payload.get("target_version", "")
     if not isinstance(target_version, str):
         return jsonify(error="请选择有效的目标版本"), 400
@@ -4881,12 +5572,10 @@ def datasets_append():
     else:
         base_version = payload.get("base_version")
         if not isinstance(base_version, str) or not base_version:
-            return jsonify(error="请选择已发布的来源版本"), 400
+            return jsonify(error="请选择已有的来源版本"), 400
         base = next((v for v in versions if v["version"] == base_version), None)
         if base is None:
             return jsonify(error="来源版本不存在，请刷新页面后重试"), 409
-        if base["publish_status"] != "已发布":
-            return jsonify(error="仅支持基于已发布版本新建，请重新选择来源版本"), 409
     source = dataset_version_snapshot(d, target_version or base_version)
     if dataset_processing_status(source) != "ready":
         return jsonify(error="目标版本尚未完成处理，暂不能添加数据"), 409
@@ -4910,18 +5599,30 @@ def datasets_append():
             return jsonify(error="请选择当前查询结果中的有效数据"), 400
         selected_set = set(selected_ids)
         recording_ids = [rid for rid in recording_ids if rid in selected_set]
-    fingerprint = hashlib.sha256(json.dumps([d["id"], target_version, source["version"], sorted(recording_ids), description.strip()], ensure_ascii=False).encode()).hexdigest()
+    source_revision = (hashlib.sha256(json.dumps(source, ensure_ascii=False, sort_keys=True).encode()).hexdigest()
+                       if target is None and base["publish_status"] == "未发布" else "")
+    fingerprint = hashlib.sha256(json.dumps([d["id"], target_version, source["version"], source_revision,
+                                             sorted(recording_ids), duplicate_policy, description.strip()],
+                                            ensure_ascii=False).encode()).hexdigest()
     if target is not None and fingerprint in target.get("append_requests", {}):
         return jsonify(**target["append_requests"][fingerprint])
     previous = next((v for v in versions if v.get("append_fingerprint") == fingerprint), None) if target is None else None
     if previous:
-        return jsonify(version=previous["version"], added=previous["added"], skipped=previous["skipped"], created=True)
+        return jsonify(version=previous["version"], added=previous["added"], skipped=previous["skipped"],
+                       updated=previous.get("updated", 0), created=True)
     rows = dataset_episodes(source)
     existing_ids = {row["rec"] for row in rows}
     additions = [get_rec(rid) for rid in recording_ids if rid not in existing_ids]
-    if not additions:
+    duplicate_ids = set(recording_ids) & existing_ids
+    if not additions and (duplicate_policy == "skip" or not duplicate_ids):
         return jsonify(error="这些数据已存在于目标数据集中，无需重复添加"), 409
     new_version = target_version or "v" + str(max(int(v["version"].lstrip("v")) for v in versions) + 1)
+    if duplicate_policy == "update":
+        for row in rows:
+            if row["rec"] in duplicate_ids:
+                recording = get_rec(row["rec"])
+                row["length"] = recording["frames"]
+                row["tags"] = rec_tag_labels(recording)
     next_index = max((row["idx"] for row in rows), default=-1) + 1
     for offset, record in enumerate(additions):
         index = next_index + offset
@@ -4938,8 +5639,9 @@ def datasets_append():
                 "episode_rows": rows, "episodes": len(rows), "frames": sum(row["length"] for row in rows),
                 "recordings": list(dict.fromkeys(row["rec"] for row in rows)),
                 "tasks": list(dict.fromkeys(source.get("tasks", []) + [r["task"] for r in additions]))}
-    skipped = len(recording_ids) - len(additions)
-    result = dict(version=new_version, added=len(additions), skipped=skipped, created=target is None)
+    skipped = len(duplicate_ids) if duplicate_policy == "skip" else 0
+    updated = len(duplicate_ids) if duplicate_policy == "update" else 0
+    result = dict(version=new_version, added=len(additions), skipped=skipped, updated=updated, created=target is None)
     if target is not None:
         target.update(note=description.strip(), recordings=len(rows), snapshot=deepcopy(snapshot), updated=now, updater=CURRENT_USER)
         target.setdefault("append_requests", {})[fingerprint] = result
@@ -4947,7 +5649,7 @@ def datasets_append():
     versions.insert(0, {"version": new_version, "created": now, "recordings": len(rows), "status": "未生效", "publish_status": "未发布",
                         "note": description.strip(), "creator": CURRENT_USER, "base_version": source["version"],
                         "snapshot": deepcopy(snapshot), "append_fingerprint": fingerprint,
-                        "added": len(additions), "skipped": skipped})
+                        "added": len(additions), "skipped": skipped, "updated": updated})
     return jsonify(**result)
 
 
@@ -5144,6 +5846,7 @@ def visible_datasets():
 
 @app.route("/datasets")
 def datasets():
+    third_party_rows()
     visible = visible_datasets()
     visible_ids = {d["id"] for d in visible}
     scope = "mine" if request.args.get("scope") == "mine" else "all"
@@ -5330,7 +6033,7 @@ def datasets():
             options:{plugins:{legend:{display:false}},scales:{y:{ticks:{font:{size:10}}},x:{ticks:{font:{size:10}}}}}});
         }
       },
-      compose: function(){ if(window._renderPies) window._renderPies(window.__tagPies,'tagPie'); }
+      compose: function(){ renderComposePies(); }
     };
     window._renderPies = function(pies, pfx){
       if(!pies||!window.Chart) return;
@@ -5350,7 +6053,7 @@ def datasets():
         ctx.restore();
       }};
       pies.forEach(function(p,i){
-        var c=document.getElementById(pfx+i); if(!c||c._drawn) return; c._drawn=true;
+        var c=document.getElementById(pfx+i); if(!c||c._drawn||!c.offsetWidth) return; c._drawn=true;
         var sum=tot(p.vals);
         new Chart(c,{type:'pie',
           data:{labels:p.labels,datasets:[{data:p.vals,backgroundColor:(p.colors||p.labels.map(function(_,j){return pal[j%pal.length];})),borderWidth:1,borderColor:'#fff'}]},
@@ -5359,19 +6062,30 @@ def datasets():
           plugins:[pieLabels]});
       });
     };
+    function renderComposePies(){
+      requestAnimationFrame(function(){
+        if(window._renderPies){
+          window._renderPies(window.__tagPies,'tagPie');
+          window._renderPies(window.__tagPiesLow,'tagPieL');
+          window._renderPies(window.__tagPies3,'tagPie3');
+          window._renderPies(window.__tagPiesLow3,'tagPieL3');
+        }
+      });
+    }
+    function levelSel(sel, dim){
+      var section=sel.closest('.dataset-compose-section');
+      var isL3=sel.value==='l3';
+      section.querySelector('#tag_'+dim+'_l2').style.display=isL3?'none':'';
+      section.querySelector('#tag_'+dim+'_l3').style.display=isL3?'':'none';
+      section.querySelector('.dataset-tag-count').textContent=(isL3?sel.dataset.countL3:sel.dataset.countL2)+' 个标签';
+      renderComposePies();
+    }
     function cmpTab(btn, which){
       var bar=btn.parentNode; bar.querySelectorAll('.ep-tab').forEach(function(b){ b.classList.remove('active'); });
       btn.classList.add('active');
       document.getElementById('cmp_high').style.display=(which==='high')?'':'none';
       document.getElementById('cmp_low').style.display=(which==='low')?'':'none';
-      if(which==='low' && window._renderPies) window._renderPies(window.__tagPiesLow,'tagPieL');
-    }
-    function levelSel(sel, dim){
-      var l2=document.getElementById('tag_'+dim+'_l2'), l3=document.getElementById('tag_'+dim+'_l3');
-      var isL3=sel.value==='l3';
-      if(l2) l2.style.display=isL3?'none':'';
-      if(l3) l3.style.display=isL3?'':'none';
-      if(isL3 && window._renderPies) window._renderPies(window.__tagPies3, dim==='high'?'tagPie3':'tagPieL3');
+      renderComposePies();
     }
     var _infoCM=null;
     function initInfoJson(){
@@ -5398,6 +6112,13 @@ def dataset_detail_panel_v2(d, viewed_ver=""):
     d = dataset_version_snapshot(d, viewed_ver) or dataset_version_snapshot(d)
     ds_format = dataset_format(d)
     eps = dataset_episodes(d)
+    if d["fps"] > 0:
+        duration_seconds = round(d["frames"] / d["fps"])
+        duration_hours, remainder = divmod(duration_seconds, 3600)
+        duration_minutes, duration_seconds = divmod(remainder, 60)
+        total_duration = f'{duration_hours:02d}:{duration_minutes:02d}:{duration_seconds:02d}'
+    else:
+        total_duration = '—'
     editor_rows = []
     lowlevel_by_id = {prompt["id"]: prompt for prompt in LOWLEVEL_PROMPTS}
     for row in eps:
@@ -5405,33 +6126,31 @@ def dataset_detail_panel_v2(d, viewed_ver=""):
         quality_result = ({"pass": "合格", "warn": "操作失误", "fail": "不合格"}.get(recording.get("qa"), "—")
                           if recording and rec_qc(recording) else "未质检" if recording else "—")
         annotation_status = ("已标注" if rec_anno(recording) else "未标注") if recording else "—"
-        prompt_ids = dict.fromkeys(segment["prompt_id"] for segment in row.get("annotation", {}).get("lowlevel_segments", [])
-                                   if segment["end_frame"] > segment["start_frame"])
-        lowlevel_prompts = [{"id": pid, "zh": lowlevel_by_id[pid]["name"], "en": lowlevel_by_id[pid].get("en", "")}
-                            for pid in prompt_ids if pid in lowlevel_by_id]
+        prompt_segments = {segment["prompt_id"]: segment for segment in row.get("annotation", {}).get("lowlevel_segments", [])
+                           if segment["end_frame"] > segment["start_frame"]}
+        lowlevel_prompts = [{"id": pid, "zh": lowlevel_by_id[pid]["name"] if pid in lowlevel_by_id else segment.get("name", pid),
+                             "en": lowlevel_by_id[pid].get("en", "") if pid in lowlevel_by_id else segment.get("name", pid)}
+                            for pid, segment in prompt_segments.items()]
         editor_rows.append({**{key: row[key] for key in ("idx", "rec", "length", "instr")},
-                            "lowlevel_prompts": lowlevel_prompts,
+                            "lowlevel_prompts": lowlevel_prompts, "videos": row.get("videos", {}),
                             "quality_rule": row.get("quality_rule") or recording.get("quality_rule") or "—",
                             "quality_result": row.get("quality_result") or recording.get("quality_result") or quality_result,
                             "annotation_rule": row.get("annotation_rule") or recording.get("annotation_rule") or "—",
                             "annotation_status": row.get("annotation_status") or recording.get("annotation_status") or annotation_status})
+    media_url = ("/model/data/datasets/" if request.path.startswith("/model/data/") else "/datasets/") + d["id"] + "/media"
     editor_config = json.dumps({"version": d["version"], "publish_status": d["publish_status"], "processing_status": d.get("processing_status", "ready"),
+        "imported": bool(d.get("third_party_source_id")),
+        "media_url": media_url,
         "catalog": {kind: [{key: value for key, value in item.items() if key != "definition"} for item in items]
                     for kind, items in dataset_edit_catalog().items()}, "episodes": editor_rows}, ensure_ascii=False).replace("<", "\\u003c").replace(">", "\\u003e").replace("&", "\\u0026")
-    dataset_labels = dataset_label_names(d)
-    dataset_labels_html = dataset_tag_picker_html(
-        f'datasetInfoTags-{d["id"]}',
-        dataset_labels,
-        editable=False,
-    )
     _hl_items = dataset_prompt_composition(d)   # highlevel prompt 构成 (info / compose 共用)
     save_current_button = ('<button class="btn btn-secondary" id="datasetSaveCurrentButton" onclick="datasetEditor.save(&quot;current&quot;)" disabled>保存至当前版本</button>'
                            if d["publish_status"] == "未发布" else '')
     preview = f"""
     <div class="tab-pane active" id="pane-preview">
       <div id="datasetDetailView">
-        <div class="muted" id="datasetPreviewDescription" style="margin-bottom:12px;">数据集共 {d['episodes']} 个 episode，每个 episode ← 一条原始 recording，可在左侧逐条预览</div>
-        {preview_block('dsv2', eps)}
+        <div class="muted" id="datasetPreviewDescription" style="margin-bottom:12px;">数据集共 {d["episodes"]} 个 episode，每个 episode ← 一条原始 recording，可在左侧逐条预览</div>
+        {preview_block('dsv2', eps, media_url=media_url if d.get('third_party_source_id') else None, fps=d['fps'])}
       </div>
     </div>
     """
@@ -5543,14 +6262,24 @@ def dataset_detail_panel_v2(d, viewed_ver=""):
             },
         },
     }]
-    ds_full = {
-        "dataset_name": d["name"],
-        "meta/info.json": _info,
-        "meta/tasks.jsonl": _tasks,
-        "meta/episodes.jsonl": _episodes,
-        "meta/episodes_stats.jsonl": _episodes_stats,
-    }
+    if d.get("third_party_source_id"):
+        _info = {**_info, **d.get("import_info", {}), "fps": d["fps"],
+                 "total_episodes": len(eps), "total_frames": sum(row["length"] for row in eps),
+                 "total_tasks": len(_hl_items),
+                 "total_videos": sum(len(row.get("videos", {})) for row in eps)}
+        _tasks = d.get("import_tasks") or _tasks
+        _episodes = [{"episode_index": row["idx"], "length": row["length"], "tasks": [row["instr"]],
+                      "tags": row.get("tags", []), "annotation": row.get("annotation", {}),
+                      "videos": row.get("videos", {})} for row in eps]
+        _episodes_stats = []
+    ds_full = {"dataset_name": d["name"], "meta/info.json": _info,
+               "meta/tasks.jsonl": _tasks, "meta/episodes.jsonl": _episodes,
+               "meta/episodes_stats.jsonl": _episodes_stats}
     ds_full_json = html.escape(json.dumps(ds_full, ensure_ascii=False, indent=2))
+    imported = bool(d.get("third_party_source_id"))
+    storage_path = d.get("third_party_storage_address") if imported else d.get("tos")
+    storage_path = storage_path if storage_path and storage_path != "—" else "—"
+    source_label = "开源数据" if imported else "自采数据"
     info = f"""
     <div class="tab-pane" id="pane-info">
       <div class="ep-tabs">
@@ -5559,15 +6288,13 @@ def dataset_detail_panel_v2(d, viewed_ver=""):
       </div>
       <div class="info-pane" id="info_sum">
         <div class="desc-grid">
-          <div class="dk">名称</div><div class="dv">{d['name']}</div>
-          <div class="dk">标识</div><div class="dv" style="font-family:monospace;">{html.escape(d.get('ident', ''), quote=True)}</div>
+          <div class="dk">名称</div><div class="dv">{html.escape(d['name'])}</div>
+          <div class="dk">标识</div><div class="dv" style="font-family:monospace;">{html.escape(d.get('ident') or d['id'])}</div>
           <div class="dk">数据格式</div><div class="dv">{ds_format}</div>
-          <div class="dk">标签</div><div class="dv" data-dataset-info-field="tags">{dataset_labels_html}</div>
-          <div class="dk">本体</div><div class="dv">{d['robot']}</div>
-          <div class="dk">规模</div><div class="dv">{d['episodes']} episodes · {d['frames']:,} frames · {round(d['frames']/30/60,1)} min</div>
-          <div class="dk">创建人</div><div class="dv">{d['owner']}</div>
-          <div class="dk">创建时间</div><div class="dv">{d['created']}</div>
-          <div class="dk">TOS</div><div class="dv" style="font-family:monospace;font-size:12px;">{d['tos']}</div>
+          <div class="dk">存储位置</div><div class="dv dataset-storage-path">{html.escape(storage_path)}</div>
+          <div class="dk">数据条数</div><div class="dv">{len(eps):,}</div>
+          <div class="dk">数据时长</div><div class="dv">{total_duration}</div>
+          <div class="dk">数据来源</div><div class="dv">{source_label}</div>
         </div>
       </div>
       <div class="info-pane" id="info_full" style="display:none;">
@@ -5576,83 +6303,104 @@ def dataset_detail_panel_v2(d, viewed_ver=""):
     </div>
     """
     prompt_rows = comp_rows_html(_hl_items, d["frames"], d["fps"])
-    # 按一级维度的标签帧数 (三个饼图 + 表格图例)
-    _byp = {}
-    for r in _dataset_recs(d):
-        for tid in rec_tags(r):
-            _byp[tid] = _byp.get(tid, 0) + r["frames"]
+    tag_groups_l2 = dataset_tag_tree(d, level=2)
+    tag_groups_l3 = dataset_tag_tree(d, level=3)
     _pal = ["#1F80A0", "#36cfc9", "#faad14", "#52c41a", "#722ed1", "#ff7a45",
             "#13c2c2", "#eb2f96", "#a0d911", "#2f54eb", "#ff85c0", "#ffc53d"]
-    pies = []
-    for grp in TAG_GROUP_ORDER:
-        items = sorted([(TAG_LABEL[t], fr) for t, fr in _byp.items() if _TAG_GROUP.get(t) == grp], key=lambda x: -x[1])
-        if items:
-            total = sum(v for _, v in items) or 1
-            labels = [i[0] for i in items]
-            vals = [i[1] for i in items]
-            colors = [_pal[j % len(_pal)] for j in range(len(items))]
-            pcts = [round(v / total * 100) for v in vals]
-            pies.append({"group": grp, "labels": labels, "vals": vals, "colors": colors, "pcts": pcts})
-    pies_json = json.dumps([{"labels": p["labels"], "vals": p["vals"], "colors": p["colors"]} for p in pies])
-    # 三级: 每个二级标签再拆两个细分 (demo)
-    pies3 = []
-    for p in pies:
-        labels3, vals3, colors3 = [], [], []
-        for lab, v, c in zip(p["labels"], p["vals"], p["colors"]):
-            a = round(v * 0.6); b = v - a
-            labels3 += [lab + "·细分A", lab + "·细分B"]
-            vals3 += [a, b]
-            colors3 += [c, c + "88"]
-        tot3 = sum(vals3) or 1
-        pcts3 = [round(x / tot3 * 100) for x in vals3]
-        pies3.append({"group": p["group"], "labels": labels3, "vals": vals3, "colors": colors3, "pcts": pcts3})
-    pies3_json = json.dumps([{"labels": p["labels"], "vals": p["vals"], "colors": p["colors"]} for p in pies3])
+    def make_pies(groups):
+        pies = []
+        for group in groups:
+            items = group["tags"]
+            if items:
+                total = sum(item["frames"] for item in items) or 1
+                labels = [item["name"] for item in items]
+                vals = [item["frames"] for item in items]
+                colors = [_pal[j % len(_pal)] for j in range(len(items))]
+                pcts = [round(value / total * 100) for value in vals]
+                pies.append({"group": group["group"], "labels": labels, "vals": vals, "colors": colors,
+                             "pcts": pcts, "counts": [item["episode_count"] for item in items]})
+        return pies
+
+    pies_l2 = make_pies(tag_groups_l2)
+    pies_l3 = make_pies(tag_groups_l3)
+
+    def pies_json(pies):
+        return json.dumps([{"labels": p["labels"], "vals": p["vals"], "colors": p["colors"]} for p in pies])
 
     def pie_legend(p):
-        rows = "".join(
-            f'<tr><td><i style="background:{c}"></i>{lab}</td><td class="pct">{pct}%</td></tr>'
-            for lab, c, pct in zip(p["labels"], p["colors"], p["pcts"]))
-        return f'<table class="pie-legend"><tbody>{rows}</tbody></table>'
+        rows = ""
+        for label, color, pct, count, frames in zip(p["labels"], p["colors"], p["pcts"], p["counts"], p["vals"]):
+            duration = f'{frames / d["fps"]:.0f}s' if d["fps"] > 0 else '—'
+            rows += (f'<tr><td><i style="background:{color}"></i>{html.escape(label)}</td>'
+                     f'<td class="pct">{pct}%</td><td class="metric">{count:,} 条</td>'
+                     f'<td class="metric">{duration}</td></tr>')
+        return ('<table class="pie-legend"><thead><tr><th>标签</th><th>占比</th><th>条数</th><th>时长</th></tr></thead>'
+                f'<tbody>{rows}</tbody></table>')
+
+    def compose_stats(rows):
+        frames = sum(row["length"] for row in rows)
+        duration = f'{frames / d["fps"]:.0f}s' if d["fps"] > 0 else '—'
+        return f'{len(rows):,} 条 · {duration}'
 
     def pie_cells_html(idpfx, plist):
         return "".join(
-            f'<div class="pie-cell"><div class="pie-title">{p["group"]}</div>'
-            f'<div class="pie-box"><canvas id="{idpfx}{i}"></canvas></div>{pie_legend(p)}</div>'
+            f'<details class="pie-cell" open ontoggle="if(window.renderComposePies)renderComposePies()"><summary class="pie-title">{html.escape(p["group"])}'
+            f' <span class="muted">{len(p["labels"])} 个标签</span>'
+            f'<span class="muted dataset-compose-meta">{compose_stats([row for row in eps if set(row.get("tags", [])) & group_labels.get(p["group"], set())])}</span></summary>'
+            f'<div class="pie-box"><canvas id="{idpfx}{i}"></canvas></div>{pie_legend(p)}</details>'
             for i, p in enumerate(plist))
-    pie_cells_h2 = pie_cells_html("tagPie", pies)
-    pie_cells_h3 = pie_cells_html("tagPie3", pies3)
-    pie_cells_l2 = pie_cells_html("tagPieL", pies)
-    pie_cells_l3 = pie_cells_html("tagPieL3", pies3)
+    label_groups = {label: group for _, label, group in TAG_DEFS}
+    group_labels = {}
+    for row in eps:
+        for label in row.get("tags", []):
+            group_labels.setdefault(label_groups.get(label, "其他"), set()).add(label)
+    pie_cells_h2 = pie_cells_html("tagPie", pies_l2)
+    pie_cells_h3 = pie_cells_html("tagPie3", pies_l3)
+    pie_cells_l2 = pie_cells_html("tagPieL", pies_l2)
+    pie_cells_l3 = pie_cells_html("tagPieL3", pies_l3)
 
     def level_sel(dim):
-        return (f'<select class="lvl-sel" onchange="levelSel(this,\'{dim}\')">'
+        count_l2 = sum(len(group["tags"]) for group in tag_groups_l2)
+        count_l3 = sum(len(group["tags"]) for group in tag_groups_l3)
+        return (f'<div class="dataset-compose-toolbar"><select class="lvl-sel" aria-label="展示层级" '
+                f'data-count-l2="{count_l2}" data-count-l3="{count_l3}" onchange="levelSel(this,\'{dim}\')">'
                 '<option value="l2">展示层级：二级</option>'
-                '<option value="l3">展示层级：三级</option></select>')
+                '<option value="l3">展示层级：三级</option></select></div>')
     # Lowlevel(子动作)维度 prompt 构成 (demo)
     _low_items = dataset_lowlevel_prompt_composition(d)
     low_prompt_rows = comp_rows_html(_low_items, d["frames"], d["fps"])
+    tagged_episodes = [row for row in eps if row.get("tags")]
+    lowlevel_episodes = [row for row in eps if any(segment["end_frame"] > segment["start_frame"]
+                                                 for segment in row["annotation"]["lowlevel_segments"])]
+    lowlevel_frames = sum(item["frames"] for item in _low_items)
+    lowlevel_duration = f'{lowlevel_frames / d["fps"]:.0f}s' if d["fps"] > 0 else '—'
     compose = f"""
     <div class="tab-pane" id="pane-compose">
-      <div class="muted" style="margin-bottom:14px;">数据集共 {d['episodes']} episode · {len(_hl_items)} highlevel · {len(_low_items)} lowlevel <span style="color:rgba(0,0,0,0.3);">(highlevel / lowlevel 按去重计数)</span></div>
       <div class="ep-tabs">
         <button class="ep-tab active" onclick="cmpTab(this,'high')">HighLevel 维度</button>
         <button class="ep-tab" onclick="cmpTab(this,'low')">Lowlevel 维度</button>
       </div>
       <div class="cmp-pane" id="cmp_high">
-        <h4 class="va-h" style="margin-top:6px;">Prompt 构成 <span class="muted" style="font-weight:400;font-size:12px;">按 highlevel 任务 prompt 的帧数占比</span></h4>
-        {prompt_rows}
-        <h4 class="va-h">标签构成 <span class="muted" style="font-weight:400;font-size:12px;">各维度内标签的帧数占比</span>{level_sel('high')}</h4>
-        <div class="pie-row" id="tag_high_l2">{pie_cells_h2}</div>
-        <div class="pie-row" id="tag_high_l3" style="display:none;">{pie_cells_h3}</div>
+        <details class="dataset-compose-section" open ontoggle="if(window.renderComposePies)renderComposePies()"><summary>标签构成 <span class="muted dataset-tag-count">{sum(len(g['tags']) for g in tag_groups_l2)} 个标签</span><span class="muted dataset-compose-meta">{compose_stats(tagged_episodes)}</span></summary>
+          {level_sel('high')}
+          <div class="pie-row" id="tag_high_l2">{pie_cells_h2}</div>
+          <div class="pie-row" id="tag_high_l3" style="display:none;">{pie_cells_h3}</div>
+        </details>
+        <details class="dataset-compose-section" open><summary>Prompt 构成 <span class="muted">{len(_hl_items)} 个 HighLevel Prompt</span><span class="muted dataset-compose-meta">{compose_stats(eps)}</span></summary>
+          <div class="recipe-header"><span>Prompt</span><span>占比</span><span>条数</span><span>时长</span></div>{prompt_rows}
+        </details>
       </div>
       <div class="cmp-pane" id="cmp_low" style="display:none;">
-        <h4 class="va-h" style="margin-top:6px;">Prompt 构成 <span class="muted" style="font-weight:400;font-size:12px;">按 lowlevel 子动作 prompt 的帧数占比</span></h4>
-        {low_prompt_rows}
-        <h4 class="va-h">标签构成 <span class="muted" style="font-weight:400;font-size:12px;">各维度内标签的帧数占比</span>{level_sel('low')}</h4>
-        <div class="pie-row" id="tag_low_l2">{pie_cells_l2}</div>
-        <div class="pie-row" id="tag_low_l3" style="display:none;">{pie_cells_l3}</div>
+        <details class="dataset-compose-section" open ontoggle="if(window.renderComposePies)renderComposePies()"><summary>标签构成 <span class="muted dataset-tag-count">{sum(len(g['tags']) for g in tag_groups_l2)} 个标签</span><span class="muted dataset-compose-meta">{compose_stats(tagged_episodes)}</span></summary>
+          {level_sel('low')}
+          <div class="pie-row" id="tag_low_l2">{pie_cells_l2}</div>
+          <div class="pie-row" id="tag_low_l3" style="display:none;">{pie_cells_l3}</div>
+        </details>
+        <details class="dataset-compose-section" open><summary>Prompt 构成 <span class="muted">{len(_low_items)} 个 LowLevel Prompt</span><span class="muted dataset-compose-meta">{len(lowlevel_episodes):,} 条 · {lowlevel_duration}</span></summary>
+          <div class="recipe-header"><span>Prompt</span><span>占比</span><span>条数</span><span>时长</span></div>{low_prompt_rows}
+        </details>
       </div>
-      <script>window.__tagPies={pies_json};window.__tagPiesLow={pies_json};window.__tagPies3={pies3_json};</script>
+      <script>window.__tagPies={pies_json(pies_l2)};window.__tagPiesLow={pies_json(pies_l2)};window.__tagPies3={pies_json(pies_l3)};window.__tagPiesLow3={pies_json(pies_l3)};</script>
     </div>
     """
     checks = doctor_checks(d["quality"])
@@ -5716,7 +6464,9 @@ def dataset_detail_panel_v2(d, viewed_ver=""):
         name_cell = f'<b>{v["version"]}</b>' if active else v["version"]
         published = v["publish_status"] == "已发布"
         publish_cell = '<span class="tag tag-green">已发布</span>' if published else '<span class="tag tag-gray">未发布</span>'
-        publish_op = ('<span class="muted" aria-disabled="true" title="已发布">发布</span>' if published else
+        publish_op = ('<span class="muted" aria-disabled="true" title="尚无可预览的 episode">发布</span>'
+                      if d.get("third_party_source_id") and not d["episodes"] else
+                      '<span class="muted" aria-disabled="true" title="已发布">发布</span>' if published else
                       '<span class="muted" aria-disabled="true" title="仅处理状态为「成功」的版本支持发布">发布</span>' if processing != "ready" else
                       f'<form method="post" action="/datasets/{d["id"]}/version/{v["version"]}/publish" style="display:inline;">'
                       '<button type="submit" class="action-link">发布</button></form>')
@@ -5756,9 +6506,8 @@ def dataset_detail_panel_v2(d, viewed_ver=""):
     head = f"""
     <div id="datasetWorkspace" data-save-url="/datasets/{d['id']}/save">
     <div class="detail-head">
-      <div><div class="dh-title">{html.escape(d['name'])} {ident_html} <span class="tag tag-blue">{ds_format}</span> {ver_select}</div>
-      <div class="dh-meta"><span>{d['episodes']} ep · {d['frames']:,} f</span></div></div>
-      <div class="dataset-detail-actions"><a class="action-link" href="/datasets/tasks">查看数据集更新进度</a><button class="btn btn-primary" id="datasetEditButton" onclick="datasetEditor.start()" {'disabled title="当前版本尚未完成处理"' if d.get('processing_status', 'ready') != 'ready' else ''}>编辑</button><span class="dataset-save-actions" data-edit-only hidden><button class="btn" onclick="datasetEditor.cancel()">取消编辑</button>{save_current_button}<button class="btn btn-primary" id="datasetSaveButton" onclick="datasetEditor.save()" disabled>保存为新版本</button></span></div>
+      <div class="dh-title">{html.escape(d['name'])} {ident_html} <span class="tag tag-blue">{ds_format}</span> {ver_select}<span class="dataset-title-stats"><span>条数 <strong>{len(eps):,} 条</strong></span><span>时长 <strong>{total_duration}</strong></span></span></div>
+      <div class="dataset-detail-actions"><a class="action-link" href="/datasets/tasks">查看数据集更新进度</a><button class="btn btn-primary" id="datasetEditButton" onclick="datasetEditor.start()" {'disabled title="尚无可预览的 episode"' if d.get('third_party_source_id') and not d['episodes'] else 'disabled title="当前版本尚未完成处理"' if d.get('processing_status', 'ready') != 'ready' else ''}>编辑</button><span class="dataset-save-actions" data-edit-only hidden><button class="btn" onclick="datasetEditor.cancel()">取消编辑</button>{save_current_button}<button class="btn btn-primary" id="datasetSaveButton" onclick="datasetEditor.save()" disabled>保存为新版本</button></span></div>
     </div>
     <div id="datasetEditError" role="alert"></div>
     <div class="dataset-edit-summary-bar" data-edit-only hidden>
@@ -5832,6 +6581,8 @@ def datasets_publish(did, ver):
     target = next((v for v in ds_versions(d) if v["version"] == ver), None)
     if target is None:
         return redirect(f"/datasets?sel={did}&tab=version")
+    if target["snapshot"].get("third_party_source_id") and not target["snapshot"].get("episodes"):
+        return jsonify(error="导入文件尚未解析为 Episode，不能发布空数据集"), 409
     if dataset_processing_status(target.get("snapshot", {})) != "ready":
         return jsonify(error="仅处理状态为「成功」的版本支持发布"), 409
     target["publish_status"] = "已发布"

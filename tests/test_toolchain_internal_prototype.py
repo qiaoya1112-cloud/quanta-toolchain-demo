@@ -480,7 +480,7 @@ def test_dataset_query_creation_modal_uses_validation_state_and_model_progress_r
     html = response.get_data(as_text=True)
     assert '数据集校验中' in html
     assert '数据集核验中' not in html
-    assert 'href="/model/data/datasets/tasks"' in html
+    assert 'href="/model/data/tasks"' in html
     assert '只保存' not in html
 
 

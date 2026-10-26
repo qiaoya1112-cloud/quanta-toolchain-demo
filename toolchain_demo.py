@@ -649,8 +649,9 @@ PLATFORMS = {
         "nav": [
             ("数据", [
                 ("/model/data/query", "数据湖圈选", "&#9906;", ""),
+                ("/model/data/raw", "开源数据集", "&#9783;", ""),
                 ("/model/data/datasets", "数据集", "&#9776;", ""),
-                ("/model/data/raw", "原始数据", "&#9783;", ""),
+                ("/model/data/tasks", "数据准备任务", "&#9881;", ""),
             ]),
             ("训练", [
                 ("/model/experiments", "训练任务", "&#9881;", ""),
@@ -1494,6 +1495,8 @@ body.lineage-canvas-page .lineage-viewport { height:100%; min-height:0; }
 .train-section.collapsed .train-section-body { display:none; }
 .train-section-body { min-width:0; }
 .train-meta-options-row { align-items:stretch; }
+.train-meta-platform-row { margin-bottom:14px; }
+.train-section .train-meta-platform-row > .fg { min-width:0; margin-bottom:0; }
 .train-notify-field { display:flex; flex-direction:column; justify-content:flex-start; align-items:flex-start; gap:0; min-height:58px; }
 .train-notify-title { width:max-content; }
 .train-notify-title label { display:block; }
@@ -3493,13 +3496,17 @@ function openTrainDrawer(){
 /* 金山云建训: 复用现有建训抽屉, 仅保留 任务信息 / 运行配置 / 训练配置(yaml + 入口命令) */
 function setKsyunTrainMode(on){
   document.body.classList.toggle('ksyun-train-mode', !!on);
+  var cloudPlatform = document.getElementById('trainCloudPlatform');
+  if (cloudPlatform) cloudPlatform.value = on ? '金山云' : '火山云';
+  var trainingType = document.getElementById('trainTrainingType');
+  if (trainingType) trainingType.value = on ? '预训练' : '后训练';
   var importButton = document.getElementById('trainDatasetImportBtn');
   if (importButton) importButton.hidden = !on;
   var datasetHeading = document.getElementById('trainDatasetNameHeading');
   if (datasetHeading) datasetHeading.textContent = on ? '数据集名称 / 地址' : '数据集名称';
   if (!on) closeTrainDatasetImport();
   var title = document.getElementById('trainDrawerTitle');
-  if (title) title.textContent = on ? '新增金山云训练任务' : '新增训练任务';
+  if (title) title.textContent = '新增训练任务';
   var entry = document.getElementById('entryCmdBox');
   if (entry) entry.classList.add('collapsed');
   var adv = document.getElementById('advConfigBox');
@@ -4687,7 +4694,8 @@ def render_page(title, content, active="", breadcrumb=None, extra_script=None,
             device_models=None,
         )
     # 统一查询筛选器文案；保留 resetFilters 等行为函数及业务表单动作。
-    _list_paths = ("/model/experiments", "/model/checkpoints", "/model/models", "/model/deploy", "/model/queues",
+    _list_paths = ("/model/data/raw", "/model/data/tasks", "/model/data/datasets/tasks", "/model/data/ds_progress",
+                   "/model/experiments", "/model/checkpoints", "/model/models", "/model/deploy", "/model/queues",
                    "/model/config/images",
                    "/model/eval/tasks", "/model/eval/eval-records",
                    "/model/eval/benchmarks", "/model/eval/scenes", "/model/eval/prompts",
@@ -4738,7 +4746,7 @@ def render_page(title, content, active="", breadcrumb=None, extra_script=None,
             title_action = ''.join(ckpt_actions)
             for action in ckpt_actions:
                 content = content.replace(action, '', 1)
-        elif request.path in ('/model/experiments', '/model/models'):
+        elif request.path in ('/model/data/raw', '/model/experiments', '/model/models'):
             # 显式标记的列表操作整体提升到共享标题行。
             split_match = re.search(r'<!--title-action-->([\s\S]*?)<!--/title-action-->', content)
             title_action = split_match.group(1).strip() if split_match else ''
@@ -10141,15 +10149,8 @@ def _dp_render(
     _dp_capture.clear()
     handler_func()
     content = _rewrite_dp_links(_dp_capture.get("content", ""), prefix=prefix)
-    if active == "/model/data/raw":
-        content = (
-            content
-            .replace('<div class="ep-tabs raw-tabs">', '<div class="tm-subtabs raw-tabs">', 1)
-            .replace('<button class="ep-tab active" onclick="rawTab(this,\'self\')">自采数据</button>',
-                     '<button class="ep-tab tm-subtab active" onclick="rawTab(this,\'self\')">自采数据</button>', 1)
-            .replace('<button class="ep-tab" onclick="rawTab(this,\'third\')">三方数据</button>',
-                     '<button class="ep-tab tm-subtab" onclick="rawTab(this,\'third\')">三方数据</button>', 1)
-        )
+    if module == "model":
+        content = content.replace("/model/data/datasets/tasks", "/model/data/tasks")
     extra = _dp_capture.get("extra_script")
     return render_page(title_override or _dp_capture.get("title", ""), content,
                        active=active, module=module, extra_script=extra)
@@ -10272,6 +10273,11 @@ def shared_datasets_append():
 
 @app.route("/model/data/datasets/<ds_id>")
 def model_data_dataset_detail(ds_id):
+    if DP_AVAILABLE:
+        dp.third_party_rows()
+        imported = dp.get_ds(ds_id)
+        if imported and imported.get("third_party_source_id"):
+            return redirect("/model/data/datasets?" + urlencode({"sel": ds_id, "tab": "info"}))
     ds = _dataset_by_id_or_name(_resolve_dataset_id(ds_id)) or DATASETS[0]
     editable_ds = next((item for item in dp.DATASETS if item["id"] == ds_id
                         or _resolve_dataset_id(item["id"]) == ds["id"]
@@ -10344,9 +10350,10 @@ def model_data_dataset_detail(ds_id):
                        breadcrumb=f'模型平台 / 数据集 / <b>{ds["name"]}</b>', mvp_note="MVP 一期")
 
 
+@app.route("/model/data/tasks")
 @app.route("/model/data/datasets/tasks")
 def model_dataset_tasks():
-    return _dp_render(dp.ds_progress, "/model/data/datasets")
+    return _dp_render(lambda: dp.ds_progress(standalone=True), "/model/data/tasks")
 
 
 @app.route("/data/datasets/tasks")
@@ -10354,6 +10361,7 @@ def data_dataset_tasks():
     return _dp_render(dp.ds_progress, "/data/datasets", prefix="/data", module="data")
 
 
+@app.route("/model/data/tasks/<task_id>/retry", methods=["POST"])
 @app.route("/model/data/datasets/tasks/<task_id>/retry", methods=["POST"])
 @app.route("/data/datasets/tasks/<task_id>/retry", methods=["POST"])
 def shared_dataset_task_retry(task_id):
@@ -10368,7 +10376,7 @@ def shared_dataset_create():
 
 @app.route("/model/data/ds_progress")
 def model_data_ds_progress():
-    return _dp_render(dp.ds_progress, "/model/data/datasets")
+    return _dp_render(lambda: dp.ds_progress(standalone=True), "/model/data/tasks")
 
 @app.route("/ds_progress")
 def legacy_ds_progress():
@@ -10377,7 +10385,23 @@ def legacy_ds_progress():
 
 @app.route("/model/data/raw")
 def model_data_raw():
-    return _dp_render(dp.raw_data, "/model/data/raw")
+    return _dp_render(lambda: dp.raw_data(third_party_only=True), "/model/data/raw",
+                      title_override="开源数据集")
+
+
+@app.route("/model/data/raw/import", methods=["POST"])
+def model_third_party_import_create():
+    return dp.third_party_import_create()
+
+
+@app.route("/model/data/raw/imports/<task_id>")
+def model_third_party_import_status(task_id):
+    return dp.third_party_import_status(task_id)
+
+
+@app.route("/model/data/datasets/<did>/media")
+def model_imported_dataset_media(did):
+    return dp.imported_dataset_media(did)
 
 
 @app.route("/model/data/lake")
@@ -11319,7 +11343,7 @@ def experiments():
     if selected_resource == "volcano":
         create_action = """
     <div class="split-btn" id="trainCreateSplit">
-      <button type="button" class="btn btn-primary split-btn-main" onclick="openTrainDrawer();return false;">新增后训练任务</button>
+      <button type="button" class="btn btn-primary split-btn-main" onclick="openTrainDrawer();return false;">新增训练任务</button>
       <button type="button" class="btn btn-primary split-btn-toggle" onclick="toggleTrainCreateSplit(event)" aria-haspopup="menu" aria-expanded="false" aria-label="更多创建方式"><span class="split-caret">&#9662;</span></button>
       <div class="split-menu" id="trainCreateSplitMenu" role="menu">
         <button type="button" class="split-menu-item" role="menuitem" onclick="openTrainResumeCreate()">新建续训任务</button>
@@ -11328,7 +11352,7 @@ def experiments():
         """
     else:
         create_action = """
-    <button type="button" class="btn btn-primary" onclick="openKsyunTrainDrawer();return false;">新增预训练任务</button>
+    <button type="button" class="btn btn-primary" onclick="openKsyunTrainDrawer();return false;">新增训练任务</button>
         """
     content = page_header(
         "训练任务",
@@ -11402,7 +11426,7 @@ def experiments():
 
         <section class="train-section" id="trainSectionMeta">
           <div class="train-section-head" onclick="toggleTrainSection(this)">
-            <h4 class="train-section-title">任务信息</h4>
+            <h4 class="train-section-title">基础信息</h4>
             <span class="train-section-toggle"><span class="train-section-caret">&#9660;</span></span>
           </div>
           <div class="train-section-body">
@@ -11413,6 +11437,16 @@ def experiments():
             <div class="fg">
               <label for="trainDescription">描述</label>
               <textarea id="trainDescription" rows="2" placeholder="请输入训练任务描述，例如任务目标、数据范围或备注说明"></textarea>
+            </div>
+            <div class="fg-row train-meta-platform-row">
+              <div class="fg">
+                <label for="trainCloudPlatform">云平台</label>
+                <input id="trainCloudPlatform" value="{'金山云' if selected_resource == 'kingsoft' else '火山云'}" readonly>
+              </div>
+              <div class="fg">
+                <label for="trainTrainingType">训练类型</label>
+                <input id="trainTrainingType" value="{'预训练' if selected_resource == 'kingsoft' else '后训练'}" readonly>
+              </div>
             </div>
             <div class="fg-row train-meta-options-row">
               <div class="fg">

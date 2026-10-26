@@ -6,7 +6,7 @@ const before = JSON.stringify(db);
 const stage = db.stages.find(row => row.enabled && row.publish_status === '已发布');
 const story = db.stories.find(row => row.enabled && row.publish_status === '已发布');
 const factor = db.factors.find(row => row.enabled && row.publish_status === '已发布' && row.values.length);
-const headers = ['用例 ID（必填，唯一）','Stage（必填）','Story（必填）','prompt_EN（必填）','prompt_CN（必填）','Skill','Factor 1','Factor 取值 1','Factor 2','Factor 取值 2','Factor 3','Factor 取值 3','所属项目（必填）','数据归属（默认 Eval-白盒）','道具','图片','可见性','可见用户组'];
+const headers = ['用例 ID（必填，唯一）','Stage（必填）','Story（必填）','prompt_EN（必填）','prompt_CN（必填）','Skill','Factor 1','Factor 取值 1','Factor 2','Factor 取值 2','Factor 3','Factor 取值 3','所属项目（必填）','数据归属（默认 Eval-白盒）','道具','图片','可见性','可见用户组','Skill 类别'];
 const values = ['IMPORT_001',stage.id,story.id,'Pick up the bowl.','拿起碗。','','','','','','','','预训练评测','','碗','','',''];
 const parsed = rows => ({headers,header_row:1,sheet:'导入模板',rows:rows.map((values,index)=>({row:index+2,values})),issues:[]});
 const plan = (rows,source=db,context={}) => planCaseImport(source,parsed(rows),context,'2026-10-20 12:00:00');
@@ -22,7 +22,7 @@ assert(scenarioValueRows(result.next).some(row=>row.stage_id===stage.id&&row.sto
 assert.equal(JSON.stringify(db), before);
 
 const filled = [...values];
-filled[1]='导入新场域'; filled[2]='导入新任务'; filled[5]='导入抓取（Import Pick）,导入放置（Import Place）';
+filled[1]='导入新场域'; filled[2]='导入新任务'; filled[5]='导入抓取（Import Pick）\n导入放置（Import Place）';filled[18]='动作类\n动作类';
 filled[6]=factor.id; filled[7]=factor.values[0].value; filled[13]='新数据归属';
 result=plan([filled]);
 assert.deepEqual(result.errors, []);
@@ -52,8 +52,8 @@ let invalid=[...filled];invalid[4]='';
 failed([filled,invalid],/prompt_CN/);
 result=failed([values,values],/重复/);assert.deepEqual([...new Set(result.errors.map(error=>error.row))],[2,3]);
 invalid=[...filled];invalid[12]='';failed([invalid],/所属项目/);
-invalid=[...values];invalid[6]='not a defined Factor';invalid[7]='large';failed([invalid],/Factor.*不存在/);
-invalid=[...values];invalid[6]=factor.id;invalid[7]='not a valid value';failed([invalid],/取值/);
+invalid=[...values];invalid[6]='not a defined Factor';invalid[7]='large';failed([invalid],/Factor.*层级不完整/);
+invalid=[...values];invalid[6]=factor.id;invalid[7]='new valid value';result=plan([invalid]);assert.deepEqual(result.errors,[]);assert.equal(result.counts.factor_values,1);
 invalid=[...values];invalid[6]=factor.id;failed([invalid],/同时填写/);
 invalid=[...values];invalid[6]=factor.id;invalid[7]=factor.values[0].value;invalid[8]=factor.id;invalid[9]=factor.values[0].value;failed([invalid],/重复配置/);
 invalid=[...values];invalid[5]='Only Chinese';failed([invalid],/中文（英文）/);
@@ -77,7 +77,7 @@ assert.deepEqual(result.errors,[]);assert.equal(result.created[0].attachments.le
 result=planCaseImport(db,{...parsed([values]),embedded:{2:Array(4).fill(dataImage)}},{});
 assert(result.errors.some(error=>/最多.*3/.test(error.message)));
 
-const punctuation=structuredClone(db);const special=punctuation.factors.find(row=>row.id===factor.id);special.values=[{value:'球体，圆弧类'},{value:'大'},{value:'小'}];
+const punctuation=structuredClone(db);const special=punctuation.factors.find(row=>row.id===factor.id);special.values=[{value:'球体，圆弧类'},{value:'大'},{value:'小'}];special.default_value='大';
 invalid=[...values];invalid[6]=factor.id;invalid[7]='球体，圆弧类';
 result=plan([invalid],punctuation);assert.deepEqual(result.errors,[]);assert.deepEqual(result.created[0].factors[0].values,['球体，圆弧类'],'Exact complete values take priority over delimiters');
 invalid[7]='大，小';result=plan([invalid],punctuation);assert.deepEqual(result.created[0].factors[0].values,['大','小']);
@@ -125,7 +125,7 @@ const requiredColumns=[0,1,2,3,4,12],minimal={header_row:1,headers:requiredColum
 result=planCaseImport(existingDb,minimal,{duplicateMode:'update'},'now');
 assert.deepEqual(result.errors,[]);assert.deepEqual(result.updated[0].factors,original.factors);assert.deepEqual(result.updated[0].attachments,original.attachments);
 const restricted=structuredClone(existingDb);Object.assign(restricted['test-cases'][0],{visibility:'受限',visible_group_ids:['KEEP_GROUP']});
-result=planCaseImport(restricted,minimal,{duplicateMode:'update'},'now');
+result=planCaseImport(restricted,minimal,{duplicateMode:'update',userGroups:[{id:'KEEP_GROUP',name:'保留组'}]},'now');
 assert.deepEqual(result.errors,[]);assert.equal(result.updated[0].visibility,'受限');assert.deepEqual(result.updated[0].visible_group_ids,['KEEP_GROUP']);
 
 result=plan([replacement,values],existingDb,{duplicateMode:'update'});

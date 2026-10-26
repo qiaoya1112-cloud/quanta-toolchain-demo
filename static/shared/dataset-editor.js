@@ -157,12 +157,25 @@
       const checkCell = cell(); checkCell.className = 'dpr-selection-cell'; checkCell.hidden = !editing; checkCell.appendChild(checkbox);
       cell().textContent = row.rec;
       const videos = document.createElement('div'); videos.className = 'dpr-video-group';
-      ['头部', '左臂', '右臂'].forEach(camera => {
-        const thumb = document.createElement('button'); thumb.className = 'vid-thumb';
-        thumb.setAttribute('aria-label', '预览数据 ID ' + row.rec + ' ' + camera + '视频');
-        thumb.title = camera; thumb.addEventListener('click', () => window.datasetEditor.detail(row.idx));
-        videos.appendChild(thumb);
-      });
+      if (config.imported && !Object.keys(row.videos || {}).length) {
+        videos.appendChild(text('span', '暂无视频', 'muted'));
+      } else {
+        (config.imported ? Object.keys(row.videos || {}) : ['头部', '左臂', '右臂']).forEach(camera => {
+          const thumb = document.createElement('button'); thumb.className = 'vid-thumb';
+          thumb.setAttribute('aria-label', '预览数据 ID ' + row.rec + ' ' + camera + '视频');
+          thumb.title = camera; thumb.addEventListener('click', () => window.datasetEditor.detail(row.idx));
+          if (config.imported && config.media_url) {
+            thumb.classList.add('has-video');
+            const clip = document.createElement('video');
+            clip.muted = true; clip.playsInline = true; clip.preload = 'metadata';
+            clip.src = config.media_url + '?episode=' + encodeURIComponent(row.idx) + '&camera=' + encodeURIComponent(camera);
+            clip.addEventListener('loadedmetadata', () => { clip.currentTime = Math.min(0.2, clip.duration || 0); }, {once: true});
+            thumb.appendChild(clip);
+            thumb.appendChild(text('span', camera, 'vid-camera-label'));
+          }
+          videos.appendChild(thumb);
+        });
+      }
       const videoPreview = text('div', '', 'dataset-video-preview');
       const prompt = text('div', row.instr || '—', 'dataset-video-prompt');
       prompt.title = row.instr || '';

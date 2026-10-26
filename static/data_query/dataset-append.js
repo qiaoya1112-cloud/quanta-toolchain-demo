@@ -12,6 +12,7 @@
   const version = byId('qAppendVersion');
   const mode = byId('qAppendMode');
   const versions = JSON.parse(byId('qAppendVersionsConfig').textContent);
+  const duplicatePolicy = byId('qAppendDuplicatePolicy');
   const description = byId('qAppendDescription');
   const error = byId('qAppendError');
   const opener = byId('qAppendDataset');
@@ -84,12 +85,12 @@
     const selected=(versions[target.value]||[]).find(item=>item.version===version.value);
     const isDraft=mode.value==='draft';
     description.value=isDraft && selected?selected.description:'';
-    byId('qAppendVersionLabel').textContent=isDraft?'目标未发布版本':'来源已发布版本';
+    byId('qAppendVersionLabel').textContent=isDraft?'目标未发布版本':'来源版本';
     submit.textContent=isDraft?'确认添加':'新建版本并添加';
     submit.disabled=!selected || !selected.ready;
     byId('qAppendVersionHint').textContent=!target.value
-      ? '选择数据集后，可添加至未发布版本，或基于已发布版本新建。'
-      : !selected ? (isDraft?'暂无可添加的未发布版本，可切换为基于已发布版本新建。':'暂无已发布版本，可切换为添加至未发布版本。')
+      ? '选择数据集后，可基于已有版本新建，或添加至未发布版本。'
+      : !selected ? (isDraft?'暂无可添加的未发布版本，可切换为基于已有版本新建。':'暂无可用的来源版本。')
       : !selected.ready ? '所选版本尚未完成处理，暂不能添加数据。'
       : isDraft ? '数据直接追加至 '+selected.version+'，该版本保持未发布，版本描述同步更新。'
       : '保留 '+selected.version+' 的已有数据，合并本次结果生成新的未发布版本；来源版本保持不变，版本号自动生成。';
@@ -104,10 +105,9 @@
     }
     if(!target.value){add('','请先选择数据集');}
     else {
-      const publishStatus=mode.value==='draft'?'未发布':'已发布';
-      const options=(versions[target.value]||[]).filter(item=>item.publish_status===publishStatus);
-      options.forEach(item=>add(item.version,item.version+' · '+publishStatus+(item.status==='生效中'?' · 当前生效':'')+(item.ready?'':'（尚未完成处理）'),!item.ready));
-      if(!options.length) add('',mode.value==='draft'?'暂无未发布版本':'暂无已发布版本');
+      const options=(versions[target.value]||[]).filter(item=>mode.value!=='draft'||item.publish_status==='未发布');
+      options.forEach(item=>add(item.version,item.version+' · '+item.publish_status+(item.status==='生效中'?' · 当前生效':'')+(item.ready?'':'（尚未完成处理）'),!item.ready));
+      if(!options.length) add('',mode.value==='draft'?'暂无未发布版本':'暂无已有版本');
       const preferred=options.find(item=>item.ready && item.status==='生效中') || options.find(item=>item.ready);
       version.value=preferred?preferred.version:'';
     }
@@ -118,7 +118,7 @@
     search.setCustomValidity(target.value ? '' : '请选择我创建的数据集');
     mode.disabled=!target.value;
     const catalog=versions[target.value]||[];
-    mode.value=catalog.some(item=>item.publish_status==='已发布' && item.ready)?'new':'draft';
+    mode.value=catalog.some(item=>item.ready)?'new':'draft';
     updateVersionOptions();
   }
   target.addEventListener('change',updateVersions);
@@ -162,7 +162,7 @@
       search.reportValidity(); search.focus(); return;
     }
     if (!version.value) {
-      error.textContent='请选择可用的'+(mode.value==='draft'?'未发布版本':'已发布来源版本');
+      error.textContent='请选择可用的'+(mode.value==='draft'?'未发布版本':'来源版本');
       error.hidden=false; version.focus(); return;
     }
     closePicker();
@@ -171,7 +171,7 @@
     }
     pending = true;
     submit.disabled = true;
-    search.disabled = target.disabled = mode.disabled = version.disabled = description.disabled = true;
+    search.disabled = target.disabled = mode.disabled = version.disabled = duplicatePolicy.disabled = description.disabled = true;
     submit.textContent = '添加中…';
     form.setAttribute('aria-busy','true');
     error.hidden = true;
@@ -180,11 +180,15 @@
         method:'POST', headers:{'Content-Type':'application/json'},
         body:JSON.stringify({dataset_id:target.value, base_version:mode.value==='new'?version.value:'',
           target_version:mode.value==='draft'?version.value:'',
-          description:description.value.trim(), source_token:byId('qAppendSource').value})
+          duplicate_policy:duplicatePolicy.value, description:description.value.trim(), source_token:byId('qAppendSource').value})
       });
       const result = await response.json();
       if (!response.ok) throw new Error(result.error || '添加失败，请重试');
-      byId('qAppendSuccessMessage').textContent = '已添加 '+result.added+' 条数据'+(result.skipped?'，跳过 '+result.skipped+' 条重复数据':'')+'，'+(result.created?'新建未发布版本 ':'更新未发布版本 ')+result.version+'。';
+      const changes = [];
+      if(result.added) changes.push('添加 '+result.added+' 条数据');
+      if(result.updated) changes.push('更新 '+result.updated+' 个重复数据 ID');
+      if(result.skipped) changes.push('跳过 '+result.skipped+' 个重复数据 ID');
+      byId('qAppendSuccessMessage').textContent = '已'+changes.join('，')+'，'+(result.created?'新建未发布版本 ':'更新未发布版本 ')+result.version+'。';
       const drafts=versions[target.value]||(versions[target.value]=[]);
       const saved=drafts.find(item=>item.version===result.version);
       if(saved)saved.description=description.value.trim();
@@ -200,7 +204,7 @@
       error.textContent = failure.message || '添加失败，请重试'; error.hidden = false;
     } finally {
       pending = false;
-      search.disabled = target.disabled = description.disabled = false;
+      search.disabled = target.disabled = duplicatePolicy.disabled = description.disabled = false;
       mode.disabled = version.disabled = !target.value;
       submit.disabled = !version.value;
       submit.textContent = mode.value==='draft'?'确认添加':'新建版本并添加';

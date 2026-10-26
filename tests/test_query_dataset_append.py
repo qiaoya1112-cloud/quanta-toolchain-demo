@@ -29,6 +29,9 @@ class QueryDatasetAppendTests(unittest.TestCase):
         dp.DS_VERSIONS.update(self.saved_versions)
 
     def payload(self, **query):
+        query.setdefault('collect_result', '')
+        query.setdefault('is_qc', '')
+        query.setdefault('is_annotated', '')
         page = self.client.get('/model/data/query', query_string=query).get_data(as_text=True)
         token = html.unescape(re.search(r'id="qAppendSource" value="([^"]+)"', page)[1])
         return {'dataset_id': 'ds1', 'base_version': self.source['version'],
@@ -50,6 +53,11 @@ class QueryDatasetAppendTests(unittest.TestCase):
         self.assertIn('id="qAppendTargetSearch" role="combobox"', page)
         self.assertIn('class="query-picker-group">我创建的', page)
         self.assertIn('id="qAppendFormat" readonly', page)
+        mode = re.search(r'<select id="qAppendMode".*?</select>', page, re.S)[0]
+        self.assertLess(mode.index('基于已有版本新建'), mode.index('添加至未发布版本'))
+        self.assertLess(page.index('id="qAppendDuplicatePolicy"'), page.index('id="qAppendDescription"'))
+        self.assertIn('<option value="skip" selected>跳过</option>', page)
+        self.assertIn('<option value="update">更新</option>', page)
         self.assertEqual(dp.dataset_format({'name':'renamed', 'format':'Mozdataset v2'}),'Mozdataset v2')
 
     def test_cannot_append_to_other_users_dataset(self):
@@ -89,8 +97,44 @@ class QueryDatasetAppendTests(unittest.TestCase):
         first = self.append(payload)
         self.assertEqual(first.json['added'], 7)
         self.assertEqual(first.json['skipped'], 3)
+        self.assertEqual(first.json['updated'], 0)
         self.assertEqual(self.append(payload).json, first.json)
         self.assertEqual(len(dp.ds_versions(self.dataset)), self.version_count + 1)
+
+    def test_update_refreshes_duplicate_ids_and_preserves_annotations(self):
+        payload = {**self.payload(), 'selected_ids': [120502], 'duplicate_policy': 'update'}
+        response = self.append(payload)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual((response.json['added'], response.json['skipped'], response.json['updated']), (0, 0, 1))
+        updated_rows = dp.dataset_episodes(dp.dataset_version_snapshot(self.dataset, response.json['version']))
+        recording = dp.get_rec(120502)
+        for original, updated in zip(self.original, updated_rows):
+            if original['rec'] == 120502:
+                self.assertEqual(updated['length'], recording['frames'])
+                self.assertEqual(updated['tags'], dp.rec_tag_labels(recording))
+                self.assertEqual(updated['annotation'], original['annotation'])
+                self.assertEqual(updated['idx'], original['idx'])
+            else:
+                self.assertEqual(updated, original)
+        self.assertEqual(dp.dataset_episodes(self.dataset), self.original)
+        self.assertEqual(self.append(payload).json, response.json)
+        self.assertEqual(len(dp.ds_versions(self.dataset)), self.version_count + 1)
+        self.assertEqual(self.append({**payload, 'duplicate_policy': 'skip'}).status_code, 409)
+
+    def test_update_can_mix_duplicate_and_new_ids_in_draft(self):
+        target = dp.ds_versions(self.dataset)[0]
+        payload = {**self.payload(), 'target_version': target['version'],
+                   'selected_ids': [120502, 121005], 'duplicate_policy': 'update'}
+        response = self.append(payload)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual((response.json['added'], response.json['skipped'], response.json['updated']), (1, 0, 1))
+        snapshot = dp.dataset_version_snapshot(self.dataset, target['version'])
+        rows = dp.dataset_episodes(snapshot)
+        self.assertEqual(rows[-1]['rec'], 121005)
+        self.assertEqual(snapshot['episodes'], len(self.original) + 1)
+        self.assertEqual(snapshot['frames'], sum(row['length'] for row in rows))
+        self.assertEqual(self.append(payload).json, response.json)
+        self.assertEqual(len(dp.ds_versions(self.dataset)), self.version_count)
 
     def test_new_version_can_copy_historical_published_source(self):
         source = next(v for v in dp.ds_versions(self.dataset) if v['version']=='v1')
@@ -116,15 +160,41 @@ class QueryDatasetAppendTests(unittest.TestCase):
         self.assertEqual(self.append(payload).json,response.json)
         self.assertEqual(len(dp.ds_versions(self.dataset)),self.version_count+1)
 
-    def test_new_version_requires_published_ready_source(self):
-        payload = self.payload(task='t2')
+    def test_new_version_can_copy_unpublished_source(self):
         draft = dp.ds_versions(self.dataset)[0]
-        for base,status in [(draft['version'],409),('v999',409),('',400),(None,400),([],400)]:
+        self.assertEqual(draft['publish_status'], '未发布')
+        draft_rows = dp.dataset_episodes(draft['snapshot'])
+        draft_rows[0]['instr'] = '未发布版本中的修改'
+        draft['snapshot']['episode_rows'] = deepcopy(draft_rows)
+        unchanged_draft = deepcopy(draft)
+        payload = {**self.payload(task='t2', limit='1'), 'base_version': draft['version']}
+        response = self.append(payload)
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.json['created'])
+        created = dp.ds_versions(self.dataset)[0]
+        self.assertEqual(created['base_version'], draft['version'])
+        snapshot = dp.dataset_version_snapshot(self.dataset, created['version'])
+        self.assertEqual(snapshot['episode_rows'][:-1], draft_rows)
+        self.assertEqual(snapshot['episode_rows'][-1]['rec'], 121023)
+        self.assertEqual(draft, unchanged_draft)
+        self.assertEqual(self.append(payload).json, response.json)
+        draft['snapshot']['episode_rows'][0]['instr'] = '来源草稿再次修改'
+        next_response = self.append(payload)
+        self.assertEqual(next_response.status_code, 200)
+        self.assertNotEqual(next_response.json['version'], response.json['version'])
+        self.assertEqual(len(dp.ds_versions(self.dataset)), self.version_count + 2)
+
+    def test_new_version_requires_existing_ready_source(self):
+        payload = self.payload(task='t2')
+        for base,status in [('v999',409),('',400),(None,400),([],400)]:
             with self.subTest(base=base):
                 self.assertEqual(self.append({**payload,'base_version':base}).status_code,status)
         historical = next(v for v in dp.ds_versions(self.dataset) if v['version']=='v1')
         historical['snapshot']['processing_status']='queued'
         self.assertEqual(self.append({**payload,'base_version':'v1'}).status_code,409)
+        draft = dp.ds_versions(self.dataset)[0]
+        draft['snapshot']['processing_status']='queued'
+        self.assertEqual(self.append({**payload,'base_version':draft['version']}).status_code,409)
         self.assertEqual(len(dp.ds_versions(self.dataset)),self.version_count)
 
     def test_append_only_selected_results_and_reject_out_of_scope_selection(self):
@@ -200,7 +270,8 @@ class QueryDatasetAppendTests(unittest.TestCase):
     def test_required_description_stale_version_and_invalid_target_do_not_create_versions(self):
         payload = self.payload(task='t2')
         for overrides, status in [({'description':''},400), ({'description':'  '},400),
-                                  ({'description':'x'*1001},400), ({'base_version':'v999'},409),
+                                  ({'description':'x'*1001},400), ({'duplicate_policy':'replace'},400),
+                                  ({'base_version':'v999'},409),
                                   ({'dataset_id':'missing'},404)]:
             with self.subTest(overrides=overrides):
                 self.assertEqual(self.append({**payload, **overrides}).status_code, status)

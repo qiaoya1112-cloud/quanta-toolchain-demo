@@ -3,6 +3,8 @@ import re
 import unittest
 from copy import deepcopy
 
+from bs4 import BeautifulSoup
+
 import data_platform as dp
 import toolchain_demo
 
@@ -39,6 +41,24 @@ class DatasetEditingTests(unittest.TestCase):
         response = self.client.get('/model/data/datasets?sel=ds1&ver=' + version)
         self.assertEqual(response.status_code, 200)
         return json.loads(re.search(r'id="datasetEditorConfig">(.*?)</script>', response.get_data(as_text=True), re.S)[1])
+
+    def test_basic_info_has_requested_fields_and_known_storage_path(self):
+        page = self.client.get('/model/data/datasets?sel=ds1&tab=info')
+        self.assertEqual(page.status_code, 200)
+        summary = BeautifulSoup(page.data, 'html.parser').select_one('#info_sum .desc-grid')
+        self.assertEqual([field.get_text(strip=True) for field in summary.select('.dk')],
+                         ['名称', '标识', '数据格式', '存储位置', '数据条数', '数据时长', '数据来源'])
+        values = [field.get_text(strip=True) for field in summary.select('.dv')]
+        self.assertEqual(values[0], self.source['name'])
+        self.assertEqual(values[1], self.source['ident'])
+        self.assertEqual(values[3], self.source['tos'])
+        self.assertEqual(values[4], str(len(self.original)))
+        self.assertRegex(values[5], r'^\d{2}:\d{2}:\d{2}$')
+        self.assertEqual(values[6], '自采数据')
+
+        missing = self.client.get('/model/data/datasets?sel=ds2&tab=info')
+        missing_summary = BeautifulSoup(missing.data, 'html.parser').select_one('#info_sum .desc-grid')
+        self.assertEqual(missing_summary.select('.dv')[3].get_text(strip=True), '—')
 
     def test_save_deletes_one_episode_updates_prompts_and_preserves_source(self):
         rows = deepcopy(self.original[1:])
@@ -388,6 +408,61 @@ class DatasetEditingTests(unittest.TestCase):
         self.assertNotIn('<th>新 Prompt</th>', html)
         for label in ('剔除数据', '修改 Prompt', '执行算子', '执行工作流'):
             self.assertIn(label, html)
+
+    def test_composition_uses_selected_version_episode_counts_and_duration(self):
+        response = self.save(self.payload(self.original[1:]))
+        self.assertEqual(response.status_code, 200)
+        version = response.json['version']
+        snapshot = dp.dataset_version_snapshot(self.dataset, version)
+        episodes = dp.dataset_episodes(snapshot)
+        self.assertEqual(sum(item['episode_count'] for item in dp.dataset_prompt_composition(snapshot)), 47)
+        self.assertEqual(sum(item['frames'] for item in dp.dataset_prompt_composition(snapshot)), snapshot['frames'])
+        for group in dp.dataset_tag_tree(snapshot):
+            for tag in group['tags']:
+                matching = [row for row in episodes if tag['name'] in row['tags']]
+                self.assertEqual(tag['episode_count'], len(matching))
+                self.assertEqual(tag['frames'], sum(row['length'] for row in matching))
+        overlapping = deepcopy(snapshot)
+        overlapping['episode_rows'] = deepcopy(episodes)
+        overlapping['episode_rows'][0]['tags'] = ['抓取', '放置']
+        skill_l2 = next(group for group in dp.dataset_tag_tree(overlapping, level=2)
+                        if group['group'] == '技能')
+        pick_place = next(tag for tag in skill_l2['tags'] if tag['name'] == '拿放类')
+        matching = [row for row in overlapping['episode_rows'] if {'抓取', '放置'} & set(row['tags'])]
+        self.assertEqual(pick_place['episode_count'], len(matching))
+        self.assertEqual(pick_place['frames'], sum(row['length'] for row in matching))
+        page = self.client.get('/model/data/datasets', query_string={
+            'sel': 'ds1', 'ver': version, 'tab': 'compose',
+        })
+        self.assertEqual(page.status_code, 200)
+        document = BeautifulSoup(page.data, 'html.parser')
+        title_stats = document.select_one('#datasetWorkspace .dh-title .dataset-title-stats')
+        seconds = round(snapshot['frames'] / snapshot['fps'])
+        hours, remainder = divmod(seconds, 3600)
+        minutes, seconds = divmod(remainder, 60)
+        self.assertEqual(title_stats.get_text(' ', strip=True),
+                         f'条数 47 条 时长 {hours:02d}:{minutes:02d}:{seconds:02d}')
+        pane = document.select_one('#pane-compose')
+        self.assertIsNone(pane.select_one('.dataset-compose-overview'))
+        for level in ('high', 'low'):
+            sections = pane.select(f'#cmp_{level} > details.dataset-compose-section')
+            self.assertEqual(len(sections), 2)
+            self.assertTrue(sections[0].summary.text.strip().startswith('标签构成'))
+            self.assertTrue(sections[1].summary.text.strip().startswith('Prompt 构成'))
+            self.assertIn('47 条', sections[0].summary.text)
+            self.assertIn('47 条', sections[1].summary.text)
+            selector = sections[0].select_one('select.lvl-sel')
+            self.assertEqual([option.text for option in selector.select('option')],
+                             ['展示层级：二级', '展示层级：三级'])
+            self.assertEqual(selector['onchange'], f"levelSel(this,'{level}')")
+            self.assertIsNotNone(sections[0].select_one(f'#tag_{level}_l2 .pie-legend'))
+            self.assertIsNotNone(sections[0].select_one(f'#tag_{level}_l3 .pie-legend'))
+            self.assertIn('清洁类', sections[0].select_one(f'#tag_{level}_l2').text)
+            self.assertIn('擦拭', sections[0].select_one(f'#tag_{level}_l3').text)
+            self.assertEqual([th.text for th in sections[0].select_one('.pie-legend').select('th')],
+                             ['标签', '占比', '条数', '时长'])
+            self.assertEqual([span.text for span in sections[1].select_one('.recipe-header').select('span')],
+                             ['Prompt', '占比', '条数', '时长'])
 
 
 if __name__ == '__main__':

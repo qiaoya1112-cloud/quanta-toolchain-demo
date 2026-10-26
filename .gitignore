@@ -34,3 +34,6 @@ skills-lock.json
 
 # Local shared task-pool demo state
 instance/workbench-pools.sqlite3*
+instance/third-party-imports.sqlite3*
+instance/third-party-uploads/
+instance/eval_imports.sqlite3*
