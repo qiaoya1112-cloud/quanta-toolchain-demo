@@ -37,3 +37,7 @@ instance/workbench-pools.sqlite3*
 instance/third-party-imports.sqlite3*
 instance/third-party-uploads/
 instance/eval_imports.sqlite3*
+instance/post-training-collection.sqlite3*
+instance/collection-server.*.log
+instance/collection-browser-artifacts/
+instance/collection-browser-*.sqlite3*

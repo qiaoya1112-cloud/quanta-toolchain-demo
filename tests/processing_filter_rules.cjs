@@ -24,7 +24,7 @@ const annotationOptions = context.dprTaskFilterScopeControl('是否完成标注'
 assert.match(annotationOptions, /端到端切分标注规则 · v1/);
 assert.doesNotMatch(annotationOptions, /通用质检规则/);
 assert.equal(key([['是否质检', '是']]), key([['是否完成质检', '等于', '是', 'any']]));
-assert.equal(key([['质检结论', '合格、操作失误']]), key([['质检结果', '等于', '操作失误,合格', 'any']]));
+assert.equal(key([['质检结论', '合格、失误']]), key([['质检结果', '等于', '失误,合格', 'any']]));
 assert.notEqual(key([['质检结果', '等于', '合格', scope]]), key([['质检结果', '等于', '合格', otherVersion]]));
 assert.notEqual(key([['质检结果', '等于', '合格', scope]]), key([['质检结果', '等于', '合格', 'any']]));
 assert.equal(key([['质检结果', '等于', '', scope]]), null);

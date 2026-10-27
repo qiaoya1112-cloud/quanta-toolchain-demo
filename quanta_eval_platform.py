@@ -2743,7 +2743,7 @@ def tag_management_dimensions():
             "tags": [
                 {"id": "q_collection", "name": "采集质量", "name_en": "Collection Quality",
                  "description": "记录采集阶段的数据有效性和异常类型",
-                 "sub_tags": [{"id": "q_success", "name": "成功"}, {"id": "q_failed", "name": "失败"}, {"id": "q_operator_error", "name": "操作失误"}]},
+                 "sub_tags": [{"id": "q_success", "name": "成功"}, {"id": "q_failed", "name": "失败"}, {"id": "q_operator_error", "name": "失误"}]},
                 {"id": "q_upload", "name": "上传状态", "name_en": "Upload Status",
                  "description": "记录数据上传链路状态",
                  "sub_tags": [{"id": "q_not_uploaded", "name": "未上传"}, {"id": "q_uploading", "name": "上传中"}, {"id": "q_uploaded", "name": "上传成功"}, {"id": "q_upload_failed", "name": "上传失败"}]},

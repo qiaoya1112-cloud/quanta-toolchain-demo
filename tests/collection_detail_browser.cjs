@@ -1,0 +1,200 @@
+/* Read-only capture of the running local demo using an empty Chrome profile. No production access. */
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const os = require('node:os');
+const path = require('node:path');
+const {spawn} = require('node:child_process');
+const root = path.resolve(__dirname,'..');
+const python = process.env.DEMO_PYTHON || path.resolve(root,'../../05-demo-source/.venv/Scripts/python.exe');
+const port = Number(process.env.TEST_PORT || 5041);
+const debugPort = Number(process.env.DEBUG_PORT || 9359);
+const origin = `http://127.0.0.1:${port}`;
+const base = '/data/post-training-collection';
+const api = '/api/post-training-collection/tasks';
+const output = path.resolve(process.env.EVIDENCE_DIR || path.join(root,'instance/detail-review-check'));
+const delay = ms => new Promise(r=>setTimeout(r,ms));
+const assertions=[];
+const check=(value,message)=>{assert.ok(value,message);assertions.push(message);};
+
+async function main(){
+  fs.mkdirSync(output,{recursive:true});
+  const sandbox=fs.mkdtempSync(path.join(output,'chrome-'));
+  const service={kill(){}};let serviceLog='';
+  let chrome,socket;
+  try{
+    for(let i=0;i<120;i++){try{if((await fetch(origin+api)).ok)break;}catch(_){}await delay(100);}
+    const health=await fetch(origin+api);if(!health.ok)throw new Error(`隔离服务响应 ${health.status}: ${serviceLog.slice(-5000)}`);
+    check(health.ok,'隔离本地服务可用');
+    chrome=spawn('C:/Program Files/Google/Chrome/Application/chrome.exe',[
+      '--headless','--disable-gpu','--no-first-run','--no-default-browser-check','--disable-extensions',
+      '--window-size=1440,1000',`--user-data-dir=${path.join(sandbox,'chrome')}`,`--remote-debugging-port=${debugPort}`,'about:blank'
+    ],{stdio:'ignore',windowsHide:true});
+    let page;
+    for(let i=0;i<100;i++){try{page=(await fetch(`http://127.0.0.1:${debugPort}/json/list`).then(r=>r.json())).find(p=>p.type==='page');if(page)break;}catch(_){}await delay(100);}
+    check(Boolean(page),'独立 Chrome 页面已打开');
+    socket=new WebSocket(page.webSocketDebuggerUrl);let seq=0;const pending=new Map(),exceptions=[];
+    socket.onmessage=event=>{
+      const m=JSON.parse(event.data);
+      if(m.id&&pending.has(m.id)){const p=pending.get(m.id);pending.delete(m.id);clearTimeout(p.timer);m.error?p.reject(new Error(m.error.message)):p.resolve(m.result);}
+      if(m.method==='Runtime.exceptionThrown')exceptions.push(m.params.exceptionDetails.exception?.description||m.params.exceptionDetails.text);
+      if(m.method==='Page.javascriptDialogOpening')call('Page.handleJavaScriptDialog',{accept:true});
+    };
+    await new Promise((r,j)=>{socket.onopen=r;socket.onerror=j;});
+    const call=(method,params={})=>new Promise((resolve,reject)=>{const id=++seq;const timer=setTimeout(()=>{pending.delete(id);reject(new Error(`CDP timeout: ${method}`));},15000);pending.set(id,{resolve,reject,timer});socket.send(JSON.stringify({id,method,params}));});
+    const evaluate=async expression=>{const r=await call('Runtime.evaluate',{expression,returnByValue:true,awaitPromise:true});if(r.exceptionDetails)throw new Error(r.exceptionDetails.exception?.description||r.exceptionDetails.text);return r.result.value;};
+    const wait=async(expression,label)=>{for(let i=0;i<100;i++){try{if(await evaluate(expression))return;}catch(_){}await delay(100);}throw new Error(`等待失败: ${label||expression}`);};
+    const nav=async url=>{await call('Page.navigate',{url:origin+url});await wait("document.querySelector('#dc-app')?.getAttribute('aria-busy')==='false'",url);};
+    const click=async selector=>evaluate(`(()=>{const el=document.querySelector(${JSON.stringify(selector)});if(!el)throw new Error('找不到控件 '+${JSON.stringify(selector)});el.click()})()`);
+    const fill=async(selector,value)=>evaluate(`(()=>{const el=document.querySelector(${JSON.stringify(selector)});if(!el)throw new Error('找不到字段 '+${JSON.stringify(selector)});el.value=${JSON.stringify(value)};el.dispatchEvent(new Event('input',{bubbles:true}));el.dispatchEvent(new Event('change',{bubbles:true}));})()`);
+    const text=selector=>evaluate(`document.querySelector(${JSON.stringify(selector)})?.textContent`);
+    const count=selector=>evaluate(`document.querySelectorAll(${JSON.stringify(selector)}).length`);
+    const shot=async name=>{await delay(120);const r=await call('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});fs.writeFileSync(path.join(output,name+'.png'),Buffer.from(r.data,'base64'));};
+    const resize=async(width,height=1000)=>{await call('Emulation.setDeviceMetricsOverride',{width,height,deviceScaleFactor:1,mobile:false});await delay(100);};
+    const noOverflow=async label=>check(await evaluate('document.documentElement.scrollWidth<=innerWidth+1'),label);
+    const taskData=id=>fetch(origin+api+'/'+id).then(r=>r.json()).then(d=>d.task);
+    const taskId=()=>evaluate("location.pathname.split('/').pop()");
+    await call('Runtime.enable');await call('Page.enable');await call('Network.enable');await call('Emulation.setFocusEmulationEnabled',{enabled:true});await call('Network.setBlockedURLs',{urls:['https://cdn.jsdelivr.net/*']});await nav(base);
+
+
+    const visibleClean=async(label)=>check(await evaluate("!document.querySelector('#dc-app').innerText.includes('上传中')&&!document.querySelector('#dc-dialog').innerText.includes('上传中')"),label);
+    await nav(base+'/02602');
+    check(await count('.dc-stat')===2,'详情仅保留两项已有统计');
+    check(await count('.dc-tabs .dc-count')===0,'采集数据Tab无数量徽标');
+    check(await count('input[data-record-filter]')===3,'恰好三个搜索框');
+    check(await evaluate("[...document.querySelectorAll('input[data-record-filter]')].map(el=>el.placeholder).join('|')==='ID搜索|设备搜索|采集员搜索'"),'搜索顺序及名称正确');
+    check(await count('#dc-record-upload')===0,'不展示上传状态筛选');
+    check(!(await text('.dc-detail-toolbar')).includes('实际采集员'),'不展示人员设备汇总');
+    check(!(await text('.dc-record-table thead')).includes('上传状态'),'录制列表无上传状态列');
+    await visibleClean('详情无上传中信息');
+    await shot('01-records-desktop');
+    const initial=await evaluate("[...document.querySelectorAll('.dc-record-table tbody tr')].map(tr=>[...tr.querySelectorAll('td')].map(td=>td.innerText))");
+    check(await count('.dc-record-video-cell')===8&&await count('.dc-video-item')===24,'每条录制展示头部、左臂、右臂三路视频入口');
+    check(await count('.dc-record-video-wrapper')===8&&await count('[data-action=record-video]')===8,'每条录制仅一个共用播放按钮');
+    const tile=await evaluate("(()=>{const r=document.querySelector('[data-action=record-video]').getBoundingClientRect();return {x:r.x+r.width/2,y:r.y+r.height/2};})()");
+    await call('Input.dispatchMouseEvent',{type:'mousePressed',...tile,button:'left',clickCount:1});
+    await call('Input.dispatchMouseEvent',{type:'mouseReleased',...tile,button:'left',clickCount:1});
+    await wait("document.querySelectorAll('.dc-video-player').length===3&&[...document.querySelectorAll('.dc-video-player')].every(p=>p.readyState>=2)",'三路演示视频加载');
+    check(await evaluate("document.querySelector('.dc-video-player').duration>0"),'视频媒体可加载并有时长');
+    await wait("[...document.querySelectorAll('.dc-video-player')].every(p=>p.currentTime>.1&&!p.paused)",'三路视频同时推进');
+    check(await evaluate("document.querySelectorAll('.dc-record-video-wrapper .plyr').length===3&&document.querySelectorAll('[data-action=toggle-record-video]').length===1&&!document.querySelector('#dc-dialog').open"),'三个视频在列表内播放并共用一个播放暂停按钮，复用旧版Plyr控件');
+    check(await evaluate("Math.max(...[...document.querySelectorAll('.dc-video-player')].map(p=>p.currentTime))-Math.min(...[...document.querySelectorAll('.dc-video-player')].map(p=>p.currentTime))<.2"),'三路播放时间保持同步');
+    await click('[data-action=toggle-record-video]');
+    await evaluate("window.previousVideos=[...document.querySelectorAll('.dc-video-player')];true");
+    const pausedTime=await evaluate("previousVideos[0].currentTime");await delay(200);
+    check(await evaluate(`previousVideos.every(p=>p.paused&&Math.abs(p.currentTime-${pausedTime})<.2)`),'一键暂停三个视频');
+    await evaluate("previousVideos[1].currentTime=2;true");
+    await wait("previousVideos.every(p=>!p.seeking&&p.paused&&Math.abs(p.currentTime-2)<.1)",'任一视角拖动同步三个画面');
+    check(await evaluate("previousVideos.every(p=>p.paused&&Math.abs(p.currentTime-2)<.1)"),'暂停时拖动某一路的进度统一跳转');
+    await evaluate("previousVideos[1].playbackRate=1.5;true");
+    await wait("previousVideos.every(p=>p.playbackRate===1.5)",'三路倍速同步');
+    check(await evaluate("previousVideos.every(p=>p.playbackRate===1.5)"),'某一路切倍速时三路同步更新');
+    await shot('07-video-player-desktop');
+    await click('[data-action=toggle-record-video]');await wait(`previousVideos.every(p=>!p.paused&&p.currentTime>${pausedTime})`,'统一继续播放');
+    check(await evaluate("previousVideos.every(p=>!p.paused)"),'一键继续播放三个视频');
+    await evaluate("previousVideos[0].currentTime=Math.max(0,previousVideos[0].duration-.1);previousVideos[1].currentTime=Math.max(0,previousVideos[1].duration-.1);previousVideos[2].currentTime=Math.max(0,previousVideos[2].duration-.1)");
+    await wait("previousVideos.every(p=>p.paused)&&document.querySelector('[data-action=toggle-record-video]').getAttribute('aria-label')==='播放三个视频'",'三路播放结束');
+    check(await evaluate("previousVideos.every(p=>p.paused)"),'三路播放结束时整组一起停止');
+    await click('[data-action=toggle-record-video]');await wait("previousVideos.every(p=>!p.paused&&p.currentTime<2)",'三路统一重播');
+    check(await evaluate("previousVideos.every(p=>p.currentTime<2)"),'结束后再次点击三路从头播放');
+    await click('.dc-record-table tbody tr:nth-child(2) [data-action=record-video]');
+    await wait("document.querySelectorAll('.dc-video-player').length===3&&[...document.querySelectorAll('.dc-video-player')].every(p=>p.currentTime>.05&&!p.paused)",'换行开始播放');
+    check(await evaluate("previousVideos.every(p=>p.paused&&!p.hasAttribute('src'))&&document.querySelectorAll('.dc-record-video-wrapper.is-playing').length===1"),'播放其他记录停止并释放上一条，只保留一组在播');
+    await evaluate("window.previousVideos=[...document.querySelectorAll('.dc-video-player')];true");
+    await click('[data-action=detail-tab][data-value=config]');
+    check(await evaluate("document.querySelectorAll('.dc-video-player').length===0"),'切换详情Tab释放行内视频');
+    check(await evaluate("previousVideos.every(p=>p.paused&&!p.hasAttribute('src'))"),'切换Tab停止并释放旧视频资源');
+    await click('[data-action=detail-tab][data-value=records]');
+    check(await count('.dc-record-video-wrapper')===8,'返回采集数据恢复三视角入口');
+    await click('[data-action=record-video]');await wait("document.querySelectorAll('.dc-video-player').length===3",'翻页前播放');
+    await evaluate("window.pagingVideos=[...document.querySelectorAll('.dc-video-player')];true");
+    await click('[data-action=record-next]');
+    check(await evaluate("pagingVideos.every(p=>p.paused&&!p.hasAttribute('src'))&&!document.querySelector('.dc-video-player')"),'翻页释放三路媒体并显示快照');
+    await click('[data-action=record-prev]');
+    await click('[data-action=record-video]');await wait("document.querySelectorAll('.dc-video-player').length===3",'筛选前播放');
+    await evaluate("window.filterVideos=[...document.querySelectorAll('.dc-video-player')];true");
+    await fill('#dc-record-id','not-a-record');
+    check(await evaluate("filterVideos.every(p=>p.paused&&!p.hasAttribute('src'))&&!document.querySelector('.dc-video-player')"),'筛选移除记录时停止并释放播放器');
+    await fill('#dc-record-id','');
+    const sample=initial[0];
+    const recordId=await text('.dc-record-table tbody [data-action=record-detail]'), device=await text('.dc-record-table tbody [data-label=设备]'), operator=await text('.dc-record-table tbody [data-label=采集员]');
+    await click('[data-action=record-next]');
+    check((await text('.dc-page-buttons')).includes('2 /'),'分页可进入第二页');
+    await fill('#dc-record-id',' '+recordId.toLowerCase()+' ');
+    check(await count('.dc-record-table tbody tr')===1,'ID搜索忽略大小写和两端空格');
+    check((await text('.dc-page-buttons')).includes('1 / 1'),'搜索重置并收敛页码');
+    await fill('#dc-record-id','');await fill('#dc-record-device',device.toLowerCase());
+    check(await evaluate(`[...document.querySelectorAll('.dc-record-table tbody tr')].every(tr=>tr.querySelector('[data-label=设备]').textContent===${JSON.stringify(device)})`),'设备搜索仅匹配设备');
+    await fill('#dc-record-operator',operator.toUpperCase());
+    check(await evaluate(`[...document.querySelectorAll('.dc-record-table tbody tr')].every(tr=>tr.querySelector('[data-label=设备]').textContent===${JSON.stringify(device)}&&tr.querySelector('[data-label=采集员]').textContent===${JSON.stringify(operator)})`),'设备与采集员使用AND组合');
+    await fill('#dc-record-id',recordId);
+    check(await count('.dc-record-table tbody tr')===1,'三个搜索框可组合匹配');
+    await fill('#dc-record-operator','not-a-real-operator');
+    check((await text('#dc-record-results')).includes('没有匹配的录制'),'组合不匹配展示空态');
+    await fill('#dc-record-operator',operator);
+    await click('[data-action=detail-tab][data-value=config]');
+    check(await evaluate("[...document.querySelectorAll('.dc-configuration-section>h3')].map(el=>el.textContent).join('|')==='基本信息|采集要求|采集配置'"),'完整配置按照创建页的三个分区展示');
+    for(const key of ['name','project','source','mode','id','creator','created_at','description','spec_url','tags','prompts','checkpoint'])check(await count(`[data-config-field="${key}"]`)===1,'DAGGER展示配置字段 '+key);
+    check(await count('.dc-config-prompt')>0,'Prompt正文展开可读');
+    check((await text('[data-config-field=checkpoint]')).trim().length>0,'Checkpoint名称及ID展示');
+    await shot('02-config-desktop');
+    await click('[data-action=detail-tab][data-value=records]');
+    check(await evaluate(`document.querySelector('#dc-record-id').value===${JSON.stringify(recordId)}&&document.querySelector('#dc-record-device').value===${JSON.stringify(device.toLowerCase())}&&document.querySelector('#dc-record-operator').value===${JSON.stringify(operator)}`),'切换Tab保留三个筛选条件');
+    await click('[data-action=record-detail]');
+    check(!(await text('.dc-dialog-body')).includes('上传状态'),'录制弹窗不展示未知上传状态');
+    await visibleClean('录制弹窗无上传中信息');await click('[data-action=close-dialog]');
+    await click('[data-action=change-state]');
+    await wait("document.querySelector('.dc-confirm-metrics [data-metric]')",'结束采集确认');
+    check(await count('.dc-confirm-metrics [data-metric]')===1,'结束确认只展示已上传数量');
+    await visibleClean('结束确认无上传中信息');await click('[data-action=close-dialog]');
+    await nav(base+'/02601');await click('[data-action=detail-tab][data-value=config]');
+    check(await count('[data-config-field=mode]')===1&&await count('[data-config-field=prompts],[data-config-field=checkpoint]')===0,'NORMAL展示其模式，不显示模型配置');
+    check(await count('.dc-config-generalization')===1,'NORMAL保留位置泛化配置区和未配置状态');
+    await nav(base+'/02607');await click('[data-action=detail-tab][data-value=config]');
+    check(await count('[data-config-field=location]')===1,'UDAS显示采集地点，即使未填写');
+    check(await count('[data-config-field=mode],[data-config-field=prompts],[data-config-field=checkpoint],.dc-config-generalization')===0,'UDAS不显示机器人配置');
+    await shot('03-config-udas');
+    await nav(base+'/02605');check((await text('#dc-record-results')).includes('等待采集数据'),'无录制任务展示空态');
+    await visibleClean('无数据任务无上传中信息');
+    // Browser-local fixture exercises every optional field without changing the service or database.
+    await call('Page.addScriptToEvaluateOnNewDocument',{source:`(()=>{const original=window.fetch;window.fetch=async(...args)=>{const response=await original(...args);if(String(args[0]).endsWith('/tasks/02602')&&response.ok){const data=await response.clone().json();const boot=JSON.parse(document.querySelector('#dc-bootstrap').textContent);data.task.description='完整说明第一行\\n第二行';data.task.tags=['位置泛化','长文本检查'];data.task.generalization=[{name:data.task.prompts[0].name,prompt_id:data.task.prompts[0].id,arm:'right',event:'open',operator:boot.operators.find(o=>o.arm==='right'&&o.event==='open').id,plane:'XYZ',bounds:{X:[-0.55,0.65],Y:[-0.75,0.85],Z:[0.15,1.25]},allow_adjust:false},{name:data.task.prompts[1]?.name||'第二项',prompt_id:data.task.prompts[1]?.id||'',arm:'left',event:'close',operator:boot.operators.find(o=>o.arm==='left'&&o.event==='close').id,plane:'YZ',bounds:{Y:[-0.3,0.3],Z:[0.1,0.9]},allow_adjust:true}];return new Response(JSON.stringify(data),{status:response.status,headers:response.headers});}return response;};})();`});
+    await nav(base+'/02602');await click('[data-action=detail-tab][data-value=config]');
+    check(await count('.dc-config-generalization-table tbody tr')===2,'完整泛化配置显示所有统计项');
+    const first=await text('.dc-config-generalization-table tbody tr');
+    check(first.includes('右臂')&&first.includes('夹爪打开')&&first.includes('XYZ'),'取点臂、夹爪事件、维度完整');
+    check(first.includes('X：-0.55 至 0.65 m')&&first.includes('Y：-0.75 至 0.85 m')&&first.includes('Z：0.15 至 1.25 m'),'三轴上下界和单位完整');
+    check(first.includes('不允许调整')&&first.includes('右臂夹爪打开取点')&&first.includes('demo-right-open@1'),'端侧调整及算子名称、版本ID完整');
+    check((await text('.dc-config-generalization-table tbody tr:nth-child(2)')).includes('允许调整'),'允许调整状态正确');
+    check((await text('[data-config-field=description]')).includes('\n'),'多行任务说明保留换行');
+    for(const width of [1440,1280,390]){
+      await resize(width,width===390?844:1000);await noOverflow(width+'配置页无横向溢出');
+      await shot('04-config-complete-'+width);
+      await evaluate("document.querySelector('.dc-config-generalization').scrollIntoView({block:'start'})");await shot('05-generalization-'+width);
+      await click('[data-action=detail-tab][data-value=records]');await noOverflow(width+'数据页无横向溢出');
+      if(width>760)check(await evaluate("new Set([...document.querySelectorAll('input[data-record-filter]')].map(el=>Math.round(el.getBoundingClientRect().top))).size===1"),width+'三个搜索框同一行');
+      await shot('06-records-'+width);
+      if(width===390){await click('[data-action=record-video]');await wait("document.querySelector('.dc-video-player')?.readyState>=2",'手机视频加载');await noOverflow('手机行内视频无横向溢出');await shot('08-video-player-mobile');}
+      await click('[data-action=detail-tab][data-value=config]');
+    }
+    await resize(1440,1000);await click('[data-action=detail-tab][data-value=records]');
+    await call('Network.setCacheDisabled',{cacheDisabled:true});
+    await call('Network.setBlockedURLs',{urls:['https://cdn.jsdelivr.net/*','*head.webm*']});
+    await click('[data-action=record-video]');await wait("document.querySelector('[data-action=retry-record-video]')&&!document.querySelector('[data-action=retry-record-video]').hidden",'视频加载失败');
+    check(await evaluate("[...document.querySelectorAll('.dc-video-player')].every(p=>p.paused)"),'一路加载失败暂停整组视频并允许重试');
+    await call('Network.setBlockedURLs',{urls:['https://cdn.jsdelivr.net/*']});await click('[data-action=retry-record-video]');
+    await wait("document.querySelector('.dc-video-player')?.readyState>=2",'重试恢复加载');
+    check(await evaluate("document.querySelector('[data-action=retry-record-video]').hidden"),'重新加载成功后清除失败态');
+    const fixture=await call('Page.addScriptToEvaluateOnNewDocument',{source:`(()=>{const original=window.fetch;window.fetch=async(...args)=>{const response=await original(...args);if(String(args[0]).endsWith('/tasks/02602')&&response.ok){const data=await response.clone().json();data.task.records[0].videos={head:{url:'/static/post_training_collection/media/head.webm',poster:'/missing-poster.png'}};data.task.records[1].videos={};data.task.records[2].videos={head:{url:'javascript:alert(1)'}};return new Response(JSON.stringify(data),{status:response.status,headers:response.headers});}return response;};})();`});
+    await nav(base+'/02602');
+    check(await count('.dc-record-table tbody tr:first-child .dc-video-item.is-missing')===2,'缺失视角显示暂无而共用入口可播放已有视角');
+    check(await count('.dc-record-table tbody tr:nth-child(2) [data-action=record-video]')===0,'无视频记录不展示播放入口');
+    check(await count('.dc-record-table tbody tr:nth-child(3) [data-action=record-video]')===0,'不允许危险媒体地址');
+    await click('.dc-record-table tbody tr:first-child [data-action=record-video]');await wait("document.querySelector('.dc-video-player')?.readyState>=2",'真实字段播放');
+    check(await count('.dc-video-player')===1&&await count('.dc-video-camera-status')===2,'缺失两路时仅播放已有视角并保留空态');
+    await call('Page.removeScriptToEvaluateOnNewDocument',{identifier:fixture.identifier});
+    const collectionExceptions=exceptions.filter(error=>!error.includes('CodeMirror is not defined'));
+    check(collectionExceptions.length===0,'无采集模块未捕获异常：'+collectionExceptions.join('; '));
+    fs.writeFileSync(path.join(output,'browser-report.json'),JSON.stringify({passed:assertions.length,assertions,exceptions},null,2));
+    console.log(JSON.stringify({passed:assertions.length,output},null,2));
+  } finally {if(socket)socket.close();if(chrome)chrome.kill();}
+}
+main().catch(error=>{console.error(error);process.exitCode=1;});

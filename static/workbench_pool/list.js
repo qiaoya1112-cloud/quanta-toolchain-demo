@@ -115,7 +115,7 @@
     if (!button || busy) return;
     const ids = visibleRecords().map(item => item.id);
     if (!ids.length) { report('当前没有可操作的数据'); return; }
-    if (button.dataset.batchAction === 'submit' && visibleRecords().some(item => !['合格','不合格','操作失误'].includes(item.result))) {
+    if (button.dataset.batchAction === 'submit' && visibleRecords().some(item => !['合格','不合格','失误'].includes(item.result))) {
       report('存在未质检的数据，请完成质检后再提交'); return;
     }
     const confirmed = await new Promise(resolve => {

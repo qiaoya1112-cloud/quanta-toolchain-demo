@@ -1,0 +1,188 @@
+/* The collection detail follows the demo's existing secondary-page shell. */
+.dc-app[data-view="detail"]{position:fixed;z-index:90;top:52px;left:220px;right:0;bottom:0;display:flex;flex-direction:column;max-width:none;margin:0;background:#f6f8f9}
+body:has(.dc-app[data-view="detail"]){overflow:hidden}
+.dc-detail-header{flex:none;padding:9px 28px 11px;background:#fff;border-bottom:1px solid #e2e8ea}
+.dc-detail-breadcrumb{display:flex;flex:none;align-items:center;gap:8px;font-size:12px;color:#8a979d;white-space:nowrap}
+.dc-detail-breadcrumb .dc-back{margin:0;color:#118f9c!important;font-size:12px;gap:4px}
+.dc-detail-breadcrumb .dc-icon{width:14px;height:14px}
+.dc-detail-title-row{display:flex;align-items:center;justify-content:space-between;gap:20px}
+.dc-detail-identity{flex:1;min-width:0}
+.dc-detail-heading-line{display:flex;align-items:center;gap:14px;min-width:0}
+.dc-detail-heading-line h1{flex:1;min-width:0;max-width:100%;display:block}
+.dc-detail-header h1{font-size:18px;font-weight:600;line-height:1.5;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dc-detail-header .dc-detail-meta{gap:10px;margin:0;font-size:12px;line-height:1.8;flex-wrap:wrap}
+.dc-detail-header .dc-detail-meta .dc-badge{font-size:11px;padding:1px 7px}
+.dc-detail-id{display:inline-flex;align-items:center;gap:6px;font-size:12px!important;background:#f3f6f7;border-radius:4px;padding:1px 6px;color:#61767e!important}
+.dc-detail-id .dc-icon{width:12px;height:12px}
+.dc-detail-header .dc-head-actions{display:flex;align-items:center;flex:none;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+.dc-detail-header .dc-head-actions .dc-btn{font-size:13px;min-height:32px;padding:5px 11px;border-radius:5px}
+.dc-detail-info-row{display:flex;align-items:center;flex-wrap:wrap;gap:8px 18px;min-width:0;margin-top:6px;color:#6c7c87}
+.dc-detail-header .dc-detail-stats-inline{display:flex;align-items:center;gap:0;margin:0;padding-left:2px;border-left:1px solid #e2e8ea}
+.dc-detail-header .dc-detail-stats-inline .dc-stat{display:flex;align-items:baseline;gap:8px;min-height:0;padding:0 0 0 18px;border:0;border-radius:0;background:transparent;white-space:nowrap}
+.dc-detail-stats-inline .dc-stat-value{font-size:15px;line-height:1.4;margin:0;color:#2c424c;font-weight:600}
+.dc-detail-stats-inline .dc-stat-name{font-size:12px;color:#72848d}
+.dc-detail-stats-inline .dc-stat-value small{font-size:11px;font-weight:400;margin-left:4px}
+.dc-detail-info-row>.dc-inline-note{margin:0;padding:3px 8px;font-size:11px;line-height:1.5;white-space:nowrap}
+.dc-detail-info-row>.dc-inline-note .dc-icon{width:13px;height:13px;margin-top:1px}
+.dc-detail-shell{display:flex;flex-direction:column;flex:1;min-height:0;margin:16px 24px 20px;border-color:#e2e8ea;border-radius:6px;overflow:hidden}
+.dc-detail-shell>.dc-tabs{flex:none;gap:28px;padding:0 20px;background:#fff;border-bottom-color:#e2e8ea}
+.dc-detail-shell .dc-tab{font-size:13px;padding:14px 0 13px;min-height:47px}
+.dc-detail-shell .dc-tab[aria-selected="true"]:after{height:2px}
+.dc-detail-shell #dc-detail-body{flex:1;min-height:0;overflow:auto;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:#c1cbd0 transparent;outline:none}
+.dc-detail-shell #dc-detail-body:focus-visible{outline:2px solid #118f9c;outline-offset:-2px}
+.dc-detail-shell #dc-detail-body[data-tab="records"]{display:flex;flex-direction:column;overflow:hidden}
+.dc-detail-shell #dc-record-results{display:flex;flex-direction:column;flex:1;min-height:0}
+.dc-detail-shell #dc-record-results>.dc-table-wrap{flex:1;min-height:0;overflow:auto;scrollbar-width:thin;scrollbar-color:#c1cbd0 transparent;overscroll-behavior:contain}
+.dc-detail-shell #dc-record-results>.dc-footer{flex:none;border-top:1px solid #edf0f4}
+.dc-detail-shell .dc-record-filters{position:sticky;top:0;z-index:2;background:#fff;align-items:center;padding:16px 20px;gap:10px;border-bottom:1px solid #eef1f3}
+.dc-detail-shell .dc-record-filters .dc-search{width:190px;min-width:0}
+.dc-detail-shell .dc-record-filters .dc-search:first-child{width:240px}
+.dc-detail-shell .dc-record-filters .dc-input{min-height:34px;font-size:13px;padding-top:6px;padding-bottom:6px}
+.dc-detail-shell .dc-record-filters .dc-search>.dc-icon{top:10px;width:14px;height:14px}
+.dc-detail-shell .dc-record-reset{width:32px;height:32px;min-height:32px;padding:0;border-radius:7px;color:#657981;flex:none}
+.dc-detail-shell .dc-record-reset .dc-icon{width:15px;height:15px;stroke-width:1.4}
+.dc-detail-shell .dc-record-table{min-width:1360px;table-layout:fixed}
+.dc-detail-shell .dc-record-table .dc-record-id-column{width:18%}
+.dc-detail-shell .dc-record-table .dc-record-video-column{width:48%}
+.dc-detail-shell .dc-record-table col:nth-child(3){width:9%}
+.dc-detail-shell .dc-record-table col:nth-child(4){width:7%}
+.dc-detail-shell .dc-record-table col:nth-child(5){width:12%}
+.dc-detail-shell .dc-record-table col:nth-child(6){width:6%}
+.dc-detail-shell .dc-record-table th{padding:11px 16px;border-top:0;font-size:12px;background:#f8fafb;color:#71818a}
+.dc-detail-shell .dc-record-table th{position:sticky;top:0;z-index:1;box-shadow:0 1px #edf0f4}
+.dc-detail-shell .dc-record-table td{padding:10px 16px;font-size:13px;height:57px}
+.dc-detail-shell .dc-record-table th:first-child,.dc-detail-shell .dc-record-table td:first-child{padding-left:20px}
+.dc-detail-shell .dc-record-table th:last-child,.dc-detail-shell .dc-record-table td:last-child{padding-right:20px}
+.dc-detail-shell .dc-record-table .dc-link{font-size:13px}
+.dc-record-identity{display:flex;align-items:baseline;gap:9px;min-width:0;flex-wrap:nowrap}
+.dc-detail-shell .dc-record-identity .dc-link{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* 【新】与旧 Quanta CollectionDataTable 相同的三视角表内结构与 Plyr 规格。 */
+.dc-record-video-wrapper{position:relative;width:100%;border-radius:12px;overflow:hidden;box-shadow:0 2px 12px #0000001a;background:#f5f7fa}
+.dc-record-video-wrapper:has(.dc-video-prompt-bar){padding-top:18px}
+.dc-video-prompt-bar{position:absolute;top:0;left:0;right:0;z-index:7;padding:3px 16px;background:#000;color:#d3d3d3;font-size:12px;line-height:1;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dc-video-row{display:flex;gap:4px;width:100%}
+.dc-video-item{position:relative;flex:1;min-width:0;height:180px;overflow:hidden;background:#f5f7fa}
+.dc-video-poster{position:relative;width:100%;height:100%;background:#eef2f4}
+.dc-video-poster img{display:block;width:100%;height:100%;object-fit:cover}
+.dc-video-poster>span,.dc-video-camera-label{position:absolute;top:6px;left:6px;z-index:3;padding:3px 5px;border-radius:3px;background:#0007;color:#fff;font-size:10px;line-height:1.2;pointer-events:none}
+.dc-video-item.is-missing .dc-video-poster{display:grid;place-items:center}
+.dc-video-item.is-missing .dc-video-poster>span{position:static;background:transparent;color:#909399}
+.dc-video-play-mask{position:absolute;inset:0;z-index:5;display:flex;align-items:center;justify-content:center;background:#0006;opacity:0;transition:opacity .2s;pointer-events:none}
+.dc-record-video-wrapper:hover .dc-video-play-mask,.dc-record-video-wrapper:focus-within .dc-video-play-mask{opacity:1}
+.dc-video-group-play{display:grid;place-items:center;width:54px;height:54px;padding:0;border:0;background:transparent;color:#fff;cursor:pointer;pointer-events:auto}
+.dc-video-group-play .dc-icon{width:48px;height:48px;stroke-width:1.3}
+.dc-video-group-play.is-loading .dc-icon{animation:dc-video-spin 1s linear infinite}
+@keyframes dc-video-spin{to{transform:rotate(360deg)}}
+@media(prefers-reduced-motion:reduce){.dc-video-group-play.is-loading .dc-icon{animation:none}}
+.dc-record-video-wrapper .dc-video-player{display:block;width:100%;height:100%;object-fit:cover;background:#101517}
+.dc-video-camera-status{display:flex;align-items:center;justify-content:center;height:100%;background:#f5f7fa;color:#909399;font-size:12px}
+.dc-video-feedback{position:absolute;bottom:0;left:0;right:0;z-index:8;display:flex;justify-content:center;gap:10px;padding:0;color:#fff;background:#0009;font-size:11px;line-height:24px}
+.dc-video-feedback:has([data-video-status]:empty):has(button[hidden]){display:none}
+.dc-video-feedback .dc-link{color:#fff!important;font-size:11px!important;text-decoration:underline}
+.dc-record-video-wrapper .plyr{height:180px!important;width:100%!important;min-width:0!important;--plyr-control-spacing:5px;--plyr-control-icon-size:12px;--plyr-control-radius:2px;--plyr-range-thumb-height:10px;--plyr-range-track-height:3px}
+.dc-record-video-wrapper .plyr__video-wrapper{height:100%!important;padding-bottom:0!important;background:transparent}
+.dc-record-video-wrapper .plyr video,.dc-record-video-wrapper .plyr__poster{width:100%!important;height:100%!important;object-fit:cover}
+.dc-record-video-wrapper .plyr__controls{position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:100%!important;display:flex;align-items:center;justify-content:space-between;opacity:0;transition:opacity .2s ease}
+.dc-record-video-wrapper .plyr--video .plyr__controls{background:linear-gradient(#0000,#00000080);width:95%!important}
+.dc-record-video-wrapper .plyr--video:hover .plyr__controls,.dc-record-video-wrapper .plyr--video:focus-within .plyr__controls{opacity:1}
+.dc-record-video-wrapper .plyr--video.plyr--hide-controls .plyr__controls{opacity:0}
+.dc-record-video-wrapper .plyr__progress__container{flex:1;min-width:0;margin:0 5px}
+.dc-record-video-wrapper .plyr__progress{width:100%}
+.dc-record-video-wrapper .plyr--fullscreen-enabled.plyr--fullscreen-active,.dc-record-video-wrapper .plyr:fullscreen{height:100%!important}
+@media(hover:none){.dc-video-play-mask{opacity:1;background:#0002}}
+.dc-detail-shell .dc-footer{padding:12px 20px;font-size:12px;min-height:53px;background:#fff}
+.dc-detail-shell .dc-empty{padding:70px 24px}
+.dc-detail-shell .dc-empty p{font-size:13px}
+.dc-detail-shell .dc-task-configuration{padding:22px 24px;background:#f7f9fa;min-height:100%}
+.dc-task-configuration .dc-configuration-section{padding:20px 22px;margin:0 0 16px;border:1px solid #e2e8ea;border-radius:6px;background:#fff}
+.dc-task-configuration .dc-configuration-section:last-child{padding:20px 22px;border:1px solid #e2e8ea;margin-bottom:0}
+.dc-task-configuration .dc-configuration-section h3{font-size:14px;font-weight:600;color:#30484f;margin:0 0 19px}
+.dc-task-configuration .dc-config-fields{gap:18px 36px}
+.dc-task-configuration .dc-config-field{display:grid;grid-template-columns:96px minmax(0,1fr);align-items:baseline;gap:10px}
+.dc-task-configuration .dc-config-field dt{font-size:12px;margin:0;line-height:1.8;color:#7b8b93}
+.dc-task-configuration .dc-config-field dd{font-size:13px;line-height:1.8;color:#3b535d}
+.dc-task-configuration .dc-description{font-size:13px;line-height:1.85}
+.dc-task-configuration .dc-config-field[data-config-field="prompts"],.dc-task-configuration .dc-config-field[data-config-field="checkpoint"]{display:block}
+.dc-task-configuration .dc-config-field[data-config-field="prompts"]>dt,.dc-task-configuration .dc-config-field[data-config-field="checkpoint"]>dt{margin-bottom:8px}
+.dc-task-configuration .dc-config-prompt{padding:13px 15px;background:#fafcfc;margin-bottom:10px;border-color:#e4eaed}
+.dc-task-configuration .dc-config-prompt-heading strong{font-size:13px}
+.dc-task-configuration .dc-config-asset-id{font-size:11px;line-height:1.7;color:#89979f}
+.dc-task-configuration .dc-config-generalization{margin-top:22px}
+.dc-task-configuration .dc-config-generalization>.dc-table-wrap{border:1px solid #e7ecef;border-radius:5px}
+.dc-task-configuration .dc-config-generalization-table th,.dc-task-configuration .dc-config-generalization-table td{font-size:12px;padding:11px 12px}
+.dc-task-configuration .dc-config-generalization-table th{border-top:0}
+.dc-task-configuration .dc-config-generalization-table tr:last-child td{border-bottom:0}
+.dc-detail-shell .dc-activity-content{padding:24px;min-height:100%;background:#fff}
+.dc-activity-content h2{font-size:14px;margin-bottom:25px;color:#30484f}
+.dc-activity-content .dc-timeline{max-width:900px}
+.dc-activity-content .dc-timeline strong{font-size:13px;font-weight:500}
+.dc-activity-content .dc-timeline p{font-size:12px;line-height:1.8;margin-top:6px}
+.dc-activity-content .dc-timeline small{font-size:12px;white-space:nowrap}
+.dc-detail-header a:focus-visible,.dc-detail-header button:focus-visible,.dc-detail-shell button:focus-visible{outline:2px solid #118f9c;outline-offset:3px}
+@media(max-width:1100px){
+  .dc-detail-title-row{align-items:flex-start;gap:16px}
+  .dc-detail-header .dc-head-actions{max-width:330px}
+  .dc-detail-heading-line{align-items:center;flex-direction:row;gap:10px}
+  .dc-detail-info-row{gap:12px}
+  .dc-task-configuration .dc-config-fields{column-gap:24px}
+  .dc-task-configuration .dc-config-field{grid-template-columns:80px minmax(0,1fr)}
+}
+@media(max-width:760px){
+  .dc-app[data-view="detail"]{left:0}
+  .dc-detail-header{padding:12px 16px 14px}
+  .dc-detail-title-row{display:block}
+  .dc-detail-heading-line{display:flex;gap:10px}
+  .dc-detail-breadcrumb{margin-bottom:0}
+  .dc-detail-header h1{font-size:17px}
+  .dc-detail-header .dc-detail-meta{gap:7px 10px;font-size:12px}
+  .dc-detail-header .dc-head-actions{max-width:none;justify-content:flex-start;margin-top:8px;gap:6px}
+  .dc-detail-header .dc-head-actions .dc-btn{font-size:12px;min-height:32px;padding:5px 8px}
+  .dc-detail-info-row{align-items:flex-start;gap:10px;flex-wrap:wrap;margin-top:8px}
+  .dc-detail-header .dc-detail-stats-inline{gap:10px}
+  .dc-detail-header .dc-detail-stats-inline .dc-stat{padding-left:10px}
+  .dc-detail-info-row>.dc-inline-note{white-space:normal}
+  .dc-detail-shell{margin:12px;min-height:180px}
+  .dc-detail-shell>.dc-tabs{padding:0 14px;gap:20px}
+  .dc-detail-shell .dc-tab{font-size:12px;min-height:45px}
+  .dc-detail-shell .dc-record-filters{padding:12px;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) 32px;gap:8px}
+  .dc-detail-shell .dc-record-filters .dc-search,.dc-detail-shell .dc-record-filters .dc-search:first-child{width:100%}
+  .dc-detail-shell .dc-record-filters .dc-search:first-child{grid-column:1/-1}
+  .dc-detail-shell .dc-record-filters .dc-input{font-size:12px;padding-left:29px}
+  .dc-detail-shell .dc-record-filters .dc-search>.dc-icon{left:9px}
+  .dc-detail-shell .dc-record-table tbody tr{padding:14px;gap:10px 14px}
+  .dc-detail-shell .dc-record-table td{height:auto}
+  .dc-detail-shell .dc-record-table{min-width:0;table-layout:auto}
+  .dc-record-video-cell{grid-column:1/-1}
+  .dc-video-item,.dc-record-video-wrapper .plyr{height:110px!important}
+  .dc-video-group-play .dc-icon{width:36px;height:36px}
+  .dc-record-video-wrapper .plyr__controls{padding:3px!important;gap:0}
+  .dc-record-video-wrapper .plyr__controls [data-plyr="download"],.dc-record-video-wrapper .plyr__controls [data-plyr="settings"]{display:none}
+  .dc-detail-shell .dc-record-table td[data-label]:before{font-size:11px}
+  .dc-detail-shell .dc-footer{padding:12px 14px}
+  .dc-detail-shell .dc-task-configuration{padding:12px}
+  .dc-task-configuration .dc-configuration-section,.dc-task-configuration .dc-configuration-section:last-child{padding:16px;margin-bottom:12px}
+  .dc-task-configuration .dc-config-fields{gap:16px}
+  .dc-task-configuration .dc-config-field{display:block}
+  .dc-task-configuration .dc-config-field dt{margin-bottom:5px}
+  .dc-task-configuration .dc-config-generalization>.dc-table-wrap{border:0}
+  .dc-task-configuration .dc-config-generalization-table td,.dc-task-configuration .dc-config-generalization-table td:first-child,.dc-task-configuration .dc-config-generalization-table td:last-child{padding:6px 0}
+  .dc-detail-shell .dc-activity-content{padding:20px 16px}
+  .dc-activity-content .dc-between{display:block}
+  .dc-activity-content .dc-timeline small{display:block;margin-top:4px}
+}
+@media(max-height:650px) and (max-width:760px){
+  body:has(.dc-app[data-view="detail"]){overflow:auto}
+  .dc-app[data-view="detail"]{position:static;display:block}
+  .dc-detail-header,.dc-detail-overview{margin:0 -12px}
+  .dc-detail-shell{margin:12px 0;max-height:none}
+  .dc-detail-shell #dc-detail-body[data-tab="records"]{overflow:visible}
+}
+
+/* 【新】操作日志内按需查看字段修改前后。 */
+.dc-log-changes{margin-top:10px;font-size:12px;color:#657887}
+.dc-log-changes summary{display:list-item;cursor:pointer;color:#118f9c;width:fit-content}
+.dc-log-changes section{margin-top:12px;padding:12px 14px;background:#f7f9fb;border:1px solid #e7edf1;border-radius:6px}
+.dc-log-changes h4{margin:0 0 8px;font-size:12px;font-weight:600;color:#445d6c}
+.dc-log-changes dl{display:grid;grid-template-columns:48px minmax(0,1fr);gap:8px 12px;margin:0}
+.dc-log-changes dt{color:#81909b}
+.dc-log-changes dd{margin:0;white-space:pre-wrap;overflow-wrap:anywhere;color:#506674}

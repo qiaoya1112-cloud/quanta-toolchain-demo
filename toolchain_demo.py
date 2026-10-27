@@ -4846,7 +4846,30 @@ def data_task_detail(task_id):
         None,
     )
     try:
-        content = data_refactor.render_task_detail(task_id)
+        if task is None:
+            from post_training_collection import database
+            from collection_processing import get_job, task_data_context
+            with database() as conn:
+                task, records = task_data_context(conn, get_job(conn, task_id))
+            content = data_refactor.render_task_detail(
+                task_id, task=task, records=records,
+                page=request.args.get('page', 1, type=int) or 1,
+                record_filter=request.args.get('data_id', '').strip(),
+                source_filter=request.args.get('collection', '').strip(),
+                return_source=request.args.get('return_collection', '').strip(),
+                return_record=request.args.get('return_record', '').strip(),
+                return_tab=request.args.get('return_tab', '').strip(),
+            )
+        else:
+            content = data_refactor.render_task_detail(
+                task_id,
+                page=request.args.get('page', 1, type=int) or 1,
+                record_filter=request.args.get('data_id', '').strip(),
+                source_filter=request.args.get('collection', '').strip(),
+                return_source=request.args.get('return_collection', '').strip(),
+                return_record=request.args.get('return_record', '').strip(),
+                return_tab=request.args.get('return_tab', '').strip(),
+            )
     except KeyError:
         return redirect("/data/collection-plans")
     collection_task = task and task["type"] == "data_collection_task"
@@ -5649,7 +5672,7 @@ WB_TASKS = [
         "priority": "P0",
         "count": 86,
         "processing": 18,
-        "filters": [("所属项目", "预训练采集"), ("处理任务", "20455"), ("质检结论", "合格 / 操作失误"), ("标注状态", "已标注")],
+        "filters": [("所属项目", "预训练采集"), ("处理任务", "20455"), ("质检结论", "合格 / 失误"), ("标注状态", "已标注")],
         "mistake_rules": ["切分边界与动作语义不一致", "片段备注缺少必要说明"],
         "rejection_rules": ["关键片段缺失", "High-level / Low-level 层级关系错误", "标注结果无法支撑训练目标"],
     },
@@ -5668,7 +5691,7 @@ WB_TASKS = [
         "priority": "P0",
         "count": 124,
         "processing": 31,
-        "filters": [("所属项目", "预训练采集"), ("处理任务", "20455"), ("质检结论", "合格 / 操作失误")],
+        "filters": [("所属项目", "预训练采集"), ("处理任务", "20455"), ("质检结论", "合格 / 失误")],
         "mistake_rules": ["切分起点偏移", "连续片段未完成切分"],
         "rejection_rules": ["片段缺少开始或结束时间", "动作描述与片段内容不一致"],
     },
@@ -5687,7 +5710,7 @@ WB_TASKS = [
         "priority": "P0",
         "count": 118,
         "processing": 28,
-        "filters": [("所属项目", "预训练采集"), ("处理任务", "20455"), ("质检结论", "合格 / 操作失误")],
+        "filters": [("所属项目", "预训练采集"), ("处理任务", "20455"), ("质检结论", "合格 / 失误")],
         "mistake_rules": ["High-level 片段范围需要调整", "动作片段存在重叠"],
         "rejection_rules": ["切分结果与规则不一致", "关键动作片段漏标"],
     },
@@ -5706,7 +5729,7 @@ WB_TASKS = [
         "priority": "P0",
         "count": 64,
         "processing": 12,
-        "filters": [("所属项目", "预训练采集"), ("处理任务", "20455"), ("质检结论", "合格 / 操作失误")],
+        "filters": [("所属项目", "预训练采集"), ("处理任务", "20455"), ("质检结论", "合格 / 失误")],
         "mistake_rules": [],
         "rejection_rules": [],
     },
@@ -6300,7 +6323,7 @@ def _pool_list_history(task, records):
     for index, record in enumerate(records):
         previous = upstream.get(record["id"], {})
         enriched.append(dict(record,
-            collection_qc_result=previous.get("result") or ("合格", "操作失误", "不合格")[index % 3],
+            collection_qc_result=previous.get("result") or ("合格", "失误", "不合格")[index % 3],
             collection_qc_at=previous.get("reviewed_at") or "2026-10-11 10:00:00",
             collection_qc_operator=previous.get("operators", {}).get("质检人") or "王晓明",
             collection_qc_operator_id=previous.get("operator_ids", {}).get("质检人") or "OP-028",
@@ -6672,7 +6695,7 @@ def _workbench_quality_result_panel_html():
       <tbody>
         <tr><td>质检规则 v3.2</td><td>不合格</td><td>2.00s - 12.00s</td><td>夹爪超出画面</td></tr>
         <tr><td>质检规则 v3.2</td><td>不合格</td><td>1:28.00 - 1:30.00</td><td>画面异常：部分时间完全遮挡</td></tr>
-        <tr><td>质检规则 v3.2</td><td>操作失误</td><td>2:45.00 - 2:46.00</td><td>采集动作不规范</td></tr>
+        <tr><td>质检规则 v3.2</td><td>失误</td><td>2:45.00 - 2:46.00</td><td>采集动作不规范</td></tr>
       </tbody>
     </table>
     """
@@ -7089,7 +7112,7 @@ def _workbench_execution_html(
           <button type="button" class="wbx-conclusion"
             onclick="wbSelectConclusion(this)">不合格</button>
           <button type="button" class="wbx-conclusion"
-            onclick="wbSelectConclusion(this)">操作失误</button>
+            onclick="wbSelectConclusion(this)">失误</button>
         </div>
       </section>
       <section class="wbx-module wbx-operation-panel"
@@ -7902,6 +7925,25 @@ def data_workbench_edit(preview_mode=None):
                     "_no_processing_task": not has_processing_task,
                 }
             )
+    linked_annotation = None
+    if request.args.get('linked_processing') == '1':
+        from post_training_collection import database
+        from collection_processing import get_job
+        from collection_processing_scope import detail_payload, safe_return
+        with database() as conn:
+            linked_job = get_job(conn, requested_task_id)
+            linked_annotation = detail_payload(conn, linked_job, request.args.get('source_collection', ''), recording_id)
+        if not linked_annotation:
+            abort(404)
+        member = linked_annotation['member']
+        raw = linked_annotation['recording']
+        workbench_task = dict(workbench_task, processing_task=linked_job['id'], task_name=linked_job['name'],
+                              recording_id=recording_id, recording_device=raw.get('device', '—'),
+                              recording_collector=raw.get('operator', '—'), stage='标注',
+                              flow=linked_job['stages'].get('标注', '—'), flow_versions=[], selected_flow_version='—',
+                              node=member.get('current_node', member.get('node', '—')),
+                              current_processor='—', _no_processing_task=False)
+        linked_annotation['return_url'] = safe_return(request.args.get('return_to', ''), '/data/tasks/' + linked_job['id'])
     workbench_mode = preview_mode or request.args.get("mode") or {
         "质检": "quality",
         "标注": "annotation",
@@ -7965,6 +8007,9 @@ def data_workbench_edit(preview_mode=None):
         {"no": 1, "start": 0.00,  "end": 1.94,  "color": "#E45A52", "desc": "无法标注",       "el_placeholder": "选择动作元素"},
         {"no": 2, "start": 1.94,  "end": 42.80, "color": "#8B47C7", "desc": "分捡药片放入盘中", "el_placeholder": "选择动作元素"},
     ]
+    if linked_annotation:
+        rows = []
+        semantic_annotation = False
     tick_secs = [0, 5, 10, 15, 20, 25, 30, 35, 40]
     ticks_html = "".join(
         f'<span class="lab-tl-tick" style="left:{t / DUR_TOTAL * 100:.2f}%;">{t:.2f}s</span>'
@@ -8102,7 +8147,7 @@ def data_workbench_edit(preview_mode=None):
         annotation_type_label = "动作标注 · A/B/C/D/Z"
 
     readonly_style = bool(
-        style_config and not style_config["annotation_editable"]
+        linked_annotation or (style_config and not style_config["annotation_editable"])
     )
     current_window_bar = (
         ""
@@ -8179,6 +8224,20 @@ def data_workbench_edit(preview_mode=None):
             and not style_preview
         ),
     )
+    if not linked_annotation and request.args.get('entry') == 'task-data' and request.args.get('return_to'):
+        from collection_processing_scope import safe_return
+        return_url = safe_return(request.args.get('return_to', ''), '/data/processing-tasks')
+        if return_url.startswith('/data/tasks/'):
+            execution_html = execution_html.replace(
+                '<div class="wbx-operation-actions">',
+                '<div class="wbx-operation-actions"><a class="btn" data-processing-return href="'
+                + html.escape(return_url, quote=True) + '">返回处理任务数据</a>', 1)
+    if linked_annotation:
+        body_rows = '<tr><td colspan="9" class="dpr-empty">' + ('标注结果未同步' if linked_annotation['member']['stages'].get('标注') == 'completed' else '暂无标注结果') + '</td></tr>'
+        annotation_timeline_html = ''
+        annotation_extra_panes = ''
+        annotation_tabs = ''
+        execution_html = '<div class="wbx-execution"><a class="btn" href="' + html.escape(linked_annotation['return_url'], quote=True) + '">返回处理任务数据</a></div>'
     if style_preview:
         detail_tabs_open = '<div class="wbx-detail-tabs" data-component="annotation_workbench_tabs">'
         sticky_workbench_open = '<div class="wbx-workbench-header">'
@@ -8225,7 +8284,7 @@ def data_workbench_edit(preview_mode=None):
       </div>
       <div class="lab-fab" onclick="toast('Demo: 录屏')" title="录屏">&#9209;</div>
     </div>
-    {_workbench_flow_note_html(workbench_task, semantic_annotation, request.args.get('style', ''))}
+    {'' if linked_annotation else _workbench_flow_note_html(workbench_task, semantic_annotation, request.args.get('style', ''))}
     {sticky_workbench_extra}
     {sticky_workbench_close}
 
@@ -8241,7 +8300,7 @@ def data_workbench_edit(preview_mode=None):
       </table>
     </div>
       </div>
-      {'' if semantic_annotation else f'<div class="wbx-detail-pane" data-detail-pane="log" data-component="workbench_log">{_workbench_log_panel_html(False, workbench_task)}</div>'}
+      {'' if semantic_annotation or linked_annotation else f'<div class="wbx-detail-pane" data-detail-pane="log" data-component="workbench_log">{_workbench_log_panel_html(False, workbench_task)}</div>'}
     {detail_tabs_close}
 
     {_workbench_tabs_script_html()}
@@ -8570,6 +8629,12 @@ def publish_rule(rule_id):
 
 @app.route("/data/rules")
 def data_rules():
+    # 【新】同一规则管理入口，采集规范与现有处理规则各自维护。
+    rules_category = request.args.get('category', 'processing')
+    rules_tabs = '<link rel="stylesheet" href="/static/post_training_collection/spec-catalog.css"><nav class="dc-rule-tabs" aria-label="规则分类"><a href="/data/rules" class="' + ('active' if rules_category != 'collection' else '') + '">处理规则</a><a href="/data/rules?category=collection" class="' + ('active' if rules_category == 'collection' else '') + '">采集规范</a></nav>'
+    if rules_category == 'collection':
+        return render_page('规则管理', rules_tabs + render_template('post_training_collection/spec-catalog.html'),
+                           active='/data/rules', module='data', breadcrumb='数据平台 / <b>规则管理</b>', mvp_note=None)
     rule_name = request.args.get("rule_name", "").strip()
     stage = request.args.get("stage", "").strip()
     rule_type = request.args.get("rule_type", "").strip()
@@ -9188,7 +9253,7 @@ def data_rules():
       #ruleStatusConfirm .modal-body p{{margin:0;color:#607178;font-size:13px;line-height:1.7}}
     </style>
     """
-    return render_page("规则管理", content, active="/data/rules", module="data",
+    return render_page("规则管理", rules_tabs + content, active="/data/rules", module="data",
                        breadcrumb='数据平台 / <b>规则管理</b>', mvp_note="MVP 一期")
 
 
@@ -16747,6 +16812,14 @@ def checkpoint_history(ckpt_id):
 # 场景库维护与测试用例组合
 from eval_catalog import register_catalog
 register_catalog(app, render_page)
+
+# Independent post-training collection routes reuse the original platform shell.
+from post_training_collection import DEMO_PROJECTS as COLLECTION_DEMO_PROJECTS, register_collection
+register_collection(app, render_page, COLLECTION_DEMO_PROJECTS, CHECKPOINTS)
+from collection_processing import register_processing
+register_processing(app, data_refactor.PROCESSING_FLOWS)
+from collection_demo_data import register_demo_seed
+register_demo_seed(app, data_refactor.PROCESSING_FLOWS)
 
 
 

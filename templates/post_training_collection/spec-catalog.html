@@ -1,0 +1,8 @@
+<section id="dc-spec-catalog" class="dc-spec-catalog">
+  <div class="dc-spec-toolbar"><label><input id="dc-catalog-search" type="search" placeholder="规范名称 / 飞书链接" aria-label="搜索采集规范"></label><button type="button" id="dc-catalog-refresh">刷新</button><button type="button" class="primary" id="dc-catalog-create">新增采集规范</button></div>
+  <div id="dc-catalog-error" role="alert"></div>
+  <div class="dc-catalog-table-wrap"><table aria-label="采集规范"><colgroup><col style="width:24%"><col style="width:32%"><col style="width:10%"><col style="width:10%"><col style="width:16%"><col style="width:8%"></colgroup><thead><tr><th>规范名称</th><th>飞书文档</th><th>关联任务</th><th>创建人</th><th>更新时间</th><th>操作</th></tr></thead><tbody id="dc-catalog-rows"><tr><td colspan="6">正在加载…</td></tr></tbody></table></div>
+  <footer id="dc-catalog-count"></footer>
+</section>
+<dialog id="dc-spec-editor" aria-labelledby="dc-spec-editor-title"><form id="dc-spec-editor-form" novalidate><header><h2 id="dc-spec-editor-title">新增采集规范</h2><button type="button" data-spec-close aria-label="关闭">×</button></header><div class="dc-spec-editor-body"><label for="dc-spec-name">规范名称</label><input id="dc-spec-name" maxlength="160" required placeholder="例如：饮茶场景采集规范"><p class="error" data-error="name"></p><label for="dc-spec-url">飞书文档链接</label><input id="dc-spec-url" type="url" maxlength="2048" required placeholder="https://…feishu.cn/wiki/…"><p class="error" data-error="url"></p><p id="dc-spec-impact" hidden></p><p class="error" data-error="form" role="alert"></p></div><footer><button type="button" data-spec-close>取消</button><button type="submit" class="primary">保存</button></footer></form></dialog>
+<script src="/static/post_training_collection/spec-catalog.js" defer></script>
