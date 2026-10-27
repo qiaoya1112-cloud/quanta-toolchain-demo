@@ -170,9 +170,35 @@ class QueryIntegrationTests(unittest.TestCase):
         with patch.object(dp, 'RECORDINGS', records):
             text = self.page(excluded_ids='800003', limit='2')
             self.assertEqual(['800002', '800001'], self.ids(text))
-            self.assertIn('筛选命中 3 条 · 已剔除 1 条 · 保留 2 条 · 总时长 25:02:01', text)
+            self.assertIn('筛选命中 3 条 · 已剔除 1 条 · 保留 2 条', text)
+            self.assertIn('记录数 2 条</span>', text)
+            self.assertIn('片段数 —</span>', text)
+            self.assertIn('时长 25:02:01</span>', text)
             empty = self.page(excluded_ids='800001,800002,800003')
-            self.assertIn('保留 0 条 · 总时长 00:00:00', empty)
+            self.assertIn('记录数 0 条</span>', empty)
+            self.assertIn('片段数 0 个</span>', empty)
+            self.assertIn('时长 00:00:00</span>', empty)
+
+    def test_result_segment_count_uses_final_rows_and_counts_repeated_prompts(self):
+        base = dp.RECORDINGS[0]
+        segments = [
+            {'prompt_id': 'repeat', 'start_frame': 0, 'end_frame': 30},
+            {'prompt_id': 'repeat', 'start_frame': 30, 'end_frame': 60},
+            {'prompt_id': 'empty', 'start_frame': 60, 'end_frame': 60},
+        ]
+        records = [
+            {**base, 'id': 800001, 'lowlevel_segments': []},
+            {**base, 'id': 800002, 'annotation': {'lowlevel_segments': segments}},
+            {**base, 'id': 800003, 'lowlevel_segments': segments},
+        ]
+        with patch.object(dp, 'RECORDINGS', records):
+            text = self.page(excluded_ids='800003', limit='1')
+            self.assertEqual(['800002'], self.ids(text))
+            self.assertIn('记录数 1 条</span>', text)
+            self.assertIn('片段数 2 个</span>', text)
+            self.assertIn('时长 00:00:48</span>', text)
+            unsegmented = self.page(recording_id='800001')
+            self.assertIn('片段数 0 个</span>', unsegmented)
 
     def test_restore_keeps_filter_and_ids_remain_unique(self):
         removed=self.page(task='t1',excluded_ids='120489,120489,#120502')

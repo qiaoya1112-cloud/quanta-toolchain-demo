@@ -649,7 +649,7 @@ PLATFORMS = {
         "nav": [
             ("数据", [
                 ("/model/data/query", "数据湖圈选", "&#9906;", ""),
-                ("/model/data/raw", "开源数据集", "&#9783;", ""),
+                ("/model/data/raw", "开源数据", "&#9783;", ""),
                 ("/model/data/datasets", "数据集", "&#9776;", ""),
                 ("/model/data/tasks", "数据准备任务", "&#9881;", ""),
             ]),
@@ -10386,7 +10386,7 @@ def legacy_ds_progress():
 @app.route("/model/data/raw")
 def model_data_raw():
     return _dp_render(lambda: dp.raw_data(third_party_only=True), "/model/data/raw",
-                      title_override="开源数据集")
+                      title_override="开源数据")
 
 
 @app.route("/model/data/raw/import", methods=["POST"])
@@ -12673,7 +12673,7 @@ def _model_asset_records():
             "description": raw.get("model_description", raw.get("description")) or "—",
             "storage_address": _ckpt_storage_address(checkpoint) or "—",
             "experiment": experiment,
-            "train_task_name": (experiment or {}).get("name") or raw.get("train_task_name") or checkpoint.get("exp_id") or "—",
+            "train_task_name": (experiment or {}).get("name") or raw.get("train_task_id") or raw.get("train_task_name") or checkpoint.get("exp_id") or "—",
         })
     return sorted(records, key=lambda row: (row.get("created", ""), row["id"]), reverse=True)
 
@@ -12951,7 +12951,7 @@ def _ckpt_detail_drawers(items):
     for c in items:
         escape = lambda value: html.escape(str(value), quote=True)
         exp = _ckpt_exp(c)
-        train_name = escape(exp["name"] if exp else c.get("train_task_name", "—"))
+        train_name = escape(exp["name"] if exp else c.get("train_task_id") or c.get("train_task_name", "—"))
         base_model = escape(exp["model_type"] if exp else c.get("base_model", "—"))
         desc = escape(_ckpt_desc(c))
         step = escape(c.get("step") or _ckpt_train_step(c))
@@ -12995,7 +12995,7 @@ def _ckpt_list_items():
         items[checkpoint_id] = {
             **items.get(checkpoint_id, {}), **operation, "id": checkpoint_id,
             "exp_id": operation.get("experiment_id", ""),
-            "train_task_name": operation.get("experiment_name", "—"),
+            "train_task_name": operation.get("train_task_id") or operation.get("experiment_name", "—"),
         }
     return list(items.values())
 
@@ -13223,7 +13223,7 @@ def _ckpt_import_modal_html():
                 <option value="金山云">金山云</option>
               </select>
             </div>
-            <div class="fg"><label class="fg-req">训练任务名称</label><input name="train_task_name" required placeholder="例如 robotwin_pi05_stack_blocks_two_top10pct_60000"></div>
+            <div class="fg"><label class="fg-req">训练任务 ID</label><input name="train_task_id" required placeholder="请输入训练任务 ID"></div>
             <div class="fg"><label class="fg-req">存储地址</label><input name="storage_address" required placeholder="TOS/KS3地址"></div>
             <div class="fg"><label class="fg-req">基础模型</label>
               <select name="base_model" required>
@@ -13446,7 +13446,7 @@ def checkpoint_import_upload():
         "source_platform": (request.form.get("source_platform") or "火山云").strip(),
         "base_model": (request.form.get("base_model") or "—").strip() or "—",
         "step": int(step_raw) if step_raw.isdigit() else "—",
-        "train_task_name": (request.form.get("train_task_name") or "—").strip() or "—",
+        "train_task_id": (request.form.get("train_task_id") or "—").strip() or "—",
         "description": (request.form.get("description") or "—").strip() or "—",
         # 外部 Ckpt 存放于对象存储: 记录地址、体积与完整性摘要.
         "storage_address": storage_address or "—",
@@ -13465,7 +13465,7 @@ def checkpoint_import_upload():
         "source_kind": "upload",
         "source": _checkpoint_resource_key(uploaded),
         "experiment_id": "",
-        "experiment_name": uploaded["train_task_name"],
+        "experiment_name": uploaded["train_task_id"],
         "step": str(uploaded["step"]),
         "location": uploaded["storage_address"],
         "cache_server": merge_mode == "cache",

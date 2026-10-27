@@ -95,7 +95,7 @@ class ModelAssetTests(unittest.TestCase):
                 patch.object(platform, 'REGISTERED_MODEL_CHECKPOINT_IDS', set(platform.REGISTERED_MODEL_CHECKPOINT_IDS)):
             response = self.client.post('/model/checkpoints/upload', data={
                 'name': 'new_external_12345', 'step': '12345', 'base_model': 'external-base',
-                'train_task_name': 'external-training', 'storage_address': 's3://external/weights',
+                'train_task_id': 'TRAIN-456', 'storage_address': 's3://external/weights',
                 'merge_mode': 'merge',
             })
             self.assertEqual(response.status_code, 303)

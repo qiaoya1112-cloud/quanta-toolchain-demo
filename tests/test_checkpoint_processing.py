@@ -19,7 +19,7 @@ class CheckpointProcessingTests(unittest.TestCase):
     def import_checkpoint(self, mode='cache'):
         response = self.client.post('/model/checkpoints/upload', data={
             'name': 'external-processing-weights', 'merge_mode': mode,
-            'source_platform': '金山云', 'train_task_name': 'external-training',
+            'source_platform': '金山云', 'train_task_id': 'TRAIN-123',
             'base_model': 'pi0.5', 'step': '60000',
             'storage_address': 'ks3://weights/test/',
         })
@@ -34,6 +34,8 @@ class CheckpointProcessingTests(unittest.TestCase):
 
     def test_processing_list_replaces_old_list_and_legacy_links_preserve_filters(self):
         page = self.client.get('/model/checkpoints?page_size=50').get_data(as_text=True)
+        self.assertIn('训练任务 ID</label><input name="train_task_id"', page)
+        self.assertNotIn('<input name="train_task_name"', page)
         self.assertIn('data-status="unmerged"', page)
         self.assertIn('data-status="cache_failed"', page)
         self.assertIn('ckpt-status-filter', page)
@@ -46,6 +48,13 @@ class CheckpointProcessingTests(unittest.TestCase):
             self.assertIn(f'id="{drawer_id}" role="dialog"', page)
         response = self.client.get('/model/checkpoints/cache-records?resource=kingsoft&operation_id=cache-op-2')
         self.assertEqual(response.location, '/model/checkpoints?resource=kingsoft&operation_id=cache-op-2')
+
+    def test_import_uses_training_task_id_in_checkpoint_details(self):
+        uploaded, operation = self.import_checkpoint()
+        self.assertEqual(uploaded['train_task_id'], 'TRAIN-123')
+        self.assertEqual(operation['experiment_name'], 'TRAIN-123')
+        page = self.client.get('/model/checkpoints?resource=kingsoft&page_size=50').get_data(as_text=True)
+        self.assertIn('>TRAIN-123</div>', page)
 
     def test_all_five_actions_are_gated_for_every_status(self):
         for status in platform.CKPT_STATUS_LABEL:

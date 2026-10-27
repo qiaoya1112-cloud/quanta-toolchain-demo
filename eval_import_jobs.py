@@ -25,6 +25,7 @@ PREFIX = '/model/eval/test-cases/import'
 JOB_METADATA = ('id, filename, submitted_at, status, message, summary, '
                 'report IS NOT NULL AS has_report, length(source) > 0 AS has_source, lease_until')
 FAILED_STATUSES = ('upload_failed', 'validation_failed', 'import_failed', 'failed')
+TEMPLATE_ERROR_MESSAGE = '校验失败，整批未导入；请使用指定模板'
 _threads = set()
 _lock = threading.Lock()
 
@@ -113,13 +114,23 @@ def import_context():
     return {'userGroups': [{'id': x['id'], 'name': x['name'], 'enabled': x.get('enabled', True)} for x in USER_GROUPS], 'tags': tags}
 
 
+def template_mismatch(message):
+    return any(marker in message for marker in (
+        '未找到唯一的评测用例表头', '无法识别表头', '缺少必填列：', '表头重复：',
+        '必须成对存在', 'Factor 配置编号',
+    ))
+
+
 def public_job(row):
     status = row['status']
+    message = row['message']
+    if status in ('failed', 'validation_failed') and template_mismatch(message):
+        status, message = 'validation_failed', TEMPLATE_ERROR_MESSAGE
     if status == 'failed':
         status = 'validation_failed' if row['message'].startswith('校验失败') else 'import_failed'
     has_source = bool(row['has_source']) if 'has_source' in row.keys() else bool(row['source'])
     return {'id': row['id'], 'filename': row['filename'], 'submitted_at': row['submitted_at'],
-            'status': status, 'message': row['message'], 'has_source': has_source,
+            'status': status, 'message': message, 'has_source': has_source,
             'summary': json.loads(row['summary']) if row['summary'] else None,
             'has_report': bool(row['has_report']) if 'has_report' in row.keys() else row['report'] is not None,
             'download_url': PREFIX + '/jobs/' + row['id'] + '/file' if has_source else None}
@@ -132,6 +143,8 @@ def finish_failed(app, task, errors, parsed=None, status='validation_failed'):
     failed_rows = len({e['row'] for e in errors if e.get('row', 1) > parsed.get('header_row', 1)})
     label = '校验失败' if status == 'validation_failed' else '导入失败'
     message = f'{label}，整批未导入。{failed_rows} 条记录存在 {len(errors)} 项错误，请下载错误文件修正。' if failed_rows else label + '，整批未导入：' + '；'.join(e['message'] for e in errors[:3])
+    if status == 'validation_failed' and any(e.get('row', 1) == parsed.get('header_row', 1) and template_mismatch(e['message']) for e in errors):
+        message = TEMPLATE_ERROR_MESSAGE
     with connect(app) as db:
         db.execute('''UPDATE eval_import_jobs SET status=?, report=?, message=?,
                       finished_at=?, lease_until=0 WHERE id=? AND status != 'success' ''',

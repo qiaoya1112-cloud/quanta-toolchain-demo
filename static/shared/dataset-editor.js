@@ -12,13 +12,14 @@
   const originalById = new Map(original.map(row => [row.idx, row]));
   const labels = {remove: '剔除数据', prompt: '修改 Prompt', operator: '执行算子', workflow: '执行工作流'};
   const isAuto = step => step.type === 'operator' || step.type === 'workflow';
-  let rows = [], operations = [], selected = new Set(), editing = false, saving = false, page = 0;
+  let rows = [], operations = [], selected = new Set(), expandedPromptRows = new Set(), editing = false, saving = false, page = 0;
   let pendingAction = null, previousOverflow = '', confirmFocus = null, operationFocus = null, query = '';
   let lowlevelZhQuery = '', lowlevelEnQuery = '';
   let batchMode = false;
   let changesFocus = null, changesOverflow = '';
   const changesOpen = () => byId('datasetChangesModal').classList.contains('active');
   const pageSize = 10;
+  const promptPreviewCount = 3;
   const nodes = new Map();
   const formOpen = () => !byId('datasetOperationForm').hidden;
   const dirty = () => editing && (operations.length > 0 || formOpen());
@@ -32,7 +33,15 @@
     byId('datasetSelectionMenuTrigger').setAttribute('aria-expanded', 'false');
   }
   const changes = () => ({deleted: rows.filter(row => row.deleted).length,
-    updated: rows.filter(row => !row.deleted && row.instr !== originalById.get(row.idx).instr).length});
+    updated: rows.filter(row => !row.deleted && (row.instr !== originalById.get(row.idx).instr ||
+      JSON.stringify(row.lowlevel_prompts) !== JSON.stringify(originalById.get(row.idx).lowlevel_prompts))).length});
+  const promptId = replacement => 'custom:' + replacement.zh.trim() + '\x1f' + replacement.en.trim();
+  const availablePrompts = () => {
+    const prompts = new Map();
+    rows.filter(row => !row.deleted && selected.has(row.idx)).forEach(row =>
+      (row.lowlevel_prompts || []).forEach(prompt => prompts.set(prompt.id, prompt)));
+    return [...prompts.values()];
+  };
   const targetFor = (type, id) => (config.catalog[type] || []).find(item => item.id === id);
   const text = (tag, value, className) => {
     const node = document.createElement(tag);
@@ -56,14 +65,22 @@
   }
 
   function preview(plan) {
-    const result = original.map(row => ({...row, deleted: false}));
+    const result = original.map(row => ({...row, lowlevel_prompts: (row.lowlevel_prompts || []).map(prompt => ({...prompt})), deleted: false}));
     for (const step of plan) {
       if (isAuto(step)) continue;
       const ids = new Set(step.episode_ids || []);
       const affected = result.filter(row => !row.deleted && (step.scope === 'all' || ids.has(row.idx)));
       if (!affected.length) throw new Error('该操作范围内的数据已被前序操作剔除。');
       if (step.type === 'remove') affected.forEach(row => { row.deleted = true; });
-      if (step.type === 'prompt') affected.forEach(row => { row.instr = step.prompt; });
+      if (step.type === 'prompt') affected.forEach(row => {
+        if (!step.replacements) { row.instr = step.prompt; return; }
+        const mapping = new Map(step.replacements.map(item => [item.old_id, item]));
+        const prompts = row.lowlevel_prompts.map(prompt => {
+          const replacement = mapping.get(prompt.id);
+          return replacement ? {id: promptId(replacement), zh: replacement.zh.trim(), en: replacement.en.trim()} : prompt;
+        });
+        row.lowlevel_prompts = [...new Map(prompts.map(prompt => [prompt.id, prompt])).values()];
+      });
       if (result.every(row => row.deleted)) throw new Error('至少需要保留一条数据。');
     }
     return result;
@@ -140,6 +157,9 @@
   }
 
   function renderRows() {
+    byId('datasetListView').querySelectorAll('.dataset-editor-table thead th').forEach(header => {
+      if (['质检规则', '标注规则'].includes(header.textContent.trim())) header.remove();
+    });
     nodes.clear();
     byId('datasetEditorRows').replaceChildren();
     pageRows().forEach(row => {
@@ -171,20 +191,37 @@
             clip.src = config.media_url + '?episode=' + encodeURIComponent(row.idx) + '&camera=' + encodeURIComponent(camera);
             clip.addEventListener('loadedmetadata', () => { clip.currentTime = Math.min(0.2, clip.duration || 0); }, {once: true});
             thumb.appendChild(clip);
-            thumb.appendChild(text('span', camera, 'vid-camera-label'));
           }
           videos.appendChild(thumb);
         });
       }
-      const videoPreview = text('div', '', 'dataset-video-preview');
-      const prompt = text('div', row.instr || '—', 'dataset-video-prompt');
-      prompt.title = row.instr || '';
-      videoPreview.append(prompt, videos);
-      cell().appendChild(videoPreview);
-      cell().textContent = row.quality_rule;
+      cell().appendChild(videos);
+      const promptCell = cell(); promptCell.className = 'dataset-lowlevel-cell';
+      if ((row.lowlevel_prompts || []).length) {
+        const promptList = text('div', '', 'dataset-lowlevel-list');
+        const expanded = expandedPromptRows.has(row.idx);
+        promptList.id = 'datasetPromptList-' + row.idx;
+        (expanded ? row.lowlevel_prompts : row.lowlevel_prompts.slice(0, promptPreviewCount)).forEach(item => {
+          const line = text('div', '', 'dataset-lowlevel-item');
+          line.title = item.zh + '\n' + item.en;
+          line.append(text('span', item.zh), text('span', item.en, 'dataset-lowlevel-en'));
+          promptList.appendChild(line);
+        });
+        promptCell.appendChild(promptList);
+        if (row.lowlevel_prompts.length > promptPreviewCount) {
+          const toggle = button(expanded ? '收起' : '展开更多', () => {
+            expanded ? expandedPromptRows.delete(row.idx) : expandedPromptRows.add(row.idx);
+            renderRows(); refresh();
+            byId('datasetEditorRows').querySelector('[data-episode-id="' + row.idx + '"] .dataset-prompt-toggle')?.focus();
+          }, (expanded ? '收起' : '展开更多') + '数据 ID ' + row.rec + ' 的 lowlevel prompt');
+          toggle.type = 'button'; toggle.classList.add('dataset-prompt-toggle');
+          toggle.setAttribute('aria-expanded', String(expanded));
+          toggle.setAttribute('aria-controls', promptList.id);
+          promptCell.appendChild(toggle);
+        }
+      } else promptCell.appendChild(text('span', '—', 'muted'));
       const qualityTone = {'合格': 'green', '不合格': 'red', '操作失误': 'orange'}[row.quality_result] || 'gray';
       cell().appendChild(text('span', row.quality_result, 'tag tag-' + qualityTone));
-      cell().textContent = row.annotation_rule;
       cell().appendChild(text('span', row.annotation_status, 'tag tag-' + (row.annotation_status === '已标注' ? 'green' : 'gray')));
       const action = button(row.deleted ? '恢复' : '剔除', () => {
         if (saving || formOpen() || pendingAuto()) return;
@@ -206,7 +243,7 @@
     });
     if (!pageRows().length) {
       const row = document.createElement('tr'), cell = document.createElement('td');
-      cell.colSpan = editing ? 8 : 6; cell.className = 'muted dataset-list-empty';
+      cell.colSpan = editing ? 7 : 5; cell.className = 'muted dataset-list-empty';
       cell.textContent = '暂无匹配数据'; row.appendChild(cell); byId('datasetEditorRows').appendChild(row);
     }
   }
@@ -232,7 +269,16 @@
         const dataIds = [...new Set(step.episode_ids.map(id => originalById.get(id).rec))];
         detail.appendChild(text('div', '数据 ID：' + dataIds.join('、')));
       } else detail.appendChild(text('div', '操作范围：全部保留数据'));
-      if (step.type === 'prompt') detail.appendChild(text('div', '修改后的 Prompt：\n' + step.prompt));
+      if (step.type === 'prompt') {
+        if (step.replacements) step.replacements.forEach(replacement => {
+          const old = original.flatMap(row => row.lowlevel_prompts || []).find(prompt => prompt.id === replacement.old_id);
+          detail.appendChild(text('div', (replacement.old_zh && replacement.old_en
+            ? replacement.old_zh + ' / ' + replacement.old_en
+            : old ? old.zh + ' / ' + old.en : replacement.old_id) +
+            ' → ' + replacement.zh + ' / ' + replacement.en));
+        });
+        else detail.appendChild(text('div', '修改后的 Prompt：\n' + step.prompt));
+      }
       if (isAuto(step)) {
         const entries = Object.entries(step.params).filter(([, value]) => value);
         entries.forEach(([key, value]) => detail.appendChild(text('div', key + '：' + value)));
@@ -271,6 +317,64 @@
     byId('datasetEditButton').focus();
   }
 
+  function syncPromptMappings() {
+    const groups = [...byId('datasetPromptMappings').children];
+    const chosen = new Set(groups.map(group => group.querySelector('select').value).filter(Boolean));
+    groups.forEach((group, index) => {
+      group.querySelector('.dataset-prompt-mapping-title').textContent = '第 ' + (index + 1) + ' 组';
+      group.querySelector('.dataset-prompt-mapping-remove').hidden = groups.length === 1;
+      const select = group.querySelector('select');
+      [...select.options].forEach(option => { option.disabled = !!option.value && option.value !== select.value && chosen.has(option.value); });
+    });
+    byId('datasetAddPromptMapping').disabled = groups.length >= 50 || groups.length >= availablePrompts().length;
+  }
+
+  function addPromptMapping() {
+    const prompts = availablePrompts();
+    const box = byId('datasetPromptMappings');
+    if (!prompts.length || box.children.length >= 50) return;
+    const group = document.createElement('div'); group.className = 'dataset-prompt-mapping';
+    const head = text('div', '', 'dataset-prompt-mapping-head');
+    head.appendChild(text('strong', '', 'dataset-prompt-mapping-title'));
+    const remove = button('移除', () => { group.remove(); syncPromptMappings(); }, '移除这组 Prompt 修改');
+    remove.classList.add('dataset-prompt-mapping-remove'); head.appendChild(remove);
+    const oldField = text('div', '', 'fg');
+    const oldLabel = text('label', '选择旧 Prompt');
+    const old = document.createElement('select'); old.setAttribute('aria-label', '旧 Prompt');
+    const empty = text('option', '请选择当前数据已有的 Prompt'); empty.value = ''; old.appendChild(empty);
+    prompts.forEach(prompt => {
+      const option = text('option', prompt.zh + ' / ' + prompt.en); option.value = prompt.id; old.appendChild(option);
+    });
+    old.addEventListener('change', () => {
+      const prompt = prompts.find(item => item.id === old.value);
+      group.querySelector('[data-old-zh]').value = prompt ? prompt.zh : '';
+      group.querySelector('[data-old-en]').value = prompt ? prompt.en : '';
+      group.querySelector('[data-new-zh]').value = prompt ? prompt.zh : '';
+      group.querySelector('[data-new-en]').value = prompt ? prompt.en : '';
+      syncPromptMappings();
+    });
+    oldField.append(oldLabel, old);
+    const oldValues = text('div', '', 'dataset-prompt-pair');
+    oldValues.appendChild(text('strong', '旧 Prompt', 'dataset-prompt-column-title'));
+    [['中文', 'old-zh'], ['英文', 'old-en']].forEach(([label, key]) => {
+      const field = text('div', '', 'fg'); field.appendChild(text('label', label));
+      const input = document.createElement('textarea'); input.rows = 2; input.readOnly = true; input.setAttribute('data-' + key, '');
+      input.setAttribute('aria-label', '旧 Prompt ' + label); field.appendChild(input); oldValues.appendChild(field);
+    });
+    const newValues = text('div', '', 'dataset-prompt-pair');
+    newValues.appendChild(text('strong', '新 Prompt', 'dataset-prompt-column-title'));
+    [['中文', 'new-zh'], ['英文', 'new-en']].forEach(([label, key]) => {
+      const field = text('div', '', 'fg'); field.appendChild(text('label', label));
+      const input = document.createElement('textarea'); input.rows = 2; input.maxLength = 10000; input.setAttribute('data-' + key, '');
+      input.placeholder = '请输入' + label; input.setAttribute('aria-label', '新 Prompt ' + label);
+      field.appendChild(input); newValues.appendChild(field);
+    });
+    const columns = text('div', '', 'dataset-prompt-columns');
+    columns.append(oldValues, newValues);
+    group.append(head, oldField, columns); box.appendChild(group);
+    syncPromptMappings(); old.focus();
+  }
+
   window.datasetEditor = {
     showChanges() {
       if (!editing || saving || formOpen() || changesOpen()) return;
@@ -303,6 +407,10 @@
       lowlevelZhQuery = byId('datasetLowlevelZhQuery').value.trim().toLowerCase();
       lowlevelEnQuery = byId('datasetLowlevelEnQuery').value.trim().toLowerCase();
       page = 0; refresh(true);
+    },
+    expandPrompts(expand) {
+      expandedPromptRows = new Set(expand ? rows.filter(row => (row.lowlevel_prompts || []).length > promptPreviewCount).map(row => row.idx) : []);
+      renderRows(); refresh();
     },
     selectPage(checked) {
       if (!editing || saving || pendingAuto()) return;
@@ -392,11 +500,13 @@
       byId('datasetPromptSelection').textContent = '已选择 ' + selected.size + ' 条数据';
       byId('datasetOperationTitle').textContent = batchMode ? '批量修改 Prompt' : '执行操作';
       byId('datasetOperationScope').value = scope;
-      byId('datasetOperationPrompt').value = '';
+      byId('datasetPromptMappings').replaceChildren();
       byId('datasetOperationError').textContent = '';
       this.changeType();
-      byId(batchMode ? 'datasetOperationPrompt' : 'datasetOperationType').focus();
+      if (type === 'prompt') byId('datasetPromptMappings').querySelector('select')?.focus();
+      else byId('datasetOperationType').focus();
     },
+    addPromptMapping() { addPromptMapping(); },
     closeOperation() {
       if (saving) return;
       if (mask.classList.contains('active')) {
@@ -411,6 +521,11 @@
       const type = byId('datasetOperationType').value;
       const automatic = type === 'operator' || type === 'workflow';
       byId('datasetPromptField').hidden = type !== 'prompt';
+      const hasPrompts = availablePrompts().length > 0;
+      byId('datasetPromptEmpty').hidden = type !== 'prompt' || hasPrompts;
+      byId('datasetAddPromptMapping').hidden = type === 'prompt' && !hasPrompts;
+      byId('datasetExecuteOperation').disabled = type === 'prompt' && !hasPrompts;
+      if (type === 'prompt' && !byId('datasetPromptMappings').children.length) addPromptMapping();
       byId('datasetAutomationFields').hidden = !automatic;
       byId('datasetOperationScope').disabled = automatic || batchMode;
       byId('datasetExecuteOperation').textContent = automatic ? '确认任务' : '确认修改';
@@ -463,8 +578,17 @@
         step.scope = 'selected';
       }
       if (type === 'prompt') {
-        step.prompt = byId('datasetOperationPrompt').value;
-        if (!step.prompt.trim()) return fail('请输入新的 Prompt。');
+        const groups = [...byId('datasetPromptMappings').children];
+        if (!groups.length) return fail('请添加 Prompt 修改。');
+        step.replacements = groups.map(group => ({old_id: group.querySelector('select').value,
+          old_zh: group.querySelector('[data-old-zh]').value, old_en: group.querySelector('[data-old-en]').value,
+          zh: group.querySelector('[data-new-zh]').value.trim(), en: group.querySelector('[data-new-en]').value.trim()}));
+        if (step.replacements.some(item => !item.old_id || !item.zh || !item.en))
+          return fail('请选择旧 Prompt，并填写新 Prompt 的中文和英文。');
+        if (new Set(step.replacements.map(item => item.old_id)).size !== step.replacements.length)
+          return fail('同一个旧 Prompt 只能修改一次。');
+        const unchanged = step.replacements.findIndex(item => item.zh === item.old_zh && item.en === item.old_en);
+        if (unchanged !== -1) return fail('第 ' + (unchanged + 1) + ' 组的新 Prompt 与旧 Prompt 相同，请修改后再确认。');
       }
       if (isAuto(step)) {
         step.target_id = byId('datasetOperationTarget').value;

@@ -362,6 +362,42 @@ class DatasetEditingTests(unittest.TestCase):
         self.assertEqual(dp.dataset_episodes(dp.dataset_version_snapshot(self.dataset, 'v3')), self.original)
         self.assertEqual(dp.RUNS, self.saved_runs)
 
+    def test_batch_prompt_replacements_update_matching_segments_only(self):
+        replacements = [
+            {'old_id': 'll_align', 'zh': '靠近目标', 'en': 'Approach the target'},
+            {'old_id': 'll_move', 'zh': '移动物体', 'en': 'Move the object'},
+        ]
+        response = self.save({'base_version': 'v3', 'operations': [
+            {'type': 'prompt', 'scope': 'selected', 'episode_ids': [0, 1], 'replacements': replacements},
+        ]})
+        self.assertEqual(response.status_code, 200)
+        saved = dp.dataset_version_snapshot(self.dataset, response.json['version'])
+        first = saved['episode_rows'][0]['annotation']['lowlevel_segments']
+        second = saved['episode_rows'][1]['annotation']['lowlevel_segments']
+        self.assertEqual((first[0]['name'], first[0]['en']), ('靠近目标', 'Approach the target'))
+        self.assertEqual((first[1]['name'], first[1]['en']), ('移动物体', 'Move the object'))
+        self.assertFalse(first[1]['selected'])
+        self.assertEqual(first[2], self.original[0]['annotation']['lowlevel_segments'][2])
+        self.assertEqual(second[0]['name'], '靠近目标')
+        self.assertEqual(saved['episode_rows'][2]['annotation'], self.original[2]['annotation'])
+        self.assertEqual(dp.dataset_episodes(dp.dataset_version_snapshot(self.dataset, 'v3')), self.original)
+        self.assertIn('靠近目标', [item['name'] for item in dp.dataset_lowlevel_prompt_composition(saved)])
+        prompts = self.config(response.json['version'])['episodes'][0]['lowlevel_prompts']
+        self.assertIn({'id': first[0]['prompt_id'], 'zh': '靠近目标', 'en': 'Approach the target'}, prompts)
+
+    def test_batch_prompt_replacements_reject_missing_and_duplicate_old_prompts(self):
+        frozen = deepcopy(dp.ds_versions(self.dataset))
+        valid = {'old_id': 'll_align', 'zh': '靠近目标', 'en': 'Approach the target'}
+        for replacements in ([valid, valid], [{'old_id': 'not-present', 'zh': '新提示', 'en': 'New prompt'}],
+                             [{'old_id': 'll_align', 'zh': '新提示', 'en': ''}],
+                             [{'old_id': 'll_align', 'zh': '接近/对准目标', 'en': 'Approach / align with the target'}]):
+            with self.subTest(replacements=replacements):
+                response = self.save({'base_version': 'v3', 'operations': [
+                    {'type': 'prompt', 'scope': 'selected', 'episode_ids': [0], 'replacements': replacements},
+                ]})
+                self.assertEqual(response.status_code, 400)
+                self.assertEqual(dp.ds_versions(self.dataset), frozen)
+
     def test_automation_only_plan_creates_pending_version(self):
         response = self.save({'base_version': 'v3', 'operations': [
             {'type': 'workflow', 'scope': 'all', 'target_id': 'pl1', 'params': {}},
@@ -402,6 +438,10 @@ class DatasetEditingTests(unittest.TestCase):
         self.assertIn('id="datasetListView"', html)
         self.assertIn('class="ant-table dpr-record-table dataset-editor-table"', html)
         self.assertEqual(html.count('id="datasetEditorRows"'), 1)
+        table_head = html.split('class="ant-table dpr-record-table dataset-editor-table"', 1)[1].split('</thead>', 1)[0]
+        self.assertEqual(table_head.count('<th ') + table_head.count('<th>'), 7)
+        self.assertNotIn('<th>质检规则</th>', table_head)
+        self.assertNotIn('<th>标注规则</th>', table_head)
         self.assertNotIn('id="datasetEditorDrawer"', html)
         self.assertIn('id="datasetOperationDrawer"', html)
         self.assertNotIn('id="procDrawer"', html)
@@ -437,11 +477,13 @@ class DatasetEditingTests(unittest.TestCase):
         self.assertEqual(page.status_code, 200)
         document = BeautifulSoup(page.data, 'html.parser')
         title_stats = document.select_one('#datasetWorkspace .dh-title .dataset-title-stats')
+        segments = sum(1 for episode in episodes for segment in episode['annotation']['lowlevel_segments']
+                       if segment['end_frame'] > segment['start_frame'])
         seconds = round(snapshot['frames'] / snapshot['fps'])
         hours, remainder = divmod(seconds, 3600)
         minutes, seconds = divmod(remainder, 60)
         self.assertEqual(title_stats.get_text(' ', strip=True),
-                         f'条数 47 条 时长 {hours:02d}:{minutes:02d}:{seconds:02d}')
+                         f'条数 47 条 片段数 {segments} 个 时长 {hours:02d}:{minutes:02d}:{seconds:02d}')
         pane = document.select_one('#pane-compose')
         self.assertIsNone(pane.select_one('.dataset-compose-overview'))
         for level in ('high', 'low'):
