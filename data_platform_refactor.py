@@ -64,7 +64,9 @@ PAGE_SPECS = {
     },
     "instruction_packages": {
         "path": "/data/instruction-packages",
-        "title": "指令包管理",
+        "title": "指令管理",
+        "hide_from_nav": True,
+        "active_path": "/data/instruction-management",
         "subtitle": "创建、发布并维护可供采集方案导入的指令包",
         "icon": "&#9638;",
     },
@@ -74,7 +76,7 @@ PAGE_SPECS = {
         "subtitle": "导入、排序并管理指令包内的指令版本",
         "icon": "&#9638;",
         "hidden": True,
-        "active_path": "/data/instruction-packages",
+        "active_path": "/data/instruction-management",
     },
     "collection_tasks": {
         "path": "/data/collection-plans",
@@ -309,7 +311,6 @@ NAV_GROUPS = [
         "数据采集",
         [
             "instruction_management",
-            "instruction_packages",
             "collection_tasks",
             "supplier_collection_plans",
             "post_training_collection",

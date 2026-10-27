@@ -45,7 +45,6 @@ class DataPlatformArchitectureTests(unittest.TestCase):
                 "数据采集",
                 [
                     "instruction_management",
-                    "instruction_packages",
                     "collection_tasks",
                     "supplier_collection_plans",
                     "post_training_collection",

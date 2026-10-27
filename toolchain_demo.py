@@ -16827,6 +16827,9 @@ register_demo_seed(app, data_refactor.PROCESSING_FLOWS)
 # Section 10: Main
 # ════════════════════════════════════════════════════════════════
 
+from batch_packages import register_batch_packages
+register_batch_packages(app)
+
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5004))
     print(f"\n  具身云 · 工具链 MVP Demo — http://localhost:{port}\n")
