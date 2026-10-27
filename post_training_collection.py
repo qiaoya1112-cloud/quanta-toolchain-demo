@@ -79,7 +79,7 @@ def seed_tasks(projects, checkpoints):
                 "device": f'{"UDAS" if source == "udas" else "MOZ1"}-{i % 2 + 1:03d}',
                 "recorded_at": stamp, "seconds": 110 + i * 17 if source == "udas" else 35 + i * 5,
                 "upload": "uploading" if i == count-1 and not closed else "uploaded",
-                "collection_result": ["success", "success", "failure", "success", None][i % 5],
+                "collection_result": "failure" if i % 5 == 2 else "success",
                 "quality": ["pending", "processing", "passed", "passed", "rejected"][i % 5],
                 "annotation": "已标注" if i % 5 in (2, 3) else "未标注",
                 "prompt": copy.deepcopy(prompts[0]) if prompts else None,
@@ -262,12 +262,16 @@ def public_task(task, detail=False):
     if detail:
         for record in result.get("records", []):
             record.pop("config_version", None)
-            if "collection_result" not in record and "is_mistake" not in record and record.get("id", "").startswith("DEMO-R-"):
-                try:
-                    index = int(record["id"][-4:]) - 1
-                    record["collection_result"] = ["success", "success", "failure", "success", None][index % 5]
-                except ValueError:
-                    pass
+            if record.get("collection_result") not in ("success", "failure"):
+                if isinstance(record.get("is_mistake"), bool):
+                    record["collection_result"] = "failure" if record["is_mistake"] else "success"
+                elif record.get("id", "").startswith("DEMO-R-"):
+                    # Repair legacy synthetic fixtures only; never invent a real collection verdict.
+                    try:
+                        index = int(record["id"][-4:]) - 1
+                        record["collection_result"] = "failure" if index % 5 == 2 else "success"
+                    except ValueError:
+                        pass
     result["metrics"] = task_metrics(task)
     result.pop("followers", None)
     if not detail:
@@ -447,6 +451,16 @@ def register_collection(app, render_page, projects, checkpoints):
     def list_tasks():
         with database() as conn:
             tasks = [public_task(json.loads(row["payload"])) for row in conn.execute("SELECT payload FROM collection_tasks ORDER BY rowid DESC")]
+            linked_counts = {}
+            if conn.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='collection_processing'").fetchone():
+                for row in conn.execute('SELECT payload FROM collection_processing'):
+                    job = json.loads(row['payload'])
+                    for task_id in set(job.get('source_ids', [])):
+                        linked_counts[task_id] = linked_counts.get(task_id, 0) + 1
+            for task in tasks:
+                task['processing_task_count'] = linked_counts.get(task['id'], 0)
+            # Stable within each group: retain the original newest-first order.
+            tasks.sort(key=lambda task: -task['processing_task_count'])
         return jsonify(tasks=tasks)
 
     # 【新】采集规范与处理规则分开管理；这里只保存名称和飞书链接。

@@ -1158,7 +1158,7 @@ class DataPlatformArchitectureTests(unittest.TestCase):
 
     def test_record_enums_are_centralized_and_valid(self):
         self.assertEqual(
-            ("合格", "不合格", "操作失误"),
+            ("合格", "不合格", "失误"),
             architecture.QUALITY_CONCLUSIONS,
         )
         self.assertEqual(
@@ -2518,7 +2518,7 @@ class DataPlatformArchitectureTests(unittest.TestCase):
             for expected in (
                 "合格",
                 "不合格",
-                "操作失误",
+                "失误",
                 'data-component="sticky_decision_actions"',
                 "wbx-conclusion-panel",
                 "wbx-operation-panel",
@@ -2632,7 +2632,7 @@ class DataPlatformArchitectureTests(unittest.TestCase):
         self.assertNotIn('class="rule-error-config"', error_module)
         for removed_help_text in (
             "根据规则类型配置判定标准或标注内容",
-            "判定为操作失误的具体条件",
+            "判定为失误的具体条件",
             "判定为质检不合格的具体条件",
             "每个元素均为枚举",
             "选择要维护的动作元素",

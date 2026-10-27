@@ -27,8 +27,8 @@
       if (acceptance) conclusionEntries.push(['采集质检', conclusion(item.collection_qc_result)]);
       else if (!pretraining) conclusionEntries.push(['采集质检', conclusion(item.result)]);
       const conclusions = details(conclusionEntries);
-      const qualityResult = ['合格','不合格','操作失误'].includes(item.result) ? item.result : '-';
-      const qualityClass = {'合格':'pass','操作失误':'mistake','不合格':'fail'}[qualityResult] || '';
+      const qualityResult = ['合格','不合格','失误'].includes(item.result) ? item.result : '-';
+      const qualityClass = {'合格':'pass','失误':'mistake','不合格':'fail'}[qualityResult] || '';
       const showQualityNotes = !(task.id === 'WB-PRETRAINING-QC' && !task.return_to_workbench);
       const qualityDetails = '<div class="wp-quality-'+qualityClass+'">'+escape(qualityResult)+'</div>' +
         (showQualityNotes && (item.qc_error_count || item.reason || item.remark) ? '<div class="wp-quality-errors">'+escape(item.qc_error_count || item.reasons?.length || 1)+'条错误</div>' : '') +

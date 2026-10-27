@@ -91,10 +91,10 @@ async function main(){
     await fill('#dc-record-device','MOZ1-001');await fill('#dc-record-operator','joanna');
     check(await evaluate("!document.querySelector('.dc-record-reset').disabled"),'有筛选时允许一键重置');
     await click('[data-action=reset-record-filters]');
-    check(await evaluate("[...document.querySelectorAll('[data-record-filter]')].every(el=>el.value==='')&&document.activeElement.id==='dc-record-id'&&document.querySelector('.dc-record-reset').disabled"),'重置清空三个筛选并聚焦ID搜索');
+    check(await evaluate("[...document.querySelectorAll('input[data-record-filter]')].every(el=>el.value==='')&&document.querySelector('[data-record-filter=upload]').value==='uploaded'&&document.querySelector('[data-record-filter=conclusion]').value===''&&document.activeElement.id==='dc-record-id'&&document.querySelector('.dc-record-reset').disabled"),'重置清空搜索和采集结论、恢复已上传并聚焦ID搜索');
     await evaluate("document.querySelector('[data-value=records]').focus()");
     await call('Input.dispatchKeyEvent',{type:'keyDown',key:'ArrowRight',code:'ArrowRight'});await call('Input.dispatchKeyEvent',{type:'keyUp',key:'ArrowRight',code:'ArrowRight'});
-    check(await evaluate("document.activeElement.dataset.value==='config'&&document.activeElement.getAttribute('aria-selected')==='true'"),'键盘方向键切换并保留焦点');
+    check(await evaluate("document.activeElement.dataset.value==='processing'&&document.activeElement.getAttribute('aria-selected')==='true'"),'键盘方向键切换到相邻关联处理Tab并保留焦点');
     await call('Input.dispatchKeyEvent',{type:'keyDown',key:'End',code:'End'});await call('Input.dispatchKeyEvent',{type:'keyUp',key:'End',code:'End'});
     check(await evaluate("document.activeElement.dataset.value==='activity'"),'End跳到最后一个Tab');
     await call('Input.dispatchKeyEvent',{type:'keyDown',key:'Home',code:'Home'});await call('Input.dispatchKeyEvent',{type:'keyUp',key:'Home',code:'Home'});
@@ -109,12 +109,13 @@ async function main(){
     await click('[data-action=detail-tab][data-value=config]');await click('[data-action=detail-tab][data-value=records]');
     check((await text('.dc-page-buttons')).includes('2 /'),'切Tab保留数据页码');
     await click('[data-action=record-detail]');await shot('after-record-dialog');await click('[data-action=close-dialog]');
-    await click('[data-action=share-task]');await wait("document.querySelector('.dc-share-card')");check(await count('.dc-share-id')===1,'任务卡正常打开');await click('[data-action=close-dialog]');
+    await click('[data-action=share-task]');await wait("document.querySelector('.dc-share-text')");check(await evaluate("document.querySelector('.dc-share-text').textContent.includes('任务 ID：02602')"),'任务卡正常打开并展示当前任务ID');await click('[data-action=close-dialog]');
     await click('[data-action=change-state]');await wait("document.querySelector('.dc-confirm-metrics')");check(await count('[data-action=confirm-state]')===1,'结束采集仍经过明确确认');await click('[data-action=close-dialog]');
     await nav(base+'/02601#config');check(await count('[data-config-field=prompts],[data-config-field=checkpoint]')===0,'NORMAL配置没有模型字段');
     await nav(base+'/02607#config');check(await count('[data-config-field=location]')===1,'UDAS配置展示地点');await shot('after-udas-config');
     await nav(base+'/02605');check((await text('#dc-record-results')).includes('等待采集数据'),'无采集数据空态正常');await shot('after-empty');
-    await nav(base+'/02606');check(await count('.dc-inline-note')===1,'需收尾任务仍显示已有提醒');await shot('after-review-notice');
+    await nav(base+'/02603');check(await count('.dc-inline-note')===1,'开放且超过48小时无录制的任务显示收尾提醒');await shot('after-review-notice');
+    await nav(base+'/02606');check(await count('.dc-inline-note')===0,'已结束任务不显示收尾提醒');
     await nav(base+'/02604');
     for(const [width,height] of [[1920,1080],[1440,1000],[1280,800],[1024,768],[768,900],[390,844],[320,720],[667,375]]){
       await resize(width,height);await noOverflow(width+'x'+height+'详情无横向溢出');

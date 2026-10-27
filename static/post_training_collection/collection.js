@@ -89,6 +89,33 @@
   if(['uploaded','uploading','failed','all'].includes(params.get('upload')))recordFilters.upload=params.get('upload');
   if(params.get('record'))recordFilters.id=params.get('record');
   let recordPage = 1;
+  const detailContextKey='quanta.collection.detail:'+location.pathname;
+  let processingRecordId='', processingRecordRequest=0;
+  function saveDetailContext(){
+    if(view!=='detail'||!task)return;
+    try{
+      const scroller=detailScroller(),body=document.getElementById('dc-detail-body'),ancestors=[];
+      for(let el=root.parentElement;el;el=el.parentElement)ancestors.push(el.scrollTop);
+      sessionStorage.setItem(detailContextKey+(processingRecordId?':'+processingRecordId:''),JSON.stringify({filters:recordFilters,page:recordPage,tab:activeTab,scroll:scroller?.scrollTop||0,horizontal:scroller?.scrollLeft||0,bodyScroll:body?.scrollTop||0,ancestors,x:scrollX,y:scrollY,drawerScroll:dialog.querySelector('.dc-dialog-body')?.scrollTop||0}));
+    }catch(_){}
+  }
+  function restoreDetailContext(){
+    if(params.has('record'))return;
+    try{
+      const key=detailContextKey+(params.get('processing_record')?':'+params.get('processing_record'):''),value=JSON.parse(sessionStorage.getItem(key));if(!value)return;
+      if(params.has('processing_record'))activeTab='records';
+      Object.assign(recordFilters,recordDefaults,value.filters);recordPage=value.page||1;detailScroll[activeTab]=value.scroll||0;
+      requestAnimationFrame(()=>{
+        const scroller=detailScroller();if(scroller){scroller.scrollTop=value.scroll||0;scroller.scrollLeft=value.horizontal||0;}
+        const body=document.getElementById('dc-detail-body');if(body&&body!==scroller)body.scrollTop=value.bodyScroll||0;
+        let i=0;for(let el=root.parentElement;el;el=el.parentElement)el.scrollTop=value.ancestors?.[i++]||0;
+        window.scrollTo(value.x||0,value.y||0);
+      });
+      return value;
+    }catch(_){}
+  }
+  document.addEventListener('click',event=>{const link=event.target.closest('a');if(view==='detail'&&link?.getAttribute('href')?.startsWith('/data/tasks/'))saveDetailContext();},true);
+  window.addEventListener('pagehide',()=>{if(processingRecordId)saveDetailContext();});
   let checkpointSelection = '', modalOrigin = null;
   let formModeCache = {}, draft = null, formSource = null;
   // 【新】刷新只应用到当前浏览视图；播放器和弹窗使用期间暂存新数据。
@@ -180,14 +207,29 @@
     openDialog('采集任务已创建',`<div class="dc-created-identity"><strong>${esc(task.name)}</strong><span>任务 ID ${esc(task.id)}</span></div>`,
       '<button class="dc-btn" data-action="creation-done">查看采集任务</button><button class="dc-btn primary" data-action="create-processing">继续创建处理任务</button>');
   }
+  function recordProcessingResultTone(result){
+    return ({'合格':'teal','已完成':'teal','不合格':'red','失误':'amber'})[result]||'';
+  }
   async function showRecordProcessing(id){
     const record=task.records.find(r=>r.id===id);if(!record)return;
-    openDialog('关联处理任务','<p role="status">正在加载…</p>');
+    const origin=root.querySelector(`[data-action="record-processing"][data-id="${CSS.escape(id)}"]`);
+    openDialog('关联处理任务',`<div class="dc-record-processing-identity"><span>数据 ID</span><strong>${esc(id)}</strong></div><div class="dc-record-processing-content" aria-live="polite"><p role="status">正在加载…</p></div>`);
+    if(origin)modalOrigin=origin;
+    dialog.classList.add('dc-record-processing-drawer');
+    processingRecordId=id;
+    const requestId=++processingRecordRequest;
+    const current=()=>dialog.open&&processingRecordId===id&&requestId===processingRecordRequest;
+    const url=new URL(location.href);url.searchParams.set('processing_record',id);url.hash='records';history.replaceState(null,'',url.pathname+url.search+url.hash);
     try{
       const {tasks:jobs}=await request('/processing/tasks?collection='+encodeURIComponent(task.id)+'&record='+encodeURIComponent(id));
-      if(!dialog.open)return;
-      dialog.querySelector('.dc-dialog-body').innerHTML=`<p class="dc-processing-record-id">${esc(id)}</p>${jobs.length?jobs.map(job=>`<article class="dc-record-processing-card"><a href="${esc(job.href)}">${esc(job.name)}</a><span>${esc(job.id)}</span>${job.stage_progress.map(p=>`<div class="dc-processing-stage-status"><strong>${esc(p.stage)}</strong><span class="dc-badge ${processingStatusTone(p.status)}">${esc(p.label)}</span></div>`).join('')}</article>`).join(''):'<div class="dc-processing-empty">此条数据尚未纳入处理任务</div>'}`;
-    }catch(error){dialog.querySelector('.dc-dialog-body').innerHTML=`<p role="alert">${esc(error.message)}</p><button class="dc-btn" data-action="record-processing" data-id="${esc(id)}">重试</button>`;}
+      if(!current())return;
+      dialog.querySelector('.dc-record-processing-content').innerHTML=jobs.length?`<table class="dc-record-processing-table"><colgroup><col><col class="dc-record-processing-id-col"><col class="dc-record-processing-stage-col"><col class="dc-record-processing-result-col"><col class="dc-record-processing-action-col"></colgroup><thead><tr><th scope="col">处理任务</th><th scope="col">任务 ID</th><th scope="col">环节</th><th scope="col">处理结果</th><th scope="col">操作</th></tr></thead>${jobs.map(job=>{
+        const query=new URLSearchParams({collection:task.id,data_id:id,return_collection:task.id,return_record:id,return_tab:'records'});
+        const href='/data/tasks/'+encodeURIComponent(job.id)+'?'+query;
+        const stages=job.record_stages?.length?job.record_stages:[{stage:'-',result:'-'}];
+        return `<tbody class="dc-record-processing-group">${stages.map((p,index)=>`<tr>${index===0?`<td rowspan="${stages.length}" class="dc-record-processing-name">${esc(job.name)}</td><td rowspan="${stages.length}" class="dc-record-processing-job-id">${esc(job.id)}</td>`:''}<td>${esc(p.stage)}</td><td><span class="dc-badge ${recordProcessingResultTone(p.result)}">${esc(p.result)}</span></td>${index===0?`<td rowspan="${stages.length}"><a class="dc-link dc-record-processing-data" href="${esc(href)}" aria-label="查看处理数据：${esc(job.name)}">查看处理数据</a></td>`:''}</tr>`).join('')}</tbody>`;
+      }).join('')}</table>`:'<div class="dc-processing-empty">此条数据暂无关联处理任务</div>';
+    }catch(error){if(current())dialog.querySelector('.dc-record-processing-content').innerHTML=`<p role="alert">${esc(error.message)}</p><button class="dc-btn" data-action="record-processing" data-id="${esc(id)}">重试</button>`;}
   }
   function recordProcessingCell(record){
     const links=processingJobs.filter(job=>(job.records||[]).some(item=>item.id===record.id&&item.task_id===task.id));
@@ -539,12 +581,14 @@
     releaseRecordVideo();
     window.CollectionTrajectory?.release();
     if(!dialog.open)modalOrigin=document.activeElement;
-    dialog.classList.remove('dc-share-dialog','dc-generalization-dialog','dc-trajectory-dialog');
+    processingRecordId='';processingRecordRequest++;
+    dialog.classList.remove('dc-share-dialog','dc-generalization-dialog','dc-trajectory-dialog','dc-record-processing-drawer');
     dialog.innerHTML=`<header class="dc-dialog-head"><h2 id="dc-dialog-title">${esc(title)}</h2><button class="dc-remove" data-action="close-dialog" aria-label="关闭弹窗">×</button></header><div class="dc-dialog-body">${body}</div><footer class="dc-dialog-foot">${footer || '<button class="dc-btn" data-action="close-dialog">关闭</button>'}</footer>`;
     dialog.showModal();
   }
   function closeDialog() { releaseRecordVideo();window.CollectionTrajectory?.release();dialog.close(); }
-  dialog.addEventListener('close',()=>{if(dialog.open)return;releaseRecordVideo();window.CollectionTrajectory?.release();generalizationEditor=null;dialog.classList.remove('dc-generalization-dialog');applyPendingRefresh();if(modalOrigin?.isConnected)modalOrigin.focus({preventScroll:true});});
+  dialog.addEventListener('keydown',event=>{if(event.key==='Escape'&&dialog.classList.contains('dc-record-processing-drawer')){event.preventDefault();closeDialog();}});
+  dialog.addEventListener('close',()=>{if(dialog.open)return;processingRecordId='';processingRecordRequest++;const url=new URL(location.href);if(url.searchParams.has('processing_record')){url.searchParams.delete('processing_record');history.replaceState(null,'',url.pathname+url.search+url.hash);}releaseRecordVideo();window.CollectionTrajectory?.release();generalizationEditor=null;dialog.classList.remove('dc-generalization-dialog','dc-record-processing-drawer');applyPendingRefresh();if(modalOrigin?.isConnected)modalOrigin.focus({preventScroll:true});});
   function openCheckpointPicker() {
     checkpointSelection=form.checkpoint;
     openDialog('选择 Checkpoint', `<label class="dc-search" style="display:block;width:100%">${icon('search')}<input class="dc-input" id="dc-checkpoint-search" placeholder="搜索名称或 ID" aria-label="搜索 Checkpoint"></label><div id="dc-checkpoint-options" class="dc-picker-items"></div>`,`<button class="dc-btn" data-action="close-dialog">取消</button><button class="dc-btn primary" data-action="confirm-checkpoint">确认选择</button>`);
@@ -648,12 +692,56 @@
       renderTaskConfiguration(el);
     }
   }
+  function processingDataUrl(job){
+    const query=new URLSearchParams({collection:task.id,return_collection:task.id,return_tab:'processing'});
+    return '/data/tasks/'+encodeURIComponent(job.id)+'?'+query;
+  }
+  function processingProgressBar(p){
+    const total=Math.max(0,Number(p.total)||0),done=Math.min(total,Math.max(0,Number(p.done)||0));
+    const quality=p.stage==='质检',passed=Number(p.passed)||0,failed=Number(p.failed)||0,mistake=Number(p.mistake)||0;
+    const groups=quality?[
+      ['passed','合格',passed],['failed','不合格',failed],['mistake','失误',mistake],['remaining','未完成',Math.max(0,total-passed-failed-mistake)]
+    ]:[['annotated','已完成',done],['remaining','未完成',total-done]];
+    const detail=groups.map(([,label,count])=>`${label} ${count}`).join(' · ');
+    const segments=groups.filter(([, ,count])=>count>0).map(([tone,label,count])=>`<span class="dc-progress-segment ${tone}" style="flex-grow:${count}" tabindex="0" title="${esc(label)}：${count}" aria-label="${esc(p.stage)}${esc(label)}：${count}">${count}</span>`).join('');
+    return `<div class="dc-processing-progress"><span class="dc-progress-stage-label">${esc(p.stage)}</span>${total?`<div class="dc-progress-track" role="group" aria-label="${esc(p.stage)}：${esc(detail)}">${segments}</div>`:'<span class="dc-progress-empty">—</span>'}</div>`;
+  }
   function renderProcessingTab(el){
     const summary=processingSummary();
     if(processingError){el.innerHTML=`<div class="dc-processing-empty"><p role="alert">关联处理任务加载失败：${esc(processingError)}</p><button class="dc-btn" data-action="retry-processing">重试</button></div>`;return;}
     if(processingLoading&&!processingJobs.length){el.innerHTML='<div class="dc-processing-loading">正在加载关联处理任务…</div>';return;}
-    el.innerHTML=`<div class="dc-detail-content dc-processing-content-tab"><div class="dc-processing-tab-head"><div><h2>关联处理</h2></div><button class="dc-btn primary" data-action="create-processing">+ 创建处理任务</button></div>
-      ${processingJobs.length?`<div class="dc-processing-summary"><div><span>关联处理任务</span><strong>${summary.count}</strong></div><div><span>处理中</span><strong>${summary.active}</strong></div><div><span>已完成</span><strong>${summary.completed}</strong></div><div><span>涉及数据</span><strong>${summary.records}</strong></div></div><div class="dc-processing-table-wrap"><table class="dc-table dc-processing-table"><thead><tr><th>处理任务</th><th>类型</th><th>数据范围</th><th>处理进度</th><th>状态</th><th>操作</th></tr></thead><tbody>${processingJobs.map(job=>`<tr><td><a class="dc-processing-task-name" href="/data/processing-tasks?linked=${encodeURIComponent(job.id)}">${esc(job.name)}</a><span class="dc-processing-task-id">${esc(job.id)}</span></td><td>${esc(Object.keys(job.stages).join(' / '))}</td><td><strong>${job.selected_count}</strong> / ${task.metrics.uploaded} 已纳入</td><td>${job.stage_progress.map(progress=>`<div class="dc-processing-progress"><span>${esc(progress.stage)}</span><i><b style="width:${progress.total?Math.round(progress.done/progress.total*100):0}%"></b></i><em>${progress.done}/${progress.total}</em></div>`).join('')}</td><td><span class="dc-badge ${processingStatusTone(job.status)}">${esc(job.status_label||processingStatusLabel(job.status))}</span>${job.new_count?`<small class="dc-processing-new-count">+${job.new_count} 条待纳入</small>`:''}</td><td><div class="dc-processing-row-actions"><a class="dc-link" href="/data/processing-tasks?linked=${encodeURIComponent(job.id)}">查看</a></div></td></tr>`).join('')}</tbody></table></div>`:'<div class="dc-processing-empty"><h3>还没有关联处理任务</h3></div>'}</div>`;
+    el.innerHTML=`<div class="dc-detail-content dc-processing-content-tab"><div class="dc-processing-tab-head"><div class="dc-processing-summary"><div><span>关联处理任务</span><strong>${summary.count}</strong></div><div><span>关联数据</span><strong>${summary.records}</strong></div></div><button class="dc-btn primary" data-action="create-processing">+ 创建处理任务</button></div>
+    ${processingJobs.length?`
+    <div class="dc-processing-table-wrap"><table class="dc-table dc-processing-table"><thead><tr><th>处理任务</th><th>本采集任务数据</th><th>处理进度 <span class="dc-progress-help" tabindex="0" aria-label="进度说明" aria-describedby="dc-progress-legend">?<span id="dc-progress-legend" class="dc-progress-legend" role="tooltip" popover="manual"><strong>走完环节全部必经节点才计入完成</strong><span><i class="passed"></i>质检合格 <i class="failed"></i>质检不合格 <i class="mistake"></i>失误</span><span><i class="annotated"></i>标注已完成 <i class="remaining"></i>未完成</span><small>待验收、驳回返工均计入未完成；仅统计本采集任务的数据。</small></span></span></th><th>创建人</th><th>创建时间</th><th>操作</th></tr></thead><tbody>${processingJobs.map(job=>`<tr><td><a class="dc-processing-task-name" href="${esc(processingDataUrl(job))}">${esc(job.name)}</a><span class="dc-processing-task-id">${esc(job.id)}</span></td><td><a href="${esc(processingDataUrl(job))}">${job.selected_count}</a></td><td><div class="dc-processing-progress-stack">${job.stage_progress.map(processingProgressBar).join('')}</div></td><td class="dc-processing-creator" title="${esc(job.creator||'-')}">${esc(job.creator||'-')}</td><td class="dc-processing-created-at">${esc(job.created_at?job.created_at.replace('T',' ').slice(0,16):'-')}</td><td><div class="dc-processing-row-actions"><a class="dc-link" href="${esc(processingDataUrl(job))}">查看数据</a></div></td></tr>`).join('')}</tbody></table></div>`:'<div class="dc-processing-empty"><h3>还没有关联处理任务</h3></div>'}</div>`;
+  }
+  // Keep the legend in the top layer so it cannot be clipped by the scrolling table.
+  root.addEventListener('pointerover',event=>{
+    const trigger=event.target.closest('.dc-progress-help');
+    if(trigger&&!trigger.contains(event.relatedTarget))showProgressLegend(trigger);
+  });
+  root.addEventListener('focusin',event=>{
+    const trigger=event.target.closest('.dc-progress-help');
+    if(trigger)showProgressLegend(trigger);
+  });
+  root.addEventListener('pointerout',event=>{
+    const trigger=event.target.closest('.dc-progress-help');
+    if(trigger&&!trigger.contains(event.relatedTarget)&&document.activeElement!==trigger)hideProgressLegend();
+  });
+  root.addEventListener('focusout',hideProgressLegend);
+  document.addEventListener('keydown',event=>{if(event.key==='Escape')hideProgressLegend();});
+  addEventListener('scroll',hideProgressLegend,true);
+  addEventListener('resize',hideProgressLegend);
+  function hideProgressLegend(){
+    const legend=document.querySelector('.dc-progress-legend:popover-open');
+    if(legend)legend.hidePopover();
+  }
+  function showProgressLegend(trigger){
+    const legend=trigger.querySelector('.dc-progress-legend');
+    if(!legend)return;
+    legend.showPopover();
+    const anchor=trigger.getBoundingClientRect(),popup=legend.getBoundingClientRect();
+    legend.style.left=Math.max(12,Math.min(innerWidth-popup.width-12,anchor.right-popup.width))+'px';
+    legend.style.top=(anchor.bottom+8+popup.height<=innerHeight-12?anchor.bottom+8:Math.max(12,anchor.top-popup.height-8))+'px';
   }
   // 【新】日志描述平台内的修改事实，不作为飞书规范或录制执行版本证明。
   function renderLogChanges(changes) {
@@ -986,7 +1074,7 @@
         formSource=form.source;
         try{const stored=JSON.parse(localStorage.getItem(draftKey));if(stored?.form?.source===formSource&&Array.isArray(stored.form.prompts)&&Array.isArray(stored.form.generalization)&&Array.isArray(stored.form.tags))draft=stored;}catch(_){/* Ignore unavailable or invalid storage. */}
         renderForm();
-      } else {task=(await request('/tasks/'+encodeURIComponent(route[0]))).task;await loadProcessingLinks(false);lastRefreshedAt=Date.now();renderDetail();if(params.has('saved')){toast(params.get('saved')==='unchanged'?'未发现修改':'任务已保存');const url=new URL(location.href);url.searchParams.delete('saved');history.replaceState(null,'',url.pathname+url.search);}if(params.get('card')==='1')await openShareCard();if(params.get('created')==='1')showCreateSuccess();if(params.has('processing_created'))toast('处理任务已创建，可在关联处理中查看并发布');}
+      } else {task=(await request('/tasks/'+encodeURIComponent(route[0]))).task;await loadProcessingLinks(false);lastRefreshedAt=Date.now();const restored=restoreDetailContext();renderDetail();if(params.get('processing_record')){const record=params.get('processing_record');root.querySelector(`[data-action="record-processing"][data-id="${CSS.escape(record)}"]`)?.focus({preventScroll:true});await showRecordProcessing(record);if(dialog.open)dialog.querySelector('.dc-dialog-body').scrollTop=restored?.drawerScroll||0;}if(params.has('saved')){toast(params.get('saved')==='unchanged'?'未发现修改':'任务已保存');const url=new URL(location.href);url.searchParams.delete('saved');history.replaceState(null,'',url.pathname+url.search+url.hash);}if(params.get('card')==='1')await openShareCard();if(params.get('created')==='1')showCreateSuccess();if(params.has('processing_created'))toast('处理任务已创建，可在关联处理中查看并发布');}
     } catch(error) { ready(pageHead('数据采集','')+`<section class="dc-panel">${empty('暂时无法加载',error.message,'<button class="dc-btn" data-action="retry">重新加载</button>')}</section>`); }
   }
   init();

@@ -149,7 +149,7 @@ PAGE_SPECS = {
         "title": "处理任务",
         "subtitle": "用筛选条件接收数据，并编排多个独立处理流程",
         "icon": "&#9776;",
-        "nav_badge": "S027",
+        "nav_badge": "S028",
     },
     "allocation_management": {
         "path": "/data/allocations",
@@ -419,7 +419,7 @@ WORKBENCH_COMPONENTS = {
     "tag_viewer": ("标签信息", "场景、动作、设备与质量标签"),
     "high_low_editor": ("High/Low level 编辑器", "编辑 highlevel 与 lowlevel 两级动作描述"),
     "action_element_editor": ("动作元素编辑器", "编辑动作元素与动作描述"),
-    "conclusion_selector": ("结论选择", "合格、不合格、操作失误三类业务结论"),
+    "conclusion_selector": ("结论选择", "合格、不合格、失误三类业务结论"),
     "workbench_log": ("处理日志", "查看当前数据的处理、提交与退回日志"),
     "task_actions": ("任务操作", "提交、驳回与后续任务流转"),
     "submit_actions": ("提交操作栏", "只展示提交与暂离"),
@@ -474,7 +474,7 @@ PROCESSING_FLOWS = [
         "name": "端到端切分标注流程",
         "stage": "标注",
         "version": "v2",
-        "input_contract": "quality_conclusion=合格/操作失误",
+        "input_contract": "quality_conclusion=合格/失误",
         "output_contract": "annotation_payload + annotation_version",
         "human_nodes": ["供应商抽验", "供应商复核", "供应商验收", "内部验收"],
         "preview_nodes": [
@@ -523,7 +523,7 @@ PROCESSING_FLOWS = [
         "name": "双轮人工标注流程",
         "stage": "标注",
         "version": "v2",
-        "input_contract": "quality_conclusion=合格/操作失误",
+        "input_contract": "quality_conclusion=合格/失误",
         "output_contract": "annotation_payload + annotation_version",
         "human_nodes": ["标注", "抽验"],
     },
@@ -771,7 +771,7 @@ PROJECT_MANAGEMENT_ITEMS = [
     },
 ]
 
-QUALITY_CONCLUSIONS = ("合格", "不合格", "操作失误")
+QUALITY_CONCLUSIONS = ("合格", "不合格", "失误")
 ANNOTATION_STATUSES = ("未标注", "已标注")
 UPLOAD_STATUSES = ("未上传", "上传中", "上传成功", "上传失败")
 COLLECTION_CONCLUSIONS = ("成功", "失败")
@@ -955,13 +955,13 @@ BUSINESS_TASKS = [
         "enabled": True,
         "task_status": "published",
         "runtime_status": "正常",
-        "filter_summary": "所属项目=预训练采集；采集任务=20197；采集任务 ID=20197；数据 ID=406006；质检结论=合格/操作失误",
+        "filter_summary": "所属项目=预训练采集；采集任务=20197；采集任务 ID=20197；数据 ID=406006；质检结论=合格/失误",
         "filter_rules": [
             ("所属项目", "等于", "预训练采集"),
             ("采集任务", "等于", "20197"),
             ("采集任务 ID", "等于", "20197"),
             ("数据 ID", "等于", "406006"),
-            ("质检结论", "等于", "合格,操作失误"),
+            ("质检结论", "等于", "合格,失误"),
         ],
         "flow_bindings": [
             ("标注", "端到端切分标注流程", "v2", "端到端切分标注规则"),
@@ -1045,10 +1045,10 @@ BUSINESS_TASKS = [
         "enabled": True,
         "task_status": "published",
         "runtime_status": "正常",
-        "filter_summary": "所属项目=demo 项目；质检结论=合格/操作失误",
+        "filter_summary": "所属项目=demo 项目；质检结论=合格/失误",
         "filter_rules": [
             ("所属项目", "demo 项目"),
-            ("质检结论", "合格、操作失误"),
+            ("质检结论", "合格、失误"),
         ],
         "flow_bindings": [
             ("标注", "双轮人工标注流程", "v2"),
@@ -1460,7 +1460,7 @@ TASK_DETAIL_RECORDS = {
             "device": "UDAS-007",
             "node": "上传",
             "collection": "成功",
-            "quality": "操作失误",
+            "quality": "失误",
             "annotation": "未标注",
             "acceptance": "待验收",
             "operators": "采集：刘素粉",
@@ -1496,7 +1496,7 @@ TASK_DETAIL_RECORDS = {
             "device": "MOZ2-20197-02",
             "node": "供应商抽验",
             "collection": "成功",
-            "quality": "操作失误",
+            "quality": "失误",
             "annotation": "未标注",
             "acceptance": "待验收",
             "operators": "标注：光轮智能",
@@ -1532,7 +1532,7 @@ TASK_DETAIL_RECORDS = {
             "device": "MOZ2-20197-05",
             "node": "供应商复核",
             "collection": "成功",
-            "quality": "操作失误",
+            "quality": "失误",
             "annotation": "未标注",
             "acceptance": "待验收",
             "operators": "标注：光轮智能",
@@ -1568,7 +1568,7 @@ TASK_DETAIL_RECORDS = {
             "device": "MOZ2-20197-08",
             "node": "内部验收",
             "collection": "成功",
-            "quality": "操作失误",
+            "quality": "失误",
             "annotation": "已标注",
             "acceptance": "进行中",
             "operators": "验收：joanna.qiao",
@@ -1605,7 +1605,7 @@ TASK_DETAIL_RECORDS = {
             "device": "UDAS-007",
             "node": "质检",
             "collection": "成功",
-            "quality": "操作失误",
+            "quality": "失误",
             "annotation": "未标注",
             "acceptance": "待验收",
             "operators": "质检：包媛桐",
@@ -1673,7 +1673,7 @@ TASK_DETAIL_RECORDS = {
             "device": "UDAS-007",
             "node": "质检",
             "collection": "成功",
-            "quality": "操作失误",
+            "quality": "失误",
             "annotation": "未标注",
             "acceptance": "待验收",
             "operators": "质检：包媛桐",
@@ -2072,7 +2072,7 @@ DATA_MANAGEMENT_RECORDS = [
         "versions": [
             ("v3", "2026-07-27 09:42", "合格", "已标注", "修正动作边界 2 处"),
             ("v2", "2026-07-26 18:10", "合格", "已标注", "完成动作分段初标"),
-            ("v1", "2026-07-25 14:36", "操作失误", "未标注", "原始采集版本"),
+            ("v1", "2026-07-25 14:36", "失误", "未标注", "原始采集版本"),
         ],
     },
     {
@@ -2095,7 +2095,7 @@ DATA_MANAGEMENT_RECORDS = [
         ],
         "versions": [
             ("v2", "2026-07-27 08:22", "合格", "未标注", "完成质检与 Episode 切分"),
-            ("v1", "2026-07-24 09:08", "操作失误", "未标注", "原始采集版本"),
+            ("v1", "2026-07-24 09:08", "失误", "未标注", "原始采集版本"),
         ],
     },
     {
@@ -2106,18 +2106,18 @@ DATA_MANAGEMENT_RECORDS = [
         "operator": "刘素粉",
         "upload": "上传中",
         "collection": "成功",
-        "quality": "操作失误",
+        "quality": "失误",
         "annotation": "未标注",
         "flows": [
             {
                 "name": "厨房数据质检流程 v3",
                 "node": "时间戳对齐",
-                "quality": "操作失误",
+                "quality": "失误",
                 "annotation": "未标注",
             }
         ],
         "versions": [
-            ("v1", "2026-07-24 08:46", "操作失误", "未标注", "原始采集版本"),
+            ("v1", "2026-07-24 08:46", "失误", "未标注", "原始采集版本"),
         ],
     },
     {
@@ -2146,7 +2146,7 @@ DATA_MANAGEMENT_RECORDS = [
         ],
         "versions": [
             ("v2", "2026-07-26 16:03", "不合格", "未标注", "缺失右腕相机片段"),
-            ("v1", "2026-07-24 08:15", "操作失误", "未标注", "原始采集版本"),
+            ("v1", "2026-07-24 08:15", "失误", "未标注", "原始采集版本"),
         ],
     },
     {
@@ -2176,7 +2176,7 @@ DATA_MANAGEMENT_RECORDS = [
         "versions": [
             ("v3", "2026-07-26 20:18", "合格", "已标注", "完成标注复核"),
             ("v2", "2026-07-24 11:06", "合格", "未标注", "完成格式标准化"),
-            ("v1", "2026-07-22 14:20", "操作失误", "已标注", "供应商原始版本"),
+            ("v1", "2026-07-22 14:20", "失误", "已标注", "供应商原始版本"),
         ],
     },
     {
@@ -2187,18 +2187,18 @@ DATA_MANAGEMENT_RECORDS = [
         "operator": "供应商 Batch-12",
         "upload": "未上传",
         "collection": "失败",
-        "quality": "操作失误",
+        "quality": "失误",
         "annotation": "已标注",
         "flows": [
             {
                 "name": "三方数据导入质检流程 v4",
                 "node": "Schema 校验",
-                "quality": "操作失误",
+                "quality": "失误",
                 "annotation": "已标注",
             }
         ],
         "versions": [
-            ("v1", "2026-07-22 14:24", "操作失误", "已标注", "供应商原始版本"),
+            ("v1", "2026-07-22 14:24", "失误", "已标注", "供应商原始版本"),
         ],
     },
 ]
@@ -2562,7 +2562,7 @@ def _record_tag(value):
         "合格": "green",
         "失败": "red",
         "不合格": "red",
-        "操作失误": "red",
+        "失误": "red",
         "进行中": "orange",
         "处理中": "orange",
         "上传中": "blue",
@@ -3654,7 +3654,7 @@ def render_processing_tasks():
       '采集时间': {{type:'datetime_range'}},
       '数据 ID': {{type:'text', placeholder:'多个数据 ID 请用英文逗号隔开'}},
       '是否完成质检': {{type:'single', options:['是', '否'], ruleStage:'质检'}},
-      '质检结果': {{type:'multi', options:['合格', '不合格', '操作失误'], ruleStage:'质检'}},
+      '质检结果': {{type:'multi', options:['合格', '不合格', '失误'], ruleStage:'质检'}},
       '是否完成采集自检': {{type:'single', options:['是', '否'], ruleStage:'自检', anyRuleOnly:true}},
       '采集自检结果': {{type:'single', options:['合格', '不合格'], ruleStage:'自检', anyRuleOnly:true}},
       '是否完成标注': {{type:'single', options:['是', '否'], ruleStage:'标注'}}
@@ -4855,7 +4855,7 @@ def _render_allocation_management_legacy():
       </select></div>
       <div class="ff"><label>来源任务 ID</label><input id="dprFlowSourceTask" placeholder="请输入任务 ID"></div>
       <div class="ff"><label>质检结论</label><select id="dprFlowQuality">
-        <option value="">全部结论</option><option>合格</option><option>不合格</option><option>操作失误</option>
+        <option value="">全部结论</option><option>合格</option><option>不合格</option><option>失误</option>
       </select></div>
       <div class="ff"><label>标注状态</label><select id="dprFlowAnnotation">
         <option value="">全部状态</option><option>未标注</option><option>已标注</option>
@@ -5430,7 +5430,7 @@ def render_allocation_management_old():
       <div class="ff"><label>来源任务 ID</label>
         <input id="dprReprocessSourceTask" placeholder="请输入任务 ID"></div>
       <div class="ff"><label>质检结论</label><select id="dprReprocessQuality">
-        <option value="">全部结论</option><option>合格</option><option>不合格</option><option>操作失误</option>
+        <option value="">全部结论</option><option>合格</option><option>不合格</option><option>失误</option>
       </select></div>
       <div class="ff"><label>标注状态</label><select id="dprReprocessAnnotation">
         <option value="">全部状态</option><option>未标注</option><option>已标注</option>
@@ -6212,7 +6212,7 @@ def render_allocation_management():
               <input id="dprDispatchReprocessTask" placeholder="请输入任务 ID"></div>
             <div class="ff"><label>质检结论</label>
               <select id="dprDispatchReprocessQuality"><option value="">全部结论</option>
-                <option>合格</option><option>不合格</option><option>操作失误</option></select></div>
+                <option>合格</option><option>不合格</option><option>失误</option></select></div>
             <div class="ff"><label>标注状态</label>
               <select id="dprDispatchReprocessAnnotation"><option value="">全部状态</option>
                 <option>未标注</option><option>已标注</option></select></div>
@@ -6749,17 +6749,64 @@ def render_allocation_management():
     )
 
 
-def render_task_detail(task_id):
-    task = next((item for item in BUSINESS_TASKS if item["id"] == task_id), None)
+def render_task_detail(task_id, *, task=None, records=None, page=1, record_filter='', source_filter='', return_source='', return_record='', return_tab=''):
+    task = task or next((item for item in BUSINESS_TASKS if item["id"] == task_id), None)
     if not task or task["type"] == "data_import_task":
         raise KeyError(f"unknown task: {task_id}")
-    records = TASK_DETAIL_RECORDS.get(task_id, [])
-    back_path = (
-        "/data/collection-plans"
-        if task["type"] == "data_collection_task"
-        else "/data/processing-tasks"
-    )
-    back_label = "采集方案" if task["type"] == "data_collection_task" else "处理任务"
+    records = TASK_DETAIL_RECORDS.get(task_id, []) if records is None else records
+    record_positions = {record['id']: index for index, record in enumerate(records)}
+    linked = bool(task.get('source_tasks'))
+    processing_page = task["type"] == "data_processing_task"
+    sources = task.get('source_tasks', []) if linked else []
+    # Navigation context is explicit: selecting a source never invents an entry path.
+    if not linked or return_source not in {source['id'] for source in sources}:
+        return_source = ''
+    return_tab = 'records' if return_tab == 'records' or (not return_tab and return_record) else 'processing'
+    if not return_source or not any(r['id'] == return_record and r.get('task_id') == return_source for r in records):
+        return_record = ''
+    linked_context = ''
+    pager = '''<div class="mini-pager">
+        <select><option>10条/页</option></select>
+        <span class="pg-btn">&lsaquo;</span><span class="pg-btn active">1</span>
+        <span class="pg-btn">2</span><span class="pg-btn">3</span>
+        <span class="muted">...</span><span class="pg-btn">18</span>
+        <span class="pg-btn">&rsaquo;</span><input class="pg-goto"><span class="pg-go">go</span>
+      </div>'''
+    if processing_page:
+        from urllib.parse import urlencode
+        from flask import has_request_context, request
+        current_url = request.full_path.rstrip('?') if has_request_context() else '/data/tasks/' + task_id
+        records = [r for r in records if not source_filter or r.get('task_id' if linked else 'collection_id') == source_filter]
+        records = [r for r in records if not record_filter or record_filter.lower() in r['id'].lower()]
+        total = len(records)
+        def record_completed(record):
+            if linked:
+                return bool(record['stage_states']) and all(label == '已完成' for _, label in record['stage_states'])
+            states = {'质检': record.get('quality') in ('合格', '不合格', '失误'),
+                      '标注': record.get('annotation') == '已标注', '验收': record.get('acceptance') in ('已验收', '已完成')}
+            stages = [binding[0] for binding in task.get('flow_bindings', [])]
+            return bool(stages) and all(states.get(stage, False) for stage in stages)
+        completed = sum(record_completed(record) for record in records)
+        task = dict(task, input_count=total, processed_count=completed, backlog_count=total-completed)
+        page_count = max(1, (total + 9) // 10)
+        page = min(max(1, page), page_count)
+        records = records[(page-1)*10:page*10]
+        page_links = ''.join(
+            f'<a class="pg-btn {"active" if index == page else ""}" href="?{_e(urlencode(dict(page=index, data_id=record_filter, collection=source_filter, return_collection=return_source, return_record=return_record, return_tab=return_tab)))}">{index}</a>'
+            for index in sorted({1, page_count, *range(max(1, page-2), min(page_count, page+2)+1)}))
+        pager = f'<div class="mini-pager"><span>共 {total} 条</span>{page_links}<span>10 条/页</span></div>'
+    if return_source:
+        back_path = f"/data/post-training-collection/{_e(return_source)}#{return_tab}"
+        if return_record:
+            back_path = _e('/data/post-training-collection/' + return_source + '?' + urlencode({'processing_record': return_record}) + '#records')
+        back_label = f"采集任务 {_e(return_source)}"
+    else:
+        back_path = (
+            "/data/collection-plans"
+            if task["type"] == "data_collection_task"
+            else "/data/processing-tasks"
+        )
+        back_label = "采集方案" if task["type"] == "data_collection_task" else "处理任务列表"
     is_collection_task = task["type"] == "data_collection_task"
     rows = ""
     for record_index, record in enumerate(records):
@@ -6789,29 +6836,42 @@ def render_task_detail(task_id):
             """
         else:
             flow_bindings = task.get("flow_bindings", [])
-            binding = flow_bindings[record_index % len(flow_bindings)] if flow_bindings else (
+            binding = flow_bindings[record_positions[record['id']] % len(flow_bindings)] if flow_bindings else (
                 "—",
                 "未绑定流程",
                 "—",
             )
             stage = binding[0]
+            stage_html = _record_tag(stage)
+            node_html = _e(record.get('node', '-'))
+            if linked:
+                stage_html = _record_tag(record['current_stage']) if record.get('current_stage') else '—'
+                node_html = _e(record.get('node')) if record.get('node') not in (None, '', '-', '—') else '—'
             workbench_task = record.get("workbench_task", "WB-2026-0922-AC")
+            action_html = (
+                f'<a href="{_e("/data/workbench-v2/edit?" + urlencode(dict(mode="annotation", task=task_id, recording_id=record["id"], source_collection=record["task_id"], linked_processing="1", entry="task-data", return_to=current_url)))}">查看标注</a>'
+                if linked else
+                f'<a href="{_e("/data/workbench-v2/edit?" + urlencode(dict(mode="annotation", task=workbench_task, recording_id=record["id"], entry="task-data", return_to=current_url)))}">查看标注</a>'
+            )
+            video_html = '<span class="vid-thumb"></span>' * 3
+            if linked:
+                video_html = ''.join(f'<button type="button" class="vid-thumb" data-linked-video="{_e(record["id"])}" data-source="{_e(record["task_id"])}" data-camera="{camera}" aria-label="播放{label}视频"></button>' for camera,label in [('head','头部'),('left','左臂'),('right','右臂')])
             rows += f"""
         <tr>
           <td><code>{_e(record["id"])}</code></td>
           <td>
             <div class="dpr-video-group" aria-label="三路采集视频">
-              <span class="vid-thumb"></span><span class="vid-thumb"></span><span class="vid-thumb"></span>
+              {video_html}
             </div>
           </td>
           <td><code>{_e(record["device"])}</code></td>
           <td>{_record_tag(record["collection"])}</td>
           <td>{_record_tag(record["quality"])}</td>
           <td>{_record_tag(record["annotation"])}</td>
-          <td>{_record_tag(stage)}</td>
-          <td>{_e(record["node"])}</td>
+          <td>{stage_html}</td>
+          <td>{node_html}</td>
           <td class="dpr-record-actions">
-            <a href="/data/workbench-v2/edit?mode=annotation&amp;task={_e(workbench_task)}&amp;recording_id={_e(record["id"])}&amp;entry=task-data">查看标注</a>
+            {action_html}
           </td>
         </tr>
         """
@@ -6861,8 +6921,33 @@ def render_task_detail(task_id):
       </div>
         """
 
+    if processing_page:
+        linked_context += '''<style>
+        .dpr-record-top>div{min-width:0;flex-wrap:wrap}.dpr-record-top b{overflow-wrap:anywhere}
+        .dpr-record-filters{display:flex;align-items:flex-end;gap:16px;flex-wrap:wrap}
+        .dpr-record-filters .ff{width:220px;flex:0 0 220px;min-width:0}
+        .dpr-record-filters input,.dpr-record-filters select{width:100%;box-sizing:border-box}
+        .dpr-record-summary{flex-wrap:wrap;gap:8px}
+        .dpr-record-table th,.dpr-record-table td{white-space:nowrap}
+        </style>'''
+        reset_params = {'return_collection': return_source, 'return_tab': return_tab} if return_source else {}
+        if return_record:
+            reset_params['return_record'] = return_record
+        reset_path = f'/data/tasks/{task_id}' + ('?' + urlencode(reset_params) if reset_params else '')
+        filter_html = f'''<form class="fb-labeled dpr-record-filters" method="get">
+        <div class="ff"><label for="linkedDataId">数据 ID</label><input id="linkedDataId" name="data_id" value="{_e(record_filter)}" placeholder="请输入数据 ID"></div>
+        <div class="ff dpr-source-filter"><label for="processingCollectionId">采集任务 ID</label><input id="processingCollectionId" name="collection" type="search" value="{_e(source_filter)}" placeholder="请输入采集任务 ID"></div>
+        <input type="hidden" name="return_collection" value="{_e(return_source)}">
+        <input type="hidden" name="return_record" value="{_e(return_record)}">
+        <input type="hidden" name="return_tab" value="{_e(return_tab)}">
+        <div class="filter-actions"><a class="btn btn-tertiary" href="{_e(reset_path)}">清空</a><button class="btn btn-primary" type="submit">查询</button></div>
+      </form>'''
+
+    if linked:
+        boot = json.dumps(dict(job_id=task_id), ensure_ascii=False).replace('<', '\\u003c')
+        linked_context += '<link rel="stylesheet" href="/static/post_training_collection/processing-data.css"><link rel="stylesheet" href="/static/post_training_collection/trajectory.css"><script src="/static/post_training_collection/trajectory.js" defer></script><script src="/static/post_training_collection/processing-data.js" defer></script><script id="cp-data-context" type="application/json">' + boot + '</script>'
     return f"""
-    <div class="dpr-record-page">
+    <div class="dpr-record-page{' dpr-linked-record-page' if linked else ''}">
       <div class="dpr-record-top">
         <div>
           <a href="{back_path}">← 返回{back_label}</a>
@@ -6871,6 +6956,7 @@ def render_task_detail(task_id):
         </div>
         {_state(task["status"])}
       </div>
+      {linked_context}
       {filter_html}
       <div class="dpr-record-summary">
         <span>{_e(task["name"])}</span>
@@ -6882,13 +6968,7 @@ def render_task_detail(task_id):
           <tbody>{rows or f'<tr><td colspan="{empty_colspan}" class="dpr-empty">暂无记录</td></tr>'}</tbody>
         </table>
       </div>
-      <div class="mini-pager">
-        <select><option>10条/页</option></select>
-        <span class="pg-btn">&lsaquo;</span><span class="pg-btn active">1</span>
-        <span class="pg-btn">2</span><span class="pg-btn">3</span>
-        <span class="muted">...</span><span class="pg-btn">18</span>
-        <span class="pg-btn">&rsaquo;</span><input class="pg-goto"><span class="pg-go">go</span>
-      </div>
+      {pager}
     </div>
     """
 
@@ -9468,7 +9548,7 @@ def render_data_management_instances():
     instances = [
         ("405708", "QC405708", "261071", "020454", "厨房数据质检任务", "厨房数据质检流程", "—", "合格", "未标注", "processing", "质检复核", "包媛桐", "质检复核", "包媛桐", "用户", "任务池"),
         ("405709", "AN405709", "261071", "020453", "家居动作标注任务", "—", "家居动作标注流程", "合格", "已标注", "archived", "标注完成", "joanna.qiao", "—", "joanna.qiao", "用户", "待办项"),
-        ("405761", "QC405761", "261071", "020454", "厨房数据质检任务", "厨房数据质检流程", "—", "操作失误", "未标注", "processing", "人工质检", "-", "人工质检", "质检复核用户组", "用户组", "任务池"),
+        ("405761", "QC405761", "261071", "020454", "厨房数据质检任务", "厨房数据质检流程", "—", "失误", "未标注", "processing", "人工质检", "-", "人工质检", "质检复核用户组", "用户组", "任务池"),
         ("405711", "AN405711", "261071", "020453", "家居动作标注任务", "—", "家居动作标注流程", "合格", "标注中", "pending", "供应商标注", "-", "—", "供应商 A", "供应商", "待办项"),
         ("406006", "QC406006", "261197", "020455", "端到端切分标注任务", "多级质检复核流程", "端到端切分标注流程", "合格", "已标注", "processing", "供应商验收", "光轮智能", "供应商验收", "光轮智能", "供应商", "任务池"),
         ("412001", "QC412001", "261042", "020451", "三方数据处理任务", "导入数据质检流程", "—", "待质检", "未标注", "paused", "格式校验", "—", "格式校验", "—", "—", "待办项"),
@@ -9563,7 +9643,7 @@ def render_data_management_instances():
         <section><h3>数据处理任务维度</h3><div class="dpr-instance-metrics three"><div class="dpr-instance-metric-card" role="button" tabindex="0" onclick="dprSelectMetricStatus('pending',this)"><span>待处理</span><b>1,206</b><small>尚未开始处理的处理任务</small></div><div class="dpr-instance-metric-card" role="button" tabindex="0" onclick="dprSelectMetricStatus('processing',this)"><span>处理中</span><b>488</b><small>已开始但尚未完成的处理任务</small></div><div class="dpr-instance-metric-card" role="button" tabindex="0" onclick="dprSelectMetricStatus('archived',this)"><span>已完成</span><b>842</b><small>已完成处理并产出结果的处理任务</small></div></div></section>
       </div>
       <div class="dpr-instance-list-head"><b>数据列表</b><div class="dpr-instance-list-actions"><span id="dprInstanceSelectedSummary" class="dpr-instance-selected-summary" hidden>已选择 0 条</span><button type="button" class="dpr-bulk-reassign" id="dprBulkStartProcessing" disabled onclick="dprStartBatchProcessing()">批量发起处理任务</button><button type="button" class="dpr-bulk-reassign" id="dprBulkReassignInstances" disabled onclick="dprOpenBatchInstanceReassign()">批量重新分配</button></div></div>
-      <div class="table-wrap dpr-instance-table-wrap"><table class="ant-table dpr-instance-table"><thead><tr><th class="dpr-instance-select-head"><div class="dpr-selection-control"><input type="checkbox" id="dprInstanceSelectAll" aria-label="全选本页" title="全选本页" onchange="dprToggleAllInstances(this.checked)"><button type="button" id="dprSelectionMenuTrigger" aria-label="选择勾选范围" title="选择勾选范围" aria-expanded="false" aria-controls="dprSelectionMenu" onclick="dprToggleSelectionMenu()">&#9662;</button></div></th><th>数据 ID</th><th>采集任务 ID</th><th>处理任务 ID</th><th>处理任务名称</th><th>质检流程</th><th>标注流程</th>{quality_status_header}<th><div class="dpr-header-filter-control" data-header-control="quality"><span>质检结果</span><button type="button" class="dpr-header-filter-trigger" aria-label="筛选质检结果" onclick="dprToggleHeaderFilter('quality',this)"><span class="dpr-header-filter-label">全部</span><i>⌄</i></button><div class="dpr-header-filter-menu"><button type="button" data-value="" class="active">全部</button><button type="button" data-value="合格">合格</button><button type="button" data-value="操作失误">操作失误</button><button type="button" data-value="待质检">待质检</button></div><select class="dpr-header-filter-native" data-header-filter="quality" tabindex="-1" aria-hidden="true"><option value="">全部</option><option>合格</option><option>操作失误</option><option>待质检</option></select></div></th><th><div class="dpr-header-filter-control" data-header-control="annotated"><span>标注状态</span><button type="button" class="dpr-header-filter-trigger" aria-label="筛选标注状态" onclick="dprToggleHeaderFilter('annotated',this)"><span class="dpr-header-filter-label">全部</span><i>⌄</i></button><div class="dpr-header-filter-menu"><button type="button" data-value="" class="active">全部</button><button type="button" data-value="未标注">未标注</button><button type="button" data-value="标注中">标注中</button><button type="button" data-value="已标注">已标注</button></div><select class="dpr-header-filter-native" data-header-filter="annotated" tabindex="-1" aria-hidden="true"><option value="">全部</option><option>未标注</option><option>标注中</option><option>已标注</option></select></div></th><th><div class="dpr-header-filter-control" data-header-control="status"><span>数据状态</span><button type="button" class="dpr-header-filter-trigger" aria-label="筛选数据状态" onclick="dprToggleHeaderFilter('status',this)"><span class="dpr-header-filter-label">全部</span><i>⌄</i></button><div class="dpr-header-filter-menu"><button type="button" data-value="" class="active">全部</button><button type="button" data-value="pending">待处理</button><button type="button" data-value="processing">处理中</button><button type="button" data-value="paused">已暂停</button><button type="button" data-value="archived">已归档</button></div><select class="dpr-header-filter-native" data-header-filter="status" tabindex="-1" aria-hidden="true"><option value="">全部</option><option value="pending">待处理</option><option value="processing">处理中</option><option value="paused">已暂停</option><option value="archived">已归档</option></select></div></th><th>当前节点</th><th>当前处理人</th><th>操作</th></tr></thead><tbody>{''.join(rows)}</tbody></table></div>
+      <div class="table-wrap dpr-instance-table-wrap"><table class="ant-table dpr-instance-table"><thead><tr><th class="dpr-instance-select-head"><div class="dpr-selection-control"><input type="checkbox" id="dprInstanceSelectAll" aria-label="全选本页" title="全选本页" onchange="dprToggleAllInstances(this.checked)"><button type="button" id="dprSelectionMenuTrigger" aria-label="选择勾选范围" title="选择勾选范围" aria-expanded="false" aria-controls="dprSelectionMenu" onclick="dprToggleSelectionMenu()">&#9662;</button></div></th><th>数据 ID</th><th>采集任务 ID</th><th>处理任务 ID</th><th>处理任务名称</th><th>质检流程</th><th>标注流程</th>{quality_status_header}<th><div class="dpr-header-filter-control" data-header-control="quality"><span>质检结果</span><button type="button" class="dpr-header-filter-trigger" aria-label="筛选质检结果" onclick="dprToggleHeaderFilter('quality',this)"><span class="dpr-header-filter-label">全部</span><i>⌄</i></button><div class="dpr-header-filter-menu"><button type="button" data-value="" class="active">全部</button><button type="button" data-value="合格">合格</button><button type="button" data-value="失误">失误</button><button type="button" data-value="待质检">待质检</button></div><select class="dpr-header-filter-native" data-header-filter="quality" tabindex="-1" aria-hidden="true"><option value="">全部</option><option>合格</option><option>失误</option><option>待质检</option></select></div></th><th><div class="dpr-header-filter-control" data-header-control="annotated"><span>标注状态</span><button type="button" class="dpr-header-filter-trigger" aria-label="筛选标注状态" onclick="dprToggleHeaderFilter('annotated',this)"><span class="dpr-header-filter-label">全部</span><i>⌄</i></button><div class="dpr-header-filter-menu"><button type="button" data-value="" class="active">全部</button><button type="button" data-value="未标注">未标注</button><button type="button" data-value="标注中">标注中</button><button type="button" data-value="已标注">已标注</button></div><select class="dpr-header-filter-native" data-header-filter="annotated" tabindex="-1" aria-hidden="true"><option value="">全部</option><option>未标注</option><option>标注中</option><option>已标注</option></select></div></th><th><div class="dpr-header-filter-control" data-header-control="status"><span>数据状态</span><button type="button" class="dpr-header-filter-trigger" aria-label="筛选数据状态" onclick="dprToggleHeaderFilter('status',this)"><span class="dpr-header-filter-label">全部</span><i>⌄</i></button><div class="dpr-header-filter-menu"><button type="button" data-value="" class="active">全部</button><button type="button" data-value="pending">待处理</button><button type="button" data-value="processing">处理中</button><button type="button" data-value="paused">已暂停</button><button type="button" data-value="archived">已归档</button></div><select class="dpr-header-filter-native" data-header-filter="status" tabindex="-1" aria-hidden="true"><option value="">全部</option><option value="pending">待处理</option><option value="processing">处理中</option><option value="paused">已暂停</option><option value="archived">已归档</option></select></div></th><th>当前节点</th><th>当前处理人</th><th>操作</th></tr></thead><tbody>{''.join(rows)}</tbody></table></div>
       <div id="dprSelectionMenu" class="dpr-selection-menu" hidden>
         <button type="button" data-selection-scope="page" onclick="dprSelectInstanceScope('page')">全选本页</button>
         <button type="button" data-selection-scope="all" onclick="dprSelectInstanceScope('all')">全选全部</button>

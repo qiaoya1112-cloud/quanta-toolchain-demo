@@ -109,7 +109,7 @@ async function main(){
     await click('[data-action=remove-generalization]');check(await count('.dc-g-card')===0&&await count('.dc-generalization-empty')===1,'删光后恢复常驻空表');
     await click('#dc-submit');await wait("/^[0-9]{5}$/.test(location.pathname.split('/').pop())&&!location.pathname.endsWith('/edit')");await wait("document.querySelector('[data-action=share-task]')");
     check((await taskData(normalId)).generalization.length===0,'删除统计项可保存');
-    await nav(base+'/new?source=robot');await click('[data-form=mode][value=DAGGER]');
+    await nav(base+'/new?source=robot');await fill('#dc-mode','DAGGER');
     check(await evaluate("document.querySelector('[data-action=add-generalization]').disabled"),'DAGGER无Prompt时禁止添加关联统计');
     await evaluate("document.querySelector('.dc-generalization').scrollIntoView({block:'center'})");await shot('04a-dagger-empty-table');
     if(process.env.CAPTURE_GENERALIZATION_CROP){

@@ -623,7 +623,7 @@ _review_flows = [
                 "user_groups": ["质检复核用户组"],
                 "allowed_actions": ["提交", "暂离"],
             },
-            {"name": "复核条件", "kind": "condition", "meta": "不合格或操作失误进入复核"},
+            {"name": "复核条件", "kind": "condition", "meta": "不合格或失误进入复核"},
             {
                 "name": "供应商复核",
                 "kind": "human",
@@ -657,7 +657,7 @@ _review_flows = [
         "stages": [],
         "schedules": [],
         "business_stage": "标注",
-        "input_contract": "quality_conclusion=合格/操作失误",
+        "input_contract": "quality_conclusion=合格/失误",
         "output_contract": "annotation_payload + annotation_version",
         "desc": "自动切分后依次完成供应商抽验、供应商复核、供应商验收与内部验收。",
         "flow_nodes": [
@@ -818,7 +818,7 @@ _review_flows = [
         "stages": [],
         "schedules": [],
         "business_stage": "标注",
-        "input_contract": "quality_conclusion=合格/操作失误",
+        "input_contract": "quality_conclusion=合格/失误",
         "output_contract": "annotation_payload + annotation_version",
         "desc": "人工标注与人工抽验两轮处理。",
         "flow_nodes": [
@@ -3234,7 +3234,7 @@ def build_query_filters():
     op = ms_search_html("operator", "不限", OP_POOL, [])
     typ = _ms("不限", [(t, t) for t in ["normal", "dagger", "test", "eval"]])
     dagger_typ = _ms("不限", [("policy", "policy"), ("teleop", "teleop")])
-    qa_ms = _ms("不限", [("pass", "合格"), ("fail", "不合格"), ("warn", "操作失误")])
+    qa_ms = _ms("不限", [("pass", "合格"), ("fail", "不合格"), ("warn", "失误")])
     hi_tag = _ms("不限", [("grab", "抓取"), ("place", "放置"), ("pour", "倾倒"), ("wipe", "擦拭")])
     lo_tag = _ms("不限", [("reach", "靠近"), ("grip", "夹取"), ("lift", "抬起"), ("release", "松开")])
     dev = '<select><option value="">不限</option>' + "".join(f'<option>{d}</option>' for d in DEVICES) + '</select>'
@@ -3644,7 +3644,7 @@ def ds_progress():
         var fields=[['采集任务',params.get('task')],['批次编号',params.get('batch')],['设备序列号',params.get('device')],
           ['Highlevel Prompt',params.get('hl')],['Lowlevel Prompt',params.get('ll')],
           ['采集结论',{{success:'成功',fail:'失败'}}[params.get('quality')]||params.get('quality')],
-          ['是否质检',yesNo(params.get('qc'))],['质检结论',params.getAll('qa').map(function(value){{return {{pass:'合格',fail:'不合格',warn:'操作失误'}}[value]||value;}}).join('、')],
+          ['是否质检',yesNo(params.get('qc'))],['质检结论',params.getAll('qa').map(function(value){{return {{pass:'合格',fail:'不合格',warn:'失误'}}[value]||value;}}).join('、')],
           ['是否标注',yesNo(params.get('anno'))],['Episode 上限',params.get('limit')],
           ['Prompt 语言',{{en:'英文',zh:'中文'}}[params.get('lang')]||params.get('lang')],['高级条件',advanced],
           ['目录',task.folder],['标签',(task.tags||[]).join('、')]];
@@ -3760,7 +3760,7 @@ def query_field_value(recording, field):
         "recording_duration": recording["dur"],
         "recording_fps": recording["fps"],
         "inspection_status": "是" if rec_qc(recording) else "否",
-        "inspection_result": {"pass": "合格", "fail": "不合格", "warn": "操作失误"}[recording["qa"]],
+        "inspection_result": {"pass": "合格", "fail": "不合格", "warn": "失误"}[recording["qa"]],
         "annotation_status": "是" if rec_anno(recording) else "否",
         "recording_high_level_prompt": task_instr(recording["task"]),
     }
@@ -3987,7 +3987,7 @@ def query():
               f'<span class="ms-label">{("标签 ("+str(n_tag)+")") if n_tag else "标签"}</span></div>'
               f'<div class="ms-panel">{tag_checks}</div></div>')
 
-    qa_ms = ms("qa", "请选择质检结论", [("pass", "合格"), ("fail", "不合格"), ("warn", "操作失误")], f_qas)
+    qa_ms = ms("qa", "请选择质检结论", [("pass", "合格"), ("fail", "不合格"), ("warn", "失误")], f_qas)
     dev_input = f'<input name="device" value="{html.escape(f_device, quote=True)}" placeholder="多个英文逗号分隔">'
     op_sel = ms_search_html("operator", "请选择操作员", OP_POOL, f_operators,
                             placeholder="请选择操作员")
@@ -4105,7 +4105,7 @@ def query():
             <div class="ai-chips">
               <span class="ai-chip" onclick="aiSend('擦白板任务、近一周、已质检通过的 episode')">擦白板·近一周·合格</span>
               <span class="ai-chip" onclick="aiSend('Moz 设备、Lance Li 采集、帧数大于 1000 的 episode')">Moz·Lance·帧数&gt;1000</span>
-              <span class="ai-chip" onclick="aiSend('近一周采集、操作失误的 episode')">近一周·操作失误</span>
+              <span class="ai-chip" onclick="aiSend('近一周采集、失误的 episode')">近一周·失误</span>
             </div>
           </div>
         </div>
@@ -4344,7 +4344,7 @@ def query():
       if(/udas/i.test(nl)) conds.push("capture_device = 'uDAS'");
       if(/lance/i.test(nl)) conds.push("operator = 'Lance Li'");
       if(/不合格|fail/i.test(nl)) conds.push("qa_status = 'FAIL'");
-      else if(/操作失误|warn/i.test(nl)) conds.push("qa_status = 'WARN'");
+      else if(/失误|warn/i.test(nl)) conds.push("qa_status = 'WARN'");
       else if(/合格|通过|pass/i.test(nl)) conds.push("qa_status = 'PASS'");
       if(/近一周|近7天|近 7 天/.test(nl)) conds.push("collected_at >= DATE_SUB(CURRENT_DATE, 7)");
       var m=nl.match(/帧数(大于|>|超过)\\s*(\\d+)/); if(m) conds.push("frames > "+m[2]);
@@ -6061,7 +6061,7 @@ WF_CANVAS_JS = r"""
   var CONDITION_VALUES={
     '所属项目':['预训练采集','宁德项目','demo 项目'],
     '供应商':['供应商 A','供应商 B'],
-    '质检结论':['合格','不合格','操作失误'],
+    '质检结论':['合格','不合格','失误'],
     '标注状态':['未标注','已标注'],
     '采集结论':['成功','失败'],
     '上传状态':['未上传','上传中','上传成功','上传失败'],

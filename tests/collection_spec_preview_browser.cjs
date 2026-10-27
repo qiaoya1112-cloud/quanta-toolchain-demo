@@ -30,7 +30,7 @@ async function main(){
     check(health.ok,'隔离本地服务可用');
     chrome=spawn('C:/Program Files/Google/Chrome/Application/chrome.exe',[
       '--headless','--disable-gpu','--no-first-run','--no-default-browser-check','--disable-extensions',
-      '--window-size=1440,1000',`--user-data-dir=${path.join(sandbox,'chrome')}`,`--remote-debugging-port=${debugPort}`,origin+base
+      '--window-size=1440,1000',`--user-data-dir=${path.join(sandbox,'chrome')}`,`--remote-debugging-port=${debugPort}`,'about:blank'
     ],{stdio:'ignore',windowsHide:true});
     let page;
     for(let i=0;i<100;i++){try{page=(await fetch(`http://127.0.0.1:${debugPort}/json/list`).then(r=>r.json())).find(p=>p.type==='page');if(page)break;}catch(_){}await delay(100);}
@@ -56,8 +56,8 @@ async function main(){
     const noOverflow=async label=>check(await evaluate('document.documentElement.scrollWidth<=innerWidth+1'),label);
     const taskData=id=>fetch(origin+api+'/'+id).then(r=>r.json()).then(d=>d.task);
     const taskId=()=>evaluate("location.pathname.split('/').pop()");
-    await call('Runtime.enable');await call('Page.enable');
-    await wait("document.querySelector('#dc-app')?.getAttribute('aria-busy')==='false'");
+    await call('Runtime.enable');await call('Page.enable');await call('Network.enable');
+    await call('Network.setBlockedURLs',{urls:['https://cdn.jsdelivr.net/*']});await nav(base);
 
     await resize(1440,1000);
     await nav(base+'/new?source=robot');
@@ -86,12 +86,14 @@ async function main(){
     await click('#dc-submit');
     await wait("/^[0-9]{5}$/.test(location.pathname.split('/').pop())&&document.querySelector('#dc-app')?.getAttribute('aria-busy')==='false'");
     const id=await taskId();
-    check((await taskData(id)).spec_url===example,'创建保存用户原始规范链接');
+    const savedExample=example.split('?')[0];
+    check((await taskData(id)).spec_url===savedExample,'创建标准化规范链接，去除分享参数用于规范库去重');
+    await click('[data-action=creation-done]');
     await click('[data-action=detail-tab][data-value=config]');
-    check(await evaluate(`document.querySelector('[data-spec-action=open]').href===${JSON.stringify(example)}&&!document.querySelector('#dc-spec-viewer')`),'详情打开规范直达同一原文，无平台正文');
+    check(await evaluate(`document.querySelector('[data-spec-action=open]').href===${JSON.stringify(savedExample)}&&!document.querySelector('#dc-spec-viewer')`),'详情打开规范直达同一原文，无平台正文');
     await shot('02-spec-link-detail');
     await nav(base+'/'+id+'/edit');
-    check(await evaluate(`document.querySelector('#dc-spec_url').value===${JSON.stringify(example)}&&document.querySelector('[data-spec-action=open]').href===${JSON.stringify(example)}`),'编辑页回显已保存的规范链接');
+    check(await evaluate(`document.querySelector('#dc-spec_url').value===${JSON.stringify(savedExample)}&&document.querySelector('[data-spec-action=open]').href===${JSON.stringify(savedExample)}`),'编辑页回显已保存的规范链接');
     const another='https://nwd4iy9rd2s.feishu.cn/docx/another-document';
     await fill('#dc-spec_url',another);
     check(await evaluate(`document.querySelector('[data-spec-action=open]').href===${JSON.stringify(another)}`),'修改链接后入口立即使用新地址');
@@ -101,14 +103,14 @@ async function main(){
     check(await evaluate(`document.querySelector('[data-spec-action=open]').href===${JSON.stringify(another)}`),'UDAS同样直达用户填写的原文');
     await nav(base+'/new?source=robot&spec=example');
     check(await evaluate("document.querySelector('#dc-spec_url').value===CollectionSpecLink.url"),'显式示例URL仍可预填链接，不加载模拟正文');
-    await click('[data-form=mode][value=DAGGER]');
+    await fill('#dc-mode','DAGGER');
     await click('[data-action=pick-prompts]');
     check(await evaluate("document.querySelector('#dc-prompt-popup').matches(':popover-open')")&&(await count('[data-prompt-choice]'))>0,'DAGGER Prompt选择不受影响');
     await click('[data-action=pick-prompts]');
     await resize(390,844);
     await noOverflow('390px创建页无横向溢出');
     await evaluate("document.querySelector('#dc-spec_url').scrollIntoView({block:'center'})");
-    check(await evaluate("(()=>{const a=document.querySelector('[data-spec-action=open]'),i=document.querySelector('#dc-spec_url');return a.getBoundingClientRect().right<=innerWidth&&Math.abs(a.getBoundingClientRect().top-i.getBoundingClientRect().top)<5})()"),'390px规范输入与按钮同排完整显示');
+    check(await evaluate("(()=>{const a=document.querySelector('[data-spec-action=open]'),pick=document.querySelector('[data-action=pick-spec]'),i=document.querySelector('#dc-spec_url'),r=i.getBoundingClientRect();return r.left>=0&&r.right<=innerWidth&&a.getBoundingClientRect().right<=innerWidth&&pick.getBoundingClientRect().right<=innerWidth&&Math.abs(a.getBoundingClientRect().top-pick.getBoundingClientRect().top)<5&&a.getBoundingClientRect().top>=r.bottom})()"),'390px规范链接完整展示，选择已有规范和打开原文在下方同行');
     await shot('03-spec-link-mobile');
     const collectionExceptions=exceptions.filter(error=>!error.includes('CodeMirror is not defined'));
     check(collectionExceptions.length===0,'采集规范模块无未捕获异常：'+collectionExceptions.join('; '));

@@ -57,7 +57,7 @@ def demo_records(task):
         reviewer_supplier_id="SUP-003",
         self_checked_at=f"2026-10-01 {9 + index:02d}:30:00" if index < 4 else "",
         standard="自动质检 V4 · 家庭目标态",
-        auto_result="操作失误" if index % 3 == 0 else "合格",
+        auto_result="失误" if index % 3 == 0 else "合格",
         auto_reason="画面短暂遮挡" if index % 3 == 0 else "—",
         operators={"采集人": collectors[index], "质检人": "李奕冲", "验收人": "张苗苗"},
         operator_ids={"采集人": f"OP-{index + 1:03d}", "质检人": "OP-028", "验收人": "OP-039"},
@@ -90,7 +90,7 @@ def transition(task, saved, action, ids, result="", reason="", remark="", owner=
             raise ValueError("当前节点不支持该整批操作")
         if action == "batch_reject" and not remark.strip():
             raise ValueError("请输入驳回说明")
-        if action == "batch_submit" and any(records[item].get("result") not in ("合格", "不合格", "操作失误") for item in ids):
+        if action == "batch_submit" and any(records[item].get("result") not in ("合格", "不合格", "失误") for item in ids):
             raise ValueError("存在未质检的数据，请完成质检后再提交")
         owned_ids = {key for key, record in records.items() if owner and record.get("owner") == owner}
         active_ids = owned_ids or set(records)
@@ -169,7 +169,7 @@ def prepare_todo_batch(path, task, legacy, owner):
         for index, record in enumerate(pool_records(task, saved)):
             if not record.get("result"):
                 state = states.setdefault(record["id"], {})
-                state["result"] = ("合格", "操作失误", "不合格")[index % 3]
+                state["result"] = ("合格", "失误", "不合格")[index % 3]
                 if state["result"] == "不合格":
                     state.setdefault("reason", "指令与采集动作不一致")
         return pool_records(task, saved)

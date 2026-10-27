@@ -6,19 +6,36 @@
   const params=new URLSearchParams(location.search),drawer=document.getElementById('drawerProcessingTaskForm');
   if(!drawer)return;
   const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-  let source=null,jobs=[],activeJob=null,saving=false,requestKey=crypto.randomUUID(),loadToken=0,collectionTasks=[];
+  let source=null,jobs=[],activeJob=null,saving=false,requestKey=crypto.randomUUID(),collectionTasks=[];
   const configs={};
   const originalOpen=window.dprOpenProcessingTaskDrawer,originalSubmit=window.dprSubmitProcessingTask,originalClose=window.dprCloseProcessingTaskPage;
   const title=document.getElementById('processingTaskDrawerTitle');
-  const sourceBox=document.createElement('div');sourceBox.id='dc-processing-source';sourceBox.className='dc-processing-source';sourceBox.hidden=true;
-  title.parentElement.append(sourceBox);
+  const sourceContext=document.createElement('div');sourceContext.className='dc-processing-source-context';sourceContext.hidden=true;
+  drawer.querySelector('.dpr-processing-basic-grid').before(sourceContext);
+  const detailActions=document.createElement('div');detailActions.className='dc-processing-actions';detailActions.hidden=true;
+  drawer.querySelector('.dpr-processing-task-page-foot').append(detailActions);
   const message=document.createElement('div');message.className='dc-processing-message';message.setAttribute('role','alert');message.hidden=true;drawer.querySelector('.dpr-processing-task-page-foot').prepend(message);
   const showError=text=>{message.textContent=text;message.hidden=!text;};
   const actionNote=document.createElement('p');actionNote.className='dc-processing-scope-note';actionNote.hidden=true;
   document.getElementById('processingTaskFilters').before(actionNote);
-  const sourceField=document.createElement('label');sourceField.className='fg';sourceField.id='dc-processing-source-field';
-  sourceField.innerHTML='<span>来源采集任务</span><select id="dc-processing-source-select"><option value="">不指定来源采集任务</option></select>';
-  drawer.querySelector('.dpr-processing-basic-grid').append(sourceField);
+  const scopeTools=document.createElement('div');scopeTools.className='dc-source-tools';scopeTools.hidden=true;
+  scopeTools.innerHTML='<button type="button" class="btn" data-select-sources>选择采集来源</button><label>上游质检任务<select id="dc-upstream"><option value="">不限上游结果</option></select></label><label>质检结论<select id="dc-upstream-result"><option>合格</option><option>不合格</option><option>失误</option></select></label><span data-source-error role="alert"></span>';
+  drawer.querySelector('[data-filter-group="basic"] .dpr-task-config-cols').before(scopeTools);
+  let sourceIds=[];
+  const splitIds=value=>[...new Set(String(value).split(/[,，、]/).map(v=>v.trim()).filter(Boolean))];
+  function updateScopeTools(){
+    scopeTools.hidden=!source;
+    if(!source)return;
+    const select=scopeTools.querySelector('#dc-upstream'),previous=activeJob?.upstream_id||select.value;
+    select.innerHTML='<option value="">不限上游结果</option>'+jobs.filter(j=>j.id!==activeJob?.id&&j.published&&j.project===source.project&&j.stages['质检']&&sourceIds.every(id=>j.source_ids.includes(id))).map(j=>`<option value="${esc(j.id)}">${esc(j.id)} · ${esc(j.name)}</option>`).join('');
+    select.value=previous;
+    scopeTools.querySelector('#dc-upstream-result').value=activeJob?.upstream_result||'合格';
+    scopeTools.querySelectorAll('button,select').forEach(el=>el.disabled=drawer.dataset.mode==='detail'||drawer.dataset.mode==='edit');
+  }
+  scopeTools.querySelector('[data-select-sources]').onclick=()=>{
+    const modal=document.createElement('dialog');modal.className='dc-source-dialog';modal.innerHTML=`<h3>采集来源</h3><div class="dc-source-choices">${collectionTasks.filter(t=>t.project===source.project).map(t=>`<label><input type="checkbox" value="${esc(t.id)}" ${sourceIds.includes(t.id)?'checked':''}>${esc(t.id)} · ${esc(t.name)}</label>`).join('')}</div><p role="alert"></p><footer><button class="btn" data-cancel>取消</button><button class="btn btn-primary" data-save>确定</button></footer>`;
+    document.body.append(modal);modal.addEventListener('close',()=>modal.remove());modal.querySelector('[data-cancel]').onclick=()=>modal.close();modal.querySelector('[data-save]').onclick=()=>{const ids=[...modal.querySelectorAll('input:checked')].map(el=>el.value);if(!ids.length){modal.querySelector('[role=alert]').textContent='请至少选择一个采集任务';return;}sourceIds=ids;const first=drawer.querySelector('.dpr-filter-row .dpr-task-filter-value');first.value=ids.join(',');first.dispatchEvent(new Event('input',{bubbles:true}));updateScopeTools();modal.close();};modal.showModal();
+  };
   async function api(path,method='GET',body,headers={}){
     const response=await fetch(API+path,{method,cache:'no-store',headers:{'Content-Type':'application/json',...headers},body:body===undefined?undefined:JSON.stringify(body)});
     let data;try{data=await response.json()}catch{throw Error('服务暂时不可用，请稍后重试')}
@@ -36,8 +53,8 @@
     });
   }
   function restoreSavedNodes(){
-    if(!activeJob)return;
-    const nodes=(activeJob.published?activeJob.configs:configs)[window.DPR_ACTIVE_ASSIGNMENT_STAGE]||{};
+    if(!source)return;
+    const nodes=(activeJob?.published?activeJob.configs:configs)[window.DPR_ACTIVE_ASSIGNMENT_STAGE]||{};
     drawer.querySelectorAll('#processingTaskAssignments .dpr-flow-node-card').forEach(card=>{
       const node=nodes[card.dataset.node];if(!node)return;
       const rule=card.querySelector('.dpr-node-rule-select'),percent=card.querySelector('.dpr-node-percent-input');
@@ -57,15 +74,22 @@
   }
   function context(sourceTask,job){
     source=sourceTask;activeJob=job||null;showError('');requestKey=crypto.randomUUID();
+    sourceIds=job?.source_ids?.slice()||(sourceTask?[sourceTask.id]:[]);
     for(const key of Object.keys(configs))delete configs[key];Object.assign(configs,job?.configs||{});
-    const linked=!!sourceTask;sourceBox.hidden=!linked;actionNote.hidden=!linked;
-    const sourceSelect=sourceField.querySelector('select');sourceSelect.value=sourceTask?.id||'';sourceSelect.disabled=!!job;
-    sourceField.hidden=drawer.dataset.mode==='detail';
+    const linked=!!sourceTask;actionNote.hidden=true;
+    drawer.querySelectorAll('#processingTaskFilters+.dpr-task-filter-scope-help').forEach(el=>el.hidden=linked);
+    sourceContext.hidden=!job||drawer.dataset.mode!=='detail';
+    detailActions.hidden=sourceContext.hidden;
+    if(!sourceContext.hidden){
+      sourceContext.innerHTML=`<span>来源采集任务</span><div class="dc-processing-sources">${job.source_ids.map(id=>{const task=collectionTasks.find(t=>t.id===id);return `<a href="${BASE}/${encodeURIComponent(id)}#processing">${esc(id)} · ${esc(task?.name||id)}</a>`;}).join('')}</div>`;
+      const returnPath=params.get('return_to'),validReturn=returnPath?.startsWith('/data/tasks/')&&!returnPath.includes('\\');
+      detailActions.innerHTML=`<a class="btn" href="${esc(validReturn?returnPath:'/data/tasks/'+encodeURIComponent(job.id))}">查看数据</a>${!job.published?`<button class="btn btn-primary" data-job-action="publish" data-job-id="${esc(job.id)}">发布</button>`:''}`;
+    }else{sourceContext.replaceChildren();detailActions.replaceChildren();}
+    drawer.dataset.collectionSource=sourceTask?.id||'';
     const sourceNotice=drawer.querySelector('.dpr-processing-filter-notice:not(.dpr-processing-filter-warning)');
     if(sourceNotice)sourceNotice.hidden=linked;
     drawer.querySelector('[data-filter-group="processing"]').hidden=linked;
-    sourceBox.innerHTML=linked?`来源采集任务 <a href="${BASE}/${esc(source.id)}#processing">${esc(source.id)} · ${esc(source.name)}</a>`:'';
-    actionNote.textContent=linked?'采集任务只限定数据来源，筛选条件可进一步缩小范围。创建后先保存为未发布，发布时才纳入数据。':'';
+    actionNote.textContent=linked?'采集任务只限定数据来源，筛选条件可进一步缩小范围。发布后按筛选条件自动接收数据。':'';
     document.getElementById('processingTaskDrawerSubmit').textContent=job?'保存修改':'创建任务';
     if(job&&!job.published&&drawer.dataset.mode==='new')title.textContent='编辑处理任务';
     if(linked){
@@ -80,31 +104,60 @@
       }
       drawer.querySelectorAll('.dpr-task-filter-field option').forEach(o=>o.disabled=!!window.DPR_TASK_FILTER_FIELDS[o.value]?._collectionHidden);
     }
+    updateScopeTools();
   }
   window.dprOpenProcessingTaskDrawer=function(mode,trigger){
     const isLinked=trigger?.dataset.collectionLinked==='true';
-    originalOpen(mode,trigger);
+    // Clear the previous adapter context before the shared form renders its controls.
+    source=null;activeJob=null;
+    window.DPR_TASK_FILTER_FIELDS['采集结论']={type:'single',options:['成功','失败']};
+    for(const config of Object.values(window.DPR_TASK_FILTER_FIELDS))config._collectionHidden=false;
+    originalOpen(isLinked&&mode==='edit'&&!jobs.find(j=>j.id===trigger.dataset.taskId)?.published?'new':mode,trigger);
     if(!isLinked){context(null,null);return;}
     const job=jobs.find(j=>j.id===trigger.dataset.taskId);
-    if(job){context({id:job.source_ids[0],name:trigger.dataset.sourceName||job.source_ids.join('、'),project:job.project,project_name:trigger.dataset.project},job);restoreSavedNodes();if(mode==='new'){const first=drawer.querySelector('.dpr-filter-row');first?.querySelectorAll('input,select,button').forEach(el=>el.disabled=true);}}
-  };
-  sourceField.querySelector('select').addEventListener('change',event=>{
-    const t=collectionTasks.find(t=>t.id===event.target.value);
-    context(t||null,null);
-    if(t){
-      window.dprRenderTaskFilters([['采集任务 ID','等于',t.id]]);
-      const first=drawer.querySelector('.dpr-filter-row');first.querySelectorAll('input,select,button').forEach(el=>el.disabled=true);
-      document.getElementById('processingTaskPriority').value=String(t.priority||3);
-    }else{
-      window.dprRenderTaskFilters([]);document.getElementById('processingTaskProject').disabled=false;
-      document.getElementById('processingTaskExpectedMode').disabled=false;
+    if(job){
+      context({id:job.source_ids[0],name:trigger.dataset.sourceName||job.source_ids.join('、'),project:job.project,project_name:trigger.dataset.project},job);
+      restoreSavedNodes();
+      if(mode==='edit'&&job.published)drawer.querySelectorAll('#processingTaskFilters input,#processingTaskFilters select,#processingTaskFilters button').forEach(el=>el.disabled=true);
     }
+  };
+  const originalCopy=window.dprCopyProcessingTask;
+  window.dprCopyProcessingTask=function(trigger){
+    if(trigger?.dataset.collectionLinked!=='true')return originalCopy(trigger);
+    const job=jobs.find(j=>j.id===trigger.dataset.taskId);if(!job)return;
+    const more=trigger.closest('details')||window.DPR_OPEN_TASK_MORE;if(more)more.open=false;
+    window.dprOpenProcessingTaskDrawer('new',trigger);
+    activeJob=null;delete drawer.dataset.taskId;drawer.dataset.taskStatus='unpublished';
+    sourceContext.hidden=true;detailActions.hidden=true;
+    scopeTools.querySelector('#dc-upstream').value=job.upstream_id||'';
+    scopeTools.querySelector('#dc-upstream-result').value=job.upstream_result||'合格';
+    document.getElementById('processingTaskName').value=job.name+'（复制）';
+    document.getElementById('processingTaskDrawerSubmit').textContent='创建任务';
+    title.textContent='新建处理任务';
+  };
+  function sourceFromFilters(){
+    if(activeJob||params.has('collection'))return;
+    const filters=window.dprCurrentTaskFilters();
+    const ids=filters.filter(f=>f[0]==='采集任务 ID'&&f[1]==='等于').flatMap(f=>splitIds(f[2]));
+    const task=ids.length&&ids.every(id=>collectionTasks.some(t=>t.id===id))?collectionTasks.find(t=>t.id===ids[0]):null;
+    if((task?.id||'')===(source?.id||'')){if(task){sourceIds=ids;updateScopeTools();}return;}
+    context(task||null,null);
+    if(task){sourceIds=ids;updateScopeTools();}
+    if(!task)document.getElementById('processingTaskProject').disabled=false;
+  }
+  drawer.addEventListener('change',event=>{
+    if(event.target.closest('#processingTaskBasicFilters'))sourceFromFilters();
   });
   window.dprCloseProcessingTaskPage=function(){
     if(saving)return;
+    const returnTo=params.get('return_to');
+    if(params.get('linked')===drawer.dataset.taskId&&returnTo&&returnTo.startsWith('/data/tasks/')&&!returnTo.includes('\\')){
+      location.assign(returnTo);
+      return;
+    }
     if(source&&params.has('collection')&&!activeJob){location.assign(BASE+'/'+encodeURIComponent(source.id)+'#processing');return;}
-    originalClose();sourceBox.hidden=true;showError('');
-    if(activeJob&&params.has('linked')){const url=new URL(location.href);url.searchParams.delete('linked');history.replaceState(null,'',url.pathname+url.search);}
+    originalClose();showError('');
+    if(activeJob){const url=new URL(location.href);url.searchParams.delete('linked');history.replaceState(null,'',url.pathname+url.search);}
     source=null;activeJob=null;
   };
   const originalFilterRow=window.dprTaskFilterRow;
@@ -117,11 +170,17 @@
     window.dprRefreshFilterRelationLabels();window.dprUpdateDuplicateFilterWarning();
   };
   window.dprSubmitProcessingTask=async function(){
+    sourceFromFilters();
     if(!source)return originalSubmit();
     if(saving)return;showError('');
     const button=document.getElementById('processingTaskDrawerSubmit');
     try{
-      if(activeJob?.published){showError('任务已发布，请创建新的处理任务配置。');return;}
+      if(activeJob?.published){
+        const expected=window.dprExpectedTaskValidation();if(!expected.valid)throw Error(expected.message);
+        saving=true;button.disabled=true;button.textContent='正在保存…';
+        await api('/tasks/'+activeJob.id,'PATCH',{revision:activeJob.revision,priority:Number(document.getElementById('processingTaskPriority').value),expected_value:document.getElementById('processingTaskExpectedValue').value});
+        originalClose();source=null;activeJob=null;await loadJobs();window.toast('已保存处理任务');return;
+      }
       if(drawer.querySelector('[data-processor-editing="true"]'))throw Error('请先保存或取消处理人修改');
       rememberNodes();
       const stages=Object.fromEntries(Object.entries(window.DPR_ENABLED_FLOW_STAGES).filter(([,enabled])=>enabled).map(([stage])=>[stage,window.DPR_SELECTED_FLOWS[stage]]));
@@ -130,53 +189,66 @@
       const unsupported=selectedFilters.some(f=>!['采集任务 ID','数据 ID','采集员','采集时间','采集结论'].includes(f[0]));
       if(unsupported){window.dprSwitchProcessingTaskPane(drawer.querySelector('[data-task-pane="filter"]'));throw Error('请使用采集任务 ID、数据 ID、采集员、采集时间或采集结论筛选');}
       const sourceFilter=selectedFilters.find(f=>f[0]==='采集任务 ID');
-      if(!sourceFilter||sourceFilter[1]!=='等于'||sourceFilter[2]!==source.id)throw Error('请保留来源采集任务 ID 条件；其他条件可继续缩小数据范围');
+      if(!sourceFilter||sourceFilter[1]!=='等于')throw Error('请保留来源采集任务 ID 条件');
+      sourceIds=splitIds(sourceFilter[2]);
+      if(!sourceIds.length||sourceIds.some(id=>!collectionTasks.some(t=>t.id===id&&t.project===source.project)))throw Error('采集来源必须属于同一项目');
       const name=document.getElementById('processingTaskName').value;
       saving=true;button.disabled=true;button.textContent='正在创建…';
       const expected=window.dprExpectedTaskValidation();if(!expected.valid)throw Error(expected.message);
-      const body={name,source_ids:[source.id],priority:Number(document.getElementById('processingTaskPriority').value),category:document.getElementById('processingTaskCategory').value,expected_mode:document.getElementById('processingTaskExpectedMode').value,expected_value:document.getElementById('processingTaskExpectedValue').value,filters:selectedFilters,stages,configs};
+      const body={name,source_ids:sourceIds,upstream_id:scopeTools.querySelector('#dc-upstream').value,upstream_result:scopeTools.querySelector('#dc-upstream-result').value,priority:Number(document.getElementById('processingTaskPriority').value),category:document.getElementById('processingTaskCategory').value,expected_mode:document.getElementById('processingTaskExpectedMode').value,expected_value:document.getElementById('processingTaskExpectedValue').value,filters:selectedFilters,stages,configs};
       if(activeJob)body.revision=activeJob.revision;
       const result=await api('/tasks'+(activeJob?'/'+activeJob.id:''),activeJob?'PATCH':'POST',body,{'Idempotency-Key':requestKey});
       window.location.assign(BASE+'/'+encodeURIComponent(source.id)+'?processing_created='+result.task.id+'#processing');
     }catch(error){showError(error.message);}
-    finally{saving=false;button.disabled=false;button.textContent='创建任务';}
+    finally{saving=false;button.disabled=false;button.textContent=activeJob?'保存修改':'创建任务';}
   };
   async function runAction(job,action){
-    const labels={publish:'发布后会纳入当前匹配的已上传数据。',pause:'关闭接收后，已纳入的数据和处理结果保留。',resume:'重新开启处理任务。采集任务的开放状态不会改变。',admit:'将当前新增且匹配的数据纳入该处理任务。'};
+    const labels={publish:`发布后开始按筛选条件处理数据。`,pause:'停止接收新数据，历史数据与处理结果保留。',resume:`重新开启后，符合条件的数据自动进入处理。采集状态不变。`};
     const dialog=document.getElementById('dc-processing-confirm');
-    dialog.querySelector('h3').textContent={publish:'发布处理任务？',pause:'关闭处理任务？',resume:'开启处理任务？',admit:'纳入新数据？'}[action];
+    dialog.querySelector('h3').textContent={publish:'发布处理任务？',pause:'关闭处理任务？',resume:'开启处理任务？'}[action];
     dialog.querySelector('p').textContent=labels[action];dialog.querySelector('[data-confirm-error]').textContent='';
+    dialog.querySelector('[data-existing-mode]')?.remove();
+    if(action==='pause'){const choice=document.createElement('label');choice.dataset.existingMode='';choice.innerHTML='已有数据 <select><option value="continue">继续处理</option><option value="pause">暂停未完成数据</option></select>';dialog.querySelector('footer').before(choice);}
     const confirm=dialog.querySelector('[data-confirm-action]');confirm.disabled=false;
-    confirm.onclick=async()=>{confirm.disabled=true;try{await api('/tasks/'+job.id+'/action','POST',{action,revision:job.revision});dialog.close();await loadJobs();if(new URLSearchParams(location.search).get('linked')===job.id)openJob(job.id);}catch(error){dialog.querySelector('[data-confirm-error]').textContent=error.message;confirm.disabled=false;}};
+    confirm.onclick=async()=>{confirm.disabled=true;try{await api('/tasks/'+job.id+'/action','POST',{action,revision:job.revision,...(action==='admit'?{expected_count:job.new_count}:action==='publish'?{expected_count:job.candidate_count}:{}),...(action==='pause'?{existing_mode:dialog.querySelector('[data-existing-mode] select').value}:{})});dialog.close();await loadJobs();if(activeJob?.id===job.id&&drawer.getAttribute('aria-hidden')==='false')openJob(job.id);}catch(error){dialog.querySelector('[data-confirm-error]').textContent=error.message;confirm.disabled=false;}};
     dialog.showModal();
   }
   function flowBindings(job){return Object.entries(job.stages).map(([stage,name])=>[stage,name,window.DPR_PROCESSING_FLOWS.find(f=>f.name===name)?.version||'']);}
+  function flowProgress(job){
+    return `<div class="dpr-flow-binding-list">${job.stage_progress.map(p=>{
+      const version=window.DPR_PROCESSING_FLOWS.find(f=>f.name===job.stages[p.stage])?.version||'';
+      const percent=p.total?Math.round(p.done/p.total*100):0;
+      return `<div class="dpr-flow-binding-chip" data-progress-stage="${esc(p.stage)}"><span>${esc(p.stage)}</span><div class="dpr-flow-binding-name"><b>${esc(job.stages[p.stage])}</b><code>${esc(version)}</code></div><div class="dpr-task-progress-line dpr-flow-progress-line"><i class="${p.stage==='质检'?'blue':'teal'}" style="width:${percent}%"></i><b>${p.done.toLocaleString()} / ${p.total.toLocaleString()} · ${percent}%</b></div></div>`;
+    }).join('')}</div>`;
+  }
   function row(job){
     const project=window.DPR_COLLECTION_PROJECTS?.find(p=>p.id===job.project)?.name||job.project;
-    const data={taskId:job.id,taskName:job.name,project,taskCategory:job.category||'formal',priority:job.priority,enabled:String(job.enabled),expectedMode:job.expected_mode||'continuous',expectedValue:job.expected_value??'',filters:JSON.stringify(job.filters),flows:JSON.stringify(flowBindings(job)),assignments:JSON.stringify(Object.fromEntries(Object.entries(job.configs).map(([stage,nodes])=>[stage,Object.fromEntries(Object.entries(nodes).map(([name,node])=>[name,node.assignments]))]))),taskStatus:job.published?'published':'unpublished',collectionLinked:'true',sourceName:job.source_ids.join('、')};
+    const data={taskId:job.id,taskName:job.name,project,taskCategory:job.category||'formal',priority:job.priority,enabled:String(job.enabled),expectedMode:job.expected_mode||'continuous',expectedValue:job.expected_value??'',flowedCount:job.total_count,filters:JSON.stringify(job.filters),flows:JSON.stringify(flowBindings(job)),assignments:JSON.stringify(Object.fromEntries(Object.entries(job.configs).map(([stage,nodes])=>[stage,Object.fromEntries(Object.entries(nodes).map(([name,node])=>[name,node.assignments]))]))),taskStatus:job.published?'published':'unpublished',collectionLinked:'true',sourceName:job.source_ids.join('、')};
     const attrs=Object.entries(data).map(([key,value])=>`data-${key.replace(/[A-Z]/g,c=>'-'+c.toLowerCase())}="${esc(value)}"`).join(' ');
-    return `<tr data-collection-processing="${esc(job.id)}" data-processing-task-stage="${esc(Object.keys(job.stages).join(' '))}"><td><code>${esc(job.id)}</code></td><td><button class="dc-processing-link" data-open-job="${esc(job.id)}">${esc(job.name)}</button></td><td>${esc(project)}</td><td>${job.stage_progress.map(p=>`<div class="dc-processing-stage"><span>${esc(p.stage)}</span><b>${p.done} / ${p.total}</b><span>${esc(p.label)}</span></div>`).join('')}</td><td>${job.published?`<button class="dc-processing-link" data-job-action="${job.enabled?'pause':'resume'}" data-job-id="${esc(job.id)}">${job.enabled?'开启':'关闭'}</button>`:'-'}</td><td>${job.published?'已发布':'未发布'}</td><td>${job.priority>=7?'高':job.priority>=4?'中':'低'}</td><td>${job.category==='informal'?'非正式':'正式'}</td><td>${esc(job.creator)}</td><td>${esc(job.created_at.replace('T',' '))}</td><td><div class="dpr-task-actions"><button data-open-job="${esc(job.id)}">数据</button><button ${attrs} onclick="dprOpenProcessingTaskDrawer('detail',this)">配置</button>${!job.published?`<button ${attrs} onclick="dprOpenProcessingTaskDrawer('new',this)">编辑</button>`:''}${!job.published?`<button data-job-action="publish" data-job-id="${esc(job.id)}">发布</button>`:job.enabled&&job.new_count?`<button data-job-action="admit" data-job-id="${esc(job.id)}">纳入新数据</button>`:''}</div></td></tr>`;
+    return `<tr data-collection-processing="${esc(job.id)}" data-processing-task-stage="${esc(Object.keys(job.stages).join(' '))}"><td><code>${esc(job.id)}</code></td><td><a class="dpr-task-name" href="/data/tasks/${encodeURIComponent(job.id)}"><b>${esc(job.name)}</b></a></td><td>${esc(project)}</td><td>${flowProgress(job)}</td><td>${job.published?`<label class="dpr-task-enable"><input type="checkbox" ${job.enabled?'checked':''} aria-label="切换任务 ${esc(job.id)} 状态" data-linked-toggle="${esc(job.id)}"><i></i></label>`:'-'}</td><td><span class="dpr-state ${job.published?'green':'gray'}">${job.published?'已发布':'未发布'}</span></td><td><span class="dpr-priority wb-priority ${job.priority>=7?'priority-high':job.priority>=4?'priority-medium':'priority-low'}">${job.priority}</span></td><td>${job.category==='informal'?'非正式':'正式'}</td><td>${esc(job.creator)}</td><td>${esc(job.created_at.replace('T',' ').slice(0,16))}</td><td><div class="dpr-task-actions"><a href="/data/tasks/${encodeURIComponent(job.id)}">数据</a><button ${attrs} onclick="dprOpenProcessingTaskDrawer('detail',this)">详情</button><button ${attrs} onclick="dprOpenProcessingTaskDrawer('edit',this)">编辑</button><details class="dpr-task-more" ontoggle="dprPositionTaskMore(this)"><summary>更多</summary><div class="dpr-task-more-menu"><button ${attrs} onclick="dprCopyProcessingTask(this)">复制</button><button ${attrs} data-job-action="publish" data-job-id="${esc(job.id)}" ${job.published?'disabled':''}>发布</button></div></details></div></td></tr>`;
   }
   async function loadJobs(){
     jobs=(await api('/tasks')).tasks;
     const body=document.querySelector('#dpr-processing-task-table tbody');body.querySelectorAll('[data-collection-processing]').forEach(e=>e.remove());body.insertAdjacentHTML('afterbegin',jobs.map(row).join(''));
   }
   async function openJob(id){
-    const token=++loadToken;
-    const panel=document.getElementById('dc-processing-detail');panel.hidden=false;panel.innerHTML='<p role="status">正在加载处理任务…</p>';
-    originalClose();
     try{
-      const {task:job,sources}=await api('/tasks/'+id);if(token!==loadToken)return;
+      const trigger=[...document.querySelectorAll('#dpr-processing-task-table .dpr-task-actions button[data-task-id]')].find(el=>el.dataset.taskId===id&&el.getAttribute('onclick')?.includes("'detail'"));
+      if(!trigger)throw Error('处理任务不存在或已不可用');
+      window.dprOpenProcessingTaskDrawer('detail',trigger);
       const url=new URL(location.href);url.searchParams.delete('new');url.searchParams.delete('collection');url.searchParams.set('linked',id);history.replaceState(null,'',url.pathname+url.search);
-      panel.innerHTML=`<header><div><button class="dc-processing-link" data-close-job>‹ 返回处理任务</button><h2>${esc(job.name)}</h2><p>ID ${esc(job.id)} <span class="dc-processing-status">${esc(job.status_label)}</span></p></div><div class="dc-processing-actions"><button class="btn" data-open-job="${esc(id)}">刷新</button>${!job.published?`<button class="btn btn-primary" data-job-action="publish" data-job-id="${esc(id)}">发布</button>`:job.enabled?`<button class="btn" data-job-action="pause" data-job-id="${esc(id)}">关闭处理</button>${job.new_count?`<button class="btn btn-primary" data-job-action="admit" data-job-id="${esc(id)}">纳入新数据（${job.new_count}）</button>`:''}`:`<button class="btn btn-primary" data-job-action="resume" data-job-id="${esc(id)}">开启处理</button>`}</div></header><section class="dc-processing-detail-card"><h3>来源采集任务</h3><div class="dc-processing-sources">${sources.map(s=>`<a href="${BASE}/${esc(s.id)}#processing">${esc(s.id)} · ${esc(s.name)}</a>`).join('')}</div><dl class="dc-processing-numbers"><div><dt>已纳入数据</dt><dd>${job.total_count}</dd></div><div><dt>当前匹配数据</dt><dd>${job.candidate_count}</dd></div><div><dt>待纳入新数据</dt><dd>${job.new_count}</dd></div></dl>${!job.published?'<p>任务未发布，尚未接收数据。</p>':''}</section><section class="dc-processing-detail-card"><h3>业务环节</h3>${job.stage_progress.map(p=>`<div class="dc-processing-stage"><strong>${esc(p.stage)}</strong><span>${esc(job.stages[p.stage])}</span><b>${p.done} / ${p.total}</b><span>${esc(p.label)}</span></div>`).join('')}</section><section class="dc-processing-detail-card"><h3>筛选条件</h3><div class="dc-processing-condition-list">${job.filters.map(f=>`<span>${esc(f.join(' '))}</span>`).join('')}</div></section><section class="dc-processing-detail-card"><h3>已纳入数据</h3>${job.records.length?`<div class="dc-processing-detail-table"><table><thead><tr><th>Recording ID</th><th>来源任务</th><th>纳入时间</th>${Object.keys(job.stages).map(stage=>`<th>${esc(stage)}</th>`).join('')}</tr></thead><tbody>${job.records.map(r=>`<tr><td><a href="${BASE}/${esc(r.task_id)}?record=${encodeURIComponent(r.id)}#records">${esc(r.id)}</a></td><td>${esc(r.task_id)}</td><td>${esc(r.admitted_at.replace('T',' '))}</td>${Object.keys(job.stages).map(stage=>`<td>${{pending:'待处理',processing:'处理中',completed:'已完成'}[r.stages[stage]]||'-'}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`:'<div class="dc-processing-empty">'+(job.published?'等待符合筛选条件的数据':'发布后将纳入匹配数据')+'</div>'}</section>`;
-    }catch(error){if(token===loadToken)panel.innerHTML=`<p role="alert">${esc(error.message)}</p><button class="btn" data-open-job="${esc(id)}">重试</button><button class="btn" data-close-job>返回</button>`;}
+    }catch(error){window.toast(error.message);}
   }
-  document.body.insertAdjacentHTML('beforeend','<section id="dc-processing-detail" hidden></section><dialog id="dc-processing-confirm"><h3></h3><p></p><p data-confirm-error role="alert"></p><footer><button class="btn" onclick="this.closest(\'dialog\').close()">取消</button><button class="btn btn-primary" data-confirm-action>确认</button></footer></dialog>');
+  document.body.insertAdjacentHTML('beforeend','<dialog id="dc-processing-confirm"><h3></h3><p></p><p data-confirm-error role="alert"></p><footer><button class="btn" onclick="this.closest(\'dialog\').close()">取消</button><button class="btn btn-primary" data-confirm-action>确认</button></footer></dialog>');
+  document.addEventListener('change',event=>{
+    const toggle=event.target.closest('[data-linked-toggle]');if(!toggle)return;
+    const job=jobs.find(j=>j.id===toggle.dataset.linkedToggle);if(!job)return;
+    toggle.checked=job.enabled;
+    runAction(job,job.enabled?'pause':'resume');
+  });
   document.addEventListener('click',event=>{
-    const el=event.target.closest('[data-open-job],[data-close-job],[data-job-action]');if(!el)return;event.preventDefault();
-    if(el.hasAttribute('data-open-job'))openJob(el.dataset.openJob);
-    else if(el.hasAttribute('data-close-job')){loadToken++;document.getElementById('dc-processing-detail').hidden=true;const url=new URL(location.href);url.searchParams.delete('linked');history.replaceState(null,'',url.pathname+url.search);loadJobs().catch(e=>window.toast(e.message));}
-    else{const job=jobs.find(j=>j.id===el.dataset.jobId);if(job)runAction(job,el.dataset.jobAction);}
+    const el=event.target.closest('[data-job-action]');if(!el)return;event.preventDefault();
+    const job=jobs.find(j=>j.id===el.dataset.jobId);if(job)runAction(job,el.dataset.jobAction);
   });
   async function init(){
     const creatingFromSource=params.has('collection');
@@ -188,7 +260,6 @@
       const shortNames={'PRJ-LIANGJIAN':'亮剑','PRJ-MOZ1-SFT-07':'demo采集','PRJ-MOZ2-PRE-03':'预训练','PRJ-POST-TRAINING':'后训练','PRJ-EVAL-GEN-02':'宁德时代','PRJ-JD':'京东项目'};
       window.DPR_COLLECTION_PROJECTS.forEach(p=>p.name=shortNames[p.id]||p.id);
       collectionTasks=all.map(t=>({...t,project_name:shortNames[t.project]||t.project}));
-      sourceField.querySelector('select').innerHTML='<option value="">不指定来源采集任务</option>'+collectionTasks.map(t=>`<option value="${esc(t.id)}">${esc(t.id)} · ${esc(t.name)}</option>`).join('');
       await loadJobs();
       if(params.get('linked')){await openJob(params.get('linked'));return;}
       if(params.get('collection')){

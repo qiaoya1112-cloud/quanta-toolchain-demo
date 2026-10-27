@@ -9,7 +9,7 @@ import json
 import math
 import re
 from datetime import datetime
-from urllib.parse import quote
+from urllib.parse import quote, urlencode
 
 from flask import Blueprint, abort, jsonify, request
 
@@ -38,6 +38,17 @@ def get_job(conn, job_id):
 
 
 def save_job(conn, job):
+    for member in job['records']:
+        if (member.get('stages', {}).get('质检') == 'completed'
+                and member.get('results', {}).get('质检', {}).get('conclusion') not in ('合格', '不合格', '失误')):
+            raise ValueError('质检完成必须提供合格或不合格结论')
+        for stage in member.get('stage_workflow', {}):
+            if stage_position := member['stage_workflow'][stage]:
+                ended = stage_position.get('node') == 'End'
+                if ended != (member.get('stages', {}).get(stage) == 'completed'):
+                    raise ValueError('环节完成状态必须与 End 节点一致')
+                if ended and stage_position.get('status') != 'completed':
+                    raise ValueError('End 节点必须处于完成状态')
     conn.execute('UPDATE collection_processing SET payload=? WHERE id=?', (json.dumps(job, ensure_ascii=False), job['id']))
 
 
@@ -49,9 +60,12 @@ def matches(job, task, record):
     if record.get('upload') != 'uploaded':
         return False
     for field, operator, value, *scope in job['filters']:
+        conclusion = record.get('collection_result')
+        if conclusion not in ('success', 'failure') and isinstance(record.get('is_mistake'), bool):
+            conclusion = 'failure' if record['is_mistake'] else 'success'
         actual = {'采集任务 ID': task['id'], '数据 ID': record['id'],
                   '采集员': record.get('operator', ''),
-                  '采集结论': {'success': '成功', 'failure': '失败'}.get(record.get('collection_result'), '')}.get(field, '')
+                  '采集结论': {'success': '成功', 'failure': '失败'}.get(conclusion, '')}.get(field, '')
         if field == '采集时间':
             start, _, end = value.partition('~')
             passed = (not start or record['recorded_at'] >= start) and (not end or record['recorded_at'] <= end)
@@ -77,13 +91,17 @@ def source_tasks(conn, job):
 
 
 def candidates(conn, job):
-    return [(task, record) for task in source_tasks(conn, job)
-            for record in task['records'] if matches(job, task, record)]
+    from collection_processing_scope import apply_upstream
+    rows = [(task, record) for task in source_tasks(conn, job)
+            for record in collection.public_task(task, detail=True)['records'] if matches(job, task, record)]
+    return apply_upstream(conn, job, rows)
 
 
-def admit(conn, job):
+def admit(conn, job, task_id=None):
     existing = {(r['task_id'], r['id']) for r in job['records']}
     for task, record in candidates(conn, job):
+        if task_id and task['id'] != task_id:
+            continue
         key = (task['id'], record['id'])
         if key not in existing:
             job['records'].append({'id': record['id'], 'task_id': task['id'],
@@ -93,6 +111,7 @@ def admit(conn, job):
 
 
 def public_job(conn, job, task_id=None, record_id=None):
+    from collection_processing_scope import stage_finished
     result = copy.deepcopy(job)
     selected = [r for r in job['records'] if (not task_id or r['task_id'] == task_id)
                 and (not record_id or r['id'] == record_id)]
@@ -105,7 +124,7 @@ def public_job(conn, job, task_id=None, record_id=None):
     result['total_count'] = len(job['records'])
     result['stage_progress'] = []
     for stage in job['stages']:
-        done = sum(r['stages'].get(stage) == 'completed' for r in selected)
+        done = sum(stage_finished(r, stage) for r in selected)
         running = any(r['stages'].get(stage) == 'processing' for r in selected)
         state = ('draft' if not job['published'] else 'paused' if not job['enabled'] else
                  'waiting' if not selected else 'completed' if done == len(selected) else
@@ -115,9 +134,59 @@ def public_job(conn, job, task_id=None, record_id=None):
                         'waiting' if not selected else 'completed' if all(p['done'] == len(selected) for p in result['stage_progress']) else
                         'processing' if any(p['status'] == 'processing' for p in result['stage_progress']) else 'pending')
     result['status_label'] = STATES[result['status']]
-    result['href'] = '/data/processing-tasks?linked=' + quote(job['id'])
+    result['href'] = '/data/tasks/' + quote(job['id'], safe='')
+    params = {}
+    if task_id:
+        params['collection'] = task_id
+    if record_id:
+        params['data_id'] = record_id
+    if params:
+        result['href'] += '?' + urlencode(params)
     result.pop('request_key', None)
+    from collection_processing_scope import enrich_job
+    enrich_job(result, job, selected)
+    if task_id and record_id and len(selected) == 1:
+        from collection_processing_scope import recording_stage_details
+        result['record_stages'] = recording_stage_details(job, selected[0])
     return result
+
+
+def task_data_context(conn, job):
+    """Adapt persisted membership to the existing task-data renderer, without
+    inventing quality verdicts, workflow nodes or workbench assignments.
+    """
+    from collection_processing_scope import quality_result, record_state, stage_finished, current_business_position
+    sources = source_tasks(conn, job)
+    source_records = {(task['id'], record['id']): record
+                      for task in sources for record in collection.public_task(task, detail=True)['records']}
+    public = public_job(conn, job)
+    records = []
+    labels = {'pending': '待处理', 'processing': '处理中', 'completed': '已完成', 'paused': '已暂停'}
+    for member in job['records']:
+        record = source_records.get((member['task_id'], member['id']), {})
+        conclusion = record.get('collection_result', record.get('result'))
+        if conclusion not in ('success', 'failure') and isinstance(record.get('is_mistake'), bool):
+            conclusion = 'failure' if record['is_mistake'] else 'success'
+        current_stage, current_node = current_business_position(job, member)
+        records.append(dict(
+            id=member['id'], task_id=member['task_id'],
+            device=record.get('device', '-'),
+            collection={'success': '成功', 'failure': '失败'}.get(conclusion, '-'),
+            quality=(quality_result(member) or '未完成') if '质检' in job['stages'] else '-',
+            annotation=('已标注' if stage_finished(member, '标注') else '标注中' if member['stages'].get('标注') == 'processing' else '未标注') if '标注' in member['stages'] else '-',
+            stage_states=[(stage, labels.get(state, '-')) for stage, state in member['stages'].items()],
+            current_stage=current_stage, node=current_node,
+        ))
+    completed = sum(record_state(member) == 'completed' for member in job['records'])
+    task = dict(id=job['id'], name=job['name'], type='data_processing_task',
+                status={'processing': 'in_progress', 'completed': 'succeeded', 'draft': 'unpublished',
+                        'paused': '已关闭', 'waiting': '等待数据'}.get(public['status'], public['status']),
+                input_count=len(records), processed_count=completed,
+                backlog_count=len(records)-completed,
+                flow_bindings=[(stage, flow, '') for stage, flow in job['stages'].items()],
+                source_tasks=[dict(id=source['id'], name=source['name']) for source in sources])
+    task['processing_job'] = public
+    return task, records
 
 
 def validate(conn, body, flows):
@@ -204,13 +273,40 @@ def validate(conn, body, flows):
                 raise ValueError()
         except (ValueError, TypeError):
             return None, '请填写有效的预期任务量'
+    upstream_id = body.get('upstream_id', '')
+    upstream_result = body.get('upstream_result', '合格')
+    if upstream_id:
+        upstream = next((j for j in all_jobs(conn) if j['id'] == upstream_id), None)
+        if not upstream or not upstream['published'] or '质检' not in upstream['stages'] or upstream['project'] != tasks[0]['project']:
+            return None, '请选择同一项目已发布的上游质检任务'
+        if not set(t['id'] for t in tasks).issubset(upstream['source_ids']) or upstream_result not in ('合格', '不合格', '失误'):
+            return None, '上游质检任务的来源范围或结论无效'
+        if body.get('id') == upstream_id:
+            return None, '不能依赖当前处理任务'
     return dict(name=name.strip(), source_ids=[t['id'] for t in tasks], project=tasks[0]['project'],
+                upstream_id=upstream_id, upstream_result=upstream_result,
                 filters=filters, stages=stages, configs=configs, priority=priority,
+                stage_nodes={stage: list(next(f for f in flows if f['stage'] == stage and f['name'] == name).get('human_nodes') or [stage+'执行']) for stage, name in stages.items()},
                 category=category, expected_mode=expected_mode, expected_value=expected_value), None
 
 
 def register_processing(app, flows):
     bp = Blueprint('collection_processing', __name__)
+
+    @app.before_request
+    def refresh_continuous_inputs():
+        # Local demonstration of continuous intake. Production scheduling stays
+        # in the processing service; users never have to confirm each batch.
+        if request.method != 'GET' or not (request.path.startswith(collection.API) or request.path.startswith('/data/tasks/') or request.path == '/data/processing-tasks'):
+            return
+        with collection.database() as conn, conn:
+            conn.execute('BEGIN IMMEDIATE')
+            for job in all_jobs(conn):
+                if job['published'] and job['enabled']:
+                    previous = len(job['records'])
+                    admit(conn, job)
+                    if len(job['records']) != previous:
+                        save_job(conn, job)
 
     @bp.errorhandler(404)
     def not_found(error):
@@ -233,6 +329,25 @@ def register_processing(app, flows):
         with collection.database() as conn:
             job = get_job(conn, job_id)
             return jsonify(task=public_job(conn, job), sources=[dict(id=t['id'], name=t['name']) for t in source_tasks(conn, job)])
+
+    @bp.get(API + '/tasks/<job_id>/records/<source_id>/<record_id>')
+    def record_detail(job_id, source_id, record_id):
+        from collection_processing_scope import detail_payload
+        with collection.database() as conn:
+            result = detail_payload(conn, get_job(conn, job_id), source_id, record_id)
+            if result is None:
+                return jsonify(error='该数据尚未纳入当前处理任务'), 404
+            return jsonify(record=result)
+
+    @bp.post(API + '/preview')
+    def preview():
+        body = request.get_json(silent=True)
+        with collection.database() as conn:
+            data, error = validate(conn, body, flows)
+            if error:
+                return jsonify(error=error), 422
+            rows = candidates(conn, data)
+            return jsonify(count=len(rows), sources=[dict(id=t['id'], name=t['name'], count=sum(s['id'] == t['id'] for s, _ in rows)) for t in source_tasks(conn, data)])
 
     @bp.post(API + '/tasks')
     def create():
@@ -274,14 +389,37 @@ def register_processing(app, flows):
                 return jsonify(error='处理任务已更新，请刷新后重试'), 409
             action = body.get('action')
             if action == 'publish' and not job['published']:
+                expected = body.get('expected_count')
+                if expected is not None and expected != len(candidates(conn, job)):
+                    return jsonify(error='匹配数量已变化，请刷新后重新确认'), 409
                 job['published'] = True
                 admit(conn, job)
                 title = '发布处理任务'
             elif action == 'admit' and job['published'] and job['enabled']:
-                admit(conn, job)
+                source_id = body.get('collection_id')
+                if source_id and source_id not in job['source_ids']:
+                    return jsonify(error='来源采集任务不属于当前处理任务'), 422
+                current = public_job(conn, job, source_id)
+                if body.get('expected_count') is not None and body['expected_count'] != current['new_count']:
+                    return jsonify(error='待纳入数量已变化，请刷新后重新确认'), 409
+                admit(conn, job, source_id)
                 title = '纳入匹配数据'
             elif action in ('pause', 'resume') and job['published']:
                 job['enabled'] = action == 'resume'
+                if action == 'pause':
+                    mode = body.get('existing_mode', 'continue')
+                    if mode not in ('continue', 'pause'):
+                        return jsonify(error='请选择已有数据处理方式'), 422
+                    job['existing_mode'] = mode
+                    if mode == 'pause':
+                        for member in job['records']:
+                            member['paused_stages'] = {k: v for k, v in member['stages'].items() if v in ('pending', 'processing')}
+                            for stage in member['paused_stages']:
+                                member['stages'][stage] = 'paused'
+                else:
+                    for member in job['records']:
+                        member['stages'].update(member.pop('paused_stages', {}))
+                    admit(conn, job)
                 title = '开启处理任务' if job['enabled'] else '关闭处理任务'
             else:
                 return jsonify(error='当前状态不支持此操作'), 422
@@ -301,13 +439,23 @@ def register_processing(app, flows):
             job = get_job(conn, job_id)
             if type(body.get('revision')) is not int or body['revision'] != job['revision']:
                 return jsonify(error='处理任务已更新，请刷新后重试'), 409
+            if job['published'] and set(body) <= {'revision', 'priority', 'expected_value'}:
+                proposed = dict(job, **{key: value for key, value in body.items() if key != 'revision'})
+                data, error = validate(conn, proposed, flows)
+                if error:
+                    return jsonify(error=error), 422
+                job.update(priority=data['priority'], expected_value=data['expected_value'],
+                           revision=job['revision'] + 1, updated_at=collection.now())
+                job['events'].append(dict(at=job['updated_at'], actor=collection.USER, title='调整处理任务优先级或预期量'))
+                save_job(conn, job)
+                return jsonify(task=public_job(conn, job))
             if job['published']:
                 return jsonify(error='任务已发布，配置不可直接覆盖，请创建新的处理任务'), 409
             data, error = validate(conn, body, flows)
             if error:
                 return jsonify(error=error), 422
-            if data['source_ids'] != job['source_ids']:
-                return jsonify(error='来源采集任务不可更改，请创建新的处理任务'), 422
+            if data.get('upstream_id') == job['id']:
+                return jsonify(error='不能依赖当前处理任务'), 422
             job.update(data, revision=job['revision'] + 1, updated_at=collection.now())
             job['events'].append(dict(at=job['updated_at'], actor=collection.USER, title='修改处理配置'))
             save_job(conn, job)
