@@ -1,0 +1,872 @@
+{
+  "ok": true,
+  "identity": "user",
+  "data": {
+    "fields": [
+      {
+        "default_value": null,
+        "id": "fldVvYS0WS",
+        "name": "取值范围",
+        "style": {
+          "type": "plain"
+        },
+        "type": "text"
+      },
+      {
+        "default_value": null,
+        "id": "fldmZHHFJ7",
+        "multiple": false,
+        "name": "一级",
+        "options": [
+          {
+            "hue": "Blue",
+            "lightness": "Lighter",
+            "name": "被操作物品属性"
+          },
+          {
+            "hue": "Yellow",
+            "lightness": "Lighter",
+            "name": "环境条件"
+          },
+          {
+            "hue": "Carmine",
+            "lightness": "Lighter",
+            "name": "任务结构"
+          },
+          {
+            "hue": "Purple",
+            "lightness": "Lighter",
+            "name": "指令语言"
+          },
+          {
+            "hue": "Turquoise",
+            "lightness": "Lighter",
+            "name": ""
+          },
+          {
+            "hue": "Orange",
+            "lightness": "Lighter",
+            "name": "指令表达与理解"
+          }
+        ],
+        "type": "select"
+      },
+      {
+        "default_value": null,
+        "id": "fldVKucYl3",
+        "multiple": false,
+        "name": "Factor",
+        "options": [
+          {
+            "hue": "Red",
+            "lightness": "Lighter",
+            "name": "任务结构-对齐精度"
+          },
+          {
+            "hue": "Orange",
+            "lightness": "Lighter",
+            "name": "环境条件-场景布局-干扰物"
+          },
+          {
+            "hue": "Blue",
+            "lightness": "Lighter",
+            "name": "被操作物品属性-颜色"
+          },
+          {
+            "hue": "Blue",
+            "lightness": "Lighter",
+            "name": "被操作物品属性-物体材质"
+          },
+          {
+            "hue": "Red",
+            "lightness": "Lighter",
+            "name": "任务结构-对象数量"
+          },
+          {
+            "hue": "Orange",
+            "lightness": "Lighter",
+            "name": "环境条件-光学条件-光照条件"
+          },
+          {
+            "hue": "Purple",
+            "lightness": "Lighter",
+            "name": "指令语言-动作表达方式"
+          },
+          {
+            "hue": "Orange",
+            "lightness": "Lighter",
+            "name": "环境条件-遮挡程度"
+          },
+          {
+            "hue": "Purple",
+            "lightness": "Lighter",
+            "name": "指令语言-终态表达"
+          },
+          {
+            "hue": "Blue",
+            "lightness": "Lighter",
+            "name": "被操作物品属性-物体形状"
+          },
+          {
+            "hue": "Blue",
+            "lightness": "Lighter",
+            "name": "被操作物品属性-夹持宽度"
+          },
+          {
+            "hue": "Red",
+            "lightness": "Lighter",
+            "name": "任务结构-目标高度"
+          },
+          {
+            "hue": "Blue",
+            "lightness": "Lighter",
+            "name": "被操作物品属性-力控要求"
+          },
+          {
+            "hue": "Purple",
+            "lightness": "Lighter",
+            "name": "指令语言-语义分类"
+          },
+          {
+            "hue": "Blue",
+            "lightness": "Lighter",
+            "name": "被操作物品属性-物体重量"
+          },
+          {
+            "hue": "Blue",
+            "lightness": "Lighter",
+            "name": "被操作物品属性-物体运动状态"
+          },
+          {
+            "hue": "Purple",
+            "lightness": "Lighter",
+            "name": "指令语言-空间表达-方位理解"
+          },
+          {
+            "hue": "Orange",
+            "lightness": "Lighter",
+            "name": "环境条件-光学条件-背景反射度"
+          },
+          {
+            "hue": "Blue",
+            "lightness": "Lighter",
+            "name": "被操作物品属性-表面摩擦力"
+          },
+          {
+            "hue": "Purple",
+            "lightness": "Lighter",
+            "name": "指令语言-物品表达方式"
+          },
+          {
+            "hue": "Red",
+            "lightness": "Lighter",
+            "name": "任务结构-运动轨迹"
+          },
+          {
+            "hue": "Red",
+            "lightness": "Lighter",
+            "name": "任务结构-空间约束-目标位置"
+          },
+          {
+            "hue": "Purple",
+            "lightness": "Lighter",
+            "name": "指令语言-指定本体"
+          },
+          {
+            "hue": "Purple",
+            "lightness": "Lighter",
+            "name": "指令语言-空间表达-序数理解"
+          },
+          {
+            "hue": "Red",
+            "lightness": "Lighter",
+            "name": "任务结构-目标材质"
+          },
+          {
+            "hue": "Blue",
+            "lightness": "Lighter",
+            "name": "被操作物品属性-物体朝向"
+          },
+          {
+            "hue": "Blue",
+            "lightness": "Lighter",
+            "name": "被操作物品属性-相对位置"
+          },
+          {
+            "hue": "Blue",
+            "lightness": "Lighter",
+            "name": "被操作物品属性-尺寸"
+          },
+          {
+            "hue": "Blue",
+            "lightness": "Lighter",
+            "name": "被操作物品属性-物理属性"
+          },
+          {
+            "hue": "Purple",
+            "lightness": "Lighter",
+            "name": "指令语言-空间表达-相对位置"
+          },
+          {
+            "hue": "Orange",
+            "lightness": "Lighter",
+            "name": "环境条件-场景布局-摆放密度"
+          },
+          {
+            "hue": "Orange",
+            "lightness": "Lighter",
+            "name": "环境条件-场景布局-背景复杂度"
+          },
+          {
+            "hue": "Blue",
+            "lightness": "Lighter",
+            "name": "被操作物品属性-内容物状态"
+          },
+          {
+            "hue": "Blue",
+            "lightness": "Lighter",
+            "name": "环境条件-场景布局-空间位置"
+          },
+          {
+            "hue": "Orange",
+            "lightness": "Lighter",
+            "name": "环境条件-场景布局-姿态角度"
+          },
+          {
+            "hue": "Wathet",
+            "lightness": "Lighter",
+            "name": "环境条件-视觉干扰-传感器噪声"
+          },
+          {
+            "hue": "Yellow",
+            "lightness": "Lighter",
+            "name": "环境条件-背景-纹理复杂度"
+          },
+          {
+            "hue": "Turquoise",
+            "lightness": "Lighter",
+            "name": "环境条件-光照条件-色温"
+          },
+          {
+            "hue": "Red",
+            "lightness": "Lighter",
+            "name": "任务结构-空间约束-操作空间"
+          },
+          {
+            "hue": "Purple",
+            "lightness": "Lighter",
+            "name": "环境条件-动态干扰"
+          },
+          {
+            "hue": "Green",
+            "lightness": "Lighter",
+            "name": "环境条件-场景布局-堆叠关系"
+          },
+          {
+            "hue": "Carmine",
+            "lightness": "Lighter",
+            "name": "任务结构-空间约束-紧密排列"
+          },
+          {
+            "hue": "Carmine",
+            "lightness": "Lighter",
+            "name": "任务结构-目标位置-承载面属性"
+          },
+          {
+            "hue": "Orange",
+            "lightness": "Lighter",
+            "name": "环境条件-高度差"
+          },
+          {
+            "hue": "Wathet",
+            "lightness": "Lighter",
+            "name": "被操作物品属性-物体状态"
+          },
+          {
+            "hue": "Carmine",
+            "lightness": "Lighter",
+            "name": "任务结构-障碍物"
+          },
+          {
+            "hue": "Carmine",
+            "lightness": "Lighter",
+            "name": "任务结构-配合操作"
+          },
+          {
+            "hue": "Carmine",
+            "lightness": "Lighter",
+            "name": "任务结构-安全约束-失败后果严重程度"
+          },
+          {
+            "hue": "Carmine",
+            "lightness": "Lighter",
+            "name": "任务结构-安全约束-操作安全约束类型"
+          },
+          {
+            "hue": "Carmine",
+            "lightness": "Lighter",
+            "name": "任务结构-安全约束-危险区域约束"
+          }
+        ],
+        "remaining_options_count": 38,
+        "truncated": true,
+        "truncated_options_count": 38,
+        "type": "select"
+      },
+      {
+        "default_value": null,
+        "id": "fldSPRvmaz",
+        "name": "default 标准值",
+        "style": {
+          "type": "plain"
+        },
+        "type": "text"
+      },
+      {
+        "bidirectional": true,
+        "bidirectional_link_field_id": "fld0ANdk41",
+        "id": "fldp5v0cCg",
+        "link_table": "tblbdNXZmJUaUdJ1",
+        "name": "场景库目录表",
+        "type": "link"
+      },
+      {
+        "bidirectional": false,
+        "id": "fldXQ4ugKq",
+        "link_table": "tbl4uI23VnzwPMxy",
+        "name": "父记录",
+        "type": "link"
+      },
+      {
+        "bidirectional": true,
+        "bidirectional_link_field_id": "fldWkv4FOQ",
+        "id": "fldWLNg51Z",
+        "link_table": "tbltAFo6zZr09s0M",
+        "name": "取值说明",
+        "type": "link"
+      },
+      {
+        "default_value": null,
+        "id": "fldlz7yGD7",
+        "multiple": false,
+        "name": "二级",
+        "options": [
+          {
+            "hue": "Blue",
+            "lightness": "Lighter",
+            "name": "动态干扰"
+          },
+          {
+            "hue": "Orange",
+            "lightness": "Lighter",
+            "name": "光照条件"
+          },
+          {
+            "hue": "Wathet",
+            "lightness": "Lighter",
+            "name": "安全约束"
+          },
+          {
+            "hue": "Yellow",
+            "lightness": "Lighter",
+            "name": "内容物状态"
+          },
+          {
+            "hue": "Turquoise",
+            "lightness": "Lighter",
+            "name": "尺寸表达"
+          },
+          {
+            "hue": "Red",
+            "lightness": "Lighter",
+            "name": "终态表达"
+          },
+          {
+            "hue": "Purple",
+            "lightness": "Lighter",
+            "name": "目标高度"
+          },
+          {
+            "hue": "Green",
+            "lightness": "Lighter",
+            "name": "运动轨迹"
+          },
+          {
+            "hue": "Carmine",
+            "lightness": "Lighter",
+            "name": "空间约束"
+          },
+          {
+            "hue": "Lime",
+            "lightness": "Lighter",
+            "name": "遮挡程度"
+          },
+          {
+            "hue": "Blue",
+            "lightness": "Lighter",
+            "name": "双臂协同"
+          },
+          {
+            "hue": "Orange",
+            "lightness": "Lighter",
+            "name": "高度差"
+          },
+          {
+            "hue": "Wathet",
+            "lightness": "Lighter",
+            "name": "相对位置"
+          },
+          {
+            "hue": "Yellow",
+            "lightness": "Lighter",
+            "name": "物理属性"
+          },
+          {
+            "hue": "Turquoise",
+            "lightness": "Lighter",
+            "name": "动作表达方式"
+          },
+          {
+            "hue": "Red",
+            "lightness": "Lighter",
+            "name": "配合操作"
+          },
+          {
+            "hue": "Purple",
+            "lightness": "Lighter",
+            "name": "物体材质"
+          },
+          {
+            "hue": "Green",
+            "lightness": "Lighter",
+            "name": "场景布局"
+          },
+          {
+            "hue": "Carmine",
+            "lightness": "Lighter",
+            "name": "语义分类"
+          },
+          {
+            "hue": "Lime",
+            "lightness": "Lighter",
+            "name": "物体状态"
+          },
+          {
+            "hue": "Blue",
+            "lightness": "Lighter",
+            "name": "对齐精度"
+          },
+          {
+            "hue": "Orange",
+            "lightness": "Lighter",
+            "name": "光学条件"
+          },
+          {
+            "hue": "Wathet",
+            "lightness": "Lighter",
+            "name": "空间表达"
+          },
+          {
+            "hue": "Yellow",
+            "lightness": "Lighter",
+            "name": "物品表达方式"
+          },
+          {
+            "hue": "Turquoise",
+            "lightness": "Lighter",
+            "name": "物体重量"
+          },
+          {
+            "hue": "Red",
+            "lightness": "Lighter",
+            "name": "物体运动状态"
+          },
+          {
+            "hue": "Purple",
+            "lightness": "Lighter",
+            "name": "物体朝向"
+          },
+          {
+            "hue": "Green",
+            "lightness": "Lighter",
+            "name": "目标位置"
+          },
+          {
+            "hue": "Carmine",
+            "lightness": "Lighter",
+            "name": "对象数量"
+          },
+          {
+            "hue": "Lime",
+            "lightness": "Lighter",
+            "name": "颜色"
+          },
+          {
+            "hue": "Blue",
+            "lightness": "Lighter",
+            "name": "尺寸"
+          },
+          {
+            "hue": "Orange",
+            "lightness": "Lighter",
+            "name": "障碍物"
+          },
+          {
+            "hue": "Wathet",
+            "lightness": "Lighter",
+            "name": "视觉干扰"
+          },
+          {
+            "hue": "Yellow",
+            "lightness": "Lighter",
+            "name": "夹持宽度"
+          },
+          {
+            "hue": "Turquoise",
+            "lightness": "Lighter",
+            "name": "目标材质"
+          },
+          {
+            "hue": "Red",
+            "lightness": "Lighter",
+            "name": "力控要求"
+          },
+          {
+            "hue": "Purple",
+            "lightness": "Lighter",
+            "name": "背景"
+          },
+          {
+            "hue": "Green",
+            "lightness": "Lighter",
+            "name": "表面摩擦力"
+          },
+          {
+            "hue": "Carmine",
+            "lightness": "Lighter",
+            "name": "指定本体"
+          },
+          {
+            "hue": "Lime",
+            "lightness": "Lighter",
+            "name": "物体形状"
+          },
+          {
+            "hue": "Green",
+            "lightness": "Lighter",
+            "name": "几何形态"
+          },
+          {
+            "hue": "Carmine",
+            "lightness": "Lighter",
+            "name": "物理与状态"
+          },
+          {
+            "hue": "Lime",
+            "lightness": "Lighter",
+            "name": "表面与材质"
+          },
+          {
+            "hue": "Gray",
+            "lightness": "Lighter",
+            "name": "传感器条件"
+          },
+          {
+            "hue": "Blue",
+            "lightness": "Lighter",
+            "name": "空间与目标"
+          },
+          {
+            "hue": "Orange",
+            "lightness": "Lighter",
+            "name": "运动控制"
+          },
+          {
+            "hue": "Wathet",
+            "lightness": "Lighter",
+            "name": "数量与复杂度"
+          },
+          {
+            "hue": "Yellow",
+            "lightness": "Lighter",
+            "name": "动作与终态"
+          },
+          {
+            "hue": "Turquoise",
+            "lightness": "Lighter",
+            "name": "对象表达"
+          },
+          {
+            "hue": "Red",
+            "lightness": "Lighter",
+            "name": "本体指定"
+          }
+        ],
+        "type": "select"
+      },
+      {
+        "default_value": null,
+        "id": "fldkH4Rsvk",
+        "multiple": false,
+        "name": "三级",
+        "options": [
+          {
+            "hue": "Blue",
+            "lightness": "Lighter",
+            "name": "色温"
+          },
+          {
+            "hue": "Orange",
+            "lightness": "Lighter",
+            "name": "失败后果严重程度"
+          },
+          {
+            "hue": "Wathet",
+            "lightness": "Lighter",
+            "name": "大小"
+          },
+          {
+            "hue": "Yellow",
+            "lightness": "Lighter",
+            "name": "目标位置"
+          },
+          {
+            "hue": "Turquoise",
+            "lightness": "Lighter",
+            "name": "操作对象关系"
+          },
+          {
+            "hue": "Red",
+            "lightness": "Lighter",
+            "name": "操作安全约束类型"
+          },
+          {
+            "hue": "Purple",
+            "lightness": "Lighter",
+            "name": "背景复杂度"
+          },
+          {
+            "hue": "Green",
+            "lightness": "Lighter",
+            "name": "紧密排列"
+          },
+          {
+            "hue": "Carmine",
+            "lightness": "Lighter",
+            "name": "堆叠关系"
+          },
+          {
+            "hue": "Lime",
+            "lightness": "Lighter",
+            "name": "背景反射度"
+          },
+          {
+            "hue": "Blue",
+            "lightness": "Lighter",
+            "name": "方位理解"
+          },
+          {
+            "hue": "Orange",
+            "lightness": "Lighter",
+            "name": "操作空间"
+          },
+          {
+            "hue": "Wathet",
+            "lightness": "Lighter",
+            "name": "承载面属性"
+          },
+          {
+            "hue": "Yellow",
+            "lightness": "Lighter",
+            "name": "相对位置"
+          },
+          {
+            "hue": "Turquoise",
+            "lightness": "Lighter",
+            "name": "干扰物"
+          },
+          {
+            "hue": "Red",
+            "lightness": "Lighter",
+            "name": "传感器噪声"
+          },
+          {
+            "hue": "Purple",
+            "lightness": "Lighter",
+            "name": "光照条件"
+          },
+          {
+            "hue": "Green",
+            "lightness": "Lighter",
+            "name": "空间位置"
+          },
+          {
+            "hue": "Carmine",
+            "lightness": "Lighter",
+            "name": "纹理复杂度"
+          },
+          {
+            "hue": "Lime",
+            "lightness": "Lighter",
+            "name": "序数理解"
+          },
+          {
+            "hue": "Blue",
+            "lightness": "Lighter",
+            "name": "危险区域约束"
+          },
+          {
+            "hue": "Orange",
+            "lightness": "Lighter",
+            "name": "时间关系"
+          },
+          {
+            "hue": "Wathet",
+            "lightness": "Lighter",
+            "name": "摆放密度"
+          },
+          {
+            "hue": "Yellow",
+            "lightness": "Lighter",
+            "name": "姿态角度"
+          },
+          {
+            "hue": "Lime",
+            "lightness": "Lighter",
+            "name": "物体形状"
+          },
+          {
+            "hue": "Yellow",
+            "lightness": "Lighter",
+            "name": "夹持宽度"
+          },
+          {
+            "hue": "Blue",
+            "lightness": "Lighter",
+            "name": "尺寸"
+          },
+          {
+            "hue": "Red",
+            "lightness": "Lighter",
+            "name": "功能部位"
+          },
+          {
+            "hue": "Turquoise",
+            "lightness": "Lighter",
+            "name": "物体重量"
+          },
+          {
+            "hue": "Yellow",
+            "lightness": "Lighter",
+            "name": "物理属性"
+          },
+          {
+            "hue": "Red",
+            "lightness": "Lighter",
+            "name": "物体运动状态"
+          },
+          {
+            "hue": "Yellow",
+            "lightness": "Lighter",
+            "name": "内容物状态"
+          },
+          {
+            "hue": "Green",
+            "lightness": "Lighter",
+            "name": "表面摩擦力"
+          },
+          {
+            "hue": "Lime",
+            "lightness": "Lighter",
+            "name": "颜色"
+          },
+          {
+            "hue": "Purple",
+            "lightness": "Lighter",
+            "name": "遮挡程度"
+          },
+          {
+            "hue": "Green",
+            "lightness": "Lighter",
+            "name": "动态干扰"
+          },
+          {
+            "hue": "Carmine",
+            "lightness": "Lighter",
+            "name": "成像质量"
+          },
+          {
+            "hue": "Lime",
+            "lightness": "Lighter",
+            "name": "高度位置"
+          },
+          {
+            "hue": "Gray",
+            "lightness": "Lighter",
+            "name": "运动轨迹"
+          },
+          {
+            "hue": "Blue",
+            "lightness": "Lighter",
+            "name": "障碍物"
+          },
+          {
+            "hue": "Orange",
+            "lightness": "Lighter",
+            "name": "对齐精度"
+          },
+          {
+            "hue": "Wathet",
+            "lightness": "Lighter",
+            "name": "对象数量"
+          },
+          {
+            "hue": "Yellow",
+            "lightness": "Lighter",
+            "name": "操作次数"
+          },
+          {
+            "hue": "Turquoise",
+            "lightness": "Lighter",
+            "name": "动作表达方式"
+          },
+          {
+            "hue": "Red",
+            "lightness": "Lighter",
+            "name": "终态表达"
+          },
+          {
+            "hue": "Purple",
+            "lightness": "Lighter",
+            "name": "朝向要求"
+          },
+          {
+            "hue": "Green",
+            "lightness": "Lighter",
+            "name": "抓取部位要求"
+          },
+          {
+            "hue": "Carmine",
+            "lightness": "Lighter",
+            "name": "空间指代表达"
+          },
+          {
+            "hue": "Lime",
+            "lightness": "Lighter",
+            "name": "物品表达方式"
+          },
+          {
+            "hue": "Gray",
+            "lightness": "Lighter",
+            "name": "语义分类"
+          }
+        ],
+        "remaining_options_count": 1,
+        "truncated": true,
+        "truncated_options_count": 1,
+        "type": "select"
+      }
+    ],
+    "total": 9
+  }
+}

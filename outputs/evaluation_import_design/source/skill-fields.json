@@ -1,0 +1,574 @@
+{
+  "ok": true,
+  "identity": "user",
+  "data": {
+    "fields": [
+      {
+        "default_value": null,
+        "id": "fldYJil6hA",
+        "name": "Key Factor",
+        "style": {
+          "type": "plain"
+        },
+        "type": "text"
+      },
+      {
+        "default_value": null,
+        "id": "fldPFGLGOc",
+        "name": "备注",
+        "style": {
+          "type": "plain"
+        },
+        "type": "text"
+      },
+      {
+        "default_value": null,
+        "id": "fld6aRQoD3",
+        "name": "Skill_中文",
+        "style": {
+          "type": "plain"
+        },
+        "type": "text"
+      },
+      {
+        "default_value": null,
+        "id": "fldvZqUZYT",
+        "name": "Skill_EN",
+        "style": {
+          "type": "plain"
+        },
+        "type": "text"
+      },
+      {
+        "default_value": null,
+        "id": "fldqD8EoHM",
+        "multiple": false,
+        "name": "工具使用",
+        "options": [
+          {
+            "hue": "Blue",
+            "lightness": "Lighter",
+            "name": "是"
+          },
+          {
+            "hue": "Carmine",
+            "lightness": "Lighter",
+            "name": "工具操作（Tool Use）"
+          }
+        ],
+        "type": "select"
+      },
+      {
+        "default_value": null,
+        "id": "fldgJG7B1e",
+        "multiple": false,
+        "name": "SKill类别",
+        "options": [
+          {
+            "hue": "Orange",
+            "lightness": "Lighter",
+            "name": "辨别类 Skill"
+          },
+          {
+            "hue": "Blue",
+            "lightness": "Lighter",
+            "name": "动作类 Skill"
+          },
+          {
+            "hue": "Wathet",
+            "lightness": "Lighter",
+            "name": "空间类 Skill"
+          }
+        ],
+        "type": "select"
+      },
+      {
+        "default_value": null,
+        "id": "fldasRKrZO",
+        "multiple": true,
+        "name": "可能的动作描述",
+        "options": [
+          {
+            "hue": "Blue",
+            "lightness": "Lighter",
+            "name": "hold"
+          },
+          {
+            "hue": "Orange",
+            "lightness": "Lighter",
+            "name": "fix"
+          },
+          {
+            "hue": "Wathet",
+            "lightness": "Lighter",
+            "name": "keep"
+          },
+          {
+            "hue": "Yellow",
+            "lightness": "Lighter",
+            "name": "open"
+          },
+          {
+            "hue": "Turquoise",
+            "lightness": "Lighter",
+            "name": "turn"
+          },
+          {
+            "hue": "Red",
+            "lightness": "Lighter",
+            "name": "flip"
+          },
+          {
+            "hue": "Purple",
+            "lightness": "Lighter",
+            "name": "OEN"
+          },
+          {
+            "hue": "Green",
+            "lightness": "Lighter",
+            "name": "Leaf"
+          },
+          {
+            "hue": "Carmine",
+            "lightness": "Lighter",
+            "name": "pick"
+          },
+          {
+            "hue": "Lime",
+            "lightness": "Lighter",
+            "name": "grasp"
+          },
+          {
+            "hue": "Gray",
+            "lightness": "Lighter",
+            "name": "grab"
+          },
+          {
+            "hue": "Blue",
+            "lightness": "Lighter",
+            "name": "take"
+          },
+          {
+            "hue": "Orange",
+            "lightness": "Lighter",
+            "name": "可能的动作描述"
+          },
+          {
+            "hue": "Wathet",
+            "lightness": "Lighter",
+            "name": "leaf"
+          },
+          {
+            "hue": "Yellow",
+            "lightness": "Lighter",
+            "name": "overturn"
+          },
+          {
+            "hue": "Turquoise",
+            "lightness": "Lighter",
+            "name": "twist"
+          },
+          {
+            "hue": "Red",
+            "lightness": "Lighter",
+            "name": "screw"
+          },
+          {
+            "hue": "Purple",
+            "lightness": "Lighter",
+            "name": "rotate"
+          },
+          {
+            "hue": "Green",
+            "lightness": "Lighter",
+            "name": "wring"
+          },
+          {
+            "hue": "Carmine",
+            "lightness": "Lighter",
+            "name": "place"
+          },
+          {
+            "hue": "Lime",
+            "lightness": "Lighter",
+            "name": "put"
+          },
+          {
+            "hue": "Gray",
+            "lightness": "Lighter",
+            "name": "set"
+          },
+          {
+            "hue": "Blue",
+            "lightness": "Lighter",
+            "name": "lay"
+          },
+          {
+            "hue": "Orange",
+            "lightness": "Lighter",
+            "name": "position"
+          },
+          {
+            "hue": "Wathet",
+            "lightness": "Lighter",
+            "name": "pour"
+          },
+          {
+            "hue": "Yellow",
+            "lightness": "Lighter",
+            "name": "tip"
+          },
+          {
+            "hue": "Turquoise",
+            "lightness": "Lighter",
+            "name": "spill"
+          },
+          {
+            "hue": "Red",
+            "lightness": "Lighter",
+            "name": "empty"
+          },
+          {
+            "hue": "Purple",
+            "lightness": "Lighter",
+            "name": "adjust"
+          },
+          {
+            "hue": "Green",
+            "lightness": "Lighter",
+            "name": "tune"
+          },
+          {
+            "hue": "Carmine",
+            "lightness": "Lighter",
+            "name": "fine-tune"
+          },
+          {
+            "hue": "Lime",
+            "lightness": "Lighter",
+            "name": "modify"
+          },
+          {
+            "hue": "Gray",
+            "lightness": "Lighter",
+            "name": "stir"
+          },
+          {
+            "hue": "Blue",
+            "lightness": "Lighter",
+            "name": "mix"
+          },
+          {
+            "hue": "Orange",
+            "lightness": "Lighter",
+            "name": "whisk"
+          },
+          {
+            "hue": "Wathet",
+            "lightness": "Lighter",
+            "name": "agitate"
+          },
+          {
+            "hue": "Yellow",
+            "lightness": "Lighter",
+            "name": "insert"
+          },
+          {
+            "hue": "Turquoise",
+            "lightness": "Lighter",
+            "name": "put in"
+          },
+          {
+            "hue": "Red",
+            "lightness": "Lighter",
+            "name": "plug in"
+          },
+          {
+            "hue": "Purple",
+            "lightness": "Lighter",
+            "name": "stick in"
+          },
+          {
+            "hue": "Green",
+            "lightness": "Lighter",
+            "name": "pull"
+          },
+          {
+            "hue": "Carmine",
+            "lightness": "Lighter",
+            "name": "drag"
+          },
+          {
+            "hue": "Lime",
+            "lightness": "Lighter",
+            "name": "draw"
+          },
+          {
+            "hue": "Gray",
+            "lightness": "Lighter",
+            "name": "tug"
+          },
+          {
+            "hue": "Blue",
+            "lightness": "Lighter",
+            "name": "clean"
+          },
+          {
+            "hue": "Orange",
+            "lightness": "Lighter",
+            "name": "sweep"
+          },
+          {
+            "hue": "Wathet",
+            "lightness": "Lighter",
+            "name": "brush"
+          },
+          {
+            "hue": "Yellow",
+            "lightness": "Lighter",
+            "name": "wipe off"
+          },
+          {
+            "hue": "Turquoise",
+            "lightness": "Lighter",
+            "name": "unlid"
+          },
+          {
+            "hue": "Red",
+            "lightness": "Lighter",
+            "name": "uncover"
+          }
+        ],
+        "remaining_options_count": 77,
+        "truncated": true,
+        "truncated_options_count": 77,
+        "type": "select"
+      },
+      {
+        "default_value": null,
+        "id": "fldGlAbYqc",
+        "multiple": false,
+        "name": "Skill",
+        "options": [
+          {
+            "hue": "Blue",
+            "lightness": "Lighter",
+            "name": "物品尺寸辨别(Sizing）"
+          },
+          {
+            "hue": "Wathet",
+            "lightness": "Lighter",
+            "name": "物品形状辨别(Shaping）"
+          },
+          {
+            "hue": "Blue",
+            "lightness": "Lighter",
+            "name": "抓取（Pick）"
+          },
+          {
+            "hue": "Orange",
+            "lightness": "Lighter",
+            "name": "翻（Turn）"
+          },
+          {
+            "hue": "Yellow",
+            "lightness": "Lighter",
+            "name": "拧（Twist）"
+          },
+          {
+            "hue": "Turquoise",
+            "lightness": "Lighter",
+            "name": "放置（Place）"
+          },
+          {
+            "hue": "Red",
+            "lightness": "Lighter",
+            "name": "倾倒（Pour）"
+          },
+          {
+            "hue": "Purple",
+            "lightness": "Lighter",
+            "name": "调整（Adjust）"
+          },
+          {
+            "hue": "Green",
+            "lightness": "Lighter",
+            "name": "搅拌（Stir）"
+          },
+          {
+            "hue": "Carmine",
+            "lightness": "Lighter",
+            "name": "插入（Insert）"
+          },
+          {
+            "hue": "Lime",
+            "lightness": "Lighter",
+            "name": "拉动（Pull）"
+          },
+          {
+            "hue": "Blue",
+            "lightness": "Lighter",
+            "name": "物品材质辨别"
+          },
+          {
+            "hue": "Orange",
+            "lightness": "Lighter",
+            "name": "清扫（Clean）"
+          },
+          {
+            "hue": "Wathet",
+            "lightness": "Lighter",
+            "name": "打开（Open）"
+          },
+          {
+            "hue": "Yellow",
+            "lightness": "Lighter",
+            "name": "关闭（Close）"
+          },
+          {
+            "hue": "Turquoise",
+            "lightness": "Lighter",
+            "name": "折叠（Fold）"
+          },
+          {
+            "hue": "Red",
+            "lightness": "Lighter",
+            "name": "悬挂（Hang）"
+          },
+          {
+            "hue": "Purple",
+            "lightness": "Lighter",
+            "name": "撕（Tear）"
+          },
+          {
+            "hue": "Green",
+            "lightness": "Lighter",
+            "name": "拆卸（Disassemble）"
+          },
+          {
+            "hue": "Carmine",
+            "lightness": "Lighter",
+            "name": "工具操作（Tool Use）"
+          },
+          {
+            "hue": "Lime",
+            "lightness": "Lighter",
+            "name": "切割（Cut）"
+          },
+          {
+            "hue": "Orange",
+            "lightness": "Lighter",
+            "name": "堆叠（Stack）"
+          },
+          {
+            "hue": "Wathet",
+            "lightness": "Lighter",
+            "name": "展开（Unfold）"
+          },
+          {
+            "hue": "Yellow",
+            "lightness": "Lighter",
+            "name": "物品颜色辨别"
+          },
+          {
+            "hue": "Turquoise",
+            "lightness": "Lighter",
+            "name": "推动（Push）"
+          },
+          {
+            "hue": "Red",
+            "lightness": "Lighter",
+            "name": "目标感知"
+          },
+          {
+            "hue": "Purple",
+            "lightness": "Lighter",
+            "name": "运动跟随"
+          },
+          {
+            "hue": "Green",
+            "lightness": "Lighter",
+            "name": "按压（Press）"
+          },
+          {
+            "hue": "Carmine",
+            "lightness": "Lighter",
+            "name": "旋转（Rotate）"
+          },
+          {
+            "hue": "Lime",
+            "lightness": "Lighter",
+            "name": "切割 (Cut)"
+          },
+          {
+            "hue": "Blue",
+            "lightness": "Lighter",
+            "name": "装配（Assembly）"
+          },
+          {
+            "hue": "Orange",
+            "lightness": "Lighter",
+            "name": "搅拌（Stir)"
+          },
+          {
+            "hue": "Wathet",
+            "lightness": "Lighter",
+            "name": "套（Fit）"
+          },
+          {
+            "hue": "Yellow",
+            "lightness": "Lighter",
+            "name": "拍打（Pat）"
+          },
+          {
+            "hue": "Turquoise",
+            "lightness": "Lighter",
+            "name": "拆卸"
+          },
+          {
+            "hue": "Red",
+            "lightness": "Lighter",
+            "name": "贴附（Attach）"
+          },
+          {
+            "hue": "Turquoise",
+            "lightness": "Lighter",
+            "name": "剥（Peel）"
+          },
+          {
+            "hue": "Turquoise",
+            "lightness": "Lighter",
+            "name": "擦拭（Wipe）"
+          },
+          {
+            "hue": "Red",
+            "lightness": "Lighter",
+            "name": "双手协同"
+          },
+          {
+            "hue": "Purple",
+            "lightness": "Lighter",
+            "name": "双手协同-打开"
+          },
+          {
+            "hue": "Green",
+            "lightness": "Lighter",
+            "name": "双手协同-放下"
+          },
+          {
+            "hue": "Carmine",
+            "lightness": "Lighter",
+            "name": "固定（Hold）"
+          },
+          {
+            "hue": "Lime",
+            "lightness": "Lighter",
+            "name": "抓取"
+          }
+        ],
+        "type": "select"
+      }
+    ],
+    "total": 8
+  }
+}

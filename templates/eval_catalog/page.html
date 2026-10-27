@@ -1,14 +1,9 @@
 <link rel="stylesheet" href="/static/shared/scene-images.css">
+{% if kind == 'test-cases' %}<link rel="stylesheet" href="/static/shared/table-upload.css">{% endif %}
 <section id="catalog" data-kind="{{kind}}" data-section="{{section}}">
   <div class="model-list-title"><div class="model-list-title-main"><h1>{{page_title}}</h1><div class="eval-project-switcher" role="group" aria-label="所属项目">
     <span class="eval-project-switcher-label">所属项目</span><select id="ec-title-project" aria-label="所属项目" onchange="if(window.syncEvalCatalogProject){window.syncEvalCatalogProject(this.value);}"><option value="">全部项目</option><option value="预训练评测">预训练评测</option><option value="后训练评测">后训练评测</option></select>
-  </div></div><div class="model-list-actions">{% if kind == 'test-cases' %}<div class="ts-wrap" id="ec-benchmark-actions" style="display:inline-flex;width:auto">
-    <button type="button" class="ant-btn" id="ec-create-benchmark" style="border-radius:6px 0 0 6px" disabled>批量新建评测集</button><button type="button" class="ant-btn" id="ec-benchmark-menu-trigger" style="border-radius:0 6px 6px 0;margin-left:-1px;padding:0 10px" aria-label="评测集批量操作" aria-haspopup="menu" aria-expanded="false" aria-controls="ec-benchmark-menu" disabled>▾</button>
-    <div class="ts-panel" id="ec-benchmark-menu" role="menu" style="left:auto;right:0;width:220px;min-width:0">
-      <button type="button" class="ts-row" id="ec-benchmark-menu-create" role="menuitem" style="width:100%;border:0;background:none;text-align:left">批量新建评测集</button>
-      <button type="button" class="ts-row" id="ec-benchmark-menu-add" role="menuitem" style="width:100%;border:0;background:none;text-align:left">批量添加至已有评测集</button>
-    </div>
-  </div>{% endif %}<button class="ant-btn ant-btn-primary" id="ec-create">{{ '批量新增场景' if section == 'scenario' else '新增' + title.replace(' 定义','') }}</button></div></div>
+  </div></div><div class="model-list-actions">{% if kind == 'test-cases' %}<button type="button" class="ant-btn" id="ec-import">批量导入</button><button type="button" class="ant-btn" id="ec-quick-create">快速创建评测用例</button>{% endif %}<button class="ant-btn ant-btn-primary" id="ec-create">{{ '批量新增场景' if section == 'scenario' else '新增' + title.replace(' 定义','') }}</button></div></div>
   {% if kind != 'test-cases' %}
   <div class="tm-bar"><div class="tm-tabs" id="ec-top-tabs" role="tablist" aria-label="场景库分类">
     <a class="tm-tab{{ ' active' if section == 'scenario' else '' }}" href="/model/eval/catalog?section=scenario" role="tab" aria-selected="{{ 'true' if section == 'scenario' else 'false' }}">场景库定义</a>
@@ -51,10 +46,22 @@
   </div>
   {% endif %}
   {% if kind == 'test-cases' %}
-  <div class="model-list-actions" style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
+  <div class="model-list-actions" style="display:flex;align-items:center;flex-wrap:wrap;gap:12px;margin-bottom:12px">
     <div class="form-group" style="display:flex;align-items:center;gap:8px;margin:0"><label for="ec-case-sort" style="margin:0;white-space:nowrap">排序方式</label><select id="ec-case-sort" style="width:220px" title="聚合时，相同 Stage 下的相同 Story 用例连续展示，组内按创建时间降序排列"><option value="stage-story" selected>按要素聚合排序</option><option value="created-desc">按创建时间降序</option></select></div>
     <span id="ec-selected-count" aria-live="polite" hidden></span>
     <button type="button" class="action-link" id="ec-clear-selection" style="border:0;background:none;padding:0" hidden>清空选择</button>
+    <div class="model-list-actions" style="display:flex;flex-wrap:wrap;justify-content:flex-end;gap:8px;margin-left:auto">
+      <div class="ts-wrap" id="ec-batch-actions" style="width:auto">
+        <button type="button" class="ant-btn" id="ec-batch-actions-trigger" aria-haspopup="menu" aria-expanded="false" aria-controls="ec-batch-actions-menu" disabled>其他批量操作 <span aria-hidden="true">▾</span></button>
+        <div class="ts-panel" id="ec-batch-actions-menu" role="menu" aria-label="其他批量操作" style="left:auto;right:0;width:160px;min-width:0">
+          <button type="button" class="ts-row case-single-option" role="menuitem" data-batch-case-status="publish" disabled>批量发布</button>
+          <button type="button" class="ts-row case-single-option" role="menuitem" data-batch-case-status="enable" disabled>批量启用</button>
+          <button type="button" class="ts-row case-single-option" role="menuitem" data-batch-case-status="disable" disabled>批量停用</button>
+        </div>
+      </div>
+      <button type="button" class="ant-btn" id="ec-add-to-benchmark" disabled>批量添加至已有评测集</button>
+      <button type="button" class="ant-btn" id="ec-create-benchmark" disabled>批量新建评测集</button>
+    </div>
   </div>
   <div class="ts-panel" id="ec-selection-menu" style="position:fixed;width:96px;min-width:0;box-sizing:border-box;z-index:1400" role="group" aria-label="选择范围">
     <button type="button" class="ts-row" data-select-scope="all" style="width:100%;border:0;background:none;text-align:left">选择全部</button>
@@ -73,13 +80,51 @@
 </style>
 {% if kind == 'test-cases' %}
 <style>
-  #ec-benchmark-actions > #ec-create-benchmark { border-radius:8px 0 0 8px !important; }
-  #ec-benchmark-actions > #ec-benchmark-menu-trigger { border-radius:0 8px 8px 0 !important; }
   #ec-benchmark-add-retry[hidden] { display:none; }
+  #ec-import-dialog [hidden] { display:none !important; }
+  #ec-import-dialog .ant-drawer-content { width:560px; }
+  #ec-import-dialog .ant-drawer-header { display:flex; align-items:center; gap:16px; }
+  #ec-import-dialog .ant-drawer-header h3 { margin-right:auto; }
+  #ec-import-dialog .ant-drawer-close { position:static; flex-shrink:0; }
+  #ec-import-dialog .s026-upload-zone { padding:20px 16px; box-sizing:border-box; }
+  #ec-import-dialog .s026-upload-zone b { max-width:100%; overflow-wrap:anywhere; }
+  #ec-import-dialog .s026-upload-zone > span { line-height:1.6; }
+  #ec-import-dialog .s026-upload-zone [data-upload-actions] { display:flex; gap:8px; }
+  #ec-import-dialog .ec-import-note { margin:12px 0 20px; font-size:12px; line-height:1.7; }
   .case-picker-group-title { padding:8px 12px 4px; color:rgba(0,0,0,.45); font-size:12px; line-height:20px; cursor:default; }
   .case-picker-group + .case-picker-group { margin-top:4px; padding-top:4px; border-top:1px solid #f0f0f0; }
   .case-picker-group > .ts-row { padding-left:20px; }
   .case-picker-empty { padding:24px 12px; color:rgba(0,0,0,.35); font-size:14px; text-align:center; cursor:default; }
+  #ec-dialog.ec-quick-create > .ant-drawer-content { width:min(1440px,calc(100vw - 224px)); max-width:100vw; }
+  #ec-quick-count { font-weight:400; margin-left:8px; }
+  .ec-quick-group { margin-bottom:20px; border:1px solid #e8e8e8; border-radius:8px; }
+  .ec-quick-group-header { display:flex; align-items:center; flex-wrap:wrap; gap:16px; padding:16px; background:#fafafa; border-radius:8px 8px 0 0; }
+  .ec-quick-group-title { color:rgba(0,0,0,.85); font-weight:500; white-space:nowrap; }
+  .ec-quick-scene-field { display:flex; align-items:center; gap:8px; min-width:260px; flex:1; max-width:380px; }
+  .ec-quick-scene-field > span { white-space:nowrap; }
+  .ec-quick-project-field.form-group { margin:0; min-width:230px; }
+  .ec-quick-project-field label { margin:0; white-space:nowrap; font-weight:400; }
+  .ec-quick-project-field select { flex:1; min-width:0; width:auto; }
+  .ec-quick-scene-field .ts-wrap { min-width:0; flex:1; }
+  .ec-quick-scene-field .ts-trigger { text-align:left; background:#fff; }
+  .ec-quick-group-count { margin-left:auto; white-space:nowrap; }
+  .ec-quick-table-scroll { overflow-x:auto; }
+  .ec-quick-table { table-layout:fixed; min-width:880px; }
+  .ec-quick-table thead th { padding:10px 12px; font-size:13px; background:#fff; }
+  .ec-quick-table tbody td { padding:12px; vertical-align:middle; }
+  .ec-quick-table .form-group { margin:0; }
+  .ec-quick-table .form-group input { width:100%; min-width:0; box-sizing:border-box; }
+  .ec-quick-operations { white-space:nowrap; }
+  .ec-quick-create .action-link { border:0; background:none; padding:0; cursor:pointer; font-size:14px; }
+  .ec-quick-create .action-link:disabled { color:rgba(0,0,0,.25); cursor:not-allowed; }
+  .ec-quick-group-footer { padding:12px 16px; }
+  .ec-quick-add-group { width:100%; border-style:dashed; }
+  .ec-quick-option-footer { border-top:1px solid #f0f0f0; padding:8px 12px; }
+  .ec-quick-element-input { display:flex; align-items:center; gap:12px; margin:0; }
+  .ec-quick-element-input .action-link { flex-shrink:0; }
+  .ec-required,[data-quick-element-error] { color:#cf1322; }
+  [data-quick-element-error] { font-size:12px; }
+  @media(max-width:900px) { #ec-dialog.ec-quick-create > .ant-drawer-content { width:100vw; } }
   #catalog[data-kind="test-cases"] [data-filter-kind="skills"] input[type="checkbox"], #ec-fields [data-case-picker] input[type="checkbox"] { appearance:auto; -webkit-appearance:checkbox; border-radius:2px; accent-color:#1F80A0; cursor:pointer; }
   #catalog[data-kind="test-cases"] [data-filter-kind="skills"] .ts-row { white-space:normal; overflow-wrap:anywhere; }
   #catalog[data-kind="test-cases"] [data-filter-kind="skills"] .ts-trigger { height:36px; flex-wrap:nowrap; text-align:left; }
@@ -109,6 +154,23 @@
 </div></div>
 <div class="ant-drawer-mask ant-centered-modal" id="ec-confirm" role="alertdialog" aria-modal="true" aria-labelledby="ec-confirm-title"><div class="ant-drawer-content"><div class="ant-drawer-header"><h3 id="ec-confirm-title">删除记录</h3></div><div class="ant-drawer-body"><p id="ec-confirm-text"></p></div><div class="ant-drawer-footer"><button class="ant-btn" id="ec-confirm-cancel">取消</button><button class="ant-btn ant-btn-primary" id="ec-confirm-delete">确认删除</button></div></div></div>
 {% if kind == 'test-cases' %}
+<div class="ant-drawer-mask" id="ec-import-dialog" role="dialog" aria-modal="true" aria-labelledby="ec-import-title"><div class="ant-drawer-content benchmark-drawer-content">
+  <div class="ant-drawer-header"><h3 id="ec-import-title">批量导入评测用例</h3><a class="action-link" href="/model/eval/test-cases/import/template" download>下载模板</a><button type="button" class="ant-drawer-close" id="ec-import-close" aria-label="关闭">×</button></div>
+  <form id="ec-import-form"><div class="ant-drawer-body">
+    <div class="s026-upload-zone" id="ec-import-zone" aria-label="上传评测用例表">
+      <b id="ec-import-filename">上传评测用例表</b>
+      <span>支持 XLSX、CSV，本地选择或拖拽上传；文件不超过 12 MB</span>
+      <input type="file" id="ec-import-file" accept=".xlsx,.csv" aria-label="选择评测用例文件" hidden>
+      <div class="s026-upload-state" id="ec-import-file-state" role="status" aria-live="polite"></div>
+      <div data-upload-actions><button type="button" class="ant-btn" id="ec-import-choose">选择本地文件</button><button type="button" class="ant-btn" id="ec-import-remove" hidden>移除文件</button></div>
+    </div>
+    <div class="form-group" style="margin-top:20px"><label for="ec-import-duplicate-mode">用例 ID 重复时</label><select id="ec-import-duplicate-mode" aria-describedby="ec-import-duplicate-help"><option value="update">更新</option><option value="skip" selected>跳过</option></select><p class="muted" id="ec-import-duplicate-help" style="margin:8px 0 0;font-size:12px">与平台已有用例 ID 重复时，跳过该行，保留已有用例。文件内的 ID 仍需唯一。</p></div>
+    <p class="muted ec-import-note">全部校验通过后整批导入；失败可下载带「错误原因」的文件。图片直接嵌入 Excel，详细规则见模板填写说明。</p>
+    <div id="ec-import-result" role="status" aria-live="polite" hidden></div>
+    <div id="ec-import-report" hidden style="margin-top:12px"><a class="action-link" id="ec-import-download" download hidden>下载错误文件</a><button type="button" class="ant-btn" id="ec-import-report-retry" hidden>重新生成错误文件</button></div>
+    <div id="ec-import-error-table" style="overflow:auto;max-height:280px;margin-top:12px" hidden></div>
+  </div><div class="ant-drawer-footer"><button type="button" class="ant-btn" id="ec-import-cancel">取消</button><button type="submit" class="ant-btn ant-btn-primary" id="ec-import-submit" disabled>校验并导入</button></div></form>
+</div></div>
 <div class="ant-drawer-mask ant-centered-modal" id="ec-benchmark-add-dialog" role="dialog" aria-modal="true" aria-labelledby="ec-benchmark-add-title"><div class="ant-drawer-content">
   <div class="ant-drawer-header"><h3 id="ec-benchmark-add-title">批量添加至已有评测集</h3><button type="button" class="ant-drawer-close" id="ec-benchmark-add-close" aria-label="关闭">×</button></div>
   <form id="ec-benchmark-add-form"><div class="ant-drawer-body">

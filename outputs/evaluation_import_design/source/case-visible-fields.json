@@ -1,0 +1,25 @@
+{
+  "ok": true,
+  "identity": "user",
+  "data": {
+    "visible_fields": [
+      "用例ID",
+      "Stage",
+      "Story",
+      "Prompt",
+      "prompt_ch",
+      "道具",
+      "布置图片",
+      "Skill标签",
+      "Factor",
+      "Factor取值",
+      "数据归属",
+      "是否在eval场景集",
+      "ft采集组（仅限来源为ft采集场景的数据）",
+      "是否采集过遥操数据",
+      "版本",
+      "来源",
+      "story(英文版）"
+    ]
+  }
+}

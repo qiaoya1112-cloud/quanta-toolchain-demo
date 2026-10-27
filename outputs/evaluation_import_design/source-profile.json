@@ -1,0 +1,1261 @@
+{
+  "source_url": "https://nwd4iy9rd2s.feishu.cn/base/OQ2UbV65natigrstPbXcwhWinyb?table=tblnjRJV5JV5vLQr&view=vewi0Okt9f",
+  "case_schema_fields": 18,
+  "visible_fields": 17,
+  "hidden_fields": [
+    "前置用例"
+  ],
+  "records": {
+    "cases": 562,
+    "scenes": 630,
+    "skills": 198,
+    "factors": 193,
+    "values": 206
+  },
+  "case_missing": {
+    "prompt_ch": 1,
+    "是否采集过遥操数据": 288,
+    "版本": 52,
+    "story(英文版）": 428,
+    "是否在eval场景集": 1,
+    "Prompt": 1,
+    "ft采集组（仅限来源为ft采集场景的数据）": 321,
+    "Skill标签": 1,
+    "Factor": 73,
+    "Factor取值": 73,
+    "用例ID": 1,
+    "Story": 1,
+    "来源": 1,
+    "道具": 1,
+    "布置图片": 310,
+    "前置用例": 560,
+    "数据归属": 1,
+    "Stage": 1
+  },
+  "case_option_counts": {
+    "Stage": {
+      "基础能力评测": 68,
+      "书房": 66,
+      "办公": 16,
+      "厨房餐厅": 240,
+      "客厅": 122,
+      "卧室": 39,
+      "阳台": 10
+    },
+    "Story": {
+      "[专项]物品识别基准测试": 61,
+      "[专项]放置基准测试": 2,
+      "[专项]抓取基准测试": 5,
+      "Carbinet": 7,
+      "Chair": 2,
+      "打扫会议室": 9,
+      "拉链": 23,
+      "开门": 5,
+      "看书": 4,
+      "保险箱": 3,
+      "放书": 4,
+      "收拾书架": 4,
+      "DishSwiping": 4,
+      "MopFolding": 2,
+      "WaterKettle": 6,
+      "叠碗": 3,
+      "准备早餐": 16,
+      "摆放礼盒": 9,
+      "GlassSwiping": 5,
+      "SqueezeChocolate": 5,
+      "零食": 5,
+      "Cooking": 5,
+      "制作冰饮": 5,
+      "搅拌": 6,
+      "鸡蛋": 2,
+      "剥玉米皮": 4,
+      "炒生菜": 5,
+      "沥水篮": 2,
+      "插花": 4,
+      "扫垃圾": 6,
+      "收拾衣柜": 16,
+      "整理沙发": 5,
+      "拿快递": 4,
+      "搭积木": 7,
+      "鸡毛掸子": 6,
+      "台球": 3,
+      "浇花": 3,
+      "扔": 2,
+      "递物品": 2,
+      "撕胶带": 2,
+      "钥匙": 1,
+      "收拾物品": 3,
+      "清理地毯": 2,
+      "鸡毛掸子清理桌面": 4,
+      "切黄瓜": 6,
+      "苹果削皮": 5,
+      "剥橙子": 3,
+      "炒菜装盘": 3,
+      "杯子盖盖": 3,
+      "拆袋装快递": 6,
+      "叠毛巾": 5,
+      "整理衣架": 8,
+      "拧开瓶盖把水瓶里的水倒进纸杯": 5,
+      "把广口塑料杯里的液体倒进玻璃杯": 3,
+      "双手空中配合把金属罐里的液体倒入碗中": 4,
+      "拧开杯盖将保温杯中的液体倒入塑料量杯": 5,
+      "将酒瓶中液体倒入红酒杯": 3,
+      "双手分别拿茶杯和收纳盒把茶杯里液体倒进收纳盒": 4,
+      "拧开瓶盖把奶瓶里的奶倒进玻璃杯": 5,
+      "把罐里的液体倒进浇水壶的壶嘴": 3,
+      "把奶瓶里的液体倒进马克杯": 1,
+      "抓起酒瓶把酒杯倒满后立在桌上": 2,
+      "用打蛋器在小碗里顺时针搅两圈": 5,
+      "用陶瓷勺在马克杯里搅一圈": 5,
+      "用吸管在咖啡杯里搅两圈": 6,
+      "用牙刷在小铁锅里顺时针搅两圈": 5,
+      "用马克笔在搪瓷杯里搅两圈": 5,
+      "用木质搅拌棒在塑料量杯里搅两圈": 6,
+      "用陶瓷勺在马克杯里逆时针搅两圈": 5,
+      "用筷子在塑料杯里搅两圈": 6,
+      "用打蛋器在大碗里顺时针搅两圈": 1,
+      "抓起液体纸盒把纸杯倒满后立在桌上": 2,
+      "撕下白板上的贴纸": 3,
+      "词典直接翻到中间": 1,
+      "上装订记事本直接翻到中间": 1,
+      "收据本翻回第一页": 1,
+      "草稿本向后翻回第一页": 1,
+      "用湿纸巾擦拭桌面": 3,
+      "打开烤箱门用抹布清洁烤箱内部后关门": 5,
+      "用袜子擦拭不锈钢盆内部": 4,
+      "用钢丝球擦玻璃杯外部": 4,
+      "用黑板擦擦拭冰箱表面": 3,
+      "打开微波炉门用除尘器清洁内部后关门": 5,
+      "用湿纸巾擦拭柜子顶部": 3,
+      "用白板擦擦白板": 3,
+      "用布擦拭玻璃": 1,
+      "打开烤箱门用布擦拭烤箱内部后关门": 2,
+      "把教科书打开到第一页": 1,
+      "把精装书从第一页翻到中间页": 1,
+      "把精装书打开到第一页": 1,
+      "打开这本书": 1,
+      "把布先横向对折再纵向对折": 3,
+      "把条形积木水平搭在圆形积木上": 3,
+      "把文件夹封面沿折痕展开摊平": 2,
+      "把衣架挂在桌面晾衣架横杆上": 2,
+      "用双手把绿叶菜撕一下": 2,
+      "把搭在圆形积木上的条形积木取下放桌上": 2,
+      "用水果刀切4片黄瓜": 4,
+      "纸板书从第一页翻至中间": 1,
+      "上装订记事本向后轻翻至首页": 1,
+      "用刷子擦碗内部": 4,
+      "草稿本翻到中间页": 1,
+      "折叠卫衣": 5,
+      "竖直堆叠三层积木": 5,
+      "嵌入圆形嵌片": 2,
+      "组装Type-C充电线和Type-C充电头": 4,
+      "连接手机充电线": 4,
+      "两爪插头插入方形墙壁插座": 2,
+      "组装扫帚簸箕": 4,
+      "挂钥匙圆环": 2,
+      "挂马克杯": 2,
+      "撕开调料包": 2,
+      "用菜刀切碎青菜": 5,
+      "给枕头套枕套": 4,
+      "从大盒取出小盒": 2,
+      "拆开叠放的两层盘子": 2,
+      "折叠长裤": 4,
+      "从插排拔出两爪插头": 4,
+      "从手机拔出Type-C线": 4,
+      "逐层展开长裤": 3,
+      "抖开展平袜子": 3,
+      "抖开展平T恤": 3,
+      "展开卡纸": 2,
+      "拆下Type-C线魔术贴": 4,
+      "用餐刀将芹菜切两片": 4,
+      "用餐刀将山楂切成两半": 4,
+      "叠大中小的碗": 5,
+      "用床刷清理沙发垫": 4
+    },
+    "Skill标签": {
+      "['物品尺寸辨别(Sizing）', '抓取（Pick）', '放置（Place）']": 7,
+      "['物品尺寸辨别(Sizing）', '抓取（Pick）']": 1,
+      "['物品材质辨别', '抓取（Pick）', '放置（Place）']": 4,
+      "['抓取（Pick）', '放置（Place）', '物品颜色辨别']": 2,
+      "['抓取（Pick）', '物品颜色辨别']": 8,
+      "['物品尺寸辨别(Sizing）', '抓取（Pick）', '物品形状辨别(Shaping）']": 1,
+      "['抓取（Pick）', '物品颜色辨别', '放置（Place）']": 1,
+      "['抓取（Pick）', '物品形状辨别(Shaping）']": 7,
+      "['物品形状辨别(Shaping）', '抓取（Pick）']": 2,
+      "['物品颜色辨别', '物品形状辨别(Shaping）', '抓取（Pick）']": 2,
+      "抓取（Pick）": 126,
+      "['抓取（Pick）', '放置（Place）']": 38,
+      "['物品尺寸辨别(Sizing）', '抓取（Pick）', '放置（Place）', '物品形状辨别(Shaping）']": 2,
+      "物品材质辨别": 3,
+      "放置（Place）": 62,
+      "拉动（Pull）": 19,
+      "推动（Push）": 9,
+      "按压（Press）": 2,
+      "打开（Open）": 8,
+      "['拉动（Pull）', '抓取（Pick）']": 1,
+      "旋转（Rotate）": 4,
+      "拧（Twist）": 4,
+      "翻（Turn）": 12,
+      "插入（Insert）": 4,
+      "['放置（Place）', '抓取（Pick）']": 8,
+      "['清扫（Clean）', '工具操作（Tool Use）']": 3,
+      "擦拭（Wipe）": 5,
+      "折叠（Fold）": 14,
+      "展开（Unfold）": 4,
+      "['抓取（Pick）', '放置（Place）', '物品颜色辨别', '物品形状辨别(Shaping）']": 3,
+      "['拉动（Pull）', '打开（Open）']": 2,
+      "['放置（Place）', '拧（Twist）']": 1,
+      "倾倒（Pour）": 13,
+      "['清扫（Clean）', '擦拭（Wipe）']": 1,
+      "['抓取（Pick）', '旋转（Rotate）']": 3,
+      "调整（Adjust）": 11,
+      "['工具操作（Tool Use）', '清扫（Clean）']": 1,
+      "['抓取（Pick）', '翻（Turn）']": 1,
+      "['放置（Place）', '按压（Press）']": 1,
+      "['推动（Push）', '关闭（Close）']": 2,
+      "['抓取（Pick）', '撕（Tear）']": 3,
+      "['抓取（Pick）', '放置（Place）', '工具操作（Tool Use）']": 3,
+      "['工具操作（Tool Use）', '抓取（Pick）']": 1,
+      "['按压（Press）', '打开（Open）']": 1,
+      "工具操作（Tool Use）": 2,
+      "['倾倒（Pour）', '工具操作（Tool Use）']": 1,
+      "['放置（Place）', '关闭（Close）']": 2,
+      "['抓取（Pick）', '插入（Insert）']": 1,
+      "搅拌（Stir）": 5,
+      "['搅拌（Stir）', '工具操作（Tool Use）']": 3,
+      "['抓取（Pick）', '切割（Cut）']": 2,
+      "关闭（Close）": 4,
+      "['剥（Peel）', '抓取（Pick）']": 1,
+      "['撕（Tear）', '放置（Place）']": 1,
+      "['工具操作（Tool Use）', '切割（Cut）']": 1,
+      "['翻（Turn）', '工具操作（Tool Use）']": 1,
+      "堆叠（Stack）": 1,
+      "拆卸": 1,
+      "['放置（Place）', '物品形状辨别(Shaping）']": 1,
+      "['放置（Place）', '物品颜色辨别']": 1,
+      "清扫（Clean）": 8,
+      "['抓取（Pick）', '悬挂（Hang）']": 2,
+      "悬挂（Hang）": 6,
+      "['工具操作（Tool Use）', '放置（Place）', '套（Fit）']": 1,
+      "['工具操作（Tool Use）', '放置（Place）', '悬挂（Hang）']": 1,
+      "['抓取（Pick）', '拍打（Pat）']": 1,
+      "['抓取（Pick）', '装配（Assembly）']": 2,
+      "['放置（Place）', '拆卸']": 1,
+      "['放置（Place）', '插入（Insert）']": 1,
+      "['抓取（Pick）', '物品颜色辨别', '工具操作（Tool Use）', '推动（Push）']": 1,
+      "贴附（Attach）": 1,
+      "['打开（Open）', '放置（Place）']": 1,
+      "['推动（Push）', '物品形状辨别(Shaping）', '物品颜色辨别']": 1,
+      "['抓取（Pick）', '物品形状辨别(Shaping）', '工具操作（Tool Use）']": 1,
+      "['抓取（Pick）', '清扫（Clean）', '工具操作（Tool Use）']": 1,
+      "['抓取（Pick）', '调整（Adjust）', '工具操作（Tool Use）']": 3,
+      "['抓取（Pick）', '工具操作（Tool Use）', '切割（Cut）']": 2,
+      "['抓取（Pick）', '放置（Place）', '物品形状辨别(Shaping）']": 1,
+      "['抓取（Pick）', '工具操作（Tool Use）']": 1,
+      "['抓取（Pick）', '剥（Peel）', '工具操作（Tool Use）']": 1,
+      "['抓取（Pick）', '工具操作（Tool Use）', '剥（Peel）']": 1,
+      "['抓取（Pick）', '调整（Adjust）']": 1,
+      "['抓取（Pick）', '剥（Peel）']": 3,
+      "['搅拌（Stir）', '放置（Place）', '工具操作（Tool Use）']": 1,
+      "['抓取（Pick）', '装配（Assembly）', '插入（Insert）']": 2,
+      "['抓取（Pick）', '倾倒（Pour）']": 4,
+      "['抓取（Pick）', '放置（Place）', '调整（Adjust）']": 1,
+      "['抓取（Pick）', '放置（Place）', '倾倒（Pour）']": 1,
+      "['放置（Place）', '物品形状辨别(Shaping）', '物品颜色辨别']": 1,
+      "['抓取（Pick）', '翻（Turn）', '物品形状辨别(Shaping）']": 1,
+      "['展开（Unfold）', '物品颜色辨别']": 1,
+      "['抓取（Pick）', '折叠（Fold）']": 2,
+      "['抓取（Pick）', '折叠（Fold）', '物品颜色辨别']": 2,
+      "['抓取（Pick）', '物品形状辨别(Shaping）', '物品颜色辨别', '双手协同']": 1,
+      "['抓取（Pick）', '放置（Place）', '堆叠（Stack）']": 3,
+      "['抓取（Pick）', '物品形状辨别(Shaping）', '物品颜色辨别']": 3,
+      "['抓取（Pick）', '物品形状辨别(Shaping）', '悬挂（Hang）']": 1,
+      "['倾倒（Pour）', '双手协同']": 1,
+      "固定（Hold）": 8,
+      "['搅拌（Stir）', '双手协同']": 3,
+      "['拉动（Pull）', '放置（Place）']": 1,
+      "['抓取（Pick）', '双手协同']": 5,
+      "['撕（Tear）', '双手协同']": 3,
+      "['擦拭（Wipe）', '双手协同']": 2,
+      "['清扫（Clean）', '打开（Open）']": 1,
+      "['打开（Open）', '双手协同']": 1,
+      "['切割（Cut）', '双手协同']": 2,
+      "['翻（Turn）', '放置（Place）']": 1,
+      "['抓取（Pick）', '物品形状辨别(Shaping）', '放置（Place）']": 1,
+      "['物品形状辨别(Shaping）', '堆叠（Stack）']": 2,
+      "['物品形状辨别(Shaping）', '装配（Assembly）']": 1,
+      "['装配（Assembly）', '双手协同']": 1,
+      "装配（Assembly）": 3,
+      "剥（Peel）": 1,
+      "切割（Cut）": 3,
+      "['套（Fit）', '双手协同']": 1,
+      "['抓取（Pick）', '物品尺寸辨别(Sizing）']": 2,
+      "['放置（Place）', '物品尺寸辨别(Sizing）']": 2,
+      "['放置（Place）', '调整（Adjust）']": 1,
+      "['拆卸（Disassemble）', '双手协同']": 1,
+      "['拉动（Pull）', '拆卸（Disassemble）']": 1,
+      "['抓取（Pick）', '固定（Hold）']": 1,
+      "['展开（Unfold）', '双手协同']": 5,
+      "['调整（Adjust）', '双手协同']": 1,
+      "拆卸（Disassemble）": 1,
+      "['清扫（Clean）', '双手协同']": 1
+    },
+    "数据归属": {
+      "Eval": 105,
+      "Test-黑盒": 301,
+      "Train": 155
+    },
+    "来源": {
+      "场景库自建": 277,
+      "0730uDAS验证": 43,
+      "FT采集场景": 241
+    },
+    "版本": {
+      "V1.0": 226,
+      "V2.0": 284
+    },
+    "是否采集过遥操数据": {
+      "是": 221,
+      "id": 4,
+      "否": 49
+    },
+    "是否在eval场景集": {
+      "否": 507,
+      "是": 54
+    }
+  },
+  "duplicate_case_ids": {
+    "BM_07_03": 2,
+    "BM_07_02": 2,
+    "BM_09": 2,
+    "BM_10": 2
+  },
+  "invalid_case_ids": [],
+  "blank_business_rows": [
+    "reczz28NuQyCi8KW"
+  ],
+  "missing_required_rows": [
+    {
+      "record_id": "reczz28NuQyCi8KW",
+      "id": null,
+      "missing": [
+        "用例ID",
+        "Stage",
+        "Story",
+        "Prompt",
+        "prompt_ch",
+        "数据归属"
+      ]
+    }
+  ],
+  "attachments": {
+    "cases": 252,
+    "files": 266,
+    "max_per_case": 2,
+    "over_1MB": 73
+  },
+  "props_ditto": [
+    {
+      "record_id": "reczz28NhsePVgCf",
+      "id": "Study_02",
+      "props": "同上"
+    },
+    {
+      "record_id": "reczz28NhsePVb8F",
+      "id": "Study_03",
+      "props": "同上"
+    },
+    {
+      "record_id": "reczz28NhsePXyzZ",
+      "id": "Study_04",
+      "props": "同上"
+    },
+    {
+      "record_id": "reczz28NhsePVelA",
+      "id": "Study_05",
+      "props": "同上"
+    },
+    {
+      "record_id": "reczz28NhsePVW8I",
+      "id": "Study_07",
+      "props": "同上"
+    },
+    {
+      "record_id": "reczz28Nht0SPlaw",
+      "id": "Kit_34",
+      "props": "同上"
+    },
+    {
+      "record_id": "reczz28Nht0SPW6E",
+      "id": "Kit_35",
+      "props": "同上"
+    },
+    {
+      "record_id": "reczz28Nht0SSdgP",
+      "id": "Kit_36",
+      "props": "同上"
+    },
+    {
+      "record_id": "reczz28Nht0STM0p",
+      "id": "Kit_37",
+      "props": "同上"
+    },
+    {
+      "record_id": "reczz28Nht0SPcgH",
+      "id": "Kit_39",
+      "props": "同上"
+    },
+    {
+      "record_id": "reczz28Nht0SShTR",
+      "id": "Kit_40",
+      "props": "同上"
+    },
+    {
+      "record_id": "reczz28Nht0SRPs1",
+      "id": "Kit_41",
+      "props": "同上"
+    },
+    {
+      "record_id": "reczz28Nht0ST1AC",
+      "id": "Kit_43",
+      "props": "同上"
+    },
+    {
+      "record_id": "reczz28Nht0SPXSp",
+      "id": "Kit_44",
+      "props": "同上"
+    },
+    {
+      "record_id": "reczz28Nht0SPCzw",
+      "id": "Kit_45",
+      "props": "同上"
+    },
+    {
+      "record_id": "reczz28Nht0SSB4f",
+      "id": "Kit_48",
+      "props": "同上"
+    },
+    {
+      "record_id": "reczz28Nht0SSDRL",
+      "id": "Kit_49",
+      "props": "同上"
+    },
+    {
+      "record_id": "reczz28Nht0STGUx",
+      "id": "Kit_50",
+      "props": "同上"
+    },
+    {
+      "record_id": "reczz28Nht0SPHCw",
+      "id": "Kit_51",
+      "props": "同上"
+    },
+    {
+      "record_id": "reczz28Nht0SRvMh",
+      "id": "Kit_58",
+      "props": "同上"
+    },
+    {
+      "record_id": "reczz28Nht0SPyI8",
+      "id": "Kit_59",
+      "props": "同上"
+    },
+    {
+      "record_id": "reczz28Nht0SPZS6",
+      "id": "Kit_64",
+      "props": "同上"
+    },
+    {
+      "record_id": "reczz28Nht0SQnEo",
+      "id": "Kit_65",
+      "props": "同上"
+    },
+    {
+      "record_id": "reczz28Nht0SSgRK",
+      "id": "Kit_66",
+      "props": "同上"
+    },
+    {
+      "record_id": "reczz28Nht0SPDmE",
+      "id": "Kit_67",
+      "props": "同上"
+    },
+    {
+      "record_id": "reczz28Nht0SQInr",
+      "id": "Kit_68",
+      "props": "同上"
+    },
+    {
+      "record_id": "reczz28Nht0SSjtK",
+      "id": "Kit_69",
+      "props": "同上"
+    },
+    {
+      "record_id": "reczz28Nht0SQPrj",
+      "id": "Kit_70",
+      "props": "同上"
+    },
+    {
+      "record_id": "reczz28NhtKq9uLy",
+      "id": "LR-06",
+      "props": "同上"
+    },
+    {
+      "record_id": "reczz28NhtKqBBTy",
+      "id": "LR-07",
+      "props": "同上"
+    },
+    {
+      "record_id": "reczz28NhtKq7sN5",
+      "id": "LR-08",
+      "props": "同上"
+    },
+    {
+      "record_id": "reczz28NhtKqA3nL",
+      "id": "LR-09",
+      "props": "同上"
+    },
+    {
+      "record_id": "reczz28NhtKq8kzV",
+      "id": "LR-10",
+      "props": "同上"
+    },
+    {
+      "record_id": "reczz28NhtKq8aOZ",
+      "id": "LR-12",
+      "props": "同上"
+    },
+    {
+      "record_id": "reczz28NhtKq8Fde",
+      "id": "LR-13",
+      "props": "同上"
+    },
+    {
+      "record_id": "reczz28NhtKqASZV",
+      "id": "LR-14",
+      "props": "同上"
+    },
+    {
+      "record_id": "reczz28NhtKq7FY0",
+      "id": "LR-15",
+      "props": "同上"
+    },
+    {
+      "record_id": "reczz28NhtKq7Mj5",
+      "id": "LR-18",
+      "props": "同上"
+    },
+    {
+      "record_id": "reczz28NhtKqAORp",
+      "id": "LR-19",
+      "props": "同上"
+    },
+    {
+      "record_id": "reczz28NhtKq91tR",
+      "id": "LR-20",
+      "props": "同上"
+    },
+    {
+      "record_id": "reczz28NhtKqEChm",
+      "id": "LR-21",
+      "props": "同上"
+    },
+    {
+      "record_id": "reczz28NhtKqDKHD",
+      "id": "LR-27",
+      "props": "同上"
+    },
+    {
+      "record_id": "reczz28NhtKqCFj6",
+      "id": "LR-28",
+      "props": "同上"
+    },
+    {
+      "record_id": "reczz28NhtKqF03H",
+      "id": "LR-29",
+      "props": "同上"
+    },
+    {
+      "record_id": "reczz28NhtKqCfrL",
+      "id": "LR-31",
+      "props": "同上"
+    },
+    {
+      "record_id": "reczz28NhtKqCWLu",
+      "id": "LR-32",
+      "props": "同上"
+    },
+    {
+      "record_id": "reczz28NhtKqEmms",
+      "id": "LR-33",
+      "props": "同上"
+    },
+    {
+      "record_id": "reczz28NhtKqDGWm",
+      "id": "LR-34",
+      "props": "同上"
+    },
+    {
+      "record_id": "reczz28NhtKqDHgA",
+      "id": "LR-35",
+      "props": "同上"
+    },
+    {
+      "record_id": "reczz28NhtKqChso",
+      "id": "LR-40",
+      "props": "同上"
+    },
+    {
+      "record_id": "reczz28NhtKqD3Fw",
+      "id": "LR-41",
+      "props": "同上"
+    },
+    {
+      "record_id": "reczz28NhtKqFUyn",
+      "id": "LR-43",
+      "props": "同上"
+    },
+    {
+      "record_id": "reczz28NhtKqE3jY",
+      "id": "LR-45",
+      "props": "同上"
+    },
+    {
+      "record_id": "reczz28NhtKqEvIh",
+      "id": "LR-47",
+      "props": "同上"
+    },
+    {
+      "record_id": "reczz28NhtKqCgxT",
+      "id": "LR-50",
+      "props": "同上"
+    },
+    {
+      "record_id": "reczz28NhtKqDsuO",
+      "id": "LR-51",
+      "props": "同上"
+    },
+    {
+      "record_id": "reczz28NhtKqDzwN",
+      "id": "LR-53",
+      "props": "同上"
+    },
+    {
+      "record_id": "recvqz0RyZiGF1",
+      "id": "Udas-02",
+      "props": "同上"
+    },
+    {
+      "record_id": "recvqz0RyZiE0n",
+      "id": "Udas-03",
+      "props": "同上"
+    },
+    {
+      "record_id": "recvqz0RyZcXY4",
+      "id": "Udas-04",
+      "props": "同上"
+    },
+    {
+      "record_id": "recvtWE07m1t2N",
+      "id": "Udas-06",
+      "props": "同上"
+    },
+    {
+      "record_id": "recvuSBojLhbHo",
+      "id": "Udas-07",
+      "props": "同上"
+    },
+    {
+      "record_id": "recvuSBtgYmRJw",
+      "id": "Udas-08",
+      "props": "同上"
+    },
+    {
+      "record_id": "recvxC6Io13xJX",
+      "id": "Udas-09",
+      "props": "同上"
+    },
+    {
+      "record_id": "reczz28Nj9NPgYYX",
+      "id": "Udas-10",
+      "props": "同上"
+    },
+    {
+      "record_id": "reczz28Nj9NPiuFo",
+      "id": "Udas-12",
+      "props": "同上"
+    },
+    {
+      "record_id": "reczz28Nj9NPiXUh",
+      "id": "Udas-13",
+      "props": "同上"
+    },
+    {
+      "record_id": "reczz28Nj9NPiHsA",
+      "id": "Udas-14",
+      "props": "同上"
+    },
+    {
+      "record_id": "reczz28Nj9NPfrxz",
+      "id": "Udas-15",
+      "props": "同上"
+    },
+    {
+      "record_id": "reczz28Nj9NPiqUf",
+      "id": "Udas-17",
+      "props": "同上"
+    },
+    {
+      "record_id": "reczz28Nj9NPhGAq",
+      "id": "Udas-18",
+      "props": "同上"
+    },
+    {
+      "record_id": "reczz28Nj9NPhVmn",
+      "id": "Udas-20",
+      "props": "同上"
+    },
+    {
+      "record_id": "reczz28Nj9NPioAV",
+      "id": "Udas-21",
+      "props": "同上"
+    },
+    {
+      "record_id": "reczz28Nj9NPilUQ",
+      "id": "Udas-23",
+      "props": "同上"
+    },
+    {
+      "record_id": "reczz28Nj9NPgYXu",
+      "id": "Udas-24",
+      "props": "同上"
+    },
+    {
+      "record_id": "reczz28Nj9NPiH6z",
+      "id": "Udas-32",
+      "props": "同上"
+    },
+    {
+      "record_id": "reczz28Nj9NPfeuV",
+      "id": "Udas-33",
+      "props": "同上"
+    },
+    {
+      "record_id": "reczz28Nj9NPfx2M",
+      "id": "Udas-34",
+      "props": "同上"
+    },
+    {
+      "record_id": "reczz28Nj9NPfkoU",
+      "id": "Udas-35",
+      "props": "同上"
+    },
+    {
+      "record_id": "reczz28NiZqExtMJ",
+      "id": "FT-07-2",
+      "props": "同上"
+    },
+    {
+      "record_id": "reczz28NiZqEy4kh",
+      "id": "FT-07-3",
+      "props": "同上"
+    },
+    {
+      "record_id": "reczz28NiZqF0Aee",
+      "id": "FT-07-4",
+      "props": "同上"
+    },
+    {
+      "record_id": "reczz28NiZqF0ZKs",
+      "id": "FT-07-5",
+      "props": "同上"
+    },
+    {
+      "record_id": "reczz28NiZqF0URX",
+      "id": "FT-08-2",
+      "props": "同上"
+    },
+    {
+      "record_id": "reczz28NiZqExl3Z",
+      "id": "FT-08-3",
+      "props": "同上"
+    },
+    {
+      "record_id": "reczz28NiZqExNNk",
+      "id": "FT-10-2",
+      "props": "同上"
+    },
+    {
+      "record_id": "reczz28NiZqEzk9m",
+      "id": "FT-18-2",
+      "props": "同上"
+    },
+    {
+      "record_id": "reczz28NiZqEzojL",
+      "id": "FT-18-3",
+      "props": "同上"
+    },
+    {
+      "record_id": "reczz28NiZqEzIra",
+      "id": "FT-18-4",
+      "props": "同上"
+    },
+    {
+      "record_id": "reczz28NiZqF0qxT",
+      "id": "FT-18-5",
+      "props": "同上"
+    },
+    {
+      "record_id": "reczz28NiZqExjGe",
+      "id": "FT-18-6",
+      "props": "同上"
+    },
+    {
+      "record_id": "reczz28NiZqExkb5",
+      "id": "FT-20-2",
+      "props": "同上"
+    },
+    {
+      "record_id": "reczz28NiZqF0hLk",
+      "id": "FT-25-2",
+      "props": "同上"
+    },
+    {
+      "record_id": "reczz28NiZqF0rHg",
+      "id": "FT-25-3",
+      "props": "同上"
+    },
+    {
+      "record_id": "reczz28NiZqF0k0t",
+      "id": "FT-25-4",
+      "props": "同上"
+    },
+    {
+      "record_id": "reczz28NiZqEyWHO",
+      "id": "FT-26-2",
+      "props": "同上"
+    },
+    {
+      "record_id": "reczz28NiZqExtf4",
+      "id": "FT-26-3",
+      "props": "同上"
+    },
+    {
+      "record_id": "reczz28NiZqEyVlq",
+      "id": "FT-27-2",
+      "props": "同上"
+    },
+    {
+      "record_id": "reczz28NiZqF0aG6",
+      "id": "FT-27-3",
+      "props": "同上"
+    },
+    {
+      "record_id": "reczz28NiZqEx7lG",
+      "id": "FT-27-4",
+      "props": "同上"
+    },
+    {
+      "record_id": "reczz28NiZqF0K0v",
+      "id": "FT-27-5",
+      "props": "同上"
+    },
+    {
+      "record_id": "reczz28NiZzKCoWV",
+      "id": "FT-28-2",
+      "props": "同上"
+    },
+    {
+      "record_id": "reczz28NiZzKAm7p",
+      "id": "FT-28-3",
+      "props": "同上"
+    },
+    {
+      "record_id": "reczz28NiZzKAHQY",
+      "id": "FT-29-2",
+      "props": "同上"
+    },
+    {
+      "record_id": "reczz28NiZzKD0lA",
+      "id": "FT-29-3",
+      "props": "同上"
+    },
+    {
+      "record_id": "reczz28NiZzK9r7R",
+      "id": "FT-31-2",
+      "props": "同上"
+    },
+    {
+      "record_id": "reczz28NiZzKBNU6",
+      "id": "FT-49-2",
+      "props": "同上"
+    },
+    {
+      "record_id": "reczz28NiZzK9tIU",
+      "id": "FT-49-3",
+      "props": "同上"
+    },
+    {
+      "record_id": "reczz28NiZzKBEAY",
+      "id": "FT-43-2",
+      "props": "同上"
+    },
+    {
+      "record_id": "reczz28NiZzK9PR1",
+      "id": "FT-43-3",
+      "props": "同上"
+    },
+    {
+      "record_id": "reczz28NiZzKCK0Z",
+      "id": "FT-50-2",
+      "props": "同上"
+    },
+    {
+      "record_id": "reczz28NiZzKBXUY",
+      "id": "FT-44-2",
+      "props": "同上"
+    },
+    {
+      "record_id": "reczz28NiZzKAo47",
+      "id": "FT-73-2",
+      "props": "同上"
+    },
+    {
+      "record_id": "reczz28NiZzKC91l",
+      "id": "FT-55-2",
+      "props": "同上"
+    },
+    {
+      "record_id": "reczz28NiaDgIhSj",
+      "id": "FT-77-2",
+      "props": "同上"
+    },
+    {
+      "record_id": "reczz28NiaDgLhif",
+      "id": "FT-77-3",
+      "props": "同上"
+    },
+    {
+      "record_id": "reczz28NiaDgKdk4",
+      "id": "FT-77-4",
+      "props": "同上"
+    },
+    {
+      "record_id": "reczz28NiaDgIxx2",
+      "id": "FT-75-2",
+      "props": "同上"
+    },
+    {
+      "record_id": "reczz28NiaDgLfd6",
+      "id": "FT-75-3",
+      "props": "同上"
+    },
+    {
+      "record_id": "reczz28NiaDgLOle",
+      "id": "FT-75-4",
+      "props": "同上"
+    },
+    {
+      "record_id": "reczz28NiaDgJiQj",
+      "id": "FT-75-5",
+      "props": "同上"
+    },
+    {
+      "record_id": "reczz28NiaDgINaq",
+      "id": "FT-76-2",
+      "props": "同上"
+    },
+    {
+      "record_id": "reczz28NiaDgM56O",
+      "id": "FT-76-3",
+      "props": "同上"
+    },
+    {
+      "record_id": "reczz28NiaDgKaBA",
+      "id": "FT-76-4",
+      "props": "同上"
+    }
+  ],
+  "invalid_yes_no": {
+    "是否在eval场景集": [],
+    "是否采集过遥操数据": [
+      {
+        "record_id": "reczz28MpLADGWze",
+        "id": "FT-03-1",
+        "value": [
+          "id"
+        ]
+      },
+      {
+        "record_id": "reczz28MpLZVjekZ",
+        "id": "FT-03-2",
+        "value": [
+          "id"
+        ]
+      },
+      {
+        "record_id": "reczz28MpLZVlJ8I",
+        "id": "FT-03-3",
+        "value": [
+          "id"
+        ]
+      },
+      {
+        "record_id": "reczz28MpLZVkrJD",
+        "id": "FT-03-4",
+        "value": [
+          "id"
+        ]
+      }
+    ]
+  },
+  "factor_json": {
+    "populated": 489,
+    "invalid_json": [
+      {
+        "record_id": "reczz28NelGH8HPj",
+        "id": "BM-12",
+        "value": "{\"被操作物品属性-相对位置,被操作物品属性-尺寸,任务结构-空间约束-目标位置\": \"勺子柄\\n大\\n特定位置}",
+        "error": "Unterminated string starting at: line 1 column 44 (char 43)"
+      },
+      {
+        "record_id": "reczz28Nht0SPW6E",
+        "id": "Kit_35",
+        "value": "{指令语言-指定本体,被操作物品属性-物体材质,被操作物品属性-物体形状,被操作物品属性-力控要求\": \"左\\n玻璃\\n圆柱\\n易碎\"}",
+        "error": "Expecting property name enclosed in double quotes: line 1 column 2 (char 1)"
+      }
+    ],
+    "invalid_shape": [],
+    "single_key_text_mismatch": [
+      {
+        "id": "Study_27",
+        "Factor": "被操作物品属性-物体形状,任务结构-运动轨迹,指令语言-空间表达-方位理解,指令语言-终态表达",
+        "json_keys": [
+          "被操作物品属性-物体形状,任务结构-运动轨迹,指令语言-空间表达-方位理解,任务结构-对齐精度"
+        ]
+      },
+      {
+        "id": "Study_61",
+        "Factor": "任务结构-空间约束-目标位置\n任务结构-对象数量",
+        "json_keys": [
+          "任务结构-空间约束-目标位置,任务结构-对象数量"
+        ]
+      },
+      {
+        "id": "Kit_71",
+        "Factor": "被操作物品属性-力控要求\n任务结构-对象数量\n任务结构-对齐精度",
+        "json_keys": [
+          "被操作物品属性-力控要求,任务结构-对象数量,任务结构-对齐精度"
+        ]
+      },
+      {
+        "id": "Kit_72",
+        "Factor": "被操作物品属性-力控要求\n任务结构-对象数量\n任务结构-空间约束-目标位置",
+        "json_keys": [
+          "被操作物品属性-力控要求,任务结构-对象数量,任务结构-空间约束-目标位置"
+        ]
+      },
+      {
+        "id": "Kit_73",
+        "Factor": "指令语言-指定本体\n任务结构-运动轨迹\n任务结构-对象数量",
+        "json_keys": [
+          "指令语言-指定本体,任务结构-运动轨迹,任务结构-对象数量"
+        ]
+      },
+      {
+        "id": "Kit_74",
+        "Factor": "任务结构-空间约束-目标位置\n被操作物品属性-尺寸",
+        "json_keys": [
+          "任务结构-空间约束-目标位置,被操作物品属性-尺寸"
+        ]
+      },
+      {
+        "id": "Kit_75",
+        "Factor": "被操作物品属性-力控要求\n被操作物品属性-物体材质",
+        "json_keys": [
+          "被操作物品属性-力控要求,被操作物品属性-物体材质"
+        ]
+      },
+      {
+        "id": "Kit_76",
+        "Factor": "被操作物品属性-力控要求\n被操作物品属性-物体材质",
+        "json_keys": [
+          "被操作物品属性-力控要求,被操作物品属性-物体材质"
+        ]
+      },
+      {
+        "id": "Kit_77",
+        "Factor": "被操作物品属性-物体材质\n任务结构-运动轨迹",
+        "json_keys": [
+          "被操作物品属性-物体材质,任务结构-运动轨迹"
+        ]
+      },
+      {
+        "id": "Kit_78",
+        "Factor": "被操作物品属性-力控要求\n被操作物品属性-物体材质\n任务结构-空间约束-目标位置",
+        "json_keys": [
+          "被操作物品属性-力控要求,被操作物品属性-物体材质,任务结构-空间约束-目标位置"
+        ]
+      },
+      {
+        "id": "Kit_80",
+        "Factor": "任务结构-对象数量,任务结构-对齐精度\n指令语言-尺寸表达-大小",
+        "json_keys": [
+          "任务结构-对象数量,任务结构-对齐精度,指令语言-尺寸表达-大小"
+        ]
+      },
+      {
+        "id": "LR-54",
+        "Factor": "被操作物品属性-物体形状,被操作物品属性-物体材质,指令语言-空间表达-相对位置\n任务结构-空间约束-目标位置",
+        "json_keys": [
+          "被操作物品属性-物体形状,被操作物品属性-物体材质,指令语言-空间表达-相对位置,任务结构-空间约束-目标位置"
+        ]
+      },
+      {
+        "id": "LR-55",
+        "Factor": "被操作物品属性-物体形状,被操作物品属性-物体材质,指令语言-空间表达-相对位置\n任务结构-空间约束-目标位置",
+        "json_keys": [
+          "被操作物品属性-物体形状,被操作物品属性-物体材质,指令语言-空间表达-相对位置,任务结构-空间约束-目标位置"
+        ]
+      },
+      {
+        "id": "LR-57",
+        "Factor": "被操作物品属性-物体材质,任务结构-对象数量\n任务结构-空间约束-目标位置",
+        "json_keys": [
+          "被操作物品属性-物体材质,任务结构-对象数量,任务结构-空间约束-目标位置"
+        ]
+      }
+    ],
+    "parsed_records": 487,
+    "multi_factor_records": 208,
+    "combined_key_records": 181
+  },
+  "factor_blank_asymmetry": [],
+  "related": {
+    "scene_factor_links_populated": 0,
+    "scene_factor_value_populated": 299,
+    "skill_named_rows": 36,
+    "skill_with_cn_en_category": 35,
+    "skill_category_counts": {
+      "动作类 Skill": 34,
+      "辨别类 Skill": 4
+    },
+    "factor_named_rows": 37,
+    "value_named_rows": 127,
+    "value_extra_fields_populated": {
+      "字段 16": 0,
+      "字段 7": 0,
+      "字段 12": 0,
+      "字段 5": 0,
+      "字段 2": 0,
+      "字段 8": 0,
+      "字段 14": 0,
+      "字段 6": 0,
+      "字段 11": 0,
+      "字段 13": 0,
+      "字段 9": 0,
+      "字段 15": 0,
+      "字段 3": 0,
+      "字段 4": 0,
+      "字段 10": 0
+    },
+    "value_link_missing_targets": [],
+    "value_without_factor_link": 80,
+    "skills_duplicate_names": {},
+    "factors_duplicate_names": {}
+  },
+  "schema_other_tables": {
+    "evalset": [
+      {
+        "name": "Prompt",
+        "type": "text"
+      },
+      {
+        "name": "前置用例",
+        "type": "text"
+      },
+      {
+        "name": "道具",
+        "type": "text"
+      },
+      {
+        "name": "Factor",
+        "type": "text"
+      },
+      {
+        "name": "Story",
+        "type": "select"
+      },
+      {
+        "name": "布置图片",
+        "type": "attachment"
+      },
+      {
+        "name": "用例ID",
+        "type": "text"
+      },
+      {
+        "name": "Stage",
+        "type": "select"
+      },
+      {
+        "name": "优先级",
+        "type": "select"
+      },
+      {
+        "name": "Skill标签",
+        "type": "select"
+      },
+      {
+        "name": "Factor取值",
+        "type": "text"
+      }
+    ],
+    "legacy": [
+      {
+        "name": "Prompt",
+        "type": "text"
+      },
+      {
+        "name": "道具",
+        "type": "text"
+      },
+      {
+        "name": "评分规则制定人",
+        "type": "user"
+      },
+      {
+        "name": "Story",
+        "type": "select"
+      },
+      {
+        "name": "ID/OOD",
+        "type": "select"
+      },
+      {
+        "name": "评分规则审核人",
+        "type": "text"
+      },
+      {
+        "name": "用例ID",
+        "type": "text"
+      },
+      {
+        "name": "评分规则",
+        "type": "text"
+      },
+      {
+        "name": "Stage",
+        "type": "select"
+      },
+      {
+        "name": "布置图片",
+        "type": "attachment"
+      },
+      {
+        "name": "中文",
+        "type": "text"
+      }
+    ]
+  }
+}

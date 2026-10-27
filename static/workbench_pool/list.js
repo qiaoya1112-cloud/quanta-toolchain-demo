@@ -127,7 +127,7 @@
       document.getElementById('wpBatchRemarkRequirement').textContent = requiresRemark ? '（必填）' : '（选填）';
       remark.value = ''; remark.required = requiresRemark; error.hidden = true;
       document.getElementById('wpBatchConfirmTitle').textContent = '确认' + button.textContent;
-      document.getElementById('wpBatchConfirmText').textContent = '确认' + button.textContent + '当前批次的 ' + ids.length + ' 条数据？' + (button.dataset.batchAction === 'submit' && task.node === '采集验收' ? '提交后将清除本批数据的错误原因，请确认已完成核验。' : '');
+      document.getElementById('wpBatchConfirmText').textContent = '确认' + button.textContent + '当前批次的 ' + ids.length + ' 条数据？' + (button.dataset.batchAction === 'submit' && task.node === '质检验收' ? '提交后将清除本批数据的错误原因，请确认已完成核验。' : '');
       mask.hidden = false;
       const finish = value => { mask.hidden = true; resolve(value); button.focus(); };
       document.getElementById('wpBatchCancel').onclick = () => finish(false);

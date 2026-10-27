@@ -1,0 +1,15 @@
+/* Shared upload surface from instruction management. */
+.s026-upload-zone{display:flex;min-height:150px;align-items:center;justify-content:center;flex-direction:column;gap:9px;margin-bottom:4px;border:1px dashed #9fc7ca;border-radius:8px;background:#f6fbfb;color:#577178;text-align:center;transition:.15s}
+.s026-upload-zone b{font-size:13px}
+.s026-upload-zone span{font-size:10.5px}
+.s026-upload-zone.dragging{border-color:var(--brand,#149daa);background:#eaf9fa}
+.s026-upload-state{display:flex;align-items:center;justify-content:center;gap:8px;min-height:24px;color:#65777d}
+.s026-upload-state .s026-btn.link{font-size:11px}
+.s026-upload-error-detail{display:none;width:min(560px,100%);padding:10px 12px;border:1px solid #efc7c3;border-radius:6px;background:#fff;color:#9e4842;text-align:left}
+.s026-upload-error-detail.active{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.s026-upload-error-detail code{font:11px/1.6 'SF Mono',Menlo,monospace;white-space:pre-wrap;word-break:break-word}
+.s026-upload-icon{display:inline-flex;width:22px;height:22px;align-items:center;justify-content:center;border-radius:50%;font-size:13px;font-style:normal}
+.s026-upload-icon.spinning{border:2px solid #b8dfe2;border-top-color:var(--brand,#149daa);animation:s026spin .75s linear infinite}
+.s026-upload-icon.success{background:#e6f6ef;color:var(--green,#2f8a68)}
+.s026-upload-icon.error{background:#fdeceb;color:var(--red,#c6534b)}
+@keyframes s026spin { to { transform:rotate(360deg); } }

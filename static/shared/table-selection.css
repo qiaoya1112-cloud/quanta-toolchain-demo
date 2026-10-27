@@ -1,0 +1,11 @@
+.ant-table .dpr-selection-cell { box-sizing:border-box; width:64px; min-width:64px; max-width:64px; padding-left:12px; padding-right:12px; text-align:center; }
+.dpr-selection-control { position:relative; display:flex; align-items:center; justify-content:center; width:14px; height:28px; margin:0 auto; }
+.dpr-selection-cell input[type="checkbox"] { display:block; width:14px; height:14px; margin:0 auto; accent-color:#149daa; cursor:pointer; }
+.dpr-selection-cell input[type="checkbox"]:disabled { cursor:not-allowed; }
+.dpr-selection-control button { position:absolute; left:calc(100% + 2px); top:0; width:22px; height:28px; padding:0; border:0; background:transparent; color:#60737a; cursor:pointer; }
+.dpr-selection-control button:disabled { color:#a8b4b8; cursor:not-allowed; }
+.dpr-selection-menu { position:fixed; z-index:1000; width:176px; padding:4px; border:1px solid #d9e0e2; border-radius:6px; background:#fff; box-shadow:0 4px 12px #0002; }
+.dpr-selection-menu button { display:block; width:100%; padding:9px 12px; border:0; border-radius:3px; background:transparent; color:#425a62; text-align:left; cursor:pointer; font-size:12px; }
+.dpr-selection-menu button:hover,.dpr-selection-menu button:focus-visible { background:#eef8f8; }
+.dpr-selection-menu button.active { color:#137f89; font-weight:600; }
+.dpr-selection-menu button:disabled { color:#a8b4b8; cursor:not-allowed; }

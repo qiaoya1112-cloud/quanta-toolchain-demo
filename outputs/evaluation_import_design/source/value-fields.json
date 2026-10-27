@@ -1,0 +1,445 @@
+{
+  "ok": true,
+  "identity": "user",
+  "data": {
+    "fields": [
+      {
+        "default_value": null,
+        "id": "fldXKXwA7h",
+        "name": "说明",
+        "style": {
+          "type": "plain"
+        },
+        "type": "text"
+      },
+      {
+        "default_value": null,
+        "id": "flde7Fsk8W",
+        "name": "字段 16",
+        "style": {
+          "type": "plain"
+        },
+        "type": "text"
+      },
+      {
+        "default_value": null,
+        "id": "fldCRAKAzI",
+        "name": "字段 7",
+        "style": {
+          "type": "plain"
+        },
+        "type": "text"
+      },
+      {
+        "default_value": null,
+        "dynamic_options_source": {
+          "field_id": "fldVKucYl3",
+          "table_id": "tbl4uI23VnzwPMxy"
+        },
+        "id": "fldjMzrrMa",
+        "multiple": false,
+        "name": "factor",
+        "options": [
+          {
+            "hue": "Red",
+            "lightness": "Lighter",
+            "name": "任务结构-对齐精度"
+          },
+          {
+            "hue": "Orange",
+            "lightness": "Lighter",
+            "name": "环境条件-场景布局-干扰物"
+          },
+          {
+            "hue": "Blue",
+            "lightness": "Lighter",
+            "name": "被操作物品属性-颜色"
+          },
+          {
+            "hue": "Blue",
+            "lightness": "Lighter",
+            "name": "被操作物品属性-物体材质"
+          },
+          {
+            "hue": "Red",
+            "lightness": "Lighter",
+            "name": "任务结构-对象数量"
+          },
+          {
+            "hue": "Orange",
+            "lightness": "Lighter",
+            "name": "环境条件-光学条件-光照条件"
+          },
+          {
+            "hue": "Purple",
+            "lightness": "Lighter",
+            "name": "指令语言-动作表达方式"
+          },
+          {
+            "hue": "Orange",
+            "lightness": "Lighter",
+            "name": "环境条件-遮挡程度"
+          },
+          {
+            "hue": "Purple",
+            "lightness": "Lighter",
+            "name": "指令语言-终态表达"
+          },
+          {
+            "hue": "Blue",
+            "lightness": "Lighter",
+            "name": "被操作物品属性-物体形状"
+          },
+          {
+            "hue": "Blue",
+            "lightness": "Lighter",
+            "name": "被操作物品属性-夹持宽度"
+          },
+          {
+            "hue": "Red",
+            "lightness": "Lighter",
+            "name": "任务结构-目标高度"
+          },
+          {
+            "hue": "Blue",
+            "lightness": "Lighter",
+            "name": "被操作物品属性-力控要求"
+          },
+          {
+            "hue": "Purple",
+            "lightness": "Lighter",
+            "name": "指令语言-语义分类"
+          },
+          {
+            "hue": "Blue",
+            "lightness": "Lighter",
+            "name": "被操作物品属性-物体重量"
+          },
+          {
+            "hue": "Blue",
+            "lightness": "Lighter",
+            "name": "被操作物品属性-物体运动状态"
+          },
+          {
+            "hue": "Purple",
+            "lightness": "Lighter",
+            "name": "指令语言-空间表达-方位理解"
+          },
+          {
+            "hue": "Orange",
+            "lightness": "Lighter",
+            "name": "环境条件-光学条件-背景反射度"
+          },
+          {
+            "hue": "Blue",
+            "lightness": "Lighter",
+            "name": "被操作物品属性-表面摩擦力"
+          },
+          {
+            "hue": "Purple",
+            "lightness": "Lighter",
+            "name": "指令语言-物品表达方式"
+          },
+          {
+            "hue": "Red",
+            "lightness": "Lighter",
+            "name": "任务结构-运动轨迹"
+          },
+          {
+            "hue": "Red",
+            "lightness": "Lighter",
+            "name": "任务结构-空间约束-目标位置"
+          },
+          {
+            "hue": "Purple",
+            "lightness": "Lighter",
+            "name": "指令语言-指定本体"
+          },
+          {
+            "hue": "Purple",
+            "lightness": "Lighter",
+            "name": "指令语言-空间表达-序数理解"
+          },
+          {
+            "hue": "Red",
+            "lightness": "Lighter",
+            "name": "任务结构-目标材质"
+          },
+          {
+            "hue": "Blue",
+            "lightness": "Lighter",
+            "name": "被操作物品属性-物体朝向"
+          },
+          {
+            "hue": "Blue",
+            "lightness": "Lighter",
+            "name": "被操作物品属性-相对位置"
+          },
+          {
+            "hue": "Blue",
+            "lightness": "Lighter",
+            "name": "被操作物品属性-尺寸"
+          },
+          {
+            "hue": "Blue",
+            "lightness": "Lighter",
+            "name": "被操作物品属性-物理属性"
+          },
+          {
+            "hue": "Purple",
+            "lightness": "Lighter",
+            "name": "指令语言-空间表达-相对位置"
+          },
+          {
+            "hue": "Orange",
+            "lightness": "Lighter",
+            "name": "环境条件-场景布局-摆放密度"
+          },
+          {
+            "hue": "Orange",
+            "lightness": "Lighter",
+            "name": "环境条件-场景布局-背景复杂度"
+          },
+          {
+            "hue": "Blue",
+            "lightness": "Lighter",
+            "name": "被操作物品属性-内容物状态"
+          },
+          {
+            "hue": "Blue",
+            "lightness": "Lighter",
+            "name": "环境条件-场景布局-空间位置"
+          },
+          {
+            "hue": "Orange",
+            "lightness": "Lighter",
+            "name": "环境条件-场景布局-姿态角度"
+          },
+          {
+            "hue": "Wathet",
+            "lightness": "Lighter",
+            "name": "环境条件-视觉干扰-传感器噪声"
+          },
+          {
+            "hue": "Yellow",
+            "lightness": "Lighter",
+            "name": "环境条件-背景-纹理复杂度"
+          },
+          {
+            "hue": "Turquoise",
+            "lightness": "Lighter",
+            "name": "环境条件-光照条件-色温"
+          },
+          {
+            "hue": "Red",
+            "lightness": "Lighter",
+            "name": "任务结构-空间约束-操作空间"
+          },
+          {
+            "hue": "Purple",
+            "lightness": "Lighter",
+            "name": "环境条件-动态干扰"
+          },
+          {
+            "hue": "Green",
+            "lightness": "Lighter",
+            "name": "环境条件-场景布局-堆叠关系"
+          },
+          {
+            "hue": "Carmine",
+            "lightness": "Lighter",
+            "name": "任务结构-空间约束-紧密排列"
+          },
+          {
+            "hue": "Carmine",
+            "lightness": "Lighter",
+            "name": "任务结构-目标位置-承载面属性"
+          },
+          {
+            "hue": "Orange",
+            "lightness": "Lighter",
+            "name": "环境条件-高度差"
+          },
+          {
+            "hue": "Wathet",
+            "lightness": "Lighter",
+            "name": "被操作物品属性-物体状态"
+          },
+          {
+            "hue": "Carmine",
+            "lightness": "Lighter",
+            "name": "任务结构-障碍物"
+          },
+          {
+            "hue": "Carmine",
+            "lightness": "Lighter",
+            "name": "任务结构-配合操作"
+          },
+          {
+            "hue": "Carmine",
+            "lightness": "Lighter",
+            "name": "任务结构-安全约束-失败后果严重程度"
+          },
+          {
+            "hue": "Carmine",
+            "lightness": "Lighter",
+            "name": "任务结构-安全约束-操作安全约束类型"
+          },
+          {
+            "hue": "Carmine",
+            "lightness": "Lighter",
+            "name": "任务结构-安全约束-危险区域约束"
+          }
+        ],
+        "remaining_options_count": 38,
+        "truncated": true,
+        "truncated_options_count": 38,
+        "type": "select"
+      },
+      {
+        "default_value": null,
+        "id": "fld39m0kyD",
+        "name": "字段 12",
+        "style": {
+          "type": "plain"
+        },
+        "type": "text"
+      },
+      {
+        "default_value": null,
+        "id": "fld1J8YklC",
+        "name": "字段 5",
+        "style": {
+          "type": "plain"
+        },
+        "type": "text"
+      },
+      {
+        "default_value": null,
+        "id": "fldVMS3SPH",
+        "name": "字段 2",
+        "style": {
+          "type": "plain"
+        },
+        "type": "text"
+      },
+      {
+        "default_value": null,
+        "id": "fldZcQD2P3",
+        "name": "字段 8",
+        "style": {
+          "type": "plain"
+        },
+        "type": "text"
+      },
+      {
+        "default_value": null,
+        "id": "fldS3pymd2",
+        "name": "字段 14",
+        "style": {
+          "type": "plain"
+        },
+        "type": "text"
+      },
+      {
+        "default_value": null,
+        "id": "fldQhfMExm",
+        "name": "字段 6",
+        "style": {
+          "type": "plain"
+        },
+        "type": "text"
+      },
+      {
+        "bidirectional": true,
+        "bidirectional_link_field_id": "fldWLNg51Z",
+        "id": "fldWkv4FOQ",
+        "link_table": "tbl4uI23VnzwPMxy",
+        "name": "Factor",
+        "type": "link"
+      },
+      {
+        "default_value": null,
+        "id": "fldd0VBw2X",
+        "name": "字段 11",
+        "style": {
+          "type": "plain"
+        },
+        "type": "text"
+      },
+      {
+        "default_value": null,
+        "id": "fldFPT89Ek",
+        "name": "字段 13",
+        "style": {
+          "type": "plain"
+        },
+        "type": "text"
+      },
+      {
+        "default_value": null,
+        "id": "fldAi8Cu26",
+        "name": "取值",
+        "style": {
+          "type": "plain"
+        },
+        "type": "text"
+      },
+      {
+        "default_value": null,
+        "id": "fldEZn1WtU",
+        "name": "字段 9",
+        "style": {
+          "type": "plain"
+        },
+        "type": "text"
+      },
+      {
+        "default_value": null,
+        "id": "fldnjW1ZwV",
+        "name": "举例",
+        "style": {
+          "type": "plain"
+        },
+        "type": "text"
+      },
+      {
+        "default_value": null,
+        "id": "fldw9jZFQr",
+        "name": "字段 15",
+        "style": {
+          "type": "plain"
+        },
+        "type": "text"
+      },
+      {
+        "default_value": null,
+        "id": "fldJwJBPZO",
+        "name": "字段 3",
+        "style": {
+          "type": "plain"
+        },
+        "type": "text"
+      },
+      {
+        "default_value": null,
+        "id": "fldXPXT68J",
+        "name": "字段 4",
+        "style": {
+          "type": "plain"
+        },
+        "type": "text"
+      },
+      {
+        "default_value": null,
+        "id": "fldRLfIaNI",
+        "name": "字段 10",
+        "style": {
+          "type": "plain"
+        },
+        "type": "text"
+      }
+    ],
+    "total": 20
+  }
+}

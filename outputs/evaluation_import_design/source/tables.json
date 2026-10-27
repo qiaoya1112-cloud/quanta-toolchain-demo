@@ -1,0 +1,51 @@
+{
+  "ok": true,
+  "identity": "user",
+  "data": {
+    "tables": [
+      {
+        "id": "tblbdNXZmJUaUdJ1",
+        "name": "场景库目录表",
+        "records_count": 630,
+        "rev": 0
+      },
+      {
+        "id": "tblT39AUgtbKTUDy",
+        "name": "skill标签维护表",
+        "records_count": 198,
+        "rev": 1
+      },
+      {
+        "id": "tbl4uI23VnzwPMxy",
+        "name": "影响因素Factor配置表",
+        "records_count": 193,
+        "rev": 0
+      },
+      {
+        "id": "tbltAFo6zZr09s0M",
+        "name": "Factor取值说明",
+        "records_count": 206,
+        "rev": 1
+      },
+      {
+        "id": "tblnjRJV5JV5vLQr",
+        "name": "测试用例表",
+        "records_count": 562,
+        "rev": 697
+      },
+      {
+        "id": "tblLbH4JKj7YDWpn",
+        "name": "【封板】eval场景集v1.0",
+        "records_count": 52,
+        "rev": 0
+      },
+      {
+        "id": "tblEJiwTzVMHMMbX",
+        "name": "【旧】FT场景测试用例_评分规则",
+        "records_count": 73,
+        "rev": 0
+      }
+    ],
+    "total": 7
+  }
+}

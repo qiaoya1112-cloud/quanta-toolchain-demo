@@ -1,0 +1,1573 @@
+{
+  "ok": true,
+  "identity": "user",
+  "data": {
+    "fields": [
+      {
+        "default_value": null,
+        "id": "fldUEFmjlq",
+        "name": "prompt_ch",
+        "style": {
+          "type": "plain"
+        },
+        "type": "text"
+      },
+      {
+        "default_value": null,
+        "id": "fldhK9vCgL",
+        "multiple": false,
+        "name": "是否采集过遥操数据",
+        "options": [
+          {
+            "hue": "Green",
+            "lightness": "Lighter",
+            "name": "用餐刀将芹菜切两片"
+          },
+          {
+            "hue": "Blue",
+            "lightness": "Lighter",
+            "name": "是"
+          },
+          {
+            "hue": "Orange",
+            "lightness": "Lighter",
+            "name": "否"
+          },
+          {
+            "hue": "Orange",
+            "lightness": "Lighter",
+            "name": "厨房餐厅"
+          },
+          {
+            "hue": "Blue",
+            "lightness": "Lighter",
+            "name": "书房"
+          },
+          {
+            "hue": "Wathet",
+            "lightness": "Lighter",
+            "name": "客厅"
+          },
+          {
+            "hue": "Orange",
+            "lightness": "Lighter",
+            "name": "id"
+          }
+        ],
+        "type": "select"
+      },
+      {
+        "default_value": null,
+        "id": "fld8bDf4A1",
+        "multiple": false,
+        "name": "版本",
+        "options": [
+          {
+            "hue": "Blue",
+            "lightness": "Lighter",
+            "name": "V1.0"
+          },
+          {
+            "hue": "Orange",
+            "lightness": "Lighter",
+            "name": "P1"
+          },
+          {
+            "hue": "Yellow",
+            "lightness": "Lighter",
+            "name": "P3"
+          },
+          {
+            "hue": "Wathet",
+            "lightness": "Lighter",
+            "name": "P2"
+          },
+          {
+            "hue": "Turquoise",
+            "lightness": "Lighter",
+            "name": "V2.0"
+          }
+        ],
+        "type": "select"
+      },
+      {
+        "default_value": null,
+        "id": "fldSrSCgNl",
+        "multiple": false,
+        "name": "story(英文版）",
+        "options": [
+          {
+            "hue": "Purple",
+            "lightness": "Lighter",
+            "name": "Stir twice in a plastic measuring cup with a wooden coffee stirrer"
+          },
+          {
+            "hue": "Orange",
+            "lightness": "Lighter",
+            "name": "Leaf quickly backward through the textbook to the first page"
+          },
+          {
+            "hue": "Wathet",
+            "lightness": "Lighter",
+            "name": "Pour liquid from the wide-mouth plastic cup into a glass"
+          },
+          {
+            "hue": "Yellow",
+            "lightness": "Lighter",
+            "name": "Flip back page by page from the middle page to the first page of the textbook"
+          },
+          {
+            "hue": "Turquoise",
+            "lightness": "Lighter",
+            "name": "Stir counterclockwise twice in a mug with a ceramic spoon"
+          },
+          {
+            "hue": "Red",
+            "lightness": "Lighter",
+            "name": "Stir twice in a plastic cup with chopsticks"
+          },
+          {
+            "hue": "Purple",
+            "lightness": "Lighter",
+            "name": "Hold a can and a bowl with both hands and pour liquid from the can into the bowl"
+          },
+          {
+            "hue": "Green",
+            "lightness": "Lighter",
+            "name": "Wipe the inside of a stainless-steel basin with a sock"
+          },
+          {
+            "hue": "Carmine",
+            "lightness": "Lighter",
+            "name": "Flip forward page by page from the first page to the middle page of the scratchpad"
+          },
+          {
+            "hue": "Lime",
+            "lightness": "Lighter",
+            "name": "Unscrew the cap and pour water from the thermos cup into a plastic measuring cup"
+          },
+          {
+            "hue": "Blue",
+            "lightness": "Lighter",
+            "name": "Stir twice in an enamel mug with a marker"
+          },
+          {
+            "hue": "Orange",
+            "lightness": "Lighter",
+            "name": "Stir clockwise twice in a small iron pan with a toothbrush"
+          },
+          {
+            "hue": "Wathet",
+            "lightness": "Lighter",
+            "name": "Stir once in a mug with a ceramic spoon"
+          },
+          {
+            "hue": "Yellow",
+            "lightness": "Lighter",
+            "name": "Pour wine from the wine bottle into a transparent wine glass"
+          },
+          {
+            "hue": "Turquoise",
+            "lightness": "Lighter",
+            "name": "Unscrew the cap and pour water from the water bottle into a paper cup"
+          },
+          {
+            "hue": "Red",
+            "lightness": "Lighter",
+            "name": "Wipe the tabletop with a wet wipe"
+          },
+          {
+            "hue": "Purple",
+            "lightness": "Lighter",
+            "name": "Stir twice in a coffee cup with a straw"
+          },
+          {
+            "hue": "Green",
+            "lightness": "Lighter",
+            "name": "Open the oven door, wipe the oven interior with a cloth, then close the door"
+          },
+          {
+            "hue": "Carmine",
+            "lightness": "Lighter",
+            "name": "Erase a whiteboard with a whiteboard eraser"
+          },
+          {
+            "hue": "Lime",
+            "lightness": "Lighter",
+            "name": "Stir clockwise twice in a small bowl with a whisk"
+          },
+          {
+            "hue": "Blue",
+            "lightness": "Lighter",
+            "name": "Open the oven door, clean the oven interior with a rag, then close the door"
+          },
+          {
+            "hue": "Orange",
+            "lightness": "Lighter",
+            "name": "Wipe the inside of a glass with a rag"
+          },
+          {
+            "hue": "Wathet",
+            "lightness": "Lighter",
+            "name": "Turn the textbook from the first page to the middle page"
+          },
+          {
+            "hue": "Yellow",
+            "lightness": "Lighter",
+            "name": "Wipe the top of a cabinet with a wet wipe"
+          },
+          {
+            "hue": "Turquoise",
+            "lightness": "Lighter",
+            "name": "Hold a teacup and a storage box with both hands and pour liquid from the teacup into the storage box"
+          },
+          {
+            "hue": "Red",
+            "lightness": "Lighter",
+            "name": "Open the microwave door, clean the interior with a desktop duster, then close the door"
+          },
+          {
+            "hue": "Purple",
+            "lightness": "Lighter",
+            "name": "Unscrew the cap and pour milk from the milk bottle into a glass"
+          },
+          {
+            "hue": "Green",
+            "lightness": "Lighter",
+            "name": "Grab the wine bottle, fill the wine glass, and stand the bottle on the table"
+          },
+          {
+            "hue": "Carmine",
+            "lightness": "Lighter",
+            "name": "Wipe the outside of an insulated lunch box with a shoe brush"
+          },
+          {
+            "hue": "Lime",
+            "lightness": "Lighter",
+            "name": "Pour liquid from the milk bottle into a mug"
+          },
+          {
+            "hue": "Blue",
+            "lightness": "Lighter",
+            "name": "Wipe the outside of a plate with a rag"
+          },
+          {
+            "hue": "Orange",
+            "lightness": "Lighter",
+            "name": "Pour liquid from the can into the spout of a watering can"
+          },
+          {
+            "hue": "Wathet",
+            "lightness": "Lighter",
+            "name": "Open the scratchpad to the first page"
+          },
+          {
+            "hue": "Yellow",
+            "lightness": "Lighter",
+            "name": "Flip back page by page from the middle page to the first page of the scratchpad"
+          },
+          {
+            "hue": "Turquoise",
+            "lightness": "Lighter",
+            "name": "Flip the textbook straight to the middle page"
+          },
+          {
+            "hue": "Red",
+            "lightness": "Lighter",
+            "name": "Open the textbook to the first page"
+          },
+          {
+            "hue": "Purple",
+            "lightness": "Lighter",
+            "name": "Leaf quickly through the scratchpad from the first page to the middle page"
+          },
+          {
+            "hue": "Green",
+            "lightness": "Lighter",
+            "name": "Flip forward page by page from the first page to the middle page of the textbook"
+          },
+          {
+            "hue": "Carmine",
+            "lightness": "Lighter",
+            "name": "Turn the textbook back from the middle page to the first page"
+          },
+          {
+            "hue": "Lime",
+            "lightness": "Lighter",
+            "name": "Grab the liquid carton, fill the paper cup, and stand the carton on the table"
+          },
+          {
+            "hue": "Blue",
+            "lightness": "Lighter",
+            "name": "Wipe the surface of a refrigerator with a board eraser"
+          },
+          {
+            "hue": "Orange",
+            "lightness": "Lighter",
+            "name": "Leaf quickly backward through the scratchpad to the first page"
+          },
+          {
+            "hue": "Wathet",
+            "lightness": "Lighter",
+            "name": "Turn the scratchpad back from the middle page to the first page"
+          },
+          {
+            "hue": "Yellow",
+            "lightness": "Lighter",
+            "name": "Stir clockwise twice in a big bowl with a whisk"
+          },
+          {
+            "hue": "Turquoise",
+            "lightness": "Lighter",
+            "name": "Turn the scratchpad from the first page to the middle page"
+          },
+          {
+            "hue": "Red",
+            "lightness": "Lighter",
+            "name": "Wipe the glass with a cloth"
+          },
+          {
+            "hue": "Purple",
+            "lightness": "Lighter",
+            "name": "Leaf quickly through the textbook from the first page to the middle page"
+          },
+          {
+            "hue": "Green",
+            "lightness": "Lighter",
+            "name": "Flip the scratchpad straight to the middle page"
+          },
+          {
+            "hue": "Turquoise",
+            "lightness": "Lighter",
+            "name": "Turn the hardcover book from the first page to the middle page"
+          },
+          {
+            "hue": "Red",
+            "lightness": "Lighter",
+            "name": "Open the hardcover book to the first page"
+          }
+        ],
+        "remaining_options_count": 13,
+        "truncated": true,
+        "truncated_options_count": 13,
+        "type": "select"
+      },
+      {
+        "default_value": null,
+        "id": "fldLOlkOau",
+        "multiple": false,
+        "name": "是否在eval场景集",
+        "options": [
+          {
+            "hue": "Blue",
+            "lightness": "Lighter",
+            "name": "是"
+          },
+          {
+            "hue": "Orange",
+            "lightness": "Lighter",
+            "name": "否"
+          },
+          {
+            "hue": "Wathet",
+            "lightness": "Lighter",
+            "name": ""
+          },
+          {
+            "hue": "Yellow",
+            "lightness": "Lighter",
+            "name": "左手拿起保温杯。"
+          },
+          {
+            "hue": "Turquoise",
+            "lightness": "Lighter",
+            "name": "调整陶瓷勺，保持勺碗朝下"
+          },
+          {
+            "hue": "Red",
+            "lightness": "Lighter",
+            "name": "用右手拿起桌上陶瓷勺的手柄"
+          },
+          {
+            "hue": "Purple",
+            "lightness": "Lighter",
+            "name": "用左手握住马克杯"
+          },
+          {
+            "hue": "Green",
+            "lightness": "Lighter",
+            "name": "用陶瓷勺在马克杯里逆时针搅两圈"
+          },
+          {
+            "hue": "Carmine",
+            "lightness": "Lighter",
+            "name": "取出陶瓷勺放在桌上"
+          },
+          {
+            "hue": "Lime",
+            "lightness": "Lighter",
+            "name": "抓起液体纸盒把纸杯倒满"
+          },
+          {
+            "hue": "Gray",
+            "lightness": "Lighter",
+            "name": "把液体纸盒立在桌上"
+          },
+          {
+            "hue": "Blue",
+            "lightness": "Lighter",
+            "name": "固定小白板。"
+          },
+          {
+            "hue": "Orange",
+            "lightness": "Lighter",
+            "name": "拿住已掀开的贴纸边角。"
+          },
+          {
+            "hue": "Wathet",
+            "lightness": "Lighter",
+            "name": "从小白板上撕下贴纸。"
+          },
+          {
+            "hue": "Yellow",
+            "lightness": "Lighter",
+            "name": "将词典直接翻到中间页。"
+          },
+          {
+            "hue": "Turquoise",
+            "lightness": "Lighter",
+            "name": "将草稿本从中间翻回第一页。"
+          },
+          {
+            "hue": "Red",
+            "lightness": "Lighter",
+            "name": "用左手拿起袜子"
+          },
+          {
+            "hue": "Purple",
+            "lightness": "Lighter",
+            "name": "用右手拿起不锈钢盆"
+          },
+          {
+            "hue": "Green",
+            "lightness": "Lighter",
+            "name": "用袜子擦拭不锈钢盆内部"
+          },
+          {
+            "hue": "Carmine",
+            "lightness": "Lighter",
+            "name": "同时把袜子和不锈钢盆放在桌上"
+          },
+          {
+            "hue": "Lime",
+            "lightness": "Lighter",
+            "name": "拿起玻璃杯。"
+          },
+          {
+            "hue": "Gray",
+            "lightness": "Lighter",
+            "name": "用一个钢丝球擦拭玻璃杯的外面。"
+          },
+          {
+            "hue": "Blue",
+            "lightness": "Lighter",
+            "name": "将清洁工具和餐具同时放到桌子上。"
+          },
+          {
+            "hue": "Orange",
+            "lightness": "Lighter",
+            "name": "拿起一个钢丝球。"
+          },
+          {
+            "hue": "Wathet",
+            "lightness": "Lighter",
+            "name": "把精装书从第一页翻到中间"
+          },
+          {
+            "hue": "Yellow",
+            "lightness": "Lighter",
+            "name": "用右手逆时针拧开盖子。"
+          },
+          {
+            "hue": "Turquoise",
+            "lightness": "Lighter",
+            "name": "将保温杯盖放置在桌面上。"
+          },
+          {
+            "hue": "Red",
+            "lightness": "Lighter",
+            "name": "把半满的保温杯内液体倒入塑料量杯中。"
+          },
+          {
+            "hue": "Purple",
+            "lightness": "Lighter",
+            "name": "将保温杯放到桌面上。"
+          },
+          {
+            "hue": "Green",
+            "lightness": "Lighter",
+            "name": "右手拿起酒瓶。"
+          },
+          {
+            "hue": "Carmine",
+            "lightness": "Lighter",
+            "name": "将酒瓶中的液体倒入透明玻璃红酒杯内。"
+          },
+          {
+            "hue": "Lime",
+            "lightness": "Lighter",
+            "name": "把酒瓶放置在桌面上。"
+          },
+          {
+            "hue": "Gray",
+            "lightness": "Lighter",
+            "name": "左手拿起桌面上的牙刷柄"
+          },
+          {
+            "hue": "Blue",
+            "lightness": "Lighter",
+            "name": "调整牙刷，使牙刷柄朝上、牙刷头朝下。"
+          },
+          {
+            "hue": "Orange",
+            "lightness": "Lighter",
+            "name": "右手拿起小铁锅。"
+          },
+          {
+            "hue": "Wathet",
+            "lightness": "Lighter",
+            "name": "顺时针搅拌小铁锅内两圈。"
+          },
+          {
+            "hue": "Yellow",
+            "lightness": "Lighter",
+            "name": "双手同时将牙刷和小铁锅放置在桌面上。"
+          },
+          {
+            "hue": "Turquoise",
+            "lightness": "Lighter",
+            "name": "打开这本书"
+          },
+          {
+            "hue": "Red",
+            "lightness": "Lighter",
+            "name": "调整布的位置"
+          },
+          {
+            "hue": "Purple",
+            "lightness": "Lighter",
+            "name": "把布横向对折"
+          },
+          {
+            "hue": "Green",
+            "lightness": "Lighter",
+            "name": "把布纵向对折"
+          },
+          {
+            "hue": "Carmine",
+            "lightness": "Lighter",
+            "name": "拿起马克杯。"
+          },
+          {
+            "hue": "Lime",
+            "lightness": "Lighter",
+            "name": "通过杯耳将马克杯挂在木质杯架的挂杆上。"
+          },
+          {
+            "hue": "Gray",
+            "lightness": "Lighter",
+            "name": "从装有四个小盒子的大盒子中取出一个小盒子。"
+          },
+          {
+            "hue": "Blue",
+            "lightness": "Lighter",
+            "name": "将小盒子放在桌面上。"
+          }
+        ],
+        "type": "select"
+      },
+      {
+        "default_value": null,
+        "id": "fldUhONTtd",
+        "name": "Prompt",
+        "style": {
+          "type": "plain"
+        },
+        "type": "text"
+      },
+      {
+        "default_value": null,
+        "id": "fldobkny38",
+        "multiple": false,
+        "name": "ft采集组（仅限来源为ft采集场景的数据）",
+        "options": [
+          {
+            "hue": "Yellow",
+            "lightness": "Lighter",
+            "name": "场景库自建"
+          },
+          {
+            "hue": "Turquoise",
+            "lightness": "Lighter",
+            "name": "0730uDAS验证"
+          },
+          {
+            "hue": "Lime",
+            "lightness": "Lighter",
+            "name": "ft_pour_01"
+          },
+          {
+            "hue": "Gray",
+            "lightness": "Lighter",
+            "name": "ft_pour_02"
+          },
+          {
+            "hue": "Blue",
+            "lightness": "Lighter",
+            "name": "ft_pour_03"
+          },
+          {
+            "hue": "Orange",
+            "lightness": "Lighter",
+            "name": "ft_pour_01_01"
+          },
+          {
+            "hue": "Wathet",
+            "lightness": "Lighter",
+            "name": "ft_pour_02_01"
+          },
+          {
+            "hue": "Yellow",
+            "lightness": "Lighter",
+            "name": "ft_pour_03_01"
+          },
+          {
+            "hue": "Turquoise",
+            "lightness": "Lighter",
+            "name": "ft_pour_ood_01"
+          },
+          {
+            "hue": "Red",
+            "lightness": "Lighter",
+            "name": "ft_pour_ood_02"
+          },
+          {
+            "hue": "Purple",
+            "lightness": "Lighter",
+            "name": "ft_pour_ood_03"
+          },
+          {
+            "hue": "Green",
+            "lightness": "Lighter",
+            "name": "ft_pour_ood_04"
+          },
+          {
+            "hue": "Carmine",
+            "lightness": "Lighter",
+            "name": "ft_stir_01"
+          },
+          {
+            "hue": "Lime",
+            "lightness": "Lighter",
+            "name": "ft_stir_02"
+          },
+          {
+            "hue": "Gray",
+            "lightness": "Lighter",
+            "name": "ft_stir_03"
+          },
+          {
+            "hue": "Blue",
+            "lightness": "Lighter",
+            "name": "ft_stir_01_01"
+          },
+          {
+            "hue": "Orange",
+            "lightness": "Lighter",
+            "name": "ft_stir_02_01"
+          },
+          {
+            "hue": "Wathet",
+            "lightness": "Lighter",
+            "name": "ft_stir_03_01"
+          },
+          {
+            "hue": "Yellow",
+            "lightness": "Lighter",
+            "name": "ft_turn_01"
+          },
+          {
+            "hue": "Turquoise",
+            "lightness": "Lighter",
+            "name": "ft_turn_02"
+          },
+          {
+            "hue": "Red",
+            "lightness": "Lighter",
+            "name": "ft_turn_03"
+          },
+          {
+            "hue": "Purple",
+            "lightness": "Lighter",
+            "name": "ft_turn_04"
+          },
+          {
+            "hue": "Green",
+            "lightness": "Lighter",
+            "name": "ft_turn_05"
+          },
+          {
+            "hue": "Carmine",
+            "lightness": "Lighter",
+            "name": "ft_turn_06"
+          },
+          {
+            "hue": "Lime",
+            "lightness": "Lighter",
+            "name": "ft_turn_07"
+          },
+          {
+            "hue": "Gray",
+            "lightness": "Lighter",
+            "name": "ft_turn_08"
+          },
+          {
+            "hue": "Blue",
+            "lightness": "Lighter",
+            "name": "ft_wipe_01"
+          },
+          {
+            "hue": "Orange",
+            "lightness": "Lighter",
+            "name": "ft_wipe_02"
+          },
+          {
+            "hue": "Wathet",
+            "lightness": "Lighter",
+            "name": "ft_wipe_03"
+          },
+          {
+            "hue": "Yellow",
+            "lightness": "Lighter",
+            "name": "ft_wipe_04"
+          },
+          {
+            "hue": "Turquoise",
+            "lightness": "Lighter",
+            "name": "Pick up the water bottle with left hand."
+          },
+          {
+            "hue": "Red",
+            "lightness": "Lighter",
+            "name": "Unscrew the lid counterclockwise with your right hand"
+          },
+          {
+            "hue": "Purple",
+            "lightness": "Lighter",
+            "name": "Place the cap on the table."
+          },
+          {
+            "hue": "Green",
+            "lightness": "Lighter",
+            "name": "Pour the full water bottle into the bowl."
+          },
+          {
+            "hue": "Carmine",
+            "lightness": "Lighter",
+            "name": "Set the water bottle on the table."
+          },
+          {
+            "hue": "Lime",
+            "lightness": "Lighter",
+            "name": "Pick up the liquid carton with right hand."
+          },
+          {
+            "hue": "Gray",
+            "lightness": "Lighter",
+            "name": "Add the liquid from the liquid carton into the bowl."
+          },
+          {
+            "hue": "Blue",
+            "lightness": "Lighter",
+            "name": "Put the liquid carton on the table."
+          },
+          {
+            "hue": "Orange",
+            "lightness": "Lighter",
+            "name": "Pick up the liquid carton with left hand."
+          },
+          {
+            "hue": "Wathet",
+            "lightness": "Lighter",
+            "name": "Pick up the bowl with right hand."
+          },
+          {
+            "hue": "Yellow",
+            "lightness": "Lighter",
+            "name": "Pour the liquid from the liquid carton into the bowl."
+          },
+          {
+            "hue": "Turquoise",
+            "lightness": "Lighter",
+            "name": "Place the liquid container and the receiving cup on the table with both hands at the same time."
+          },
+          {
+            "hue": "Red",
+            "lightness": "Lighter",
+            "name": "Pick up the whisk handle on the table with left hand."
+          },
+          {
+            "hue": "Purple",
+            "lightness": "Lighter",
+            "name": "Adjust it with handle upward and mixing head downward."
+          },
+          {
+            "hue": "Green",
+            "lightness": "Lighter",
+            "name": "Pick up the large bowl with right hand."
+          },
+          {
+            "hue": "Carmine",
+            "lightness": "Lighter",
+            "name": "Whip the eggs in the large bowl clockwise for one circle."
+          },
+          {
+            "hue": "Lime",
+            "lightness": "Lighter",
+            "name": "Set the bowl and whisk on the table with both hands."
+          },
+          {
+            "hue": "Gray",
+            "lightness": "Lighter",
+            "name": "Pick up the handle of the ceramic spoon on the table with right hand."
+          },
+          {
+            "hue": "Blue",
+            "lightness": "Lighter",
+            "name": "Adjust it to keep the spoon bowl downward."
+          },
+          {
+            "hue": "Orange",
+            "lightness": "Lighter",
+            "name": "Hold the mug with left hand."
+          }
+        ],
+        "remaining_options_count": 147,
+        "truncated": true,
+        "truncated_options_count": 147,
+        "type": "select"
+      },
+      {
+        "default_value": null,
+        "dynamic_options_source": {
+          "field_id": "fldGlAbYqc",
+          "table_id": "tblT39AUgtbKTUDy"
+        },
+        "id": "fld7vU71WR",
+        "multiple": true,
+        "name": "Skill标签",
+        "options": [
+          {
+            "hue": "Blue",
+            "lightness": "Lighter",
+            "name": "物品尺寸辨别(Sizing）"
+          },
+          {
+            "hue": "Wathet",
+            "lightness": "Lighter",
+            "name": "物品形状辨别(Shaping）"
+          },
+          {
+            "hue": "Blue",
+            "lightness": "Lighter",
+            "name": "抓取（Pick）"
+          },
+          {
+            "hue": "Orange",
+            "lightness": "Lighter",
+            "name": "翻（Turn）"
+          },
+          {
+            "hue": "Yellow",
+            "lightness": "Lighter",
+            "name": "拧（Twist）"
+          },
+          {
+            "hue": "Turquoise",
+            "lightness": "Lighter",
+            "name": "放置（Place）"
+          },
+          {
+            "hue": "Red",
+            "lightness": "Lighter",
+            "name": "倾倒（Pour）"
+          },
+          {
+            "hue": "Purple",
+            "lightness": "Lighter",
+            "name": "调整（Adjust）"
+          },
+          {
+            "hue": "Green",
+            "lightness": "Lighter",
+            "name": "搅拌（Stir）"
+          },
+          {
+            "hue": "Carmine",
+            "lightness": "Lighter",
+            "name": "插入（Insert）"
+          },
+          {
+            "hue": "Lime",
+            "lightness": "Lighter",
+            "name": "拉动（Pull）"
+          },
+          {
+            "hue": "Blue",
+            "lightness": "Lighter",
+            "name": "物品材质辨别"
+          },
+          {
+            "hue": "Orange",
+            "lightness": "Lighter",
+            "name": "清扫（Clean）"
+          },
+          {
+            "hue": "Wathet",
+            "lightness": "Lighter",
+            "name": "打开（Open）"
+          },
+          {
+            "hue": "Yellow",
+            "lightness": "Lighter",
+            "name": "关闭（Close）"
+          },
+          {
+            "hue": "Turquoise",
+            "lightness": "Lighter",
+            "name": "折叠（Fold）"
+          },
+          {
+            "hue": "Red",
+            "lightness": "Lighter",
+            "name": "悬挂（Hang）"
+          },
+          {
+            "hue": "Purple",
+            "lightness": "Lighter",
+            "name": "撕（Tear）"
+          },
+          {
+            "hue": "Green",
+            "lightness": "Lighter",
+            "name": "拆卸（Disassemble）"
+          },
+          {
+            "hue": "Carmine",
+            "lightness": "Lighter",
+            "name": "工具操作（Tool Use）"
+          },
+          {
+            "hue": "Lime",
+            "lightness": "Lighter",
+            "name": "切割（Cut）"
+          },
+          {
+            "hue": "Orange",
+            "lightness": "Lighter",
+            "name": "堆叠（Stack）"
+          },
+          {
+            "hue": "Wathet",
+            "lightness": "Lighter",
+            "name": "展开（Unfold）"
+          },
+          {
+            "hue": "Yellow",
+            "lightness": "Lighter",
+            "name": "物品颜色辨别"
+          },
+          {
+            "hue": "Turquoise",
+            "lightness": "Lighter",
+            "name": "推动（Push）"
+          },
+          {
+            "hue": "Red",
+            "lightness": "Lighter",
+            "name": "目标感知"
+          },
+          {
+            "hue": "Purple",
+            "lightness": "Lighter",
+            "name": "运动跟随"
+          },
+          {
+            "hue": "Green",
+            "lightness": "Lighter",
+            "name": "按压（Press）"
+          },
+          {
+            "hue": "Carmine",
+            "lightness": "Lighter",
+            "name": "旋转（Rotate）"
+          },
+          {
+            "hue": "Lime",
+            "lightness": "Lighter",
+            "name": "切割 (Cut)"
+          },
+          {
+            "hue": "Blue",
+            "lightness": "Lighter",
+            "name": "装配（Assembly）"
+          },
+          {
+            "hue": "Orange",
+            "lightness": "Lighter",
+            "name": "搅拌（Stir)"
+          },
+          {
+            "hue": "Wathet",
+            "lightness": "Lighter",
+            "name": "套（Fit）"
+          },
+          {
+            "hue": "Yellow",
+            "lightness": "Lighter",
+            "name": "拍打（Pat）"
+          },
+          {
+            "hue": "Turquoise",
+            "lightness": "Lighter",
+            "name": "拆卸"
+          },
+          {
+            "hue": "Red",
+            "lightness": "Lighter",
+            "name": "贴附（Attach）"
+          },
+          {
+            "hue": "Turquoise",
+            "lightness": "Lighter",
+            "name": "剥（Peel）"
+          },
+          {
+            "hue": "Turquoise",
+            "lightness": "Lighter",
+            "name": "擦拭（Wipe）"
+          },
+          {
+            "hue": "Red",
+            "lightness": "Lighter",
+            "name": "双手协同"
+          },
+          {
+            "hue": "Purple",
+            "lightness": "Lighter",
+            "name": "双手协同-打开"
+          },
+          {
+            "hue": "Green",
+            "lightness": "Lighter",
+            "name": "双手协同-放下"
+          },
+          {
+            "hue": "Carmine",
+            "lightness": "Lighter",
+            "name": "固定（Hold）"
+          },
+          {
+            "hue": "Lime",
+            "lightness": "Lighter",
+            "name": "抓取"
+          }
+        ],
+        "type": "select"
+      },
+      {
+        "default_value": null,
+        "id": "fldR559pvo",
+        "name": "Factor",
+        "style": {
+          "type": "plain"
+        },
+        "type": "text"
+      },
+      {
+        "default_value": null,
+        "id": "fld47emjCc",
+        "name": "Factor取值",
+        "style": {
+          "type": "plain"
+        },
+        "type": "text"
+      },
+      {
+        "default_value": null,
+        "id": "fld1SpQmio",
+        "name": "用例ID",
+        "style": {
+          "type": "plain"
+        },
+        "type": "text"
+      },
+      {
+        "default_value": null,
+        "id": "fldzeIL4nT",
+        "multiple": false,
+        "name": "Story",
+        "options": [
+          {
+            "hue": "Turquoise",
+            "lightness": "Lighter",
+            "name": "[专项]物品识别基准测试"
+          },
+          {
+            "hue": "Blue",
+            "lightness": "Lighter",
+            "name": "[专项]空间感知基准测试"
+          },
+          {
+            "hue": "Blue",
+            "lightness": "Lighter",
+            "name": "[专项]动作能力评测"
+          },
+          {
+            "hue": "Wathet",
+            "lightness": "Lighter",
+            "name": "[专项]放置基准测试"
+          },
+          {
+            "hue": "Purple",
+            "lightness": "Lighter",
+            "name": "[专项]推拉基准测试"
+          },
+          {
+            "hue": "Yellow",
+            "lightness": "Lighter",
+            "name": "[专项]抓取基准测试"
+          },
+          {
+            "hue": "Turquoise",
+            "lightness": "Lighter",
+            "name": "整理桌面"
+          },
+          {
+            "hue": "Purple",
+            "lightness": "Lighter",
+            "name": "浇花"
+          },
+          {
+            "hue": "Red",
+            "lightness": "Lighter",
+            "name": "插花"
+          },
+          {
+            "hue": "Purple",
+            "lightness": "Lighter",
+            "name": "扫垃圾"
+          },
+          {
+            "hue": "Orange",
+            "lightness": "Lighter",
+            "name": "TableWiping"
+          },
+          {
+            "hue": "Blue",
+            "lightness": "Lighter",
+            "name": "Carbinet"
+          },
+          {
+            "hue": "Orange",
+            "lightness": "Lighter",
+            "name": "[专项]折叠基准测试"
+          },
+          {
+            "hue": "Wathet",
+            "lightness": "Lighter",
+            "name": "[专项]展开基准测试"
+          },
+          {
+            "hue": "Yellow",
+            "lightness": "Lighter",
+            "name": "[专项]精细化能力基准测试"
+          },
+          {
+            "hue": "Turquoise",
+            "lightness": "Lighter",
+            "name": "WaterKettle"
+          },
+          {
+            "hue": "Red",
+            "lightness": "Lighter",
+            "name": "DishSwiping"
+          },
+          {
+            "hue": "Purple",
+            "lightness": "Lighter",
+            "name": "MopFolding"
+          },
+          {
+            "hue": "Green",
+            "lightness": "Lighter",
+            "name": "TurnOnTheLight"
+          },
+          {
+            "hue": "Carmine",
+            "lightness": "Lighter",
+            "name": "拉链"
+          },
+          {
+            "hue": "Lime",
+            "lightness": "Lighter",
+            "name": "打扫会议室"
+          },
+          {
+            "hue": "Gray",
+            "lightness": "Lighter",
+            "name": "Cooking"
+          },
+          {
+            "hue": "Blue",
+            "lightness": "Lighter",
+            "name": "制作冰饮"
+          },
+          {
+            "hue": "Orange",
+            "lightness": "Lighter",
+            "name": "chair"
+          },
+          {
+            "hue": "Turquoise",
+            "lightness": "Lighter",
+            "name": "开门"
+          },
+          {
+            "hue": "Red",
+            "lightness": "Lighter",
+            "name": "叠碗"
+          },
+          {
+            "hue": "Purple",
+            "lightness": "Lighter",
+            "name": "准备早餐"
+          },
+          {
+            "hue": "Green",
+            "lightness": "Lighter",
+            "name": "零食"
+          },
+          {
+            "hue": "Carmine",
+            "lightness": "Lighter",
+            "name": "GlassSwiping"
+          },
+          {
+            "hue": "Lime",
+            "lightness": "Lighter",
+            "name": "SqueezeKetchup"
+          },
+          {
+            "hue": "Gray",
+            "lightness": "Lighter",
+            "name": "摆放礼盒"
+          },
+          {
+            "hue": "Lime",
+            "lightness": "Lighter",
+            "name": "收拾衣柜"
+          },
+          {
+            "hue": "Gray",
+            "lightness": "Lighter",
+            "name": "整理沙发"
+          },
+          {
+            "hue": "Blue",
+            "lightness": "Lighter",
+            "name": "拿快递"
+          },
+          {
+            "hue": "Orange",
+            "lightness": "Lighter",
+            "name": "搭积木"
+          },
+          {
+            "hue": "Wathet",
+            "lightness": "Lighter",
+            "name": "鸡毛掸子"
+          },
+          {
+            "hue": "Yellow",
+            "lightness": "Lighter",
+            "name": "台球"
+          },
+          {
+            "hue": "Turquoise",
+            "lightness": "Lighter",
+            "name": "看书"
+          },
+          {
+            "hue": "Red",
+            "lightness": "Lighter",
+            "name": "保险箱"
+          },
+          {
+            "hue": "Purple",
+            "lightness": "Lighter",
+            "name": "放书"
+          },
+          {
+            "hue": "Green",
+            "lightness": "Lighter",
+            "name": "搅拌"
+          },
+          {
+            "hue": "Carmine",
+            "lightness": "Lighter",
+            "name": "扔"
+          },
+          {
+            "hue": "Lime",
+            "lightness": "Lighter",
+            "name": "递物品"
+          },
+          {
+            "hue": "Gray",
+            "lightness": "Lighter",
+            "name": "撕胶带"
+          },
+          {
+            "hue": "Blue",
+            "lightness": "Lighter",
+            "name": "挂钥匙"
+          },
+          {
+            "hue": "Orange",
+            "lightness": "Lighter",
+            "name": "Chair"
+          },
+          {
+            "hue": "Wathet",
+            "lightness": "Lighter",
+            "name": "收拾书架"
+          },
+          {
+            "hue": "Yellow",
+            "lightness": "Lighter",
+            "name": "SqueezeChocolate"
+          },
+          {
+            "hue": "Turquoise",
+            "lightness": "Lighter",
+            "name": "鸡蛋"
+          },
+          {
+            "hue": "Red",
+            "lightness": "Lighter",
+            "name": "剥玉米皮"
+          }
+        ],
+        "remaining_options_count": 237,
+        "truncated": true,
+        "truncated_options_count": 237,
+        "type": "select"
+      },
+      {
+        "default_value": null,
+        "id": "fldygXuYsi",
+        "multiple": false,
+        "name": "来源",
+        "options": [
+          {
+            "hue": "Yellow",
+            "lightness": "Lighter",
+            "name": "场景库自建"
+          },
+          {
+            "hue": "Turquoise",
+            "lightness": "Lighter",
+            "name": "0730uDAS验证"
+          },
+          {
+            "hue": "Red",
+            "lightness": "Lighter",
+            "name": "FT采集场景"
+          }
+        ],
+        "type": "select"
+      },
+      {
+        "default_value": null,
+        "id": "fldbKz35jV",
+        "name": "道具",
+        "style": {
+          "type": "plain"
+        },
+        "type": "text"
+      },
+      {
+        "id": "fldN7IHNwF",
+        "name": "布置图片",
+        "style": {
+          "type": "plain"
+        },
+        "type": "attachment"
+      },
+      {
+        "default_value": null,
+        "id": "fldB5eDTVz",
+        "name": "前置用例",
+        "style": {
+          "type": "plain"
+        },
+        "type": "text"
+      },
+      {
+        "default_value": null,
+        "id": "fldmiz62Aq",
+        "multiple": false,
+        "name": "数据归属",
+        "options": [
+          {
+            "hue": "Blue",
+            "lightness": "Lighter",
+            "name": "Eval"
+          },
+          {
+            "hue": "Orange",
+            "lightness": "Lighter",
+            "name": "Test-黑盒"
+          },
+          {
+            "hue": "Wathet",
+            "lightness": "Lighter",
+            "name": "Train"
+          },
+          {
+            "hue": "Blue",
+            "lightness": "Lighter",
+            "name": "Train"
+          }
+        ],
+        "type": "select"
+      },
+      {
+        "default_value": null,
+        "id": "fldwdW8ldV",
+        "multiple": false,
+        "name": "Stage",
+        "options": [
+          {
+            "hue": "Blue",
+            "lightness": "Lighter",
+            "name": "书房"
+          },
+          {
+            "hue": "Orange",
+            "lightness": "Lighter",
+            "name": "厨房餐厅"
+          },
+          {
+            "hue": "Wathet",
+            "lightness": "Lighter",
+            "name": "客厅"
+          },
+          {
+            "hue": "Yellow",
+            "lightness": "Lighter",
+            "name": "基础能力评测"
+          },
+          {
+            "hue": "Turquoise",
+            "lightness": "Lighter",
+            "name": "办公"
+          },
+          {
+            "hue": "Red",
+            "lightness": "Lighter",
+            "name": "卧室"
+          },
+          {
+            "hue": "Purple",
+            "lightness": "Lighter",
+            "name": "阳台"
+          },
+          {
+            "hue": "Blue",
+            "lightness": "Lighter",
+            "name": "抓取（Pick）"
+          },
+          {
+            "hue": "Purple",
+            "lightness": "Lighter",
+            "name": "调整（Adjust）"
+          },
+          {
+            "hue": "Green",
+            "lightness": "Lighter",
+            "name": "搅拌（Stir）"
+          },
+          {
+            "hue": "Red",
+            "lightness": "Lighter",
+            "name": "双手协同"
+          },
+          {
+            "hue": "Lime",
+            "lightness": "Lighter",
+            "name": "拉动（Pull）"
+          },
+          {
+            "hue": "Turquoise",
+            "lightness": "Lighter",
+            "name": "放置（Place）"
+          },
+          {
+            "hue": "Red",
+            "lightness": "Lighter",
+            "name": "倾倒（Pour）"
+          },
+          {
+            "hue": "Purple",
+            "lightness": "Lighter",
+            "name": "撕（Tear）"
+          },
+          {
+            "hue": "Orange",
+            "lightness": "Lighter",
+            "name": "翻（Turn）"
+          },
+          {
+            "hue": "Turquoise",
+            "lightness": "Lighter",
+            "name": "擦拭（Wipe）"
+          },
+          {
+            "hue": "Yellow",
+            "lightness": "Lighter",
+            "name": "拧（Twist）"
+          },
+          {
+            "hue": "Turquoise",
+            "lightness": "Lighter",
+            "name": "折叠（Fold）"
+          },
+          {
+            "hue": "Red",
+            "lightness": "Lighter",
+            "name": "悬挂（Hang）"
+          },
+          {
+            "hue": "Blue",
+            "lightness": "Lighter",
+            "name": "物品尺寸辨别(Sizing）"
+          }
+        ],
+        "type": "select"
+      }
+    ],
+    "total": 18
+  }
+}

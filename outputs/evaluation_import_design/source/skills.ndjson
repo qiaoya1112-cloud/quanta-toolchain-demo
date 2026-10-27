@@ -1,0 +1,198 @@
+{"Key Factor":null,"SKill类别":["动作类 Skill"],"Skill":["抓取（Pick）"],"Skill_EN":"Pick","Skill_中文":"抓取","record_id":"recvtcQv2DXExJ","可能的动作描述":["pick","grasp","grab","take","hold"],"备注":"最基础的夹取动作","工具使用":[]}
+{"Key Factor":null,"SKill类别":["动作类 Skill"],"Skill":["翻（Turn）"],"Skill_EN":"Turn","Skill_中文":"翻","record_id":"recvtcQv2DJTh8","可能的动作描述":["open","turn","flip","leaf","overturn"],"备注":"翻书类、翻面","工具使用":[]}
+{"Key Factor":null,"SKill类别":["动作类 Skill"],"Skill":["物品形状辨别(Shaping）"],"Skill_EN":"Shaping","Skill_中文":"物品形状辨别","record_id":"recvtcQv2DL9FE","可能的动作描述":[],"备注":"辨别物品形状","工具使用":[]}
+{"Key Factor":null,"SKill类别":["动作类 Skill"],"Skill":["拧（Twist）"],"Skill_EN":"Twist","Skill_中文":"拧","record_id":"recvtcQv2D2kzx","可能的动作描述":["twist","screw","turn","rotate","wring"],"备注":"拧瓶盖、拧毛巾","工具使用":[]}
+{"Key Factor":null,"SKill类别":["动作类 Skill"],"Skill":["放置（Place）"],"Skill_EN":"Place","Skill_中文":"放置","record_id":"recvtcQv2D8ql9","可能的动作描述":["place","put","set","lay","position"],"备注":"放到指定位置","工具使用":[]}
+{"Key Factor":null,"SKill类别":["动作类 Skill"],"Skill":["倾倒（Pour）"],"Skill_EN":"Pour","Skill_中文":"倾倒","record_id":"recvtcRR24sgzq","可能的动作描述":["pour","tip","spill","empty"],"备注":"倒液体 / 颗粒","工具使用":[]}
+{"Key Factor":null,"SKill类别":["动作类 Skill"],"Skill":["调整（Adjust）"],"Skill_EN":"Adjust","Skill_中文":"调整","record_id":"recvtcRR24Jrhm","可能的动作描述":["adjust","tune","fine-tune","modify"],"备注":"微调位置 / 角度","工具使用":[]}
+{"Key Factor":null,"SKill类别":["动作类 Skill"],"Skill":["搅拌（Stir）"],"Skill_EN":"Stir","Skill_中文":"搅拌","record_id":"recvtcRR24pMOp","可能的动作描述":["stir","mix","whisk","agitate"],"备注":"通常用勺子 / 筷子","工具使用":["工具操作（Tool Use）"]}
+{"Key Factor":null,"SKill类别":["动作类 Skill"],"Skill":["插入（Insert）"],"Skill_EN":"Insert","Skill_中文":"插入","record_id":"recvtcRR24WNdq","可能的动作描述":["insert","put in","plug in","stick in"],"备注":"插入孔 / 槽 / 接口","工具使用":[]}
+{"Key Factor":null,"SKill类别":["动作类 Skill"],"Skill":["拉动（Pull）"],"Skill_EN":"Pull","Skill_中文":"拉动","record_id":"recvtcRR24LyKC","可能的动作描述":["pull","drag","draw","tug"],"备注":"夹爪夹住后沿水平方向拖拽","工具使用":[]}
+{"Key Factor":null,"SKill类别":["辨别类 Skill"],"Skill":["物品材质辨别"],"Skill_EN":"Material Recognition","Skill_中文":"物品材质辨别","record_id":"recvtcRR240isJ","可能的动作描述":[],"备注":null,"工具使用":[]}
+{"Key Factor":null,"SKill类别":["动作类 Skill"],"Skill":["清扫（Clean）"],"Skill_EN":"Clean","Skill_中文":"清扫","record_id":"recvtcRR240DMx","可能的动作描述":["clean","sweep","brush","wipe off"],"备注":"用扫帚 / 刷子清扫桌面","工具使用":["工具操作（Tool Use）"]}
+{"Key Factor":null,"SKill类别":["动作类 Skill"],"Skill":["打开（Open）"],"Skill_EN":"Open","Skill_中文":"打开","record_id":"recvtcRR24jCUz","可能的动作描述":["open","unlid","uncover","unwrap"],"备注":"打开门、开盖、开包装","工具使用":[]}
+{"Key Factor":null,"SKill类别":["动作类 Skill"],"Skill":["关闭（Close）"],"Skill_EN":"Close","Skill_中文":"关闭","record_id":"recvtcRR24bdZ2","可能的动作描述":["close","shut","lid","cover"],"备注":"关门、盖盖","工具使用":[]}
+{"Key Factor":null,"SKill类别":["动作类 Skill"],"Skill":["折叠（Fold）"],"Skill_EN":"Fold","Skill_中文":"折叠","record_id":"recvtcRR247YBp","可能的动作描述":["fold","crease","bend"],"备注":"折纸、折衣服","工具使用":[]}
+{"Key Factor":null,"SKill类别":["动作类 Skill"],"Skill":["悬挂（Hang）"],"Skill_EN":"Hang","Skill_中文":"悬挂","record_id":"recvtcRR246iNC","可能的动作描述":["hang","suspend","hook"],"备注":"挂到挂钩 / 杆子上","工具使用":[]}
+{"Key Factor":null,"SKill类别":["动作类 Skill"],"Skill":["撕（Tear）"],"Skill_EN":"Tear","Skill_中文":"撕","record_id":"recvtcRR24gW48","可能的动作描述":["tear","rip","open","shred"],"备注":"撕开包装、撕纸","工具使用":[]}
+{"Key Factor":null,"SKill类别":["动作类 Skill"],"Skill":["拆卸（Disassemble）"],"Skill_EN":"Disassemble","Skill_中文":"拆卸","record_id":"recvtcRR24K357","可能的动作描述":["disassemble","take apart","dismantle"],"备注":"拆开组合物品","工具使用":[]}
+{"Key Factor":null,"SKill类别":[],"Skill":[],"Skill_EN":null,"Skill_中文":null,"record_id":"recvtcRR24uGLl","可能的动作描述":[],"备注":null,"工具使用":[]}
+{"Key Factor":null,"SKill类别":["动作类 Skill"],"Skill":["切割（Cut）"],"Skill_EN":"Cut","Skill_中文":"切割","record_id":"recvtcRR24hNOY","可能的动作描述":["cut","slice","chop","saw","trim"],"备注":"用刀 / 剪刀等","工具使用":["工具操作（Tool Use）"]}
+{"Key Factor":null,"SKill类别":["辨别类 Skill"],"Skill":["物品尺寸辨别(Sizing）"],"Skill_EN":"Sizing","Skill_中文":"物品尺寸辨别","record_id":"recvtcRR24hN1x","可能的动作描述":[],"备注":null,"工具使用":[]}
+{"Key Factor":null,"SKill类别":["动作类 Skill"],"Skill":["堆叠（Stack）"],"Skill_EN":"Stack","Skill_中文":"堆叠","record_id":"recvtcRR24Y5Km","可能的动作描述":["stack","pile","heap","layer"],"备注":"叠放物品","工具使用":[]}
+{"Key Factor":null,"SKill类别":["动作类 Skill"],"Skill":["展开（Unfold）"],"Skill_EN":"Unfold","Skill_中文":"展开","record_id":"recvtcRR24y5Cf","可能的动作描述":["unfold","spread","open","lay out"],"备注":"展开折叠物","工具使用":[]}
+{"Key Factor":null,"SKill类别":["辨别类 Skill"],"Skill":["物品颜色辨别"],"Skill_EN":"Color Recognition","Skill_中文":"物品颜色辨别","record_id":"recvtcRR24Y0bn","可能的动作描述":[],"备注":null,"工具使用":[]}
+{"Key Factor":null,"SKill类别":["动作类 Skill"],"Skill":["推动（Push）"],"Skill_EN":"Push","Skill_中文":"推动","record_id":"recvtcRR240vLi","可能的动作描述":["push","slide","move","shove"],"备注":"沿平面水平推动","工具使用":[]}
+{"Key Factor":null,"SKill类别":["动作类 Skill"],"Skill":["运动跟随"],"Skill_EN":"Motion Tracking","Skill_中文":"运动跟随","record_id":"recvtcRR24uCqy","可能的动作描述":["follow","track","mimic","copy"],"备注":"跟随人体 / 物体运动轨迹","工具使用":[]}
+{"Key Factor":null,"SKill类别":["动作类 Skill"],"Skill":["按压（Press）"],"Skill_EN":"Press","Skill_中文":"按压","record_id":"recvtcRR24MQ6b","可能的动作描述":["press","push down","depress"],"备注":"垂直向下用力","工具使用":[]}
+{"Key Factor":null,"SKill类别":["动作类 Skill"],"Skill":["旋转（Rotate）"],"Skill_EN":"Rotate","Skill_中文":"旋转","record_id":"recvtcRR24qBQ6","可能的动作描述":["rotate","turn","spin","twist"],"备注":"保证道具以中线为轴心旋转，如拧钥匙","工具使用":[]}
+{"Key Factor":null,"SKill类别":["动作类 Skill"],"Skill":["装配（Assembly）"],"Skill_EN":"Assembly","Skill_中文":"装配","record_id":"recvtcRR24xAW1","可能的动作描述":["assemble","put together","build","construct"],"备注":"组装零件","工具使用":[]}
+{"Key Factor":null,"SKill类别":["动作类 Skill"],"Skill":["套（Fit）"],"Skill_EN":"Fit","Skill_中文":"套","record_id":"recvtcRR24w9DL","可能的动作描述":["fit","slip on","sleeve","cover"],"备注":"套袋子、套环","工具使用":[]}
+{"Key Factor":null,"SKill类别":["动作类 Skill"],"Skill":["拍打（Pat）"],"Skill_EN":"Pat","Skill_中文":"拍打","record_id":"recvtcRR24kEFY","可能的动作描述":["pat","tap","slap","hit"],"备注":"轻拍动作","工具使用":[]}
+{"Key Factor":null,"SKill类别":[],"Skill":[],"Skill_EN":null,"Skill_中文":null,"record_id":"recvtcRR244y8Z","可能的动作描述":[],"备注":null,"工具使用":[]}
+{"Key Factor":null,"SKill类别":["动作类 Skill"],"Skill":["贴附（Attach）"],"Skill_EN":"Attach","Skill_中文":"贴附","record_id":"recvtcRR24xLgq","可能的动作描述":["attach","stick","paste","adhere"],"备注":"贴标签、贴纸","工具使用":[]}
+{"Key Factor":null,"SKill类别":["动作类 Skill"],"Skill":["擦拭（Wipe）"],"Skill_EN":"Wipe","Skill_中文":"擦拭","record_id":"recvtcTLWKDPcP","可能的动作描述":["wipe","clean","rub","mop"],"备注":"用布 / 纸巾擦拭表面","工具使用":["工具操作（Tool Use）"]}
+{"Key Factor":null,"SKill类别":["动作类 Skill"],"Skill":["剥（Peel）"],"Skill_EN":"Peel","Skill_中文":"剥","record_id":"recvtcX6i016o1","可能的动作描述":["peel","skin","shell","husk"],"备注":"剥皮、剥壳","工具使用":[]}
+{"Key Factor":null,"SKill类别":["动作类 Skill"],"Skill":["双手协同"],"Skill_EN":"Dual-arm ","Skill_中文":"双手协同","record_id":"recvtYi44LKWyF","可能的动作描述":["coordinate both hands","use both graper"],"备注":"指令指明或者未指明的双手配合","工具使用":[]}
+{"Key Factor":null,"SKill类别":["动作类 Skill"],"Skill":["固定（Hold）"],"Skill_EN":"Fix","Skill_中文":"固定","record_id":"recvtYvjG4HPYF","可能的动作描述":["hold","fix","keep","secure","clamp"],"备注":"按住 / 固定物品，防止移动","工具使用":[]}
+{"Key Factor":null,"SKill类别":[],"Skill":[],"Skill_EN":null,"Skill_中文":null,"record_id":"recvuvhs6fsU66","可能的动作描述":[],"备注":null,"工具使用":[]}
+{"Key Factor":null,"SKill类别":[],"Skill":[],"Skill_EN":null,"Skill_中文":null,"record_id":"recvuvhs6fW0TJ","可能的动作描述":[],"备注":null,"工具使用":[]}
+{"Key Factor":null,"SKill类别":[],"Skill":[],"Skill_EN":null,"Skill_中文":null,"record_id":"recvuvhs6fslYC","可能的动作描述":[],"备注":null,"工具使用":[]}
+{"Key Factor":null,"SKill类别":[],"Skill":[],"Skill_EN":null,"Skill_中文":null,"record_id":"recvuvhs6fl1rG","可能的动作描述":[],"备注":null,"工具使用":[]}
+{"Key Factor":null,"SKill类别":[],"Skill":[],"Skill_EN":null,"Skill_中文":null,"record_id":"recvuvhs6fx5lB","可能的动作描述":[],"备注":null,"工具使用":[]}
+{"Key Factor":null,"SKill类别":[],"Skill":[],"Skill_EN":null,"Skill_中文":null,"record_id":"recvuvhs6fGDPL","可能的动作描述":[],"备注":null,"工具使用":[]}
+{"Key Factor":null,"SKill类别":[],"Skill":[],"Skill_EN":null,"Skill_中文":null,"record_id":"recvuvhs6fdWKx","可能的动作描述":[],"备注":null,"工具使用":[]}
+{"Key Factor":null,"SKill类别":[],"Skill":[],"Skill_EN":null,"Skill_中文":null,"record_id":"recvuvhs6fic66","可能的动作描述":[],"备注":null,"工具使用":[]}
+{"Key Factor":null,"SKill类别":[],"Skill":[],"Skill_EN":null,"Skill_中文":null,"record_id":"recvuvhs6fEo2B","可能的动作描述":[],"备注":null,"工具使用":[]}
+{"Key Factor":null,"SKill类别":[],"Skill":[],"Skill_EN":null,"Skill_中文":null,"record_id":"recvuvhs6fhE8t","可能的动作描述":[],"备注":null,"工具使用":[]}
+{"Key Factor":null,"SKill类别":[],"Skill":[],"Skill_EN":null,"Skill_中文":null,"record_id":"recvuvhs6fJekz","可能的动作描述":[],"备注":null,"工具使用":[]}
+{"Key Factor":null,"SKill类别":[],"Skill":[],"Skill_EN":null,"Skill_中文":null,"record_id":"recvuvhs6f9EI3","可能的动作描述":[],"备注":null,"工具使用":[]}
+{"Key Factor":null,"SKill类别":[],"Skill":[],"Skill_EN":null,"Skill_中文":null,"record_id":"recvuvhs6fysul","可能的动作描述":[],"备注":null,"工具使用":[]}
+{"Key Factor":null,"SKill类别":[],"Skill":[],"Skill_EN":null,"Skill_中文":null,"record_id":"recvuvhs6fMYeU","可能的动作描述":[],"备注":null,"工具使用":[]}
+{"Key Factor":null,"SKill类别":[],"Skill":[],"Skill_EN":null,"Skill_中文":null,"record_id":"recvuvhs6fUk9u","可能的动作描述":[],"备注":null,"工具使用":[]}
+{"Key Factor":null,"SKill类别":[],"Skill":[],"Skill_EN":null,"Skill_中文":null,"record_id":"recvuvhs6fkNNn","可能的动作描述":[],"备注":null,"工具使用":[]}
+{"Key Factor":null,"SKill类别":[],"Skill":[],"Skill_EN":null,"Skill_中文":null,"record_id":"recvuvhs6fBJmR","可能的动作描述":[],"备注":null,"工具使用":[]}
+{"Key Factor":null,"SKill类别":[],"Skill":[],"Skill_EN":null,"Skill_中文":null,"record_id":"recvuvhs6f48ei","可能的动作描述":[],"备注":null,"工具使用":[]}
+{"Key Factor":null,"SKill类别":[],"Skill":[],"Skill_EN":null,"Skill_中文":null,"record_id":"recvuvhs6feycw","可能的动作描述":[],"备注":null,"工具使用":[]}
+{"Key Factor":null,"SKill类别":[],"Skill":[],"Skill_EN":null,"Skill_中文":null,"record_id":"recvuvhs6faqoq","可能的动作描述":[],"备注":null,"工具使用":[]}
+{"Key Factor":null,"SKill类别":[],"Skill":[],"Skill_EN":null,"Skill_中文":null,"record_id":"recvuvhs6fcMsT","可能的动作描述":[],"备注":null,"工具使用":[]}
+{"Key Factor":null,"SKill类别":[],"Skill":[],"Skill_EN":null,"Skill_中文":null,"record_id":"recvuvhs6f58aJ","可能的动作描述":[],"备注":null,"工具使用":[]}
+{"Key Factor":null,"SKill类别":[],"Skill":[],"Skill_EN":null,"Skill_中文":null,"record_id":"recvuvhs6f8RGc","可能的动作描述":[],"备注":null,"工具使用":[]}
+{"Key Factor":null,"SKill类别":[],"Skill":[],"Skill_EN":null,"Skill_中文":null,"record_id":"recvuvhs6f3ngx","可能的动作描述":[],"备注":null,"工具使用":[]}
+{"Key Factor":null,"SKill类别":[],"Skill":[],"Skill_EN":null,"Skill_中文":null,"record_id":"recvuvhs6fxe7n","可能的动作描述":[],"备注":null,"工具使用":[]}
+{"Key Factor":null,"SKill类别":[],"Skill":[],"Skill_EN":null,"Skill_中文":null,"record_id":"recvuvhs6fQrAZ","可能的动作描述":[],"备注":null,"工具使用":[]}
+{"Key Factor":null,"SKill类别":[],"Skill":[],"Skill_EN":null,"Skill_中文":null,"record_id":"recvuvhs6fcjFW","可能的动作描述":[],"备注":null,"工具使用":[]}
+{"Key Factor":null,"SKill类别":[],"Skill":[],"Skill_EN":null,"Skill_中文":null,"record_id":"recvuvhs6fkPR9","可能的动作描述":[],"备注":null,"工具使用":[]}
+{"Key Factor":null,"SKill类别":[],"Skill":[],"Skill_EN":null,"Skill_中文":null,"record_id":"recvuvhs6fGNfd","可能的动作描述":[],"备注":null,"工具使用":[]}
+{"Key Factor":null,"SKill类别":[],"Skill":[],"Skill_EN":null,"Skill_中文":null,"record_id":"recvuvhs6fBG61","可能的动作描述":[],"备注":null,"工具使用":[]}
+{"Key Factor":null,"SKill类别":[],"Skill":[],"Skill_EN":null,"Skill_中文":null,"record_id":"recvuvhs6fE3ft","可能的动作描述":[],"备注":null,"工具使用":[]}
+{"Key Factor":null,"SKill类别":[],"Skill":[],"Skill_EN":null,"Skill_中文":null,"record_id":"recvuvhs6f7ldy","可能的动作描述":[],"备注":null,"工具使用":[]}
+{"Key Factor":null,"SKill类别":[],"Skill":[],"Skill_EN":null,"Skill_中文":null,"record_id":"recvuvhs6f31y4","可能的动作描述":[],"备注":null,"工具使用":[]}
+{"Key Factor":null,"SKill类别":[],"Skill":[],"Skill_EN":null,"Skill_中文":null,"record_id":"recvuvhs6fKeqN","可能的动作描述":[],"备注":null,"工具使用":[]}
+{"Key Factor":null,"SKill类别":[],"Skill":[],"Skill_EN":null,"Skill_中文":null,"record_id":"recvuvhs6f2I0l","可能的动作描述":[],"备注":null,"工具使用":[]}
+{"Key Factor":null,"SKill类别":[],"Skill":[],"Skill_EN":null,"Skill_中文":null,"record_id":"recvuvhs6fwQjK","可能的动作描述":[],"备注":null,"工具使用":[]}
+{"Key Factor":null,"SKill类别":[],"Skill":[],"Skill_EN":null,"Skill_中文":null,"record_id":"recvuvhs6fi5JK","可能的动作描述":[],"备注":null,"工具使用":[]}
+{"Key Factor":null,"SKill类别":[],"Skill":[],"Skill_EN":null,"Skill_中文":null,"record_id":"recvuvhs6f2SzT","可能的动作描述":[],"备注":null,"工具使用":[]}
+{"Key Factor":null,"SKill类别":[],"Skill":[],"Skill_EN":null,"Skill_中文":null,"record_id":"recvuvhs6fCrtV","可能的动作描述":[],"备注":null,"工具使用":[]}
+{"Key Factor":null,"SKill类别":[],"Skill":[],"Skill_EN":null,"Skill_中文":null,"record_id":"recvuvhs6fFZoe","可能的动作描述":[],"备注":null,"工具使用":[]}
+{"Key Factor":null,"SKill类别":[],"Skill":[],"Skill_EN":null,"Skill_中文":null,"record_id":"recvuvhs6fqGHn","可能的动作描述":[],"备注":null,"工具使用":[]}
+{"Key Factor":null,"SKill类别":[],"Skill":[],"Skill_EN":null,"Skill_中文":null,"record_id":"recvuvhs6fKSQY","可能的动作描述":[],"备注":null,"工具使用":[]}
+{"Key Factor":null,"SKill类别":[],"Skill":[],"Skill_EN":null,"Skill_中文":null,"record_id":"recvuvhs6fnajV","可能的动作描述":[],"备注":null,"工具使用":[]}
+{"Key Factor":null,"SKill类别":[],"Skill":[],"Skill_EN":null,"Skill_中文":null,"record_id":"recvuvhs6fypo7","可能的动作描述":[],"备注":null,"工具使用":[]}
+{"Key Factor":null,"SKill类别":[],"Skill":[],"Skill_EN":null,"Skill_中文":null,"record_id":"recvuvhs6fRROL","可能的动作描述":[],"备注":null,"工具使用":[]}
+{"Key Factor":null,"SKill类别":[],"Skill":[],"Skill_EN":null,"Skill_中文":null,"record_id":"recvuvhs6f9lwq","可能的动作描述":[],"备注":null,"工具使用":[]}
+{"Key Factor":null,"SKill类别":[],"Skill":[],"Skill_EN":null,"Skill_中文":null,"record_id":"recvuvhs6fuUG9","可能的动作描述":[],"备注":null,"工具使用":[]}
+{"Key Factor":null,"SKill类别":[],"Skill":[],"Skill_EN":null,"Skill_中文":null,"record_id":"recvuvhs6f3nQ7","可能的动作描述":[],"备注":null,"工具使用":[]}
+{"Key Factor":null,"SKill类别":[],"Skill":[],"Skill_EN":null,"Skill_中文":null,"record_id":"recvuvhs6f0mz7","可能的动作描述":[],"备注":null,"工具使用":[]}
+{"Key Factor":null,"SKill类别":[],"Skill":[],"Skill_EN":null,"Skill_中文":null,"record_id":"recvuvhs6f9u2C","可能的动作描述":[],"备注":null,"工具使用":[]}
+{"Key Factor":null,"SKill类别":[],"Skill":[],"Skill_EN":null,"Skill_中文":null,"record_id":"recvuvhs6fVkL1","可能的动作描述":[],"备注":null,"工具使用":[]}
+{"Key Factor":null,"SKill类别":[],"Skill":[],"Skill_EN":null,"Skill_中文":null,"record_id":"recvuvhs6flVRC","可能的动作描述":[],"备注":null,"工具使用":[]}
+{"Key Factor":null,"SKill类别":[],"Skill":[],"Skill_EN":null,"Skill_中文":null,"record_id":"recvuvhs6fi8dg","可能的动作描述":[],"备注":null,"工具使用":[]}
+{"Key Factor":null,"SKill类别":[],"Skill":[],"Skill_EN":null,"Skill_中文":null,"record_id":"recvuvhs6fyZdn","可能的动作描述":[],"备注":null,"工具使用":[]}
+{"Key Factor":null,"SKill类别":[],"Skill":[],"Skill_EN":null,"Skill_中文":null,"record_id":"recvuvhs6fkYoK","可能的动作描述":[],"备注":null,"工具使用":[]}
+{"Key Factor":null,"SKill类别":[],"Skill":[],"Skill_EN":null,"Skill_中文":null,"record_id":"recvuvhs6fh90L","可能的动作描述":[],"备注":null,"工具使用":[]}
+{"Key Factor":null,"SKill类别":[],"Skill":[],"Skill_EN":null,"Skill_中文":null,"record_id":"recvuvhs6fZL7N","可能的动作描述":[],"备注":null,"工具使用":[]}
+{"Key Factor":null,"SKill类别":[],"Skill":[],"Skill_EN":null,"Skill_中文":null,"record_id":"recvuvhs6fU75R","可能的动作描述":[],"备注":null,"工具使用":[]}
+{"Key Factor":null,"SKill类别":[],"Skill":[],"Skill_EN":null,"Skill_中文":null,"record_id":"recvuvhs6fw1at","可能的动作描述":[],"备注":null,"工具使用":[]}
+{"Key Factor":null,"SKill类别":[],"Skill":[],"Skill_EN":null,"Skill_中文":null,"record_id":"recvuvhs6fPouO","可能的动作描述":[],"备注":null,"工具使用":[]}
+{"Key Factor":null,"SKill类别":[],"Skill":[],"Skill_EN":null,"Skill_中文":null,"record_id":"recvuvhs6fPOGY","可能的动作描述":[],"备注":null,"工具使用":[]}
+{"Key Factor":null,"SKill类别":[],"Skill":[],"Skill_EN":null,"Skill_中文":null,"record_id":"recvuvhs6fPJ8k","可能的动作描述":[],"备注":null,"工具使用":[]}
+{"Key Factor":null,"SKill类别":[],"Skill":[],"Skill_EN":null,"Skill_中文":null,"record_id":"recvuvhs6fQANc","可能的动作描述":[],"备注":null,"工具使用":[]}
+{"Key Factor":null,"SKill类别":[],"Skill":[],"Skill_EN":null,"Skill_中文":null,"record_id":"recvuvhs6fRy8Q","可能的动作描述":[],"备注":null,"工具使用":[]}
+{"Key Factor":null,"SKill类别":[],"Skill":[],"Skill_EN":null,"Skill_中文":null,"record_id":"recvuvhs6f3aHC","可能的动作描述":[],"备注":null,"工具使用":[]}
+{"Key Factor":null,"SKill类别":[],"Skill":[],"Skill_EN":null,"Skill_中文":null,"record_id":"recvuvhs6ff6CP","可能的动作描述":[],"备注":null,"工具使用":[]}
+{"Key Factor":null,"SKill类别":[],"Skill":[],"Skill_EN":null,"Skill_中文":null,"record_id":"recvuvhs6fIkjS","可能的动作描述":[],"备注":null,"工具使用":[]}
+{"Key Factor":null,"SKill类别":[],"Skill":[],"Skill_EN":null,"Skill_中文":null,"record_id":"recvuvhs6fpRDs","可能的动作描述":[],"备注":null,"工具使用":[]}
+{"Key Factor":null,"SKill类别":[],"Skill":[],"Skill_EN":null,"Skill_中文":null,"record_id":"recvuvhs6fC3GM","可能的动作描述":[],"备注":null,"工具使用":[]}
+{"Key Factor":null,"SKill类别":[],"Skill":[],"Skill_EN":null,"Skill_中文":null,"record_id":"recvuvhs6fuKlS","可能的动作描述":[],"备注":null,"工具使用":[]}
+{"Key Factor":null,"SKill类别":[],"Skill":[],"Skill_EN":null,"Skill_中文":null,"record_id":"recvuvhs6fOifp","可能的动作描述":[],"备注":null,"工具使用":[]}
+{"Key Factor":null,"SKill类别":[],"Skill":[],"Skill_EN":null,"Skill_中文":null,"record_id":"recvuvhs6fbibu","可能的动作描述":[],"备注":null,"工具使用":[]}
+{"Key Factor":null,"SKill类别":[],"Skill":[],"Skill_EN":null,"Skill_中文":null,"record_id":"recvuvhs6fG0Fg","可能的动作描述":[],"备注":null,"工具使用":[]}
+{"Key Factor":null,"SKill类别":[],"Skill":[],"Skill_EN":null,"Skill_中文":null,"record_id":"recvuvhs6fieto","可能的动作描述":[],"备注":null,"工具使用":[]}
+{"Key Factor":null,"SKill类别":[],"Skill":[],"Skill_EN":null,"Skill_中文":null,"record_id":"recvuvhs6f2iWu","可能的动作描述":[],"备注":null,"工具使用":[]}
+{"Key Factor":null,"SKill类别":[],"Skill":[],"Skill_EN":null,"Skill_中文":null,"record_id":"recvuvhs6fqm1o","可能的动作描述":[],"备注":null,"工具使用":[]}
+{"Key Factor":null,"SKill类别":[],"Skill":[],"Skill_EN":null,"Skill_中文":null,"record_id":"recvuvhs6fmL1w","可能的动作描述":[],"备注":null,"工具使用":[]}
+{"Key Factor":null,"SKill类别":[],"Skill":[],"Skill_EN":null,"Skill_中文":null,"record_id":"recvuvhs6fVH8x","可能的动作描述":[],"备注":null,"工具使用":[]}
+{"Key Factor":null,"SKill类别":[],"Skill":[],"Skill_EN":null,"Skill_中文":null,"record_id":"recvuvhs6fsvMi","可能的动作描述":[],"备注":null,"工具使用":[]}
+{"Key Factor":null,"SKill类别":[],"Skill":[],"Skill_EN":null,"Skill_中文":null,"record_id":"recvuvhs6fux3U","可能的动作描述":[],"备注":null,"工具使用":[]}
+{"Key Factor":null,"SKill类别":[],"Skill":[],"Skill_EN":null,"Skill_中文":null,"record_id":"recvuvhs6fOyg2","可能的动作描述":[],"备注":null,"工具使用":[]}
+{"Key Factor":null,"SKill类别":[],"Skill":[],"Skill_EN":null,"Skill_中文":null,"record_id":"recvuvhs6fSrtl","可能的动作描述":[],"备注":null,"工具使用":[]}
+{"Key Factor":null,"SKill类别":[],"Skill":[],"Skill_EN":null,"Skill_中文":null,"record_id":"recvuvhs6fNg0h","可能的动作描述":[],"备注":null,"工具使用":[]}
+{"Key Factor":null,"SKill类别":[],"Skill":[],"Skill_EN":null,"Skill_中文":null,"record_id":"recvuvhs6f74BB","可能的动作描述":[],"备注":null,"工具使用":[]}
+{"Key Factor":null,"SKill类别":[],"Skill":[],"Skill_EN":null,"Skill_中文":null,"record_id":"recvuvhs6fDnNY","可能的动作描述":[],"备注":null,"工具使用":[]}
+{"Key Factor":null,"SKill类别":[],"Skill":[],"Skill_EN":null,"Skill_中文":null,"record_id":"recvuvhs6foHGa","可能的动作描述":[],"备注":null,"工具使用":[]}
+{"Key Factor":null,"SKill类别":[],"Skill":[],"Skill_EN":null,"Skill_中文":null,"record_id":"recvuvhs6flJn0","可能的动作描述":[],"备注":null,"工具使用":[]}
+{"Key Factor":null,"SKill类别":[],"Skill":[],"Skill_EN":null,"Skill_中文":null,"record_id":"recvuvhs6f2p0f","可能的动作描述":[],"备注":null,"工具使用":[]}
+{"Key Factor":null,"SKill类别":[],"Skill":[],"Skill_EN":null,"Skill_中文":null,"record_id":"recvuvhs6f62du","可能的动作描述":[],"备注":null,"工具使用":[]}
+{"Key Factor":null,"SKill类别":[],"Skill":[],"Skill_EN":null,"Skill_中文":null,"record_id":"recvuvhs6fYbIu","可能的动作描述":[],"备注":null,"工具使用":[]}
+{"Key Factor":null,"SKill类别":[],"Skill":[],"Skill_EN":null,"Skill_中文":null,"record_id":"recvuvhs6fFhXI","可能的动作描述":[],"备注":null,"工具使用":[]}
+{"Key Factor":null,"SKill类别":[],"Skill":[],"Skill_EN":null,"Skill_中文":null,"record_id":"recvuvhs6fmFzm","可能的动作描述":[],"备注":null,"工具使用":[]}
+{"Key Factor":null,"SKill类别":[],"Skill":[],"Skill_EN":null,"Skill_中文":null,"record_id":"recvuvhs6fHOI7","可能的动作描述":[],"备注":null,"工具使用":[]}
+{"Key Factor":null,"SKill类别":[],"Skill":[],"Skill_EN":null,"Skill_中文":null,"record_id":"recvuvhs6faPYo","可能的动作描述":[],"备注":null,"工具使用":[]}
+{"Key Factor":null,"SKill类别":[],"Skill":[],"Skill_EN":null,"Skill_中文":null,"record_id":"recvuvhs6f1cqX","可能的动作描述":[],"备注":null,"工具使用":[]}
+{"Key Factor":null,"SKill类别":[],"Skill":[],"Skill_EN":null,"Skill_中文":null,"record_id":"recvuvhs6fu3OR","可能的动作描述":[],"备注":null,"工具使用":[]}
+{"Key Factor":null,"SKill类别":[],"Skill":[],"Skill_EN":null,"Skill_中文":null,"record_id":"recvuvhs6fQCfe","可能的动作描述":[],"备注":null,"工具使用":[]}
+{"Key Factor":null,"SKill类别":[],"Skill":[],"Skill_EN":null,"Skill_中文":null,"record_id":"recvuvhs6fctMK","可能的动作描述":[],"备注":null,"工具使用":[]}
+{"Key Factor":null,"SKill类别":[],"Skill":[],"Skill_EN":null,"Skill_中文":null,"record_id":"recvuvhs6fHWVD","可能的动作描述":[],"备注":null,"工具使用":[]}
+{"Key Factor":null,"SKill类别":[],"Skill":[],"Skill_EN":null,"Skill_中文":null,"record_id":"recvuvhs6fCaHO","可能的动作描述":[],"备注":null,"工具使用":[]}
+{"Key Factor":null,"SKill类别":[],"Skill":[],"Skill_EN":null,"Skill_中文":null,"record_id":"recvuvhs6f5LW2","可能的动作描述":[],"备注":null,"工具使用":[]}
+{"Key Factor":null,"SKill类别":[],"Skill":[],"Skill_EN":null,"Skill_中文":null,"record_id":"recvuvhs6fQG92","可能的动作描述":[],"备注":null,"工具使用":[]}
+{"Key Factor":null,"SKill类别":[],"Skill":[],"Skill_EN":null,"Skill_中文":null,"record_id":"recvuvhs6f4jYc","可能的动作描述":[],"备注":null,"工具使用":[]}
+{"Key Factor":null,"SKill类别":[],"Skill":[],"Skill_EN":null,"Skill_中文":null,"record_id":"recvuvhs6fQfB7","可能的动作描述":[],"备注":null,"工具使用":[]}
+{"Key Factor":null,"SKill类别":[],"Skill":[],"Skill_EN":null,"Skill_中文":null,"record_id":"recvuvhs6fzc8k","可能的动作描述":[],"备注":null,"工具使用":[]}
+{"Key Factor":null,"SKill类别":[],"Skill":[],"Skill_EN":null,"Skill_中文":null,"record_id":"recvuvhs6f0sis","可能的动作描述":[],"备注":null,"工具使用":[]}
+{"Key Factor":null,"SKill类别":[],"Skill":[],"Skill_EN":null,"Skill_中文":null,"record_id":"recvuvhs6fHJpB","可能的动作描述":[],"备注":null,"工具使用":[]}
+{"Key Factor":null,"SKill类别":[],"Skill":[],"Skill_EN":null,"Skill_中文":null,"record_id":"recvuvhs6fKELW","可能的动作描述":[],"备注":null,"工具使用":[]}
+{"Key Factor":null,"SKill类别":[],"Skill":[],"Skill_EN":null,"Skill_中文":null,"record_id":"recvuvhs6fZmLq","可能的动作描述":[],"备注":null,"工具使用":[]}
+{"Key Factor":null,"SKill类别":[],"Skill":[],"Skill_EN":null,"Skill_中文":null,"record_id":"recvuvhs6flhtz","可能的动作描述":[],"备注":null,"工具使用":[]}
+{"Key Factor":null,"SKill类别":[],"Skill":[],"Skill_EN":null,"Skill_中文":null,"record_id":"recvuvhs6fTi7f","可能的动作描述":[],"备注":null,"工具使用":[]}
+{"Key Factor":null,"SKill类别":[],"Skill":[],"Skill_EN":null,"Skill_中文":null,"record_id":"recvuvhs6fZ7PH","可能的动作描述":[],"备注":null,"工具使用":[]}
+{"Key Factor":null,"SKill类别":[],"Skill":[],"Skill_EN":null,"Skill_中文":null,"record_id":"recvuvhs6fSCAB","可能的动作描述":[],"备注":null,"工具使用":[]}
+{"Key Factor":null,"SKill类别":[],"Skill":[],"Skill_EN":null,"Skill_中文":null,"record_id":"recvuvhs6fKHtb","可能的动作描述":[],"备注":null,"工具使用":[]}
+{"Key Factor":null,"SKill类别":[],"Skill":[],"Skill_EN":null,"Skill_中文":null,"record_id":"recvuvhs6fZisQ","可能的动作描述":[],"备注":null,"工具使用":[]}
+{"Key Factor":null,"SKill类别":[],"Skill":[],"Skill_EN":null,"Skill_中文":null,"record_id":"recvuvhs6fqJpy","可能的动作描述":[],"备注":null,"工具使用":[]}
+{"Key Factor":null,"SKill类别":[],"Skill":[],"Skill_EN":null,"Skill_中文":null,"record_id":"recvuvhs6fEunt","可能的动作描述":[],"备注":null,"工具使用":[]}
+{"Key Factor":null,"SKill类别":[],"Skill":[],"Skill_EN":null,"Skill_中文":null,"record_id":"recvuvhs6fW8o5","可能的动作描述":[],"备注":null,"工具使用":[]}
+{"Key Factor":null,"SKill类别":[],"Skill":[],"Skill_EN":null,"Skill_中文":null,"record_id":"recvuvhs6ff8Bl","可能的动作描述":[],"备注":null,"工具使用":[]}
+{"Key Factor":null,"SKill类别":[],"Skill":[],"Skill_EN":null,"Skill_中文":null,"record_id":"recvuvhs6fR1vA","可能的动作描述":[],"备注":null,"工具使用":[]}
+{"Key Factor":null,"SKill类别":[],"Skill":[],"Skill_EN":null,"Skill_中文":null,"record_id":"recvuvhs6fYSC6","可能的动作描述":[],"备注":null,"工具使用":[]}
+{"Key Factor":null,"SKill类别":[],"Skill":[],"Skill_EN":null,"Skill_中文":null,"record_id":"recvuvhs6fUsdQ","可能的动作描述":[],"备注":null,"工具使用":[]}
+{"Key Factor":null,"SKill类别":[],"Skill":[],"Skill_EN":null,"Skill_中文":null,"record_id":"recvuvhs6fKlRG","可能的动作描述":[],"备注":null,"工具使用":[]}
+{"Key Factor":null,"SKill类别":[],"Skill":[],"Skill_EN":null,"Skill_中文":null,"record_id":"recvuvhs6fV8K8","可能的动作描述":[],"备注":null,"工具使用":[]}
+{"Key Factor":null,"SKill类别":[],"Skill":[],"Skill_EN":null,"Skill_中文":null,"record_id":"recvuvhs6fMuo2","可能的动作描述":[],"备注":null,"工具使用":[]}
+{"Key Factor":null,"SKill类别":[],"Skill":[],"Skill_EN":null,"Skill_中文":null,"record_id":"recvuvhs6fhpxO","可能的动作描述":[],"备注":null,"工具使用":[]}
+{"Key Factor":null,"SKill类别":[],"Skill":[],"Skill_EN":null,"Skill_中文":null,"record_id":"recvuvhs6f12q6","可能的动作描述":[],"备注":null,"工具使用":[]}
+{"Key Factor":null,"SKill类别":[],"Skill":[],"Skill_EN":null,"Skill_中文":null,"record_id":"recvuvhs6fuEUr","可能的动作描述":[],"备注":null,"工具使用":[]}
+{"Key Factor":null,"SKill类别":[],"Skill":[],"Skill_EN":null,"Skill_中文":null,"record_id":"recvuvhs6fVg5N","可能的动作描述":[],"备注":null,"工具使用":[]}
+{"Key Factor":null,"SKill类别":[],"Skill":[],"Skill_EN":null,"Skill_中文":null,"record_id":"recvuvhs6f2cf7","可能的动作描述":[],"备注":null,"工具使用":[]}
+{"Key Factor":null,"SKill类别":[],"Skill":[],"Skill_EN":null,"Skill_中文":null,"record_id":"recvuvhs6fBcIN","可能的动作描述":[],"备注":null,"工具使用":[]}
+{"Key Factor":null,"SKill类别":[],"Skill":[],"Skill_EN":null,"Skill_中文":null,"record_id":"recvuvhs6fXHkr","可能的动作描述":[],"备注":null,"工具使用":[]}
+{"Key Factor":null,"SKill类别":[],"Skill":[],"Skill_EN":null,"Skill_中文":null,"record_id":"recvuvhs6fTBxv","可能的动作描述":[],"备注":null,"工具使用":[]}
+{"Key Factor":null,"SKill类别":[],"Skill":[],"Skill_EN":null,"Skill_中文":null,"record_id":"recvuvhs6fmSQL","可能的动作描述":[],"备注":null,"工具使用":[]}
+{"Key Factor":null,"SKill类别":[],"Skill":[],"Skill_EN":null,"Skill_中文":null,"record_id":"recvuvhs6fahzK","可能的动作描述":[],"备注":null,"工具使用":[]}
+{"Key Factor":null,"SKill类别":[],"Skill":[],"Skill_EN":null,"Skill_中文":null,"record_id":"recvuvhs6f6SSH","可能的动作描述":[],"备注":null,"工具使用":[]}
+{"Key Factor":null,"SKill类别":[],"Skill":[],"Skill_EN":null,"Skill_中文":null,"record_id":"recvuvhs6flWxq","可能的动作描述":[],"备注":null,"工具使用":[]}
+{"Key Factor":null,"SKill类别":[],"Skill":[],"Skill_EN":null,"Skill_中文":null,"record_id":"recvuvhs6fAHys","可能的动作描述":[],"备注":null,"工具使用":[]}
+{"Key Factor":null,"SKill类别":[],"Skill":[],"Skill_EN":null,"Skill_中文":null,"record_id":"recvuvhs6fReiF","可能的动作描述":[],"备注":null,"工具使用":[]}
+{"Key Factor":null,"SKill类别":[],"Skill":[],"Skill_EN":null,"Skill_中文":null,"record_id":"recvuvhs6fNC9S","可能的动作描述":[],"备注":null,"工具使用":[]}
+{"Key Factor":null,"SKill类别":[],"Skill":[],"Skill_EN":null,"Skill_中文":null,"record_id":"recvuvhs6fDmA6","可能的动作描述":[],"备注":null,"工具使用":[]}
+{"Key Factor":null,"SKill类别":[],"Skill":[],"Skill_EN":null,"Skill_中文":null,"record_id":"recvuvhs6fuLaf","可能的动作描述":[],"备注":null,"工具使用":[]}
+{"Key Factor":null,"SKill类别":[],"Skill":[],"Skill_EN":null,"Skill_中文":null,"record_id":"recvuvhs6fDoe1","可能的动作描述":[],"备注":null,"工具使用":[]}
+{"Key Factor":null,"SKill类别":[],"Skill":[],"Skill_EN":null,"Skill_中文":null,"record_id":"recvuvhs6f0jas","可能的动作描述":[],"备注":null,"工具使用":[]}
+{"Key Factor":null,"SKill类别":[],"Skill":[],"Skill_EN":null,"Skill_中文":null,"record_id":"recvuvhs6fYuo0","可能的动作描述":[],"备注":null,"工具使用":[]}
+{"Key Factor":null,"SKill类别":[],"Skill":[],"Skill_EN":null,"Skill_中文":null,"record_id":"recvuvhs6fQslR","可能的动作描述":[],"备注":null,"工具使用":[]}
+{"Key Factor":null,"SKill类别":[],"Skill":[],"Skill_EN":null,"Skill_中文":null,"record_id":"recvuvhs6fPWYK","可能的动作描述":[],"备注":null,"工具使用":[]}
+{"Key Factor":null,"SKill类别":[],"Skill":[],"Skill_EN":null,"Skill_中文":null,"record_id":"recvuvhs6f62IO","可能的动作描述":[],"备注":null,"工具使用":[]}
+{"Key Factor":null,"SKill类别":[],"Skill":[],"Skill_EN":null,"Skill_中文":null,"record_id":"recvuvhs6f7704","可能的动作描述":[],"备注":null,"工具使用":[]}
+{"Key Factor":null,"SKill类别":[],"Skill":[],"Skill_EN":null,"Skill_中文":null,"record_id":"recvuvhs6fY4qZ","可能的动作描述":[],"备注":null,"工具使用":[]}
+{"Key Factor":null,"SKill类别":[],"Skill":[],"Skill_EN":null,"Skill_中文":null,"record_id":"recvuvhs6fWAmT","可能的动作描述":[],"备注":null,"工具使用":[]}
+{"Key Factor":null,"SKill类别":[],"Skill":[],"Skill_EN":null,"Skill_中文":null,"record_id":"recvuvhs6f3jCf","可能的动作描述":[],"备注":null,"工具使用":[]}
+{"Key Factor":null,"SKill类别":[],"Skill":[],"Skill_EN":null,"Skill_中文":null,"record_id":"recvuvhs6fE443","可能的动作描述":[],"备注":null,"工具使用":[]}
+{"Key Factor":null,"SKill类别":[],"Skill":[],"Skill_EN":null,"Skill_中文":null,"record_id":"recvuvhs6fCXYc","可能的动作描述":[],"备注":null,"工具使用":[]}
+{"Key Factor":null,"SKill类别":[],"Skill":[],"Skill_EN":null,"Skill_中文":null,"record_id":"recvuvhs6f3Ul9","可能的动作描述":[],"备注":null,"工具使用":[]}
+{"Key Factor":null,"SKill类别":[],"Skill":[],"Skill_EN":null,"Skill_中文":null,"record_id":"recvuvhs6fxkxh","可能的动作描述":[],"备注":null,"工具使用":[]}
+{"Key Factor":null,"SKill类别":[],"Skill":[],"Skill_EN":null,"Skill_中文":null,"record_id":"recvuvhs6fBygm","可能的动作描述":[],"备注":null,"工具使用":[]}
+{"Key Factor":null,"SKill类别":[],"Skill":[],"Skill_EN":null,"Skill_中文":null,"record_id":"recvuvklRNtGfl","可能的动作描述":[],"备注":null,"工具使用":[]}
+{"Key Factor":null,"SKill类别":["动作类 Skill"],"Skill":["工具操作（Tool Use）"],"Skill_EN":null,"Skill_中文":null,"record_id":"recvuvl2OqsxgI","可能的动作描述":[],"备注":null,"工具使用":[]}
+{"Key Factor":null,"SKill类别":["动作类 Skill"],"Skill":[],"Skill_EN":null,"Skill_中文":null,"record_id":"recvuvl3oJDnhN","可能的动作描述":[],"备注":null,"工具使用":[]}
+{"Key Factor":null,"SKill类别":["辨别类 Skill"],"Skill":[],"Skill_EN":null,"Skill_中文":null,"record_id":"recvvORvhFgnch","可能的动作描述":[],"备注":null,"工具使用":[]}

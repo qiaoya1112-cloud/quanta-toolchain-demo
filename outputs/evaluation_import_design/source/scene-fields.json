@@ -1,0 +1,608 @@
+{
+  "ok": true,
+  "identity": "user",
+  "data": {
+    "fields": [
+      {
+        "default_value": null,
+        "id": "fldm9aBNzv",
+        "multiple": false,
+        "name": "1级-场域-Stage",
+        "options": [
+          {
+            "hue": "Yellow",
+            "lightness": "Lighter",
+            "name": "基础能力评测"
+          },
+          {
+            "hue": "Blue",
+            "lightness": "Lighter",
+            "name": "厨房餐厅"
+          },
+          {
+            "hue": "Orange",
+            "lightness": "Lighter",
+            "name": "书房"
+          },
+          {
+            "hue": "Wathet",
+            "lightness": "Lighter",
+            "name": "客厅"
+          },
+          {
+            "hue": "Turquoise",
+            "lightness": "Lighter",
+            "name": "0730uDAS验证"
+          }
+        ],
+        "type": "select"
+      },
+      {
+        "expression": "COUNTA(UNIQUE([场景库目录表].[3级-原子能力-Skill]))",
+        "id": "fldjsKeSA1",
+        "name": "unique skill count",
+        "type": "formula"
+      },
+      {
+        "bidirectional": true,
+        "bidirectional_link_field_id": "fldp5v0cCg",
+        "id": "fld0ANdk41",
+        "link_table": "tbl4uI23VnzwPMxy",
+        "name": "4级-factor",
+        "type": "link"
+      },
+      {
+        "default_value": null,
+        "id": "fldfM3Vxjt",
+        "name": "factor取值",
+        "style": {
+          "type": "plain"
+        },
+        "type": "text"
+      },
+      {
+        "bidirectional": false,
+        "id": "fldcsxllnb",
+        "link_table": "tblbdNXZmJUaUdJ1",
+        "name": "父记录",
+        "type": "link"
+      },
+      {
+        "default_value": null,
+        "id": "fldfcPn0SC",
+        "multiple": false,
+        "name": "2级-任务-Story",
+        "options": [
+          {
+            "hue": "Turquoise",
+            "lightness": "Lighter",
+            "name": "[专项]物品识别基准测试"
+          },
+          {
+            "hue": "Blue",
+            "lightness": "Lighter",
+            "name": "[专项]空间感知基准测试"
+          },
+          {
+            "hue": "Blue",
+            "lightness": "Lighter",
+            "name": "[专项]动作能力评测"
+          },
+          {
+            "hue": "Wathet",
+            "lightness": "Lighter",
+            "name": "[专项]放置基准测试"
+          },
+          {
+            "hue": "Purple",
+            "lightness": "Lighter",
+            "name": "[专项]推拉基准测试"
+          },
+          {
+            "hue": "Yellow",
+            "lightness": "Lighter",
+            "name": "[专项]抓取基准测试"
+          },
+          {
+            "hue": "Turquoise",
+            "lightness": "Lighter",
+            "name": "整理桌面"
+          },
+          {
+            "hue": "Purple",
+            "lightness": "Lighter",
+            "name": "浇花"
+          },
+          {
+            "hue": "Red",
+            "lightness": "Lighter",
+            "name": "插花"
+          },
+          {
+            "hue": "Purple",
+            "lightness": "Lighter",
+            "name": "扫垃圾"
+          },
+          {
+            "hue": "Orange",
+            "lightness": "Lighter",
+            "name": "TableWiping"
+          },
+          {
+            "hue": "Blue",
+            "lightness": "Lighter",
+            "name": "Carbinet"
+          },
+          {
+            "hue": "Orange",
+            "lightness": "Lighter",
+            "name": "[专项]折叠基准测试"
+          },
+          {
+            "hue": "Wathet",
+            "lightness": "Lighter",
+            "name": "[专项]展开基准测试"
+          },
+          {
+            "hue": "Yellow",
+            "lightness": "Lighter",
+            "name": "[专项]精细化能力基准测试"
+          },
+          {
+            "hue": "Turquoise",
+            "lightness": "Lighter",
+            "name": "WaterKettle"
+          },
+          {
+            "hue": "Red",
+            "lightness": "Lighter",
+            "name": "DishSwiping"
+          },
+          {
+            "hue": "Purple",
+            "lightness": "Lighter",
+            "name": "MopFolding"
+          },
+          {
+            "hue": "Green",
+            "lightness": "Lighter",
+            "name": "TurnOnTheLight"
+          },
+          {
+            "hue": "Carmine",
+            "lightness": "Lighter",
+            "name": "拉链"
+          },
+          {
+            "hue": "Lime",
+            "lightness": "Lighter",
+            "name": "打扫会议室"
+          },
+          {
+            "hue": "Gray",
+            "lightness": "Lighter",
+            "name": "Cooking"
+          },
+          {
+            "hue": "Blue",
+            "lightness": "Lighter",
+            "name": "制作冰饮"
+          },
+          {
+            "hue": "Orange",
+            "lightness": "Lighter",
+            "name": "chair"
+          },
+          {
+            "hue": "Turquoise",
+            "lightness": "Lighter",
+            "name": "开门"
+          },
+          {
+            "hue": "Red",
+            "lightness": "Lighter",
+            "name": "叠碗"
+          },
+          {
+            "hue": "Purple",
+            "lightness": "Lighter",
+            "name": "准备早餐"
+          },
+          {
+            "hue": "Green",
+            "lightness": "Lighter",
+            "name": "零食"
+          },
+          {
+            "hue": "Carmine",
+            "lightness": "Lighter",
+            "name": "GlassSwiping"
+          },
+          {
+            "hue": "Lime",
+            "lightness": "Lighter",
+            "name": "SqueezeKetchup"
+          },
+          {
+            "hue": "Gray",
+            "lightness": "Lighter",
+            "name": "摆放礼盒"
+          },
+          {
+            "hue": "Lime",
+            "lightness": "Lighter",
+            "name": "收拾衣柜"
+          },
+          {
+            "hue": "Gray",
+            "lightness": "Lighter",
+            "name": "整理沙发"
+          },
+          {
+            "hue": "Blue",
+            "lightness": "Lighter",
+            "name": "拿快递"
+          },
+          {
+            "hue": "Orange",
+            "lightness": "Lighter",
+            "name": "搭积木"
+          },
+          {
+            "hue": "Wathet",
+            "lightness": "Lighter",
+            "name": "鸡毛掸子"
+          },
+          {
+            "hue": "Yellow",
+            "lightness": "Lighter",
+            "name": "台球"
+          },
+          {
+            "hue": "Turquoise",
+            "lightness": "Lighter",
+            "name": "看书"
+          },
+          {
+            "hue": "Red",
+            "lightness": "Lighter",
+            "name": "保险箱"
+          },
+          {
+            "hue": "Purple",
+            "lightness": "Lighter",
+            "name": "放书"
+          },
+          {
+            "hue": "Green",
+            "lightness": "Lighter",
+            "name": "搅拌"
+          },
+          {
+            "hue": "Carmine",
+            "lightness": "Lighter",
+            "name": "扔"
+          },
+          {
+            "hue": "Lime",
+            "lightness": "Lighter",
+            "name": "递物品"
+          },
+          {
+            "hue": "Gray",
+            "lightness": "Lighter",
+            "name": "撕胶带"
+          },
+          {
+            "hue": "Blue",
+            "lightness": "Lighter",
+            "name": "挂钥匙"
+          }
+        ],
+        "type": "select"
+      },
+      {
+        "default_value": null,
+        "id": "fldmPhoQcO",
+        "name": "文本 3",
+        "style": {
+          "type": "plain"
+        },
+        "type": "text"
+      },
+      {
+        "default_value": null,
+        "id": "fldLaO334Z",
+        "name": "备注",
+        "style": {
+          "type": "plain"
+        },
+        "type": "text"
+      },
+      {
+        "expression": "COUNTA(UNIQUE([场景库目录表].[2级-任务-Story]))",
+        "id": "fldoAPlczN",
+        "name": "unique story cnt",
+        "type": "formula"
+      },
+      {
+        "aggregate": "raw_value",
+        "from": "测试用例表",
+        "id": "fldyzI5klW",
+        "name": "用例id",
+        "select": "用例ID",
+        "type": "lookup",
+        "where": {
+          "conditions": [
+            [
+              "Skill标签",
+              "intersects",
+              {
+                "field": "3级-原子能力-Skill",
+                "type": "field_ref"
+              }
+            ],
+            [
+              "Story",
+              "intersects",
+              {
+                "field": "2级-任务-Story",
+                "type": "field_ref"
+              }
+            ],
+            [
+              "Stage",
+              "intersects",
+              {
+                "field": "1级-场域-Stage",
+                "type": "field_ref"
+              }
+            ]
+          ],
+          "logic": "and"
+        }
+      },
+      {
+        "expression": "COUNTA(UNIQUE([场景库目录表].[1级-场域-Stage]))",
+        "id": "fldTy1OoJw",
+        "name": "unique stage cnt",
+        "type": "formula"
+      },
+      {
+        "expression": "COUNTA(UNIQUE([场景库目录表].[4级-factor]))",
+        "id": "fldNH006BV",
+        "name": "unique factor cnt",
+        "type": "formula"
+      },
+      {
+        "default_value": null,
+        "dynamic_options_source": {
+          "field_id": "fldGlAbYqc",
+          "table_id": "tblT39AUgtbKTUDy"
+        },
+        "id": "fldSkmZ8Ea",
+        "multiple": false,
+        "name": "3级-原子能力-Skill",
+        "options": [
+          {
+            "hue": "Blue",
+            "lightness": "Lighter",
+            "name": "物品尺寸辨别(Sizing）"
+          },
+          {
+            "hue": "Wathet",
+            "lightness": "Lighter",
+            "name": "物品形状辨别(Shaping）"
+          },
+          {
+            "hue": "Blue",
+            "lightness": "Lighter",
+            "name": "抓取（Pick）"
+          },
+          {
+            "hue": "Orange",
+            "lightness": "Lighter",
+            "name": "翻（Turn）"
+          },
+          {
+            "hue": "Yellow",
+            "lightness": "Lighter",
+            "name": "拧（Twist）"
+          },
+          {
+            "hue": "Turquoise",
+            "lightness": "Lighter",
+            "name": "放置（Place）"
+          },
+          {
+            "hue": "Red",
+            "lightness": "Lighter",
+            "name": "倾倒（Pour）"
+          },
+          {
+            "hue": "Purple",
+            "lightness": "Lighter",
+            "name": "调整（Adjust）"
+          },
+          {
+            "hue": "Green",
+            "lightness": "Lighter",
+            "name": "搅拌（Stir）"
+          },
+          {
+            "hue": "Carmine",
+            "lightness": "Lighter",
+            "name": "插入（Insert）"
+          },
+          {
+            "hue": "Lime",
+            "lightness": "Lighter",
+            "name": "拉动（Pull）"
+          },
+          {
+            "hue": "Blue",
+            "lightness": "Lighter",
+            "name": "物品材质辨别"
+          },
+          {
+            "hue": "Orange",
+            "lightness": "Lighter",
+            "name": "清扫（Clean）"
+          },
+          {
+            "hue": "Wathet",
+            "lightness": "Lighter",
+            "name": "打开（Open）"
+          },
+          {
+            "hue": "Yellow",
+            "lightness": "Lighter",
+            "name": "关闭（Close）"
+          },
+          {
+            "hue": "Turquoise",
+            "lightness": "Lighter",
+            "name": "折叠（Fold）"
+          },
+          {
+            "hue": "Red",
+            "lightness": "Lighter",
+            "name": "悬挂（Hang）"
+          },
+          {
+            "hue": "Purple",
+            "lightness": "Lighter",
+            "name": "撕（Tear）"
+          },
+          {
+            "hue": "Green",
+            "lightness": "Lighter",
+            "name": "拆卸（Disassemble）"
+          },
+          {
+            "hue": "Carmine",
+            "lightness": "Lighter",
+            "name": "工具操作（Tool Use）"
+          },
+          {
+            "hue": "Lime",
+            "lightness": "Lighter",
+            "name": "切割（Cut）"
+          },
+          {
+            "hue": "Orange",
+            "lightness": "Lighter",
+            "name": "堆叠（Stack）"
+          },
+          {
+            "hue": "Wathet",
+            "lightness": "Lighter",
+            "name": "展开（Unfold）"
+          },
+          {
+            "hue": "Yellow",
+            "lightness": "Lighter",
+            "name": "物品颜色辨别"
+          },
+          {
+            "hue": "Turquoise",
+            "lightness": "Lighter",
+            "name": "推动（Push）"
+          },
+          {
+            "hue": "Red",
+            "lightness": "Lighter",
+            "name": "目标感知"
+          },
+          {
+            "hue": "Purple",
+            "lightness": "Lighter",
+            "name": "运动跟随"
+          },
+          {
+            "hue": "Green",
+            "lightness": "Lighter",
+            "name": "按压（Press）"
+          },
+          {
+            "hue": "Carmine",
+            "lightness": "Lighter",
+            "name": "旋转（Rotate）"
+          },
+          {
+            "hue": "Lime",
+            "lightness": "Lighter",
+            "name": "切割 (Cut)"
+          },
+          {
+            "hue": "Blue",
+            "lightness": "Lighter",
+            "name": "装配（Assembly）"
+          },
+          {
+            "hue": "Orange",
+            "lightness": "Lighter",
+            "name": "搅拌（Stir)"
+          },
+          {
+            "hue": "Wathet",
+            "lightness": "Lighter",
+            "name": "套（Fit）"
+          },
+          {
+            "hue": "Yellow",
+            "lightness": "Lighter",
+            "name": "拍打（Pat）"
+          },
+          {
+            "hue": "Turquoise",
+            "lightness": "Lighter",
+            "name": "拆卸"
+          },
+          {
+            "hue": "Red",
+            "lightness": "Lighter",
+            "name": "贴附（Attach）"
+          },
+          {
+            "hue": "Turquoise",
+            "lightness": "Lighter",
+            "name": "剥（Peel）"
+          },
+          {
+            "hue": "Turquoise",
+            "lightness": "Lighter",
+            "name": "擦拭（Wipe）"
+          },
+          {
+            "hue": "Red",
+            "lightness": "Lighter",
+            "name": "双手协同"
+          },
+          {
+            "hue": "Purple",
+            "lightness": "Lighter",
+            "name": "双手协同-打开"
+          },
+          {
+            "hue": "Green",
+            "lightness": "Lighter",
+            "name": "双手协同-放下"
+          },
+          {
+            "hue": "Carmine",
+            "lightness": "Lighter",
+            "name": "固定（Hold）"
+          },
+          {
+            "hue": "Lime",
+            "lightness": "Lighter",
+            "name": "抓取"
+          }
+        ],
+        "type": "select"
+      }
+    ],
+    "total": 13
+  }
+}

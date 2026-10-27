@@ -337,7 +337,7 @@ def test_new_train_drawer_exposes_tag_hierarchy_without_footer_status():
     assert 'data-level="三级标签"' in html
     assert 'id="trainSubmitState"' not in html
     assert 'function selectTrainTag' in html
-    assert 'function scrollTrainSection' in html
+    assert 'function scrollTrainSection' not in html
 
 
 def test_new_train_drawer_matches_benchmark_tag_picker_and_compact_controls():
@@ -383,6 +383,31 @@ def test_train_config_exposes_recommended_and_custom_modes():
     assert 'id="customYamlEditor"' in html
 
 
+def test_training_dataset_versions_use_latest_published_instead_of_active_or_draft():
+    from unittest.mock import patch
+
+    datasets = [{"id": "training", "name": "training", "type": "train"},
+                {"id": "draft", "name": "draft", "type": "train"},
+                {"id": "evaluation", "name": "evaluation", "type": "eval"}]
+    versions = {
+        "training": [
+            {"version": "v11", "publish_status": "未发布"},
+            {"version": "v2", "publish_status": "已发布", "status": "生效中"},
+            {"version": "v10", "publish_status": "已发布", "status": "未生效"},
+        ],
+        "draft": [{"version": "v1", "publish_status": "未发布"}],
+    }
+    with patch.object(toolchain_demo, 'DP_AVAILABLE', True), \
+         patch.object(toolchain_demo.dp, 'DATASETS', datasets), \
+         patch.object(toolchain_demo.dp, 'ds_versions', side_effect=lambda dataset: versions[dataset['id']]):
+        assert toolchain_demo._train_dataset_catalog() == [
+            {"id": "training", "name": "training", "versions": ["v10", "v2"]},
+            {"id": "draft", "name": "draft", "versions": []},
+        ]
+        versions['training'][0]['publish_status'] = '已发布'
+        assert toolchain_demo._train_dataset_catalog()[0]['versions'][0] == 'v11'
+
+
 def test_custom_yaml_mode_exposes_restore_action_only():
     client = toolchain_demo.app.test_client()
     response = client.get("/model/experiments")
@@ -415,17 +440,24 @@ def test_train_drawer_uses_requested_field_rows_and_optional_fields():
     assert 'train-runtime-code-row' in drawer
     assert 'train-runtime-queue-row' in drawer
     assert 'train-runtime-priority-row' in drawer
+    custom_image_row = drawer.split('id="trainImageCustom"', 1)[1].split('</div>\n              </div>', 1)[0]
+    assert custom_image_row.index('id="trainImageName"') < custom_image_row.index('id="trainImageVersion"') < custom_image_row.index('id="trainMozbrainVersion"')
+    assert drawer.index('train-runtime-code-row') < drawer.index('train-runtime-queue-row')
 
 
-def test_train_drawer_orders_priority_queue_and_count_specification_as_requested():
+def test_train_drawer_orders_queue_count_specification_then_priority_as_requested():
     html = toolchain_demo.app.test_client().get('/model/experiments').get_data(as_text=True)
     drawer = html.split('<div class="drawer drawer-wide" id="drawerNewTrain">', 1)[1].split('</div>\n    """', 1)[0]
     queue_row_start = drawer.index('class="fg-row train-runtime-queue-row"')
     spec_row_start = drawer.index('class="fg-row train-runtime-priority-row"')
     queue_row = drawer[queue_row_start:spec_row_start]
-    assert queue_row.index('优先级') < queue_row.index('训练队列')
-    spec_row = drawer[spec_row_start:]
-    assert spec_row.index('实例数') < spec_row.index('实例规格')
+    assert '训练队列' in queue_row
+    assert 'id="trainInstanceCount"' not in queue_row
+    assert 'id="trainInstanceSpec"' not in queue_row
+    assert 'id="trainPriority"' not in queue_row
+    priority_row = drawer[spec_row_start:].split('</section>', 1)[0]
+    assert priority_row.count('class="fg-row') == 1
+    assert priority_row.index('id="trainInstanceCount"') < priority_row.index('id="trainInstanceSpec"') < priority_row.index('id="trainPriority"')
 
 
 def test_custom_yaml_keeps_only_restore_recommended_action():
@@ -448,7 +480,7 @@ def test_dataset_query_creation_modal_uses_validation_state_and_model_progress_r
     html = response.get_data(as_text=True)
     assert '数据集校验中' in html
     assert '数据集核验中' not in html
-    assert 'href="/model/data/ds_progress"' in html
+    assert 'href="/model/data/datasets/tasks"' in html
     assert '只保存' not in html
 
 
@@ -461,7 +493,8 @@ def test_dataset_progress_supports_validation_status_and_legacy_redirect():
     assert '进行中' in html
     assert 'data-value="todo"' not in html
     assert '未开始</button>' not in html
-    assert 'data-value="verify"' in html
+    assert '<option value="校验中"' in html
+    assert 'id="datasetTaskTable"' in html
     assert '<h3 id="dpErrorTitle">异常原因</h3>' in html
     assert 'data-reason="FEATURES_MISMATCH"' in html
     assert 'data-reason="FILE_MISSING"' in html
@@ -509,7 +542,10 @@ def test_image_management_page_and_recommended_image_options_share_catalog():
     assert config.status_code == 200
     config_html = config.get_data(as_text=True)
     assert '镜像名称' in config_html
-    assert '版本' in config_html
+    assert '<th>版本</th><th>mozbrain 版本</th>' in config_html
+    assert 'id="imageEditorMozbrainVersion"' in config_html
+    assert '<option value="mozbrain v1.0">mozbrain v1.0</option>' in config_html
+    assert '<option value="mozbrain v2.0">mozbrain v2.0</option>' in config_html
     assert '描述信息' in config_html
     assert '创建人' in config_html
     assert '创建时间' in config_html

@@ -9642,6 +9642,7 @@ def render_data_management_instances():
         <section><h3>数据维度</h3><div class="dpr-instance-metrics two"><div class="dpr-instance-metric-card" role="button" tabindex="0" onclick="dprSelectMetricStatus('processing',this)"><span>处理中</span><b>3,126</b><small>已进入处理任务，但暂未有任意任务产出结果</small></div><div class="dpr-instance-metric-card" role="button" tabindex="0" onclick="dprSelectMetricStatus('archived',this)"><span>已产出结果</span><b>9,408</b><small>只要任意一个处理任务有产出结果即可计入</small></div></div></section>
         <section><h3>数据处理任务维度</h3><div class="dpr-instance-metrics three"><div class="dpr-instance-metric-card" role="button" tabindex="0" onclick="dprSelectMetricStatus('pending',this)"><span>待处理</span><b>1,206</b><small>尚未开始处理的处理任务</small></div><div class="dpr-instance-metric-card" role="button" tabindex="0" onclick="dprSelectMetricStatus('processing',this)"><span>处理中</span><b>488</b><small>已开始但尚未完成的处理任务</small></div><div class="dpr-instance-metric-card" role="button" tabindex="0" onclick="dprSelectMetricStatus('archived',this)"><span>已完成</span><b>842</b><small>已完成处理并产出结果的处理任务</small></div></div></section>
       </div>
+      <link rel="stylesheet" href="/static/shared/table-selection.css?v=20261019">
       <div class="dpr-instance-list-head"><b>数据列表</b><div class="dpr-instance-list-actions"><span id="dprInstanceSelectedSummary" class="dpr-instance-selected-summary" hidden>已选择 0 条</span><button type="button" class="dpr-bulk-reassign" id="dprBulkStartProcessing" disabled onclick="dprStartBatchProcessing()">批量发起处理任务</button><button type="button" class="dpr-bulk-reassign" id="dprBulkReassignInstances" disabled onclick="dprOpenBatchInstanceReassign()">批量重新分配</button></div></div>
       <div class="table-wrap dpr-instance-table-wrap"><table class="ant-table dpr-instance-table"><thead><tr><th class="dpr-instance-select-head"><div class="dpr-selection-control"><input type="checkbox" id="dprInstanceSelectAll" aria-label="全选本页" title="全选本页" onchange="dprToggleAllInstances(this.checked)"><button type="button" id="dprSelectionMenuTrigger" aria-label="选择勾选范围" title="选择勾选范围" aria-expanded="false" aria-controls="dprSelectionMenu" onclick="dprToggleSelectionMenu()">&#9662;</button></div></th><th>数据 ID</th><th>采集任务 ID</th><th>处理任务 ID</th><th>处理任务名称</th><th>质检流程</th><th>标注流程</th>{quality_status_header}<th><div class="dpr-header-filter-control" data-header-control="quality"><span>质检结果</span><button type="button" class="dpr-header-filter-trigger" aria-label="筛选质检结果" onclick="dprToggleHeaderFilter('quality',this)"><span class="dpr-header-filter-label">全部</span><i>⌄</i></button><div class="dpr-header-filter-menu"><button type="button" data-value="" class="active">全部</button><button type="button" data-value="合格">合格</button><button type="button" data-value="失误">失误</button><button type="button" data-value="待质检">待质检</button></div><select class="dpr-header-filter-native" data-header-filter="quality" tabindex="-1" aria-hidden="true"><option value="">全部</option><option>合格</option><option>失误</option><option>待质检</option></select></div></th><th><div class="dpr-header-filter-control" data-header-control="annotated"><span>标注状态</span><button type="button" class="dpr-header-filter-trigger" aria-label="筛选标注状态" onclick="dprToggleHeaderFilter('annotated',this)"><span class="dpr-header-filter-label">全部</span><i>⌄</i></button><div class="dpr-header-filter-menu"><button type="button" data-value="" class="active">全部</button><button type="button" data-value="未标注">未标注</button><button type="button" data-value="标注中">标注中</button><button type="button" data-value="已标注">已标注</button></div><select class="dpr-header-filter-native" data-header-filter="annotated" tabindex="-1" aria-hidden="true"><option value="">全部</option><option>未标注</option><option>标注中</option><option>已标注</option></select></div></th><th><div class="dpr-header-filter-control" data-header-control="status"><span>数据状态</span><button type="button" class="dpr-header-filter-trigger" aria-label="筛选数据状态" onclick="dprToggleHeaderFilter('status',this)"><span class="dpr-header-filter-label">全部</span><i>⌄</i></button><div class="dpr-header-filter-menu"><button type="button" data-value="" class="active">全部</button><button type="button" data-value="pending">待处理</button><button type="button" data-value="processing">处理中</button><button type="button" data-value="paused">已暂停</button><button type="button" data-value="archived">已归档</button></div><select class="dpr-header-filter-native" data-header-filter="status" tabindex="-1" aria-hidden="true"><option value="">全部</option><option value="pending">待处理</option><option value="processing">处理中</option><option value="paused">已暂停</option><option value="archived">已归档</option></select></div></th><th>当前节点</th><th>当前处理人</th><th>操作</th></tr></thead><tbody>{''.join(rows)}</tbody></table></div>
       <div id="dprSelectionMenu" class="dpr-selection-menu" hidden>
@@ -9714,14 +9715,6 @@ def render_data_management_instances():
 
     .dpr-instance-table th:first-child,.dpr-instance-table td:first-child{{width:64px;min-width:64px;max-width:64px}}
     .dpr-instance-table th:nth-child(2),.dpr-instance-table td:nth-child(2){{left:64px}}
-    .dpr-selection-control{{display:flex;align-items:center;justify-content:center;gap:2px;height:28px}}
-    .dpr-selection-control input{{width:14px;height:14px;margin:0;accent-color:#149daa}}
-    .dpr-selection-control button{{width:22px;height:28px;padding:0;border:0;background:transparent;color:#60737a;cursor:pointer}}
-    .dpr-selection-menu{{position:fixed;z-index:1000;width:176px;padding:4px;border:1px solid #d9e0e2;border-radius:6px;background:#fff;box-shadow:0 4px 12px #0002}}
-    .dpr-selection-menu button{{display:block;width:100%;padding:9px 12px;border:0;border-radius:3px;background:transparent;color:#425a62;text-align:left;cursor:pointer;font-size:12px}}
-    .dpr-selection-menu button:hover,.dpr-selection-menu button:focus-visible{{background:#eef8f8}}
-    .dpr-selection-menu button.active{{color:#137f89;font-weight:600}}
-    .dpr-selection-menu button:disabled{{color:#a8b4b8;cursor:not-allowed}}
     .dpr-instance-pagination{{display:flex;align-items:center;justify-content:flex-end;flex-wrap:wrap;gap:10px;padding-top:14px;color:#60737a;font-size:12px}}
     .dpr-instance-pagination select,.dpr-instance-pagination button{{height:30px;border:1px solid #d9e0e2;border-radius:5px;background:#fff;color:#425a62}}
     .dpr-instance-pagination button{{width:30px;padding:0;cursor:pointer;font-size:18px}}
@@ -9903,7 +9896,7 @@ def render_workbench_v2():
         {"owner": "供应商 A", "pool": "端到端切分标注 · 供应商 A 任务池", "pool_id": "POOL-E2E-SUPPLIER-A", "flow": "端到端切分标注流程", "node": "供应商抽验", "priority": 9, "pending": 124, "processing": 31, "stalled_hours": 3.4, "priority_counts": {9: 88, 7: 36}},
         {"owner": "光轮智能", "pool": "端到端切分标注 · 光轮智能任务池", "pool_id": "POOL-E2E-GUAN", "flow": "端到端切分标注流程", "node": "供应商抽验", "priority": 9, "pending": 118, "processing": 28, "stalled_hours": 2.8, "priority_counts": {9: 76, 6: 42}},
         {"owner": "采集质检用户组", "pool_id": "POOL-PRETRAINING-QC", "flow": "预训练数据质检流程", "node": "采集质检", "pending": 4, "processing": 2, "stalled_hours": 0, "priority_counts": {9: 4}},
-        {"owner": "采集验收用户组", "pool_id": "POOL-PRETRAINING-ACCEPTANCE", "flow": "预训练数据质检流程", "node": "采集验收", "pending": 4, "processing": 2, "stalled_hours": 0, "priority_counts": {9: 4}},
+        {"owner": "质检验收用户组", "pool_id": "POOL-PRETRAINING-ACCEPTANCE", "flow": "预训练数据质检流程", "node": "质检验收", "pending": 4, "processing": 2, "stalled_hours": 0, "priority_counts": {9: 4}},
     ]
     pool_groups = {}
     for item in pool_items:
@@ -10007,13 +10000,13 @@ def render_workbench_v2():
         }
         for recording_id, flow_id, flow_name, current_node, source_node, source_operation, current_round, description, updated_at, task_id in rejected
     ]
-    for node, task_id, pool_id in (("采集质检", "WB-PRETRAINING-QC", "POOL-PRETRAINING-QC"), ("采集验收", "WB-PRETRAINING-ACCEPTANCE", "POOL-PRETRAINING-ACCEPTANCE")):
+    for node, task_id, pool_id in (("采集质检", "WB-PRETRAINING-QC", "POOL-PRETRAINING-QC"), ("质检验收", "WB-PRETRAINING-ACCEPTANCE", "POOL-PRETRAINING-ACCEPTANCE")):
         for todo_type in ("驳回待处理", "修正待审核", "其他分配任务"):
             if node == "采集质检" and todo_type == "修正待审核":
                 continue
-            if node == "采集验收" and todo_type == "驳回待处理":
+            if node == "质检验收" and todo_type == "驳回待处理":
                 continue
-            todo_items.append(dict(recording_id="7523785", record_ids=[str(7523785 + i) for i in range(10)], flow_id="flow.pretraining.qc", flow_name="预训练自动化质检流程", current_node=node, source_operation={"驳回待处理":"驳回", "修正待审核":"提交"}.get(todo_type, "分配"), todo_type=todo_type, processing_type="批量处理", current_round="第 2 轮", description="质检结果存在错误，请检查标记为错误的数据并修正后重新提交。" if todo_type == "驳回待处理" or (node == "采集验收" and todo_type == "修正待审核") else "", updated_at="2026-10-11 10:00", task_id=task_id, pool_id=pool_id))
+            todo_items.append(dict(recording_id="7523785", record_ids=[str(7523785 + i) for i in range(10)], flow_id="flow.pretraining.qc", flow_name="预训练自动化质检流程", current_node=node, source_operation={"驳回待处理":"驳回", "修正待审核":"提交"}.get(todo_type, "分配"), todo_type=todo_type, processing_type="批量处理", current_round="第 2 轮", description="质检结果存在错误，请检查标记为错误的数据并修正后重新提交。" if todo_type == "驳回待处理" or (node == "质检验收" and todo_type == "修正待审核") else "", updated_at="2026-10-11 10:00", task_id=task_id, pool_id=pool_id))
     for item in todo_items:
         if item["todo_type"] == "修正待审核":
             item["source_operation"] = "提交"

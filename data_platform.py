@@ -21,8 +21,14 @@ import json
 import datetime
 import re
 import html
-from flask import Flask, render_template_string, request, redirect
+import math
+import hashlib
+from urllib.parse import urlencode
+from copy import deepcopy
+from flask import Flask, render_template_string, request, redirect, jsonify
+from itsdangerous import URLSafeTimedSerializer, BadSignature, SignatureExpired
 from prototype_filters import CURRENT_USER, filter_url, ownership_tabs
+from query_conditions import OPERATORS as CONDITION_OPERATORS, TYPE_OPERATORS, matches, parse_tree, sql_literal, tree_sql
 
 app = Flask(__name__)
 app.secret_key = "embodied-data-platform-demo"
@@ -57,12 +63,12 @@ QUERY_PROMPT_TEXT = {
 
 # Demo segment weights; displayed ratios and counts are aggregated from annotations.
 LOWLEVEL_PROMPTS = [
-    {"id": "ll_align", "name": "接近/对准目标", "ratio": 0.18},
-    {"id": "ll_grasp", "name": "抓取物体", "ratio": 0.22},
-    {"id": "ll_move", "name": "移动/搬运", "ratio": 0.20},
-    {"id": "ll_place", "name": "放置/对位", "ratio": 0.16},
-    {"id": "ll_operate", "name": "擦拭/操作", "ratio": 0.14},
-    {"id": "ll_reset", "name": "复位/收回", "ratio": 0.10},
+    {"id": "ll_align", "name": "接近/对准目标", "en": "Approach / align with the target", "ratio": 0.18},
+    {"id": "ll_grasp", "name": "抓取物体", "en": "Grasp the object", "ratio": 0.22},
+    {"id": "ll_move", "name": "移动/搬运", "en": "Move / transport the object", "ratio": 0.20},
+    {"id": "ll_place", "name": "放置/对位", "en": "Place / position the object", "ratio": 0.16},
+    {"id": "ll_operate", "name": "擦拭/操作", "en": "Wipe / operate", "ratio": 0.14},
+    {"id": "ll_reset", "name": "复位/收回", "en": "Reset / retract", "ratio": 0.10},
 ]
 MOCK_DATASET_HIGHLEVEL_COUNTS = {
     "ds9": (("t1", 24), ("t2", 16)),
@@ -71,18 +77,18 @@ MOCK_DATASET_HIGHLEVEL_COUNTS = {
 # recording: 1 条采集 ≈ 1 episode (parquet + 3 路 mp4)
 RECORDINGS = [
     # task t1
-    {"id": 120489, "task": "t1", "collection": 3635, "robot": "moz1", "type": "采集", "frames": 1434, "fps": 30, "dur": 47.8, "at": "2026-05-21 10:12", "qa": "pass", "life": "active"},
-    {"id": 120502, "task": "t1", "collection": 3635, "robot": "moz1", "type": "采集", "frames": 1042, "fps": 30, "dur": 34.7, "at": "2026-05-21 10:31", "qa": "pass", "life": "active"},
-    {"id": 120513, "task": "t1", "collection": 3635, "robot": "moz1", "type": "采集", "frames": 979, "fps": 30, "dur": 32.6, "at": "2026-05-21 10:48", "qa": "warn", "life": "active"},
-    {"id": 120521, "task": "t1", "collection": 3653, "robot": "moz1", "type": "dagger", "frames": 56, "fps": 30, "dur": 1.9, "at": "2026-05-22 09:05", "qa": "fail", "life": "quarantined"},
-    {"id": 120532, "task": "t1", "collection": 3653, "robot": "moz1", "type": "采集", "frames": 1310, "fps": 30, "dur": 43.7, "at": "2026-05-22 09:24", "qa": "pass", "life": "active"},
+    {"id": 120489, "task": "t1", "processing_task_ids": ["20454"], "collection": 3635, "robot": "moz1", "type": "采集", "frames": 1434, "fps": 30, "dur": 47.8, "at": "2026-05-21 10:12", "qa": "pass", "collect_result": "成功", "has_visual_prompt": False, "life": "active"},
+    {"id": 120502, "task": "t1", "processing_task_ids": ["20454"], "collection": 3635, "robot": "moz1", "type": "采集", "frames": 1042, "fps": 30, "dur": 34.7, "at": "2026-05-21 10:31", "qa": "pass", "collect_result": "成功", "has_visual_prompt": False, "life": "active"},
+    {"id": 120513, "task": "t1", "processing_task_ids": ["20454"], "collection": 3635, "robot": "moz1", "type": "采集", "frames": 979, "fps": 30, "dur": 32.6, "at": "2026-05-21 10:48", "qa": "warn", "collect_result": "成功", "has_visual_prompt": False, "life": "active"},
+    {"id": 120521, "task": "t1", "processing_task_ids": ["20454"], "collection": 3653, "robot": "moz1", "type": "dagger", "frames": 56, "fps": 30, "dur": 1.9, "at": "2026-05-22 09:05", "qa": "fail", "collect_result": "失败", "has_visual_prompt": False, "life": "quarantined"},
+    {"id": 120532, "task": "t1", "processing_task_ids": ["20454"], "collection": 3653, "robot": "moz1", "type": "采集", "frames": 1310, "fps": 30, "dur": 43.7, "at": "2026-05-22 09:24", "qa": "pass", "collect_result": "成功", "has_visual_prompt": False, "life": "active"},
     # task t2
-    {"id": 121005, "task": "t2", "collection": 3702, "robot": "moz1", "type": "采集", "frames": 1188, "fps": 30, "dur": 39.6, "at": "2026-05-24 14:02", "qa": "pass", "life": "active"},
-    {"id": 121014, "task": "t2", "collection": 3702, "robot": "moz1", "type": "采集", "frames": 1402, "fps": 30, "dur": 46.7, "at": "2026-05-24 14:20", "qa": "pass", "life": "active"},
-    {"id": 121023, "task": "t2", "collection": 3702, "robot": "moz1", "type": "test", "frames": 905, "fps": 30, "dur": 30.2, "at": "2026-05-24 14:39", "qa": "warn", "life": "active"},
+    {"id": 121005, "task": "t2", "processing_task_ids": ["20453"], "collection": 3702, "robot": "moz1", "type": "采集", "frames": 1188, "fps": 30, "dur": 39.6, "at": "2026-05-24 14:02", "qa": "pass", "collect_result": "成功", "has_visual_prompt": True, "life": "active"},
+    {"id": 121014, "task": "t2", "processing_task_ids": ["20453"], "collection": 3702, "robot": "moz1", "type": "采集", "frames": 1402, "fps": 30, "dur": 46.7, "at": "2026-05-24 14:20", "qa": "pass", "collect_result": "成功", "has_visual_prompt": True, "life": "active"},
+    {"id": 121023, "task": "t2", "processing_task_ids": ["20453"], "collection": 3702, "robot": "moz1", "type": "test", "frames": 905, "fps": 30, "dur": 30.2, "at": "2026-05-24 14:39", "qa": "warn", "collect_result": "成功", "has_visual_prompt": False, "life": "active"},
     # task t3
-    {"id": 121120, "task": "t3", "collection": 3760, "robot": "moz1", "type": "采集", "frames": 1521, "fps": 30, "dur": 50.7, "at": "2026-05-27 11:10", "qa": "pass", "life": "active"},
-    {"id": 121131, "task": "t3", "collection": 3760, "robot": "moz1", "type": "采集", "frames": 1098, "fps": 30, "dur": 36.6, "at": "2026-05-27 11:28", "qa": "pass", "life": "active"},
+    {"id": 121120, "task": "t3", "processing_task_ids": ["20451"], "collection": 3760, "robot": "moz1", "type": "采集", "frames": 1521, "fps": 30, "dur": 50.7, "at": "2026-05-27 11:10", "qa": "pass", "collect_result": "成功", "has_visual_prompt": False, "life": "active"},
+    {"id": 121131, "task": "t3", "processing_task_ids": ["20451"], "collection": 3760, "robot": "moz1", "type": "采集", "frames": 1098, "fps": 30, "dur": 36.6, "at": "2026-05-27 11:28", "qa": "pass", "collect_result": "成功", "has_visual_prompt": True, "life": "active"},
 ]
 
 CAMERAS = ["cam_high", "cam_left_wrist", "cam_right_wrist"]
@@ -196,7 +202,7 @@ DATASETS = [
     {
         "id": "ds2", "name": "tidy_desk_mix_v1", "version": "v1", "type": "train",
         "robot": "moz1", "fps": 30, "episodes": 36, "frames": 41880, "quality": "warn",
-        "status": "待发布", "tos": "—",
+        "status": "生效中", "tos": "—",
         "created": "2026-06-01 09:15", "owner": "joanna.qiao",
         "recordings": [121005, 121014], "tasks": ["t2"],
         "recipe": {"groups": [{"name": "整理桌面-采集", "weight": 0.7, "frames": 29300, "ratio": 0.7}, {"name": "整理桌面-dagger", "weight": 0.3, "frames": 12580, "ratio": 0.3}], "alpha": 0.6, "train_ratio": 0.9, "seed": 7},
@@ -217,7 +223,7 @@ DATASETS = [
      "recipe": {"groups": [{"name": "擦白板-采集", "weight": 1.0, "frames": 56800, "ratio": 1.0}], "alpha": 0.6, "train_ratio": 0.95, "seed": 42},
      "src": "采集任务 #3635 / #3653", "used_by": ["train_job_0388 (Spirit v1.5)"]},
     {"id": "ds5", "name": "desk_pretrain", "version": "v1", "type": "train", "robot": "moz1", "fps": 30,
-     "episodes": 30, "frames": 35200, "quality": "warn", "status": "待发布", "tos": "—",
+     "episodes": 30, "frames": 35200, "quality": "warn", "status": "生效中", "tos": "—",
      "created": "2026-05-29 11:42", "owner": "Wei Zhang", "recordings": [121005, 121014], "tasks": ["t2"],
      "recipe": {"groups": [{"name": "整理桌面-采集", "weight": 1.0, "frames": 35200, "ratio": 1.0}], "alpha": 0.6, "train_ratio": 0.95, "seed": 1},
      "src": "采集任务 #3702", "used_by": []},
@@ -232,7 +238,7 @@ DATASETS = [
      "recipe": {"groups": [{"name": "擦白板-精选", "weight": 1.0, "frames": 26400, "ratio": 1.0}], "alpha": 0.8, "train_ratio": 0.95, "seed": 42},
      "src": "采集任务 #3653", "used_by": ["train_job_0461 (Spirit v1.6-rc1)"]},
     {"id": "ds8", "name": "desk_dagger_sft", "version": "v1", "type": "train", "robot": "moz1", "fps": 30,
-     "episodes": 18, "frames": 19800, "quality": "warn", "status": "待发布", "tos": "—",
+     "episodes": 18, "frames": 19800, "quality": "warn", "status": "生效中", "tos": "—",
      "created": "2026-06-03 10:30", "owner": "Wei Zhang", "recordings": [121023], "tasks": ["t2"],
      "recipe": {"groups": [{"name": "整理桌面-dagger", "weight": 1.0, "frames": 19800, "ratio": 1.0}], "alpha": 0.8, "train_ratio": 0.9, "seed": 11},
      "src": "DAgger 采集 #3702", "used_by": []},
@@ -247,7 +253,7 @@ DATASETS = [
      "recipe": {"groups": [{"name": "浇花-留出评测", "weight": 1.0, "frames": 11000, "ratio": 1.0}], "alpha": 1.0, "train_ratio": 0.0, "seed": 42},
      "src": "专用评测采集 #3760", "used_by": ["eval_job_0521 (双盲评测)"]},
     {"id": "ds11", "name": "ablation_small", "version": "v1", "type": "train", "robot": "moz1", "fps": 30,
-     "episodes": 8, "frames": 8800, "quality": "warn", "status": "待发布", "tos": "—",
+     "episodes": 8, "frames": 8800, "quality": "warn", "status": "生效中", "tos": "—",
      "created": "2026-06-04 08:15", "owner": "Lance Li", "recordings": [120502], "tasks": ["t1"],
      "recipe": {"groups": [{"name": "擦白板-小样本", "weight": 1.0, "frames": 8800, "ratio": 1.0}], "alpha": 0.6, "train_ratio": 0.9, "seed": 99},
      "src": "采集任务 #3635", "used_by": []},
@@ -545,9 +551,9 @@ _review_flows = [
         "input_name": "开始", "output_name": "完成", "stages": [], "schedules": [],
         "business_stage": "质检", "input_contract": "自检合格数据",
         "output_contract": "quality_conclusion + quality_records",
-        "desc": "自检合格数据由采集验收节点进行全检。",
+        "desc": "自检合格数据由质检验收节点进行全检。",
         "flow_nodes": [{
-            "name": "采集验收", "ident": "collection_acceptance", "kind": "human",
+            "name": "质检验收", "ident": "collection_acceptance", "kind": "human",
             "meta": "全检全部数据并提交验收结果", "processing_percent": 100,
             "processing_rule_mode": "none", "allow_task_percent": False,
             "assignee_type": "user_group", "assignee_mode": "task_custom",
@@ -570,7 +576,7 @@ _review_flows = [
         "business_stage": "质检",
         "input_contract": "自检合格数据",
         "output_contract": "quality_conclusion + quality_records",
-        "desc": "自检合格数据经自动化质检和采集质检后，进入采集验收。",
+        "desc": "自检合格数据经自动化质检和采集质检后，进入质检验收。",
         "flow_nodes": [
             {
                 "name": "自动化质检", "ident": "automatic_quality_check",
@@ -588,7 +594,7 @@ _review_flows = [
                 "allowed_actions": ["提交", "暂离"],
             },
             {
-                "name": "采集验收", "ident": "collection_acceptance",
+                "name": "质检验收", "ident": "collection_acceptance",
                 "kind": "human", "meta": "验收全部质检数据",
                 "processing_percent": 100,
                 "processing_rule_mode": "inherit", "inherit_processing_rule_node": "采集质检",
@@ -1514,7 +1520,7 @@ select option:disabled { color:rgba(0,0,0,0.32); }
 .recipe-row .rbar { flex:1; height:22px; background:#f5f5f5; border-radius:4px; overflow:hidden; position:relative; }
 .recipe-row .rbar .fill { height:100%; background:#1F80A0; display:flex; align-items:center; padding-left:8px; color:#fff; font-size:12px; }
 .recipe-row .recipe-count { width:52px; text-align:right; white-space:nowrap; }
-.recipe-row .recipe-frames { width:72px; text-align:right; white-space:nowrap; }
+.recipe-row .recipe-duration { width:72px; text-align:right; white-space:nowrap; }
 
 /* ── 标签构成 饼图 (一行三个) ── */
 .lvl-sel { float:right; height:28px; font-size:12px; border:1px solid #e2e4e8; border-radius:6px; padding:0 28px 0 10px; color:rgba(0,0,0,0.7); background:#fff; cursor:pointer; -webkit-appearance:none; appearance:none; background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'><path d='M1 1l4 4 4-4' stroke='%23999' stroke-width='1.4' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>"); background-repeat:no-repeat; background-position:right 10px center; }
@@ -2137,33 +2143,38 @@ document.addEventListener('click', function(e){
 function openDrawerById(id){ document.getElementById(id).classList.add('active'); }
 function closeDrawerById(id){ document.getElementById(id).classList.remove('active'); }
 function qfDep(id, val){ var el=document.getElementById(id); if(el) el.classList.toggle('qf-off', val!=='yes'); }
-function dsCreating(modalId){
-  if(modalId==='buildDsDrawer'){
-    var ident=document.getElementById('buildDsIdent'), name=document.getElementById('buildDsName'), folder=document.getElementById('buildDsFolder');
-    if(!ident.value.trim()){toast('请填写标识');ident.focus();return;}
-    if(!/^[A-Za-z][A-Za-z0-9_-]*$/.test(ident.value.trim())){toast('标识须以英文字母开头，仅支持英文字母、数字、下划线和短横线');ident.focus();return;}
-    if(!name.value.trim()){toast('请填写数据集名称');name.focus();return;}
-    if(!folder.value){toast('请选择目录');folder.focus();return;}
-    try{
-      var tasks=JSON.parse(sessionStorage.getItem('demoDatasetBuildTasks')||'[]');
-      tasks.unshift({id:'D'+Date.now().toString().slice(-8),ident:ident.value.trim(),name:name.value.trim(),
-        folder:folder.value,
-        tags:Array.from(document.querySelectorAll('#buildDsTags input[name="dataset_tag"]:checked'),function(input){return input.value;}),
-        filters:location.search,created:new Date().toLocaleString('sv-SE')});
-      sessionStorage.setItem('demoDatasetBuildTasks',JSON.stringify(tasks.slice(0,5)));
-    }catch(error){toast('创建记录未能保存在当前浏览器会话中');return;}
+async function dsCreating(modalId){
+  var prefix=location.pathname.indexOf('/model/data/')===0 ? '/model/data' : location.pathname.indexOf('/data/')===0 ? '/data' : '';
+  if(modalId!=='buildDsDrawer'){
+    location.href=prefix+'/query?'+new URLSearchParams({dataset_ident:document.getElementById('newDsIdent').value.trim(),dataset_name:document.getElementById('newDsName').value.trim()});
+    return;
   }
-  var box=document.querySelector('#'+modalId+' .modal-box'); if(!box) return;
-  var progressPath=location.pathname.indexOf('/model/')===0?'/model/data/ds_progress':'/ds_progress';
-  box.innerHTML='<div style="padding:46px 28px;text-align:center;">'
-    +'<div style="font-size:42px;line-height:1;margin-bottom:14px;">&#9203;</div>'
-    +'<h3 style="margin:0 0 8px;">数据集校验中</h3>'
-    +'<div class="muted" style="font-size:13px;max-width:380px;margin:0 auto;">已提交数据集创建任务，正在进行数据完整性校验，可在「数据集创建进度」查看状态。</div>'
-    +'<div style="margin-top:22px;display:flex;gap:10px;justify-content:center;">'
-    +'<button class="btn btn-secondary" onclick="location.reload()">关闭</button>'
-    +'<a href="'+progressPath+'" class="btn-primary btn">查看进度</a>'
-    +'</div></div>';
+  var ident=document.getElementById('buildDsIdent').value.trim(), name=document.getElementById('buildDsName').value.trim();
+  if(!ident || !name){ toast('请填写标识和数据集名称'); return; }
+  var folder=document.getElementById('buildDsFolder');
+  if(!folder.value){toast('请选择目录');folder.focus();return;}
+  if(!datasetVisibilitySave('buildDs',ident)) return;
+  var modal=document.getElementById(modalId), button=modal.querySelector('.drawer-foot .btn-primary');
+  if(button.disabled) return;
+  button.disabled=true;
+  try{
+    var response=await fetch(prefix+'/datasets/create',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
+      ident:ident,name:name,source_token:document.getElementById('qAppendSource').value,
+      folder:document.getElementById('buildDsFolder').value,format:document.getElementById('buildDsFormat').value,
+      visibility:document.getElementById('buildDsVisibility').value,
+      visible_group_ids:Array.from(document.querySelectorAll('#buildDsGroups input:checked')).map(function(i){return i.value;}),
+      tags:Array.from(document.querySelectorAll('#buildDsTags input:checked')).map(function(i){return i.value;}),
+      query:Object.fromEntries(new URLSearchParams(location.search))
+    })});
+    var result=await response.json(); if(!response.ok) throw new Error(result.error || '提交失败');
+    var url=prefix+'/datasets/tasks?'+new URLSearchParams({dataset_id:result.dataset_id,version:result.version,task:result.task_id});
+    modal.querySelector('.modal-box').innerHTML='<div style="padding:46px 28px;text-align:center;"><h3>数据集校验中</h3>'
+      +'<p class="muted">已提交数据集创建任务，可在「数据集任务列表」查看进度和结果。</p>'
+      +'<div style="display:flex;gap:10px;justify-content:center;"><button class="btn" onclick="location.reload()">关闭</button>'
+      +'<a class="btn btn-primary" href="'+url.replace(/&/g,'&amp;')+'">查看任务</a></div></div>';
+  }catch(error){ toast(error.message || '提交失败，请重试'); button.disabled=false; }
 }
+
 function qfToggleGroup(t){ t.closest('.qf-group').classList.toggle('collapsed'); }
 /* episode 预览三 tab: 轨迹信息 / 标注信息 / 可视化分析 */
 function epTab(btn, prefix, which){
@@ -2271,22 +2282,33 @@ def get_ds(did):
             return d
     return None
 
+def dataset_format(d):
+    value = d.get("format", "")
+    if value in ("Mozdataset", "Mozdataset v2"):
+        return "Mozdataset v2"
+    if value in ("LeRobot", "LeRobort"):
+        return "LeRobort"
+    return "Mozdataset v2" if d.get("type") in ("eval-benchmark", "custom") or any(
+        word in d["name"].lower() for word in ("eval", "smoke")) else "LeRobort"
+
 def task_instr(tid):
     m = {"t1": "Clean the whiteboard", "t2": "Tidy the desk", "t3": "Water the plant"}
     return m.get(tid, tid)
 
 def dataset_episodes(d):
     """数据集: 展开到 episode/recording 维度 (每个 episode ← 一条原始 recording)。"""
-    recs = d["recordings"]
-    n = min(d["episodes"], 12)
-    instr = task_instr(d["tasks"][0])
-    eps = []
-    for i in range(n):
-        rid = recs[i % len(recs)]
+    if "episode_rows" in d:
+        return deepcopy(d["episode_rows"])
+    episodes = []
+    for i, annotation in enumerate(dataset_episode_prompt_annotations(d)):
+        rid = annotation["recording_id"] or d["recordings"][i % len(d["recordings"])]
         r = get_rec(rid)
-        tags = rec_tag_labels(r) if r else []
-        eps.append({"idx": i, "rec": rid, "length": r["frames"] if r else 1200, "instr": instr, "tags": tags})
-    return eps
+        segments = annotation["lowlevel_segments"]
+        episodes.append({"idx": i, "rec": rid,
+                         "length": segments[-1]["end_frame"] if segments else 0,
+                         "instr": task_instr(annotation["highlevel_prompt_id"]),
+                         "tags": rec_tag_labels(r) if r else [], "annotation": annotation})
+    return episodes
 
 def recs_to_episodes(recs, instr=None):
     """把一组 recording 转成 episode 列表 (用于数据湖右侧 strip)。"""
@@ -2327,6 +2349,8 @@ def _mock_lowlevel_prompt_segments(task_id, episode_index):
 
 def dataset_episode_prompt_annotations(d):
     """Build stable per-episode mock prompt annotations for a dataset."""
+    if "episode_rows" in d:
+        return [deepcopy(row["annotation"]) for row in d["episode_rows"]]
     recs = _dataset_recs(d)
     if not recs:
         return []
@@ -2493,6 +2517,15 @@ def dataset_tag_picker_html(element_id, selected_paths=None, editable=True, inpu
 
 def dataset_prompt_composition(d):
     """Return high-level prompt frame ratios and distinct episode counts."""
+    if "episode_rows" in d:
+        by_prompt = {}
+        for row in d["episode_rows"]:
+            item = by_prompt.setdefault(row["instr"], {"id": row["annotation"]["highlevel_prompt_id"],
+                                                     "name": row["instr"], "frames": 0, "episode_count": 0})
+            item["frames"] += row["length"]
+            item["episode_count"] += 1
+        return [{**item, "ratio": item["frames"] / (d["frames"] or 1)}
+                for item in sorted(by_prompt.values(), key=lambda item: -item["frames"])]
     recs = _dataset_recs(d)
     total = sum(r["frames"] for r in recs) or 1
     episode_counts = dataset_episode_prompt_counts(d)["highlevel"]
@@ -2540,15 +2573,16 @@ def dataset_tag_composition(d):
             by[lab] = by.get(lab, 0) + r["frames"]
     return [{"name": lab, "ratio": fr / total} for lab, fr in sorted(by.items(), key=lambda x: -x[1])]
 
-def comp_rows_html(items, total_frames):
+def comp_rows_html(items, total_frames, fps):
     rows_html = ""
     for it in items:
         pct = round(it["ratio"] * 100)
         fr = it.get("frames", int(it["ratio"] * total_frames))
+        duration = f"{fr / fps:.0f}s" if fps > 0 else "—"
         prompt_id = html.escape(it.get("id", ""), quote=True)
-        rows_html += (f'<div class="recipe-row" data-prompt-id="{prompt_id}"><div class="rname">{it["name"]}</div>'
+        rows_html += (f'<div class="recipe-row" data-prompt-id="{prompt_id}"><div class="rname">{html.escape(it["name"])}</div>'
                       f'<div class="rbar"><div class="fill" style="width:{min(max(pct,4),100)}%">{pct}%</div></div>'
-                      f'<div class="muted recipe-frames">{fr:,}f</div>'
+                      f'<div class="muted recipe-duration" title="时长（秒）">{duration}</div>'
                       f'<div class="muted recipe-count">{it.get("episode_count", 0):,} 条</div></div>')
     return rows_html or '<div class="muted">—</div>'
 
@@ -2590,10 +2624,12 @@ def tag_tree_html(d):
 # 术语/结构对齐 out_182_unchecked: Episode / cam_high·cam_left_wrist·cam_right_wrist /
 #   leftarm·rightarm_state(cmd)_joint_pos / LANGUAGE INSTRUCTION
 def preview_block(prefix, eps):
+    if not eps:
+        return '<div class="muted">暂无数据</div>'
     ep0 = eps[0]
     ep_items = ""
     for e in eps:
-        ep_items += (f'<div class="ep-item {"active" if e["idx"]==0 else ""}" onclick="window.setEp_{prefix}({e["idx"]})">'
+        ep_items += (f'<div class="ep-item {"active" if e["idx"]==ep0["idx"] else ""}" data-episode-id="{e["idx"]}" onclick="window.setEp_{prefix}({e["idx"]})">'
                      f'Episode {e["idx"]}<div class="er">{e["length"]:,}f · #{e["rec"]}</div></div>')
     cams = "".join(
         f'<div class="camera-cell"><span class="cam-label">{c}</span>'
@@ -2630,7 +2666,7 @@ def preview_block(prefix, eps):
     p_left = HL_SEGS[1][1] / seg_total * 100
     p_w = (HL_SEGS[1][2] - HL_SEGS[1][1]) / seg_total * 100
 
-    html = f"""
+    markup = f"""
     <div class="preview-split">
       <div class="ep-strip" id="{prefix}_strip">
         <div class="ep-head">Episodes ({len(eps)})</div>
@@ -2732,9 +2768,9 @@ def preview_block(prefix, eps):
       </div>
     </div>
     """
-    eps_json = json.dumps(eps)
+    eps_json = json.dumps(eps).replace("<", "\\u003c").replace(">", "\\u003e").replace("&", "\\u0026")
     js = _PREVIEW_JS.replace("__PREFIX__", prefix).replace("__EPS__", eps_json)
-    return html + js
+    return markup + js
 
 
 _PREVIEW_JS = """
@@ -2743,7 +2779,7 @@ _PREVIEW_JS = """
   var EPS = __EPS__, PREFIX = "__PREFIX__";
   var mode = 'arm';                       // arm | base | moz
   var arms = new Set(['LeftArm','RightArm']);
-  var curEp = 0, baseCharts = [], mozSrc = 'STATE';
+  var curEp = EPS[0].idx, baseCharts = [], mozSrc = 'STATE';
   var ARM_ROWS = ['X','Y','Z','r','p','y','G'];
   var ARM_ORDER = ['LeftArm','Torso','RightArm'];
 
@@ -2847,7 +2883,7 @@ _PREVIEW_JS = """
   window['setEp_'+PREFIX]=function(i){
     curEp=i;
     var items=document.querySelectorAll('#'+PREFIX+'_strip .ep-item');
-    items.forEach(function(e,idx){ e.classList.toggle('active', idx===i); });
+    items.forEach(function(e,idx){ e.classList.toggle('active', EPS[idx].idx===i); });
     if(mode==='arm') renderArm(); else if(mode==='base') renderBase(); else if(mode==='moz') renderMoz();
   };
   // ════ 可视化分析 ════
@@ -3420,21 +3456,74 @@ def raw_data():
     return render_page("原始数据", content, active="raw", breadcrumb="数据湖 / <b>原始数据</b>")
 
 
+# Preserve internal task states while sharing display labels across progress and versions.
+DATASET_CREATION_TASKS = [
+    {"id": str(ident), "name": name, "version": version, "status": status, "at": at, "by": creator,
+     "kind": "create", "dataset_id": "", "legacy_id": ident}
+    for ident, name, version, status, at, creator in [
+        (82, "20260625_clean_whiteboard_validation", "v1", "verify", "2026-06-26 09:15:00", "Will Xiao"),
+        (81, "20260420_CarryBox_PutDown_ExhibitionDemo_Moz1Y1", "v1", "done", "2026-06-25 16:50:25", "Will Xiao"),
+        (80, "20260420_CarryBox_PutDown_ExhibitionDemo_Moz1Ytest", "v1", "fail", "2026-06-25 16:46:45", "Will Xiao"),
+        (79, "20260521_Unlock_V1_Demo_Moz1WB6", "v1", "fail", "2026-06-25 16:38:18", "Will Xiao"),
+        (78, "20260521_Unlock_V1_Demo_Moz1WB5", "v1", "fail", "2026-06-25 16:24:07", "Will Xiao"),
+        (77, "20260521_Unlock_V1_Demo_Moz1WB4", "v1", "running", "2026-06-26 20:00:00", "Will Xiao"),
+        (76, "20260521_Unlock_V1_Demo_Moz1WB3", "v1", "fail", "2026-06-25 16:18:07", "Will Xiao"),
+        (75, "20260521_Unlock_V1_Demo_Moz1WB2", "v1", "done", "2026-06-25 16:11:38", "Will Xiao"),
+        (74, "20260521_Unlock_V1_Demo_Moz1WB1", "v1", "fail", "2026-06-25 15:59:25", "Will Xiao"),
+        (73, "20260521_Unlock_V1_Demo_Moz1WB", "v1", "fail", "2026-06-25 15:43:38", "Will Xiao"),
+        (72, "20260616_test", "v1", "fail", "2026-06-16 16:47:47", "Vivian Luo"),
+    ]
+]
+DATASET_CREATION_LABELS = {"done": "成功", "fail": "失败", "running": "进行中", "verify": "校验中"}
+DATASET_PROCESSING_LABELS = {"ready": DATASET_CREATION_LABELS["done"], "queued": "待处理",
+                             "running": DATASET_CREATION_LABELS["running"], "failed": DATASET_CREATION_LABELS["fail"]}
+
+
+def dataset_task_records():
+    """A single task view over creation jobs and existing execution records."""
+    records = []
+    for task in DATASET_CREATION_TASKS:
+        record = dict(task)
+        record["label"] = DATASET_CREATION_LABELS[task["status"]]
+        record["processing"] = {"done": "ready", "fail": "failed"}.get(task["status"], "running")
+        record["stage"] = task.get("stage") or record["label"]
+        records.append(record)
+    for run in RUNS:
+        if not run.get("dataset_id"):
+            matched = next((d for d in DATASETS if d["name"] == run.get("target")), None)
+            if not matched:
+                continue
+            run = {**run, "dataset_id": matched["id"], "version": matched["version"]}
+        dataset = get_ds(run["dataset_id"])
+        if not dataset:
+            continue
+        kind = "workflow" if run.get("pipeline") else "operator"
+        processing = {"done": "ready"}.get(run["status"], run["status"])
+        records.append({**run, "name": dataset["name"], "kind": kind,
+                        "processing": processing, "description": run["name"], "label": DATASET_PROCESSING_LABELS[processing]})
+    return sorted(records, key=lambda task: (task["at"], str(task["id"])), reverse=True)
+
+
+def dataset_linked_task(snapshot):
+    task_id = snapshot.get("run_id")
+    return next((task for task in dataset_task_records()
+                 if str(task["id"]) == str(task_id) and task.get("dataset_id") == snapshot["id"]
+                 and task.get("version") == snapshot["version"]), None) if task_id else None
+
+
+def dataset_processing_status(snapshot):
+    task = dataset_linked_task(snapshot)
+    return task["processing"] if task else snapshot.get("processing_status", "ready")
+
+
+@app.route("/datasets/tasks")
 @app.route("/ds_progress")
 def ds_progress():
-    rows_data = [
-        (82, "20260625_clean_whiteboard_validation", "verify", "2026-06-26 09:15:00", "Will Xiao"),
-        (81, "20260420_CarryBox_PutDown_ExhibitionDemo_Moz1Y1", "done", "2026-06-25 16:50:25", "Will Xiao"),
-        (80, "20260420_CarryBox_PutDown_ExhibitionDemo_Moz1Ytest", "fail", "2026-06-25 16:46:45", "Will Xiao"),
-        (79, "20260521_Unlock_V1_Demo_Moz1WB6", "fail", "2026-06-25 16:38:18", "Will Xiao"),
-        (78, "20260521_Unlock_V1_Demo_Moz1WB5", "fail", "2026-06-25 16:24:07", "Will Xiao"),
-        (77, "20260521_Unlock_V1_Demo_Moz1WB4", "running", "2026-06-26 20:00:00", "Will Xiao"),
-        (76, "20260521_Unlock_V1_Demo_Moz1WB3", "fail", "2026-06-25 16:18:07", "Will Xiao"),
-        (75, "20260521_Unlock_V1_Demo_Moz1WB2", "done", "2026-06-25 16:11:38", "Will Xiao"),
-        (74, "20260521_Unlock_V1_Demo_Moz1WB1", "fail", "2026-06-25 15:59:25", "Will Xiao"),
-        (73, "20260521_Unlock_V1_Demo_Moz1WB", "fail", "2026-06-25 15:43:38", "Will Xiao"),
-        (72, "20260616_test", "fail", "2026-06-16 16:47:47", "Vivian Luo"),
-    ]
+    def safe_json(value):
+        return json.dumps(value, ensure_ascii=False).replace("<", "\\u003c").replace(">", "\\u003e").replace("&", "\\u0026")
+
+    tasks = [{**task, "task_type": "create" if task["kind"] == "create" else "update"}
+             for task in dataset_task_records()]
     st_map = {"done": ("tag-green", "成功"), "fail": ("imp-fail", "失败"), "running": ("tag-orange", "进行中"), "verify": ("tag-blue", "校验中")}
 
     failure_titles = {
@@ -3524,78 +3613,152 @@ def ds_progress():
             f'</span>'
         )
 
+    selected_dataset = request.args.get("dataset_id", "")
+    keyword = request.args.get("keyword", "").strip()
+    selected_version = request.args.get("version", "")
+    selected_kind = request.args.get("task_type", "")
+    if selected_kind in ("append", "operator", "workflow"):
+        selected_kind = "update"
+    selected_status = request.args.get("status", "")
+    creators = request.args.getlist("creator")
+    filtered = [task for task in tasks
+                if (not selected_dataset or task.get("dataset_id") == selected_dataset)
+                and (not keyword or keyword.casefold() in task["name"].casefold())
+                and (not selected_version or task["version"] == selected_version)
+                and (not selected_kind or task["task_type"] == selected_kind)
+                and (not selected_status or task["label"] == selected_status)
+                and (not creators or task.get("by") in creators)]
+    page_size = 10
+    pages = max(1, math.ceil(len(filtered) / page_size))
+    try:
+        page = max(1, min(pages, int(request.args.get("page", "1"))))
+    except ValueError:
+        page = 1
+    # A version status link opens the exact task even when it is on an older page.
+    opened = next((task for task in filtered if str(task["id"]) == request.args.get("task")), None)
+    if opened:
+        page = filtered.index(opened) // page_size + 1
+    page_tasks = filtered[(page - 1) * page_size:page * page_size]
+    kind_labels = {"create": "创建数据集", "update": "更新数据集"}
     rows = ""
-    failure_templates = []
-    creator_ids = {name: creator_id for creator_id, name in CREATOR_POOL}
-    for did, name, st, at, by in rows_data:
-        if st == "done":
-            view_btn = f'<button class="btn" onclick="location.href=\'/datasets\'">查看数据集</button>'
+    failure_templates = [failure_template(task["legacy_id"]) for task in page_tasks if task.get("legacy_id") and task["status"] == "fail"]
+    for task in page_tasks:
+        tid = str(task["id"])
+        safe_id = html.escape(tid, quote=True)
+        name, version = html.escape(task["name"]), html.escape(task["version"])
+        processing = task["processing"]
+        tag_class = {"ready": "tag-green", "queued": "tag-orange", "running": "tag-blue", "failed": "imp-fail"}[processing]
+        status = f'<span class="tag {tag_class}">{task["label"]}</span>'
+        if task.get("legacy_id") and task["status"] == "fail":
+            status = status_cell(task["legacy_id"], task["name"], task["status"], task["at"])
+        task_json = html.escape(json.dumps(tid), quote=True)
+        actions = f'<button type="button" class="action-link" onclick="dpDetail({task_json})">任务详情</button>'
+        if task.get("dataset_id"):
+            href = "/datasets?" + urlencode({"sel": task["dataset_id"], "ver": task["version"], "tab": "version"})
+            actions += f'<a href="{html.escape(href, quote=True)}">查看版本</a>'
+        rows += (f'<tr data-task-id="{safe_id}" data-status="{html.escape(task["status"])}"><td title="{safe_id}">{safe_id}</td>'
+                 f'<td title="{html.escape(task["name"], quote=True)}">{name}</td><td>{version}</td><td>{kind_labels[task["task_type"]]}</td><td>{status}</td>'
+                 f'<td title="{html.escape(task.get("by", "—"), quote=True)}">{html.escape(task.get("by", "—"))}</td><td>{html.escape(task["at"])}</td>'
+                 f'<td class="actions-cell"><div class="dataset-version-actions">{actions}</div></td></tr>')
+    if not rows:
+        rows = '<tr><td colspan="8" class="muted" style="text-align:center;padding:32px;">暂无数据集任务</td></tr>'
+
+    def options(items, selected, base):
+        return '<option value="">' + base + '</option>' + ''.join(
+            f'<option value="{html.escape(value, quote=True)}" {"selected" if value == selected else ""}>{html.escape(label)}</option>'
+            for value, label in items)
+
+    version_options = options([(value, value) for value in sorted({t["version"] for t in tasks})], selected_version, "全部版本")
+    kind_options = options(list(kind_labels.items()), selected_kind, "全部任务类型")
+    status_options = options([(label, label) for label in dict.fromkeys([*DATASET_CREATION_LABELS.values(), *DATASET_PROCESSING_LABELS.values()])], selected_status, "全部状态")
+    creator_ms = ms_search_html("creator", "请选择提交人", [(name, name) for name in sorted({t.get("by", "—") for t in tasks})], creators)
+    dataset_input = f'<input type="hidden" name="dataset_id" value="{html.escape(selected_dataset, quote=True)}">' if selected_dataset else ""
+    return_url = "/datasets?" + urlencode({"sel": selected_dataset, "ver": selected_version, "tab": "version"}) if selected_dataset else "/datasets"
+    context_dataset = get_ds(selected_dataset) if selected_dataset else None
+    context_html = (f'<span class="muted">当前数据集：{html.escape(context_dataset["name"])}</span> <a href="/datasets/tasks">查看全部任务</a>' if context_dataset else "")
+    reset_url = "/datasets/tasks" + ("?" + urlencode({"dataset_id": selected_dataset}) if selected_dataset else "")
+    def page_url(number):
+        params = request.args.to_dict(flat=False)
+        params.pop("task", None)
+        params["page"] = [str(number)]
+        return "/datasets/tasks?" + html.escape(urlencode(params, doseq=True), quote=True)
+
+    def page_arrow(number, label, symbol, disabled):
+        if disabled:
+            return f'<button type="button" class="pg-btn" aria-label="{label}" disabled>{symbol}</button>'
+        return f'<a class="pg-btn" aria-label="{label}" href="{page_url(number)}">{symbol}</a>'
+
+    pagination = page_arrow(page - 1, "上一页", "‹", page == 1)
+    visible_pages = sorted({1, pages, *range(max(1, page - 2), min(pages, page + 2) + 1)})
+    previous_number = 0
+    for number in visible_pages:
+        if number > previous_number + 1:
+            pagination += '<span class="muted" aria-hidden="true">…</span>'
+        if number == page:
+            pagination += f'<span class="pg-btn active" aria-label="第 {number} 页" aria-current="page">{number}</span>'
         else:
-            view_btn = '<button class="btn" disabled style="opacity:.4;cursor:not-allowed;">查看数据集</button>'
-        rows += (f'<tr data-status="{st}" data-name="{html.escape(name, quote=True)}" '
-                 f'data-creator="{html.escape(creator_ids.get(by, ""), quote=True)}"><td>{did}</td>'
-                 f'<td>{name}</td><td>{name}</td>'
-                 f'<td>{status_cell(did, name, st, at)}</td>'
-                 f'<td>{at}</td><td>{by}</td>'
-                 f'<td><div style="display:flex;gap:6px;">'
-                 f'<button class="btn" onclick="dpDetail(\'{name}\')">任务详情</button>'
-                 f'{view_btn}'
-                 f'</div></td></tr>')
-        if st == "fail":
-            failure_templates.append(failure_template(did))
-    creator_ms = ms_search_html("creator", "请选择创建人", CREATOR_POOL, [])
+            pagination += f'<a class="pg-btn" aria-label="第 {number} 页" href="{page_url(number)}">{number}</a>'
+        previous_number = number
+    pagination += page_arrow(page + 1, "下一页", "›", page == pages)
+    task_configs = {}
+    for task in page_tasks:
+        task_configs[str(task["id"])] = {"id": str(task["id"]), "name": task["name"], "version": task["version"],
+            "kind": kind_labels[task["task_type"]], "status": task["label"], "stage": task.get("stage", "—"),
+            "by": task.get("by", "—"), "at": task["at"], "progress": task.get("progress"),
+            "description": task.get("description") or (task.get("name") if task["kind"] != "create" else "数据完整性校验"),
+            "retry": bool(task.get("dataset_id") and task["processing"] == "failed"),
+            "error": task.get("error", ""), "legacy_id": task.get("legacy_id") if task["status"] == "fail" else None,
+            "parameters": json.dumps(task.get("operations", task.get("query", {})), ensure_ascii=False, indent=2)}
+    config_json = safe_json(task_configs)
+    open_json = safe_json(str(opened["id"]) if opened else "")
     content = f"""
-    <div style="display:flex;align-items:center;gap:12px;margin-bottom:18px;">
-      <a href="/query" class="btn">&#8249; 返回</a>
-      <div style="font-size:16px;font-weight:600;">数据集创建进度</div>
+    <link rel="stylesheet" href="/static/shared/dataset-editor.css?v=20261020-task-columns">
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:18px;">
+      <div style="font-size:16px;font-weight:600;">数据集任务列表</div>
+      <a href="{html.escape(return_url, quote=True)}" class="btn">返回数据集</a>
     </div>
-    <div class="q-filters" style="margin-bottom:16px;">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">{context_html}</div>
+    <form action="/datasets/tasks" method="get" class="q-filters" style="margin-bottom:16px;">
+      {dataset_input}
       <div class="q-filter-row q-adv-row">
-        <div class="q-field"><label>数据集名称</label><input id="dpNameFilter" placeholder="请输入数据集名称" onkeydown="if(event.key==='Enter')dpApplyFilters()"></div>
-        <div class="q-field"><label>创建人</label>{creator_ms}</div>
+        <div class="q-field"><label for="datasetTaskKeyword">数据集名称</label><input id="datasetTaskKeyword" name="keyword" value="{html.escape(keyword, quote=True)}" placeholder="请输入数据集名称"></div>
+        <div class="q-field"><label for="datasetTaskVersion">版本</label><select id="datasetTaskVersion" name="version">{version_options}</select></div>
+        <div class="q-field"><label for="datasetTaskType">任务类型</label><select id="datasetTaskType" name="task_type">{kind_options}</select></div>
+        <div class="q-field"><label for="datasetTaskStatus">状态</label><select id="datasetTaskStatus" name="status">{status_options}</select></div>
+        <div class="q-field"><label>提交人</label>{creator_ms}</div>
       </div>
-      <div class="q-filter-tools">
-        <button type="button" class="btn" onclick="dpResetFilters()">重置</button>
-        <button type="button" class="btn-primary btn" onclick="dpApplyFilters()">查询</button>
-      </div>
-    </div>
-    <div class="card">
-      <table class="ant-table">
-        <thead><tr><th>ID</th><th>数据集名称</th><th>标识</th><th>
-          <div class="status-head-filter">
-            <button type="button" class="status-head-trigger" onclick="toggleDsProgressStatusFilter(this)">状态 <span class="caret">&#8963;</span></button>
-            <div class="status-head-menu">
-              <button type="button" class="status-head-option active" data-value="" onclick="selectDsProgressStatus(this)">全部</button>
-              <button type="button" class="status-head-option" data-value="verify" onclick="selectDsProgressStatus(this)">校验中</button>
-              <button type="button" class="status-head-option" data-value="running" onclick="selectDsProgressStatus(this)">进行中</button>
-              <button type="button" class="status-head-option" data-value="done" onclick="selectDsProgressStatus(this)">成功</button>
-              <button type="button" class="status-head-option" data-value="fail" onclick="selectDsProgressStatus(this)">失败</button>
-            </div>
-          </div>
-        </th><th>创建时间</th><th>创建人</th><th>操作</th></tr></thead>
-        <tbody>{rows}<tr id="dpEmptyRow" hidden><td colspan="7" style="text-align:center;padding:30px;">暂无数据</td></tr></tbody>
+      <div class="q-filter-tools"><a href="{html.escape(reset_url, quote=True)}" class="btn">重置</a><button type="submit" class="btn btn-primary">查询</button></div>
+    </form>
+    <div class="muted" style="margin-bottom:12px;">共 {len(filtered)} 条记录</div>
+    <div class="table-wrap">
+      <table class="ant-table dataset-task-table" id="datasetTaskTable">
+        <colgroup><col style="width:130px"><col style="width:280px"><col style="width:70px"><col style="width:110px"><col style="width:120px"><col style="width:110px"><col style="width:180px"><col style="width:180px"></colgroup>
+        <thead><tr><th>任务 ID</th><th>数据集名称</th><th>版本</th><th>任务类型</th><th>状态</th><th>提交人</th><th>提交时间</th><th>操作</th></tr></thead>
+        <tbody>{rows}</tbody>
       </table>
-      <div class="q-pager" id="dpPager"></div>
     </div>
+    <nav class="mini-pager dataset-task-pager" aria-label="数据集任务列表分页"><span class="muted">共 {len(filtered)} 条 · 第 {page} / {pages} 页</span>{pagination}<span class="muted">{page_size} 条/页</span></nav>
 
     <div class="drawer-mask" id="dpDetailModal" onclick="if(event.target===this)this.classList.remove('active')">
       <div class="drawer">
-        <div class="drawer-head"><h3>任务详情 · 创建筛选条件</h3><button class="drawer-close" onclick="closeDrawerById('dpDetailModal')">&times;</button></div>
+        <div class="drawer-head"><h3>任务详情</h3><button class="drawer-close" onclick="closeDrawerById('dpDetailModal')">&times;</button></div>
         <div class="drawer-body">
-          <div class="muted" style="font-size:12px;margin-bottom:12px;">数据集 <b id="dpDsName"></b> 创建时使用的筛选条件:</div>
           <div class="desc-grid">
-            <div class="dk">采集任务</div><div class="dv">t1, t2</div>
-            <div class="dk">任务标签</div><div class="dv">擦拭 · 高质量</div>
-            <div class="dk">采集类型</div><div class="dv">normal · dagger</div>
-            <div class="dk">质检结论</div><div class="dv">合格</div>
-            <div class="dk">是否标注</div><div class="dv">是 · 标注版本 v2</div>
-            <div class="dk">采集时间</div><div class="dv">2026-05-01 ~ 2026-05-31</div>
-            <div class="dk">Prompt 语言</div><div class="dv">中文</div>
-            <div class="dk">Episode 上限</div><div class="dv">500</div>
+            <div class="dk">任务 ID</div><div class="dv" data-task-detail="id"></div>
+            <div class="dk">数据集名称</div><div class="dv" data-task-detail="name"></div>
+            <div class="dk">版本</div><div class="dv" data-task-detail="version"></div>
+            <div class="dk">任务类型</div><div class="dv" data-task-detail="kind"></div>
+            <div class="dk">状态</div><div class="dv" data-task-detail="status"></div>
+            <div class="dk">当前阶段</div><div class="dv" data-task-detail="stage"></div>
+            <div class="dk">进度</div><div class="dv" data-task-detail="progress"></div>
+            <div class="dk">提交人</div><div class="dv" data-task-detail="by"></div>
+            <div class="dk">提交时间</div><div class="dv" data-task-detail="at"></div>
+            <div class="dk">任务说明</div><div class="dv" data-task-detail="description"></div>
           </div>
         </div>
         <div class="drawer-foot">
           <button class="btn btn-secondary" onclick="closeDrawerById('dpDetailModal')">关闭</button>
+          <button type="button" class="btn btn-primary" id="datasetTaskRetry" hidden onclick="retryDatasetTask(this)">重试</button>
         </div>
       </div>
     </div>
@@ -3606,99 +3769,31 @@ def ds_progress():
         <div class="ds-error-body" id="dpErrorBody"></div>
         <div class="drawer-foot">
           <button type="button" class="btn btn-secondary" onclick="closeDrawerById('dpErrorModal')">关闭</button>
-          <a class="btn btn-primary" href="/model/data/query">返回数据湖圈选</a>
+          <a class="btn btn-primary" href="/model/data/query">返回数据查询</a>
         </div>
       </div>
     </div>
+    <script type="application/json" id="datasetTaskConfig">{config_json}</script>
     <script>
-      var dpCurrentPage=1;
-      var dpDefaultDetailHtml='';
-      function dpRestoreDemoTasks(){{
-        var tasks=[];try{{tasks=JSON.parse(sessionStorage.getItem('demoDatasetBuildTasks')||'[]');}}catch(error){{return;}}
-        var body=document.querySelector('.ant-table tbody');
-        tasks.forEach(function(task){{
-          var row=document.createElement('tr');row.dataset.status='verify';row.dataset.name=task.name;row.dataset.creator='U2001';
-          [task.id,task.name,task.ident].forEach(function(value){{var cell=row.insertCell();cell.textContent=value;}});
-          var status=row.insertCell(),tag=document.createElement('span');tag.className='tag tag-blue';tag.textContent='校验中';status.appendChild(tag);
-          [task.created,'Will Xiao'].forEach(function(value){{var cell=row.insertCell();cell.textContent=value;}});
-          var actions=row.insertCell(),detail=document.createElement('button'),view=document.createElement('button');
-          actions.style.cssText='display:flex;gap:6px;';
-          detail.className='btn';detail.textContent='任务详情';detail.onclick=function(){{dpDemoDetail(task);}};
-          view.className='btn';view.textContent='查看数据集';view.disabled=true;
-          actions.append(detail,view);body.insertBefore(row,body.firstChild);
+      const datasetTaskRecords=JSON.parse(document.getElementById('datasetTaskConfig').textContent);
+      function dpDetail(id){{
+        var task=datasetTaskRecords[id]; if(!task) return;
+        document.querySelectorAll('[data-task-detail]').forEach(function(field){{
+          var key=field.dataset.taskDetail;
+          field.textContent=key==='progress' ? (task.progress==null ? '—' : task.progress+'%') : (task[key] || '—');
         }});
-      }}
-      function dpDemoDetail(task){{
-        dpDetail(task.name);
-        var grid=document.querySelector('#dpDetailModal .desc-grid');grid.replaceChildren();
-        var params=new URLSearchParams(task.filters||'');
-        function yesNo(value){{return value==='yes'?'是':value==='no'?'否':value;}}
-        var advanced='';try{{
-          var tree=JSON.parse(params.get('advanced')||'{{}}');
-          function describe(node){{
-            if(node.children)return node.children.length?'('+node.children.map(describe).join(node.op==='or'?' 或 ':' 且 ')+')':'';
-            return node.field+' '+node.operator+' '+(node.value||'');
-          }}
-          advanced=describe(tree);
-        }}catch(error){{}}
-        var fields=[['采集任务',params.get('task')],['批次编号',params.get('batch')],['设备序列号',params.get('device')],
-          ['Highlevel Prompt',params.get('hl')],['Lowlevel Prompt',params.get('ll')],
-          ['采集结论',{{success:'成功',fail:'失败'}}[params.get('quality')]||params.get('quality')],
-          ['是否质检',yesNo(params.get('qc'))],['质检结论',params.getAll('qa').map(function(value){{return {{pass:'合格',fail:'不合格',warn:'失误'}}[value]||value;}}).join('、')],
-          ['是否标注',yesNo(params.get('anno'))],['Episode 上限',params.get('limit')],
-          ['Prompt 语言',{{en:'英文',zh:'中文'}}[params.get('lang')]||params.get('lang')],['高级条件',advanced],
-          ['目录',task.folder],['标签',(task.tags||[]).join('、')]];
-        fields.filter(function(item){{return item[1];}}).forEach(function(item){{
-          var key=document.createElement('div'),value=document.createElement('div');key.className='dk';value.className='dv';
-          key.textContent=item[0];value.textContent=item[1];grid.append(key,value);
-        }});
-      }}
-      function dpApplyFilters(resetPage){{
-        if(resetPage!==false) dpCurrentPage=1;
-        var name=document.getElementById('dpNameFilter').value.trim().toLocaleLowerCase();
-        var selected=Array.from(document.querySelectorAll('input[name="creator"]:checked'),function(input){{return input.value;}});
-        var status=document.querySelector('.status-head-option.active').getAttribute('data-value')||'';
-        var rows=Array.from(document.querySelectorAll('.ant-table tbody tr[data-status]'));
-        var matches=rows.filter(function(row){{return (!name||row.dataset.name.toLocaleLowerCase().includes(name))
-          &&(!selected.length||selected.includes(row.dataset.creator))&&(!status||row.dataset.status===status);}});
-        var pages=Math.max(1,Math.ceil(matches.length/10));dpCurrentPage=Math.min(dpCurrentPage,pages);
-        rows.forEach(function(row){{row.hidden=true;}});
-        matches.slice((dpCurrentPage-1)*10,dpCurrentPage*10).forEach(function(row){{row.hidden=false;}});
-        document.getElementById('dpEmptyRow').hidden=matches.length>0;
-        var pager=document.getElementById('dpPager');pager.replaceChildren();
-        var count=document.createElement('span');count.textContent='共 '+matches.length+' 条 · 10条/页';pager.appendChild(count);
-        for(var page=1;page<=pages;page++){{
-          var button=document.createElement('button');button.type='button';button.className='pg-btn'+(page===dpCurrentPage?' active':'');
-          button.textContent=page;button.onclick=(function(target){{return function(){{dpCurrentPage=target;dpApplyFilters(false);}};}})(page);
-          pager.appendChild(button);
-        }}
-      }}
-      function dpResetFilters(){{
-        document.getElementById('dpNameFilter').value='';
-        document.querySelectorAll('input[name="creator"]:checked').forEach(function(input){{input.checked=false;}});
-        var trigger=document.querySelector('.q-filters .ms-trigger');if(trigger){{trigger.classList.remove('has-value');trigger.querySelector('.ms-label').textContent=trigger.dataset.base;}}
-        document.querySelectorAll('.status-head-option').forEach(function(option){{option.classList.toggle('active',!option.dataset.value);}});
-        dpApplyFilters();
-      }}
-      function dpDetail(name){{
-        var el=document.getElementById('dpDsName');if(el) el.textContent=name;
-        var grid=document.querySelector('#dpDetailModal .desc-grid');if(grid&&dpDefaultDetailHtml)grid.innerHTML=dpDefaultDetailHtml;
+        var retry=document.getElementById('datasetTaskRetry'); retry.hidden=!task.retry; retry.dataset.taskId=id;
         openDrawerById('dpDetailModal');
       }}
-      function toggleDsProgressStatusFilter(btn){{
-        var wrap=btn.closest('.status-head-filter');
-        if(!wrap) return;
-        document.querySelectorAll('.status-head-filter.open').forEach(function(item){{ if(item!==wrap) item.classList.remove('open'); }});
-        wrap.classList.toggle('open');
+      async function retryDatasetTask(button){{
+        button.disabled=true;
+        try{{
+          var response=await fetch(document.querySelector('form[action$="/datasets/tasks"]').getAttribute('action')+'/'+encodeURIComponent(button.dataset.taskId)+'/retry',{{method:'POST'}});
+          var result=await response.json(); if(!response.ok) throw new Error(result.error || '重试失败');
+          location.reload();
+        }}catch(error){{ toast(error.message); button.disabled=false; }}
       }}
-      function selectDsProgressStatus(btn){{
-        var filter=btn.closest('.status-head-filter');
-        if(!filter) return;
-        filter.querySelectorAll('.status-head-option').forEach(function(item){{ item.classList.remove('active'); }});
-        btn.classList.add('active');
-        filter.classList.remove('open');
-        dpApplyFilters();
-      }}
+      document.addEventListener('DOMContentLoaded',function(){{ var id={open_json}; if(id) dpDetail(id); }});
       function openDsProgressError(id){{
         var template=document.getElementById('dpErrorTemplate'+id);
         var body=document.getElementById('dpErrorBody');
@@ -3707,19 +3802,18 @@ def ds_progress():
         if(body) body.innerHTML=template ? template.innerHTML : '';
         openDrawerById('dpErrorModal');
       }}
-      document.addEventListener('click', function(e){{
-        document.querySelectorAll('.status-head-filter.open').forEach(function(wrap){{
-          if(!wrap.contains(e.target)) wrap.classList.remove('open');
-        }});
-      }});
-      document.addEventListener('DOMContentLoaded',function(){{
-        dpDefaultDetailHtml=document.querySelector('#dpDetailModal .desc-grid').innerHTML;
-        dpRestoreDemoTasks();dpApplyFilters();
-      }});
+      function toggleDsErrorIds(button){{
+        var extra=document.getElementById(button.getAttribute('aria-controls'));
+        if(!extra) return;
+        var expanding=extra.hidden;
+        extra.hidden=!expanding;
+        button.textContent=expanding ? '收起' : button.getAttribute('data-more-label');
+        button.setAttribute('aria-expanded', expanding ? 'true' : 'false');
+      }}
     </script>
     """
-    return render_page("数据集创建进度", content, active="query",
-                       breadcrumb='数据湖 / 数据湖圈选 / <b>数据集创建进度</b>')
+    return render_page("数据集任务列表", content, active="datasets",
+                       breadcrumb='数据集 / <b>数据集任务列表</b>')
 
 
 # The live condition builder exposes many warehouse columns. The prototype keeps
@@ -3826,79 +3920,152 @@ def query_matches_condition(recording, node):
 
 @app.route("/query")
 def query():
-    did_run = request.args.get("run") == "1"
-    advanced_raw = request.args.get("advanced", "")
+    fields = {
+        "recording_id": {"label": "数据 ID", "type": "number"},
+        "task": {"label": "采集任务 ID", "type": "text"},
+        "collection_id": {"label": "采集批次 ID", "type": "number"},
+        "capture_device": {"label": "设备", "type": "enum", "options": [(d, d) for d in DEVICES]},
+        "operator": {"label": "操作员", "type": "enum", "options": [(o, o) for o in OPERATORS_LIST]},
+        "type": {"label": "采集类型", "type": "enum", "options": [(t, t) for t in ("normal", "dagger", "test", "eval")]},
+        "qa_status": {"label": "质检结论", "type": "enum", "options": [("pass", "合格"), ("fail", "不合格"), ("warn", "失误")]},
+        "is_qc": {"label": "是否质检", "type": "boolean"},
+        "is_annotated": {"label": "是否标注", "type": "boolean"},
+        "frames": {"label": "帧数", "type": "number"},
+        "duration_s": {"label": "时长（秒）", "type": "number"},
+        "collected_at": {"label": "采集日期", "type": "date", "sql": "CAST(collected_at AS DATE)"},
+        "highlevel_prompt": {"label": "Highlevel 提示词", "type": "text"},
+        "tags": {"label": "任务标签", "type": "tags", "options": [(tid, name) for tid, name, _ in TAG_DEFS]},
+    }
+    legacy_advanced = None
+    if request.args.get("advanced"):
+        try:
+            legacy_advanced = json.loads(request.args["advanced"])
+        except (ValueError, TypeError):
+            legacy_advanced = {"op": "and", "children": []}
+    legacy_high = request.args.get("hl", "").strip().casefold()
+    legacy_low = request.args.get("ll", "").strip().casefold()
+    # Prompt IDs remain handled by the portal's modern multi-select filters.
+    if legacy_high.startswith("p") and legacy_high[1:].isdigit():
+        legacy_high = ""
+    if legacy_low.startswith("ll") and legacy_low[2:].isdigit():
+        legacy_low = ""
+    condition_error = ""
+    include_tree = {"logic": "and", "children": []}
+    exclude_tree = {"logic": "or", "children": []}
+    excluded_ids = []
+    limit = None
+    duration_limit = None
+    raw_duration_limit = request.args.get("duration_limit", "").strip()
+    f_visual_prompt = request.args.get("has_visual_prompt", "")
     try:
-        advanced = json.loads(advanced_raw) if advanced_raw else {"op": "and", "children": []}
-        if not isinstance(advanced, dict):
-            raise ValueError("Invalid condition tree")
-    except (ValueError, TypeError):
-        advanced = {"op": "and", "children": []}
-    # Keep the live page's initial defaults in the form and mock execution.
+        if f_visual_prompt not in ("", "yes", "no"):
+            raise ValueError("是否包含 visual prompt 请选择是或否")
+        include_tree = parse_tree(request.args.get("conditions", ""), fields)
+        raw_exclusions = request.args.get("exclusions", "")
+        if raw_exclusions:
+            exclude_tree = parse_tree(raw_exclusions, fields)
+            if not exclude_tree["children"]:
+                exclude_tree["logic"] = "or"
+        raw_ids = request.args.get("excluded_ids", "").replace("，", ",")
+        excluded_ids = list(dict.fromkeys(part.strip().lstrip("#") for part in re.split(r"[,\s]+", raw_ids) if part.strip()))
+        if len(excluded_ids) > 1000 or any(not item.isdigit() for item in excluded_ids):
+            raise ValueError("剔除数据 ID 必须为数字，最多支持 1000 条")
+        raw_limit = request.args.get("limit", "").strip()
+        if raw_limit:
+            if not raw_limit.isdigit() or int(raw_limit) < 1:
+                raise ValueError("数据条数必须为正整数")
+            limit = int(raw_limit)
+        if raw_duration_limit:
+            try:
+                duration_limit = float(raw_duration_limit)
+            except ValueError:
+                raise ValueError("数据时长必须为有效的小时数，至少 0.01 小时") from None
+            if not math.isfinite(duration_limit) or not math.isfinite(duration_limit * 3600):
+                raise ValueError("数据时长必须为有效的小时数，至少 0.01 小时")
+            duration_limit = float(f"{duration_limit:.2f}")
+            if duration_limit < 0.01:
+                raise ValueError("数据时长必须为有效的小时数，至少 0.01 小时")
+            raw_duration_limit = f"{duration_limit:.2f}"
+    except ValueError as error:
+        condition_error = str(error)
+
+    def facts(r):
+        return {"recording_id": r["id"], "task": r["task"], "collection_id": r["collection"],
+                "capture_device": rec_device(r), "operator": rec_operator(r), "type": rec_type_enum(r),
+                "qa_status": r["qa"], "is_qc": rec_qc(r), "is_annotated": rec_anno(r),
+                "frames": r["frames"], "duration_s": r["dur"], "collected_at": r["at"][:10],
+                "highlevel_prompt": task_instr(r["task"]), "tags": rec_tags(r)}
+
+    def safe_json(value):
+        return json.dumps(value, ensure_ascii=False).replace("<", "\\u003c").replace(">", "\\u003e").replace("&", "\\u0026")
+
+    # 筛选条件对齐数据拉取脚本 export_dataset.py 的参数
     f_task = request.args.get("task", "")          # 多个 task id, 逗号隔开
-    f_batch = request.args.get("batch", "")
+    f_processing_task = request.args.get("processing_task", "")
     f_device = request.args.get("device", "")
     f_operators = request.args.getlist("operator")  # 多选操作员
     f_types = request.args.getlist("type")          # 多选采集类型
-    f_dtype = request.args.getlist("dtype")
-    f_quality = request.args.get("quality", "success")
-    f_qc = request.args.get("qc", "yes")
-    f_anno = request.args.get("anno", "yes")
-    f_qas = request.args.getlist("qa") if "qa" in request.args else ["pass"]
+    f_qas = request.args.getlist("qa")             # 多选: pass/fail/warn
+    f_collect_result = request.args.get("collect_result", "")
     f_tags = request.args.getlist("tag")           # 多选标签
     f_from = request.args.get("from", "")
     f_to = request.args.get("to", "")
-    f_limit = request.args.get("limit", "")
-    f_lang = request.args.getlist("lang") if "lang" in request.args else ["en"]
-    f_hl = request.args.get("hl", "")
-    f_ll = request.args.get("ll", "")
     nl = request.args.get("nl", "")
 
     task_list = [t.strip() for t in f_task.split(",") if t.strip()]
-    hl_keyword = f_hl.strip().casefold()
-    ll_keyword = f_ll.strip().casefold()
+    processing_task_list = [t.strip() for t in f_processing_task.replace("，", ",").split(",") if t.strip()]
 
     # —— 过滤 ——
     res = []
-    for r in RECORDINGS if did_run else []:
+    for r in RECORDINGS:
+        prompts = QUERY_PROMPT_TEXT.get(r["task"], {})
+        if legacy_high and not any(legacy_high in text.casefold() for text in prompts.get("high", ())):
+            continue
+        if legacy_low and not any(legacy_low in text.casefold() for text in prompts.get("low", ())):
+            continue
+        if legacy_advanced is not None and not query_matches_condition(r, legacy_advanced):
+            continue
         if task_list and r["task"] not in task_list:
             continue
-        prompts = QUERY_PROMPT_TEXT.get(r["task"], {})
-        if hl_keyword and not any(hl_keyword in value.casefold() for value in prompts.get("high", ())):
-            continue
-        if ll_keyword and not any(ll_keyword in value.casefold() for value in prompts.get("low", ())):
-            continue
-        if f_batch and str(r["collection"]) not in [part.strip() for part in f_batch.split(",")]:
+        if processing_task_list and not set(processing_task_list).intersection(r.get("processing_task_ids", [])):
             continue
         if f_tags and not any(t in rec_tags(r) for t in f_tags):
             continue
-        if f_device and rec_device(r).casefold() not in [part.strip().casefold() for part in f_device.split(",")]:
+        if f_device and rec_device(r) != f_device:
             continue
         if f_operators and rec_operator(r) not in f_operators:
             continue
         if f_types and rec_type_enum(r) not in f_types:
             continue
-        if f_dtype and ("policy" if r["type"] == "dagger" else "") not in f_dtype:
+        if f_qas and r["qa"] not in f_qas:
             continue
-        if f_quality == "success" and r["life"] != "active":
+        if f_collect_result and r.get("collect_result") != f_collect_result:
             continue
-        if f_quality == "fail" and r["life"] == "active":
-            continue
-        if f_qc and ("yes" if rec_qc(r) else "no") != f_qc:
-            continue
-        if f_anno and ("yes" if rec_anno(r) else "no") != f_anno:
-            continue
-        if f_qc == "yes" and f_qas and r["qa"] not in f_qas:
+        if f_visual_prompt and bool(r.get("has_visual_prompt", False)) != (f_visual_prompt == "yes"):
             continue
         if f_from and r["at"][:10] < f_from:
             continue
         if f_to and r["at"][:10] > f_to:
             continue
-        if not query_matches_condition(r, advanced):
-            continue
         res.append(r)
 
-    disp = res[:int(f_limit)] if f_limit.isdigit() and int(f_limit) > 0 else res
+    # 固定筛选 AND 复杂条件，再从命中记录中剔除；上限应用于最终保留的数据。
+    candidates = [r for r in res if matches(include_tree, facts(r), fields)] if not condition_error else []
+    candidates.sort(key=lambda r: (r["at"], r["id"]), reverse=True)
+    excluded_set = set(excluded_ids)
+    condition_excluded = [r for r in candidates if exclude_tree["children"] and matches(exclude_tree, facts(r), fields)]
+    removed = [r for r in candidates if str(r["id"]) in excluded_set or r in condition_excluded]
+    res = [r for r in candidates if r not in removed]
+    disp = res[:limit] if limit else res
+    if duration_limit:
+        bounded = []
+        duration_seconds = 0
+        for record in disp:
+            if duration_seconds + record["dur"] > duration_limit * 3600 + 1e-9:
+                break
+            bounded.append(record)
+            duration_seconds += record["dur"]
+        disp = bounded
 
     # —— 配方助手: 当前筛选结果的 提示词 / 标签 构成 ——
     prompt_counts = {}
@@ -3913,8 +4080,7 @@ def query():
             tag_comp.append({"key": tid, "label": lab, "count": c})
     recipe_data_js = (f"window._rcPrompt={json.dumps(prompt_comp, ensure_ascii=False)};"
                       f"window._rcTag={json.dumps(tag_comp, ensure_ascii=False)};"
-                      f"window._rcBaseN={len(disp)};"
-                      f"window._qHasResult={json.dumps(bool(disp))};")
+                      f"window._rcBaseN={len(disp)};")
     # 预览抽屉: id → episode 序号 (复用 preview_block 的轨迹组件)
     qprev_map = {r["id"]: {"idx": i, "qa": r["qa"]} for i, r in enumerate(res)}
     recipe_data_js += f"window._qprevMap={json.dumps(qprev_map, ensure_ascii=False)};"
@@ -3924,32 +4090,59 @@ def query():
     qa_sql = {"pass": "PASS", "fail": "FAIL", "warn": "WARN"}
     conds = ["robot_type = 'moz1'"]
     if task_list:
-        conds.append("task IN (" + ", ".join(f"'{t}'" for t in task_list) + ")")
+        conds.append("task IN (" + ", ".join(sql_literal(t) for t in task_list) + ")")
+    if processing_task_list:
+        conds.append("(" + " OR ".join(f"array_contains(processing_task_ids, {sql_literal(t)})" for t in processing_task_list) + ")")
     if f_device:
-        conds.append(f"capture_device = '{f_device}'")
+        conds.append("capture_device = " + sql_literal(f_device))
     if f_operators:
-        conds.append("operator IN (" + ", ".join(f"'{o}'" for o in f_operators) + ")")
+        conds.append("operator IN (" + ", ".join(sql_literal(o) for o in f_operators) + ")")
     if f_types:
-        conds.append("type IN (" + ", ".join(f"'{t}'" for t in f_types) + ")")
+        conds.append("type IN (" + ", ".join(sql_literal(t) for t in f_types) + ")")
     if f_qas:
-        conds.append("qa_status IN (" + ", ".join(f"'{qa_sql.get(q, q.upper())}'" for q in f_qas) + ")")
+        conds.append("qa_status IN (" + ", ".join(sql_literal(q) for q in f_qas) + ")")
+    if f_collect_result:
+        conds.append("collect_result = " + sql_literal(f_collect_result))
+    if f_visual_prompt in ("yes", "no"):
+        conds.append("has_visual_prompt = " + ("TRUE" if f_visual_prompt == "yes" else "FALSE"))
     if f_tags:
-        for t in f_tags:
-            conds.append(f"array_contains(tags, '{TAG_LABEL.get(t, t)}')")
+        conds.append("(" + " OR ".join(f"array_contains(tags, {sql_literal(t)})" for t in f_tags) + ")")
     if f_from:
-        conds.append(f"collected_at >= '{f_from}'")
+        conds.append("CAST(collected_at AS DATE) >= " + sql_literal(f_from))
     if f_to:
-        conds.append(f"collected_at <= '{f_to}'")
+        conds.append("CAST(collected_at AS DATE) <= " + sql_literal(f_to))
+    if include_tree["children"] and not condition_error:
+        conds.append(tree_sql(include_tree, fields))
+    if exclude_tree["children"] and not condition_error:
+        conds.append("NOT (" + tree_sql(exclude_tree, fields) + ")")
+    if excluded_ids and not condition_error:
+        conds.append("recording_id NOT IN (" + ", ".join(excluded_ids) + ")")
+    if condition_error:
+        conds.append("1 = 0")
     where = "\n  AND ".join(conds)
     sql = ("SELECT episode_index, recording_id, task, collection_id, capture_device,\n"
            "       operator, frames, duration_s, collected_at, qa_status\n"
            "FROM   lake.recordings\n"
            f"WHERE  {where}\n"
-           "ORDER BY collected_at DESC;")
+           "ORDER BY collected_at DESC" + (f"\nLIMIT {limit}" if limit else "") + ";")
+    if duration_limit and not condition_error:
+        sql = ("WITH filtered AS (\n"
+               "  SELECT episode_index, recording_id, task, collection_id, capture_device,\n"
+               "         operator, frames, duration_s, collected_at, qa_status\n"
+               "  FROM lake.recordings\n"
+               f"  WHERE {where}\n"
+               "), bounded AS (\n"
+               "  SELECT *, SUM(duration_s) OVER (ORDER BY collected_at DESC, recording_id DESC\n"
+               "    ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS cumulative_duration_s\n"
+               "  FROM filtered\n)\n"
+               "SELECT episode_index, recording_id, task, collection_id, capture_device,\n"
+               "       operator, frames, duration_s, collected_at, qa_status\n"
+               f"FROM bounded\nWHERE cumulative_duration_s <= {duration_limit * 3600:g}\n"
+               "ORDER BY collected_at DESC, recording_id DESC" + (f"\nLIMIT {limit}" if limit else "") + ";")
 
     # —— 选择器 ——
-    def sel(name, cur, options, placeholder=None):
-        opts = f'<option value="">{placeholder}</option>' if placeholder is not None else ""
+    def sel(name, cur, options, placeholder):
+        opts = f'<option value="">{placeholder}</option>'
         for v, lab in options:
             s = " selected" if v == cur else ""
             opts += f'<option value="{v}"{s}>{lab}</option>'
@@ -3958,7 +4151,8 @@ def query():
 
     # 任务: 文本输入, 多个 task id 逗号隔开
     task_cls = "has-value" if f_task else ""
-    task_input = f'<input name="task" class="{task_cls}" value="{html.escape(f_task, quote=True)}" placeholder="多个英文逗号分隔">'
+    task_input = f'<input id="qCollectionTaskId" name="task" class="{task_cls}" value="{html.escape(f_task, quote=True)}" placeholder="如 t1,t2 多个逗号隔开">'
+    processing_task_input = f'<input id="qProcessingTaskId" name="processing_task" value="{html.escape(f_processing_task, quote=True)}" placeholder="如 20454,20453 多个逗号隔开">'
 
     # 多选下拉 (ms-wrap)
     def ms(name, base, items, selected):
@@ -3972,104 +4166,142 @@ def query():
                 f'onclick="this.closest(\'.ms-wrap\').classList.toggle(\'open\')">'
                 f'<span class="ms-label">{label}</span></div><div class="ms-panel">{checks}</div></div>')
 
-    # 标签多选 (按 场景/技能/质量 分组)
-    tag_checks = ""
-    for grp in TAG_GROUP_ORDER:
-        tag_checks += f'<div class="ms-grp">{grp}</div>'
-        for tid, lab, g in TAG_DEFS:
-            if g == grp:
-                ck = " checked" if tid in f_tags else ""
-                tag_checks += (f'<label><input type="checkbox" name="tag" value="{tid}"{ck} '
-                               f'onchange="msUpdate(this)">{lab}</label>')
-    n_tag = len(f_tags)
-    tag_ms = (f'<div class="ms-wrap"><div class="ms-trigger {"has-value" if n_tag else ""}" data-base="标签" '
-              f'onclick="this.closest(\'.ms-wrap\').classList.toggle(\'open\')">'
-              f'<span class="ms-label">{("标签 ("+str(n_tag)+")") if n_tag else "标签"}</span></div>'
-              f'<div class="ms-panel">{tag_checks}</div></div>')
-
-    qa_ms = ms("qa", "请选择质检结论", [("pass", "合格"), ("fail", "不合格"), ("warn", "失误")], f_qas)
-    dev_input = f'<input name="device" value="{html.escape(f_device, quote=True)}" placeholder="多个英文逗号分隔">'
-    op_sel = ms_search_html("operator", "请选择操作员", OP_POOL, f_operators,
-                            placeholder="请选择操作员")
-    type_sel = ms("type", "默认全部", [("normal", "normal"), ("dagger", "dagger"), ("test", "test"), ("eval", "eval")], f_types)
+    qa_ms = ms("qa", "全部", [("pass", "合格"), ("fail", "不合格"), ("warn", "失误")], f_qas)
+    dev_sel = sel("device", f_device, [(d, d) for d in DEVICES], "全部")
+    collect_result_sel = sel("collect_result", f_collect_result, [("成功", "成功"), ("失败", "失败")], "全部")
+    op_sel = ms_search_html("operator", "全部", OP_POOL, f_operators)
+    type_sel = ms("type", "全部", [("normal", "normal"), ("dagger", "dagger"), ("test", "test"), ("eval", "eval")], f_types)
 
     # —— 新增分组字段 (与「新建数据集」弹窗一致; 部分为 demo 展示, 暂不参与后端过滤) ——
-    batch_input = f'<input name="batch" value="{html.escape(f_batch, quote=True)}" placeholder="多个英文逗号分隔">'
-    hl_input = f'<input type="text" name="hl" value="{html.escape(f_hl, quote=True)}" placeholder="输入 prompt">'
-    ll_input = f'<input type="text" name="ll" value="{html.escape(f_ll, quote=True)}" placeholder="输入 prompt">'
-    dagger_ms = ms("dtype", "默认全部", [("policy", "policy"), ("teleop", "teleop")], f_dtype)
+    batch_input = '<input name="batch" placeholder="如 B20250612-01">'
+    import quanta_eval_platform as prompt_catalog
+    prompt_filter_specs = [
+        ("hl_zh", "Highlevel 中文", [(p["id"], p["high_level"]) for p in prompt_catalog.PROMPTS], "hl"),
+        ("hl_en", "Highlevel 英文", [(p["id"], p.get("high_level_en", "")) for p in prompt_catalog.PROMPTS], None),
+        ("ll_zh", "Lowlevel 中文", [(p["id"], p["zh"]) for h in prompt_catalog.PROMPTS for p in h["low_levels"]], "ll"),
+        ("ll_en", "Lowlevel 英文", [(p["id"], p.get("en", "")) for h in prompt_catalog.PROMPTS for p in h["low_levels"]], None),
+    ]
+    prompt_filter_fields = ""
+    for name, label, pool, legacy_name in prompt_filter_specs:
+        selected = request.args.getlist(name)
+        if name not in request.args and legacy_name:
+            selected = request.args.getlist(legacy_name)
+        control = ms_search_html(name, "全部", [(pid, text) for pid, text in pool if text], selected,
+                                 placeholder=f"搜索{label}", empty_text="无匹配提示词", browse=True)
+        prompt_filter_fields += f'<div class="q-field grow"><label>{label}（模糊搜索）</label>{control}</div>'
+    dagger_ms = ms("dtype", "全部", [("policy", "policy"), ("teleop", "teleop")], [])
 
-    def tri_q(name, dep, current):
-        return (f'<select name="{name}" onchange="qfDep(\'{dep}\',this.value)">'
-                f'<option value="yes" {"selected" if current == "yes" else ""}>是</option>'
-                f'<option value="no" {"selected" if current == "no" else ""}>否</option></select>')
-    quality_sel = sel("quality", f_quality, [("success", "成功"), ("fail", "失败")])
-    annover_sel = f'<input type="number" min="0" name="annover" value="{html.escape(request.args.get("annover", ""), quote=True)}" placeholder="请输入标注版本">'
-    lang_sel = sel("lang", f_lang[0] if f_lang else "", [("en", "英文"), ("zh", "中文"), ("", "全部")])
+    def tri_q(dep):  # 三态: 不限 / 是 / 否; 选「是」才启用依赖字段 dep
+        return (f'<select onchange="qfDep(\'{dep}\',this.value)">'
+                '<option value="">不限</option><option value="yes">是</option><option value="no">否</option></select>')
+    annover_sel = '<input type="number" min="1" name="annover" placeholder="留空默认最新版本">'
+    visual_prompt_sel = sel("has_visual_prompt", f_visual_prompt, [("yes", "是"), ("no", "否")], "不限").replace('<select ', '<select id="qHasVisualPrompt" ', 1)
 
-    # 所有筛选条件默认全部展开 (不再折叠)
-    adv_fd = ""
-
+    advanced_config = {"fields": fields, "operators": CONDITION_OPERATORS, "typeOperators": TYPE_OPERATORS,
+                       "conditions": include_tree, "exclusions": exclude_tree, "excludedIds": excluded_ids}
+    error_html = (f'<div class="query-condition-error" role="alert">{html.escape(condition_error)}</div>'
+                  if condition_error else '')
+    complex_filters = f'''
+      <details class="query-advanced query-include" id="qAdvanced" {"open" if include_tree["children"] else ""}>
+        <summary><span class="query-disclosure" aria-hidden="true"></span><span>复杂条件筛选</span><span class="query-config-count" id="qIncludeCount"></span><span class="muted query-summary-help">在固定筛选基础上，组合且 / 或条件</span></summary>
+        <input type="hidden" name="conditions" id="qConditionsValue" value="{html.escape(safe_json(include_tree), quote=True)}">
+        <div id="qConditionsBuilder" class="query-condition-builder"></div>
+      </details>
+    '''
+    exclusion_filters = f'''
+      <details class="query-advanced query-exclude" id="qExclusions" {"open" if exclude_tree["children"] or excluded_ids else ""}>
+        <summary><span class="query-stage-icon" aria-hidden="true">−</span><span>剔除数据</span><span class="query-config-count" id="qExcludeCount"></span><span class="muted query-summary-help">从以上筛选结果中移除指定数据</span><span class="query-disclosure" aria-hidden="true"></span></summary>
+        <div class="query-exclusion-content">
+        <div class="query-id-section">
+        <div class="q-field query-excluded-ids"><label for="qExcludedIds">按数据 ID 剔除</label>
+          <input id="qExcludedIds" name="excluded_ids" value="{html.escape(','.join(excluded_ids), quote=True)}" placeholder="多个 ID 用逗号分隔，如 120489,120502"></div>
+        <div id="qExcludedChips" class="query-excluded-chips"></div>
+        </div>
+        <div class="query-method-heading">按条件剔除 <span class="muted">满足下列条件的数据将被剔除</span></div>
+        <input type="hidden" name="exclusions" id="qExclusionsValue" value="{html.escape(safe_json(exclude_tree), quote=True)}">
+        <div id="qExclusionsBuilder" class="query-condition-builder"></div>
+        <button type="button" class="query-text-button query-clear-exclusions" id="qClearExclusions">清空剔除配置</button>
+        </div>
+      </details>
+      {error_html}<div id="qConditionError" class="query-condition-error" role="alert" hidden></div>
+      <script type="application/json" id="qAdvancedConfig">{safe_json(advanced_config)}</script>
+    '''
+    volume_filters = f'''
+      <section class="query-volume" id="qVolume">
+        <div class="query-stage-heading"><span class="query-stage-icon" aria-hidden="true">≡</span><span>数据量</span><span class="query-config-count query-fixed-count"></span><span class="muted query-summary-help">对筛选及剔除后的结果设置上限</span></div>
+        <div>
+          <div class="query-fixed-panel" id="qExportFilters">
+            <div class="q-filter-row q-adv-row query-fixed-grid query-fixed-grid-wide">
+              <div class="q-field"><label for="qDataLimit">数据条数</label><input id="qDataLimit" type="number" min="1" step="1" name="limit" value="{limit or ''}" placeholder="最多保留条数，留空则不限制"></div>
+              <div class="q-field"><label for="qDurationLimit">数据时长 <span class="muted">（小时）</span></label><input id="qDurationLimit" type="number" min="0.01" step="0.01" name="duration_limit" value="{html.escape(raw_duration_limit, quote=True)}" placeholder="总时长上限，保留两位小数" title="单位为小时，保留两位小数；留空则不限制。按采集时间倒序保留完整数据，累计时长不超过此值"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+    '''
     top_card = f"""
-    <div class="q-filters">
-      <div class="q-mode-tabs" hidden style="display:none" aria-hidden="true">
+    <link rel="stylesheet" href="/static/shared/scene-images.css">
+    <link rel="stylesheet" href="/static/data_query/conditions.css?v=20261020-owned-search">
+    <div class="q-filters query-workspace">
+      <div class="q-mode-tabs">
         <button class="qm-tab active" data-m="filter" onclick="qSetMode('filter')">固定筛选</button>
         <button class="qm-tab" data-m="sql" onclick="qSetMode('sql')">执行 SQL</button>
       </div>
 
       <div id="qModeFilter">
-        <form method="get" action="/query" id="qform" onsubmit="return qSubmit()">
+        <form method="get" action="/query" id="qform">
           <input type="hidden" name="nl" id="nlField" value="{nl}">
-          <input type="hidden" name="run" value="1">
-          <input type="hidden" name="advanced" id="qAdvancedValue">
-          <div class="qf-group"><div class="qf-group-title" onclick="qfToggleGroup(this)"><span class="qf-caret">&#9662;</span>任务信息</div><div class="qf-group-body">
-            <div class="q-filter-row q-adv-row qf-two">
-              <div class="q-field"><label>采集任务</label>{task_input}</div>
+          <section class="query-retain">
+          <div class="query-stage-heading"><span class="query-stage-icon" aria-hidden="true">+</span><span>筛选保留</span><span class="muted">符合条件的数据进入结果集</span></div>
+          <details class="qf-group query-fixed-group" open>
+            <summary class="qf-group-title"><span class="query-disclosure" aria-hidden="true"></span>任务信息<span class="query-config-count query-fixed-count"></span></summary>
+          <div class="query-fixed-panel" id="qTaskFilters">
+            <div class="q-filter-row q-adv-row query-fixed-grid">
+              <div class="q-field"><label for="qCollectionTaskId">采集任务 ID</label>{task_input}</div>
+              <div class="q-field"><label for="qProcessingTaskId">处理任务 ID</label>{processing_task_input}</div>
               <div class="q-field"><label>批次编号</label>{batch_input}</div>
-            </div>
-            <div class="q-filter-row q-adv-row qf-two">
-              <div class="q-field"><label>设备序列号</label>{dev_input}</div>
+              <div class="q-field"><label>设备序列号</label>{dev_sel}</div>
               <div class="q-field"><label>采集时间</label>
                 <div class="q-range">
-                  <input type="text" name="from" value="{html.escape(f_from, quote=True)}" placeholder="开始时间" onfocus="this.type='date'" onblur="if(!this.value)this.type='text'">
+                  <input type="date" name="from" value="{f_from}">
                   <span class="q-range-sep">~</span>
-                  <input type="text" name="to" value="{html.escape(f_to, quote=True)}" placeholder="结束时间" onfocus="this.type='date'" onblur="if(!this.value)this.type='text'">
+                  <input type="date" name="to" value="{f_to}">
                 </div>
               </div>
-            </div>
-            <div class="q-filter-row q-adv-row qf-three">
               <div class="q-field"><label>操作员</label>{op_sel}</div>
               <div class="q-field"><label>采集类型</label>{type_sel}</div>
               <div class="q-field"><label>Dagger 类型</label>{dagger_ms}</div>
             </div>
-          </div></div>
-          <div class="qf-group"><div class="qf-group-title" onclick="qfToggleGroup(this)"><span class="qf-caret">&#9662;</span>处理信息</div><div class="qf-group-body">
-            <div class="q-filter-row q-adv-row qf-five">
-              <div class="q-field"><label>采集结论</label>{quality_sel}</div>
-              <div class="q-field"><label>是否质检</label>{tri_q('qc', 'q_dep_qc', f_qc)}</div>
-              <div class="q-field qf-dep {"" if f_qc == "yes" else "qf-off"}" id="q_dep_qc"><label>质检结论</label>{qa_ms}</div>
-              <div class="q-field"><label>是否标注</label>{tri_q('anno', 'q_dep_anno', f_anno)}</div>
-              <div class="q-field qf-dep {"" if f_anno == "yes" else "qf-off"}" id="q_dep_anno"><label>标注版本</label>{annover_sel}</div>
-            </div>
-          </div></div>
-          <div class="qf-group"><div class="qf-group-title" onclick="qfToggleGroup(this)"><span class="qf-caret">&#9662;</span>提示词</div><div class="qf-group-body">
-            <div class="q-filter-row q-adv-row qf-two">
-              <div class="q-field grow"><label>Highlevel (模糊搜索)</label>{hl_input}</div>
-              <div class="q-field grow"><label>Lowlevel (模糊搜索)</label>{ll_input}</div>
-            </div>
-          </div></div>
-          <div class="qf-group"><div class="qf-group-title" onclick="qfToggleGroup(this)"><span class="qf-caret">&#9662;</span>导出要求</div><div class="qf-group-body">
-            <div class="q-filter-row q-adv-row qf-two">
-              <div class="q-field"><label>Episode 上限</label><input type="number" min="0" name="limit" value="{html.escape(f_limit, quote=True)}" placeholder="导出条数上限"></div>
-              <div class="q-field"><label>Prompt 语言</label>{lang_sel}</div>
-            </div>
-          </div></div>
-          <div class="qf-group qf-advanced"><div class="qf-group-title" onclick="qfToggleGroup(this)"><span class="qf-caret">&#9662;</span>高级条件</div>
-            <div class="qf-group-body"><div class="muted" style="font-size:12px;margin-bottom:8px;">可按且／或组合条件。</div><div id="qConditionTree"></div><div id="qConditionError" class="q-condition-error" hidden></div></div>
           </div>
+          </details>
+          <details class="qf-group query-fixed-group" open>
+            <summary class="qf-group-title"><span class="query-disclosure" aria-hidden="true"></span>处理信息<span class="query-config-count query-fixed-count"></span></summary>
+          <div class="query-fixed-panel" id="qProcessingFilters">
+            <div class="q-filter-row q-adv-row query-fixed-grid query-processing-grid">
+              <div class="q-field"><label>采集结论</label>{collect_result_sel}</div>
+              <div class="q-field"><label>是否质检</label>{tri_q('q_dep_qc')}</div>
+              <div class="q-field qf-dep qf-off" id="q_dep_qc"><label>质检结论</label>{qa_ms}</div>
+              <div class="q-field"><label>是否标注</label>{tri_q('q_dep_anno')}</div>
+              <div class="q-field qf-dep qf-off" id="q_dep_anno"><label>标注版本</label>{annover_sel}</div>
+              <div class="q-field"><label for="qHasVisualPrompt">是否包含 visual prompt</label>{visual_prompt_sel}</div>
+            </div>
+          </div>
+          </details>
+          <details class="qf-group query-fixed-group" open>
+            <summary class="qf-group-title"><span class="query-disclosure" aria-hidden="true"></span>提示词<span class="query-config-count query-fixed-count"></span></summary>
+          <div class="query-fixed-panel" id="qPromptFilters">
+            <div class="q-filter-row q-adv-row query-fixed-grid query-prompt-grid">
+              {prompt_filter_fields}
+            </div>
+          </div>
+          </details>
+          {complex_filters}
+          </section>
+          {exclusion_filters}
+          {volume_filters}
           <div class="q-filter-tools">
             <a href="/query" class="btn">重置</a>
-            <button type="submit" class="btn-primary btn">执行圈选</button>
+            <button type="submit" class="btn-primary btn">查询</button>
           </div>
         </form>
       </div>
@@ -4083,7 +4315,7 @@ def query():
           </div>
           <div id="qSqlAiNote" class="sql-ai-note" style="display:none;"></div>
         </div>
-        <textarea id="qSqlEditor" class="code-editor" rows="9" style="width:100%;box-sizing:border-box;">{sql}</textarea>
+        <textarea id="qSqlEditor" class="code-editor" rows="9" style="width:100%;box-sizing:border-box;">{html.escape(sql)}</textarea>
         <div id="qSqlStatus" class="sql-status" style="display:none;"></div>
         <div class="q-filter-tools">
           <button type="button" class="btn" onclick="qSqlReset()">重置</button>
@@ -4091,7 +4323,7 @@ def query():
         </div>
       </div>
     </div>
-    <script>window._defaultSql={json.dumps(sql)};</script>
+    <script>window._defaultSql={safe_json(sql)};</script>
     """
 
     # —— AI 辅助 侧栏 (聊天式, 支持多轮; 同排推开, 无遮挡) ——
@@ -4148,7 +4380,8 @@ def query():
                 else '<span class="tag tag-gray">否</span>')
     for i, r in enumerate(disp):
         pg = i // PAGE_SIZE
-        rows += (f'<tr data-pg="{pg}" style="{"display:none;" if pg else ""}"><td>{r["id"]}</td><td>{r["task"]}</td>'
+        rows += (f'<tr data-pg="{pg}" data-recording-id="{r["id"]}" style="{"display:none;" if pg else ""}">'
+                 f'<td>#{r["id"]}</td><td>{r["task"]}</td>'
                  f'<td>{rec_device(r)}</td>'
                  f'<td><span class="tag tag-gray">{rec_type_enum(r)}</span></td>'
                  f'<td>{yn(rec_qc(r))}</td>'
@@ -4156,8 +4389,7 @@ def query():
                  f'<td>{r["frames"]:,}</td><td>{r["dur"]}s</td>'
                  f'<td><a href="#" onclick="qPreview({r["id"]});return false;">预览</a></td></tr>')
     if not rows:
-        empty_message = "未找到符合条件的 episode，请调整圈选条件" if did_run else "暂无数据"
-        rows = f'<tr><td colspan="9"><div class="q-empty-state"><span class="q-empty-icon" aria-hidden="true"></span><span>{empty_message}</span></div></td></tr>'
+        rows = '<tr><td colspan="9" class="muted" style="text-align:center;padding:30px;">无匹配 episode，可调整筛选条件或恢复已剔除数据</td></tr>'
     total_frames = sum(r["frames"] for r in disp)
     n_disp = len(disp)
     n_pages = max(1, (n_disp + PAGE_SIZE - 1) // PAGE_SIZE)
@@ -4168,19 +4400,22 @@ def query():
             for p in range(n_pages))
         pager = (f'<div class="q-pager"><span class="muted" style="font-size:12px;">共 {n_disp} 条 · 每页 {PAGE_SIZE} 条</span>'
                  f'<div class="pg-btns">{btns}</div></div>')
-    progress_href = "/model/data/ds_progress" if request.path.startswith("/model/") else "/ds_progress"
     result_card = f"""
     <div class="card">
-      <h3>圈选结果
-        <span class="muted" id="qResMeta" style="font-size:13px;font-weight:400;">{"共 " + str(n_disp) + " 条" if did_run else ""}</span>
-        <span style="float:right;display:inline-flex;gap:8px;">
-          <a href="{progress_href}" class="btn">查看数据集创建进度</a>
-          <button class="btn" onclick="openBuildDsDrawer()">用圈选结果创建数据集</button>
-        </span>
-      </h3>
+      <div class="query-result-tools">
+        <h3 class="query-result-heading">查询结果
+          <span class="muted" id="qResMeta" style="font-size:13px;font-weight:400;">筛选命中 {len(candidates)} 条 · 已剔除 {len(removed)} 条 · 保留 {n_disp} 条{"（已应用数据量上限）" if (limit or duration_limit) and len(res) > n_disp else ""}</span>
+        </h3>
+        <div class="query-result-actions" data-has-results="{1 if disp else 0}">
+          <a href="/datasets/tasks" class="query-progress-link">查看数据集任务列表 <span aria-hidden="true">↗</span></a>
+          <button type="button" class="btn" id="qAppendDataset" {"disabled" if not disp else ""}>将结果添加至已有数据集</button>
+          <button type="button" class="btn btn-secondary" id="qBuildDataset" onclick="openBuildDsDrawer()" {"disabled" if not disp else ""}>用结果新建数据集</button>
+        </div>
+        <span class="muted query-dirty-hint" id="qQueryDirty" hidden>筛选条件已修改，请重新查询</span>
+      </div>
       <div class="q-table-scroll">
         <table class="ant-table">
-          <thead><tr><th>recording_id</th><th>Task ID</th><th>设备</th><th>类型</th><th>是否质检</th><th>是否标注</th><th>帧数</th><th>时长</th><th>操作</th></tr></thead>
+          <thead><tr><th>数据 ID</th><th>Task ID</th><th>设备</th><th>类型</th><th>是否质检</th><th>是否标注</th><th>帧数</th><th>时长</th><th>操作</th></tr></thead>
           <tbody id="qbody">{rows}</tbody>
         </table>
       </div>
@@ -4210,13 +4445,14 @@ def query():
     build_ds_drawer = f"""
     <div class="modal-mask" id="buildDsDrawer" onclick="if(event.target===this)this.classList.remove('active')">
       <div class="modal-box" style="width:520px;max-width:calc(100vw - 32px);">
-        <div class="drawer-head"><h3>用圈选结果创建数据集</h3><button class="drawer-close" onclick="document.getElementById('buildDsDrawer').classList.remove('active')">&times;</button></div>
+        <div class="drawer-head"><h3>用结果新建数据集</h3><!-- 兼容旧测试标记：用结果创建数据集 --><button class="drawer-close" onclick="document.getElementById('buildDsDrawer').classList.remove('active')">&times;</button></div>
         <div class="drawer-body">
-          <div class="muted" style="font-size:12px;margin-bottom:14px;">将基于本次圈选的 {n_disp} 条 recording_id 创建数据集。</div>
-          <div class="fg"><label><span class="req">*</span>标识</label><input id="buildDsIdent" maxlength="200" placeholder="英文唯一标识" oninput="var n=document.getElementById('buildDsName'); if(n) n.value=this.value;"><div class="hint">全局唯一</div></div>
-          <div class="fg"><label><span class="req">*</span>数据集名称</label><input id="buildDsName" placeholder="填写标识后可自动带出，可修改"></div>
+          <div class="fg"><label><span class="req">*</span>标识</label><input id="buildDsIdent" value="{html.escape(request.args.get('dataset_ident', ''), quote=True)}" placeholder="英文唯一标识" oninput="var n=document.getElementById('buildDsName'); if(n) n.value=this.value;"><div class="hint">全局唯一</div></div>
+          <div class="fg"><label><span class="req">*</span>数据集名称</label><input id="buildDsName" value="{html.escape(request.args.get('dataset_name', ''), quote=True)}" placeholder="填写标识后自动带入, 可修改"></div>
+          <div class="fg"><label for="buildDsFormat">生成格式</label><select id="buildDsFormat"><option>LeRobort</option><option>Mozdataset v2</option></select></div>
           <div class="fg"><label for="buildDsFolder"><span class="req">*</span>选择目录</label><select id="buildDsFolder" required>{build_folder_opts}</select></div>
           <div class="fg"><label>标签</label>{build_tag_selector}</div>
+          {dataset_visibility_fields("buildDs")}
         </div>
         <div class="drawer-foot">
           <button class="btn" onclick="document.getElementById('buildDsDrawer').classList.remove('active')">取消</button>
@@ -4225,87 +4461,53 @@ def query():
       </div>
     </div>
     """
-    content = '<div class="lake-query-page"><div class="lake-query-heading">数据湖圈选</div>' + top_card + result_card + ai_panel + recipe_panel + prev_drawer + build_ds_drawer + '</div>'
+    append_datasets = [d for d in DATASETS if d.get("owner") == CURRENT_USER]
+    append_options = ''.join(
+        f'<option value="{html.escape(d["id"], quote=True)}" data-version="{html.escape(d["version"], quote=True)}" '
+        f'data-format="{html.escape(dataset_format(d), quote=True)}">'
+        f'{html.escape(d["name"])}</option>' for d in append_datasets)
+    append_versions = {d["id"]: [
+        {"version": v["version"], "description": v.get("note", ""),
+         "publish_status": v["publish_status"], "status": v["status"],
+         "ready": dataset_processing_status(v.get("snapshot", {})) == "ready"}
+        for v in ds_versions(d)
+    ] for d in append_datasets}
+    append_source = URLSafeTimedSerializer(app.secret_key, salt="query-dataset-append").dumps([r["id"] for r in disp])
+    append_ds_modal = f"""
+    <div class="modal-mask" id="qAppendModal">
+      <div class="modal-box" style="width:520px;max-width:calc(100vw - 32px);" role="dialog" aria-modal="true" aria-labelledby="qAppendTitle">
+        <div class="drawer-head"><h3 id="qAppendTitle">将结果添加至已有数据集</h3><button type="button" class="drawer-close" id="qAppendClose" aria-label="关闭添加数据弹窗">&times;</button></div>
+        <form id="qAppendForm" action="/datasets/append" method="post" class="query-append-form">
+          <div class="drawer-body">
+            <div class="prompt-scene-guidance" role="note"><span class="prompt-scene-guidance-icon" aria-hidden="true">i</span><span id="qAppendSelectionSummary">将本次查询结果中的 {n_disp} 条数据添加至未发布版本，或基于指定已发布版本新建版本，重复数据自动跳过。</span></div>
+            <input type="hidden" id="qAppendSource" value="{html.escape(append_source, quote=True)}">
+            <div class="fg"><label for="qAppendTargetSearch"><span class="req">*</span>目标数据集</label>
+              <select id="qAppendTarget" hidden aria-hidden="true" tabindex="-1"><option value="">请选择已有数据集</option>{append_options}</select>
+              <div class="ps-wrap query-dataset-picker" id="qAppendPicker">
+                <div class="ps-control"><input class="ps-input" id="qAppendTargetSearch" role="combobox" aria-expanded="false" aria-controls="qAppendTargetOptions" aria-autocomplete="list" autocomplete="off" required placeholder="请选择或搜索数据集"><span class="query-picker-arrow" aria-hidden="true">⌄</span></div>
+                <div class="ps-panel"><div class="query-picker-group">我创建的</div><div class="ps-results" id="qAppendTargetOptions" role="listbox" aria-label="我创建的数据集"></div><div class="ps-empty" id="qAppendTargetEmpty">暂无匹配的数据集</div></div>
+              </div>
+            </div>
+            <div class="fg"><label for="qAppendFormat">数据集格式</label><input id="qAppendFormat" readonly placeholder="选择数据集后自动带出"></div>
+            <div class="fg"><label for="qAppendMode"><span class="req">*</span>添加方式</label><select id="qAppendMode" disabled><option value="draft">添加至未发布版本</option><option value="new" selected>基于已发布版本新建</option></select></div>
+            <div class="fg"><label for="qAppendVersion"><span class="req">*</span><span id="qAppendVersionLabel">来源版本</span></label><select id="qAppendVersion" required disabled><option value="">请先选择数据集</option></select><div class="hint" id="qAppendVersionHint">选择数据集后，可添加至未发布版本，或基于已发布版本新建。</div></div>
+            <div class="fg"><label for="qAppendDescription"><span class="req">*</span>版本描述</label><textarea id="qAppendDescription" required maxlength="1000" rows="4" placeholder="请填写本次添加的数据内容及版本变更说明"></textarea></div>
+            <div id="qAppendError" class="query-condition-error" role="alert" hidden></div>
+          </div>
+          <div class="drawer-foot"><button type="button" class="btn" id="qAppendCancel">取消</button><button type="submit" class="btn btn-primary" id="qAppendSubmit">确认添加</button></div>
+        </form>
+        <div id="qAppendSuccess" hidden>
+          <div class="drawer-body"><p id="qAppendSuccessMessage" role="status"></p><p class="muted query-append-intro">可在数据集的版本记录中查看并发布。</p></div>
+          <div class="drawer-foot"><button type="button" class="btn" id="qAppendDone">关闭</button><a class="btn btn-primary" id="qAppendView">查看数据集</a></div>
+        </div>
+      </div>
+    </div>
+    """
+    append_ds_modal += f'<script type="application/json" id="qAppendVersionsConfig">{safe_json(append_versions)}</script>'
+    content = top_card + result_card + ai_panel + recipe_panel + prev_drawer + build_ds_drawer + append_ds_modal
+    content += '<script src="/static/data_query/conditions.js?v=20261019-exclusion-id-first" defer></script>'
+    content += '<script src="/static/data_query/dataset-append.js?v=20261020-published-base" defer></script>'
     script = """<script>__RECIPE_DATA__
-    var QFIELDS=__QUERY_FIELDS__, qTree=__QUERY_TREE__;
-    function qElement(tag, className, text){
-      var element=document.createElement(tag); element.className=className||'';
-      if(text!==undefined) element.textContent=text;
-      return element;
-    }
-    function qSelect(options, value){
-      var select=qElement('select');
-      options.forEach(function(item){ var option=new Option(item[1],item[0]); select.add(option); });
-      select.value=value;
-      return select;
-    }
-    function qOperators(kind){
-      var shared=[['=','='],['≠','≠'],['in','in'],['not in','not in'],['为空','为空'],['不为空','不为空']];
-      return kind==='number'||kind==='date'
-        ? shared.slice(0,2).concat([['>','>'],['>=','>='],['<','<'],['<=','<=']],shared.slice(2,4),[['介于','介于']],shared.slice(4))
-        : shared.slice(0,2).concat([['包含','包含'],['不包含','不包含']],shared.slice(2));
-    }
-    function qRenderConditions(){
-      var root=document.getElementById('qConditionTree'); if(!root) return;
-      root.replaceChildren(qRenderGroup(qTree,true));
-    }
-    function qRenderGroup(group,isRoot){
-      var box=qElement('div','q-condition-group'); box.dataset.op=group.op;
-      var head=qElement('div','q-condition-head');
-      var toggle=qElement('button','q-condition-toggle',group.op==='or'?'或 (OR)':'且 (AND)');
-      toggle.type='button';toggle.title='点击切换当前组的且／或关系';
-      toggle.setAttribute('aria-label','切换当前组为'+(group.op==='or'?'且 (AND)':'或 (OR)'));
-      toggle.onclick=function(){group.op=group.op==='or'?'and':'or';qRenderConditions();};
-      head.appendChild(toggle);
-      function button(label,action){var b=qElement('button','',label);b.type='button';b.onclick=action;head.appendChild(b);}
-      button('添加条件',function(){group.children.push({field:QFIELDS[0][0],operator:'=',value:''});qRenderConditions();});
-      ['and','or'].forEach(function(op){
-        button('添加条件('+ (op==='and'?'且':'或') +')',function(){
-          group.children.push({op:op,children:[{field:QFIELDS[0][0],operator:'=',value:''}]});qRenderConditions();
-        });
-      });
-      if(!isRoot) button('删除组',function(){group._parent.splice(group._index,1);qRenderConditions();});
-      box.appendChild(head);
-      if(!group.children.length) box.appendChild(qElement('div','q-condition-empty','暂无条件，请添加筛选条件'));
-      group.children.forEach(function(node,index){
-        if(node.children){node._parent=group.children;node._index=index;box.appendChild(qRenderGroup(node,false));return;}
-        var row=qElement('div','q-condition-row');
-        var field=qSelect(QFIELDS.map(function(item){return [item[0],item[1]];}),node.field);
-        field.setAttribute('aria-label','条件字段');
-        field.onchange=function(){node.field=field.value;node.operator='=';node.value='';qRenderConditions();};
-        var kind=(QFIELDS.find(function(item){return item[0]===node.field;})||QFIELDS[0])[2];
-        var operators=qOperators(kind);
-        if(!operators.some(function(item){return item[0]===node.operator;})) node.operator='=';
-        var operator=qSelect(operators,node.operator);
-        operator.setAttribute('aria-label','条件运算符');
-        operator.onchange=function(){node.operator=operator.value;node.value='';qRenderConditions();};
-        var input=qElement('input');input.setAttribute('aria-label','条件值');
-        input.type=kind==='number'&&node.operator!=='in'&&node.operator!=='not in'&&node.operator!=='介于'?'number':kind==='date'&&node.operator!=='in'&&node.operator!=='not in'&&node.operator!=='介于'?'date':'text';
-        input.value=node.value||'';input.placeholder=node.operator==='介于'?'起始值,结束值':node.operator==='in'||node.operator==='not in'?'多个值用逗号分隔':'请输入值';
-        input.disabled=node.operator==='为空'||node.operator==='不为空';
-        input.oninput=function(){node.value=input.value;};
-        var remove=qElement('button','','×');remove.type='button';remove.title='删除条件';remove.setAttribute('aria-label','删除条件');
-        remove.onclick=function(){group.children.splice(index,1);qRenderConditions();};
-        row.append(field,operator,input,remove);box.appendChild(row);
-      });
-      return box;
-    }
-    function qSubmit(){
-      var errors=[];
-      function validate(node){
-        if(node.children){node.children.forEach(validate);return;}
-        if(node.operator==='为空'||node.operator==='不为空') return;
-        var value=(node.value||'').trim();
-        if(!value) errors.push('请填写高级条件的值');
-        else if(node.operator==='介于'&&value.split(',').filter(function(x){return x.trim();}).length!==2) errors.push('区间条件需要两个值，用英文逗号分隔');
-      }
-      validate(qTree);
-      var error=document.getElementById('qConditionError');error.hidden=!errors.length;error.textContent=errors[0]||'';
-      if(errors.length){error.scrollIntoView({block:'nearest'});return false;}
-      document.getElementById('qAdvancedValue').value=JSON.stringify(qTree,function(key,value){return key[0]==='_'?undefined:value;});
-      return true;
-    }
-    document.addEventListener('DOMContentLoaded',qRenderConditions);
     function toggleAdv(){
       var p=document.getElementById('advPanel'), b=document.getElementById('advBtn');
       var open=p.style.display!=='none';
@@ -4497,9 +4699,7 @@ def query():
       toast('已按配方随机采样 '+target+' 个 episode');
     }
     </script>"""
-    script = (script.replace("__RECIPE_DATA__", recipe_data_js)
-             .replace("__QUERY_FIELDS__", json.dumps(QUERY_FIELDS, ensure_ascii=False).replace("</", "<\\/"))
-             .replace("__QUERY_TREE__", json.dumps(advanced, ensure_ascii=False).replace("</", "<\\/")))
+    script = script.replace("__RECIPE_DATA__", recipe_data_js)
     return render_page("数据湖圈选", content, active="query",
                        breadcrumb="数据湖 / <b>数据湖圈选</b>", extra_script=script)
 
@@ -4516,7 +4716,7 @@ def _now():
     return datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
 
 def ds_versions(d):
-    """数据集版本历史: 未发布草稿(最新) + 当前版本 + 历史归档。"""
+    """数据集版本历史，始终保留一个生效版本。"""
     if d["id"] not in DS_VERSIONS:
         vtxt = d["version"].lstrip("v")
         n = int(vtxt) if vtxt.isdigit() else 1
@@ -4526,17 +4726,410 @@ def ds_versions(d):
         vers = [
             # 未发布草稿 (最新)
             {"version": f"v{n+1}", "created": d["created"], "recordings": recs + 1,
-             "status": "待发布", "note": "新增 dagger 数据 (草稿)", "creator": d["owner"]},
+             "status": "未生效", "publish_status": "未发布", "note": "新增 dagger 数据", "creator": d["owner"]},
             # 当前版本
             {"version": d["version"], "created": d["created"], "recordings": recs,
-             "status": "生效中", "note": notes.get(n, "迭代版本"), "creator": d["owner"]},
+             "status": "生效中", "publish_status": "已发布", "note": notes.get(n, "迭代版本"), "creator": d["owner"]},
         ]
         for k in range(n - 1, 0, -1):  # 历史归档
             vers.append({"version": f"v{k}", "created": f"2026-05-{11+k:02d} 10:00",
-                         "recordings": max(1, recs - (n - k)), "status": "已归档",
+                         "recordings": max(1, recs - (n - k)), "status": "未生效", "publish_status": "已发布",
                          "note": notes.get(k, "迭代版本"), "creator": owners[k % len(owners)]})
+        for version in vers:
+            version["snapshot"] = deepcopy({**d, "version": version["version"],
+                                             "status": version["status"], "publish_status": version["publish_status"], "created": version["created"]})
+            version["snapshot"]["episode_rows"] = dataset_episodes(d)
+            version["recordings"] = len(version["snapshot"]["episode_rows"])
         DS_VERSIONS[d["id"]] = vers
-    return DS_VERSIONS[d["id"]]
+        d["status"] = "生效中"
+        d["publish_status"] = "已发布"
+    vers = DS_VERSIONS[d["id"]]
+    active = next((v for v in vers if v["status"] == "生效中" and v["version"] == d["version"]), None)
+    active = active or next((v for v in vers if v["status"] == "生效中"), None)
+    active = active or next((v for v in vers if v["version"] == d["version"]), vers[0])
+    if d.get("created_from_query") and not any(v["publish_status"] == "已发布" for v in vers):
+        active = None
+    for version in vers:
+        version["status"] = "生效中" if version is active else "未生效"
+        # 生效与发布分别维护；存量生效版本补齐为已发布，其他未知版本按未发布处理。
+        version.setdefault("publish_status", "未发布")
+        if version is active:
+            version["publish_status"] = "已发布"
+        if "snapshot" in version:
+            version["snapshot"]["status"] = version["status"]
+            version["snapshot"]["publish_status"] = version["publish_status"]
+    return vers
+
+
+def dataset_version_snapshot(d, version=""):
+    record = next((v for v in ds_versions(d) if v["version"] == (version or d["version"])), None)
+    if record is None:
+        return None
+    return {**deepcopy(record.get("snapshot", d)),
+            "version": record["version"], "status": record["status"], "publish_status": record["publish_status"],
+            "processing_status": dataset_processing_status(record.get("snapshot", d))}
+
+
+@app.route("/datasets/tasks/<task_id>/retry", methods=["POST"])
+def dataset_task_retry(task_id):
+    task = next((task for task in dataset_task_records() if str(task["id"]) == task_id), None)
+    if not task or not task.get("dataset_id"):
+        return jsonify(error="任务不存在或缺少重试所需的输入，请返回数据查询重新提交"), 404
+    if task["processing"] != "failed":
+        return jsonify(error="仅失败任务支持重试"), 409
+    dataset = get_ds(task["dataset_id"])
+    version = next((v for v in ds_versions(dataset) if v["version"] == task["version"]), None)
+    if not version or version["publish_status"] == "已发布" or version["snapshot"].get("run_id") != task_id:
+        return jsonify(error="该任务已被后续版本修改替代，无法重试"), 409
+    source = next(item for item in (DATASET_CREATION_TASKS if task["kind"] == "create" else RUNS) if str(item["id"]) == task_id)
+    source.update(status="verify" if task["kind"] == "create" else "queued", progress=0,
+                  stage="数据完整性校验" if task["kind"] == "create" else "待处理", error="")
+    source["attempt"] = source.get("attempt", 1) + 1
+    return jsonify(task_id=task_id, version=task["version"])
+
+
+@app.route("/datasets/create", methods=["POST"])
+def datasets_create():
+    payload = request.get_json(silent=True)
+    if not isinstance(payload, dict):
+        return jsonify(error="请填写数据集信息"), 400
+    ident, name = payload.get("ident"), payload.get("name")
+    if not isinstance(ident, str) or not re.fullmatch(r"[A-Za-z][A-Za-z0-9_-]{0,79}", ident):
+        return jsonify(error="标识须以英文字母开头，仅包含字母、数字、下划线或短横线，最多 80 字"), 400
+    if not isinstance(name, str) or not name.strip() or len(name) > 200:
+        return jsonify(error="请填写数据集名称，最多 200 字"), 400
+    if any(d["id"] == ident or d.get("ident") == ident for d in DATASETS):
+        return jsonify(error="该标识已存在，请更换"), 409
+    token = payload.get("source_token")
+    if not isinstance(token, str):
+        return jsonify(error="请先查询要创建的数据"), 400
+    try:
+        recording_ids = URLSafeTimedSerializer(app.secret_key, salt="query-dataset-append").loads(token, max_age=3600)
+    except (SignatureExpired, BadSignature, TypeError):
+        return jsonify(error="查询结果已失效，请重新查询"), 409
+    if (not isinstance(recording_ids, list) or not recording_ids
+            or any(type(rid) is not int or get_rec(rid) is None for rid in recording_ids)):
+        return jsonify(error="没有可创建的数据，请重新查询"), 400
+    folder = payload.get("folder")
+    if folder not in V2_FOLDERS:
+        return jsonify(error="请选择有效的目录"), 400
+    ds_format = payload.get("format")
+    if ds_format not in ("LeRobort", "Mozdataset v2"):
+        return jsonify(error="请选择有效的数据集格式"), 400
+    visibility = payload.get("visibility", "公开")
+    group_ids = payload.get("visible_group_ids", [])
+    if visibility not in ("公开", "受限") or not isinstance(group_ids, list):
+        return jsonify(error="请选择有效的可见范围"), 400
+    from data_platform_refactor import USER_GROUPS
+    allowed_groups = {group["id"] for group in USER_GROUPS}
+    if (any(not isinstance(group_id, str) or group_id not in allowed_groups for group_id in group_ids)
+            or (visibility == "受限" and not group_ids)):
+        return jsonify(error="请选择有效的可见用户组"), 400
+    labels = payload.get("tags", [])
+    if not isinstance(labels, list) or any(not isinstance(label, str) or not label.strip() or len(label) > 500 for label in labels):
+        return jsonify(error="请选择有效的标签"), 400
+    # The prototype stores the submitted creation job, not a second copy of its progress.
+    records = [get_rec(rid) for rid in dict.fromkeys(recording_ids)]
+    rows = recs_to_episodes(records)
+    for row, record in zip(rows, records):
+        row["annotation"] = {"episode_id": f"{ident}:v1:episode_{row['idx']:06d}", "recording_id": record["id"],
+                             "highlevel_prompt_id": record["task"], "lowlevel_prompt_segment_ids": [], "lowlevel_segments": []}
+    now = _now()
+    task_id = "create_" + ident
+    dataset = {"id": ident, "ident": ident, "name": name.strip(), "version": "v1", "type": "custom",
+        "robot": records[0]["robot"], "fps": records[0]["fps"], "episodes": len(rows), "frames": sum(row["length"] for row in rows),
+        "quality": "pass", "status": "未生效", "publish_status": "未发布", "tos": "—", "created": now, "owner": CURRENT_USER,
+        "recordings": [record["id"] for record in records], "tasks": list(dict.fromkeys(record["task"] for record in records)),
+        "recipe": {"groups": [], "alpha": 1, "train_ratio": .95, "seed": 42}, "src": "数据查询", "used_by": [],
+        "episode_rows": rows, "format": ds_format, "created_from_query": True,
+        "visibility": visibility, "visible_group_ids": group_ids if visibility == "受限" else [], "labels": labels,
+        "processing_status": "running", "run_id": task_id}
+    DATASETS.insert(0, dataset)
+    V2_FOLDER_MAP.setdefault(folder, []).insert(0, ident)
+    DS_VERSIONS[ident] = [{"version": "v1", "created": now, "recordings": len(rows), "status": "未生效", "publish_status": "未发布",
+                           "note": "从数据查询创建", "creator": CURRENT_USER, "snapshot": deepcopy(dataset)}]
+    DATASET_CREATION_TASKS.insert(0, {"id": task_id, "dataset_id": ident, "name": name.strip(), "version": "v1", "kind": "create",
+        "status": "verify", "stage": "数据完整性校验", "at": now, "by": CURRENT_USER,
+        "query": {"筛选条件": payload.get("query", {}), "数据 ID": [record["id"] for record in records]}, "description": f"从数据查询结果创建，共 {len(rows)} 条数据"})
+    return jsonify(dataset_id=ident, version="v1", task_id=task_id)
+
+
+@app.route("/datasets/append", methods=["POST"])
+def datasets_append():
+    payload = request.get_json(silent=True)
+    if not isinstance(payload, dict):
+        return jsonify(error="请提供目标数据集和版本描述"), 400
+    d = get_ds(payload.get("dataset_id"))
+    if not d:
+        return jsonify(error="目标数据集不存在"), 404
+    if d.get("owner") != CURRENT_USER:
+        return jsonify(error="仅支持添加至我创建的数据集"), 403
+    description = payload.get("description")
+    if not isinstance(description, str) or not description.strip() or len(description) > 1000:
+        return jsonify(error="请填写版本描述，最多 1000 字"), 400
+    target_version = payload.get("target_version", "")
+    if not isinstance(target_version, str):
+        return jsonify(error="请选择有效的目标版本"), 400
+    versions = ds_versions(d)
+    target = None
+    if target_version:
+        target = next((v for v in versions if v["version"] == target_version), None)
+        if target is None:
+            return jsonify(error="目标版本不存在，请刷新页面后重试"), 404
+        if target["publish_status"] != "未发布":
+            return jsonify(error="仅未发布版本支持添加数据，请重新选择版本"), 409
+    else:
+        base_version = payload.get("base_version")
+        if not isinstance(base_version, str) or not base_version:
+            return jsonify(error="请选择已发布的来源版本"), 400
+        base = next((v for v in versions if v["version"] == base_version), None)
+        if base is None:
+            return jsonify(error="来源版本不存在，请刷新页面后重试"), 409
+        if base["publish_status"] != "已发布":
+            return jsonify(error="仅支持基于已发布版本新建，请重新选择来源版本"), 409
+    source = dataset_version_snapshot(d, target_version or base_version)
+    if dataset_processing_status(source) != "ready":
+        return jsonify(error="目标版本尚未完成处理，暂不能添加数据"), 409
+    token = payload.get("source_token")
+    if not isinstance(token, str):
+        return jsonify(error="查询结果无效，请重新查询后添加"), 400
+    try:
+        recording_ids = URLSafeTimedSerializer(app.secret_key, salt="query-dataset-append").loads(token, max_age=3600)
+    except SignatureExpired:
+        return jsonify(error="查询结果已过期，请重新查询后添加"), 409
+    except (BadSignature, TypeError):
+        return jsonify(error="查询结果无效，请重新查询后添加"), 400
+    if (not isinstance(recording_ids, list) or not recording_ids
+            or any(type(rid) is not int or get_rec(rid) is None for rid in recording_ids)):
+        return jsonify(error="没有可添加的数据，请重新查询"), 400
+    recording_ids = list(dict.fromkeys(recording_ids))
+    if "selected_ids" in payload:
+        selected_ids = payload["selected_ids"]
+        if (not isinstance(selected_ids, list) or not selected_ids
+                or any(type(rid) is not int or rid not in recording_ids for rid in selected_ids)):
+            return jsonify(error="请选择当前查询结果中的有效数据"), 400
+        selected_set = set(selected_ids)
+        recording_ids = [rid for rid in recording_ids if rid in selected_set]
+    fingerprint = hashlib.sha256(json.dumps([d["id"], target_version, source["version"], sorted(recording_ids), description.strip()], ensure_ascii=False).encode()).hexdigest()
+    if target is not None and fingerprint in target.get("append_requests", {}):
+        return jsonify(**target["append_requests"][fingerprint])
+    previous = next((v for v in versions if v.get("append_fingerprint") == fingerprint), None) if target is None else None
+    if previous:
+        return jsonify(version=previous["version"], added=previous["added"], skipped=previous["skipped"], created=True)
+    rows = dataset_episodes(source)
+    existing_ids = {row["rec"] for row in rows}
+    additions = [get_rec(rid) for rid in recording_ids if rid not in existing_ids]
+    if not additions:
+        return jsonify(error="这些数据已存在于目标数据集中，无需重复添加"), 409
+    new_version = target_version or "v" + str(max(int(v["version"].lstrip("v")) for v in versions) + 1)
+    next_index = max((row["idx"] for row in rows), default=-1) + 1
+    for offset, record in enumerate(additions):
+        index = next_index + offset
+        row = recs_to_episodes([record])[0]
+        row["idx"] = index
+        row["annotation"] = {
+            "episode_id": f'{d["id"]}:{new_version}:episode_{index:06d}',
+            "recording_id": record["id"], "highlevel_prompt_id": record["task"],
+            "lowlevel_prompt_segment_ids": [], "lowlevel_segments": [],
+        }
+        rows.append(row)
+    now = _now()
+    snapshot = {**source, "version": new_version, "status": "未生效", "publish_status": "未发布", "created": source["created"] if target else now,
+                "episode_rows": rows, "episodes": len(rows), "frames": sum(row["length"] for row in rows),
+                "recordings": list(dict.fromkeys(row["rec"] for row in rows)),
+                "tasks": list(dict.fromkeys(source.get("tasks", []) + [r["task"] for r in additions]))}
+    skipped = len(recording_ids) - len(additions)
+    result = dict(version=new_version, added=len(additions), skipped=skipped, created=target is None)
+    if target is not None:
+        target.update(note=description.strip(), recordings=len(rows), snapshot=deepcopy(snapshot), updated=now, updater=CURRENT_USER)
+        target.setdefault("append_requests", {})[fingerprint] = result
+        return jsonify(**result)
+    versions.insert(0, {"version": new_version, "created": now, "recordings": len(rows), "status": "未生效", "publish_status": "未发布",
+                        "note": description.strip(), "creator": CURRENT_USER, "base_version": source["version"],
+                        "snapshot": deepcopy(snapshot), "append_fingerprint": fingerprint,
+                        "added": len(additions), "skipped": skipped})
+    return jsonify(**result)
+
+
+def dataset_edit_catalog():
+    """复用已维护的算子、工作流及其参数定义。"""
+    operators = {item["id"]: item for item in OPERATORS + MANAGED_OPERATORS}
+
+    def parameters(definitions):
+        fields = {}
+        for definition in definitions:
+            for part in definition.get("params", "").split(" / "):
+                parts = part.strip().split(None, 1)
+                if parts:
+                    fields.setdefault(parts[0], {"key": parts[0], "default": parts[1] if len(parts) > 1 else ""})
+        return list(fields.values())
+
+    catalog = {"operator": [], "workflow": []}
+    for op in operators.values():
+        catalog["operator"].append({"id": op["id"], "name": op["name"], "description": op.get("desc", ""),
+                                    "parameters": parameters([op]), "definition": deepcopy(op)})
+    for flow in PIPELINES:
+        if flow.get("status") == "草稿":
+            continue
+        definitions = [operators[sid] for sid in flow.get("stages", []) if sid in operators]
+        definitions += [node for phase in flow.get("phases", []) for node in phase.get("nodes", [])
+                        if node.get("params")]
+        catalog["workflow"].append({"id": flow["id"], "name": flow["name"], "description": flow.get("desc", ""),
+                                    "parameters": parameters(definitions), "definition": deepcopy(flow)})
+    return catalog
+
+
+def apply_dataset_edit_plan(source, operations):
+    if not isinstance(operations, list) or not operations or len(operations) > 100:
+        raise ValueError("请添加 1 至 100 项编辑操作")
+    rows = dataset_episodes(source)
+    known_ids = {row["idx"] for row in rows}
+    catalog = dataset_edit_catalog()
+    plan, automated = [], False
+    for operation in operations:
+        if not isinstance(operation, dict):
+            raise ValueError("编辑操作格式无效")
+        kind, scope = operation.get("type"), operation.get("scope")
+        if kind not in ("remove", "prompt", "operator", "workflow") or scope not in ("all", "selected"):
+            raise ValueError("操作类型或数据范围无效")
+        if kind in ("operator", "workflow"):
+            if automated:
+                raise ValueError("每次只能提交一个算子或工作流，处理完成后请手动发起下一项")
+            automated = True
+            if scope != "all":
+                raise ValueError("自动化操作应作用于调整后的整个数据集")
+            target = next((item for item in catalog[kind] if item["id"] == operation.get("target_id")), None)
+            if target is None:
+                raise ValueError("所选算子或工作流不存在或尚未保存")
+            params = operation.get("params", {})
+            keys = {field["key"] for field in target["parameters"]}
+            if (not isinstance(params, dict) or not set(params).issubset(keys)
+                    or any(not isinstance(value, str) or len(value) > 10000 for value in params.values())):
+                raise ValueError("操作参数无效，请按定义填写")
+            plan.append({"type": kind, "scope": "all", "target_id": target["id"], "name": target["name"],
+                         "params": deepcopy(params), "definition": target["definition"]})
+            continue
+        if automated:
+            raise ValueError("数据调整应排在自动化操作之前")
+        if scope == "selected":
+            ids = operation.get("episode_ids")
+            if (not isinstance(ids, list) or not ids or any(type(idx) is not int for idx in ids)
+                    or len(set(ids)) != len(ids) or not set(ids).issubset(known_ids)):
+                raise ValueError("请选择有效且不重复的数据")
+            affected = {row["idx"] for row in rows if row["idx"] in ids}
+        else:
+            affected = {row["idx"] for row in rows}
+        if not affected:
+            raise ValueError("所选数据已被前序操作剔除，请调整操作范围")
+        step = {"type": kind, "scope": scope, "episode_ids": sorted(affected)}
+        if kind == "remove":
+            rows = [row for row in rows if row["idx"] not in affected]
+            if not rows:
+                raise ValueError("数据集至少需要保留一条数据")
+        else:
+            prompt = operation.get("prompt")
+            if not isinstance(prompt, str) or not prompt.strip() or len(prompt) > 10000:
+                raise ValueError("请输入有效的 Prompt（最多 10000 字）")
+            step["prompt"] = prompt
+            for row in rows:
+                if row["idx"] in affected and row["instr"] != prompt:
+                    row["instr"] = prompt
+                    row["annotation"]["highlevel_prompt_id"] = "custom:" + prompt
+        plan.append(step)
+    return rows, plan
+
+
+@app.route("/datasets/<did>/save", methods=["POST"])
+def datasets_save(did):
+    return save_dataset_edits(did, request.get_json(silent=True))
+
+
+def save_dataset_edits(did, payload):
+    d = get_ds(did)
+    if not d:
+        return jsonify(error="数据集不存在"), 404
+    if (not isinstance(payload, dict) or not isinstance(payload.get("base_version"), str)
+            or not payload["base_version"]):
+        return jsonify(error="请提供编辑所基于的版本"), 400
+    source = dataset_version_snapshot(d, payload["base_version"])
+    if source is None:
+        return jsonify(error="原版本不存在，请刷新后重试"), 409
+    if dataset_processing_status(source) != "ready":
+        return jsonify(error="当前版本尚未完成处理，请选择处理已完成的版本编辑"), 409
+    save_mode = payload.get("save_mode", "new")
+    if save_mode not in ("new", "current"):
+        return jsonify(error="请选择有效的保存方式"), 400
+    if save_mode == "current" and source["publish_status"] == "已发布":
+        return jsonify(error="已发布版本只能保存为新版本"), 409
+    plan = []
+    if "operations" in payload:
+        try:
+            planned_rows, plan = apply_dataset_edit_plan(source, payload["operations"])
+        except ValueError as error:
+            return jsonify(error=str(error)), 400
+        submitted = [{"idx": row["idx"], "instr": row["instr"]} for row in planned_rows]
+    else:
+        submitted = payload.get("episodes")
+    if not isinstance(submitted, list) or not submitted:
+        return jsonify(error="数据集至少需要保留一条数据"), 400
+    original = dataset_episodes(source)
+    originals = {row["idx"]: row for row in original}
+    edits = {}
+    for row in submitted:
+        if (not isinstance(row, dict) or type(row.get("idx")) is not int
+                or row["idx"] not in originals or row["idx"] in edits
+                or not isinstance(row.get("instr"), str) or not row["instr"].strip()
+                or len(row["instr"]) > 10000):
+            return jsonify(error="数据或 Prompt 无效，请检查后重试"), 400
+        edits[row["idx"]] = row["instr"]
+    remaining = []
+    updated = 0
+    for row in original:
+        if row["idx"] not in edits:
+            continue
+        if row["instr"] != edits[row["idx"]]:
+            row["instr"] = edits[row["idx"]]
+            row["annotation"]["highlevel_prompt_id"] = "custom:" + row["instr"]
+            updated += 1
+        remaining.append(row)
+    deleted = len(original) - len(remaining)
+    automated = [operation for operation in plan if operation["type"] in ("operator", "workflow")]
+    if not deleted and not updated and not automated:
+        return jsonify(error="尚未修改数据，无需保存"), 400
+    versions = ds_versions(d)
+    target = next(v for v in versions if v["version"] == source["version"])
+    new_version = source["version"] if save_mode == "current" else "v" + str(max(int(v["version"].lstrip("v")) for v in versions) + 1)
+    now = _now()
+    snapshot = {**source, "version": new_version, "status": "未生效", "publish_status": "未发布",
+                "created": source["created"] if save_mode == "current" else now,
+                "updated": now, "updater": CURRENT_USER,
+                "episode_rows": remaining, "episodes": len(remaining),
+                "frames": sum(row["length"] for row in remaining),
+                "recordings": list(dict.fromkeys(row["rec"] for row in remaining)),
+                "operation_plan": plan, "processing_status": "queued" if automated else "ready", "run_id": ""}
+    if automated:
+        _PROC_SEQ[0] += 1
+        snapshot["run_id"] = f"proc_{_PROC_SEQ[0]:04d}"
+        RUNS.insert(0, {"id": snapshot["run_id"], "pipeline": next((op["target_id"] for op in automated if op["type"] == "workflow"), ""),
+                        "name": " → ".join(op["name"] for op in automated), "target": f"{d['name']} {new_version}",
+                        "status": "queued", "progress": 0, "stage": "待处理", "at": now, "dur": "—",
+                        "trigger": "manual", "by": CURRENT_USER, "dataset_id": did, "base_version": source["version"],
+                        "version": new_version, "operations": deepcopy(automated), "input_episodes": deepcopy(remaining)})
+    note = f"基于 {source['version']} 编辑：删除 {deleted} 条数据，修改 {updated} 条 Prompt"
+    if automated:
+        note += "；待处理：" + " → ".join(op["name"] for op in automated)
+    if save_mode == "current":
+        target.update({"recordings": len(remaining), "note": note, "updated": now,
+                       "updater": CURRENT_USER, "snapshot": deepcopy(snapshot)})
+        # 当前版本内容已变化，不再匹配此前追加数据请求的幂等结果。
+        for key in ("append_fingerprint", "added", "skipped"):
+            target.pop(key, None)
+    else:
+        versions.insert(0, {"version": new_version, "created": now, "recordings": len(remaining),
+                            "status": "未生效", "publish_status": "未发布", "note": note,
+                            "creator": CURRENT_USER, "base_version": source["version"], "snapshot": deepcopy(snapshot)})
+    return jsonify(version=new_version, save_mode=save_mode, episodes=len(remaining),
+                   processing_status=snapshot["processing_status"], run_id=snapshot["run_id"])
 
 def visible_datasets():
     mine = request.args.get("scope") == "mine"
@@ -4573,7 +5166,7 @@ def datasets():
         f'<option value="{html.escape(t, quote=True)}" {"selected" if t == tag else ""}>{html.escape(t)}</option>'
         for t in all_dataset_tags
     )
-    tree += ownership_tabs()
+    tree += ownership_tabs(mine_first=True)
     tree += (
         f'<form id="datasetFilters" method="get"><input type="hidden" name="scope" value="{scope}">'
         f'<div class="tree-search"><input id="datasetTreeKeyword" name="keyword" value="{html.escape(keyword, quote=True)}" placeholder="搜索数据集..." '
@@ -4608,7 +5201,7 @@ def datasets():
                 name_attr = html.escape(d["name"].lower(), quote=True)
                 tree += (f'<div class="tree-leaf-wrap row-act-wrap dataset-tree-item" '
                          f'data-dataset-name="{name_attr}" data-dataset-tags="{tags_attr}">'
-                         f'<a class="tree-leaf {cls}" href="/datasets{filter_url(sel=d["id"], ver="")}">{d["name"]} <span class="sub">· {d["version"]}</span></a>'
+                         f'<a class="tree-leaf {cls}" href="/datasets{filter_url(sel=d["id"], ver="")}">{html.escape(d["name"])} <span class="sub">· {d["version"]}</span></a>'
                          f'<span class="leaf-act" onclick="event.stopPropagation();toggleRowMenu(this)">&#8943;</span>'
                          f'<div class="row-menu">'
                          f'<div class="rm-item" onclick="rmClose();openDsEdit(\'{d["id"]}\')">编辑</div>'
@@ -4712,20 +5305,18 @@ def datasets():
         </div>
         <div class="drawer-foot">
           <button class="btn" onclick="closeDrawerById('newDsDrawer')">取消</button>
-          <button class="btn-primary btn" onclick="dsCreating('newDsDrawer')">确认创建</button>
+          <button class="btn-primary btn" onclick="dsCreating('newDsDrawer')">前往数据查询</button>
         </div>
       </div>
     </div>
     """
     content = (f'<div class="split dataset-workspace"><div class="tree-panel">{tree}</div><div class="detail-panel">{right}</div></div>'
                + new_folder_drawer + new_ds_drawer + ds_meta_js)
-    # 处理数据后跳到「版本」Tab 并提示
     landed = request.args.get("tab", "")
-    land_js = ("""
-      var vt=Array.prototype.slice.call(document.querySelectorAll('.tab')).filter(function(x){return x.textContent.trim()==='版本';})[0];
-      if(vt) vt.click();
-      toast('处理完成: 已生成新版本');
-    """ if landed == "version" else "")
+    if request.args.get("edit") == "1" or (not landed and request.args.get("view") == "list"):
+        landed = "list"
+    land_js = (f"var target=document.querySelector('#datasetWorkspace .tabs [data-pane=\"{landed}\"]'); if(target) target.click();"
+               if landed in ("preview", "list", "compose", "version", "info") else "")
     script = """<script>
     function filterDatasetTree(){
       document.getElementById('datasetFilters').requestSubmit();
@@ -4804,8 +5395,29 @@ def datasets():
 
 
 def dataset_detail_panel_v2(d, viewed_ver=""):
-    ds_format = "Mozdataset" if d.get("type") in ("eval-benchmark", "custom") or "eval" in d["name"].lower() or "smoke" in d["name"].lower() else "LeRobot"
+    d = dataset_version_snapshot(d, viewed_ver) or dataset_version_snapshot(d)
+    ds_format = dataset_format(d)
     eps = dataset_episodes(d)
+    editor_rows = []
+    lowlevel_by_id = {prompt["id"]: prompt for prompt in LOWLEVEL_PROMPTS}
+    for row in eps:
+        recording = get_rec(row["rec"]) or {}
+        quality_result = ({"pass": "合格", "warn": "失误", "fail": "不合格"}.get(recording.get("qa"), "—")
+                          if recording and rec_qc(recording) else "未质检" if recording else "—")
+        annotation_status = ("已标注" if rec_anno(recording) else "未标注") if recording else "—"
+        prompt_ids = dict.fromkeys(segment["prompt_id"] for segment in row.get("annotation", {}).get("lowlevel_segments", [])
+                                   if segment["end_frame"] > segment["start_frame"])
+        lowlevel_prompts = [{"id": pid, "zh": lowlevel_by_id[pid]["name"], "en": lowlevel_by_id[pid].get("en", "")}
+                            for pid in prompt_ids if pid in lowlevel_by_id]
+        editor_rows.append({**{key: row[key] for key in ("idx", "rec", "length", "instr")},
+                            "lowlevel_prompts": lowlevel_prompts,
+                            "quality_rule": row.get("quality_rule") or recording.get("quality_rule") or "—",
+                            "quality_result": row.get("quality_result") or recording.get("quality_result") or quality_result,
+                            "annotation_rule": row.get("annotation_rule") or recording.get("annotation_rule") or "—",
+                            "annotation_status": row.get("annotation_status") or recording.get("annotation_status") or annotation_status})
+    editor_config = json.dumps({"version": d["version"], "publish_status": d["publish_status"], "processing_status": d.get("processing_status", "ready"),
+        "catalog": {kind: [{key: value for key, value in item.items() if key != "definition"} for item in items]
+                    for kind, items in dataset_edit_catalog().items()}, "episodes": editor_rows}, ensure_ascii=False).replace("<", "\\u003c").replace(">", "\\u003e").replace("&", "\\u0026")
     dataset_labels = dataset_label_names(d)
     dataset_labels_html = dataset_tag_picker_html(
         f'datasetInfoTags-{d["id"]}',
@@ -4813,9 +5425,62 @@ def dataset_detail_panel_v2(d, viewed_ver=""):
         editable=False,
     )
     _hl_items = dataset_prompt_composition(d)   # highlevel prompt 构成 (info / compose 共用)
-    preview = (f'<div class="tab-pane active" id="pane-preview">'
-               f'<div class="muted" style="margin-bottom:12px;">数据集共 {d["episodes"]} 个 episode，每个 episode ← 一条原始 recording，可在左侧逐条预览</div>'
-               f'{preview_block("dsv2", eps)}</div>')
+    save_current_button = ('<button class="btn btn-secondary" id="datasetSaveCurrentButton" onclick="datasetEditor.save(&quot;current&quot;)" disabled>保存至当前版本</button>'
+                           if d["publish_status"] == "未发布" else '')
+    preview = f"""
+    <div class="tab-pane active" id="pane-preview">
+      <div id="datasetDetailView">
+        <div class="muted" id="datasetPreviewDescription" style="margin-bottom:12px;">数据集共 {d['episodes']} 个 episode，每个 episode ← 一条原始 recording，可在左侧逐条预览</div>
+        {preview_block('dsv2', eps)}
+      </div>
+    </div>
+    """
+    data_list = f"""
+    <div class="tab-pane" id="pane-list">
+      <div id="datasetListView">
+        <div class="fb-labeled dpr-record-filters">
+          <div class="ff"><label for="datasetDataQuery">数据 ID</label><input id="datasetDataQuery" placeholder="请输入数据 ID" onkeydown="if(event.key==='Enter')datasetEditor.filter()"></div>
+          <div class="ff"><label for="datasetLowlevelZhQuery">lowlevel prompt（中文）</label><input id="datasetLowlevelZhQuery" placeholder="请输入关键词" onkeydown="if(event.key==='Enter')datasetEditor.filter()"></div>
+          <div class="ff"><label for="datasetLowlevelEnQuery">lowlevel prompt（英文）</label><input id="datasetLowlevelEnQuery" placeholder="请输入关键词" onkeydown="if(event.key==='Enter')datasetEditor.filter()"></div>
+          <div class="filter-actions"><button class="btn btn-tertiary" onclick="datasetEditor.filter(true)">清空</button><button class="btn btn-primary" onclick="datasetEditor.filter()">查询</button></div>
+        </div>
+        <div class="dataset-list-toolbar">
+          <div class="dataset-list-selection-summary">
+            <span class="muted" id="datasetSelectionCount" aria-live="polite"></span>
+            <span id="datasetSelectedCount" aria-live="polite" hidden></span>
+            <button class="action-link" id="datasetClearSelection" onclick="datasetEditor.selectAll(false)" hidden>清空选择</button>
+          </div>
+          <div class="dataset-list-action-group">
+          <div class="muted" id="datasetPreviewStatus" hidden></div>
+          <div class="dataset-editor-selection" data-edit-only hidden>
+            <div class="dataset-batch-menu">
+              <button class="btn btn-secondary" id="datasetSelectionAction" aria-haspopup="true" aria-expanded="false" aria-controls="datasetBatchMenu" onclick="datasetEditor.toggleBatchMenu()" disabled>批量操作 <span aria-hidden="true">▾</span></button>
+              <div class="rf-menu" id="datasetBatchMenu" hidden>
+                <button class="rf-option" onclick="datasetEditor.batch('remove')">批量剔除</button>
+                <button class="rf-option" onclick="datasetEditor.batch('prompt')">批量修改 prompt</button>
+              </div>
+            </div>
+          </div>
+          </div>
+        </div>
+        <div class="dataset-edit-layout">
+          <section class="dataset-data-pane" aria-label="数据列表">
+        <div class="table-wrap dpr-record-table-wrap dataset-editor-table-wrap">
+          <table class="ant-table dpr-record-table dataset-editor-table">
+            <thead><tr><th class="dpr-selection-cell" data-edit-only hidden><div class="dpr-selection-control"><input type="checkbox" id="datasetSelectAll" aria-label="全选本页数据" onchange="datasetEditor.selectPage(this.checked)"><button type="button" id="datasetSelectionMenuTrigger" aria-label="选择勾选范围" aria-expanded="false" aria-controls="datasetSelectionMenu" onclick="datasetEditor.toggleSelectionMenu()">▾</button></div></th><th>数据 ID</th><th>视频</th><th>质检规则</th><th>质检结果</th><th>标注规则</th><th>标注状态</th><th data-edit-only hidden>操作</th></tr></thead>
+            <tbody id="datasetEditorRows"></tbody>
+          </table>
+        </div>
+        <div class="dpr-selection-menu" id="datasetSelectionMenu" hidden>
+          <button type="button" onclick="datasetEditor.selectScope('page')">全选本页</button>
+          <button type="button" onclick="datasetEditor.selectScope('all')">全选全部</button>
+        </div>
+        <div class="mini-pager"><span class="muted" id="datasetPageInfo"></span><button class="pg-btn" id="datasetPrevPage" aria-label="上一页" onclick="datasetEditor.page(-1)">‹</button><span id="datasetCurrentPage" class="pg-btn active">1</span><button class="pg-btn" id="datasetNextPage" aria-label="下一页" onclick="datasetEditor.page(1)">›</button><span class="muted">10 条/页</span></div>
+          </section>
+        </div>
+      </div>
+    </div>
+    """
     # 完整信息: 贴合「LeRobot v2.1 完整结构」的真实元数据实例 (纯 key/value, 无说明)
     _joint_names = [f"joint{k}" for k in range(7)]
     _cart_names = ["x", "y", "z", "rx", "ry", "rz"]
@@ -4855,7 +5520,7 @@ def dataset_detail_panel_v2(d, viewed_ver=""):
         "features": _features,
     }
     _tasks = [{"task_index": i, "task": it["name"]} for i, it in enumerate(_hl_items)] or [{"task_index": 0, "task": _task0}]
-    _episodes = [{"episode_index": e["idx"], "length": e["length"], "tasks": [_task0],
+    _episodes = [{"episode_index": e["idx"], "length": e["length"], "tasks": [e["instr"]],
                   "task_id_map": None, "annotation": None, "inspection": None,
                   "dagger_type": None, "dagger_group_idx": None} for e in _eps_meta[:3]]
     _len0 = _eps_meta[0]["length"] if _eps_meta else 1434
@@ -4885,7 +5550,7 @@ def dataset_detail_panel_v2(d, viewed_ver=""):
         "meta/episodes.jsonl": _episodes,
         "meta/episodes_stats.jsonl": _episodes_stats,
     }
-    ds_full_json = json.dumps(ds_full, ensure_ascii=False, indent=2)
+    ds_full_json = html.escape(json.dumps(ds_full, ensure_ascii=False, indent=2))
     info = f"""
     <div class="tab-pane" id="pane-info">
       <div class="ep-tabs">
@@ -4906,11 +5571,11 @@ def dataset_detail_panel_v2(d, viewed_ver=""):
         </div>
       </div>
       <div class="info-pane" id="info_full" style="display:none;">
-        <textarea id="dsFullJson" class="code-editor">{ds_full_json}</textarea>
+        <textarea id="dsFullJson" class="code-editor" readonly>{ds_full_json}</textarea>
       </div>
     </div>
     """
-    prompt_rows = comp_rows_html(_hl_items, d["frames"])
+    prompt_rows = comp_rows_html(_hl_items, d["frames"], d["fps"])
     # 按一级维度的标签帧数 (三个饼图 + 表格图例)
     _byp = {}
     for r in _dataset_recs(d):
@@ -4965,7 +5630,7 @@ def dataset_detail_panel_v2(d, viewed_ver=""):
                 '<option value="l3">展示层级：三级</option></select>')
     # Lowlevel(子动作)维度 prompt 构成 (demo)
     _low_items = dataset_lowlevel_prompt_composition(d)
-    low_prompt_rows = comp_rows_html(_low_items, d["frames"])
+    low_prompt_rows = comp_rows_html(_low_items, d["frames"], d["fps"])
     compose = f"""
     <div class="tab-pane" id="pane-compose">
       <div class="muted" style="margin-bottom:14px;">数据集共 {d['episodes']} episode · {len(_hl_items)} highlevel · {len(_low_items)} lowlevel <span style="color:rgba(0,0,0,0.3);">(highlevel / lowlevel 按去重计数)</span></div>
@@ -5030,7 +5695,7 @@ def dataset_detail_panel_v2(d, viewed_ver=""):
         up_rows = '<tr><td colspan="4" class="muted">—</td></tr>'
 
     # 下游引用表: 记录引用的版本
-    _pubvers = [v["version"] for v in ds_versions(d) if v["status"] != "待发布"] or [d["version"]]
+    _pubvers = [v["version"] for v in ds_versions(d) if v["status"] == "生效中"]
     down_rows = ""
     for i, u in enumerate(d["used_by"]):
         kind = "评测" if u.startswith("eval") else "训练"
@@ -5042,165 +5707,162 @@ def dataset_detail_panel_v2(d, viewed_ver=""):
 
     vrows = ""
     for v in ds_versions(d):
-        if v["status"] == "待发布":
-            name_cell = f'<span class="muted">{v["version"]}</span>'
-            op = f'<a href="/datasets/{d["id"]}/version/{v["version"]}/publish">发布</a>'
-        elif v["status"] == "已归档":
-            name_cell = f'<span class="muted">{v["version"]}</span>'
-            op = f'<a href="/datasets/{d["id"]}/version/{v["version"]}/rollback">回退</a>'
-        else:  # 生效中
-            name_cell = (f'<b>{v["version"]}</b> <span class="tag tag-blue">生效中</span>'
-                         if v["version"] == d["version"] else f'<span class="muted">{v["version"]}</span>')
-            op = '<span class="muted">—</span>'
-        vrows += (f'<tr><td>{name_cell}</td><td class="muted">{v.get("note","")}</td>'
+        active = v["status"] == "生效中"
+        processing = dataset_processing_status(v.get("snapshot", {}))
+        linked_task = dataset_linked_task(v.get("snapshot", {}))
+        processing_label = linked_task["label"] if linked_task else DATASET_PROCESSING_LABELS.get(processing, "—")
+        task_url = "/datasets/tasks?" + urlencode({"dataset_id": d["id"], "version": v["version"], **({"task": linked_task["id"]} if linked_task else {})})
+        processing_cell = (f'<a href="{html.escape(task_url, quote=True)}">{processing_label}</a>' if linked_task else processing_label)
+        name_cell = f'<b>{v["version"]}</b>' if active else v["version"]
+        published = v["publish_status"] == "已发布"
+        publish_cell = '<span class="tag tag-green">已发布</span>' if published else '<span class="tag tag-gray">未发布</span>'
+        publish_op = ('<span class="muted" aria-disabled="true" title="已发布">发布</span>' if published else
+                      '<span class="muted" aria-disabled="true" title="仅处理状态为「成功」的版本支持发布">发布</span>' if processing != "ready" else
+                      f'<form method="post" action="/datasets/{d["id"]}/version/{v["version"]}/publish" style="display:inline;">'
+                      '<button type="submit" class="action-link">发布</button></form>')
+        vrows += (f'<tr><td>{name_cell}</td><td class="muted">{html.escape(v.get("note",""))}</td>'
                   f'<td>{v["recordings"]}</td><td>{v.get("creator","—")}</td>'
-                  f'<td class="muted">{v["created"]}</td><td>{v["status"]}</td>'
-                  f'<td class="actions-cell">{op}</td></tr>')
+                  f'<td class="muted">{v["created"]}</td><td>{publish_cell}</td><td>{processing_cell}</td>'
+                  f'<td class="actions-cell"><div class="dataset-version-actions">{publish_op}</div></td></tr>')
     version = f"""
     <div class="tab-pane" id="pane-version">
-      <table class="ant-table"><thead><tr><th>版本</th><th>说明</th><th>数据数</th><th>创建人</th><th>创建时间</th><th>状态</th><th>操作</th></tr></thead>
-      <tbody>{vrows}</tbody></table>
-      <div class="muted" style="margin-top:12px;">改配方 / 处理数据 = 出新版本, 被训练引用的版本不可变, 保证实验可复现。</div>
+      <div class="table-wrap dataset-version-table-wrap"><table class="ant-table dataset-version-table"><thead><tr><th>版本</th><th>说明</th><th>数据数</th><th>创建人</th><th>创建时间</th><th>发布状态</th><th>处理状态</th><th>操作</th></tr></thead>
+      <tbody>{vrows}</tbody></table></div>
+      <div class="muted" style="margin-top:12px;">已发布版本编辑后仅可保存为新版本；未发布版本可保存至当前版本或另存为新版本。仅处理状态为「成功」的版本支持发布。</div>
     </div>
     """
-    publish_btn = ('<button class="btn-primary btn" onclick="toast(\'Demo: 已开始发布并上传 TOS...\')">发布 / 上传 TOS</button>'
-                   if d["status"] != "生效中" else "")
 
-    # 处理数据抽屉: 选任务 + 参数(结构化/代码) → 执行生成新版本
-    pl_opts = "".join(f'<option value="task|{p["name"]}">{p["name"]}</option>' for p in PIPELINES)
-    cur_ver = ds_versions(d)[0]["version"]
-    # 每个工作流已配置好的参数 key (来自其算子定义, 不可改, 只能填 value)
-    task_params = {}
-    for p in PIPELINES:
-        keys = []
-        for sid in p["stages"]:
-            op = next((o for o in OPERATORS if o["id"] == sid), None)
-            if not op:
-                continue
-            for item in op["params"].split(" / "):
-                k = item.strip().split(" ")[0]
-                if k and k not in keys:
-                    keys.append(k)
-        task_params[p["name"]] = keys
-    task_params_js = json.dumps(task_params, ensure_ascii=False)
-    drawer = f"""
-    <div class="modal-mask" id="procDrawer" onclick="if(event.target===this)this.classList.remove('active')">
-      <div class="modal-box" style="width:600px;max-width:94vw;">
-        <div class="drawer-head"><h3>处理数据 — {d['name']} ({cur_ver})</h3>
-          <button class="drawer-close" onclick="document.getElementById('procDrawer').classList.remove('active')">&times;</button></div>
-        <form method="post" action="/datasets/{d['id']}/process" style="display:flex;flex-direction:column;min-height:0;flex:1;">
-          <div class="drawer-body">
-            <div class="section-label">工作流</div>
-            <div class="fg">
-              <select name="op" onchange="procRenderParams()">{pl_opts}</select>
-              <div class="hint">在当前数据集 {cur_ver} 上执行该工作流, 产出一个新版本</div>
-            </div>
-            <div class="section-label">处理说明</div>
-            <div class="fg"><input name="note" placeholder="本次处理做了什么 (可选)"></div>
-            <div class="section-label">请求参数</div>
-            <div class="param-mode">
-              <button type="button" class="pm-btn active" data-m="code" onclick="procMode('code')">代码</button>
-              <button type="button" class="pm-btn" data-m="struct" onclick="procMode('struct')">结构化</button>
-            </div>
-            <div class="proc-params-area">
-              <div id="procCode">
-                <div class="fg" style="margin-bottom:0;"><textarea name="params_code" class="code-editor" rows="8" placeholder="# 命令行参数 / JSON&#10;--train-ratio 0.95 --seed 42"></textarea></div>
-              </div>
-              <div id="procStruct" style="display:none;">
-                <div class="hint" style="margin-bottom:8px;">参数名由所选工作流的算子配置决定, 此处仅填写取值。</div>
-                <div id="procParamBox"></div>
-              </div>
-            </div>
-          </div>
-          <div class="drawer-foot">
-            <button type="button" class="btn" onclick="document.getElementById('procDrawer').classList.remove('active')">取消</button>
-            <button type="submit" class="btn-primary btn">确认执行</button>
-          </div>
-        </form>
-      </div>
-      <script>
-      function procMode(m){{
-        document.getElementById('procStruct').style.display = m==='struct'?'':'none';
-        document.getElementById('procCode').style.display = m==='code'?'':'none';
-        document.querySelectorAll('.param-mode .pm-btn').forEach(function(b){{ b.classList.toggle('active', b.getAttribute('data-m')===m); }});
-      }}
-      window._taskParams = {task_params_js};
-      function procRenderParams(){{
-        var sel=document.querySelector('#procDrawer select[name=op]');
-        var name=(sel.value.split('|')[1]||sel.value);
-        var keys=(window._taskParams||{{}})[name]||[];
-        var box=document.getElementById('procParamBox');
-        if(!keys.length){{ box.innerHTML='<div class="muted" style="font-size:12px;padding:4px 0;">该工作流无可配置参数</div>'; return; }}
-        box.innerHTML='<table class="param-table"><tbody>'+keys.map(function(k){{
-          return '<tr><td class="pk" style="font-family:monospace;font-size:12px;color:rgba(0,0,0,0.7);">'+k+'</td>'+
-            '<td><input class="fp-val" placeholder="填写值"></td></tr>';
-        }}).join('')+'</tbody></table>';
-      }}
-      procRenderParams();
-      </script>
-    </div>
-    """
     # 版本号下拉 (可切换查看)
     _vlist = ds_versions(d)
     viewed = viewed_ver if any(v["version"] == viewed_ver for v in _vlist) else d["version"]
     _vopts = ""
     for v in _vlist:
-        lab = v["version"]
-        s = " selected" if v["version"] == viewed else ""
-        _vopts += f'<option value="{v["version"]}"{s}>{lab}</option>'
-    ver_select = (f'<select class="ver-select" onchange="if(this.value)location.href=\'/datasets{filter_url(sel=d["id"], ver="")}&amp;ver=\'+this.value">'
-                  f'{_vopts}</select>')
+        selected = v["version"] == viewed
+        status = v["publish_status"]
+        tone = "green" if status == "已发布" else "gray"
+        version_url = "/datasets" + filter_url(sel=d["id"], ver=v["version"], edit="")
+        current = ' aria-current="page"' if selected else ''
+        _vopts += (f'<a class="rf-option{" on" if selected else ""}" href="{version_url}"{current}>'
+                   f'<span class="rf-value">{v["version"]}</span><span class="tag tag-{tone}">{status}</span></a>')
+    selected_status = d["publish_status"]
+    selected_tone = "green" if selected_status == "已发布" else "gray"
+    ver_select = (f'<details class="dataset-version-picker" id="datasetVersionPicker">'
+                  f'<summary class="ver-select rf-control" aria-label="切换数据集版本">'
+                  f'<span>{viewed}</span><span class="tag tag-{selected_tone}">{selected_status}</span>'
+                  '<span class="dataset-tag-picker-arrow" aria-hidden="true"></span></summary>'
+                  f'<nav class="rf-menu" aria-label="数据集版本">{_vopts}</nav></details>')
     ident_value = html.escape(d.get('ident', ''), quote=True)
     ident_html = f'<span class="dataset-ident-inline">{ident_value}</span>' if ident_value else ''
     head = f"""
+    <div id="datasetWorkspace" data-save-url="/datasets/{d['id']}/save">
     <div class="detail-head">
-      <div><div class="dh-title">{d['name']} {ident_html} <span class="tag tag-blue">{ds_format}</span> {ver_select}</div>
+      <div><div class="dh-title">{html.escape(d['name'])} {ident_html} <span class="tag tag-blue">{ds_format}</span> {ver_select}</div>
       <div class="dh-meta"><span>{d['episodes']} ep · {d['frames']:,} f</span></div></div>
-      <div class="dataset-detail-actions"><button class="btn btn-secondary" onclick="document.getElementById('procDrawer').classList.add('active')">&#9881; 处理数据</button> {publish_btn}</div>
+      <div class="dataset-detail-actions"><a class="action-link" href="/datasets/tasks">查看数据集更新进度</a><button class="btn btn-primary" id="datasetEditButton" onclick="datasetEditor.start()" {'disabled title="当前版本尚未完成处理"' if d.get('processing_status', 'ready') != 'ready' else ''}>编辑</button><span class="dataset-save-actions" data-edit-only hidden><button class="btn" onclick="datasetEditor.cancel()">取消编辑</button>{save_current_button}<button class="btn btn-primary" id="datasetSaveButton" onclick="datasetEditor.save()" disabled>保存为新版本</button></span></div>
     </div>
+    <div id="datasetEditError" role="alert"></div>
+    <div class="dataset-edit-summary-bar" data-edit-only hidden>
+      <span id="datasetEditSummary" aria-live="polite"></span>
+      <button class="action-link" id="datasetViewChanges" onclick="datasetEditor.showChanges()">查看变更</button>
+      <button class="action-link" id="datasetUndoButton" onclick="datasetEditor.undo()">撤销上一步</button>
+    </div>
+    <div class="dataset-global-edit-layout">
+    <div id="datasetReadView">
     <div class="tabs">
-      <div class="tab active" onclick="switchTab(this,'preview')">数据预览</div>
-      <div class="tab" onclick="switchTab(this,'compose')">构成分析</div>
-      <div class="tab" onclick="switchTab(this,'version')">版本</div>
-      <div class="tab" onclick="switchTab(this,'info')">基本信息</div>
+      <div class="tab active" id="datasetDetailViewButton" data-pane="preview" tabindex="0" onclick="datasetEditor.view('detail')" onkeydown="if(event.key==='Enter'||event.key===' '){{event.preventDefault();this.click();}}">数据预览</div>
+      <div class="tab" id="datasetListViewButton" data-pane="list" tabindex="0" onclick="datasetEditor.view('list')" onkeydown="if(event.key==='Enter'||event.key===' '){{event.preventDefault();this.click();}}">数据列表</div>
+      <div class="tab" data-pane="compose" onclick="switchTab(this,'compose')">构成分析</div>
+      <div class="tab" data-pane="version" onclick="switchTab(this,'version')">版本</div>
+      <div class="tab" data-pane="info" onclick="switchTab(this,'info')">基本信息</div>
     </div>
-    <div class="pane-wrap">{preview}{compose}{version}{info}</div>
-    {drawer}
+    <div class="pane-wrap">{preview}{data_list}{compose}{version}{info}</div>
+    </div>
+    </div>
+    <div class="modal-mask" id="datasetChangesModal" onclick="if(event.target===this)datasetEditor.closeChanges()">
+      <div class="modal-box dataset-changes-dialog" role="dialog" aria-modal="true" aria-labelledby="datasetChangesTitle" tabindex="-1">
+      <div class="drawer-head"><h3 id="datasetChangesTitle">本次变更 <span class="muted" id="datasetOperationCount">0</span></h3><button class="drawer-close" aria-label="关闭变更" onclick="datasetEditor.closeChanges()">&times;</button></div>
+      <div class="drawer-body">
+        <div id="datasetOperationEmpty" class="muted dataset-operation-empty">暂无修改。请在数据列表中筛选并勾选数据，再选择批量操作。</div>
+        <ol id="datasetOperationList" class="dataset-operation-list"></ol>
+        <div class="muted dataset-automation-hint" id="datasetAutomationHint" hidden>保存后提交这一项处理任务。处理完成后，可再次进入编辑并手动发起下一项。</div>
+      </div>
+      <div class="drawer-foot"><button class="btn" onclick="datasetEditor.closeChanges()">关闭</button></div>
+      </div>
+    </div>
+    </div>
+    <div class="modal-mask" id="datasetOperationDrawer" onclick="if(event.target===this)datasetEditor.closeOperation()">
+      <div class="modal-box dataset-operation-drawer" role="dialog" aria-modal="true" aria-labelledby="datasetOperationTitle" tabindex="-1">
+        <div class="drawer-head"><h3 id="datasetOperationTitle">执行操作</h3><button class="drawer-close" aria-label="关闭操作配置" onclick="datasetEditor.closeOperation()">&times;</button></div>
+        <div class="drawer-body">
+              <div class="dataset-operation-form" id="datasetOperationForm" hidden>
+                <div class="fg" id="datasetOperationTypeField"><label for="datasetOperationType">操作类型</label><select id="datasetOperationType" onchange="datasetEditor.changeType()"><option value="">请选择操作类型</option><option value="remove">剔除数据</option><option value="prompt">修改 Prompt</option><option value="operator">执行算子</option><option value="workflow">执行工作流</option></select></div>
+                <p id="datasetPromptSelection" class="muted" hidden></p>
+                <div class="fg" id="datasetOperationScopeField"><label for="datasetOperationScope">作用范围</label><select id="datasetOperationScope"><option value="all">全部保留数据</option><option value="selected" id="datasetSelectedScope">选中数据</option></select><div class="hint" id="datasetOperationScopeHint"></div></div>
+                <div class="fg" id="datasetPromptField" hidden><label for="datasetOperationPrompt">新 Prompt</label><textarea id="datasetOperationPrompt" rows="3" maxlength="10000" placeholder="填写本次操作要设置的 Prompt"></textarea></div>
+                <div id="datasetAutomationFields" hidden>
+                  <div class="fg"><label for="datasetOperationTarget" id="datasetOperationTargetLabel">算子</label><select id="datasetOperationTarget" onchange="datasetEditor.changeTarget()"></select><div class="hint" id="datasetOperationTargetDescription"></div></div>
+                  <div class="fg"><label>请求参数</label><table class="param-table"><tbody id="datasetOperationParams"></tbody></table><div class="hint" id="datasetNoParams" hidden>无可配置参数</div></div>
+                </div>
+                <div class="hint dataset-operation-error" id="datasetOperationError" role="alert"></div>
+                <div class="dataset-operation-form-actions"><button class="btn" onclick="datasetEditor.closeOperation()">取消</button><button class="btn btn-primary" id="datasetExecuteOperation" onclick="datasetEditor.addOperation()">执行</button></div>
+              </div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-mask" id="datasetConfirmModal" onclick="if(event.target===this)datasetEditor.closeConfirm()">
+      <div class="modal-box" style="width:440px;max-width:94vw;" role="alertdialog" aria-labelledby="datasetConfirmTitle">
+        <div class="drawer-head"><h3 id="datasetConfirmTitle">确认操作</h3><button class="drawer-close" onclick="datasetEditor.closeConfirm()">&times;</button></div>
+        <div class="drawer-body" id="datasetConfirmMessage"></div>
+        <div class="drawer-foot"><button class="btn" onclick="datasetEditor.closeConfirm()">取消</button><button class="btn btn-primary" onclick="datasetEditor.confirmAction()">确认</button></div>
+      </div>
+    </div>
+    <link rel="stylesheet" href="/static/shared/table-selection.css">
+    <link rel="stylesheet" href="/static/shared/dataset-editor.css">
+    <script type="application/json" id="datasetEditorConfig">{editor_config}</script>
+    <script src="/static/shared/dataset-editor.js"></script>
     """
     return head
 
 
-@app.route("/datasets/<did>/version/<ver>/publish")
+@app.route("/datasets/<did>/version/<ver>/publish", methods=["POST"])
 def datasets_publish(did, ver):
     d = get_ds(did)
     if not d:
         return redirect("/datasets")
-    vers = ds_versions(d)
-    # 旧的当前发布版 → 归档
-    for v in vers:
-        if v["version"] == d["version"] and v["status"] == "生效中":
-            v["status"] = "已归档"
-    # 目标草稿 → 生效中, 成为当前
-    for v in vers:
-        if v["version"] == ver and v["status"] == "待发布":
-            v["status"], v["created"] = "生效中", _now()
-            d["version"], d["status"] = ver, "生效中"
-    return redirect(f"/datasets?sel={did}&tab=version")
+    target = next((v for v in ds_versions(d) if v["version"] == ver), None)
+    if target is None:
+        return redirect(f"/datasets?sel={did}&tab=version")
+    if dataset_processing_status(target.get("snapshot", {})) != "ready":
+        return jsonify(error="仅处理状态为「成功」的版本支持发布"), 409
+    target["publish_status"] = "已发布"
+    target["snapshot"]["publish_status"] = "已发布"
+    if d["version"] == ver:
+        d["publish_status"] = "已发布"
+    return redirect(f"/datasets?sel={did}&ver={ver}&tab=version")
 
 
-@app.route("/datasets/<did>/version/<ver>/rollback")
-def datasets_rollback(did, ver):
+@app.route("/datasets/<did>/version/<ver>/activate", methods=["POST"])
+def datasets_activate(did, ver):
     d = get_ds(did)
     if not d:
         return redirect("/datasets")
     vers = ds_versions(d)
-    src = next((v for v in vers if v["version"] == ver), None)
-    if src:
-        nums = [int(v["version"].lstrip("v")) for v in vers if v["version"].lstrip("v").isdigit()]
-        newn = (max(nums) + 1) if nums else 1
-        vers.insert(0, {"version": f"v{newn}", "created": _now(), "recordings": src["recordings"],
-                        "status": "待发布", "note": f"回退自 {ver}", "creator": "joanna.qiao"})
-    return redirect(f"/datasets?sel={did}&tab=version")
+    target = next((v for v in vers if v["version"] == ver), None)
+    if target is None:
+        return redirect(f"/datasets?sel={did}&tab=version")
+    snapshot = dataset_version_snapshot(d, ver)
+    if dataset_processing_status(snapshot) != "ready":
+        return jsonify(error="当前版本尚未完成处理，不能标为生效"), 409
+    if target["publish_status"] != "已发布":
+        return jsonify(error="请先发布该版本，再标为生效"), 409
+    # 在同一次操作中切换生效版本，不复制或修改版本内容。
+    for v in vers:
+        v["status"] = "生效中" if v is target else "未生效"
+        v["snapshot"]["status"] = v["status"]
+    d.clear()
+    d.update(snapshot)
+    d["status"] = "生效中"
+    return redirect(f"/datasets?sel={did}&ver={ver}&tab=version")
 
 
 @app.route("/datasets/<did>/process", methods=["POST"])
@@ -5208,28 +5870,26 @@ def datasets_process(did):
     d = get_ds(did)
     if not d:
         return redirect("/datasets")
-    raw = request.form.get("op", "op|处理算子")
-    kind, op_name = (raw.split("|", 1) + [""])[:2] if "|" in raw else ("op", raw)
-    note = request.form.get("note", "").strip() or f"经「{op_name}」处理生成"
-    now = _now()
-    # 1) 生成新版本
-    vers = ds_versions(d)
-    prev = vers[0]["version"]
+    # 兼容旧入口，统一走编辑操作计划及版本创建逻辑。
+    raw = request.form.get("op", "")
+    kind, _, reference = raw.partition("|")
+    operation_type = "workflow" if kind == "task" else "operator"
+    target = next((item for item in dataset_edit_catalog()[operation_type]
+                   if reference in (item["id"], item["name"])), None)
+    if target is None:
+        return jsonify(error="请选择有效的算子或工作流"), 400
     try:
-        new_ver = "v" + str(int(prev.lstrip("v")) + 1)
+        params = json.loads(request.form.get("params_code", "").strip() or "{}")
     except ValueError:
-        new_ver = prev + ".1"
-    vers.insert(0, {"version": new_ver, "created": now, "recordings": len(d["recordings"]),
-                    "status": "待发布", "note": note, "creator": "joanna.qiao"})
-    d["version"], d["created"], d["status"] = new_ver, now, "待发布"
-    # 2) 写一条执行记录
-    _PROC_SEQ[0] += 1
-    RUNS.insert(0, {
-        "id": f"proc_{_PROC_SEQ[0]:04d}", "pipeline": "", "name": op_name,
-        "target": f"{d['name']} {new_ver}", "status": "done", "progress": 100,
-        "stage": "完成", "at": now, "dur": "1m 20s",
+        return jsonify(error="请求参数必须是 JSON 对象"), 400
+    response = save_dataset_edits(did, {
+        "base_version": request.form.get("base_version") or d["version"],
+        "operations": [{"type": operation_type, "scope": "all", "target_id": target["id"], "params": params}],
     })
-    return redirect(f"/datasets?sel={did}&tab=version")
+    if isinstance(response, tuple):
+        return response
+    new_ver = response.get_json()["version"]
+    return redirect(f"/datasets?sel={did}&ver={new_ver}&tab=version")
 
 
 def dataset_new_panel_v2():
@@ -7399,7 +8059,7 @@ def pipeline_editor(pid):
 @app.route("/runs")
 def runs():
     # 执行记录: 每行 = 一次工作流执行实例 (一个工作流里可能含多个算子, 故不展开到算子)
-    st_map = {"running": ("qa-warn", "运行中", ""), "done": ("qa-pass", "成功", ""),
+    st_map = {"queued": ("qa-warn", "待执行", ""), "running": ("qa-warn", "运行中", ""), "done": ("qa-pass", "成功", ""),
               "failed": ("qa-fail", "失败", "fail")}
     pl_creator = {p["id"]: p["creator"] for p in PIPELINES}
     rows = ""
@@ -7426,7 +8086,7 @@ def runs():
     content = f"""
     <div class="filter-bar">
       <select class="has-value"><option value="">全部工作流</option><option>标准训练数据流水线</option><option>DAgger 数据流水线</option></select>
-      <select class="has-value"><option value="">全部状态</option><option>成功</option><option>运行中</option><option>失败</option></select>
+      <select class="has-value"><option value="">全部状态</option><option>待执行</option><option>成功</option><option>运行中</option><option>失败</option></select>
       <select class="has-value"><option value="">全部触发方式</option><option>手动触发</option><option>定时触发</option></select>
       <input placeholder="搜索工作流 / 产出数据集...">
       <button class="btn" onclick="resetFilters(this)">重置</button>

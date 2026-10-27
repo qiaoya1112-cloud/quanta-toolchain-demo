@@ -1,0 +1,245 @@
+{
+  "manifest_version": "v1",
+  "format": "ndjson",
+  "base_token": "OQ2UbV65natigrstPbXcwhWinyb",
+  "table_id": "tblnjRJV5JV5vLQr",
+  "rev": 697,
+  "timezone": "Asia/Shanghai",
+  "query_context": {
+    "field_scope": "selected_fields",
+    "record_scope": "view_filtered_records"
+  },
+  "requested_limit": 2000,
+  "records_count": 562,
+  "page_count": 1,
+  "has_more": false,
+  "record_file": "/Users/joanna/Desktop/具身/具身智能-项目/模型平台/outputs/evaluation_import_design/source/cases-0000.ndjson",
+  "record_file_size_bytes": 494685,
+  "manifest_file": "/Users/joanna/Desktop/具身/具身智能-项目/模型平台/outputs/evaluation_import_design/source/cases-0000.manifest.json",
+  "columns": {
+    "Factor": {
+      "field_id": "fldR559pvo",
+      "field_type": "text",
+      "physical_type": "string|null",
+      "stats": {
+        "null_count": 73,
+        "max_length": 67
+      },
+      "example": "任务结构-目标材质"
+    },
+    "Factor取值": {
+      "field_id": "fld47emjCc",
+      "field_type": "text",
+      "physical_type": "string|null",
+      "stats": {
+        "null_count": 73,
+        "max_length": 109
+      },
+      "example": "{\"被操作物品属性-尺寸\": \"大\"}"
+    },
+    "Prompt": {
+      "field_id": "fldUhONTtd",
+      "field_type": "text",
+      "physical_type": "string|null",
+      "stats": {
+        "null_count": 1,
+        "max_length": 204
+      },
+      "example": "Zip the pouch"
+    },
+    "Skill标签": {
+      "field_id": "fld7vU71WR",
+      "field_type": "select",
+      "physical_type": "array<string>",
+      "stats": {
+        "empty_count": 1,
+        "max_length": 4,
+        "avg_length": 1.498220640569395
+      },
+      "example": [
+        "拆卸"
+      ]
+    },
+    "Stage": {
+      "field_id": "fldwdW8ldV",
+      "field_type": "select",
+      "physical_type": "array<string>",
+      "stats": {
+        "empty_count": 1,
+        "max_length": 1,
+        "avg_length": 0.998220640569395
+      },
+      "example": [
+        "书房"
+      ]
+    },
+    "Story": {
+      "field_id": "fldzeIL4nT",
+      "field_type": "select",
+      "physical_type": "array<string>",
+      "stats": {
+        "empty_count": 1,
+        "max_length": 1,
+        "avg_length": 0.998220640569395
+      },
+      "example": [
+        "扔"
+      ]
+    },
+    "ft采集组（仅限来源为ft采集场景的数据）": {
+      "field_id": "fldobkny38",
+      "field_type": "select",
+      "physical_type": "array<string>",
+      "stats": {
+        "empty_count": 321,
+        "max_length": 1,
+        "avg_length": 0.4288256227758007
+      },
+      "example": [
+        "是"
+      ]
+    },
+    "prompt_ch": {
+      "field_id": "fldUEFmjlq",
+      "field_type": "text",
+      "physical_type": "string|null",
+      "stats": {
+        "null_count": 1,
+        "max_length": 40
+      },
+      "example": "压缩袋"
+    },
+    "record_id": {
+      "physical_type": "string",
+      "stats": {
+        "max_length": 16
+      },
+      "example": "recvnUNUTjXG42"
+    },
+    "story(英文版）": {
+      "field_id": "fldSrSCgNl",
+      "field_type": "select",
+      "physical_type": "array<string>",
+      "stats": {
+        "empty_count": 428,
+        "max_length": 1,
+        "avg_length": 0.23843416370106763
+      },
+      "example": [
+        "Open this book"
+      ]
+    },
+    "前置用例": {
+      "field_id": "fldB5eDTVz",
+      "field_type": "text",
+      "physical_type": "string|null",
+      "stats": {
+        "null_count": 560,
+        "max_length": 1
+      },
+      "example": "-"
+    },
+    "布置图片": {
+      "field_id": "fldN7IHNwF",
+      "field_type": "attachment",
+      "physical_type": "array<struct<file_token string, size number, name string>>",
+      "stats": {
+        "empty_count": 310,
+        "max_length": 2,
+        "avg_length": 0.47330960854092524
+      },
+      "example": [
+        {
+          "file_token": "UfevbIrgporK3MxGJwociEnyn8d",
+          "name": "image.png",
+          "size": 1024
+        }
+      ]
+    },
+    "数据归属": {
+      "field_id": "fldmiz62Aq",
+      "field_type": "select",
+      "physical_type": "array<string>",
+      "stats": {
+        "empty_count": 1,
+        "max_length": 1,
+        "avg_length": 0.998220640569395
+      },
+      "example": [
+        "Eval"
+      ]
+    },
+    "是否在eval场景集": {
+      "field_id": "fldLOlkOau",
+      "field_type": "select",
+      "physical_type": "array<string>",
+      "stats": {
+        "empty_count": 1,
+        "max_length": 1,
+        "avg_length": 0.998220640569395
+      },
+      "example": [
+        "否"
+      ]
+    },
+    "是否采集过遥操数据": {
+      "field_id": "fldhK9vCgL",
+      "field_type": "select",
+      "physical_type": "array<string>",
+      "stats": {
+        "empty_count": 288,
+        "max_length": 1,
+        "avg_length": 0.4875444839857651
+      },
+      "example": [
+        "id"
+      ]
+    },
+    "来源": {
+      "field_id": "fldygXuYsi",
+      "field_type": "select",
+      "physical_type": "array<string>",
+      "stats": {
+        "empty_count": 1,
+        "max_length": 1,
+        "avg_length": 0.998220640569395
+      },
+      "example": [
+        "0730uDAS验证"
+      ]
+    },
+    "版本": {
+      "field_id": "fld8bDf4A1",
+      "field_type": "select",
+      "physical_type": "array<string>",
+      "stats": {
+        "empty_count": 52,
+        "max_length": 1,
+        "avg_length": 0.9074733096085409
+      },
+      "example": [
+        "V1.0"
+      ]
+    },
+    "用例ID": {
+      "field_id": "fld1SpQmio",
+      "field_type": "text",
+      "physical_type": "string|null",
+      "stats": {
+        "null_count": 1,
+        "max_length": 8
+      },
+      "example": "BM-01"
+    },
+    "道具": {
+      "field_id": "fldbKz35jV",
+      "field_type": "text",
+      "physical_type": "string|null",
+      "stats": {
+        "null_count": 1,
+        "max_length": 79
+      },
+      "example": "同上"
+    }
+  }
+}

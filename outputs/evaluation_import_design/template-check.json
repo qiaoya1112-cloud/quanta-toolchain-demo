@@ -1,0 +1,56 @@
+{
+  "check": {
+    "recordCount": 1,
+    "truncated": false,
+    "metadata": {
+      "revision": "1bphsl",
+      "target": {
+        "id": "wb/uokji9",
+        "beforeLines": 0,
+        "afterLines": 0
+      },
+      "kind": {
+        "requested": "table",
+        "tokens": [
+          "table"
+        ]
+      },
+      "include": {
+        "requested": "values,formulas",
+        "tokens": [
+          "values",
+          "formulas"
+        ]
+      },
+      "exclude": {
+        "tokens": []
+      },
+      "notices": []
+    }
+  },
+  "errors": {
+    "recordCount": 1,
+    "truncated": false,
+    "metadata": {
+      "revision": "5vb5dx",
+      "target": {
+        "id": "wb/ccdhug",
+        "beforeLines": 0,
+        "afterLines": 0
+      },
+      "kind": {
+        "requested": "match",
+        "tokens": [
+          "match"
+        ]
+      },
+      "include": {
+        "tokens": []
+      },
+      "exclude": {
+        "tokens": []
+      },
+      "notices": []
+    }
+  }
+}

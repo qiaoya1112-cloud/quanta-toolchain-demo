@@ -75,7 +75,7 @@ class WorkbenchPoolTests(unittest.TestCase):
         html = self.client.get("/data/workbench-v2").get_data(as_text=True)
         table = re.search(r'<table class="ant-table" id="dpr-wb2-pool-table">.*?</table>', html, re.S)[0]
         self.assertEqual(4, table.count("<tr data-flow="))
-        for node in ("采集质检", "采集验收"):
+        for node in ("采集质检", "质检验收"):
             self.assertIn(f'data-flow="预训练数据质检流程" data-node="{node}"', table)
         for pool in ("POOL-PRETRAINING-QC", "POOL-PRETRAINING-ACCEPTANCE", "POOL-E2E-ACCEPTANCE"):
             html = self.client.get("/data/workbench-v2/pools/" + pool).get_data(as_text=True)

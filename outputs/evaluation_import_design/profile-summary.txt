@@ -1,0 +1,196 @@
+{
+  "source_url": "https://nwd4iy9rd2s.feishu.cn/base/OQ2UbV65natigrstPbXcwhWinyb?table=tblnjRJV5JV5vLQr&view=vewi0Okt9f",
+  "case_schema_fields": 18,
+  "visible_fields": 17,
+  "hidden_fields": [
+    "前置用例"
+  ],
+  "records": {
+    "cases": 562,
+    "scenes": 630,
+    "skills": 198,
+    "factors": 193,
+    "values": 206
+  },
+  "case_missing": {
+    "prompt_ch": 1,
+    "是否采集过遥操数据": 288,
+    "版本": 52,
+    "story(英文版）": 428,
+    "是否在eval场景集": 1,
+    "Prompt": 1,
+    "ft采集组（仅限来源为ft采集场景的数据）": 321,
+    "Skill标签": 1,
+    "Factor": 73,
+    "Factor取值": 73,
+    "用例ID": 1,
+    "Story": 1,
+    "来源": 1,
+    "道具": 1,
+    "布置图片": 310,
+    "前置用例": 560,
+    "数据归属": 1,
+    "Stage": 1
+  },
+  "duplicate_case_ids": {
+    "BM_07_03": 2,
+    "BM_07_02": 2,
+    "BM_09": 2,
+    "BM_10": 2
+  },
+  "invalid_case_ids": [],
+  "blank_business_rows": [
+    "reczz28NuQyCi8KW"
+  ],
+  "missing_required_rows": [
+    {
+      "record_id": "reczz28NuQyCi8KW",
+      "id": null,
+      "missing": [
+        "用例ID",
+        "Stage",
+        "Story",
+        "Prompt",
+        "prompt_ch",
+        "数据归属"
+      ]
+    }
+  ],
+  "attachments": {
+    "cases": 252,
+    "files": 266,
+    "max_per_case": 2,
+    "over_1MB": 73
+  },
+  "factor_blank_asymmetry": [],
+  "related": {
+    "scene_factor_links_populated": 0,
+    "scene_factor_value_populated": 299,
+    "skill_named_rows": 36,
+    "skill_with_cn_en_category": 35,
+    "skill_category_counts": {
+      "动作类 Skill": 34,
+      "辨别类 Skill": 4
+    },
+    "factor_named_rows": 37,
+    "value_named_rows": 127,
+    "value_extra_fields_populated": {
+      "字段 16": 0,
+      "字段 7": 0,
+      "字段 12": 0,
+      "字段 5": 0,
+      "字段 2": 0,
+      "字段 8": 0,
+      "字段 14": 0,
+      "字段 6": 0,
+      "字段 11": 0,
+      "字段 13": 0,
+      "字段 9": 0,
+      "字段 15": 0,
+      "字段 3": 0,
+      "字段 4": 0,
+      "字段 10": 0
+    },
+    "value_link_missing_targets": [],
+    "value_without_factor_link": 80,
+    "skills_duplicate_names": {},
+    "factors_duplicate_names": {}
+  },
+  "schema_other_tables": {
+    "evalset": [
+      {
+        "name": "Prompt",
+        "type": "text"
+      },
+      {
+        "name": "前置用例",
+        "type": "text"
+      },
+      {
+        "name": "道具",
+        "type": "text"
+      },
+      {
+        "name": "Factor",
+        "type": "text"
+      },
+      {
+        "name": "Story",
+        "type": "select"
+      },
+      {
+        "name": "布置图片",
+        "type": "attachment"
+      },
+      {
+        "name": "用例ID",
+        "type": "text"
+      },
+      {
+        "name": "Stage",
+        "type": "select"
+      },
+      {
+        "name": "优先级",
+        "type": "select"
+      },
+      {
+        "name": "Skill标签",
+        "type": "select"
+      },
+      {
+        "name": "Factor取值",
+        "type": "text"
+      }
+    ],
+    "legacy": [
+      {
+        "name": "Prompt",
+        "type": "text"
+      },
+      {
+        "name": "道具",
+        "type": "text"
+      },
+      {
+        "name": "评分规则制定人",
+        "type": "user"
+      },
+      {
+        "name": "Story",
+        "type": "select"
+      },
+      {
+        "name": "ID/OOD",
+        "type": "select"
+      },
+      {
+        "name": "评分规则审核人",
+        "type": "text"
+      },
+      {
+        "name": "用例ID",
+        "type": "text"
+      },
+      {
+        "name": "评分规则",
+        "type": "text"
+      },
+      {
+        "name": "Stage",
+        "type": "select"
+      },
+      {
+        "name": "布置图片",
+        "type": "attachment"
+      },
+      {
+        "name": "中文",
+        "type": "text"
+      }
+    ]
+  }
+}
+factor_json_counts {'populated': 489, 'invalid_json': 2, 'invalid_shape': 0, 'single_key_text_mismatch': 14, 'parsed_records': 487, 'multi_factor_records': 208, 'combined_key_records': 181}
+invalid_yes_no_counts {'是否在eval场景集': 0, '是否采集过遥操数据': 4}
+props_ditto 124

@@ -1,0 +1,60 @@
+{% macro field(label, value) -%}
+<div class="bi-field-item"><div class="bi-field-label">{{ label }}</div><div class="bi-field-value">{{ value }}</div></div>
+{%- endmacro %}
+{% macro empty(columns, message) -%}
+<tr><td colspan="{{ columns }}" class="muted" style="text-align:center;padding:32px;">{{ message }}</td></tr>
+{%- endmacro %}
+
+<div class="tdh">
+  <div class="tdh-name">{{ model.name }}</div>
+  <div class="tdh-actions">
+    <a class="btn" href="{{ url_for('models') }}">返回模型管理</a>
+  </div>
+  <div class="tdh-meta">
+    <div><span class="lbl">Checkpoint ID:</span><span class="val mono">{{ model.id }}</span></div>
+    <div><span class="lbl">创建人:</span><span class="val">{{ model.owner }}</span></div>
+    <div><span class="lbl">创建时间:</span><span class="val">{{ model.created }}</span></div>
+  </div>
+</div>
+<div class="tm-bar"><div class="tm-tabs" aria-label="模型详情">
+  {% for key, label in tabs %}<a class="tm-tab{{ ' active' if active_tab == key else '' }}" href="{{ url_for('model_detail', model_id=model.id, tab=key) }}"{% if active_tab == key %} aria-current="page"{% endif %}>{{ label }}</a>{% endfor %}
+</div></div>
+
+{% if active_tab == 'info' %}
+<div class="basic-info">
+  <section class="bi-sec">
+    <h3 class="bi-sec-title">基本信息</h3>
+    <div class="bi-field-row">{{ field('名称', model.name) }}</div>
+    <div class="bi-field-row">{{ field('描述', model.description or '—') }}</div>
+    <div class="bi-field-row">{{ field('基础模型', model.base) }}</div>
+    <div class="bi-field-row">
+      <div class="bi-field-item"><div class="bi-field-label">训练任务</div><div class="bi-field-value">
+        {% if experiment %}<a href="{{ url_for('experiment_detail', exp_id=experiment.id) }}">{{ experiment.name }}</a>
+        {% elif model.source == 'upload' %}{{ model.train_task_name }} <span class="muted">（外部导入时登记）</span>
+        {% else %}{{ model.train_task_name }} <span class="muted">（暂无对应任务记录）</span>{% endif %}
+      </div></div>
+    </div>
+    <div class="bi-field-row">{{ field('步数', model.step) }}</div>
+    <div class="bi-field-row">{{ field('来源', model.source_label) }}</div>
+    <div class="bi-field-row">{{ field('存储地址', model.storage_address) }}</div>
+    <h4 class="bi-subsection-title">数据集与权重</h4>
+    <div class="table-wrap q-table-scroll"><table class="ant-table" aria-label="数据集与权重">
+      <thead><tr><th>数据集 ID</th><th>数据集名称</th><th>版本</th><th>权重</th></tr></thead>
+      <tbody>{% for dataset in datasets %}<tr>
+        <td class="mono">{{ dataset.id }}</td><td><a href="{{ url_for('model_data_dataset_detail', ds_id=dataset.id) }}">{{ dataset.name }}</a></td>
+        <td>{{ dataset.version }}</td><td>{{ dataset.weight }}</td>
+      </tr>{% else %}{{ empty(4, '暂无关联数据集') }}{% endfor %}</tbody>
+    </table></div>
+  </section>
+</div>
+{% elif active_tab == 'evaluations' %}
+<div class="table-wrap q-table-scroll"><table class="ant-table" aria-label="关联评测任务">
+  <thead><tr><th>任务 ID</th><th>名称</th><th>评测集</th><th>创建时间</th></tr></thead>
+  <tbody>{% for item in evaluations %}<tr>
+    <td class="mono">{{ item.id }}</td><td><a href="{{ url_for('task_statistics', tid=item.id) }}" target="_blank" rel="noopener noreferrer">{{ item.name }}</a></td>
+    <td>{{ item.benchmark }}</td><td>{{ item.at }}</td>
+  </tr>{% else %}{{ empty(4, '暂无关联评测记录') }}{% endfor %}</tbody>
+</table></div>
+{% elif active_tab == 'lineage' %}
+<div class="lineage-page-shell">{{ lineage_html|safe }}</div>
+{% endif %}
