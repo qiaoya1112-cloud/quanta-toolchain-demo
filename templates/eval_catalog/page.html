@@ -91,8 +91,9 @@
   #ec-import-dialog .s026-upload-zone > span { line-height:1.6; }
   #ec-import-dialog .s026-upload-zone [data-upload-actions] { display:flex; flex-wrap:wrap; gap:8px; }
   #ec-import-form > .ant-drawer-footer { display:flex; align-items:center; gap:8px; }
-  #ec-import-mock { margin-right:auto; padding:0; border:0; background:none; font-size:12px; white-space:nowrap; cursor:pointer; }
-  #ec-import-mock:disabled { color:rgba(0,0,0,.25); cursor:not-allowed; }
+  .ec-import-mock-actions { display:flex; flex-wrap:wrap; gap:16px; margin-right:auto; }
+  .ec-import-mock-actions .action-link { padding:0; border:0; background:none; font-size:12px; white-space:nowrap; cursor:pointer; }
+  .ec-import-mock-actions .action-link:disabled { color:rgba(0,0,0,.25); cursor:not-allowed; }
   #ec-import-dialog .ec-import-note { margin:12px 0 20px; font-size:12px; line-height:1.7; }
   #ec-import-history-section { margin-top:24px; border-top:1px solid #f0f0f0; padding-top:20px; }
   .ec-import-history-heading { display:flex; align-items:baseline; gap:12px; margin-bottom:12px; }
@@ -167,14 +168,14 @@
 <div class="ant-drawer-mask" id="ec-import-dialog" role="dialog" aria-modal="true" aria-labelledby="ec-import-title"><div class="ant-drawer-content benchmark-drawer-content">
   <div class="ant-drawer-header"><h3 id="ec-import-title">批量导入评测用例</h3><button type="button" class="ant-drawer-close" id="ec-import-close" aria-label="关闭">×</button></div>
   <form id="ec-import-form"><div class="ant-drawer-body">
-    <div class="form-group"><label for="ec-import-duplicate-mode">用例 ID 重复时</label><select id="ec-import-duplicate-mode" aria-describedby="ec-import-duplicate-help"><option value="update">更新</option><option value="skip" selected>跳过</option></select><p class="muted" id="ec-import-duplicate-help" style="margin:8px 0 0;font-size:12px">与平台已有用例 ID 重复时，跳过该行，保留已有用例。文件内的 ID 仍需唯一。</p></div>
     <div class="s026-upload-zone" id="ec-import-zone" aria-label="上传评测用例表">
       <b id="ec-import-filename">上传评测用例表</b>
       <span>支持 XLSX、CSV，本地选择或拖拽上传；文件不超过 12 MB</span>
       <input type="file" id="ec-import-file" accept=".xlsx,.csv" aria-label="选择评测用例文件" hidden>
       <div class="s026-upload-state" id="ec-import-file-state" role="status" aria-live="polite"></div>
-      <div data-upload-actions><a class="ant-btn" href="/model/eval/test-cases/import/template" download>下载模板</a><button type="button" class="ant-btn" id="ec-import-choose">选择本地文件</button><button type="button" class="ant-btn" id="ec-import-remove" hidden>移除文件</button></div>
+      <div data-upload-actions><a class="ant-btn" href="/model/eval/test-cases/import/template" download>下载模板</a><button type="button" class="ant-btn" id="ec-import-choose">选择本地文件</button></div>
     </div>
+    <div class="form-group" style="margin-top:20px"><label for="ec-import-duplicate-mode">用例 ID 重复时</label><select id="ec-import-duplicate-mode" aria-describedby="ec-import-duplicate-help"><option value="update">更新</option><option value="skip" selected>跳过</option></select><p class="muted" id="ec-import-duplicate-help" style="margin:8px 0 0;font-size:12px">与平台已有用例 ID 重复时，跳过该行，保留已有用例。文件内的 ID 仍需唯一。</p></div>
     <p class="muted ec-import-note">选择文件后自动上传、校验，全部通过后整批导入；失败原因和错误文件见对应记录。图片直接嵌入 Excel，详细规则见模板填写说明。</p>
     <section id="ec-import-history-section" aria-labelledby="ec-import-history-title">
       <div class="ec-import-history-heading"><h4 id="ec-import-history-title">导入记录</h4><p class="muted" id="ec-import-history-note">仅展示本人的导入记录</p></div>
@@ -182,7 +183,7 @@
       <div style="overflow-x:auto"><table class="ant-table" id="ec-import-history"><colgroup><col style="width:180px"><col style="width:150px"><col style="width:112px"><col><col style="width:136px"></colgroup><thead><tr><th>文件</th><th>提交时间</th><th>状态</th><th>错误说明</th><th>操作</th></tr></thead><tbody id="ec-import-history-body"><tr><td colspan="5" class="muted" style="text-align:center">暂无导入记录</td></tr></tbody></table></div>
       <div class="ec-import-pagination" id="ec-import-history-pagination" hidden><span class="muted" id="ec-import-history-count"></span><button type="button" class="ant-btn" id="ec-import-history-prev">上一页</button><button type="button" class="ant-btn" id="ec-import-history-next">下一页</button></div>
     </section>
-  </div><div class="ant-drawer-footer"><button type="button" class="action-link" id="ec-import-mock">mock 错误数据</button><button type="button" class="ant-btn" id="ec-import-cancel">关闭</button><button type="submit" class="ant-btn ant-btn-primary" id="ec-import-submit" hidden disabled>重试上传</button></div></form>
+  </div><div class="ant-drawer-footer"><div class="ec-import-mock-actions"><button type="button" class="action-link" id="ec-import-mock">mock 错误数据</button><button type="button" class="action-link" id="ec-import-mock-valid">mock 正确数据</button></div><button type="button" class="ant-btn" id="ec-import-cancel">关闭</button><button type="submit" class="ant-btn ant-btn-primary" id="ec-import-submit" hidden disabled>重试上传</button></div></form>
 </div></div>
 <div class="ant-drawer-mask ant-centered-modal" id="ec-benchmark-add-dialog" role="dialog" aria-modal="true" aria-labelledby="ec-benchmark-add-title"><div class="ant-drawer-content">
   <div class="ant-drawer-header"><h3 id="ec-benchmark-add-title">批量添加至已有评测集</h3><button type="button" class="ant-drawer-close" id="ec-benchmark-add-close" aria-label="关闭">×</button></div>

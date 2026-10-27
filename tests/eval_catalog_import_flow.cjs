@@ -50,9 +50,14 @@ function environment(){
  await pending;
  assert(env.messages.includes('上传中 50%'),'Progress reflects transferred bytes');
  assert.equal(env.get('importTask.status'),'validating');
+ assert.equal(env.get('importFile'),null,'Successful upload releases the selected file');
+ assert.equal(env.elements['ec-import-file'].value,'');
+ assert.equal(env.elements['ec-import-filename'].textContent,'上传评测用例表');
+ assert.equal(env.elements['ec-import-file-state'].textContent,'');
  assert(env.elements['ec-import-history-body'].innerHTML.includes('校验中'));
  env.tasks[0].status='importing';await env.context.pollImport();
  assert(env.elements['ec-import-history-body'].innerHTML.includes('导入中'));
+ assert.equal(env.elements['ec-import-file-state'].textContent,'','Processing stays in history');
  env.tasks[0].status='success';await env.context.pollImport();
  assert(env.elements['ec-import-history-body'].innerHTML.includes('导入成功'));
  assert.equal(env.catalogLoads(),1);assert(!env.elements['ec-import-choose'].disabled);
@@ -68,8 +73,9 @@ function environment(){
  failed.tasks[0].status='validation_failed';failed.tasks[0].has_report=true;failed.tasks[0].message='prompt_CN 必填';
  await failed.context.pollImport();
  assert(failed.elements['ec-import-history-body'].innerHTML.includes('下载错误文件'));
- assert.equal(failed.elements['ec-import-submit'].textContent,'重新上传');
- await failed.context.submitImport();assert.equal(failed.tasks.length,2,'Revalidation creates a new historical record');
+ assert(failed.elements['ec-import-submit'].hidden,'Uploaded files do not leave a stale resubmit button');
+ assert.equal(failed.elements['ec-import-file-state'].textContent,'');
+ await failed.context.selectImportFile(file);assert.equal(failed.tasks.length,2,'Selecting the corrected file creates a new historical record');
  failed.tasks[0].status='import_failed';failed.tasks[0].message='写入冲突';await failed.context.pollImport();
  assert(failed.elements['ec-import-history-body'].innerHTML.includes('导入失败'));
  const labels=env.get('Object.values(importStates).map(item=>item[0])');

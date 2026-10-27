@@ -1597,7 +1597,7 @@ function clearImportResult(){
 function importLoading(busy){
  busy=busy||importSending;
  importBusy=busy;
- for(const id of ['ec-import-choose','ec-import-remove','ec-import-mock','ec-import-duplicate-mode'])$(id).disabled=busy;
+ for(const id of ['ec-import-choose','ec-import-mock','ec-import-mock-valid','ec-import-duplicate-mode'])$(id).disabled=busy;
  const retry=importFailed(importTask?.status)&&!!importFile;
  $('ec-import-submit').hidden=!retry;$('ec-import-submit').disabled=busy||!retry;$('ec-import-submit').textContent=importTask?.status==='upload_failed'?'重试上传':'重新上传';
  $('ec-import-cancel').textContent='关闭';
@@ -1605,7 +1605,7 @@ function importLoading(busy){
 function selectImportFile(file){
  if(importBusy)return;
  importFile=file||null;importRequestKey=null;importTask=null;rememberImportTask(null);clearImportResult();
- $('ec-import-filename').textContent=file?.name||'上传评测用例表';$('ec-import-remove').hidden=!file;
+ $('ec-import-filename').textContent=file?.name||'上传评测用例表';
  $('ec-import-file-state').textContent=file?`${(file.size/1024/1024).toFixed(2)} MB`:'';
  importLoading(false);
  if(file)return submitImport();
@@ -1638,7 +1638,11 @@ function importHistoryError(message){const result=$('ec-import-history-error');r
 function rememberImportTask(taskId){try{if(taskId)sessionStorage.setItem('eval-import-task:'+catalogNamespace,taskId);else sessionStorage.removeItem('eval-import-task:'+catalogNamespace);}catch(error){}}
 function showImportTask(task){
  importTask=task;
- importMessage((importFile?`${(importFile.size/1024/1024).toFixed(2)} MB · `:'')+(importStates[task.status]?.[0]||'导入失败'),importFailed(task.status));
+ if(!['uploading','upload_failed'].includes(task.status)){
+  importFile=null;$('ec-import-file').value='';$('ec-import-filename').textContent='上传评测用例表';importMessage('');
+ }else if(importFile){
+  importMessage(`${(importFile.size/1024/1024).toFixed(2)} MB · `+(importStates[task.status]?.[0]||'上传失败'),importFailed(task.status));
+ }
  importLoading(importActive(task.status));
 }
 async function pollImport(){
@@ -1665,6 +1669,7 @@ async function pollImport(){
 }
 async function submitImport(){
  if(importBusy||!importFile)return;
+ const selectedFile=importFile;
  if(importTask&&importTask.status!=='upload_failed')importRequestKey=null;
  if(!importRequestKey)importRequestKey=crypto.randomUUID();
  importSending=true;importLoading(true);importHistoryPage=1;
@@ -1691,8 +1696,12 @@ async function submitImport(){
   let recovered=null;
   if(task?.id){try{const response=await fetch(`${importEndpoint}/jobs/${task.id}/upload`,{method:'POST',headers:{'Content-Type':'application/json'},body:'{}',signal:AbortSignal.timeout(10000)});if(response.ok)recovered=await response.json();}catch(ignore){}}
   if(recovered){importLocalTask=null;showImportTask(recovered);}
-  else{importLocalTask={id:task?.id||importRequestKey,filename:importFile.name,submitted_at:task?.submitted_at||new Date().toLocaleString('sv-SE'),status:'upload_failed',message:error.message,has_report:false,download_url:null};showImportTask(importLocalTask);renderImportHistory(importHistory);}
+  else{importLocalTask={id:task?.id||importRequestKey,filename:selectedFile.name,submitted_at:task?.submitted_at||new Date().toLocaleString('sv-SE'),status:'upload_failed',message:error.message,has_report:false,download_url:null};showImportTask(importLocalTask);renderImportHistory(importHistory);}
  }finally{importSending=false;importLoading(importActive(importTask?.status));await pollImport();}
+}
+function nextMockCaseId(used){
+ let id;do{id=crypto.randomUUID().slice(0,6).toUpperCase();}while(used.has(id));
+ used.add(id);return id;
 }
 function uploadImportFile(task,file){
  return new Promise((resolve,reject)=>{
@@ -1715,7 +1724,6 @@ if($('ec-import')){
  $('ec-import-dialog').addEventListener('click',event=>{if(event.target===event.currentTarget){event.stopImmediatePropagation();close('ec-import-dialog');}},true);
  $('ec-import-file').onchange=()=>{const file=$('ec-import-file').files[0];if(file)selectImportFile(file);};
  $('ec-import-choose').onclick=()=>{$('ec-import-file').value='';$('ec-import-file').click();};
- $('ec-import-remove').onclick=()=>{$('ec-import-file').value='';selectImportFile(null);};
  $('ec-import-duplicate-mode').onchange=()=>{importRequestKey=null;syncImportDuplicateMode();};
  const zone=$('ec-import-zone');
  for(const eventName of ['dragenter','dragover'])zone.addEventListener(eventName,event=>{event.preventDefault();if(!importBusy)zone.classList.add('dragging');});
@@ -1728,16 +1736,28 @@ if($('ec-import')){
  $('ec-import-history-prev').onclick=()=>{importHistoryPage--;refreshImportHistory().catch(error=>importHistoryError(error.message));};
  $('ec-import-history-next').onclick=()=>{importHistoryPage++;refreshImportHistory().catch(error=>importHistoryError(error.message));};
  $('ec-import-form').onsubmit=event=>{event.preventDefault();submitImport();};
+ $('ec-import-mock-valid').onclick=async()=>{
+  if(importBusy)return;if(!await catalogReady){importMessage('评测数据未能加载，请刷新页面后重试',true);return;}
+  const project=$('ec-title-project')?.value||projects[0],suffix=crypto.randomUUID().replaceAll('-','');
+  const active=kind=>db[kind].find(row=>row.project===project&&row.publish_status==='已发布'&&row.enabled!==false);
+  const stage=active('stages')?.id||`演示场域_${suffix}`,story=active('stories')?.id||`演示任务_${suffix}`;
+  const prompts=[['Pick up the cup.','拿起杯子。'],['Place the cup on the table.','将杯子放在桌上。'],['Move the cup to the tray.','将杯子移到托盘上。']];
+  const used=new Set(db['test-cases'].map(row=>row.id.toUpperCase()));
+  const rows=prompts.map(([en,cn])=>[nextMockCaseId(used),stage,story,en,cn,project,'公开']);
+  const csv=[['用例 ID','Stage','Story','prompt_EN','prompt_CN','所属项目','可见性'],...rows].map(row=>row.map(value=>'"'+String(value).replace(/"/g,'""')+'"').join(',')).join('\r\n');
+  await selectImportFile(new File(['\uFEFF'+csv],'mock_正确数据.csv',{type:'text/csv'}));
+ };
  $('ec-import-mock').onclick=async()=>{
   if(importBusy)return;if(!await catalogReady){importMessage('评测数据未能加载，请刷新页面后重试',true);return;}
   const project=$('ec-title-project')?.value||projects[0],stage=db.stages.find(row=>row.project===project&&row.publish_status==='已发布'&&row.enabled!==false),story=db.stories.find(row=>row.project===project&&row.publish_status==='已发布'&&row.enabled!==false);
-  const base=['MOCK_ERROR_'+Date.now(),stage?.id||'演示场域',story?.id||'演示任务','Pick up the cup.','拿起杯子。',project,'公开','','',''];
+  const used=new Set(db['test-cases'].map(row=>row.id.toUpperCase()));
+  const base=[nextMockCaseId(used),stage?.id||'演示场域',story?.id||'演示任务','Pick up the cup.','拿起杯子。',project,'公开','','',''];
   const rows=[];const missing=[...base];missing[4]='';rows.push(missing);
   const duplicate=[...base];duplicate[4]='放下杯子。';rows.push(duplicate);
-  const restricted=[...base];restricted[0]+='_GROUP';restricted[6]='受限';rows.push(restricted);
-  const invalid=[...base];invalid[0]+='_FACTOR';invalid[8]='仅有末级名称';invalid[9]='新取值';rows.push(invalid);
+  const restricted=[...base];restricted[0]=nextMockCaseId(used);restricted[6]='受限';rows.push(restricted);
+  const invalid=[...base];invalid[0]=nextMockCaseId(used);invalid[8]='仅有末级名称';invalid[9]='新取值';rows.push(invalid);
   const inactive=db.stages.find(row=>row.project===project&&(row.publish_status!=='已发布'||row.enabled===false));
-  if(inactive){const row=[...base];row[0]+='_STATE';row[1]=inactive.id;rows.push(row);}
+  if(inactive){const row=[...base];row[0]=nextMockCaseId(used);row[1]=inactive.id;rows.push(row);}
   const csv=[['用例 ID','Stage','Story','prompt_EN','prompt_CN','所属项目','可见性','可见用户组','Factor 1','Factor 取值 1'],...rows].map(row=>row.map(value=>'"'+String(value).replace(/"/g,'""')+'"').join(',')).join('\r\n');
   await selectImportFile(new File(['\uFEFF'+csv],'mock_错误数据.csv',{type:'text/csv'}));
  };
