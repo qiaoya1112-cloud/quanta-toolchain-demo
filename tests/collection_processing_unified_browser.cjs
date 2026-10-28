@@ -9,7 +9,7 @@ function getJson(url){return new Promise((resolve,reject)=>{http.get(url,respons
 async function main(){
   fs.mkdirSync(out,{recursive:true});const sandbox=fs.mkdtempSync(path.join(out,'isolated-'));
   const env={...process.env,COLLECTION_DEMO_DB:path.join(sandbox,'collection.sqlite3'),PYTHONIOENCODING:'utf-8'};
-  const seed=spawnSync(python,['-m','flask','--app','toolchain_demo','seed-collection-demo'],{cwd:root,env,encoding:'utf8',windowsHide:true});assert.equal(seed.status,0,seed.stderr);
+  // Start with an empty database: deployed demos must show links without a seed command.
   service=spawn(python,['-m','flask','--app','toolchain_demo','run','--host','127.0.0.1','--port','5087','--no-reload','--no-debugger'],{cwd:root,env,stdio:'ignore',windowsHide:true});
   for(let i=0;i<100;i++){try{if((await getJson(origin+api+'/tasks')).tasks)break;}catch{}await delay(100);}
   chrome=spawn('C:/Program Files/Google/Chrome/Application/chrome.exe',['--headless','--disable-gpu','--no-first-run','--disable-extensions','--no-default-browser-check','--user-data-dir='+path.join(sandbox,'chrome'),'--remote-debugging-port=9437','about:blank'],{stdio:'ignore',windowsHide:true});

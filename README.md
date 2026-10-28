@@ -72,7 +72,8 @@ gunicorn --bind 0.0.0.0:$PORT --workers 1 --timeout 120 toolchain_demo:app
 
 ## 环境变量
 
-本地需要更多数据采集演示数据时，可在仓库目录运行 `python -m flask --app toolchain_demo seed-collection-demo`。
+首次打开数据采集或处理任务页面时，Demo 自动初始化采集录制及关联处理示例，新部署无需复制本地数据库或手工执行命令。已有数据库也会补齐一次，保留用户手动创建及已修改的数据；重复打开和服务重启不会重复添加。设置 `COLLECTION_DEMO_AUTO_SEED=0` 可关闭自动初始化。测试模式保持显式装载测试数据。
+也可在仓库目录手工运行 `python -m flask --app toolchain_demo seed-collection-demo`。
 该命令一次性追加采集任务、录制和 5 个关联处理样例（待处理、处理中、已完成），重复执行不重复添加。02602 关联 3 个处理任务；02601、02607 共用另外 2 个质检与标注任务，部分数据关联多个任务。采集任务列表优先展示有关联的任务。旧版多余且未修改的处理样例会自动精简，手动创建及已修改的数据保留。可通过 `COLLECTION_DEMO_DB` 指定本地数据库，`instance/` 运行数据不提交到仓库。
 
 关联处理任务复用原处理模块的配置详情与 `/data/tasks/<id>` 数据列表，不另设详情页。`/data/processing-tasks?linked=<id>` 打开原只读配置详情；来源采集任务支持返回链接。数据列表仅显示实际纳入成员，支持数据 ID 查询和分页；未接收的质检结果显示“-”，每条录制可回到采集数据查看。
