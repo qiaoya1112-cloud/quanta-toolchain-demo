@@ -33,11 +33,11 @@ async function main(){
     await click('[data-action=create-processing]');await wait("location.pathname==='/data/processing-tasks'&&document.querySelector('#drawerProcessingTaskForm').dataset.collectionSource");
     check(await ev("document.querySelector('#processingTaskProject').value==='亮剑'&&document.querySelector('#processingTaskProject').disabled"),'连续创建自动带入并锁定来源项目');
     check(await ev("document.querySelector('.dpr-task-filter-value').value==='02602'&&document.querySelector('.dpr-task-filter-value').disabled"),'来源任务ID准确带入，不能误删');
-    check(await ev("document.querySelector('#processingTaskName').value===''"),'从采集发起处理任务不自动填写任务名称');
+    check(await ev("document.querySelector('#processingTaskName').value.endsWith('_处理任务')"),'从采集发起处理任务自动填写关联名称');
     check(await ev("!document.querySelector('#dc-processing-source')&&!document.querySelector('#dc-processing-source-field')"),'处理创建页不展示重复来源提示或来源下拉框');
     await click('[data-task-pane=flow]');await click('[data-toggle-stage="质检"]');
     await fill('[data-flow-stage="质检"]','标准训练数据自动质检流程');
-    await click('#processingTaskDrawerSubmit');await wait("document.querySelector('.dc-processing-message')?.textContent.includes('请填写处理任务名称')");
+    await fill('#processingTaskName','');await click('#processingTaskDrawerSubmit');await wait("document.querySelector('.dc-processing-message')?.textContent.includes('请填写处理任务名称')");
     check((await get('/processing/tasks?collection=02602')).tasks.length===0,'处理任务名称为空时阻止创建且不生成半成品');
     await fill('#processingTaskName','桌面采集 · 自动质检');await shot('02-processing-form');
     await click('#processingTaskDrawerSubmit');await wait("location.pathname==='/data/post-training-collection/02602'&&!!document.querySelector('.dc-processing-table')");
@@ -72,9 +72,10 @@ async function main(){
     await click('[data-action=change-state]');await wait("document.querySelector('#dc-dialog').open");check(await ev("document.querySelector('#dc-dialog').textContent.includes('处理任务不会自动重开')"),'重开采集不默默重开处理任务');await click('[data-action=confirm-state]');await wait("document.querySelector('[data-action=change-state]').textContent==='结束采集'");
     await click('[data-action=detail-tab][data-value=processing]');await wait("!!document.querySelector('.dc-processing-table')");await shot('06-related-active');await noOverflow('1440采集关联处理无页面横向溢出');
     await size(1366,900);await noOverflow('1366采集关联处理无页面横向溢出');await shot('07-related-1366');await size(390,844);await noOverflow('390采集关联处理无页面横向溢出');await shot('08-related-mobile');await size(1440);
-    await nav(base+'/new?source=udas');await fill('#dc-name','连续创建入口验证');await fill('#dc-project','PRJ-LIANGJIAN');await fill('#dc-description','根据现场规范执行');await click('#dc-submit');await wait("document.querySelector('#dc-dialog')?.open&&document.querySelector('#dc-dialog-title').textContent==='采集任务已创建'");
-    const createdId=await ev("location.pathname.split('/').pop()");check(await ev("!!document.querySelector('[data-action=create-processing]')&&!!document.querySelector('[data-action=creation-done]')"),'采集创建成功后提供继续创建或查看采集任务，无强制后续配置');await shot('09-create-success');
-    await click('[data-action=create-processing]');await wait("location.pathname==='/data/processing-tasks'&&!!document.querySelector('#drawerProcessingTaskForm').dataset.collectionSource");
+    await nav(base+'/new?source=udas');await fill('#dc-name','连续创建入口验证');await fill('#dc-project','PRJ-LIANGJIAN');await fill('#dc-description','根据现场规范执行');await click('#dc-submit-processing');
+    await wait("location.pathname==='/data/processing-tasks'&&!!document.querySelector('#drawerProcessingTaskForm').dataset.collectionSource");
+    const createdId=await ev("new URLSearchParams(location.search).get('collection')");
+    check(await ev("document.querySelector('.dc-processing-source-context').textContent.includes('采集任务已创建')"),'组合创建直接进入处理配置，采集成功不弹窗');await shot('09-create-success');
     await click('.dpr-processing-back');await wait("location.pathname==='/data/post-training-collection/"+createdId+"'&&!!document.querySelector('.dc-processing-empty')");
     check((await get('/tasks/'+createdId)).task.status==='open'&&(await get('/processing/tasks?collection='+createdId)).tasks.length===0,'取消后续创建不会撤销采集任务或生成半成品处理任务');
     // Partial scope: another processing task only receives one exact recording.

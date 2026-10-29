@@ -476,6 +476,55 @@ class ProcessingTests(unittest.TestCase):
         fallback = render_task_detail(job['id'], task=task, records=records, return_source=record['task_id'], return_tab='invalid')
         self.assertIn('#processing', fallback)
 
+    def test_original_processing_filters_use_completed_results_and_rule_versions(self):
+        upstream = self.action(self.create().json['task'], 'publish').json['task']
+        with self.app.app_context(), collection.database() as conn, conn:
+            stored = processing.get_job(conn, upstream['id'])
+            stored['configs']['质检'] = {'质检': {'rule': '拿取规范 v1'}}
+            for member, conclusion in zip(stored['records'], ('合格', '不合格')):
+                member['stages']['质检'] = 'completed'
+                member['results'] = {'质检': {'conclusion': conclusion}}
+            processing.save_job(conn, stored)
+            job = dict(id='new-job', source_ids=[self.task['id']], filters=[])
+            source = [['采集任务 ID', '等于', self.task['id']]]
+            def selected(*extra):
+                job['filters'] = source + list(extra)
+                return {record['id'] for _, record in processing.candidates(conn, job)}
+            finished = {m['id'] for m in stored['records'][:2]}
+            self.assertEqual(finished, selected(['是否完成质检', '等于', '是', 'any']))
+            self.assertEqual({stored['records'][0]['id']}, selected(['质检结果', '等于', '合格', 'any']))
+            self.assertEqual({stored['records'][1]['id']}, selected(['质检结果', '等于', '不合格', 'any']))
+            self.assertEqual(len(stored['records']) - 2, len(selected(['是否完成质检', '等于', '否', 'any'])))
+            self.assertEqual(finished, selected(['是否完成质检', '等于', '是', json.dumps(['质检', '拿取规范', 'v1'])]))
+            self.assertEqual(set(), selected(['是否完成质检', '等于', '是', json.dumps(['质检', '拿取规范', 'v2'])]))
+            self.assertEqual(set(), selected(['是否完成标注', '等于', '是', 'any']))
+            # A verdict recorded before End must not count as a finished result.
+            member = stored['records'][2]
+            member['results'] = {'质检': {'conclusion': '合格'}}
+            processing.save_job(conn, stored)
+            self.assertEqual(finished, selected(['是否完成质检', '等于', '是', 'any']))
+
+    def test_original_processing_filters_choose_latest_verdict_and_validate_scope(self):
+        for stamp, conclusion in [('2026-10-28 10:00:00', '合格'), ('2026-10-29 10:00:00', '不合格')]:
+            job = self.action(self.create().json['task'], 'publish').json['task']
+            with self.app.app_context(), collection.database() as conn, conn:
+                stored = processing.get_job(conn, job['id'])
+                stored['records'][0]['stages']['质检'] = 'completed'
+                stored['records'][0]['results'] = {'质检': {'conclusion': conclusion, 'completed_at': stamp}}
+                processing.save_job(conn, stored)
+        for conclusion, count in [('合格', 0), ('不合格', 1)]:
+            created = self.create(self.body(filters=[['采集任务 ID', '等于', self.task['id']], ['质检结果', '等于', conclusion, 'any']]))
+            self.assertEqual(201, created.status_code)
+            self.assertEqual(count, created.json['task']['candidate_count'])
+        for condition in [['质检结果', '等于', '合格'], ['质检结果', '等于', '合格', 'bad-scope'], ['是否完成标注', '等于', '是', json.dumps(['质检', '规则', 'v1'])]]:
+            self.assertEqual(422, self.create(self.body(filters=[condition])).status_code)
+
+    def test_original_basic_filters_intersect_source_instead_of_being_ignored(self):
+        for field, value, expected in [('所属项目', '亮剑', self.task['metrics']['uploaded']), ('所属项目', '其他项目', 0), ('采集任务', self.task['id'], self.task['metrics']['uploaded']), ('采集任务', '99999', 0)]:
+            response = self.create(self.body(filters=[['采集任务 ID', '等于', self.task['id']], [field, '等于', value]]))
+            self.assertEqual(201, response.status_code)
+            self.assertEqual(expected, response.json['task']['candidate_count'])
+
     def test_quality_progress_keeps_mistake_separate_from_failed(self):
         from collection_processing_scope import progress
         job={'stages':{'质检':'自动质检','标注':'人工标注'}}
@@ -488,6 +537,24 @@ class ProcessingTests(unittest.TestCase):
         self.assertNotIn('unreported',qc)
         self.assertEqual(1,annotation['done'])
         self.assertEqual(0,progress(job,[])[0][0]['total'])
+
+    def test_progress_three_states_preserve_started_review_rework_and_paused_work(self):
+        from collection_processing_scope import progress
+        job = {'stages': {'质检': '人工质检'}, 'stage_nodes': {'质检': ['质检', '审核']}}
+        rows = [
+            {'stages': {'质检': 'completed'}, 'results': {'质检': {'conclusion': '失误'}}},
+            {'stages': {'质检': 'processing'}},
+            {'stages': {'质检': 'pending'}, 'stage_workflow': {'质检': {'node': '审核', 'status': 'pending'}}},
+            {'stages': {'质检': 'processing'}, 'stage_workflow': {'质检': {'node': '质检', 'status': 'rework'}}},
+            {'stages': {'质检': 'paused'}, 'paused_stages': {'质检': 'processing'}},
+            {'stages': {'质检': 'paused'}, 'paused_stages': {'质检': 'pending'}},
+            {'stages': {'质检': 'pending'}},
+        ]
+        qc = progress(job, rows)[0][0]
+        self.assertEqual((7, 1, 4, 2, 1), (qc['total'], qc['done'], qc['in_progress'], qc['unprocessed'], qc['mistake']))
+        self.assertEqual(qc['total'], qc['done'] + qc['in_progress'] + qc['unprocessed'])
+        empty = progress(job, [])[0][0]
+        self.assertEqual((0, 0, 0), (empty['done'], empty['in_progress'], empty['unprocessed']))
 
 
 if __name__ == '__main__':

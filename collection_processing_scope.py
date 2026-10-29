@@ -101,7 +101,19 @@ def progress(job, members):
             done = passed + failed + mistake
         state = 'waiting' if not members else 'completed' if done == len(members) else 'paused' if paused else 'processing' if running or done else 'pending'
         nodes = node_progress(job, members, stage)
+        def started(member):
+            if stage_finished(member, stage):
+                return False
+            state = member.get('stages', {}).get(stage, 'pending')
+            if state == 'paused':
+                state = member.get('paused_stages', {}).get(stage, 'pending')
+            position = stage_position(member, stage)
+            return (state in ('processing', 'completed', 'rework', 'rejected')
+                    or position.get('status') in ('processing', 'rework', 'rejected')
+                    or position.get('node') not in (None, '', stage_nodes(job, stage)[0]))
+        in_progress = sum(started(member) for member in members)
         rows.append(dict(stage=stage, done=done, running=running, total=len(members), status=state,
+                         in_progress=in_progress, unprocessed=len(members)-done-in_progress,
                          passed=passed, failed=failed, mistake=mistake, unchecked=len(members)-done if stage == '质检' else 0,
                          nodes=nodes, business_nodes=business_nodes(nodes, stage),
                          label={'waiting': '暂无数据', **LABELS}.get(state, state)))

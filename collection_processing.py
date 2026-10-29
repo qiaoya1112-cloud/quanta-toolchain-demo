@@ -11,13 +11,15 @@ import re
 from datetime import datetime
 from urllib.parse import quote, urlencode
 
-from flask import Blueprint, abort, jsonify, request
+from flask import Blueprint, abort, current_app, jsonify, request
 
 import post_training_collection as collection
 
 API = collection.API + '/processing'
 STATES = {'draft': '未发布', 'waiting': '等待数据', 'pending': '待处理',
           'processing': '处理中', 'completed': '已完成', 'paused': '已关闭'}
+PROCESSING_FILTERS = {'是否完成质检': '质检', '质检结果': '质检',
+                      '是否完成标注': '标注', '是否完成采集自检': '自检', '采集自检结果': '自检'}
 
 
 def setup(conn):
@@ -60,10 +62,15 @@ def matches(job, task, record):
     if record.get('upload') != 'uploaded':
         return False
     for field, operator, value, *scope in job['filters']:
+        if field in PROCESSING_FILTERS:
+            continue
         conclusion = record.get('collection_result')
         if conclusion not in ('success', 'failure') and isinstance(record.get('is_mistake'), bool):
             conclusion = 'failure' if record['is_mistake'] else 'success'
-        actual = {'采集任务 ID': task['id'], '数据 ID': record['id'],
+        project = next((p['name'] for p in current_app.config['COLLECTION_PROJECTS']
+                        if p['id'] == task['project']), task['project'])
+        actual = {'采集任务 ID': task['id'], '采集任务': task['id'], '数据 ID': record['id'],
+                  '所属项目': project, '采集类型': {'NORMAL': 'Normal', 'DAGGER': 'DAgger'}.get(task['mode'], 'UDAS'),
                   '采集员': record.get('operator', ''),
                   '采集结论': {'success': '成功', 'failure': '失败'}.get(conclusion, '')}.get(field, '')
         if field == '采集时间':
@@ -94,7 +101,56 @@ def candidates(conn, job):
     from collection_processing_scope import apply_upstream
     rows = [(task, record) for task in source_tasks(conn, job)
             for record in collection.public_task(task, detail=True)['records'] if matches(job, task, record)]
-    return apply_upstream(conn, job, rows)
+    rows = apply_upstream(conn, job, rows)
+    if any(f[0] in PROCESSING_FILTERS for f in job['filters']):
+        rows = filter_processing_results(conn, job, rows)
+    return rows
+
+
+def filter_processing_results(conn, job, rows):
+    """Use completed persisted results, never collection verdicts as processing results."""
+    from collection_processing_scope import stage_finished
+    history = {}
+    for previous in all_jobs(conn):
+        if previous['id'] == job.get('id') or not previous['published']:
+            continue
+        for member in previous['records']:
+            for stage in previous['stages']:
+                if not stage_finished(member, stage):
+                    continue
+                result = member.get('results', {}).get(stage, {})
+                rules = {str(c.get('rule', '')) for c in previous.get('configs', {}).get(stage, {}).values()}
+                # A rule scope is accepted only when its version is known explicitly.
+                if result.get('rule'):
+                    rules.add(str(result['rule']) + (' ' + str(result['rule_version']) if result.get('rule_version') else ''))
+                history.setdefault((member['task_id'], member['id'], stage), []).append(dict(
+                    stamp=(result.get('completed_at') or member.get('admitted_at') or previous['created_at'], previous['id']),
+                    conclusion=result.get('conclusion', ''), rules=rules))
+    selected = []
+    for task, record in rows:
+        passed = True
+        for field, operator, value, *scope in job['filters']:
+            if field not in PROCESSING_FILTERS:
+                continue
+            stage = PROCESSING_FILTERS[field]
+            results = history.get((task['id'], record['id'], stage), [])
+            if stage == '自检':
+                check = record.get('self_check', {})
+                results = [dict(stamp=('', ''), conclusion=check.get('conclusion', ''))] if isinstance(check, dict) and check.get('completed') else []
+            if scope and scope[0] != 'any':
+                _, name, version = json.loads(scope[0])
+                results = [r for r in results if name + ' ' + version in r['rules']]
+            actual = ('是' if results else '否') if field.startswith('是否') else (max(results, key=lambda r: r['stamp'])['conclusion'] if results else '')
+            match = (not actual if operator == '为空' else bool(actual) if operator == '不为空' else
+                     any(v in actual for v in tokens(value)) if operator in ('包含', '不包含') else actual in tokens(value))
+            if operator in ('不等于', '不包含'):
+                match = not match
+            if not match:
+                passed = False
+                break
+        if passed:
+            selected.append((task, record))
+    return selected
 
 
 def admit(conn, job, task_id=None):
@@ -204,15 +260,29 @@ def validate(conn, body, flows):
     filters = body.get('filters', [])
     if not isinstance(filters, list) or len(filters) > 30:
         return None, '筛选条件格式无效'
-    # Only implement filters with collection facts. Never pretend a rule-specific
-    # processing result can be inferred from the legacy quality fixture.
-    allowed_fields = {'采集任务 ID', '数据 ID', '采集员', '采集时间', '采集结论'}
+    allowed_fields = {'采集任务 ID', '采集任务', '所属项目', '采集类型', '数据 ID', '采集员', '采集时间', '采集结论'} | set(PROCESSING_FILTERS)
     for item in filters:
-        if not isinstance(item, list) or len(item) != 3 or any(not isinstance(v, str) for v in item):
+        if not isinstance(item, list) or len(item) not in (3, 4) or any(not isinstance(v, str) for v in item):
             return None, '筛选条件格式无效'
-        field, operator, value = item
+        field, operator, value, *scope = item
         if field not in allowed_fields:
-            return None, '当前采集关联支持采集任务 ID、数据 ID、采集员、采集时间和采集结论筛选'
+            return None, '筛选项无效'
+        if field in PROCESSING_FILTERS:
+            if len(item) != 4:
+                return None, '请选择处理信息的规则范围'
+            if operator not in ('为空', '不为空') and field.startswith('是否') and value not in ('是', '否'):
+                return None, '请选择是或否'
+            if operator not in ('为空', '不为空') and field.endswith('结果') and (not tokens(value) or set(tokens(value)) - {'合格', '不合格', '失误'}):
+                return None, '请选择有效的处理结果'
+            if scope[0] != 'any':
+                try:
+                    parts = json.loads(scope[0])
+                    if not isinstance(parts, list) or len(parts) != 3 or parts[0] != PROCESSING_FILTERS[field] or any(not isinstance(v, str) or not v or len(v) > 300 for v in parts) or parts[0] == '自检':
+                        raise ValueError()
+                except (ValueError, TypeError):
+                    return None, '规则范围无效'
+        elif scope:
+            return None, '基础信息不支持规则范围'
         if operator not in ('等于', '不等于', '包含', '不包含', '为空', '不为空') or len(value) > 20000:
             return None, '筛选条件无效'
         if operator not in ('为空', '不为空') and not value.strip():
@@ -254,7 +324,7 @@ def validate(conn, body, flows):
             percent = config.get('percent', 100)
             if type(percent) is not int or not 0 <= percent <= 100:
                 return None, '处理比例请输入 0～100 的整数'
-    priority = body.get('priority', 6)
+    priority = body.get('priority', 3)
     if type(priority) is not int or not 1 <= priority <= 9:
         return None, '优先级无效'
     category = body.get('category', 'formal')

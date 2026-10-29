@@ -88,7 +88,7 @@ async function main(){
     const id=await taskId();
     const savedExample=example.split('?')[0];
     check((await taskData(id)).spec_url===savedExample,'创建标准化规范链接，去除分享参数用于规范库去重');
-    await click('[data-action=creation-done]');
+    check(await evaluate("!document.querySelector('#dc-dialog').open"),'创建后直接进入详情，不再弹出询问');
     await click('[data-action=detail-tab][data-value=config]');
     check(await evaluate(`document.querySelector('[data-spec-action=open]').href===${JSON.stringify(savedExample)}&&!document.querySelector('#dc-spec-viewer')`),'详情打开规范直达同一原文，无平台正文');
     await shot('02-spec-link-detail');

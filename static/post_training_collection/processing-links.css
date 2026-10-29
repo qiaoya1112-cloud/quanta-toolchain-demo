@@ -38,16 +38,22 @@ body:has(#drawerProcessingTaskForm[aria-hidden="false"][data-collection-source]:
 .dc-processing-table th,.dc-processing-table td{padding:13px 14px!important;text-align:left!important;font-size:13px;vertical-align:middle}
 .dc-processing-task-name{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#118f9c;text-decoration:none}
 .dc-processing-task-id{display:block;font-size:12px;color:#637985;margin-top:5px}
-.dc-processing-progress-stack{display:grid;align-content:center;gap:6px;min-height:54px;width:100%;max-width:240px}
+.dc-processing-progress-stack{display:grid;align-content:center;gap:4px;min-height:54px;width:100%;max-width:240px}
 .dc-processing-progress{display:grid;grid-template-columns:36px minmax(0,1fr);align-items:center;gap:8px;min-height:24px;font-size:12px;white-space:nowrap}
 .dc-progress-stage-label{min-width:0;color:#526a75;font-size:12px}
-.dc-progress-track{height:24px;flex:1;min-width:0;display:flex;gap:2px;overflow:hidden;background:white;border-radius:4px}
+.dc-progress-track{height:20px;flex:1;min-width:0;display:flex;gap:2px;overflow:hidden;background:white;border-radius:10px}
 .dc-progress-segment{display:flex;flex-basis:0;min-width:24px;align-items:center;justify-content:center;height:100%;color:#334e5b;font-weight:500;font-variant-numeric:tabular-nums;cursor:help;outline-offset:-2px}
 .dc-progress-segment:focus-visible{outline:2px solid #118f9c}
-.dc-progress-track .passed,.dc-progress-legend .passed{background:#b6dcc8}
-.dc-progress-track .failed,.dc-progress-track .mistake,.dc-progress-legend .failed,.dc-progress-legend .mistake{background:#f0b9b8}
-.dc-progress-track .annotated,.dc-progress-legend .annotated{background:#f0d0a5}
-.dc-progress-track .remaining,.dc-progress-legend .remaining{background:#e8edf1}
+.dc-progress-segment:hover{filter:brightness(.96)}
+.dc-progress-tooltip{display:none;position:fixed;inset:auto;margin:0;box-sizing:border-box;width:218px;max-width:calc(100vw - 24px);padding:13px 15px;border:1px solid #dfe6eb;border-radius:8px;background:#fff;box-shadow:0 5px 20px #213d4526;color:#334e5b;font:13px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI","Microsoft YaHei",sans-serif;pointer-events:auto}
+.dc-progress-tooltip:popover-open{display:block}
+.dc-progress-tooltip-heading,.dc-progress-tooltip-value,.dc-progress-tooltip-results>div{display:flex;justify-content:space-between;align-items:center;gap:16px}
+.dc-progress-tooltip-heading strong{font-size:13px;font-weight:600}.dc-progress-tooltip-heading>span{font-size:12px}
+.dc-progress-tooltip-value{margin-top:8px;font-variant-numeric:tabular-nums}.dc-progress-tooltip-value>strong{font-size:18px;font-weight:600}.dc-progress-tooltip-value small{font-size:12px;font-weight:400;color:#637985}.dc-progress-tooltip-value>span{font-size:12px;color:#637985}
+.dc-progress-tooltip-results{display:grid;gap:7px;margin-top:11px;padding-top:10px;border-top:1px solid #edf1f4}.dc-progress-tooltip-results strong{font-weight:500;font-variant-numeric:tabular-nums}
+.dc-progress-track .completed,.dc-progress-legend .completed{background:#b6dcc8}
+.dc-progress-track .in-progress,.dc-progress-legend .in-progress{background:#bdd8f4}
+.dc-progress-track .unprocessed,.dc-progress-legend .unprocessed{background:#e8edf1}
 .dc-progress-empty{color:#637985}
 .dc-processing-node-toggle{font-size:12px;margin-top:5px;padding:0;border:0;background:transparent;cursor:pointer}
 .dc-processing-table .dc-processing-nodes-row>td{background:#f8fafb;padding:18px 20px!important}

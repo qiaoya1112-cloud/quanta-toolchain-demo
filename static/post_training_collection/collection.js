@@ -203,10 +203,6 @@
     const ids=new Set();processingJobs.forEach(job=>(job.records||[]).filter(record=>record.task_id===task.id).forEach(record=>ids.add(record.id+'@'+record.task_id)));
     return {count:processingJobs.length,active:processingJobs.filter(job=>job.status==='processing').length,completed:processingJobs.filter(job=>job.status==='completed').length,records:ids.size};
   }
-  function showCreateSuccess(){
-    openDialog('采集任务已创建',`<div class="dc-created-identity"><strong>${esc(task.name)}</strong><span>任务 ID ${esc(task.id)}</span></div>`,
-      '<button class="dc-btn" data-action="creation-done">查看采集任务</button><button class="dc-btn primary" data-action="create-processing">继续创建处理任务</button>');
-  }
   function recordProcessingResultTone(result){
     return ({'合格':'teal','已完成':'teal','不合格':'red','失误':'amber'})[result]||'';
   }
@@ -423,7 +419,7 @@
             <section class="dc-generalization" aria-labelledby="dc-generalization-title"><div class="dc-generalization-head"><h3 id="dc-generalization-title">位置泛化统计</h3><span class="dc-optional">选填</span></div><div class="dc-generalization-body"><div class="dc-generalization-scroll"><table class="dc-generalization-table" aria-label="位置泛化统计配置"><thead><tr><th>${isDagger()?'对应 Prompt':'统计项名称'}</th><th>取点规则</th><th>目标泛化区域</th><th>端侧调整</th><th>算子</th><th>操作</th></tr></thead><tbody id="dc-generalization">${form.generalization.length?form.generalization.map(renderGeneralization).join(''):`<tr><td colspan="6" class="dc-generalization-empty">${isDagger()&&!form.prompts.length?'请先选择任务提示词，再添加统计项':'尚未添加统计项'}</td></tr>`}</tbody></table></div><div class="dc-generalization-actions"><button type="button" class="dc-btn small" data-action="add-generalization" ${isDagger()&&!form.prompts.some(p=>!form.generalization.some(g=>g.prompt_id===p.id))?'disabled':''}>${icon('plus')}新增统计项</button></div>${errorFor('generalization')}</div></section>
           </section>`:''}
         </div></div>
-        <footer class="dc-form-bottom"><span></span><div class="dc-row"><a class="dc-btn" href="${task?withListContext(boot.base+'/'+task.id):esc(listReturnHref())}">取消</a><button type="button" class="dc-btn" data-action="save-draft">保存本地草稿</button><button class="dc-btn primary" type="submit" id="dc-submit">${task?'保存修改':'创建任务'}</button></div></footer>
+        <footer class="dc-form-bottom"><span></span><div class="dc-row"><a class="dc-btn" href="${task?withListContext(boot.base+'/'+task.id):esc(listReturnHref())}">取消</a><button class="dc-btn primary" type="submit" id="dc-submit">${task?'保存修改':'创建'}</button>${!task?'<button class="dc-btn" type="submit" id="dc-submit-processing" name="next" value="processing">创建并建处理任务</button>':''}</div></footer>
       </form>`);
     window.CollectionTagPicker.mount(document.getElementById('dc-tags'),form.tags,tags=>{form.tags=tags;clearFormError('tags');dirty=true;});
     window.CollectionPromptPicker.mount(task?null:document.getElementById('dc-prompts'),form.prompts,boot.prompts,prompts=>{
@@ -559,7 +555,10 @@
   }
   async function submitForm(event) {
     event.preventDefault(); if (busy) return;
-    busy = true; document.getElementById('dc-submit').disabled=true; document.getElementById('dc-submit').textContent='正在保存…';
+    const continueProcessing=!task&&event.submitter?.value==='processing';
+    const buttons=[...document.querySelectorAll('#dc-create-form button[type="submit"]')];
+    const clicked=event.submitter||document.getElementById('dc-submit');
+    busy = true; buttons.forEach(button=>button.disabled=true);clicked.textContent='正在保存…';
     try {
       const body=payload();let headers={};
       if(!task){
@@ -570,12 +569,14 @@
       const result = await request(task?`/tasks/${task.id}`:'/tasks', task?'PATCH':'POST', body, headers);
       dirty=false; try { localStorage.removeItem(draftKey); } catch (_) { /* storage may be disabled */ }
       if(!task){createAttempt=null;try{sessionStorage.removeItem(createAttemptKey);}catch(_){}
-        location.assign(contextualPath(boot.base+'/'+result.task.id+'?created=1'));return;
+        location.assign(continueProcessing
+          ?'/data/processing-tasks?'+new URLSearchParams({collection:result.task.id,new:'1',collection_created:'1'})
+          :contextualPath(boot.base+'/'+result.task.id+'?created=1'));return;
       }
       location.assign(contextualPath(boot.base+'/'+result.task.id+'?saved='+(result.unchanged?'unchanged':'1')));
     } catch (error) {
-      showErrors(error.errors, error.status===409?'此任务已在其他页面更新。你的输入已保留，请先保存本地草稿，再刷新核对。':error.errors?'请检查标红的配置后重试。':error.message);
-    } finally { busy=false; const button=document.getElementById('dc-submit'); if(button){button.disabled=false;button.textContent=task?'保存修改':'创建任务';} }
+      showErrors(error.errors, error.status===409?'此任务已在其他页面更新。你的输入已保留，请先复制需要保留的内容，再刷新核对。':error.errors?'请检查标红的配置后重试。':error.message);
+    } finally { busy=false; buttons.forEach(button=>{button.disabled=false;button.textContent=button.id==='dc-submit-processing'?'创建并建处理任务':task?'保存修改':'创建';}); }
   }
   function openDialog(title, body, footer) {
     releaseRecordVideo();
@@ -698,21 +699,60 @@
   }
   function processingProgressBar(p){
     const total=Math.max(0,Number(p.total)||0),done=Math.min(total,Math.max(0,Number(p.done)||0));
-    const quality=p.stage==='质检',passed=Number(p.passed)||0,failed=Number(p.failed)||0,mistake=Number(p.mistake)||0;
-    const groups=quality?[
-      ['passed','合格',passed],['failed','不合格',failed],['mistake','失误',mistake],['remaining','未完成',Math.max(0,total-passed-failed-mistake)]
-    ]:[['annotated','已完成',done],['remaining','未完成',total-done]];
+    const running=Math.min(total-done,Math.max(0,Number(p.in_progress??p.running)||0));
+    const groups=[['completed','已完成',done],['in-progress','处理中',running],['unprocessed','未处理',total-done-running]];
     const detail=groups.map(([,label,count])=>`${label} ${count}`).join(' · ');
-    const segments=groups.filter(([, ,count])=>count>0).map(([tone,label,count])=>`<span class="dc-progress-segment ${tone}" style="flex-grow:${count}" tabindex="0" title="${esc(label)}：${count}" aria-label="${esc(p.stage)}${esc(label)}：${count}">${count}</span>`).join('');
+    const segments=groups.filter(([, ,count])=>count>0).map(([tone,label,count])=>{
+      const tooltip=p.stage==='质检'&&tone==='completed'?`已完成：${count}；合格：${Number(p.passed)||0}；不合格：${Number(p.failed)||0}；失误：${Number(p.mistake)||0}`:`${label}：${count}`;
+      const details={stage:p.stage,label,count,total,tone,results:p.stage==='质检'&&tone==='completed'?[['合格',Number(p.passed)||0],['不合格',Number(p.failed)||0],['失误',Number(p.mistake)||0]]:null};
+      return `<span class="dc-progress-segment ${tone}" style="flex-grow:${count}" tabindex="0" data-progress-tooltip="${esc(JSON.stringify(details))}" aria-label="${esc(p.stage)}${esc(tooltip)}">${count}</span>`;
+    }).join('');
     return `<div class="dc-processing-progress"><span class="dc-progress-stage-label">${esc(p.stage)}</span>${total?`<div class="dc-progress-track" role="group" aria-label="${esc(p.stage)}：${esc(detail)}">${segments}</div>`:'<span class="dc-progress-empty">—</span>'}</div>`;
   }
+  const progressTooltip=document.createElement('div');
+  progressTooltip.id='dc-progress-tooltip';progressTooltip.className='dc-progress-tooltip';
+  progressTooltip.setAttribute('popover','manual');progressTooltip.setAttribute('role','tooltip');document.body.append(progressTooltip);
+  let progressTooltipAnchor=null,progressTooltipTimer;
+  function hideProgressTooltip(){
+    clearTimeout(progressTooltipTimer);
+    progressTooltipAnchor?.removeAttribute('aria-describedby');progressTooltipAnchor=null;
+    if(progressTooltip.matches(':popover-open'))progressTooltip.hidePopover();
+  }
+  function showProgressTooltip(anchor){
+    clearTimeout(progressTooltipTimer);
+    if(!anchor.isConnected)return;
+    const data=JSON.parse(anchor.dataset.progressTooltip);
+    progressTooltipAnchor?.removeAttribute('aria-describedby');progressTooltipAnchor=anchor;
+    anchor.setAttribute('aria-describedby',progressTooltip.id);
+    progressTooltip.innerHTML=`<div class="dc-progress-tooltip-heading"><strong>${esc(data.stage)}</strong><span>${esc(data.label)}</span></div><div class="dc-progress-tooltip-value"><strong>${data.count.toLocaleString()}<small> / ${data.total.toLocaleString()}</small></strong><span>${(data.count/data.total*100).toFixed(1)}%</span></div>${data.results?`<div class="dc-progress-tooltip-results">${data.results.map(([label,count])=>`<div><span>${esc(label)}</span><strong>${count.toLocaleString()}</strong></div>`).join('')}</div>`:''}`;
+    progressTooltip.showPopover();
+    const rect=anchor.getBoundingClientRect(),box=progressTooltip.getBoundingClientRect();
+    progressTooltip.style.left=Math.max(12,Math.min(innerWidth-box.width-12,rect.left+(rect.width-box.width)/2))+'px';
+    progressTooltip.style.top=(rect.top-box.height-8>=12?rect.top-box.height-8:Math.min(innerHeight-box.height-12,rect.bottom+8))+'px';
+  }
+  root.addEventListener('pointerover',event=>{
+    const anchor=event.target.closest('[data-progress-tooltip]');
+    if(anchor&&!anchor.contains(event.relatedTarget)){clearTimeout(progressTooltipTimer);progressTooltipTimer=setTimeout(()=>showProgressTooltip(anchor),120);}
+  });
+  root.addEventListener('pointerout',event=>{
+    const anchor=event.target.closest('[data-progress-tooltip]');
+    if(anchor&&!anchor.contains(event.relatedTarget)&&document.activeElement!==anchor){clearTimeout(progressTooltipTimer);progressTooltipTimer=setTimeout(hideProgressTooltip,120);}
+  });
+  root.addEventListener('focusin',event=>{const anchor=event.target.closest('[data-progress-tooltip]');if(anchor)showProgressTooltip(anchor);});
+  root.addEventListener('focusout',event=>{if(event.target.closest('[data-progress-tooltip]'))hideProgressTooltip();});
+  progressTooltip.addEventListener('pointerenter',()=>clearTimeout(progressTooltipTimer));
+  progressTooltip.addEventListener('pointerleave',()=>{if(document.activeElement!==progressTooltipAnchor)hideProgressTooltip();});
+  document.addEventListener('keydown',event=>{if(event.key==='Escape')hideProgressTooltip();});
+  document.addEventListener('pointerdown',event=>{if(!event.target.closest('[data-progress-tooltip],.dc-progress-tooltip'))hideProgressTooltip();});
+  addEventListener('scroll',event=>{if(event.target===window||!progressTooltip.contains(event.target))hideProgressTooltip();},true);addEventListener('resize',hideProgressTooltip);
   function renderProcessingTab(el){
+    hideProgressTooltip();
     const summary=processingSummary();
     if(processingError){el.innerHTML=`<div class="dc-processing-empty"><p role="alert">关联处理任务加载失败：${esc(processingError)}</p><button class="dc-btn" data-action="retry-processing">重试</button></div>`;return;}
     if(processingLoading&&!processingJobs.length){el.innerHTML='<div class="dc-processing-loading">正在加载关联处理任务…</div>';return;}
     el.innerHTML=`<div class="dc-detail-content dc-processing-content-tab"><div class="dc-processing-tab-head"><div class="dc-processing-summary"><div><span>关联处理任务</span><strong>${summary.count}</strong></div><div><span>关联数据</span><strong>${summary.records}</strong></div></div><button class="dc-btn primary" data-action="create-processing">+ 创建处理任务</button></div>
     ${processingJobs.length?`
-    <div class="dc-processing-table-wrap"><table class="dc-table dc-processing-table"><thead><tr><th>处理任务</th><th>本采集任务数据</th><th>处理进度 <span class="dc-progress-help" tabindex="0" aria-label="进度说明" aria-describedby="dc-progress-legend">?<span id="dc-progress-legend" class="dc-progress-legend" role="tooltip" popover="manual"><strong>走完环节全部必经节点才计入完成</strong><span><i class="passed"></i>质检合格 <i class="failed"></i>质检不合格 <i class="mistake"></i>失误</span><span><i class="annotated"></i>标注已完成 <i class="remaining"></i>未完成</span><small>待验收、驳回返工均计入未完成；仅统计本采集任务的数据。</small></span></span></th><th>创建人</th><th>创建时间</th><th>操作</th></tr></thead><tbody>${processingJobs.map(job=>`<tr><td><a class="dc-processing-task-name" href="${esc(processingDataUrl(job))}">${esc(job.name)}</a><span class="dc-processing-task-id">${esc(job.id)}</span></td><td><a href="${esc(processingDataUrl(job))}">${job.selected_count}</a></td><td><div class="dc-processing-progress-stack">${job.stage_progress.map(processingProgressBar).join('')}</div></td><td class="dc-processing-creator" title="${esc(job.creator||'-')}">${esc(job.creator||'-')}</td><td class="dc-processing-created-at">${esc(job.created_at?job.created_at.replace('T',' ').slice(0,16):'-')}</td><td><div class="dc-processing-row-actions"><a class="dc-link" href="${esc(processingDataUrl(job))}">查看数据</a></div></td></tr>`).join('')}</tbody></table></div>`:'<div class="dc-processing-empty"><h3>还没有关联处理任务</h3></div>'}</div>`;
+    <div class="dc-processing-table-wrap"><table class="dc-table dc-processing-table"><thead><tr><th>处理任务</th><th>本采集任务数据</th><th>处理进度 <span class="dc-progress-help" tabindex="0" aria-label="进度说明" aria-describedby="dc-progress-legend">?<span id="dc-progress-legend" class="dc-progress-legend" role="tooltip" popover="manual"><strong>走完环节全部必经节点才计入完成</strong><span><i class="completed"></i>已完成 <i class="in-progress"></i>处理中 <i class="unprocessed"></i>未处理</span><small>已开始的待验收、返工计入处理中；悬停质检已完成部分查看结果。仅统计本采集任务关联的数据。</small></span></span></th><th>创建人</th><th>创建时间</th><th>操作</th></tr></thead><tbody>${processingJobs.map(job=>`<tr><td><a class="dc-processing-task-name" href="${esc(processingDataUrl(job))}">${esc(job.name)}</a><span class="dc-processing-task-id">${esc(job.id)}</span></td><td><a href="${esc(processingDataUrl(job))}">${job.selected_count}</a></td><td><div class="dc-processing-progress-stack">${job.stage_progress.map(processingProgressBar).join('')}</div></td><td class="dc-processing-creator" title="${esc(job.creator||'-')}">${esc(job.creator||'-')}</td><td class="dc-processing-created-at">${esc(job.created_at?job.created_at.replace('T',' ').slice(0,16):'-')}</td><td><div class="dc-processing-row-actions"><a class="dc-link" href="${esc(processingDataUrl(job))}">查看数据</a></div></td></tr>`).join('')}</tbody></table></div>`:'<div class="dc-processing-empty"><h3>还没有关联处理任务</h3></div>'}</div>`;
   }
   // Keep the legend in the top layer so it cannot be clipped by the scrolling table.
   root.addEventListener('pointerover',event=>{
@@ -1028,7 +1068,6 @@
     }
     else if(action==='discard-draft'){try{localStorage.removeItem(draftKey);}catch(_){}draft=null;renderForm();}
     else if(action==='create-processing')location.assign('/data/processing-tasks?collection='+encodeURIComponent(task.id)+'&new=1');
-    else if(action==='creation-done'){closeDialog();const url=new URL(location.href);url.searchParams.delete('created');history.replaceState(null,'',url.pathname+url.search+url.hash);}
     else if(action==='record-processing')await showRecordProcessing(button.dataset.id);
     else if(action==='retry-processing')await loadProcessingLinks();
     else if(action==='detail-tab')selectDetailTab(button.dataset.value);
@@ -1074,7 +1113,7 @@
         formSource=form.source;
         try{const stored=JSON.parse(localStorage.getItem(draftKey));if(stored?.form?.source===formSource&&Array.isArray(stored.form.prompts)&&Array.isArray(stored.form.generalization)&&Array.isArray(stored.form.tags))draft=stored;}catch(_){/* Ignore unavailable or invalid storage. */}
         renderForm();
-      } else {task=(await request('/tasks/'+encodeURIComponent(route[0]))).task;await loadProcessingLinks(false);lastRefreshedAt=Date.now();const restored=restoreDetailContext();renderDetail();if(params.get('processing_record')){const record=params.get('processing_record');root.querySelector(`[data-action="record-processing"][data-id="${CSS.escape(record)}"]`)?.focus({preventScroll:true});await showRecordProcessing(record);if(dialog.open)dialog.querySelector('.dc-dialog-body').scrollTop=restored?.drawerScroll||0;}if(params.has('saved')){toast(params.get('saved')==='unchanged'?'未发现修改':'任务已保存');const url=new URL(location.href);url.searchParams.delete('saved');history.replaceState(null,'',url.pathname+url.search+url.hash);}if(params.get('card')==='1')await openShareCard();if(params.get('created')==='1')showCreateSuccess();if(params.has('processing_created'))toast('处理任务已创建，可在关联处理中查看并发布');}
+      } else {task=(await request('/tasks/'+encodeURIComponent(route[0]))).task;await loadProcessingLinks(false);lastRefreshedAt=Date.now();const restored=restoreDetailContext();renderDetail();if(params.get('processing_record')){const record=params.get('processing_record');root.querySelector(`[data-action="record-processing"][data-id="${CSS.escape(record)}"]`)?.focus({preventScroll:true});await showRecordProcessing(record);if(dialog.open)dialog.querySelector('.dc-dialog-body').scrollTop=restored?.drawerScroll||0;}if(params.has('saved')){toast(params.get('saved')==='unchanged'?'未发现修改':'任务已保存');const url=new URL(location.href);url.searchParams.delete('saved');history.replaceState(null,'',url.pathname+url.search+url.hash);}if(params.get('card')==='1')await openShareCard();if(params.get('created')==='1'){toast('采集任务已创建');const url=new URL(location.href);url.searchParams.delete('created');history.replaceState(null,'',url.pathname+url.search+url.hash);}if(params.has('processing_created'))toast('处理任务已创建，可在关联处理中查看并发布');}
     } catch(error) { ready(pageHead('数据采集','')+`<section class="dc-panel">${empty('暂时无法加载',error.message,'<button class="dc-btn" data-action="retry">重新加载</button>')}</section>`); }
   }
   init();
