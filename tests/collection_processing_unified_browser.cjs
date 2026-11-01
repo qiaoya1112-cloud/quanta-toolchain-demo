@@ -27,11 +27,11 @@ async function main(){
   const shot=async name=>{await delay(120);const r=await call('Page.captureScreenshot',{format:'png'});fs.writeFileSync(path.join(out,name+'.png'),Buffer.from(r.data,'base64'));};
   await call('Runtime.enable');await call('Emulation.setFocusEmulationEnabled',{enabled:true});await call('Network.enable');await call('Network.setBlockedURLs',{urls:['https://cdn.jsdelivr.net/*']});await call('Emulation.setDeviceMetricsOverride',{width:1440,height:960,deviceScaleFactor:1,mobile:false});
   await nav('/data/tasks/20455');
-  await check("document.querySelector('.dpr-record-top .dpr-state')?.textContent==='运行中'&&!document.querySelector('.dpr-record-config')",'原处理数据页恢复运行中状态且无配置按钮');
+  await check("!document.querySelector('.dpr-record-top .dpr-state')&&!document.querySelector('.dpr-record-config')",'原处理数据页移除顶部状态和配置按钮');
   const original=await ev("({headers:[...document.querySelectorAll('.dpr-record-table th')].map(e=>e.textContent),filter:document.querySelector('.dpr-record-filters').className,table:document.querySelector('.dpr-record-table').className,top:document.querySelector('.dpr-record-top').className})");await shot('01-original');
   await nav(base+'/02601#processing');await wait("document.querySelectorAll('.dc-processing-table tbody tr').length===2");
   await check("[...document.querySelectorAll('.dc-processing-table thead th')].map(e=>e.childNodes[0].textContent.trim()).join('|')==='处理任务|本采集任务数据|处理进度|创建人|创建时间|操作'",'关联处理增加创建人与创建时间，保持六列顺序');
-  await check("fetch('/api/post-training-collection/processing/tasks?collection=02601').then(r=>r.json()).then(({tasks})=>[...document.querySelectorAll('.dc-processing-task-name')].every(a=>{const row=a.closest('tr'),job=tasks.find(t=>a.href.includes('/data/tasks/'+t.id+'?'));return row.querySelector('.dc-processing-creator').textContent===(['joanna.qiao','演示创建人'].includes(job.creator)?'joanna':job.creator)&&row.querySelector('.dc-processing-created-at').textContent===job.created_at.replace('T',' ').slice(0,16);}))",'创建人与时间取对应处理任务字段');
+  await check("fetch('/api/post-training-collection/processing/tasks?collection=02601').then(r=>r.json()).then(({tasks})=>[...document.querySelectorAll('.dc-processing-task-name')].every(a=>{const row=a.closest('tr'),job=tasks.find(t=>a.closest('tr').dataset.collectionProcessing===t.id);return row.querySelector('.dc-processing-creator').textContent===(['joanna.qiao','演示创建人'].includes(job.creator)?'joanna':job.creator)&&row.querySelector('.dc-processing-created-at').textContent===job.created_at.replace('T',' ').slice(0,16);}))",'创建人与时间取对应处理任务字段');
   await check("!['已纳入','待纳入','全部匹配','未匹配'].some(t=>document.querySelector('#dc-app').textContent.includes(t))",'采集关联页删除批次接收概念');
   await check("!document.querySelector('.dc-collection-progress')&&[...document.querySelectorAll('.dc-progress-stage-label')].every(e=>['质检','标注'].includes(e.textContent))&&!document.querySelector('.dc-progress-legend').textContent.includes('已采')&&document.querySelector('.dc-detail-stats-inline').textContent.includes('已上传数据')",'关联处理不重复显示已采，保留处理进度及顶部采集统计');
   if(!process.env.SOURCE_FILTER_ONLY){
@@ -63,7 +63,7 @@ async function main(){
   }
   if(process.env.RELATED_COLUMNS_ONLY){await shot('02-related-columns');assert.deepEqual(errors,[]);fs.writeFileSync(path.join(out,'columns-report.json'),JSON.stringify({checks,passed:checks.length,errors},null,2));console.log(JSON.stringify({passed:checks.length,out}));return;}
   await click('.dc-processing-row-actions a[href*="30004"]');await wait("!!document.querySelector('#cp-data-context')");
-  await check("!!document.querySelector('.dpr-record-top .dpr-state')&&!document.querySelector('.dpr-record-config')",'关联处理数据页沿用原状态组件且无配置按钮');
+  await check("!document.querySelector('.dpr-record-top .dpr-state')&&!document.querySelector('.dpr-record-config')",'关联处理数据页移除顶部状态和配置按钮');
   await check("document.querySelectorAll('.dpr-record-table tbody tr').length===8",'采集入口仅查看当前来源八条数据');
   await check("document.querySelector('#processingCollectionId').tagName==='INPUT'&&document.querySelector('#processingCollectionId').value==='02601'&&location.pathname==='/data/tasks/30004'",'点击查看数据进入共用详情页并自动填写采集ID');
   await check(`[...document.querySelectorAll('.dpr-record-table th')].map(e=>e.textContent).join('|')===${JSON.stringify(original.headers.join('|'))}`, '关联与原处理任务表格列完全相同');

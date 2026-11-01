@@ -218,6 +218,8 @@ def seed_demo(conn, flows):
         count = seed_processing_examples(conn, flows) + seed_multi_task_examples(conn, flows)
         repaired = repair_demo_quality_results(conn)
         seed_workflow_example(conn, flows)
+        from processing_rule_examples import link_demo_jobs
+        link_demo_jobs(conn)
         return dict(tasks=0, records=0, processing_tasks=count, repaired_quality_results=repaired, already_seeded=True)
     totals = dict(tasks=0, records=0, processing_tasks=0, already_seeded=False)
     templates = collection.seed_tasks(current_app.config['COLLECTION_PROJECTS'],
@@ -270,6 +272,8 @@ def seed_demo(conn, flows):
     totals['processing_tasks'] = seed_processing_examples(conn, flows)
     totals['processing_tasks'] += seed_multi_task_examples(conn, flows)
     seed_workflow_example(conn, flows)
+    from processing_rule_examples import link_demo_jobs
+    link_demo_jobs(conn)
     conn.execute('INSERT INTO collection_meta VALUES (?, ?)', (FIXTURE, json.dumps(totals)))
     return totals
 

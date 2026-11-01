@@ -561,15 +561,16 @@ PROCESSING_RULES = [
     {
         "stage": "标注",
         "name": "端到端切分标注规则",
+        "rule_type": "语义标注",
         "version": "v1",
         "annotation_method": "仅切分",
         "config": "略",
         "workbench": "语义标注工作台",
     },
-    {"stage": "质检", "name": "通用质检规则", "version": "v3"},
-    {"stage": "质检", "name": "自动化质检规则", "version": "v2"},
-    {"stage": "质检", "name": "DAgger 质检规则", "version": "v1"},
-    {"stage": "标注", "name": "通用动作标注规则", "version": "v3"},
+    {"stage": "质检", "name": "通用质检规则", "version": "v3", "rule_type": "质检"},
+    {"stage": "质检", "name": "自动化质检规则", "version": "v2", "rule_type": "质检"},
+    {"stage": "质检", "name": "DAgger 质检规则", "version": "v1", "rule_type": "质检"},
+    {"stage": "标注", "name": "通用动作标注规则", "version": "v3", "rule_type": "动作标注"},
 ]
 
 USER_GROUPS = [
@@ -3273,6 +3274,7 @@ def render_processing_tasks():
                 "stage": rule["stage"],
                 "name": rule["name"],
                 "version": rule["version"],
+                "rule_type": rule.get("rule_type", ""),
             }
             for rule in PROCESSING_RULES
         ],
@@ -3552,6 +3554,12 @@ def render_processing_tasks():
         .dpr-node-config-row {{ display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px; }}
         .dpr-node-config-row .dpr-node-config-module + .dpr-node-config-module {{ padding-top:0;border-top:0; }}
         .dpr-node-config-module-head {{ display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:9px; }}
+        .dpr-node-percent-actions {{ display:flex;align-items:center;gap:8px; }}
+        .dpr-node-percent-actions button {{ padding:0;border:0;background:transparent;color:#149DAA;font-size:12px;cursor:pointer; }}
+        .dpr-node-percent-actions .dpr-node-percent-cancel {{ color:#74848a; }}
+        .dpr-node-percent-actions [hidden] {{ display:none; }}
+        .dpr-node-percent-error {{ display:block;margin-top:6px;color:#c64b40;font-size:12px; }}
+        .dpr-node-percent-error:empty {{ display:none; }}
         .dpr-node-config-module-head b {{ color:#40575f;font-size:12px; }}
         .dpr-node-config-module-head span {{ color:#8a989d;font-size:10.5px; }}
         .dpr-node-rule-select,.dpr-node-percent-input {{ width:100%;height:34px;box-sizing:border-box;border:1px solid #d8e0e3;border-radius:6px;background:#fff;padding:0 30px 0 9px;color:#344c54;font-size:12px; }}
@@ -3847,7 +3855,7 @@ def render_processing_tasks():
       var stage = (DPR_TASK_FILTER_FIELDS[field] || {{}}).ruleStage;
       if (!stage) return '<span class="muted">—</span>';
       var selected = scope || 'any';
-      var options = [{{value:'any', label:'任意规则'}}].concat(DPR_NODE_RULES.filter(function(rule) {{ return !DPR_TASK_FILTER_FIELDS[field].anyRuleOnly && rule.stage === stage; }}).map(function(rule) {{
+      var options = [{{value:'any', label:'任意规则'}}].concat(DPR_NODE_RULES.filter(function(rule) {{ return !DPR_TASK_FILTER_FIELDS[field].anyRuleOnly && rule.stage === stage && (!rule.inlineProject || rule.inlineProject === document.getElementById('processingTaskProject').value); }}).map(function(rule) {{
         return {{value:JSON.stringify([rule.stage, rule.name, rule.version]), label:rule.name + ' · ' + rule.version}};
       }}));
       // 保留历史版本，不把已有条件静默替换成任意规则。
@@ -4144,7 +4152,7 @@ def render_processing_tasks():
       return false;
     }}
     function dprRulesForNodeStage(stage) {{
-      return DPR_NODE_RULES.filter(function(rule) {{ return rule.stage === stage; }});
+      return DPR_NODE_RULES.filter(function(rule) {{ return rule.stage === stage && !rule.inlineProject; }});
     }}
     function dprDefaultNodeRule(flow) {{
       var rules = dprRulesForNodeStage(flow ? flow.stage : '');
@@ -4159,14 +4167,16 @@ def render_processing_tasks():
       }}
       return rules[0].name + ' ' + rules[0].version;
     }}
-    function dprNodeRuleOptions(flow, selected) {{
+    function dprNodeRuleOptions(flow, selected, node) {{
       var rules = dprRulesForNodeStage(flow ? flow.stage : '');
-      var value = selected || dprDefaultNodeRule(flow);
-      return rules.map(function(rule) {{
+      var isNew = document.getElementById('drawerProcessingTaskForm').dataset.mode === 'new';
+      var value = selected || (isNew ? '' : dprDefaultNodeRule(flow));
+      var fixed = dprNodeRuleConfig(flow, node).mode === 'fixed';
+      return '<option value=""' + (!value ? ' selected' : '') + '>' + (fixed ? '流程固定版本' : '请选择规则') + '</option>' + rules.map(function(rule) {{
         var optionValue = rule.name + ' ' + rule.version;
         return '<option value="' + dprProcessingEscape(optionValue) + '"' +
           (optionValue === value ? ' selected' : '') + '>' +
-          dprProcessingEscape(rule.name) + ' · ' + dprProcessingEscape(rule.version) + '</option>';
+          dprProcessingEscape(rule.name) + ' · ' + dprProcessingEscape(rule.version) + (fixed ? ' · 流程固定' : '') + '</option>';
       }}).join('');
     }}
     function dprNodeRuleConfig(flow, node) {{
@@ -4275,13 +4285,59 @@ def render_processing_tasks():
       dprSetProcessorEditing(card, false);
       toast('保存成功，处理人修改仅对后续新增的数据生效');
     }}
+    function dprSetNodePercentageEditing(card, editing) {{
+      card.dataset.percentEditing = String(editing);
+      card.querySelector('.dpr-node-percent-input').disabled = !editing;
+      card.querySelector('.dpr-node-percent-edit').hidden = editing;
+      card.querySelector('.dpr-node-percent-save').hidden = !editing;
+      card.querySelector('.dpr-node-percent-cancel').hidden = !editing;
+      card.querySelector('.dpr-node-percent-error').textContent = '';
+    }}
+    function dprEditNodePercentage(button) {{
+      var drawer = document.getElementById('drawerProcessingTaskForm');
+      var card = button.closest('.dpr-flow-node-card');
+      if (drawer.querySelector('[data-percent-editing="true"]')) {{ toast('请先保存或取消处理比例修改'); return; }}
+      var input = card.querySelector('.dpr-node-percent-input');
+      card.dataset.percentOriginal = input.value;
+      dprSetNodePercentageEditing(card, true);
+      input.focus(); input.select();
+    }}
+    function dprCancelNodePercentage(button) {{
+      var card = button.closest('.dpr-flow-node-card');
+      var input = card.querySelector('.dpr-node-percent-input');
+      input.value = card.dataset.percentOriginal;
+      dprUpdateNodePercentage(input);
+      dprSetNodePercentageEditing(card, false);
+    }}
+    function dprNodePercentageInputValid(card) {{
+      var input = card.querySelector('.dpr-node-percent-input');
+      var valid = input.value.trim() !== '' && input.checkValidity();
+      card.querySelector('.dpr-node-percent-error').textContent = valid ? '' : '处理比例请输入 0～100 的整数';
+      if (!valid) input.focus();
+      return valid;
+    }}
+    function dprSaveNodePercentage(button) {{
+      var card = button.closest('.dpr-flow-node-card');
+      if (!dprNodePercentageInputValid(card)) return;
+      var input = card.querySelector('.dpr-node-percent-input');
+      dprUpdateNodePercentage(input);
+      var taskId = document.getElementById('drawerProcessingTaskForm').dataset.taskId;
+      var saved = dprReadNodePercentages();
+      saved[taskId] = DPR_NODE_PERCENTAGES;
+      try {{ localStorage.setItem(DPR_NODE_PERCENT_STORAGE, JSON.stringify(saved)); }}
+      catch (error) {{ card.querySelector('.dpr-node-percent-error').textContent = '保存失败，请重试'; return; }}
+      card.dataset.percentOriginal = input.value;
+      dprSetNodePercentageEditing(card, false);
+      toast('已保存，处理比例对新流入的数据生效');
+    }}
     function dprReadNodePercentages() {{
       try {{ return JSON.parse(localStorage.getItem(DPR_NODE_PERCENT_STORAGE) || '{{}}') || {{}}; }}
       catch (error) {{ return {{}}; }}
     }}
     function dprNodePercentage(flowName, nodeName) {{
       var flowValues = DPR_NODE_PERCENTAGES[flowName] || {{}};
-      return Object.prototype.hasOwnProperty.call(flowValues, nodeName) ? flowValues[nodeName] : 100;
+      var config = dprNodeRuleConfig(dprFlowByName(flowName), nodeName);
+      return Object.prototype.hasOwnProperty.call(flowValues, nodeName) ? flowValues[nodeName] : (config.percent == null ? 100 : config.percent);
     }}
     function dprUpdateNodePercentage(input) {{
       var flowName = DPR_SELECTED_FLOWS[DPR_ACTIVE_ASSIGNMENT_STAGE];
@@ -4301,7 +4357,7 @@ def render_processing_tasks():
         var flow = dprFlowByName(DPR_SELECTED_FLOWS[stage]);
         return flow && (flow.human_nodes || []).every(function(node) {{
           var value = String(dprNodePercentage(flow.name, node));
-          return value.trim() !== '' && /^\d+$/.test(value) && Number(value) >= 1 && Number(value) <= 100;
+          return value.trim() !== '' && /^\d+$/.test(value) && Number(value) >= 0 && Number(value) <= 100;
         }});
       }});
     }}
@@ -4341,8 +4397,8 @@ def render_processing_tasks():
           '<div class="dpr-flow-node-card-head"><div><b>' + dprProcessingEscape(node) + '</b><span>人工任务节点</span></div></div>' +
           '<div class="dpr-node-config-modules">' +
             '<div class="dpr-node-config-row">' +
-              '<section class="dpr-node-config-module dpr-node-percent-module"><div class="dpr-node-config-module-head"><b>处理比例</b><span>' + (ruleConfig.allow_task_percent ? '支持任务自定义' : '流程固定比例') + '</span></div><label class="dpr-node-percent-field"><input class="dpr-node-percent-input" type="number" min="1" max="100" step="1" value="' + dprProcessingEscape(String(ruleConfig.percent || dprNodePercentage(flow.name, node))) + '" oninput="dprUpdateNodePercentage(this)"' + (isDetail || (isEdit && drawer.dataset.taskStatus === 'published') || !ruleConfig.allow_task_percent ? ' disabled' : '') + '><span>%</span></label></section>' +
-              '<section class="dpr-node-config-module dpr-node-rule-module"><div class="dpr-node-config-module-head"><b>处理规则</b></div>' + (ruleConfig.mode === 'inherit' ? '<div class="dpr-flow-inherit-note">继承前序节点：' + dprProcessingEscape(ruleConfig.inherit_text || '前序人工节点') + '</div>' : ruleConfig.mode === 'none' ? '<div class="dpr-flow-inherit-note">无需配置</div>' : '<select class="dpr-node-rule-select"' + (configDisabled ? ' disabled' : '') + '>' + dprNodeRuleOptions(flow, ruleConfig.rule || '') + '</select>') + '</section>' +
+              '<section class="dpr-node-config-module dpr-node-percent-module"><div class="dpr-node-config-module-head"><b>处理比例</b>' + ((isEdit || isDetail) && ruleConfig.allow_task_percent !== false ? '<div class="dpr-node-percent-actions"><button type="button" class="dpr-node-percent-edit" onclick="dprEditNodePercentage(this)">编辑</button><button type="button" class="dpr-node-percent-save" onclick="dprSaveNodePercentage(this)" hidden>保存</button><button type="button" class="dpr-node-percent-cancel" onclick="dprCancelNodePercentage(this)" hidden>取消</button></div>' : '<span>' + (ruleConfig.allow_task_percent === false ? '流程固定比例' : '支持任务自定义') + '</span>') + '</div><label class="dpr-node-percent-field"><input class="dpr-node-percent-input" type="number" min="0" max="100" step="1" value="' + dprProcessingEscape(String(dprNodePercentage(flow.name, node))) + '" oninput="dprUpdateNodePercentage(this)"' + (isDetail || isEdit || ruleConfig.allow_task_percent === false ? ' disabled' : '') + '><span>%</span></label><span class="dpr-node-percent-error" role="alert"></span></section>' +
+              '<section class="dpr-node-config-module dpr-node-rule-module"><div class="dpr-node-config-module-head"><b>处理规则</b></div>' + (ruleConfig.mode === 'inherit' ? '<div class="dpr-flow-inherit-note">继承前序节点：' + dprProcessingEscape(ruleConfig.inherit_text || '前序人工节点') + '</div>' : ruleConfig.mode === 'none' ? '<div class="dpr-flow-inherit-note">无需配置</div>' : '<select class="dpr-node-rule-select"' + (configDisabled || ruleConfig.mode === 'fixed' ? ' disabled' : '') + '>' + dprNodeRuleOptions(flow, ruleConfig.rule || '', node) + '</select>') + '</section>' +
             '</div>' +
             '<section class="dpr-node-config-module dpr-node-processor-module"><div class="dpr-node-config-module-head"><b>处理人</b>' + (isEdit && !inherited ? '<div class="dpr-node-processor-actions"><button type="button" class="dpr-node-processor-edit" onclick="dprEditProcessorAssignments(this)">编辑</button><span class="dpr-node-processor-notice" hidden>处理人修改仅对后续新增的数据生效</span><button type="button" class="dpr-node-processor-save" onclick="dprSaveProcessorAssignments(this)" hidden>保存</button><button type="button" class="dpr-node-processor-cancel" onclick="dprCancelProcessorAssignments(this)" hidden>取消</button></div>' : '<span>' + (inherited ? '继承前序节点' : '多个处理人之间为竞签关系') + '</span>') + '</div>' + processorConfig + '</section>' +
           '</div>' +
@@ -4406,6 +4462,9 @@ def render_processing_tasks():
     }}
     function dprShowAssignmentsForStage(stage) {{
       if (!DPR_ENABLED_FLOW_STAGES[stage]) return;
+      if (document.querySelector('#processingTaskAssignments [data-percent-editing="true"]')) {{
+        toast('请先保存或取消处理比例修改'); return;
+      }}
       if (document.querySelector('#processingTaskAssignments .dpr-flow-node-card[data-processor-editing="true"]')) {{
         toast('请先保存或取消处理人修改');
         return;
@@ -4449,7 +4508,8 @@ def render_processing_tasks():
     function dprProcessingAssignmentsValid() {{
       return Array.from(document.querySelectorAll('.dpr-flow-node-card')).every(function(card) {{
         var rule = card.querySelector('.dpr-node-rule-select');
-        if (rule && !rule.value) return false;
+        if (rule && rule.dataset.unavailable === 'true') return false;
+        if (rule && !rule.value && !rule.disabled) return false;
         if (card.dataset.assignmentMode === 'inherit') return true;
         var rows = Array.from(card.querySelectorAll('.dpr-flow-assignment-row'));
         return rows.length > 0 && rows.every(function(row) {{
@@ -4576,8 +4636,9 @@ def render_processing_tasks():
       drawer.querySelectorAll('input, select').forEach(function(control) {{
         if (isDetail) control.disabled = true;
         else if (mode === 'edit') {{
-          if (control.classList.contains('dpr-node-percent-input')) control.disabled = control.disabled || drawer.dataset.taskStatus === 'published';
-          else control.disabled = !['processingTaskPriority', 'processingTaskExpectedValue'].includes(control.id);
+          if (!control.classList.contains('dpr-node-percent-input')) {{
+            control.disabled = !['processingTaskPriority', 'processingTaskExpectedValue'].includes(control.id);
+          }}
         }}
         else if (control.classList.contains('dpr-flow-assignment-type')) {{
           var card = control.closest('.dpr-flow-node-card');
@@ -4631,6 +4692,9 @@ def render_processing_tasks():
     function dprSubmitProcessingTask() {{
       var drawer = document.getElementById('drawerProcessingTaskForm');
       var mode = drawer.dataset.mode;
+      if (drawer.querySelector('[data-percent-editing="true"]')) {{
+        toast('请先保存或取消处理比例修改'); return;
+      }}
       if (drawer.querySelector('.dpr-flow-node-card[data-processor-editing="true"]')) {{
         toast('请先保存或取消处理人修改');
         return;
@@ -6955,7 +7019,7 @@ def render_task_detail(task_id, *, task=None, records=None, page=1, record_filte
           <b>{_e(task["name"])}</b>
           <code>{_e(task["id"])}</code>
         </div>
-        {_state(task["status"])}
+        {'' if processing_page else _state(task["status"])}
       </div>
       {linked_context}
       {filter_html}

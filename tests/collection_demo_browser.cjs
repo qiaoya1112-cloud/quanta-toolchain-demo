@@ -66,7 +66,7 @@ async function main(){
       await shot('record-'+taskId+'-relations');
       await nav('/data/post-training-collection/'+taskId+'#processing');
       await wait(`document.querySelectorAll('.dc-processing-table tbody tr').length===${count}`);
-      check(await ev("[...document.querySelectorAll('.dc-processing-task-name,.dc-processing-row-actions a')].every(a=>a.pathname.startsWith('/data/tasks/')&&new URL(a.href).searchParams.get('collection')==="+JSON.stringify(taskId)+")"),taskId+'关联任务摘要默认查看本采集任务数据');
+      check(await ev("[...document.querySelectorAll('.dc-processing-task-name')].every(a=>a.pathname==='/data/processing-tasks'&&new URL(a.href).searchParams.get('linked'))&&[...document.querySelectorAll('.dc-processing-row-actions a')].every(a=>a.pathname.startsWith('/data/tasks/')&&new URL(a.href).searchParams.get('collection')==="+JSON.stringify(taskId)+")"),taskId+'关联任务名称进入配置、查看数据进入数据页');
     }
     // Existing processing configuration and task-data pages are the only destinations.
     for(const [sourceId,prefix] of [['02601','DEMO-R-01'],['02607','DEMO-R-07']]){

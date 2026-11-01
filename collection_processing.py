@@ -120,6 +120,8 @@ def filter_processing_results(conn, job, rows):
                     continue
                 result = member.get('results', {}).get(stage, {})
                 rules = {str(c.get('rule', '')) for c in previous.get('configs', {}).get(stage, {}).values()}
+                rules.update(c['rule_identity']['name'] + ' ' + c['rule_identity']['version']
+                             for c in previous.get('configs', {}).get(stage, {}).values() if c.get('rule_identity'))
                 # A rule scope is accepted only when its version is known explicitly.
                 if result.get('rule'):
                     rules.add(str(result['rule']) + (' ' + str(result['rule_version']) if result.get('rule_version') else ''))
@@ -162,7 +164,11 @@ def admit(conn, job, task_id=None):
         if key not in existing:
             job['records'].append({'id': record['id'], 'task_id': task['id'],
                                    'admitted_at': collection.now(),
-                                   'stages': {stage: 'pending' for stage in job['stages']}})
+                                   'stages': {stage: 'pending' for stage in job['stages']},
+                                   # The allocation is a boundary snapshot. Editing the
+                                   # task later must never move an already admitted record.
+                                   'node_percentages': editable_node_percentages(
+                                       job, current_app.config['COLLECTION_PROCESSING_FLOWS'], editable_only=False)})
             existing.add(key)
 
 
@@ -317,6 +323,21 @@ def validate(conn, body, flows):
             assignment_config = flow.get('node_assignment_configs', {}).get(node, {})
             if rule_config.get('mode') not in ('inherit', 'none') and not config.get('rule'):
                 return None, '请为人工节点选择处理规则'
+            if rule_config.get('mode') not in ('inherit', 'none'):
+                from processing_rule_store import reference_error
+                project_name = next((p['name'] for p in current_app.config['COLLECTION_PROJECTS'] if p['id'] == tasks[0]['project']), tasks[0]['project'])
+                rule_error = reference_error(conn, config.get('rule', ''), project_name, stage, flow,
+                                             allow_historical=rule_config.get('mode') == 'fixed')
+                if rule_error:
+                    return None, rule_error
+                from processing_rule_store import snapshot_reference
+                identity = snapshot_reference(conn, config.get('rule', ''),project=project_name,stage=stage)
+                if identity:
+                    config['rule_identity'] = identity
+                else:
+                    config.pop('rule_identity', None)
+                if rule_config.get('mode') == 'fixed' and config.get('rule') != rule_config.get('rule'):
+                    return None, '固定规则不允许修改'
             if assignment_config.get('mode') != 'inherit':
                 assignments = config.get('assignments')
                 if not isinstance(assignments, list) or not assignments or any(not isinstance(a, dict) or a.get('type') not in ('supplier', 'user_group') or not isinstance(a.get('target'), str) or not a['target'].strip() for a in assignments):
@@ -360,7 +381,56 @@ def validate(conn, body, flows):
                 category=category, expected_mode=expected_mode, expected_value=expected_value), None
 
 
+def editable_node_percentages(job, flows, editable_only=True):
+    """Return the task-editable node ratio map and current values."""
+    result = {}
+    for stage, flow_name in job.get('stages', {}).items():
+        flow = next((f for f in flows if f.get('stage') == stage and f.get('name') == flow_name), None)
+        if not flow:
+            continue
+        configs = flow.get('node_rule_configs', {})
+        values = {}
+        for node in flow.get('human_nodes', []):
+            rule = configs.get(node, {})
+            if node not in job.get('configs', {}).get(stage, {}):
+                continue
+            if editable_only and rule.get('allow_task_percent', True) is False:
+                continue
+            value = job.get('configs', {}).get(stage, {}).get(node, {}).get('percent',
+                    rule.get('percent', 100))
+            values[node] = int(value)
+        if values:
+            result[stage] = values
+    return result
+
+
+def validate_published_percentages(job, proposed, flows):
+    if not isinstance(proposed, dict):
+        return None, '处理比例格式无效'
+    allowed = editable_node_percentages(job, flows)
+    if set(proposed) != set(allowed):
+        return None, '只能编辑当前任务可配置节点的处理比例'
+    normalized = {}
+    for stage, nodes in proposed.items():
+        if not isinstance(nodes, dict) or set(nodes) != set(allowed[stage]):
+            return None, '只能编辑当前任务可配置节点的处理比例'
+        normalized[stage] = {}
+        for node, value in nodes.items():
+            if type(value) is not int or not 0 <= value <= 100:
+                return None, '处理比例请输入 0～100 的整数'
+            normalized[stage][node] = value
+    return normalized, None
+
+
+def snapshot_existing_percentages(job, flows):
+    """Backfill old demo records once, before a published ratio edit."""
+    current = editable_node_percentages(job, flows, editable_only=False)
+    for member in job.get('records', []):
+        member.setdefault('node_percentages', copy.deepcopy(current))
+
+
 def register_processing(app, flows):
+    app.config['COLLECTION_PROCESSING_FLOWS'] = flows
     bp = Blueprint('collection_processing', __name__)
 
     @app.before_request
@@ -459,6 +529,9 @@ def register_processing(app, flows):
                 return jsonify(error='处理任务已更新，请刷新后重试'), 409
             action = body.get('action')
             if action == 'publish' and not job['published']:
+                _, error = validate(conn, job, flows)
+                if error:
+                    return jsonify(error=error), 422
                 expected = body.get('expected_count')
                 if expected is not None and expected != len(candidates(conn, job)):
                     return jsonify(error='匹配数量已变化，请刷新后重新确认'), 409
@@ -509,14 +582,43 @@ def register_processing(app, flows):
             job = get_job(conn, job_id)
             if type(body.get('revision')) is not int or body['revision'] != job['revision']:
                 return jsonify(error='处理任务已更新，请刷新后重试'), 409
-            if job['published'] and set(body) <= {'revision', 'priority', 'expected_value'}:
-                proposed = dict(job, **{key: value for key, value in body.items() if key != 'revision'})
-                data, error = validate(conn, proposed, flows)
-                if error:
-                    return jsonify(error=error), 422
-                job.update(priority=data['priority'], expected_value=data['expected_value'],
-                           revision=job['revision'] + 1, updated_at=collection.now())
-                job['events'].append(dict(at=job['updated_at'], actor=collection.USER, title='调整处理任务优先级或预期量'))
+            published_fields = {'revision', 'priority', 'expected_value', 'node_percentages'}
+            if job['published'] and set(body) <= published_fields:
+                before = editable_node_percentages(job, flows)
+                if 'node_percentages' in body:
+                    percentages, error = validate_published_percentages(job, body['node_percentages'], flows)
+                    if error:
+                        return jsonify(error=error), 422
+                    # Freeze the old assignment before switching the task's current
+                    # configuration. Newly admitted records receive the new map.
+                    snapshot_existing_percentages(job, flows)
+                    for stage, nodes in percentages.items():
+                        for node, value in nodes.items():
+                            job['configs'][stage][node]['percent'] = value
+                if 'priority' in body:
+                    if type(body['priority']) is not int or not 1 <= body['priority'] <= 9:
+                        return jsonify(error='优先级无效'), 422
+                    job['priority'] = body['priority']
+                if 'expected_value' in body:
+                    value = body['expected_value']
+                    if job.get('expected_mode', 'continuous') == 'continuous':
+                        value = None
+                    else:
+                        try:
+                            if isinstance(value, bool):
+                                raise ValueError()
+                            value = float(value)
+                            if not math.isfinite(value) or value <= 0 or (job['expected_mode'] == 'count' and not value.is_integer()):
+                                raise ValueError()
+                        except (ValueError, TypeError):
+                            return jsonify(error='请填写有效的预期任务量'), 422
+                    job['expected_value'] = value
+                job.update(revision=job['revision'] + 1, updated_at=collection.now())
+                title = '调整处理比例' if 'node_percentages' in body and set(body) == {'revision', 'node_percentages'} else '调整处理任务配置'
+                event = dict(at=job['updated_at'], actor=collection.USER, title=title)
+                if 'node_percentages' in body:
+                    event.update(before=before, after=percentages, applies_to='new_records')
+                job['events'].append(event)
                 save_job(conn, job)
                 return jsonify(task=public_job(conn, job))
             if job['published']:

@@ -449,9 +449,11 @@
       this.dataset.rendered='true';
       const isLongReject=this.getAttribute('variant')==='long-reject';
       const rejectReason=isLongReject?'驳回原因：High-level片段范围需要调整，动作起止边界与任务要求不一致，请重新检查完整操作过程后修正并再次提交':'驳回原因：High-level片段范围需要调整';
-      this.innerHTML=`<header class="workbench-task-info"><div class="workbench-task-info__left"><button class="workbench-task-info__close" type="button" aria-label="关闭"><img src="${assets}icon-close.svg" alt=""></button><div class="workbench-task-info__identity"><span>采集任务ID</span><b>17782</b></div><i class="workbench-task-info__divider" aria-hidden="true"></i><div class="workbench-task-info__workflow"><div class="workbench-task-info__step"><span>当前节点</span><b>内部验收</b></div><i class="workbench-task-info__divider" aria-hidden="true"></i><div class="workbench-task-info__step"><span>上一节点</span><b>供应商验收</b><em>·</em><b>Aria提交</b><em>·</em></div></div><div class="workbench-task-info__reject"${isLongReject?` tabindex="0" aria-label="${rejectReason}" data-tooltip="${rejectReason}"`:` title="${rejectReason}"`}><span>${rejectReason}</span></div></div></header>`;
+      const collectionId=escapeText(this.getAttribute('data-collection-id')||'17782');
+      this.innerHTML=`<header class="workbench-task-info"><div class="workbench-task-info__left"><button class="workbench-task-info__close" type="button" aria-label="关闭"><img src="${assets}icon-close.svg" alt=""></button><div class="workbench-task-info__identity"><span>采集任务ID</span><b>${collectionId}</b></div><i class="workbench-task-info__divider" aria-hidden="true"></i><div class="workbench-task-info__workflow"><div class="workbench-task-info__step"><span>当前节点</span><b>内部验收</b></div><i class="workbench-task-info__divider" aria-hidden="true"></i><div class="workbench-task-info__step"><span>上一节点</span><b>供应商验收</b><em>·</em><b>Aria提交</b><em>·</em></div></div><div class="workbench-task-info__reject"${isLongReject?` tabindex="0" aria-label="${rejectReason}" data-tooltip="${rejectReason}"`:` title="${rejectReason}"`}><span>${rejectReason}</span></div></div></header>`;
       const taskIdentity=this.querySelector('.workbench-task-info__identity');
       for(const [label,attribute] of [['数据 ID','data-id'],['数据处理 ID','data-processing-id']]){
+        if(this.hasAttribute('data-pure-video')&&attribute==='data-processing-id')continue;
         const identity=document.createElement('div');
         identity.className='workbench-task-info__identity';
         const name=document.createElement('span');name.textContent=label;
@@ -460,7 +462,10 @@
         const divider=document.createElement('i');divider.className='workbench-task-info__divider';divider.setAttribute('aria-hidden','true');
         taskIdentity.before(identity,divider);
       }
-      this.querySelector('.workbench-task-info__close').addEventListener('click',()=>this.dispatchEvent(new CustomEvent('workbench-close',{bubbles:true})));
+      this.querySelector('.workbench-task-info__close').addEventListener('click',()=>{
+        const returnUrl=this.getAttribute('data-return-url');
+        if(returnUrl)window.location.assign(returnUrl);else this.dispatchEvent(new CustomEvent('workbench-close',{bubbles:true}));
+      });
       if(isLongReject){
         const trigger=this.querySelector('.workbench-task-info__reject');
         const tooltip=document.createElement('div');
@@ -504,10 +509,11 @@
     }
     render(){
       const isLong=this.getAttribute('variant')==='long';
-      const instruction=isLong
+      const collectionInstruction=this.closest('body')?.querySelector('workbench-task-header')?.getAttribute('data-collection-instruction');
+      const instruction=collectionInstruction || (isLong
         ?'归位书本与笔记本：将散落在桌面、椅面和地面的书本与笔记本逐一整理，按照书本、笔记本分类后放回书架指定位置；摆放时保持书脊朝外、整体竖直，同类物品集中排列，并确保书架前方及周边没有遗漏物品，完成后将双手移出操作区域。'
-        :'归位书本与笔记本：将散落的书本和笔记本整理并放回书架指定位置，保持竖立排列或按类别分层摆放，便于查找和取用';
-      this.innerHTML=`<div class="workbench-instruction${isLong?' workbench-instruction--expandable':''}"${isLong?' aria-expanded="false"':''}><span class="workbench-instruction__inline"><b>采集指令</b><i aria-hidden="true"></i><span>${instruction}</span></span>${isLong?'<button class="workbench-instruction__expand" type="button" aria-expanded="false"><span>展开</span><i aria-hidden="true"></i></button>':''}</div>`;
+        :'归位书本与笔记本：将散落的书本和笔记本整理并放回书架指定位置，保持竖立排列或按类别分层摆放，便于查找和取用');
+      this.innerHTML=`<div class="workbench-instruction${isLong?' workbench-instruction--expandable':''}"${isLong?' aria-expanded="false"':''}><span class="workbench-instruction__inline"><b>采集指令</b><i aria-hidden="true"></i><span>${escapeText(instruction)}</span></span>${isLong?'<button class="workbench-instruction__expand" type="button" aria-expanded="false"><span>展开</span><i aria-hidden="true"></i></button>':''}</div>`;
       const button=this.querySelector('.workbench-instruction__expand');
       if(button)button.addEventListener('click',()=>{
         const panel=this.querySelector('.workbench-instruction');

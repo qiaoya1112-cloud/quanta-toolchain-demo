@@ -42,9 +42,15 @@
     if(!response.ok)throw Error(data.error||'操作失败');return data;
   }
   function rememberNodes(){
-    if(activeJob?.published)return;
     const stage=window.DPR_ACTIVE_ASSIGNMENT_STAGE;
     if(!stage||!window.DPR_ENABLED_FLOW_STAGES[stage])return;
+    if(activeJob?.published){
+      drawer.querySelectorAll('#processingTaskAssignments .dpr-flow-node-card').forEach(card=>{
+        const node=configs[stage]?.[card.dataset.node],percent=card.querySelector('.dpr-node-percent-input');
+        if(node&&percent&&!percent.disabled&&card.dataset.percentEditing!=='true')node.percent=percent.value.trim()===''?null:Number(percent.value);
+      });
+      return;
+    }
     configs[stage]={};
     drawer.querySelectorAll('#processingTaskAssignments .dpr-flow-node-card').forEach(card=>{
       configs[stage][card.dataset.node]={rule:card.querySelector('.dpr-node-rule-select')?.value||'',
@@ -54,12 +60,18 @@
   }
   function restoreSavedNodes(){
     if(!source)return;
-    const nodes=(activeJob?.published?activeJob.configs:configs)[window.DPR_ACTIVE_ASSIGNMENT_STAGE]||{};
+    const nodes=configs[window.DPR_ACTIVE_ASSIGNMENT_STAGE]||{};
     drawer.querySelectorAll('#processingTaskAssignments .dpr-flow-node-card').forEach(card=>{
       const node=nodes[card.dataset.node];if(!node)return;
       const rule=card.querySelector('.dpr-node-rule-select'),percent=card.querySelector('.dpr-node-percent-input');
-      if(rule&&node.rule){if(![...rule.options].some(o=>o.value===node.rule))rule.add(new Option(node.rule,node.rule));rule.value=node.rule;}
-      if(percent)percent.value=node.percent;
+      card.dataset.ruleTaskId=activeJob?.id||'';
+      if(rule&&node.rule){
+        const identity=node.rule_identity;
+        const label=identity?identity.name+' · '+identity.version.toUpperCase():node.rule;
+        if(![...rule.options].some(o=>o.value===node.rule))rule.add(new Option(label,node.rule));
+        rule.value=node.rule;
+      }
+      if(percent&&card.dataset.percentEditing!=='true'){percent.value=node.percent??'';window.dprUpdateNodePercentage(percent);}
     });
   }
   // The existing form caches markup. Persist current property values to avoid
@@ -70,12 +82,16 @@
     if(source)rememberNodes();
   });
   for(const name of ['dprShowAssignmentsForStage','dprToggleFlowStage','dprProcessingFlowChange']){
-    const original=window[name];window[name]=function(...args){if(source)rememberNodes();const result=original.apply(this,args);restoreSavedNodes();return result;};
+    const original=window[name];window[name]=function(...args){
+      if(saving)return;
+      if(drawer.querySelector('[data-percent-editing="true"]')){window.toast('请先保存或取消处理比例修改');return;}
+      if(source)rememberNodes();const result=original.apply(this,args);restoreSavedNodes();return result;
+    };
   }
   function context(sourceTask,job){
     source=sourceTask;activeJob=job||null;showError('');requestKey=crypto.randomUUID();
     sourceIds=job?.source_ids?.slice()||(sourceTask?[sourceTask.id]:[]);
-    for(const key of Object.keys(configs))delete configs[key];Object.assign(configs,job?.configs||{});
+    for(const key of Object.keys(configs))delete configs[key];Object.assign(configs,JSON.parse(JSON.stringify(job?.configs||{})));
     const linked=!!sourceTask;
     drawer.querySelectorAll('#processingTaskFilters+.dpr-task-filter-scope-help').forEach(el=>el.hidden=false);
     sourceContext.hidden=!job||drawer.dataset.mode!=='detail';
@@ -142,7 +158,14 @@
   window.dprCloseProcessingTaskPage=function(){
     if(saving)return;
     const returnTo=params.get('return_to');
-    if(params.get('linked')===drawer.dataset.taskId&&returnTo&&returnTo.startsWith('/data/tasks/')&&!returnTo.includes('\\')){
+    let collectionReturn=false;
+    if(returnTo&&activeJob){
+      try{
+        const parsed=new URL(returnTo,location.origin);
+        collectionReturn=returnTo.startsWith(BASE+'/')&&!returnTo.includes('\\')&&!/[\u0000-\u001f\u007f]/.test(returnTo)&&parsed.origin===location.origin&&parsed.hash==='#processing'&&activeJob.source_ids.some(id=>parsed.pathname===BASE+'/'+encodeURIComponent(id));
+      }catch(_){}
+    }
+    if(params.get('linked')===drawer.dataset.taskId&&returnTo&&((returnTo.startsWith('/data/tasks/')&&!returnTo.includes('\\'))||collectionReturn)){
       location.assign(returnTo);
       return;
     }
@@ -155,17 +178,74 @@
   window.dprRenderTaskFilters=function(...args){const result=originalRenderFilters.apply(this,args);lockSourceFilter();return result;};
   const originalRemoveFilter=window.dprRemoveTaskFilter;
   window.dprRemoveTaskFilter=function(button){if(button.closest('[data-collection-source-locked]'))return;return originalRemoveFilter(button);};
+  const originalSavePercentage=window.dprSaveNodePercentage,originalCancelPercentage=window.dprCancelNodePercentage;
+  window.dprCancelNodePercentage=function(button){
+    if(saving)return;
+    originalCancelPercentage(button);
+    const card=button.closest('.dpr-flow-node-card'),node=configs[window.DPR_ACTIVE_ASSIGNMENT_STAGE]?.[card.dataset.node];
+    if(node)node.percent=Number(card.querySelector('.dpr-node-percent-input').value);
+  };
+  window.dprSaveNodePercentage=async function(button){
+    if(!activeJob)return originalSavePercentage(button);
+    if(saving)return;
+    const card=button.closest('.dpr-flow-node-card');
+    if(!window.dprNodePercentageInputValid(card))return;
+    const stage=window.DPR_ACTIVE_ASSIGNMENT_STAGE,nodeName=card.dataset.node;
+    const next=JSON.parse(JSON.stringify(activeJob.configs));
+    next[stage][nodeName].percent=Number(card.querySelector('.dpr-node-percent-input').value);
+    const percentages={};
+    for(const [s,flowName] of Object.entries(activeJob.stages)){
+      const flow=window.DPR_PROCESSING_FLOWS.find(f=>f.stage===s&&f.name===flowName);
+      if(!flow){card.querySelector('.dpr-node-percent-error').textContent='处理流程已不可用，请刷新后重试';return;}
+      for(const n of flow.human_nodes||[]){
+        if(flow.node_rule_configs?.[n]?.allow_task_percent===false)continue;
+        (percentages[s]||={})[n]=next[s]?.[n]?.percent;
+      }
+    }
+    const controls=[...card.querySelectorAll('.dpr-node-percent-actions button')];
+    const submit=document.getElementById('processingTaskDrawerSubmit'),submitDisabled=submit.disabled;
+    try{
+      saving=true;controls.forEach(el=>el.disabled=true);submit.disabled=true;
+      const body=activeJob.published?{revision:activeJob.revision,node_percentages:percentages}:{...activeJob,configs:next};
+      const result=await api('/tasks/'+activeJob.id,'PATCH',body);
+      activeJob=result.task;
+      for(const [s,nodes] of Object.entries(activeJob.configs))for(const [n,value] of Object.entries(nodes)){
+        if(configs[s]?.[n])configs[s][n].percent=value.percent;
+      }
+      window.dprUpdateNodePercentage(card.querySelector('.dpr-node-percent-input'));
+      window.dprSetNodePercentageEditing(card,false);
+      jobs=jobs.map(job=>job.id===activeJob.id?activeJob:job);
+      const taskRow=document.querySelector('[data-collection-processing="'+CSS.escape(activeJob.id)+'"]');
+      if(taskRow)taskRow.outerHTML=row(activeJob);
+      window.toast('已保存，处理比例对新流入的数据生效');
+    }catch(error){card.querySelector('.dpr-node-percent-error').textContent=error.message;}
+    finally{saving=false;controls.forEach(el=>el.disabled=false);submit.disabled=submitDisabled;}
+  };
   window.dprSubmitProcessingTask=async function(){
     sourceFromFilters();
     if(!source)return originalSubmit();
     if(saving)return;showError('');
     const button=document.getElementById('processingTaskDrawerSubmit');
     try{
+      if(drawer.querySelector('[data-percent-editing="true"]'))throw Error('请先保存或取消处理比例修改');
       if(activeJob?.published){
         const expected=window.dprExpectedTaskValidation();if(!expected.valid)throw Error(expected.message);
+        if(drawer.querySelector('[data-processor-editing="true"]'))throw Error('请先保存或取消处理人修改');
+        rememberNodes();
+        const percentages={};
+        for(const [stage,flowName] of Object.entries(activeJob.stages)){
+          const flow=window.DPR_PROCESSING_FLOWS.find(f=>f.stage===stage&&f.name===flowName);
+          if(!flow)throw Error('处理流程已不可用，请刷新后重试');
+          for(const node of flow.human_nodes||[]){
+            if(flow.node_rule_configs?.[node]?.allow_task_percent===false)continue;
+            const value=configs[stage]?.[node]?.percent;
+            if(!Number.isInteger(value)||value<0||value>100)throw Error('处理比例请输入 0～100 的整数');
+            (percentages[stage]||={})[node]=value;
+          }
+        }
         saving=true;button.disabled=true;button.textContent='正在保存…';
-        await api('/tasks/'+activeJob.id,'PATCH',{revision:activeJob.revision,priority:Number(document.getElementById('processingTaskPriority').value),expected_value:document.getElementById('processingTaskExpectedValue').value});
-        originalClose();source=null;activeJob=null;await loadJobs();window.toast('已保存处理任务');return;
+        await api('/tasks/'+activeJob.id,'PATCH',{revision:activeJob.revision,priority:Number(document.getElementById('processingTaskPriority').value),expected_value:document.getElementById('processingTaskExpectedValue').value,node_percentages:percentages});
+        originalClose();source=null;activeJob=null;await loadJobs();window.toast('已保存，处理比例对新流入的数据生效');return;
       }
       if(drawer.querySelector('[data-processor-editing="true"]'))throw Error('请先保存或取消处理人修改');
       rememberNodes();

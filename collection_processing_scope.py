@@ -210,7 +210,12 @@ def detail_payload(conn, job, source_id, record_id):
     row = next((r for r in rows if r['task_id'] == source_id and r['id'] == record_id), None)
     if not row:
         return None
-    row.update(processing_id=job['id'], processing_name=job['name'], stages=job['stages'], configs=job['configs'])
+    configs = copy.deepcopy(job['configs'])
+    for stage, nodes in (row.get('member') or {}).get('node_percentages', {}).items():
+        for node, value in nodes.items():
+            if node in configs.get(stage, {}):
+                configs[stage][node]['percent'] = value
+    row.update(processing_id=job['id'], processing_name=job['name'], stages=job['stages'], configs=configs)
     return row
 
 

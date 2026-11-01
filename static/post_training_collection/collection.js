@@ -114,7 +114,7 @@
       return value;
     }catch(_){}
   }
-  document.addEventListener('click',event=>{const link=event.target.closest('a');if(view==='detail'&&link?.getAttribute('href')?.startsWith('/data/tasks/'))saveDetailContext();},true);
+  document.addEventListener('click',event=>{const link=event.target.closest('a'),href=link?.getAttribute('href');if(view==='detail'&&(href?.startsWith('/data/tasks/')||href?.startsWith('/data/processing-tasks?linked=')))saveDetailContext();},true);
   window.addEventListener('pagehide',()=>{if(processingRecordId)saveDetailContext();});
   let checkpointSelection = '', modalOrigin = null;
   let formModeCache = {}, draft = null, formSource = null;
@@ -697,6 +697,10 @@
     const query=new URLSearchParams({collection:task.id,return_collection:task.id,return_tab:'processing'});
     return '/data/tasks/'+encodeURIComponent(job.id)+'?'+query;
   }
+  function processingConfigUrl(job){
+    const query=new URLSearchParams({linked:job.id,return_to:boot.base+'/'+encodeURIComponent(task.id)+'#processing'});
+    return '/data/processing-tasks?'+query;
+  }
   function processingProgressBar(p){
     const total=Math.max(0,Number(p.total)||0),done=Math.min(total,Math.max(0,Number(p.done)||0));
     const running=Math.min(total-done,Math.max(0,Number(p.in_progress??p.running)||0));
@@ -752,7 +756,7 @@
     if(processingLoading&&!processingJobs.length){el.innerHTML='<div class="dc-processing-loading">正在加载关联处理任务…</div>';return;}
     el.innerHTML=`<div class="dc-detail-content dc-processing-content-tab"><div class="dc-processing-tab-head"><div class="dc-processing-summary"><div><span>关联处理任务</span><strong>${summary.count}</strong></div><div><span>关联数据</span><strong>${summary.records}</strong></div></div><button class="dc-btn primary" data-action="create-processing">+ 创建处理任务</button></div>
     ${processingJobs.length?`
-    <div class="dc-processing-table-wrap"><table class="dc-table dc-processing-table"><thead><tr><th>处理任务</th><th>本采集任务数据</th><th>处理进度 <span class="dc-progress-help" tabindex="0" aria-label="进度说明" aria-describedby="dc-progress-legend">?<span id="dc-progress-legend" class="dc-progress-legend" role="tooltip" popover="manual"><strong>走完环节全部必经节点才计入完成</strong><span><i class="completed"></i>已完成 <i class="in-progress"></i>处理中 <i class="unprocessed"></i>未处理</span><small>已开始的待验收、返工计入处理中；悬停质检已完成部分查看结果。仅统计本采集任务关联的数据。</small></span></span></th><th>创建人</th><th>创建时间</th><th>操作</th></tr></thead><tbody>${processingJobs.map(job=>`<tr><td><a class="dc-processing-task-name" href="${esc(processingDataUrl(job))}">${esc(job.name)}</a><span class="dc-processing-task-id">${esc(job.id)}</span></td><td><a href="${esc(processingDataUrl(job))}">${job.selected_count}</a></td><td><div class="dc-processing-progress-stack">${job.stage_progress.map(processingProgressBar).join('')}</div></td><td class="dc-processing-creator" title="${esc(job.creator||'-')}">${esc(job.creator||'-')}</td><td class="dc-processing-created-at">${esc(job.created_at?job.created_at.replace('T',' ').slice(0,16):'-')}</td><td><div class="dc-processing-row-actions"><a class="dc-link" href="${esc(processingDataUrl(job))}">查看数据</a></div></td></tr>`).join('')}</tbody></table></div>`:'<div class="dc-processing-empty"><h3>还没有关联处理任务</h3></div>'}</div>`;
+    <div class="dc-processing-table-wrap"><table class="dc-table dc-processing-table"><thead><tr><th>处理任务</th><th>本采集任务数据</th><th>处理进度 <span class="dc-progress-help" tabindex="0" aria-label="进度说明" aria-describedby="dc-progress-legend">?<span id="dc-progress-legend" class="dc-progress-legend" role="tooltip" popover="manual"><strong>走完环节全部必经节点才计入完成</strong><span><i class="completed"></i>已完成 <i class="in-progress"></i>处理中 <i class="unprocessed"></i>未处理</span><small>已开始的待验收、返工计入处理中；悬停质检已完成部分查看结果。仅统计本采集任务关联的数据。</small></span></span></th><th>创建人</th><th>创建时间</th><th>操作</th></tr></thead><tbody>${processingJobs.map(job=>`<tr><td><a class="dc-processing-task-name" href="${esc(processingConfigUrl(job))}" aria-label="打开处理任务配置：${esc(job.name)}">${esc(job.name)}</a><span class="dc-processing-task-id">${esc(job.id)}</span></td><td><a href="${esc(processingDataUrl(job))}">${job.selected_count}</a></td><td><div class="dc-processing-progress-stack">${job.stage_progress.map(processingProgressBar).join('')}</div></td><td class="dc-processing-creator" title="${esc(job.creator||'-')}">${esc(job.creator||'-')}</td><td class="dc-processing-created-at">${esc(job.created_at?job.created_at.replace('T',' ').slice(0,16):'-')}</td><td><div class="dc-processing-row-actions"><a class="dc-link" href="${esc(processingDataUrl(job))}">查看数据</a></div></td></tr>`).join('')}</tbody></table></div>`:'<div class="dc-processing-empty"><h3>还没有关联处理任务</h3></div>'}</div>`;
   }
   // Keep the legend in the top layer so it cannot be clipped by the scrolling table.
   root.addEventListener('pointerover',event=>{
@@ -942,7 +946,7 @@
     const resultSeconds=rows.filter(r=>r.upload==='uploaded').reduce((sum,r)=>sum+(Number.isFinite(r.seconds)?r.seconds:0),0);
     const showUpload=recordFilters.upload!=='uploaded';
     const uploadCell=r=>`<td data-label="上传状态"><span class="dc-badge ${r.upload==='failed'?'red':r.upload==='uploaded'?'teal':''}">${{uploaded:'已上传',failed:'上传失败',uploading:'上传中'}[r.upload]||'—'}</span></td>`;
-    document.getElementById('dc-record-results').innerHTML=`<div class="dc-table-wrap"><table class="dc-table dc-record-table ${showUpload?'dc-record-with-upload':''}" aria-label="采集录制"><colgroup><col class="dc-record-id-column"><col class="dc-record-video-column"><col><col><col><col>${showUpload?'<col>':''}<col><col><col></colgroup><thead><tr><th>Recording ID</th><th>视频区域（头部 ｜ 左臂 ｜ 右臂）</th><th>设备</th><th>采集员</th><th>录制时间</th><th>时长</th>${showUpload?'<th>上传状态</th>':''}<th class="dc-record-conclusion-head">采集结论</th><th>关联处理</th><th>操作</th></tr></thead><tbody>${rows.slice((recordPage-1)*8,recordPage*8).map(r=>`<tr><td class="dc-record-cell"><div class="dc-record-identity"><button class="dc-link" data-action="record-detail" data-id="${esc(r.id)}" title="${esc(r.id)}">${esc(r.id)}</button></div></td><td class="dc-record-video-cell" data-label="视频">${recordVideoTiles(r)}</td><td data-label="设备">${esc(r.device)}</td><td data-label="采集员">${esc(r.operator)}</td><td class="dc-muted" data-label="录制时间">${date(r.recorded_at)}</td><td class="dc-muted" data-label="时长">${Number.isFinite(r.seconds)?duration(r.seconds):'—'}</td>${showUpload?uploadCell(r):''}<td data-label="采集结论">${collectionConclusionBadge(r)}</td><td data-label="关联处理">${recordProcessingCell(r)}</td><td data-label="操作"><button type="button" class="dc-link dc-record-trajectory" data-action="record-trajectory" data-id="${esc(r.id)}" ${r.upload!=='uploaded'?'disabled':''}>轨迹</button></td></tr>`).join('')||`<tr class="dc-record-empty-row"><td colspan="${showUpload?10:9}">${empty(emptyTitle,emptyMessage,emptyAction)}</td></tr>`}</tbody></table></div><footer class="dc-footer"><span class="dc-record-summary">共 ${rows.length} 条录制<span class="dc-result-hours">${recordFilters.upload==='uploaded'?'累计':'已上传累计'} ${esc(hours(resultSeconds))} 小时</span></span><div class="dc-page-buttons"><button data-action="record-prev" aria-label="上一页录制" ${recordPage===1?'disabled':''}>‹</button><span>${recordPage} / ${pageCount}</span><button data-action="record-next" aria-label="下一页录制" ${recordPage===pageCount?'disabled':''}>›</button></div></footer>`;
+    document.getElementById('dc-record-results').innerHTML=`<div class="dc-table-wrap"><table class="dc-table dc-record-table ${showUpload?'dc-record-with-upload':''}" aria-label="采集录制"><colgroup><col class="dc-record-id-column"><col class="dc-record-video-column"><col><col><col><col>${showUpload?'<col>':''}<col><col><col></colgroup><thead><tr><th>Recording ID</th><th>视频区域（头部 ｜ 左臂 ｜ 右臂）</th><th>设备</th><th>采集员</th><th>录制时间</th><th>时长</th>${showUpload?'<th>上传状态</th>':''}<th class="dc-record-conclusion-head">采集结论</th><th>关联处理</th><th>操作</th></tr></thead><tbody>${rows.slice((recordPage-1)*8,recordPage*8).map(r=>`<tr><td class="dc-record-cell"><div class="dc-record-identity"><button class="dc-link" data-action="record-detail" data-id="${esc(r.id)}" title="${esc(r.id)}">${esc(r.id)}</button></div></td><td class="dc-record-video-cell" data-label="视频">${recordVideoTiles(r)}</td><td data-label="设备">${esc(r.device)}</td><td data-label="采集员">${esc(r.operator)}</td><td class="dc-muted" data-label="录制时间">${date(r.recorded_at)}</td><td class="dc-muted" data-label="时长">${Number.isFinite(r.seconds)?duration(r.seconds):'—'}</td>${showUpload?uploadCell(r):''}<td data-label="采集结论">${collectionConclusionBadge(r)}</td><td data-label="关联处理">${recordProcessingCell(r)}</td><td data-label="操作"><button type="button" class="dc-link dc-record-detail-workbench" data-action="record-workbench" data-id="${esc(r.id)}" ${r.upload!=='uploaded'?'disabled':''}>详情</button></td></tr>`).join('')||`<tr class="dc-record-empty-row"><td colspan="${showUpload?10:9}">${empty(emptyTitle,emptyMessage,emptyAction)}</td></tr>`}</tbody></table></div><footer class="dc-footer"><span class="dc-record-summary">共 ${rows.length} 条录制<span class="dc-result-hours">${recordFilters.upload==='uploaded'?'累计':'已上传累计'} ${esc(hours(resultSeconds))} 小时</span></span><div class="dc-page-buttons"><button data-action="record-prev" aria-label="上一页录制" ${recordPage===1?'disabled':''}>‹</button><span>${recordPage} / ${pageCount}</span><button data-action="record-next" aria-label="下一页录制" ${recordPage===pageCount?'disabled':''}>›</button></div></footer>`;
   }
   function recordDetail(id) {
     const r=task.records.find(r=>r.id===id); if(!r)return;
@@ -1075,11 +1079,18 @@
     else if(action==='record-prev'||action==='record-next'){recordPage+=action==='record-prev'?-1:1;renderRecords();}
     else if(action==='record-detail')recordDetail(button.dataset.id);
     else if(action==='copy-record-issue'){const r=task.records.find(record=>record.id===button.dataset.id);if(r)await copyText(recordIssueText(r),'问题信息已复制，可补充说明后交接');}
-    else if(action==='record-trajectory'){
-      const record=task.records.find(r=>r.id===button.dataset.id);if(!record)return;
-      button.focus({preventScroll:true});
-      openDialog('数据轨迹','',`<button class="dc-btn" data-action="copy-record-issue" data-id="${esc(record.id)}">复制问题信息</button><button class="dc-btn" data-action="close-dialog">关闭</button>`);
-      window.CollectionTrajectory.open({dialog,record,cameras:recordVideoCameras.map(camera=>({...camera,...recordVideoSource(record,camera)})),conclusion:collectionConclusionBadge(record)});
+    else if(action==='record-workbench'){
+      const record=task.records.find(r=>r.id===button.dataset.id);if(!record||record.upload!=='uploaded')return;
+      saveDetailContext();
+      const returnUrl=new URL(location.href);returnUrl.hash='records';
+      const target=new URL('/data/workbench-v2/edit',location.origin);
+      target.searchParams.set('mode','detail');
+      target.searchParams.set('source','collection-data');
+      target.searchParams.set('entry','collection-data');
+      target.searchParams.set('recording_id',record.id);
+      target.searchParams.set('collection_task_id',task.id);
+      target.searchParams.set('return_to',returnUrl.pathname+returnUrl.search+returnUrl.hash);
+      location.assign(target.href);
     }
     else if(action==='record-video')recordVideo(button.dataset.id,button);
     else if(action==='toggle-record-video')toggleRecordVideos();
