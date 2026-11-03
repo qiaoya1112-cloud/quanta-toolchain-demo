@@ -2260,6 +2260,11 @@ document.addEventListener('click', function(e){
 function openDrawerById(id){ document.getElementById(id).classList.add('active'); }
 function closeDrawerById(id){ document.getElementById(id).classList.remove('active'); }
 function qfDep(id, val){ var el=document.getElementById(id); if(el) el.classList.toggle('qf-off', val!=='yes'); }
+function buildDsFormatChanged(){
+  var supported=document.getElementById('buildDsFormat').value!=='Mozdataset v2';
+  document.getElementById('buildDsAutoSplitField').hidden=!supported;
+  document.getElementById('buildDsAutoSplit').disabled=!supported;
+}
 async function dsCreating(modalId){
   var prefix=location.pathname.indexOf('/model/data/')===0 ? '/model/data' : location.pathname.indexOf('/data/')===0 ? '/data' : '';
   if(modalId!=='buildDsDrawer'){
@@ -2279,7 +2284,7 @@ async function dsCreating(modalId){
       ident:ident,name:name,source_token:document.getElementById('qAppendSource').value,
       folder:document.getElementById('buildDsFolder').value,format:document.getElementById('buildDsFormat').value,
       storage_locations:Array.from(document.querySelectorAll('#buildDsStorageLocations input:checked')).map(function(i){return i.value;}),
-      auto_split:document.getElementById('buildDsAutoSplit').checked,
+      auto_split:document.getElementById('buildDsFormat').value!=='Mozdataset v2' && document.getElementById('buildDsAutoSplit').checked,
       visibility:document.getElementById('buildDsVisibility').value,
       visible_group_ids:Array.from(document.querySelectorAll('#buildDsGroups input:checked')).map(function(i){return i.value;}),
       tags:Array.from(document.querySelectorAll('#buildDsTags input:checked')).map(function(i){return i.value;}),
@@ -5195,12 +5200,12 @@ def query():
         <div class="drawer-body">
           <div class="fg"><label><span class="req">*</span>标识</label><input id="buildDsIdent" value="{html.escape(request.args.get('dataset_ident', ''), quote=True)}" placeholder="英文唯一标识" oninput="var n=document.getElementById('buildDsName'); if(n) n.value=this.value;"><div class="hint">全局唯一</div></div>
           <div class="fg"><label><span class="req">*</span>数据集名称</label><input id="buildDsName" value="{html.escape(request.args.get('dataset_name', ''), quote=True)}" placeholder="填写标识后自动带入, 可修改"></div>
-          <div class="fg"><label for="buildDsFormat">生成格式</label><select id="buildDsFormat"><option>LeRobort</option><option>Mozdataset v2</option></select></div>
-          <div class="fg"><label id="buildDsStorageLabel">存储位置</label>{storage_location_ms}</div>
-          <div class="fg"><label for="buildDsAutoSplit">自动拆分</label>
+          <div class="fg"><label for="buildDsFormat">生成格式</label><select id="buildDsFormat" onchange="buildDsFormatChanged()"><option>LeRobort</option><option>Mozdataset v2</option></select></div>
+          <div class="fg" id="buildDsAutoSplitField"><label for="buildDsAutoSplit">自动拆分</label>
             <label class="switch"><input type="checkbox" role="switch" id="buildDsAutoSplit" checked aria-label="自动拆分" aria-describedby="buildDsAutoSplitHelp"><span class="slider" aria-hidden="true"></span></label>
             <div class="hint" id="buildDsAutoSplitHelp">设备 feature 不一致不能合并时，自动拆分为多个数据集</div>
           </div>
+          <div class="fg"><label id="buildDsStorageLabel">存储位置</label>{storage_location_ms}</div>
           <div class="fg"><label for="buildDsFolder"><span class="req">*</span>选择目录</label><select id="buildDsFolder" required>{build_folder_opts}</select></div>
           <div class="fg"><label>标签</label>{build_tag_selector}</div>
           {dataset_visibility_fields("buildDs")}
@@ -5619,6 +5624,8 @@ def datasets_create():
     auto_split = payload.get("auto_split", True)
     if not isinstance(auto_split, bool):
         return jsonify(error="自动拆分须为开启或关闭"), 400
+    if ds_format == "Mozdataset v2":
+        auto_split = False
     visibility = payload.get("visibility", "公开")
     group_ids = payload.get("visible_group_ids", [])
     if visibility not in ("公开", "受限") or not isinstance(group_ids, list):

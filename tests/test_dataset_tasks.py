@@ -113,6 +113,17 @@ class DatasetTaskTests(unittest.TestCase):
             with self.subTest(locations=locations):
                 self.assertEqual(self.create(storage_locations=locations).status_code, 400)
 
+    def test_mozdataset_creation_disables_auto_split(self):
+        for index, options in enumerate(({}, {'auto_split': True}, {'auto_split': False})):
+            with self.subTest(options=options):
+                response = self.create(ident=f'moz_split_{index}', format='Mozdataset v2', **options)
+                self.assertEqual(response.status_code, 200)
+                dataset = dp.get_ds(response.json['dataset_id'])
+                self.assertFalse(dataset['auto_split'])
+                self.assertFalse(dp.dataset_version_snapshot(dataset, 'v1')['auto_split'])
+                task = next(item for item in dp.DATASET_CREATION_TASKS if item['id'] == response.json['task_id'])
+                self.assertFalse(task['query']['自动拆分'])
+
     def test_task_status_drives_version_status_and_publication_in_both_modules(self):
         result = self.automate()
         task = next(run for run in dp.RUNS if run['id'] == result['run_id'])
