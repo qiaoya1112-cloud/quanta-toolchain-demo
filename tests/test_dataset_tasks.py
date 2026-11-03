@@ -158,7 +158,7 @@ class DatasetTaskTests(unittest.TestCase):
         self.assertEqual(dp.DATASET_CREATION_LABELS, {'done': '成功', 'fail': '失败', 'running': '进行中', 'verify': '校验中'})
         self.assertEqual(dp.DATASET_PROCESSING_LABELS, {'ready': '成功', 'queued': '待处理', 'running': '进行中', 'failed': '失败'})
 
-    def test_creator_defaults_to_current_user_and_can_be_cleared_or_changed(self):
+    def test_creator_defaults_to_all_and_can_be_selected_or_cleared(self):
         records = [dict(id=str(index), name='任务', version='v1', kind='create',
                         status='done', processing='ready', label='成功', at='2026-11-03',
                         data_source='自采数据', by=dp.CURRENT_USER if index < 12 else 'Will Xiao')
@@ -168,19 +168,21 @@ class DatasetTaskTests(unittest.TestCase):
             self.assertEqual(len(config), 10)
             self.assertEqual({task['by'] for task in config.values()}, {dp.CURRENT_USER})
             filters = page.split('id="datasetTaskFilters"', 1)[1].split('</form>', 1)[0]
-            self.assertIn(f'name="creator" value="{dp.CURRENT_USER}"', filters)
-            self.assertIn('name="creator" value=""', filters)
+            self.assertNotIn('name="creator" value=', filters)
             _, config = self.tasks(page=2)
-            self.assertEqual(set(config), {'10', '11'})
+            self.assertEqual(set(config), {'10', '11', '12'})
             page, config = self.tasks(creator='', page=2)
             self.assertEqual(set(config), {'10', '11', '12'})
             self.assertIn('creator=', page)
-            _, config = self.tasks(creator=['', 'Will Xiao'])
+            page, config = self.tasks(creator=['', 'Will Xiao'])
             self.assertEqual(set(config), {'12'})
+            self.assertIn('name="creator" value="Will Xiao"', page)
+            _, config = self.tasks(creator=dp.CURRENT_USER, page=2)
+            self.assertEqual(set(config), {'10', '11'})
             with patch.object(dp, 'CURRENT_USER', 'new.user'):
-                page, config = self.tasks()
-                self.assertEqual(config, {})
-                self.assertIn('name="creator" value="new.user"', page)
+                page, config = self.tasks(page=2)
+                self.assertEqual(set(config), {'10', '11', '12'})
+                self.assertNotIn('name="creator" value="new.user"', page)
 
     def test_task_types_group_updates_and_version_precedes_type(self):
         created = self.create().json

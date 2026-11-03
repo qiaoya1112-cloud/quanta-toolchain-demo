@@ -68,7 +68,10 @@ class DatasetBatchCopyTests(unittest.TestCase):
         self.assertIsNone(doc.select_one('#datasetTreeSelectAll'))
         leaf = doc.select_one('.dataset-tree-checkbox')
         self.assertEqual(len(leaf.find_parents('section', class_='dataset-folder')), 3)
+        self.assertIsNotNone(doc.select_one('#datasetPreviewButton'))
         self.assertIsNotNone(doc.select_one('#datasetGenerateModal #datasetGenerateCopy'))
+        self.assertIsNotNone(doc.select_one('#datasetGenerateContent'))
+        self.assertEqual(doc.select_one('#datasetGenerateNotice').get_text(), '预览生成中，生成完成会通过飞书通知')
         self.assertIn('tos://embodied/datasets/clean_whiteboard_v3/', config[0]['addresses'])
 
     def test_version_options_default_latest_and_keep_only_published_alternatives(self):

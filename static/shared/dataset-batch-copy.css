@@ -29,8 +29,8 @@
 .dataset-tree-selecting .dataset-folder-checkbox { display:block; }
 .dataset-tree-selecting .dataset-folder > .tree-grp > .row-act-wrap { display:none; }
 .dataset-generate-modal { width:760px; max-width:calc(100vw - 48px); }
+#datasetGenerateModal [hidden] { display:none !important; }
 #datasetGenerateContent { width:100%; box-sizing:border-box; height:340px; resize:vertical; margin-top:16px; font:12px/1.7 monospace; white-space:pre; overflow:auto; }
-#datasetGenerateWarning { margin-top:12px; color:#ad6800; max-height:100px; overflow:auto; }
 #datasetGenerateStatus { min-height:20px; margin-top:8px; }
 #datasetVersionModal [hidden] { display:none !important; }
 #datasetVersionModal .table-wrap { margin-top:16px; max-height:380px; overflow:auto; }

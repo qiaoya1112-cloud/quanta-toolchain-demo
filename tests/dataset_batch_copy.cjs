@@ -20,8 +20,9 @@ assert.ok(yaml.includes('    version: "v2"\n    format: "mozdataset v2"\n    sto
 assert.equal((yaml.match(/  - name:/g) || []).length, 2);
 assert.throws(() => formatSelection([], 'yaml'), /请先选择/);
 assert.throws(() => formatSelection([{...items[0], addresses: []}], 'tos'), /缺少 tos/);
-assert.throws(() => formatSelection([{...items[0], vepfs_addresses: []}], 'yaml'), /缺少 VEPFS/);
+assert.ok(formatSelection([{...items[0], vepfs_addresses: []}], 'yaml').includes('    storage_paths: []\n'));
+assert.ok(formatSelection([{...items[0], vepfs_addresses: undefined}], 'yaml').includes('    storage_paths: []\n'));
 assert.throws(() => formatSelection([{...items[0], format: 'lebort'}], 'yaml'), /格式不支持/);
-assert.throws(() => formatSelection([items[0], {...items[1], vepfs_addresses: []}], 'yaml'), /缺少 VEPFS/);
+assert.equal((formatSelection([items[0], {...items[1], vepfs_addresses: []}], 'yaml').match(/  - name:/g) || []).length, 2);
 assert.throws(() => formatSelection(items, 'invalid'), /不支持/);
 console.log('Dataset batch copy formatting checks passed.');

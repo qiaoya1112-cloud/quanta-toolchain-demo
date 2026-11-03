@@ -1,6 +1,6 @@
 (function () {
   'use strict';
-  const yamlIssues = item => [item.format !== 'mozdataset v2' ? '格式不支持' : '', !item.vepfs_addresses?.length ? '缺少 VEPFS 地址' : ''].filter(Boolean);
+  const yamlIssues = item => item.format !== 'mozdataset v2' ? ['格式不支持'] : [];
   const storageIssue = kind => '缺少 ' + kind + ' 地址';
   function formatSelection(items, kind) {
     if (!items.length) throw new Error('请先选择数据集。');
@@ -26,8 +26,8 @@
       '  - name: ' + quote(item.name),
       '    version: ' + quote(item.version),
       '    format: ' + quote(item.format),
-      '    storage_paths:',
-      ...item.vepfs_addresses.map(address => '      - ' + quote(address))
+      item.vepfs_addresses?.length ? '    storage_paths:' : '    storage_paths: []',
+      ...(item.vepfs_addresses || []).map(address => '      - ' + quote(address))
     ].join('\n')).join('\n') + '\n';
   }
   if (typeof module !== 'undefined' && module.exports) module.exports = {formatSelection};
@@ -215,10 +215,7 @@
     const invalid = chosenVersions.map((item, index) => ({item, index, reasons: !item.id ? [] : kind === 'yaml' ? yamlIssues(item) : (item.addresses || []).some(address => address.startsWith(kind + '://')) ? [] : [storageIssue(kind)]})).filter(row => row.reasons.length);
     byId('datasetYamlValidation').hidden = !checking || !invalid.length;
     byId('datasetYamlSummary').textContent = invalid.length + (kind === 'yaml' ? ' 个版本不符合预训练 YAML 要求' : ' 个版本缺少 ' + kind + ' 地址');
-    byId('datasetValidationRequirement').textContent = kind === 'yaml' ? [
-      invalid.some(row => row.item.format !== 'mozdataset v2') ? '只有 mozdataset v2 格式支持生成预训练 YAML，请移除格式不符的版本。' : '',
-      invalid.some(row => !row.item.vepfs_addresses?.length) ? '缺少 VEPFS 地址的版本，请先通过「同步存储」同步至 VEPFS，完成后再生成预览。' : ''
-    ].filter(Boolean).join(' ') : '请移除缺少 ' + kind + ' 地址的数据集版本，或者先通过「同步存储」同步至 ' + kind + '，完成后再生成预览。';
+    byId('datasetValidationRequirement').textContent = kind === 'yaml' ? '只有 mozdataset v2 格式支持生成预训练 YAML，请移除格式不符的版本。' : '请移除缺少 ' + kind + ' 地址的数据集版本，或者先通过「同步存储」同步至 ' + kind + '，完成后再生成预览。';
     byId('datasetVersionRows').querySelectorAll('tr').forEach((row, index) => {
       const issue = checking && invalid.find(item => item.index === index);
       row.classList.toggle('dataset-yaml-invalid', Boolean(issue));
@@ -437,33 +434,44 @@
     if (!modal.classList.contains('active')) return;
     modal.classList.remove('active');
     document.body.style.overflow = previousOverflow;
-    versionModal.classList.add('active');
-    focusBeforePreview?.focus();
+    if (modal.dataset.notifying === 'true') closeVersions();
+    else { versionModal.classList.add('active'); focusBeforePreview?.focus(); }
   }
   modal.querySelectorAll('[data-close-dataset-preview]').forEach(button => button.addEventListener('click', closePreview));
   modal.addEventListener('click', event => { if (event.target === modal) closePreview(); });
   modal.addEventListener('keydown', event => {
     if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); closePreview(); }
     if (event.key === 'Tab') {
-      const targets = [...modal.querySelectorAll('button,textarea')].filter(node => !node.disabled);
+      const targets = [...modal.querySelectorAll('button,textarea')].filter(node => !node.disabled && !node.hidden && node.getClientRects().length);
       const first = targets[0], last = targets[targets.length - 1];
       if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
       else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
     }
   });
   trigger.addEventListener('click', () => {
-    if (!versionModal.classList.contains('active') || !chosenVersions.length || chosenVersions.some(item => item.publish_status !== '已发布')) return;
+    if (!versionModal.classList.contains('active') || !chosenVersions.length || chosenVersions.some(item => !item.id || item.publish_status !== '已发布')) return;
     const option = byId('datasetPreviewFields').querySelector('input:checked');
     const kind = option.value;
     const chosen = chosenVersions;
     previewValidated = true; updateYamlValidation();
-    try { content.value = formatSelection(chosen, kind); }
+    const notifying = kind === 'yaml';
+    try {
+      if (notifying) {
+        if (chosen.some(item => yamlIssues(item).length)) return;
+        content.value = '';
+      } else content.value = formatSelection(chosen, kind);
+    }
     catch (error) {
       updateYamlValidation();
       return;
     }
     byId('datasetVersionError').hidden = true;
-    byId('datasetGenerateWarning').hidden = true;
+    content.hidden = notifying;
+    content.closest('.fg').hidden = notifying;
+    copy.hidden = notifying;
+    byId('datasetGenerateNotice').hidden = !notifying;
+    byId('datasetGenerateBack').textContent = notifying ? '关闭' : '上一步';
+    modal.dataset.notifying = String(notifying);
     byId('datasetGenerateTitle').textContent = option.parentElement.textContent + ' · 预览';
     const addressCount = kind === 'yaml' ? 0 : chosen.reduce((count, item) => count + new Set((item.addresses || []).filter(address => address.startsWith(kind + '://'))).size, 0);
     byId('datasetGenerateSummary').textContent = '已选 ' + chosen.length + ' 个数据集' + (kind === 'yaml' ? '' : ' · 生成 ' + addressCount + ' 条地址');

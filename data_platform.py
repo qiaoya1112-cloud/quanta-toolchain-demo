@@ -4208,9 +4208,7 @@ def ds_progress(standalone=False):
     if selected_kind in ("append", "operator", "workflow"):
         selected_kind = "update"
     selected_status = request.args.get("status", "")
-    # Missing means the default user; an explicit empty value means all creators.
-    creators = ([value for value in request.args.getlist("creator") if value]
-                if "creator" in request.args else [CURRENT_USER])
+    creators = [value for value in request.args.getlist("creator") if value]
     filtered = [task for task in tasks
                 if (not selected_dataset or task.get("dataset_id") == selected_dataset)
                 and (not task_id_keyword or task_id_keyword.casefold() in str(task["id"]).casefold())
@@ -4320,7 +4318,6 @@ def ds_progress(standalone=False):
     {task_context}
     <form id="datasetTaskFilters" action="/datasets/tasks" method="get" class="q-filters dataset-task-filters" style="margin-bottom:16px;">
       {dataset_input}
-      <input type="hidden" name="creator" value="">
       <div class="q-filter-row q-adv-row">
         <div class="q-field"><label for="datasetTaskKeyword">数据集名称</label><input id="datasetTaskKeyword" name="keyword" value="{html.escape(keyword, quote=True)}" placeholder="请输入数据集名称"></div>
         <div class="q-field"><label for="datasetTaskVersion">版本</label><select id="datasetTaskVersion" name="version">{version_options}</select></div>
@@ -6249,8 +6246,8 @@ def datasets():
     add_config = json.dumps([dataset_batch_version_metadata(d) for d in DATASETS if d["id"] not in visible_ids], ensure_ascii=False).replace("<", "\\u003c")
     ds_meta_js += (f'<script type="application/json" id="datasetTreeCopyConfig">{copy_config}</script>'
                    f'<script type="application/json" id="datasetAdditionalConfig">{add_config}</script>'
-                   '<link rel="stylesheet" href="/static/shared/dataset-batch-copy.css?v=20261103-sync-toast">'
-                   '<script defer src="/static/shared/dataset-batch-copy.js?v=20261103-default-preview"></script>')
+                   '<link rel="stylesheet" href="/static/shared/dataset-batch-copy.css?v=20261103-preview-by-format">'
+                   '<script defer src="/static/shared/dataset-batch-copy.js?v=20261103-preview-by-format"></script>')
     operator_config = json.dumps(dataset_edit_catalog()["operator"], ensure_ascii=False).replace("<", "\\u003c")
     ds_meta_js += f'<script type="application/json" id="datasetBatchOperators">{operator_config}</script>'
     ds_meta_js += """
@@ -6267,7 +6264,7 @@ def datasets():
           <div id="datasetStorageStatus" class="hint" hidden aria-live="polite"><span id="datasetStorageStatusRows"></span></div>
           <div id="datasetOperatorFields" hidden><div class="fg"><label for="datasetBatchOperator">算子</label><select id="datasetBatchOperator"></select></div><div class="fg" id="datasetOperatorParams" hidden><label for="datasetOperatorScript">入参脚本（JSON）</label><textarea id="datasetOperatorScript" class="code-editor" rows="8" spellcheck="false"></textarea></div><div class="hint">每个数据集版本独立执行，结果保存为新版本。</div></div>
           <div class="fg" id="datasetPreviewFields" hidden><label>预览格式</label><div class="dataset-storage-targets"><label><input type="radio" name="datasetPreviewFormat" data-dataset-copy="tos" value="tos" checked>tos 地址合集</label><label><input type="radio" name="datasetPreviewFormat" data-dataset-copy="ks3" value="ks3">ks3 地址合集</label><label><input type="radio" name="datasetPreviewFormat" data-dataset-copy="yaml" value="yaml">预训练 yaml</label></div></div>
-          <div id="datasetYamlValidation" class="dataset-yaml-validation" hidden aria-live="polite"><span class="dataset-validation-icon" aria-hidden="true">!</span><div><div id="datasetYamlSummary"></div><div class="hint" id="datasetValidationRequirement">仅支持 mozdataset v2 且有 VEPFS 地址的数据集版本。</div></div></div>
+          <div id="datasetYamlValidation" class="dataset-yaml-validation" hidden aria-live="polite"><span class="dataset-validation-icon" aria-hidden="true">!</span><div><div id="datasetYamlSummary"></div><div class="hint" id="datasetValidationRequirement">仅支持 mozdataset v2 格式的数据集版本。</div></div></div>
           <div id="datasetBatchResult" role="status" class="hint" hidden></div>
         </div>
         <div class="drawer-foot">
@@ -6282,11 +6279,11 @@ def datasets():
         <div class="drawer-head"><h3 id="datasetGenerateTitle">生成预览</h3><button type="button" class="drawer-close" data-close-dataset-preview aria-label="关闭">&times;</button></div>
         <div class="drawer-body">
           <div class="muted" id="datasetGenerateSummary"></div>
-          <div class="hint" id="datasetGenerateWarning" hidden></div>
+          <div id="datasetGenerateNotice" role="status" hidden>预览生成中，生成完成会通过飞书通知</div>
           <div class="fg"><textarea id="datasetGenerateContent" readonly aria-label="生成内容" spellcheck="false"></textarea></div>
           <div class="hint" id="datasetGenerateStatus" role="status"></div>
         </div>
-        <div class="drawer-foot"><button type="button" class="btn" data-close-dataset-preview>上一步</button><button type="button" class="btn btn-primary" id="datasetGenerateCopy">复制</button></div>
+        <div class="drawer-foot"><button type="button" class="btn" id="datasetGenerateBack" data-close-dataset-preview>上一步</button><button type="button" class="btn btn-primary" id="datasetGenerateCopy">复制</button></div>
       </div>
     </div>
     """
