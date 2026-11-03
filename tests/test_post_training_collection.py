@@ -94,6 +94,8 @@ class CollectionTests(unittest.TestCase):
         specs = self.client.get(collection.API+'/specs').json['specs']
         self.assertEqual(1, len(specs))
         self.assertEqual(3, specs[0]['task_count'])
+        self.assertEqual('project-a', specs[0]['project'])
+        self.assertEqual(['演示项目'], specs[0]['project_names'])
 
     def test_failed_task_does_not_register_spec_and_retry_is_idempotent(self):
         url = 'https://example.feishu.cn/docx/NewSpec'
@@ -106,33 +108,63 @@ class CollectionTests(unittest.TestCase):
         self.assertEqual(first.json['task']['id'], second.json['task']['id'])
         self.assertEqual(1, len(self.client.get(collection.API+'/specs').json['specs']))
 
-    def test_spec_catalog_create_edit_updates_references_and_logs(self):
-        api = collection.API+'/specs'
-        spec = self.client.post(api, json={'name': '原规范', 'url': 'https://example.feishu.cn/docx/SpecOne'}).json['spec']
+    def test_spec_catalog_rejects_edits_and_preserves_references(self):
+        api = collection.API + '/specs'
+        spec = self.client.post(api, json={'name': '原规范', 'project': 'project-a', 'url': 'https://example.feishu.cn/docx/SpecOne'}).json['spec']
+        unused = self.client.patch(api + '/' + spec['id'], json={**spec, 'name': '无引用也不可改'})
+        self.assertEqual(403, unused.status_code)
         task = self.client.post(self.base, json=self.payload(spec_id=spec['id'])).json['task']
-        new_url = 'https://example.feishu.cn/wiki/SpecTwo'
-        r = self.client.patch(api+'/'+spec['id'], json={'name': '新规范', 'url': new_url, 'revision': spec['revision']})
-        self.assertEqual(200, r.status_code)
-        updated = self.get(task['id'])
-        self.assertEqual(('新规范', new_url, task['revision']+1), (updated['spec_name'], updated['spec_url'], updated['revision']))
-        self.assertEqual(task['prompts'], updated['prompts'])
-        self.assertEqual({'spec_name', 'spec_url'}, {c['field'] for c in updated['events'][-1]['changes']})
-        stale_task = self.client.patch(self.base+'/'+task['id'], json={'revision': task['revision'], 'priority': 3})
-        self.assertEqual(409, stale_task.status_code)
-        stale_spec = self.client.patch(api+'/'+spec['id'], json={'name': '覆盖', 'url': new_url, 'revision': spec['revision']})
-        self.assertEqual(409, stale_spec.status_code)
-        stale_selection = self.client.post(self.base, json=self.payload(spec_id=spec['id'], spec_url=spec['url']))
-        self.assertEqual(422, stale_selection.status_code)
+        for changes in ({'name': '新规范'}, {'url': 'https://example.feishu.cn/wiki/SpecTwo'}, {'project': 'missing'}, {}):
+            with self.subTest(changes=changes):
+                response = self.client.patch(api + '/' + spec['id'], json={**spec, **changes})
+                self.assertEqual(403, response.status_code)
+                self.assertIn('不可编辑', response.json['error'])
+                self.assertEqual(task, self.get(task['id']))
+        current = self.client.get(api).json['specs'][0]
+        for key, value in spec.items():
+            self.assertEqual(value, current[key])
+        selected = self.client.post(self.base, json=self.payload(spec_id=spec['id'])).json['task']
+        self.assertEqual(spec['url'], selected['spec_url'])
 
     def test_spec_catalog_validates_links_and_prevents_duplicate_documents(self):
         api = collection.API+'/specs'
         for url in ['https://evil.test/docx/Spec', 'javascript:alert(1)', 'https://a.feishu.cn.evil.test/wiki/S', 'https://user:pass@a.feishu.cn/docx/Spec', 'http://a.feishu.cn/wiki/S']:
             with self.subTest(url=url):
-                self.assertEqual(422, self.client.post(api, json={'name': '规范', 'url': url}).status_code)
+                self.assertEqual(422, self.client.post(api, json={'name': '规范', 'project': 'project-a', 'url': url}).status_code)
         url = 'https://a.feishu.cn/docx/Spec'
-        self.assertEqual(201, self.client.post(api, json={'name': '规范', 'url': url}).status_code)
-        self.assertEqual(409, self.client.post(api, json={'name': '重复规范', 'url': url+'?from=share'}).status_code)
+        self.assertEqual(201, self.client.post(api, json={'name': '规范', 'project': 'project-a', 'url': url}).status_code)
+        self.assertEqual(409, self.client.post(api, json={'name': '重复规范', 'project': 'project-a', 'url': url+'?from=share'}).status_code)
         self.assertEqual(422, self.client.post(self.base, json=self.payload(spec_id='missing')).status_code)
+
+    def test_spec_project_validation_and_project_edit_is_rejected(self):
+        api = collection.API + '/specs'
+        payload = {'name': '项目规范', 'url': 'https://example.feishu.cn/docx/ProjectSpec'}
+        for project in ('', 'missing', None, []):
+            response = self.client.post(api, json={**payload, 'project': project})
+            self.assertEqual(422, response.status_code)
+            self.assertIn('project', response.json['errors'])
+        self.app.config['COLLECTION_PROJECTS'].append({'id': 'project-b', 'name': '另一项目'})
+        spec = self.client.post(api, json={**payload, 'project': 'project-a'}).json['spec']
+        task = self.client.post(self.base, json=self.payload(spec_id=spec['id'])).json['task']
+        response = self.client.patch(api + '/' + spec['id'], json={**payload, 'project': 'project-b', 'revision': spec['revision']})
+        self.assertEqual(403, response.status_code)
+        self.assertEqual(task, self.get(task['id']))
+        self.assertEqual('project-a', self.client.get(api).json['specs'][0]['project'])
+
+    def test_legacy_spec_projects_are_derived_without_mutating_stored_data(self):
+        api = collection.API + '/specs'
+        task = self.client.post(self.base, json=self.payload(spec_url='https://example.feishu.cn/wiki/LegacySpec')).json['task']
+        with self.app.app_context(), collection.database() as conn, conn:
+            row = conn.execute('SELECT payload FROM collection_specs WHERE id=?', (task['spec_id'],)).fetchone()
+            legacy = json.loads(row['payload'])
+            legacy.pop('project')
+            conn.execute('UPDATE collection_specs SET payload=? WHERE id=?', (json.dumps(legacy), legacy['id']))
+        listed = self.client.get(api).json['specs'][0]
+        self.assertEqual(('project-a', ['演示项目']), (listed['project'], listed['project_names']))
+        with self.app.app_context(), collection.database() as conn:
+            stored = json.loads(conn.execute('SELECT payload FROM collection_specs WHERE id=?', (legacy['id'],)).fetchone()['payload'])
+        self.assertNotIn('project', stored)
+        self.assertEqual(task, self.get(task['id']))
 
     def test_edit_changes_spec_and_can_remove_reference(self):
         one = self.client.post(self.base, json=self.payload(spec_url='https://a.feishu.cn/wiki/One')).json['task']
@@ -152,6 +184,16 @@ class CollectionTests(unittest.TestCase):
         with ThreadPoolExecutor(max_workers=4) as pool:
             self.assertEqual(1, len(set(pool.map(create, range(4)))))
         self.assertEqual(1, len(self.client.get(collection.API+'/specs').json['specs']))
+
+    def test_catalog_lists_all_projects_referencing_one_document(self):
+        spec_url = 'https://a.feishu.cn/wiki/MultiProject'
+        first = self.client.post(self.base, json=self.payload(spec_url=spec_url)).json['task']
+        self.app.config['COLLECTION_PROJECTS'].append({'id': 'project-b', 'name': '另一项目'})
+        second = self.client.post(self.base, json=self.payload(project='project-b', spec_url=spec_url)).json['task']
+        self.assertEqual(first['spec_id'], second['spec_id'])
+        listed = self.client.get(collection.API+'/specs').json['specs'][0]
+        self.assertEqual(['演示项目', '另一项目'], listed['project_names'])
+        self.assertEqual('project-a', listed['project'])
 
     def test_five_digit_ids_and_concurrent_creation(self):
         initial = self.client.get(self.base).json["tasks"]

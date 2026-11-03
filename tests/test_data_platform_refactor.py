@@ -45,7 +45,6 @@ class DataPlatformArchitectureTests(unittest.TestCase):
                 "数据采集",
                 [
                     "instruction_management",
-                    "instruction_packages",
                     "collection_tasks",
                     "supplier_collection_plans",
                     "post_training_collection",
@@ -543,9 +542,9 @@ class DataPlatformArchitectureTests(unittest.TestCase):
         self.assertNotIn('继承前序节点，无需单独配置', html)
         self.assertNotIn('当前节点配置', html)
         self.assertNotIn('节点执行时生效', html)
-        self.assertIn('<b>处理比例</b><span>', html)
-        self.assertIn('class="dpr-node-percent-input" type="number" min="1" max="100" step="1"', html)
-        self.assertIn("? flowValues[nodeName] : 100", html)
+        self.assertIn('<b>处理比例</b>', html)
+        self.assertIn('class="dpr-node-percent-input" type="number" min="0" max="100" step="1"', html)
+        self.assertIn("config.percent == null ? 100 : config.percent", html)
         self.assertIn("DPR_NODE_PERCENT_STORAGE", html)
         self.assertIn("control.classList.contains('dpr-node-percent-input')", html)
         self.assertIn("if (!dprNodePercentagesValid())", html)
@@ -558,7 +557,8 @@ class DataPlatformArchitectureTests(unittest.TestCase):
     def test_published_processing_task_locks_flow_and_saves_processors_separately(self):
         html = self.client.get('/data/processing-tasks').get_data(as_text=True)
         self.assertIn('drawer.dataset.taskStatus = data.taskStatus', html)
-        self.assertIn("isEdit && drawer.dataset.taskStatus === 'published'", html)
+        self.assertIn("isDetail || isEdit || ruleConfig.allow_task_percent === false", html)
+        self.assertIn('onclick="dprEditNodePercentage(this)">编辑</button>', html)
         self.assertIn('dpr-node-processor-edit', html)
         self.assertIn('onclick="dprEditProcessorAssignments(this)">编辑</button>', html)
         self.assertIn('onclick="dprSaveProcessorAssignments(this)"', html)
@@ -2330,7 +2330,7 @@ class DataPlatformArchitectureTests(unittest.TestCase):
                 f"/data/rules/{rule['id']}/status", json={"status": "disabled"}
             )
             self.assertEqual(200, response.status_code)
-            self.assertFalse(rule["enabled"])
+            self.assertFalse(self.client.get(f"/api/processing-rules/{rule['id']}").json['rule']['enabled'])
             self.assertNotIn(rule["name"], rule_options())
             self.assertIn(
                 f'data-rule-id="{rule["id"]}" onchange="ruleToggleStatus(this)"',
@@ -2341,11 +2341,12 @@ class DataPlatformArchitectureTests(unittest.TestCase):
                 f"/data/rules/{rule['id']}/status", json={"status": "enabled"}
             )
             self.assertEqual(200, response.status_code)
-            self.assertTrue(rule["enabled"])
-            self.assertEqual("enabled", rule["status"])
+            persisted=self.client.get(f"/api/processing-rules/{rule['id']}").json['rule']
+            self.assertTrue(persisted['enabled'])
+            self.assertEqual("enabled", persisted['status'])
             self.assertIn(rule["name"], rule_options())
             self.assertEqual(
-                400,
+                422,
                 self.client.post(
                     f"/data/rules/{rule['id']}/status", json={"status": "unknown"}
                 ).status_code,
@@ -2363,9 +2364,10 @@ class DataPlatformArchitectureTests(unittest.TestCase):
         rows = re.findall(r"<tr>(.*?)</tr>", html, flags=re.S)
         published = next(row for row in rows if "RL-009" in row)
         unpublished = next(row for row in rows if "RL-010" in row)
-        self.assertEqual(["详情", "复制"], re.findall(r"<a[^>]*>(.*?)</a>", published, flags=re.S))
+        self.assertEqual(["详情", "⋯ 更多", "复制", "编辑"], re.findall(r"<a[^>]*>(.*?)</a>", published, flags=re.S))
+        self.assertIn('<th>版本</th>',html)
         self.assertIn("⋯ 更多", unpublished)
-        self.assertIn('class="action-menu"', unpublished)
+        self.assertIn('class="action-menu rule-overflow-menu"', unpublished)
         for action in ("编辑", "删除", "发布"):
             self.assertIn(f">{action}</a>", unpublished)
         self.assertEqual(1, unpublished.count("class=\"action-more\""))
@@ -2373,11 +2375,10 @@ class DataPlatformArchitectureTests(unittest.TestCase):
         self.assertIn("data-rule-publish-status=\"未发布\"", unpublished)
         response = self.client.delete("/data/rules/RL-009")
         self.assertEqual(403, response.status_code)
-        response = self.client.post("/data/rules/RL-010/publish")
-        self.assertEqual(200, response.status_code)
-        draft_rule = next(rule for rule in toolchain_demo.RULES if rule["id"] == "RL-010")
-        self.assertEqual("已发布", draft_rule["publish_status"])
-        draft_rule["publish_status"] = "未发布"
+        response = self.client.post("/data/rules/RL-010/publish",json={'revision':1})
+        self.assertEqual(422, response.status_code)
+        self.assertIn('标签',response.json['error'])
+        self.assertEqual('未发布',self.client.get('/api/processing-rules/RL-010').json['rule']['publish_status'])
 
     def test_rule_create_drawer_supports_four_cards_and_fluid_fields(self):
         html = self.client.get("/data/rules").get_data(as_text=True)

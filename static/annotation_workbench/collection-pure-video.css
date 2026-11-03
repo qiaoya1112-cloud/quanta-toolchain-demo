@@ -1,0 +1,40 @@
+/* Collection detail uses the real workbench shell as a read-only video viewer. */
+body.collection-pure-video .workbench-task-info__workflow,
+body.collection-pure-video .workbench-task-info__reject,
+body.collection-pure-video .timeline-card,
+body.collection-pure-video workbench-segment-editor,
+body.collection-pure-video workbench-segment-list,
+body.collection-pure-video pre-training-quality-workspace,
+body.collection-pure-video post-training-quality-workspace,
+body.collection-pure-video post-training-quality-review-workspace,
+body.collection-pure-video post-rework-training-quality-workspace,
+body.collection-pure-video post-training-quality-second-review-workspace { display:none !important; }
+body.collection-pure-video .main,
+body.collection-pure-video .workspace,
+body.collection-pure-video .media-timeline-group,
+body.collection-pure-video .media-card { min-height:0; }
+body.collection-pure-video .main{flex:1;overflow:hidden}
+body.collection-pure-video .workspace{height:100%;display:flex}
+body.collection-pure-video .media-timeline-group { display:flex; height:100%; }
+body.collection-pure-video .media-card { flex:1; border:0; border-radius:0; padding:0; }
+body.collection-pure-video .workbench-instruction { margin:0 0 8px; }
+body.collection-pure-video workbench-media-viewer{flex:1;min-height:0;width:100%;display:flex}
+body.collection-pure-video .workbench-media-preview { flex:1; height:100%; min-height:0; padding:8px; }
+body.collection-pure-video .media-card>workbench-media-viewer .workbench-video-grid { height:100%; align-content:center; }
+body.collection-pure-video .workbench-feed { background:#111820; }
+body.collection-pure-video .workbench-feed video { display:block; width:100%; height:100%; object-fit:contain; background:#0b1015; }
+body.collection-pure-video .workbench-feed img:not([src*="icon-fullscreen"]) { display:none; }
+body.collection-pure-video .workbench-feed figcaption { z-index:2; }
+body.collection-pure-video .workbench-feed figcaption img { display:inline-block; }
+body.collection-pure-video .workbench-task-info__identity b { color:var(--cyan); }
+body.collection-pure-video .workbench-feed .collection-video-fullscreen{display:inline-grid;place-items:center;border:0;background:transparent;color:inherit;padding:0;cursor:pointer;vertical-align:middle}
+body.collection-pure-video .workbench-feed:fullscreen{width:100vw!important;height:100dvh!important;aspect-ratio:auto;background:#080c11}
+body.collection-pure-video .collection-video-empty{display:grid;place-items:center;width:100%;height:100%;color:var(--muted);font-size:13px}
+.collection-video-controls{display:flex;align-items:center;gap:14px;height:48px;flex:0 0 48px;border-top:1px solid var(--line);padding:0 16px;font-size:13px}
+.collection-video-controls button{border:0;background:var(--cyan);color:var(--bg);width:30px;height:30px;border-radius:50%;cursor:pointer}
+.collection-video-controls output{font-variant-numeric:tabular-nums;white-space:nowrap;color:var(--text)}
+.collection-video-controls input{flex:1;min-width:100px;accent-color:var(--cyan)}
+.collection-video-controls select{border:1px solid var(--line);border-radius:5px;background:var(--panel);padding:4px 8px;color:var(--text);font:inherit}
+.collection-video-controls [data-video-status]:empty{display:none}
+body.collection-pure-video .workbench-task-info__left{width:100%}
+body.collection-pure-video .workbench-task-info__left>.workbench-task-info__divider:last-of-type{display:none}

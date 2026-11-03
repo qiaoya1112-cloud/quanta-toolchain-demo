@@ -1,11 +1,12 @@
-"""Explicit, repeatable synthetic data for the local collection demo."""
+"""Repeatable synthetic fixtures for the collection demo, including fresh deployments."""
 import copy
 import hashlib
 import json
+import os
 from datetime import datetime, timedelta
 
 import click
-from flask import current_app
+from flask import current_app, request
 
 import collection_processing as processing
 import post_training_collection as collection
@@ -217,6 +218,10 @@ def seed_demo(conn, flows):
         count = seed_processing_examples(conn, flows) + seed_multi_task_examples(conn, flows)
         repaired = repair_demo_quality_results(conn)
         seed_workflow_example(conn, flows)
+        from processing_rule_examples import link_demo_jobs
+        link_demo_jobs(conn)
+        from processing_rule_versions import migrate_task_bindings
+        migrate_task_bindings(conn)
         return dict(tasks=0, records=0, processing_tasks=count, repaired_quality_results=repaired, already_seeded=True)
     totals = dict(tasks=0, records=0, processing_tasks=0, already_seeded=False)
     templates = collection.seed_tasks(current_app.config['COLLECTION_PROJECTS'],
@@ -269,11 +274,36 @@ def seed_demo(conn, flows):
     totals['processing_tasks'] = seed_processing_examples(conn, flows)
     totals['processing_tasks'] += seed_multi_task_examples(conn, flows)
     seed_workflow_example(conn, flows)
+    from processing_rule_examples import link_demo_jobs
+    link_demo_jobs(conn)
+    from processing_rule_versions import migrate_task_bindings
+    migrate_task_bindings(conn)
     conn.execute('INSERT INTO collection_meta VALUES (?, ?)', (FIXTURE, json.dumps(totals)))
     return totals
 
 
 def register_demo_seed(app, flows):
+    app.config.setdefault('COLLECTION_DEMO_AUTO_SEED',
+                          os.environ.get('COLLECTION_DEMO_AUTO_SEED', '1').lower() not in ('0', 'false', 'no'))
+    initialized = set()
+
+    @app.before_request
+    def initialize_collection_demo():
+        # Fresh deployments must show the same examples as local previews.
+        # Tests retain explicit fixtures; operators can disable automatic demo data.
+        if app.testing or not app.config['COLLECTION_DEMO_AUTO_SEED'] or request.method != 'GET':
+            return
+        if not (request.path.startswith(collection.BASE) or request.path.startswith(collection.API)
+                or request.path == '/data/processing-tasks' or request.path.startswith('/data/tasks/')):
+            return
+        path = str(app.config['COLLECTION_DEMO_DB'])
+        if path in initialized:
+            return
+        with collection.database() as conn, conn:
+            conn.execute('BEGIN IMMEDIATE')
+            seed_demo(conn, flows)
+        initialized.add(path)
+
     @app.cli.command('seed-collection-demo')
     def seed_command():
         """Add synthetic collection recordings and related processing examples once."""

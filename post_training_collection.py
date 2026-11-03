@@ -212,7 +212,7 @@ def bind_spec(conn, data):
     if row:
         spec = json.loads(row['payload'])
     else:
-        spec = dict(id=uuid.uuid4().hex, name=data.get('spec_name') or data['name'] + ' · 采集规范',
+        spec = dict(id=uuid.uuid4().hex, name=data.get('spec_name') or data['name'] + ' · 采集规范', project=data['project'],
                     url=identity[1], creator=USER, created_at=now(), updated_at=now(), revision=1)
         conn.execute('INSERT INTO collection_specs VALUES (?, ?, ?)', (spec['id'], identity[0], json.dumps(spec, ensure_ascii=False)))
     data.update(spec_id=spec['id'], spec_name=spec['name'], spec_url=spec['url'])
@@ -463,19 +463,29 @@ def register_collection(app, render_page, projects, checkpoints):
             tasks.sort(key=lambda task: -task['processing_task_count'])
         return jsonify(tasks=tasks)
 
-    # 【新】采集规范与处理规则分开管理；这里只保存名称和飞书链接。
+    # 【新】采集规范与处理规则分开管理；维护名称、所属项目和飞书链接。
     @bp.get(API + '/specs')
     def list_specs():
         with database() as conn:
             tasks = [json.loads(r['payload']) for r in conn.execute('SELECT payload FROM collection_tasks')]
             specs = [json.loads(r['payload']) for r in conn.execute('SELECT payload FROM collection_specs ORDER BY rowid DESC')]
+            project_names = {p['id']: p['name'] for p in current_app.config['COLLECTION_PROJECTS']}
             for spec in specs:
-                spec['task_count'] = sum(t.get('spec_id') == spec['id'] for t in tasks)
-        return jsonify(specs=specs)
+                linked = [t for t in tasks if t.get('spec_id') == spec['id']]
+                spec['task_count'] = len(linked)
+                project_ids = list(dict.fromkeys(
+                    ([spec['project']] if spec.get('project') else []) +
+                    [t['project'] for t in linked if t.get('project')]
+                ))
+                spec['project'] = spec.get('project') or (project_ids[0] if len(project_ids) == 1 else '')
+                spec['project_names'] = [project_names.get(pid, pid) for pid in project_ids]
+        return jsonify(specs=specs, projects=[{'id': p['id'], 'name': p['name']} for p in current_app.config['COLLECTION_PROJECTS']])
 
     @bp.post(API + '/specs')
     @bp.patch(API + '/specs/<spec_id>')
     def save_spec(spec_id=None):
+        if spec_id is not None:
+            return jsonify(error='采集规范创建后不可编辑，请新建采集规范'), 403
         body = request.get_json(silent=True)
         if not isinstance(body, dict):
             return jsonify(error='请求内容无效'), 422
@@ -486,6 +496,9 @@ def register_collection(app, render_page, projects, checkpoints):
         identity = document_identity(url) if isinstance(url, str) and len(url) <= 2048 else None
         if not identity:
             errors['url'] = '请填写飞书文档或知识库的 https 链接'
+        project = body.get('project')
+        if not isinstance(project, str) or project not in {p['id'] for p in current_app.config['COLLECTION_PROJECTS']}:
+            errors['project'] = '请选择所属项目'
         if errors:
             return jsonify(errors=errors), 422
         with database() as conn, conn:
@@ -493,34 +506,11 @@ def register_collection(app, render_page, projects, checkpoints):
             duplicate = conn.execute('SELECT id FROM collection_specs WHERE document_key=?', (identity[0],)).fetchone()
             if duplicate and duplicate['id'] != spec_id:
                 return jsonify(error='该文档已在规范库中，请使用已有规范'), 409
-            old = None
-            if spec_id:
-                row = conn.execute('SELECT payload FROM collection_specs WHERE id=?', (spec_id,)).fetchone()
-                if not row:
-                    abort(404, description='规范不存在')
-                old = json.loads(row['payload'])
-                if type(body.get('revision')) is not int or body['revision'] != old['revision']:
-                    return jsonify(error='规范已被更新，请刷新后重试'), 409
-                if old['name'] == name.strip() and old['url'] == identity[1]:
-                    return jsonify(spec=old, unchanged=True)
             stamp = now()
-            spec = dict(old or dict(id=uuid.uuid4().hex, creator=USER, created_at=stamp),
-                        name=name.strip(), url=identity[1], updated_at=stamp, revision=(old['revision'] + 1 if old else 1))
-            if old:
-                conn.execute('UPDATE collection_specs SET document_key=?, payload=? WHERE id=?', (identity[0], json.dumps(spec, ensure_ascii=False), spec_id))
-                for row in conn.execute('SELECT id, payload FROM collection_tasks').fetchall():
-                    task = json.loads(row['payload'])
-                    if task.get('spec_id') != spec_id:
-                        continue
-                    changes = [{'field': key, 'label': label, 'before': task.get(key, ''), 'after': spec[source]}
-                               for key, label, source in [('spec_name', '规范名称', 'name'), ('spec_url', '采集规范', 'url')]
-                               if task.get(key, '') != spec[source]]
-                    task.update(spec_name=spec['name'], spec_url=spec['url'], updated_at=stamp, revision=task['revision'] + 1)
-                    task['events'].append(dict(at=stamp, actor=USER, title='更新采集规范', detail='规则管理更新了关联规范。', changes=changes))
-                    conn.execute('UPDATE collection_tasks SET payload=? WHERE id=?', (json.dumps(task, ensure_ascii=False), task['id']))
-            else:
-                conn.execute('INSERT INTO collection_specs VALUES (?, ?, ?)', (spec['id'], identity[0], json.dumps(spec, ensure_ascii=False)))
-        return jsonify(spec=spec), 200 if old else 201
+            spec = dict(id=uuid.uuid4().hex, creator=USER, created_at=stamp,
+                        name=name.strip(), project=project, url=identity[1], updated_at=stamp, revision=1)
+            conn.execute('INSERT INTO collection_specs VALUES (?, ?, ?)', (spec['id'], identity[0], json.dumps(spec, ensure_ascii=False)))
+        return jsonify(spec=spec), 201
 
     @bp.get(API + "/tasks/<task_id>")
     def detail(task_id):

@@ -12,7 +12,8 @@ import collection_processing as processing
 
 
 FLOWS = [dict(stage='质检', name='自动质检', human_nodes=[]),
-         dict(stage='标注', name='人工标注', human_nodes=['标注'])]
+         dict(stage='标注', name='人工标注', human_nodes=['标注'],
+              node_rule_configs={'标注': {'allow_task_percent': True, 'percent': 100}})]
 
 
 class ProcessingTests(unittest.TestCase):
@@ -155,7 +156,7 @@ class ProcessingTests(unittest.TestCase):
         self.assertEqual(0, job['total_count'])
 
     def test_stages_are_separate_and_missing_record_is_not_success(self):
-        configs = {'质检': {}, '标注': {'标注': dict(rule='规则 v1', assignments=[dict(type='user_group', target='标注组')], percent=100)}}
+        configs = {'质检': {}, '标注': {'标注': dict(rule='通用动作标注规则 v3', assignments=[dict(type='user_group', target='标注组')], percent=100)}}
         job = self.create(self.body(stages={'质检': '自动质检', '标注': '人工标注'}, configs=configs)).json['task']
         job = self.action(job, 'publish').json['task']
         with self.app.app_context(), collection.database() as conn, conn:
@@ -214,6 +215,149 @@ class ProcessingTests(unittest.TestCase):
         self.assertEqual(409, self.client.patch(path, json=dict(revision=job['revision'], priority=1)).status_code)
         self.assertEqual(422, self.client.patch(path, json=dict(revision=updated['revision'], priority=100)).status_code)
         self.assertEqual(409, self.client.patch(path, json=dict(revision=updated['revision'], name='覆盖配置')).status_code)
+
+    def test_published_node_percentage_edit_only_applies_to_new_members(self):
+        config = {'标注': {'标注': dict(rule='通用动作标注规则 v3',
+                                  assignments=[dict(type='user_group', target='标注组')], percent=100)}}
+        job = self.action(self.create(self.body(stages={'标注': '人工标注'}, configs=config)).json['task'], 'publish').json['task']
+        path = processing.API + '/tasks/' + job['id']
+        updated = self.client.patch(path, json={'revision': job['revision'],
+                                                'node_percentages': {'标注': {'标注': 60}}})
+        self.assertEqual(200, updated.status_code)
+        updated = updated.json['task']
+        self.assertEqual(100, updated['records'][0]['node_percentages']['标注']['标注'])
+        self.assertEqual(60, updated['configs']['标注']['标注']['percent'])
+        with self.app.app_context(), collection.database() as conn, conn:
+            task = collection.get_task(conn, self.task['id'])
+            task['records'].append(dict(task['records'][0], id='new-after-ratio-edit', upload='uploaded'))
+            conn.execute('UPDATE collection_tasks SET payload=? WHERE id=?', (json.dumps(task), task['id']))
+        admitted = self.action(updated, 'admit').json['task']
+        new_member = next(row for row in admitted['records'] if row['id'] == 'new-after-ratio-edit')
+        self.assertEqual(60, new_member['node_percentages']['标注']['标注'])
+        self.assertEqual(409, self.client.patch(path, json={'revision': job['revision'],
+                                                             'node_percentages': {'标注': {'标注': 20}}}).status_code)
+
+    def test_published_node_percentage_rejects_fixed_or_unknown_nodes(self):
+        job = self.action(self.create().json['task'], 'publish').json['task']
+        path = processing.API + '/tasks/' + job['id']
+        self.assertEqual(422, self.client.patch(path, json={'revision': job['revision'],
+                                                             'node_percentages': {'质检': {'不存在': 50}}}).status_code)
+
+    def test_task_ratio_edit_requires_explicit_flow_opt_in(self):
+        flow = dict(stage='质检', name='显式比例流程', human_nodes=['可调节点', '未配置节点', '固定节点'],
+                    node_rule_configs={'可调节点': {'allow_task_percent': True, 'percent': 100},
+                                       '固定节点': {'allow_task_percent': False, 'percent': 80}})
+        job = dict(stages={'质检': '显式比例流程'}, configs={'质检': {
+            '可调节点': {'percent': 100}, '未配置节点': {'percent': 100}, '固定节点': {'percent': 80}}})
+        allowed = processing.editable_node_percentages(job, [flow])
+        self.assertEqual({'质检': {'可调节点': 100}}, allowed)
+        normalized, error = processing.validate_published_percentages(
+            job, {'质检': {'可调节点': 60}}, [flow])
+        self.assertIsNone(error)
+        self.assertEqual(60, normalized['质检']['可调节点'])
+        for node in ('未配置节点', '固定节点'):
+            _, error = processing.validate_published_percentages(
+                job, {'质检': {node: 60}}, [flow])
+            self.assertIn('可配置节点', error)
+
+    def test_draft_ratio_edit_respects_flow_opt_in(self):
+        config = {'标注': {'标注': dict(rule='通用动作标注规则 v3', percent=100,
+                                  assignments=[dict(type='user_group', target='标注组')])}}
+        job = self.create(self.body(stages={'标注': '人工标注'}, configs=config)).json['task']
+        flow_config = FLOWS[1]['node_rule_configs']['标注']
+        original = flow_config.copy()
+        try:
+            for flag in (None, False):
+                if flag is None:
+                    flow_config.pop('allow_task_percent', None)
+                else:
+                    flow_config['allow_task_percent'] = flag
+                body = json.loads(json.dumps(job, ensure_ascii=False))
+                body['configs']['标注']['标注']['percent'] = 60
+                response = self.client.patch(processing.API + '/tasks/' + job['id'], json=body)
+                self.assertEqual(422, response.status_code)
+                self.assertIn('不允许修改处理比例', response.json['error'])
+            flow_config['allow_task_percent'] = True
+            response = self.client.patch(processing.API + '/tasks/' + job['id'], json=body)
+            self.assertEqual(200, response.status_code)
+            self.assertEqual(60, response.json['task']['configs']['标注']['标注']['percent'])
+        finally:
+            flow_config.clear()
+            flow_config.update(original)
+
+    def test_percentage_edit_keeps_historical_pending_rework_and_completed(self):
+        config = {'标注': {'标注': dict(rule='通用动作标注规则 v3', assignments=[dict(type='user_group', target='标注组')], percent=80)}}
+        job = self.action(self.create(self.body(stages={'标注': '人工标注'}, configs=config)).json['task'], 'publish').json['task']
+        with self.app.app_context(), collection.database() as conn, conn:
+            stored = processing.get_job(conn, job['id'])
+            for member, state, node in zip(stored['records'], ('pending', 'processing', 'completed'), ('标注', '标注', 'End')):
+                member.pop('node_percentages', None)  # pre-feature migration
+                member['stages']['标注'] = state
+                member['stage_workflow'] = {'标注': {'node': node, 'status': 'completed' if node == 'End' else 'rework' if state == 'processing' else state}}
+            processing.save_job(conn, stored)
+            before = json.loads(json.dumps(stored['records']))
+        changed = self.client.patch(processing.API + '/tasks/' + job['id'], json={
+            'revision': job['revision'], 'node_percentages': {'标注': {'标注': 20}}}).json['task']
+        for old, new in zip(before, changed['records']):
+            snapshot = new.pop('node_percentages')
+            old.pop('node_percentages', None)
+            self.assertEqual(old, new)
+            self.assertEqual(80, snapshot['标注']['标注'])
+        from collection_processing_scope import detail_payload
+        with self.app.app_context(), collection.database() as conn:
+            saved = processing.get_job(conn, job['id'])
+            detail = detail_payload(conn, saved, self.task['id'], saved['records'][0]['id'])
+            self.assertEqual(80, detail['configs']['标注']['标注']['percent'])
+        self.assertEqual({'标注': {'标注': 80}}, changed['events'][-1]['before'])
+        self.assertEqual({'标注': {'标注': 20}}, changed['events'][-1]['after'])
+
+    def test_percentage_edit_while_paused_applies_on_resume_and_repeated_edit(self):
+        config = {'标注': {'标注': dict(rule='通用动作标注规则 v3', assignments=[dict(type='user_group', target='标注组')], percent=100)}}
+        job = self.action(self.create(self.body(stages={'标注': '人工标注'}, configs=config)).json['task'], 'publish').json['task']
+        paused = self.action(job, 'pause').json['task']
+        path = processing.API + '/tasks/' + job['id']
+        for value in (60, 0):
+            response = self.client.patch(path, json={'revision': paused['revision'], 'node_percentages': {'标注': {'标注': value}}})
+            self.assertEqual(200, response.status_code)
+            paused = response.json['task']
+            self.assertFalse(paused['enabled'])
+        with self.app.app_context(), collection.database() as conn, conn:
+            task = collection.get_task(conn, self.task['id'])
+            task['records'].append(dict(task['records'][0], id='after-paused-edit', upload='uploaded'))
+            conn.execute('UPDATE collection_tasks SET payload=? WHERE id=?', (json.dumps(task), task['id']))
+        current = self.client.get(path).json['task']
+        self.assertFalse(any(m['id'] == 'after-paused-edit' for m in current['records']))
+        resumed = self.action(current, 'resume').json['task']
+        self.assertEqual(0, next(m for m in resumed['records'] if m['id'] == 'after-paused-edit')['node_percentages']['标注']['标注'])
+        self.assertEqual(100, resumed['records'][0]['node_percentages']['标注']['标注'])
+
+    def test_percentage_validation_fixed_nodes_and_values(self):
+        flow = dict(stage='质检', name='抽检', human_nodes=['质检', '复核'], node_rule_configs={'质检': {'percent': 100, 'allow_task_percent': False}, '复核': {'allow_task_percent': True}})
+        job = dict(stages={'质检': '抽检'}, configs={'质检': {'质检': {'percent': 100}, '复核': {'percent': 50}}})
+        for value in (None, True, 1.5, -1, 101, '30'):
+            _, error = processing.validate_published_percentages(job, {'质检': {'复核': value}}, [flow])
+            self.assertIsNotNone(error)
+        for nodes in ({'质检': 30, '复核': 50}, {}, {'其他': 50}):
+            _, error = processing.validate_published_percentages(job, {'质检': nodes}, [flow])
+            self.assertIsNotNone(error)
+        for value in (0, 100):
+            normalized, error = processing.validate_published_percentages(job, {'质检': {'复核': value}}, [flow])
+            self.assertIsNone(error)
+            self.assertEqual(value, normalized['质检']['复核'])
+
+    def test_zero_data_task_first_admission_uses_edited_percentage(self):
+        config = {'标注': {'标注': dict(rule='通用动作标注规则 v3', assignments=[dict(type='user_group', target='标注组')], percent=100)}}
+        filters = [['采集任务 ID', '等于', self.task['id']], ['数据 ID', '等于', 'future-ratio']]
+        job = self.action(self.create(self.body(stages={'标注': '人工标注'}, configs=config, filters=filters)).json['task'], 'publish').json['task']
+        self.assertEqual([], job['records'])
+        changed = self.client.patch(processing.API + '/tasks/' + job['id'], json={
+            'revision': job['revision'], 'node_percentages': {'标注': {'标注': 45}}}).json['task']
+        with self.app.app_context(), collection.database() as conn, conn:
+            task = collection.get_task(conn, self.task['id'])
+            task['records'].append(dict(task['records'][0], id='future-ratio', upload='uploaded'))
+            conn.execute('UPDATE collection_tasks SET payload=? WHERE id=?', (json.dumps(task), task['id']))
+        admitted = self.action(changed, 'admit').json['task']
+        self.assertEqual(45, admitted['records'][0]['node_percentages']['标注']['标注'])
 
     def test_source_progress_does_not_replace_task_status(self):
         job = self.action(self.create().json['task'], 'publish').json['task']
@@ -419,7 +563,7 @@ class ProcessingTests(unittest.TestCase):
     def test_record_results_use_only_conclusions_or_completion(self):
         from collection_processing_scope import dataset
         qc = self.action(self.create().json['task'], 'publish').json['task']
-        annotation_config = {'标注': {'标注': dict(rule='规则 v1', assignments=[dict(type='user_group', target='标注组')], percent=100)}}
+        annotation_config = {'标注': {'标注': dict(rule='通用动作标注规则 v3', assignments=[dict(type='user_group', target='标注组')], percent=100)}}
         annotation = self.action(self.create(self.body(stages={'标注': '人工标注'}, configs=annotation_config)).json['task'], 'publish').json['task']
         with self.app.app_context(), collection.database() as conn:
             for conclusion in ('合格', '不合格', '失误'):
@@ -476,6 +620,57 @@ class ProcessingTests(unittest.TestCase):
         fallback = render_task_detail(job['id'], task=task, records=records, return_source=record['task_id'], return_tab='invalid')
         self.assertIn('#processing', fallback)
 
+    def test_original_processing_filters_use_completed_results_and_rule_versions(self):
+        upstream = self.action(self.create().json['task'], 'publish').json['task']
+        with self.app.app_context(), collection.database() as conn, conn:
+            stored = processing.get_job(conn, upstream['id'])
+            identity={'name':'拿取规范','version':'v1','reference':'拿取规范 v1','legacy':True}
+            stored['configs']['质检'] = {'质检': {'rule': '拿取规范 v1','rule_identity':dict(identity)}}
+            for member, conclusion in zip(stored['records'], ('合格', '不合格')):
+                member['stages']['质检'] = 'completed'
+                member['results'] = {'质检': {'conclusion': conclusion}}
+                member.setdefault('rule_snapshots',{})['质检']={'质检':dict(identity)}
+            processing.save_job(conn, stored)
+            job = dict(id='new-job', source_ids=[self.task['id']], filters=[])
+            source = [['采集任务 ID', '等于', self.task['id']]]
+            def selected(*extra):
+                job['filters'] = source + list(extra)
+                return {record['id'] for _, record in processing.candidates(conn, job)}
+            finished = {m['id'] for m in stored['records'][:2]}
+            self.assertEqual(finished, selected(['是否完成质检', '等于', '是', 'any']))
+            self.assertEqual({stored['records'][0]['id']}, selected(['质检结果', '等于', '合格', 'any']))
+            self.assertEqual({stored['records'][1]['id']}, selected(['质检结果', '等于', '不合格', 'any']))
+            self.assertEqual(len(stored['records']) - 2, len(selected(['是否完成质检', '等于', '否', 'any'])))
+            self.assertEqual(finished, selected(['是否完成质检', '等于', '是', json.dumps(['质检', '拿取规范', 'v1'])]))
+            self.assertEqual(set(), selected(['是否完成质检', '等于', '是', json.dumps(['质检', '拿取规范', 'v2'])]))
+            self.assertEqual(set(), selected(['是否完成标注', '等于', '是', 'any']))
+            # A verdict recorded before End must not count as a finished result.
+            member = stored['records'][2]
+            member['results'] = {'质检': {'conclusion': '合格'}}
+            processing.save_job(conn, stored)
+            self.assertEqual(finished, selected(['是否完成质检', '等于', '是', 'any']))
+
+    def test_original_processing_filters_choose_latest_verdict_and_validate_scope(self):
+        for stamp, conclusion in [('2026-10-28 10:00:00', '合格'), ('2026-10-29 10:00:00', '不合格')]:
+            job = self.action(self.create().json['task'], 'publish').json['task']
+            with self.app.app_context(), collection.database() as conn, conn:
+                stored = processing.get_job(conn, job['id'])
+                stored['records'][0]['stages']['质检'] = 'completed'
+                stored['records'][0]['results'] = {'质检': {'conclusion': conclusion, 'completed_at': stamp}}
+                processing.save_job(conn, stored)
+        for conclusion, count in [('合格', 0), ('不合格', 1)]:
+            created = self.create(self.body(filters=[['采集任务 ID', '等于', self.task['id']], ['质检结果', '等于', conclusion, 'any']]))
+            self.assertEqual(201, created.status_code)
+            self.assertEqual(count, created.json['task']['candidate_count'])
+        for condition in [['质检结果', '等于', '合格'], ['质检结果', '等于', '合格', 'bad-scope'], ['是否完成标注', '等于', '是', json.dumps(['质检', '规则', 'v1'])]]:
+            self.assertEqual(422, self.create(self.body(filters=[condition])).status_code)
+
+    def test_original_basic_filters_intersect_source_instead_of_being_ignored(self):
+        for field, value, expected in [('所属项目', '亮剑', self.task['metrics']['uploaded']), ('所属项目', '其他项目', 0), ('采集任务', self.task['id'], self.task['metrics']['uploaded']), ('采集任务', '99999', 0)]:
+            response = self.create(self.body(filters=[['采集任务 ID', '等于', self.task['id']], [field, '等于', value]]))
+            self.assertEqual(201, response.status_code)
+            self.assertEqual(expected, response.json['task']['candidate_count'])
+
     def test_quality_progress_keeps_mistake_separate_from_failed(self):
         from collection_processing_scope import progress
         job={'stages':{'质检':'自动质检','标注':'人工标注'}}
@@ -488,6 +683,24 @@ class ProcessingTests(unittest.TestCase):
         self.assertNotIn('unreported',qc)
         self.assertEqual(1,annotation['done'])
         self.assertEqual(0,progress(job,[])[0][0]['total'])
+
+    def test_progress_three_states_preserve_started_review_rework_and_paused_work(self):
+        from collection_processing_scope import progress
+        job = {'stages': {'质检': '人工质检'}, 'stage_nodes': {'质检': ['质检', '审核']}}
+        rows = [
+            {'stages': {'质检': 'completed'}, 'results': {'质检': {'conclusion': '失误'}}},
+            {'stages': {'质检': 'processing'}},
+            {'stages': {'质检': 'pending'}, 'stage_workflow': {'质检': {'node': '审核', 'status': 'pending'}}},
+            {'stages': {'质检': 'processing'}, 'stage_workflow': {'质检': {'node': '质检', 'status': 'rework'}}},
+            {'stages': {'质检': 'paused'}, 'paused_stages': {'质检': 'processing'}},
+            {'stages': {'质检': 'paused'}, 'paused_stages': {'质检': 'pending'}},
+            {'stages': {'质检': 'pending'}},
+        ]
+        qc = progress(job, rows)[0][0]
+        self.assertEqual((7, 1, 4, 2, 1), (qc['total'], qc['done'], qc['in_progress'], qc['unprocessed'], qc['mistake']))
+        self.assertEqual(qc['total'], qc['done'] + qc['in_progress'] + qc['unprocessed'])
+        empty = progress(job, [])[0][0]
+        self.assertEqual((0, 0, 0), (empty['done'], empty['in_progress'], empty['unprocessed']))
 
 
 if __name__ == '__main__':

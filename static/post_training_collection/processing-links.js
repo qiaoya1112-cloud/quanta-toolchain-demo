@@ -16,35 +16,41 @@
   drawer.querySelector('.dpr-processing-task-page-foot').append(detailActions);
   const message=document.createElement('div');message.className='dc-processing-message';message.setAttribute('role','alert');message.hidden=true;drawer.querySelector('.dpr-processing-task-page-foot').prepend(message);
   const showError=text=>{message.textContent=text;message.hidden=!text;};
-  const actionNote=document.createElement('p');actionNote.className='dc-processing-scope-note';actionNote.hidden=true;
-  document.getElementById('processingTaskFilters').before(actionNote);
-  const scopeTools=document.createElement('div');scopeTools.className='dc-source-tools';scopeTools.hidden=true;
-  scopeTools.innerHTML='<button type="button" class="btn" data-select-sources>选择采集来源</button><label>上游质检任务<select id="dc-upstream"><option value="">不限上游结果</option></select></label><label>质检结论<select id="dc-upstream-result"><option>合格</option><option>不合格</option><option>失误</option></select></label><span data-source-error role="alert"></span>';
-  drawer.querySelector('[data-filter-group="basic"] .dpr-task-config-cols').before(scopeTools);
   let sourceIds=[];
   const splitIds=value=>[...new Set(String(value).split(/[,，、]/).map(v=>v.trim()).filter(Boolean))];
-  function updateScopeTools(){
-    scopeTools.hidden=!source;
-    if(!source)return;
-    const select=scopeTools.querySelector('#dc-upstream'),previous=activeJob?.upstream_id||select.value;
-    select.innerHTML='<option value="">不限上游结果</option>'+jobs.filter(j=>j.id!==activeJob?.id&&j.published&&j.project===source.project&&j.stages['质检']&&sourceIds.every(id=>j.source_ids.includes(id))).map(j=>`<option value="${esc(j.id)}">${esc(j.id)} · ${esc(j.name)}</option>`).join('');
-    select.value=previous;
-    scopeTools.querySelector('#dc-upstream-result').value=activeJob?.upstream_result||'合格';
-    scopeTools.querySelectorAll('button,select').forEach(el=>el.disabled=drawer.dataset.mode==='detail'||drawer.dataset.mode==='edit');
+  function lockSourceFilter(){
+    if(!source||!params.has('collection'))return;
+    drawer.querySelectorAll('#processingTaskBasicFilters .dpr-filter-row').forEach(row=>{
+      if(row.querySelector('.dpr-task-filter-field')?.value!=='采集任务 ID')return;
+      row.dataset.collectionSourceLocked='true';
+      row.querySelectorAll('input,select,button').forEach(el=>el.disabled=true);
+      const remove=row.querySelector('.dpr-task-config-remove');if(remove)remove.hidden=true;
+    });
   }
-  scopeTools.querySelector('[data-select-sources]').onclick=()=>{
-    const modal=document.createElement('dialog');modal.className='dc-source-dialog';modal.innerHTML=`<h3>采集来源</h3><div class="dc-source-choices">${collectionTasks.filter(t=>t.project===source.project).map(t=>`<label><input type="checkbox" value="${esc(t.id)}" ${sourceIds.includes(t.id)?'checked':''}>${esc(t.id)} · ${esc(t.name)}</label>`).join('')}</div><p role="alert"></p><footer><button class="btn" data-cancel>取消</button><button class="btn btn-primary" data-save>确定</button></footer>`;
-    document.body.append(modal);modal.addEventListener('close',()=>modal.remove());modal.querySelector('[data-cancel]').onclick=()=>modal.close();modal.querySelector('[data-save]').onclick=()=>{const ids=[...modal.querySelectorAll('input:checked')].map(el=>el.value);if(!ids.length){modal.querySelector('[role=alert]').textContent='请至少选择一个采集任务';return;}sourceIds=ids;const first=drawer.querySelector('.dpr-filter-row .dpr-task-filter-value');first.value=ids.join(',');first.dispatchEvent(new Event('input',{bubbles:true}));updateScopeTools();modal.close();};modal.showModal();
-  };
+  function defaultProcessingName(task){
+    const base=task.name.slice(0,95)+'_处理任务';
+    const related=jobs.filter(job=>job.source_ids.includes(task.id));
+    const names=new Set(related.map(job=>job.name));
+    if(!related.length)return base;
+    let index=1;
+    while(names.has(base.slice(0,100-String(index).length-1)+'_'+index))index++;
+    return base.slice(0,100-String(index).length-1)+'_'+index;
+  }
   async function api(path,method='GET',body,headers={}){
     const response=await fetch(API+path,{method,cache:'no-store',headers:{'Content-Type':'application/json',...headers},body:body===undefined?undefined:JSON.stringify(body)});
     let data;try{data=await response.json()}catch{throw Error('服务暂时不可用，请稍后重试')}
     if(!response.ok)throw Error(data.error||'操作失败');return data;
   }
   function rememberNodes(){
-    if(activeJob?.published)return;
     const stage=window.DPR_ACTIVE_ASSIGNMENT_STAGE;
     if(!stage||!window.DPR_ENABLED_FLOW_STAGES[stage])return;
+    if(activeJob?.published){
+      drawer.querySelectorAll('#processingTaskAssignments .dpr-flow-node-card').forEach(card=>{
+        const node=configs[stage]?.[card.dataset.node],percent=card.querySelector('.dpr-node-percent-input');
+        if(node&&percent&&!percent.disabled&&card.dataset.percentEditing!=='true')node.percent=percent.value.trim()===''?null:Number(percent.value);
+      });
+      return;
+    }
     configs[stage]={};
     drawer.querySelectorAll('#processingTaskAssignments .dpr-flow-node-card').forEach(card=>{
       configs[stage][card.dataset.node]={rule:card.querySelector('.dpr-node-rule-select')?.value||'',
@@ -54,12 +60,18 @@
   }
   function restoreSavedNodes(){
     if(!source)return;
-    const nodes=(activeJob?.published?activeJob.configs:configs)[window.DPR_ACTIVE_ASSIGNMENT_STAGE]||{};
+    const nodes=configs[window.DPR_ACTIVE_ASSIGNMENT_STAGE]||{};
     drawer.querySelectorAll('#processingTaskAssignments .dpr-flow-node-card').forEach(card=>{
       const node=nodes[card.dataset.node];if(!node)return;
       const rule=card.querySelector('.dpr-node-rule-select'),percent=card.querySelector('.dpr-node-percent-input');
-      if(rule&&node.rule){if(![...rule.options].some(o=>o.value===node.rule))rule.add(new Option(node.rule,node.rule));rule.value=node.rule;}
-      if(percent)percent.value=node.percent;
+      card.dataset.ruleTaskId=activeJob?.id||'';
+      if(rule&&node.rule){
+        const identity=node.rule_identity;
+        const label=identity?identity.name+' · '+identity.version.toUpperCase():node.rule;
+        if(![...rule.options].some(o=>o.value===node.rule))rule.add(new Option(label,node.rule));
+        rule.value=node.rule;
+      }
+      if(percent&&card.dataset.percentEditing!=='true'){percent.value=node.percent??'';window.dprUpdateNodePercentage(percent);}
     });
   }
   // The existing form caches markup. Persist current property values to avoid
@@ -70,14 +82,18 @@
     if(source)rememberNodes();
   });
   for(const name of ['dprShowAssignmentsForStage','dprToggleFlowStage','dprProcessingFlowChange']){
-    const original=window[name];window[name]=function(...args){if(source)rememberNodes();const result=original.apply(this,args);restoreSavedNodes();return result;};
+    const original=window[name];window[name]=function(...args){
+      if(saving)return;
+      if(drawer.querySelector('[data-percent-editing="true"]')){window.toast('请先保存或取消处理比例修改');return;}
+      if(source)rememberNodes();const result=original.apply(this,args);restoreSavedNodes();return result;
+    };
   }
   function context(sourceTask,job){
     source=sourceTask;activeJob=job||null;showError('');requestKey=crypto.randomUUID();
     sourceIds=job?.source_ids?.slice()||(sourceTask?[sourceTask.id]:[]);
-    for(const key of Object.keys(configs))delete configs[key];Object.assign(configs,job?.configs||{});
-    const linked=!!sourceTask;actionNote.hidden=true;
-    drawer.querySelectorAll('#processingTaskFilters+.dpr-task-filter-scope-help').forEach(el=>el.hidden=linked);
+    for(const key of Object.keys(configs))delete configs[key];Object.assign(configs,JSON.parse(JSON.stringify(job?.configs||{})));
+    const linked=!!sourceTask;
+    drawer.querySelectorAll('#processingTaskFilters+.dpr-task-filter-scope-help').forEach(el=>el.hidden=false);
     sourceContext.hidden=!job||drawer.dataset.mode!=='detail';
     detailActions.hidden=sourceContext.hidden;
     if(!sourceContext.hidden){
@@ -87,9 +103,8 @@
     }else{sourceContext.replaceChildren();detailActions.replaceChildren();}
     drawer.dataset.collectionSource=sourceTask?.id||'';
     const sourceNotice=drawer.querySelector('.dpr-processing-filter-notice:not(.dpr-processing-filter-warning)');
-    if(sourceNotice)sourceNotice.hidden=linked;
-    drawer.querySelector('[data-filter-group="processing"]').hidden=linked;
-    actionNote.textContent=linked?'采集任务只限定数据来源，筛选条件可进一步缩小范围。发布后按筛选条件自动接收数据。':'';
+    if(sourceNotice)sourceNotice.hidden=false;
+    drawer.querySelector('[data-filter-group="processing"]').hidden=false;
     document.getElementById('processingTaskDrawerSubmit').textContent=job?'保存修改':'创建任务';
     if(job&&!job.published&&drawer.dataset.mode==='new')title.textContent='编辑处理任务';
     if(linked){
@@ -97,17 +112,12 @@
       const project=document.getElementById('processingTaskProject');
       const label=source.project_name||source.project;
       if(![...project.options].some(o=>o.value===label))project.add(new Option(label,label));project.value=label;project.disabled=true;
-      // Scope remains on the original filter page. Unsupported rule-result
-      // predicates are kept out of this local collection-only adapter.
-      for(const [key,config] of Object.entries(window.DPR_TASK_FILTER_FIELDS)){
-        config._collectionHidden=!['采集任务 ID','数据 ID','采集员','采集时间','采集结论'].includes(key);
-      }
-      drawer.querySelectorAll('.dpr-task-filter-field option').forEach(o=>o.disabled=!!window.DPR_TASK_FILTER_FIELDS[o.value]?._collectionHidden);
     }
-    updateScopeTools();
+    lockSourceFilter();
   }
   window.dprOpenProcessingTaskDrawer=function(mode,trigger){
     const isLinked=trigger?.dataset.collectionLinked==='true';
+    drawer.dataset.editingExisting=String(isLinked&&mode==='edit'&&!!jobs.find(j=>j.id===trigger.dataset.taskId&&!j.published));
     // Clear the previous adapter context before the shared form renders its controls.
     source=null;activeJob=null;
     window.DPR_TASK_FILTER_FIELDS['采集结论']={type:'single',options:['成功','失败']};
@@ -118,6 +128,7 @@
     if(job){
       context({id:job.source_ids[0],name:trigger.dataset.sourceName||job.source_ids.join('、'),project:job.project,project_name:trigger.dataset.project},job);
       restoreSavedNodes();
+      if(mode==='edit'&&!job.published)drawer.querySelectorAll('.dpr-node-percent-input').forEach(el=>el.disabled=true);
       if(mode==='edit'&&job.published)drawer.querySelectorAll('#processingTaskFilters input,#processingTaskFilters select,#processingTaskFilters button').forEach(el=>el.disabled=true);
     }
   };
@@ -128,9 +139,8 @@
     const more=trigger.closest('details')||window.DPR_OPEN_TASK_MORE;if(more)more.open=false;
     window.dprOpenProcessingTaskDrawer('new',trigger);
     activeJob=null;delete drawer.dataset.taskId;drawer.dataset.taskStatus='unpublished';
+    drawer.dataset.editingExisting='false';
     sourceContext.hidden=true;detailActions.hidden=true;
-    scopeTools.querySelector('#dc-upstream').value=job.upstream_id||'';
-    scopeTools.querySelector('#dc-upstream-result').value=job.upstream_result||'合格';
     document.getElementById('processingTaskName').value=job.name+'（复制）';
     document.getElementById('processingTaskDrawerSubmit').textContent='创建任务';
     title.textContent='新建处理任务';
@@ -140,9 +150,9 @@
     const filters=window.dprCurrentTaskFilters();
     const ids=filters.filter(f=>f[0]==='采集任务 ID'&&f[1]==='等于').flatMap(f=>splitIds(f[2]));
     const task=ids.length&&ids.every(id=>collectionTasks.some(t=>t.id===id))?collectionTasks.find(t=>t.id===ids[0]):null;
-    if((task?.id||'')===(source?.id||'')){if(task){sourceIds=ids;updateScopeTools();}return;}
+    if((task?.id||'')===(source?.id||'')){if(task){sourceIds=ids;}return;}
     context(task||null,null);
-    if(task){sourceIds=ids;updateScopeTools();}
+    if(task){sourceIds=ids;}
     if(!task)document.getElementById('processingTaskProject').disabled=false;
   }
   drawer.addEventListener('change',event=>{
@@ -151,7 +161,14 @@
   window.dprCloseProcessingTaskPage=function(){
     if(saving)return;
     const returnTo=params.get('return_to');
-    if(params.get('linked')===drawer.dataset.taskId&&returnTo&&returnTo.startsWith('/data/tasks/')&&!returnTo.includes('\\')){
+    let collectionReturn=false;
+    if(returnTo&&activeJob){
+      try{
+        const parsed=new URL(returnTo,location.origin);
+        collectionReturn=returnTo.startsWith(BASE+'/')&&!returnTo.includes('\\')&&!/[\u0000-\u001f\u007f]/.test(returnTo)&&parsed.origin===location.origin&&parsed.hash==='#processing'&&activeJob.source_ids.some(id=>parsed.pathname===BASE+'/'+encodeURIComponent(id));
+      }catch(_){}
+    }
+    if(params.get('linked')===drawer.dataset.taskId&&returnTo&&((returnTo.startsWith('/data/tasks/')&&!returnTo.includes('\\'))||collectionReturn)){
       location.assign(returnTo);
       return;
     }
@@ -160,14 +177,52 @@
     if(activeJob){const url=new URL(location.href);url.searchParams.delete('linked');history.replaceState(null,'',url.pathname+url.search);}
     source=null;activeJob=null;
   };
-  const originalFilterRow=window.dprTaskFilterRow;
-  window.dprTaskFilterRow=function(...args){const html=originalFilterRow.apply(this,args);if(!source)return html;const box=document.createElement('div');box.innerHTML=html;box.querySelectorAll('.dpr-task-filter-field option').forEach(o=>o.disabled=!!window.DPR_TASK_FILTER_FIELDS[o.value]?._collectionHidden);return box.innerHTML;};
-  const originalAddFilter=window.dprAddTaskFilter;
-  window.dprAddTaskFilter=function(group){
-    if(!source)return originalAddFilter(group);
-    if(group==='processing'){showError('此入口按采集事实筛选数据；处理结果条件请在原处理任务模块配置。');return;}
-    document.getElementById('processingTaskBasicFilters').insertAdjacentHTML('beforeend',window.dprTaskFilterRow('数据 ID','等于',''));
-    window.dprRefreshFilterRelationLabels();window.dprUpdateDuplicateFilterWarning();
+  const originalRenderFilters=window.dprRenderTaskFilters;
+  window.dprRenderTaskFilters=function(...args){const result=originalRenderFilters.apply(this,args);lockSourceFilter();return result;};
+  const originalRemoveFilter=window.dprRemoveTaskFilter;
+  window.dprRemoveTaskFilter=function(button){if(button.closest('[data-collection-source-locked]'))return;return originalRemoveFilter(button);};
+  const originalSavePercentage=window.dprSaveNodePercentage,originalCancelPercentage=window.dprCancelNodePercentage;
+  window.dprCancelNodePercentage=function(button){
+    if(saving)return;
+    originalCancelPercentage(button);
+    const card=button.closest('.dpr-flow-node-card'),node=configs[window.DPR_ACTIVE_ASSIGNMENT_STAGE]?.[card.dataset.node];
+    if(node)node.percent=Number(card.querySelector('.dpr-node-percent-input').value);
+  };
+  window.dprSaveNodePercentage=async function(button){
+    if(!activeJob)return originalSavePercentage(button);
+    if(saving)return;
+    const card=button.closest('.dpr-flow-node-card');
+    if(!window.dprNodePercentageInputValid(card))return;
+    const stage=window.DPR_ACTIVE_ASSIGNMENT_STAGE,nodeName=card.dataset.node;
+    const next=JSON.parse(JSON.stringify(activeJob.configs));
+    next[stage][nodeName].percent=Number(card.querySelector('.dpr-node-percent-input').value);
+    const percentages={};
+    for(const [s,flowName] of Object.entries(activeJob.stages)){
+      const flow=window.DPR_PROCESSING_FLOWS.find(f=>f.stage===s&&f.name===flowName);
+      if(!flow){card.querySelector('.dpr-node-percent-error').textContent='处理流程已不可用，请刷新后重试';return;}
+      for(const n of flow.human_nodes||[]){
+        if(flow.node_rule_configs?.[n]?.allow_task_percent!==true)continue;
+        (percentages[s]||={})[n]=next[s]?.[n]?.percent;
+      }
+    }
+    const controls=[...card.querySelectorAll('.dpr-node-percent-actions button')];
+    const submit=document.getElementById('processingTaskDrawerSubmit'),submitDisabled=submit.disabled;
+    try{
+      saving=true;controls.forEach(el=>el.disabled=true);submit.disabled=true;
+      const body=activeJob.published?{revision:activeJob.revision,node_percentages:percentages}:{...activeJob,configs:next};
+      const result=await api('/tasks/'+activeJob.id,'PATCH',body);
+      activeJob=result.task;
+      for(const [s,nodes] of Object.entries(activeJob.configs))for(const [n,value] of Object.entries(nodes)){
+        if(configs[s]?.[n])configs[s][n].percent=value.percent;
+      }
+      window.dprUpdateNodePercentage(card.querySelector('.dpr-node-percent-input'));
+      window.dprSetNodePercentageEditing(card,false);
+      jobs=jobs.map(job=>job.id===activeJob.id?activeJob:job);
+      const taskRow=document.querySelector('[data-collection-processing="'+CSS.escape(activeJob.id)+'"]');
+      if(taskRow)taskRow.outerHTML=row(activeJob);
+      window.toast('已保存，处理比例对新流入的数据生效');
+    }catch(error){card.querySelector('.dpr-node-percent-error').textContent=error.message;}
+    finally{saving=false;controls.forEach(el=>el.disabled=false);submit.disabled=submitDisabled;}
   };
   window.dprSubmitProcessingTask=async function(){
     sourceFromFilters();
@@ -175,27 +230,40 @@
     if(saving)return;showError('');
     const button=document.getElementById('processingTaskDrawerSubmit');
     try{
+      if(drawer.querySelector('[data-percent-editing="true"]'))throw Error('请先保存或取消处理比例修改');
       if(activeJob?.published){
         const expected=window.dprExpectedTaskValidation();if(!expected.valid)throw Error(expected.message);
+        if(drawer.querySelector('[data-processor-editing="true"]'))throw Error('请先保存或取消处理人修改');
+        rememberNodes();
+        const percentages={};
+        for(const [stage,flowName] of Object.entries(activeJob.stages)){
+          const flow=window.DPR_PROCESSING_FLOWS.find(f=>f.stage===stage&&f.name===flowName);
+          if(!flow)throw Error('处理流程已不可用，请刷新后重试');
+          for(const node of flow.human_nodes||[]){
+            if(flow.node_rule_configs?.[node]?.allow_task_percent!==true)continue;
+            const value=configs[stage]?.[node]?.percent;
+            if(!Number.isInteger(value)||value<0||value>100)throw Error('处理比例请输入 0～100 的整数');
+            (percentages[stage]||={})[node]=value;
+          }
+        }
         saving=true;button.disabled=true;button.textContent='正在保存…';
-        await api('/tasks/'+activeJob.id,'PATCH',{revision:activeJob.revision,priority:Number(document.getElementById('processingTaskPriority').value),expected_value:document.getElementById('processingTaskExpectedValue').value});
-        originalClose();source=null;activeJob=null;await loadJobs();window.toast('已保存处理任务');return;
+        await api('/tasks/'+activeJob.id,'PATCH',{revision:activeJob.revision,priority:Number(document.getElementById('processingTaskPriority').value),expected_value:document.getElementById('processingTaskExpectedValue').value,node_percentages:percentages});
+        originalClose();source=null;activeJob=null;await loadJobs();window.toast('已保存，处理比例对新流入的数据生效');return;
       }
       if(drawer.querySelector('[data-processor-editing="true"]'))throw Error('请先保存或取消处理人修改');
       rememberNodes();
       const stages=Object.fromEntries(Object.entries(window.DPR_ENABLED_FLOW_STAGES).filter(([,enabled])=>enabled).map(([stage])=>[stage,window.DPR_SELECTED_FLOWS[stage]]));
       if(!Object.keys(stages).length){window.dprSwitchProcessingTaskPane(drawer.querySelector('[data-task-pane="flow"]'));throw Error('请至少开启并配置一个业务环节');}
       const selectedFilters=window.dprCurrentTaskFilters();
-      const unsupported=selectedFilters.some(f=>!['采集任务 ID','数据 ID','采集员','采集时间','采集结论'].includes(f[0]));
-      if(unsupported){window.dprSwitchProcessingTaskPane(drawer.querySelector('[data-task-pane="filter"]'));throw Error('请使用采集任务 ID、数据 ID、采集员、采集时间或采集结论筛选');}
       const sourceFilter=selectedFilters.find(f=>f[0]==='采集任务 ID');
       if(!sourceFilter||sourceFilter[1]!=='等于')throw Error('请保留来源采集任务 ID 条件');
       sourceIds=splitIds(sourceFilter[2]);
+      if(params.has('collection')&&(sourceIds.length!==1||sourceIds[0]!==params.get('collection')))throw Error('来源采集任务不可修改');
       if(!sourceIds.length||sourceIds.some(id=>!collectionTasks.some(t=>t.id===id&&t.project===source.project)))throw Error('采集来源必须属于同一项目');
       const name=document.getElementById('processingTaskName').value;
       saving=true;button.disabled=true;button.textContent='正在创建…';
       const expected=window.dprExpectedTaskValidation();if(!expected.valid)throw Error(expected.message);
-      const body={name,source_ids:sourceIds,upstream_id:scopeTools.querySelector('#dc-upstream').value,upstream_result:scopeTools.querySelector('#dc-upstream-result').value,priority:Number(document.getElementById('processingTaskPriority').value),category:document.getElementById('processingTaskCategory').value,expected_mode:document.getElementById('processingTaskExpectedMode').value,expected_value:document.getElementById('processingTaskExpectedValue').value,filters:selectedFilters,stages,configs};
+      const body={name,source_ids:sourceIds,upstream_id:activeJob?.upstream_id||'',upstream_result:activeJob?.upstream_result||'合格',priority:Number(document.getElementById('processingTaskPriority').value),category:document.getElementById('processingTaskCategory').value,expected_mode:document.getElementById('processingTaskExpectedMode').value,expected_value:document.getElementById('processingTaskExpectedValue').value,filters:selectedFilters,stages,configs};
       if(activeJob)body.revision=activeJob.revision;
       const result=await api('/tasks'+(activeJob?'/'+activeJob.id:''),activeJob?'PATCH':'POST',body,{'Idempotency-Key':requestKey});
       window.location.assign(BASE+'/'+encodeURIComponent(source.id)+'?processing_created='+result.task.id+'#processing');
@@ -266,11 +334,18 @@
         const response=await fetch('/api/post-training-collection/tasks/'+encodeURIComponent(params.get('collection')),{cache:'no-store'});const data=await response.json();if(!response.ok)throw Error(data.error||'来源采集任务不可用');
         const t=data.task;t.project_name=shortNames[t.project]||t.project;
         originalOpen('new');context(t,null);
+        if(params.get('collection_created')==='1'){
+          sourceContext.hidden=false;
+          sourceContext.innerHTML='<span role="status">采集任务已创建</span><div class="dc-processing-sources"><a href="'+BASE+'/'+encodeURIComponent(t.id)+'#records">'+esc(t.id)+' · '+esc(t.name)+'</a></div>';
+        }
         const sourceNotice=drawer.querySelector('.dpr-processing-filter-notice:not(.dpr-processing-filter-warning)');
-        if(sourceNotice)sourceNotice.hidden=true;
-        drawer.querySelector('[data-filter-group="processing"]').hidden=true;
-        // 处理任务是独立对象，名称由处理负责人按本次处理目的填写；仅带入来源项目、任务 ID 和优先级。
-        document.getElementById('processingTaskName').value='';document.getElementById('processingTaskPriority').value=String(t.priority||3);
+        if(sourceNotice)sourceNotice.hidden=false;
+        drawer.querySelector('[data-filter-group="processing"]').hidden=false;
+        // Reuse the complete original form; only prefill creation defaults.
+        document.getElementById('processingTaskName').value=defaultProcessingName(t);
+        document.getElementById('processingTaskPriority').value=String(t.priority>=7?9:t.priority>=4?6:3);
+        document.getElementById('processingTaskCategory').value='formal';
+        const expectedMode=document.getElementById('processingTaskExpectedMode');expectedMode.value='continuous';window.dprExpectedTaskModeChange(expectedMode);
         window.dprRenderTaskFilters([['采集任务 ID','等于',t.id]]);
         // Make source condition fixed; extra conditions remain fully editable.
         const first=drawer.querySelector('.dpr-filter-row');first.querySelectorAll('input,select,button').forEach(el=>el.disabled=true);

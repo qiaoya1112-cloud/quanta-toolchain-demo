@@ -183,12 +183,12 @@
         case 'play':play(state);break;
         case 'replay':pause(state);seek(state,0);play(state);break;
         case 'retry':pause(state);state.failed=false;retry.hidden=true;setStatus(state,'视频加载中…');for(const video of state.videos)video.load();break;
-        case 'part':state.part=button.dataset.part;for(const tab of body.querySelectorAll('[role="tab"]')){const selected=tab===button;tab.setAttribute('aria-selected',String(selected));tab.tabIndex=selected?0:-1;}body.querySelector('[role="tabpanel"]').setAttribute('aria-labelledby',button.id);paintCharts(state);break;
+        case 'part':state.part=button.dataset.part;for(const tab of body.querySelectorAll('[data-trajectory-action="part"]')){const selected=tab===button;tab.setAttribute('aria-selected',String(selected));tab.tabIndex=selected?0:-1;}body.querySelector('#dc-trajectory-plots').setAttribute('aria-labelledby',button.id);paintCharts(state);break;
       }
     });
     on(body,'keydown',event=>{
-      const tab=event.target.closest('[role="tab"]');if(!tab||!['ArrowLeft','ArrowRight','Home','End'].includes(event.key))return;
-      event.preventDefault();const tabs=[...body.querySelectorAll('[role="tab"]:not(:disabled)')],i=tabs.indexOf(tab),next=event.key==='Home'?tabs[0]:event.key==='End'?tabs.at(-1):tabs[(i+(event.key==='ArrowRight'?1:tabs.length-1))%tabs.length];next.click();next.focus();
+      const tab=event.target.closest('[data-trajectory-action="part"]');if(!tab||!['ArrowLeft','ArrowRight','Home','End'].includes(event.key))return;
+      event.preventDefault();const tabs=[...body.querySelectorAll('[data-trajectory-action="part"]:not(:disabled)')],i=tabs.indexOf(tab),next=event.key==='Home'?tabs[0]:event.key==='End'?tabs.at(-1):tabs[(i+(event.key==='ArrowRight'?1:tabs.length-1))%tabs.length];next.click();next.focus();
     });
     on(body.querySelector('[data-trajectory-seek]'),'input',event=>seek(state,event.target.value));
     on(body.querySelector('[data-trajectory-rate]'),'change',event=>{if(state.mode!=='sync')pause(state);for(const video of state.videos)video.playbackRate=Number(event.target.value);});

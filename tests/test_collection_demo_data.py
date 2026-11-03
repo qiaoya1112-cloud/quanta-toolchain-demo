@@ -26,6 +26,39 @@ class DemoSeedTests(unittest.TestCase):
     def tearDown(self):
         self.tmp.cleanup()
 
+    def test_fresh_deployment_initializes_links_without_cli(self):
+        self.app.testing = False
+        client = self.app.test_client()
+        self.assertFalse(Path(self.app.config['COLLECTION_DEMO_DB']).exists())
+        tasks = client.get(collection.API + '/tasks').json['tasks']
+        self.assertEqual(['02602', '02607', '02601'], [task['id'] for task in tasks[:3]])
+        self.assertEqual([3, 2, 2], [task['processing_task_count'] for task in tasks[:3]])
+        jobs = client.get(processing.API + '/tasks?collection=02602').json['tasks']
+        self.assertEqual(3, len(jobs))
+        self.assertTrue(all(job['records'] for job in jobs))
+        # A second worker or restart encounters existing markers, not duplicate jobs.
+        with self.app.app_context(), collection.database() as conn, conn:
+            again = demo.seed_demo(conn, self.flows)
+        self.assertTrue(again['already_seeded'])
+        self.assertEqual(tasks, client.get(collection.API + '/tasks').json['tasks'])
+
+    def test_auto_seed_upgrades_existing_database_preserving_user_task(self):
+        client = self.app.test_client()
+        manual = client.post(collection.API + '/tasks', json=dict(name='保留已有任务', source='udas',
+                             project='a', description='保留内容')).json['task']
+        self.app.testing = False
+        self.assertEqual(5, len(client.get(processing.API + '/tasks').json['tasks']))
+        self.assertEqual(manual, client.get(collection.API + '/tasks/' + manual['id']).json['task'])
+
+    def test_auto_seed_can_be_disabled_and_testing_is_explicit(self):
+        client = self.app.test_client()
+        self.assertEqual([], client.get(processing.API + '/tasks').json['tasks'])
+        self.app.testing = False
+        self.app.config['COLLECTION_DEMO_AUTO_SEED'] = False
+        self.assertEqual([], client.get(processing.API + '/tasks').json['tasks'])
+        self.app.config['COLLECTION_DEMO_AUTO_SEED'] = True
+        self.assertEqual(5, len(client.get(processing.API + '/tasks').json['tasks']))
+
     def test_seed_preserves_manual_task_and_is_repeatable(self):
         client = self.app.test_client()
         manual = client.post(collection.API+'/tasks', json=dict(name='用户手动创建', source='udas',

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>工作台 · 新版样式</title>
+  <title>{{ '采集数据视频详情' if collection_pure_video else '工作台 · 新版样式' }}</title>
   <script>
     try {
       const theme = localStorage.getItem('workbench-theme') || 'dark';
@@ -30,23 +30,32 @@
   <link rel="stylesheet" href="/static/annotation_workbench/compact-workbench.css" />
 <link rel="stylesheet" href="/static/annotation_workbench/post-training-quality-second-review.css">
 </head>
-<body class="theme-pending">
+<body class="theme-pending{% if collection_pure_video %} collection-pure-video{% endif %}">
   <script>
     if (document.documentElement.classList.contains('theme-light')) {
       document.body.classList.add('theme-light');
     }
   </script>
   <main class="page">
-    <workbench-task-header data-processing-id="DP202609070018" data-id="DT202609070126"></workbench-task-header>
+    <workbench-task-header data-processing-id="{{ collection.processing_id if collection else 'DP202609070018' }}" data-id="{{ collection.data_id if collection else 'DT202609070126' }}" data-collection-id="{{ collection.collection_task_id if collection else '17782' }}" data-return-url="{{ collection.return_url if collection else '' }}" data-collection-instruction="{{ collection.instruction if collection else '' }}"{% if collection_pure_video %} data-pure-video="1"{% endif %}></workbench-task-header>
 
     <section class="main is-loading" aria-busy="true">
       <div class="workbench-loading" role="status"><span class="workbench-loading__spinner" aria-hidden="true"><svg class="workbench-loading__pattern" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="6" width="42" height="36" rx="4"/><path d="M3 13h42M3 33h42" opacity=".55"/><circle cx="8" cy="9.5" r="1" fill="currentColor" stroke="none"/><circle cx="12" cy="9.5" r="1" fill="currentColor" stroke="none" opacity=".6"/><path d="M34 9.5h6" opacity=".65"/><circle cx="24" cy="23" r="7" opacity=".45"/><path d="m22 19.5 6 3.5-6 3.5Z" fill="currentColor" stroke="none"/><path d="M8 17h3m-3 0v3m32-3h-3m3 0v3" opacity=".5"/><path d="M8 37.5h22" opacity=".3"/><path d="M8 37.5h9"/><circle cx="18" cy="37.5" r="1.5" fill="currentColor" stroke="none"/><path d="M35 36v3m3-3v3M41 36v3" stroke-width="1" opacity=".7"/></svg><span class="workbench-loading__core"></span></span><span>工作台加载中…</span></div>
       <div class="workspace" inert>
         <div class="media-timeline-group">
-        <section class="card media-card"><workbench-instruction></workbench-instruction><workbench-media-viewer></workbench-media-viewer></section>
+        <section class="card media-card"><workbench-instruction></workbench-instruction><workbench-media-viewer{% if collection_pure_video %} variant="three-panel"{% endif %}></workbench-media-viewer></section>
+        {% if not collection_pure_video %}
         <section class="card timeline-card"><semantic-annotation-track position="8.2" label="14"></semantic-annotation-track><action-annotation-track position="8.2" label="14" hidden></action-annotation-track><workbench-quality-track hidden></workbench-quality-track></section>
+        {% endif %}
+        {% if collection_pure_video %}<div class="collection-video-controls" aria-label="视频播放控制">
+          <button type="button" class="collection-video-play" data-video-action="play" aria-label="播放全部视频">▶</button>
+          <output data-video-time>00:00 / 00:00</output>
+          <input type="range" min="0" max="0" step="0.01" value="0" data-video-seek aria-label="视频进度" disabled>
+          <select data-video-rate aria-label="播放速度"><option value="0.5">0.5×</option><option value="1" selected>1×</option><option value="1.5">1.5×</option><option value="2">2×</option></select>
+          <span data-video-status role="status"></span>
+        </div>{% endif %}
         </div>
-
+        {% if not collection_pure_video %}
         <workbench-segment-editor></workbench-segment-editor>
         <workbench-segment-editor variant="variant-2" hidden></workbench-segment-editor>
         <workbench-segment-editor variant="variant-3" hidden></workbench-segment-editor>
@@ -54,11 +63,13 @@
         <post-training-quality-workspace hidden></post-training-quality-workspace>
         <post-training-quality-review-workspace hidden></post-training-quality-review-workspace>
         <post-rework-training-quality-workspace hidden></post-rework-training-quality-workspace><post-training-quality-second-review-workspace hidden></post-training-quality-second-review-workspace>
+        {% endif %}
       </div>
 
-      <workbench-segment-list variant="segments" inert></workbench-segment-list>
+      {% if not collection_pure_video %}<workbench-segment-list variant="segments" inert></workbench-segment-list>{% endif %}
     </section>
   </main>
+  {% if not collection_pure_video %}
   <script id="workbench-tag-tree" type="application/json">{{ tag_tree | tojson }}</script>
   <script src="/static/annotation_workbench/tag-tree.js" defer></script>
   <script src="/static/annotation_workbench/tags.js" defer></script>
@@ -71,6 +82,12 @@
   <script src="/static/annotation_workbench/operation-timer.js" defer></script>
   <script src="/static/annotation_workbench/workbench.js" defer></script>
   <script src="/static/annotation_workbench/action-annotation-rules.js" defer></script>
+  {% endif %}
   <div id="workbenchNotice" role="status" hidden></div>
+  {% if collection_pure_video %}
+  <script id="collection-pure-video-data" type="application/json">{{ collection|tojson }}</script>
+  <link rel="stylesheet" href="/static/annotation_workbench/collection-pure-video.css" />
+  <script src="/static/annotation_workbench/collection-pure-video.js" defer></script>
+  {% endif %}
 </body>
 </html>

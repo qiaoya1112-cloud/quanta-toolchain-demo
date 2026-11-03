@@ -66,7 +66,7 @@ async function main(){
       await shot('record-'+taskId+'-relations');
       await nav('/data/post-training-collection/'+taskId+'#processing');
       await wait(`document.querySelectorAll('.dc-processing-table tbody tr').length===${count}`);
-      check(await ev("[...document.querySelectorAll('.dc-processing-task-name,.dc-processing-row-actions a')].every(a=>a.pathname.startsWith('/data/tasks/')&&new URL(a.href).searchParams.get('collection')==="+JSON.stringify(taskId)+")"),taskId+'关联任务摘要默认查看本采集任务数据');
+      check(await ev("[...document.querySelectorAll('.dc-processing-task-name')].every(a=>a.pathname==='/data/processing-tasks'&&new URL(a.href).searchParams.get('linked'))&&[...document.querySelectorAll('.dc-processing-row-actions a')].every(a=>a.pathname.startsWith('/data/tasks/')&&new URL(a.href).searchParams.get('collection')==="+JSON.stringify(taskId)+")"),taskId+'关联任务名称进入配置、查看数据进入数据页');
     }
     // Existing processing configuration and task-data pages are the only destinations.
     for(const [sourceId,prefix] of [['02601','DEMO-R-01'],['02607','DEMO-R-07']]){
@@ -83,7 +83,7 @@ async function main(){
     }
     await nav('/data/processing-tasks?linked=30004');
     await wait("document.querySelector('#drawerProcessingTaskForm').getAttribute('aria-hidden')==='false'");
-    check(await ev("!document.querySelector('#dc-processing-detail')&&document.querySelector('#processingTaskDrawerTitle').textContent==='处理任务详情'"),'关联入口复用原处理详情，不存在额外独立详情层');
+    check(await ev("!document.querySelector('#dc-processing-detail')&&document.querySelector('#processingTaskDrawerTitle').textContent==='饮料取放数据质检'"),'关联入口复用原处理详情并显示任务名称');
     check(await ev("document.querySelector('#processingTaskName').value==='饮料取放数据质检'&&document.querySelector('#processingTaskName').disabled"),'关联任务配置按原详情只读展示');
     check(await ev("[...document.querySelectorAll('.dc-processing-source-context a')].map(a=>a.textContent.slice(0,5)).sort().join(',')==='02601,02607'"),'配置详情保留两个来源采集任务返回链接');
     await shot('processing-shared-config-1440');
