@@ -12,7 +12,8 @@ import collection_processing as processing
 
 
 FLOWS = [dict(stage='质检', name='自动质检', human_nodes=[]),
-         dict(stage='标注', name='人工标注', human_nodes=['标注'])]
+         dict(stage='标注', name='人工标注', human_nodes=['标注'],
+              node_rule_configs={'标注': {'allow_task_percent': True, 'percent': 100}})]
 
 
 class ProcessingTests(unittest.TestCase):
@@ -242,6 +243,48 @@ class ProcessingTests(unittest.TestCase):
         self.assertEqual(422, self.client.patch(path, json={'revision': job['revision'],
                                                              'node_percentages': {'质检': {'不存在': 50}}}).status_code)
 
+    def test_task_ratio_edit_requires_explicit_flow_opt_in(self):
+        flow = dict(stage='质检', name='显式比例流程', human_nodes=['可调节点', '未配置节点', '固定节点'],
+                    node_rule_configs={'可调节点': {'allow_task_percent': True, 'percent': 100},
+                                       '固定节点': {'allow_task_percent': False, 'percent': 80}})
+        job = dict(stages={'质检': '显式比例流程'}, configs={'质检': {
+            '可调节点': {'percent': 100}, '未配置节点': {'percent': 100}, '固定节点': {'percent': 80}}})
+        allowed = processing.editable_node_percentages(job, [flow])
+        self.assertEqual({'质检': {'可调节点': 100}}, allowed)
+        normalized, error = processing.validate_published_percentages(
+            job, {'质检': {'可调节点': 60}}, [flow])
+        self.assertIsNone(error)
+        self.assertEqual(60, normalized['质检']['可调节点'])
+        for node in ('未配置节点', '固定节点'):
+            _, error = processing.validate_published_percentages(
+                job, {'质检': {node: 60}}, [flow])
+            self.assertIn('可配置节点', error)
+
+    def test_draft_ratio_edit_respects_flow_opt_in(self):
+        config = {'标注': {'标注': dict(rule='通用动作标注规则 v3', percent=100,
+                                  assignments=[dict(type='user_group', target='标注组')])}}
+        job = self.create(self.body(stages={'标注': '人工标注'}, configs=config)).json['task']
+        flow_config = FLOWS[1]['node_rule_configs']['标注']
+        original = flow_config.copy()
+        try:
+            for flag in (None, False):
+                if flag is None:
+                    flow_config.pop('allow_task_percent', None)
+                else:
+                    flow_config['allow_task_percent'] = flag
+                body = json.loads(json.dumps(job, ensure_ascii=False))
+                body['configs']['标注']['标注']['percent'] = 60
+                response = self.client.patch(processing.API + '/tasks/' + job['id'], json=body)
+                self.assertEqual(422, response.status_code)
+                self.assertIn('不允许修改处理比例', response.json['error'])
+            flow_config['allow_task_percent'] = True
+            response = self.client.patch(processing.API + '/tasks/' + job['id'], json=body)
+            self.assertEqual(200, response.status_code)
+            self.assertEqual(60, response.json['task']['configs']['标注']['标注']['percent'])
+        finally:
+            flow_config.clear()
+            flow_config.update(original)
+
     def test_percentage_edit_keeps_historical_pending_rework_and_completed(self):
         config = {'标注': {'标注': dict(rule='通用动作标注规则 v3', assignments=[dict(type='user_group', target='标注组')], percent=80)}}
         job = self.action(self.create(self.body(stages={'标注': '人工标注'}, configs=config)).json['task'], 'publish').json['task']
@@ -289,7 +332,7 @@ class ProcessingTests(unittest.TestCase):
         self.assertEqual(100, resumed['records'][0]['node_percentages']['标注']['标注'])
 
     def test_percentage_validation_fixed_nodes_and_values(self):
-        flow = dict(stage='质检', name='抽检', human_nodes=['质检', '复核'], node_rule_configs={'质检': {'percent': 100, 'allow_task_percent': False}})
+        flow = dict(stage='质检', name='抽检', human_nodes=['质检', '复核'], node_rule_configs={'质检': {'percent': 100, 'allow_task_percent': False}, '复核': {'allow_task_percent': True}})
         job = dict(stages={'质检': '抽检'}, configs={'质检': {'质检': {'percent': 100}, '复核': {'percent': 50}}})
         for value in (None, True, 1.5, -1, 101, '30'):
             _, error = processing.validate_published_percentages(job, {'质检': {'复核': value}}, [flow])
@@ -581,10 +624,12 @@ class ProcessingTests(unittest.TestCase):
         upstream = self.action(self.create().json['task'], 'publish').json['task']
         with self.app.app_context(), collection.database() as conn, conn:
             stored = processing.get_job(conn, upstream['id'])
-            stored['configs']['质检'] = {'质检': {'rule': '拿取规范 v1'}}
+            identity={'name':'拿取规范','version':'v1','reference':'拿取规范 v1','legacy':True}
+            stored['configs']['质检'] = {'质检': {'rule': '拿取规范 v1','rule_identity':dict(identity)}}
             for member, conclusion in zip(stored['records'], ('合格', '不合格')):
                 member['stages']['质检'] = 'completed'
                 member['results'] = {'质检': {'conclusion': conclusion}}
+                member.setdefault('rule_snapshots',{})['质检']={'质检':dict(identity)}
             processing.save_job(conn, stored)
             job = dict(id='new-job', source_ids=[self.task['id']], filters=[])
             source = [['采集任务 ID', '等于', self.task['id']]]

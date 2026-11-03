@@ -52,8 +52,8 @@
       if (epoch !== permissionEpoch) return;
       const inline = !!window.inlineRuleContext;
       const editing = ['edit','revision'].includes(drawer.dataset.mode);
-      publish.hidden = (inline ? !data.permissions.create || !data.permissions.edit || !data.permissions.publish : !(editing ? data.permissions.edit : data.permissions.create)) || drawer.dataset.mode === 'detail';
-      publish.textContent = inline ? '发布并使用' : editing ? '保存修改' : '创建';
+      publish.hidden = (inline ? !data.permissions.create || !data.permissions.edit || !data.permissions.publish : !(editing ? data.permissions.edit && (drawer.dataset.mode !== 'revision' || data.permissions.publish) : data.permissions.create)) || drawer.dataset.mode === 'detail';
+      publish.textContent = inline ? '发布并使用' : drawer.dataset.mode === 'revision' ? '保存并发布' : editing ? '保存修改' : '创建';
       publish.disabled = saving;
     } catch (e) { error.textContent = e.message; error.hidden = false; }
   }
@@ -102,7 +102,7 @@
         values:[...e.querySelectorAll('.rule-action-value-row')].map(r=>({name:r.querySelector('.rule-enum-value-name').value.trim(),key:r.querySelector('.rule-enum-value-key').value.trim()}))
       })),
       action_descriptions: [...document.querySelectorAll('#ruleActionDescriptionRows tr')].map(e=>({zh:e.querySelector('.rule-action-desc-zh').value.trim(),en:e.querySelector('.rule-action-desc-en').value.trim()})).filter(d=>d.zh||d.en),
-      publish: !!context, revision: Number(drawer.dataset.revision || 0)
+      publish: !!context || drawer.dataset.mode === 'revision', revision: Number(drawer.dataset.revision || 0)
     };
     if(context)body.node_context={project:context.project,stage:context.stage,flow:context.flow,node:context.node};
     if (context && (body.project !== context.project || body.stage !== context.stage || !context.types.includes(body.rule_type))) {
@@ -146,7 +146,7 @@
   if (location.pathname === '/data/rules') {
     const rights=window.RULE_EDITOR_PERMISSIONS;
     if (rights && !rights.create) document.querySelectorAll('[onclick*="openRuleCreate"],[onclick*="ruleCopy"]').forEach(e=>e.hidden=true);
-    if (rights && !rights.edit) document.querySelectorAll('[onclick*="openRuleDetail(this,false)"],[onclick*="ruleDelete"],.rule-update-action,[onclick*="ruleDiscardPending"]').forEach(e=>e.hidden=true);
+    if (rights && !rights.edit) document.querySelectorAll('[onclick*="openRuleDetail(this,false)"],[onclick*="ruleDelete"],.rule-update-action').forEach(e=>e.hidden=true);
     if (rights && !rights.manage) document.querySelectorAll('.rule-status-switch').forEach(e=>e.hidden=true);
     if (rights && !rights.publish) document.querySelectorAll('[onclick*="rulePublish(this)"]').forEach(e=>e.hidden=true);
   }

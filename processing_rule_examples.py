@@ -98,7 +98,7 @@ def link_demo_jobs(conn):
         return
     marker='rule-version-links-v1'
     if not conn.execute('SELECT 1 FROM collection_meta WHERE key=?',(marker,)).fetchone():
-        versions={'杯子抓取首批复核':1,'饮料取放质检与标注':2}
+        versions={'杯子抓取首批复核':2,'饮料取放质检与标注':2}
         for job in processing.all_jobs(conn):
             version=versions.get(job['name'])
             if not version or job.get('revision')!=1 or not job.get('demo_fixture','').startswith('collection-linked-demo-'):

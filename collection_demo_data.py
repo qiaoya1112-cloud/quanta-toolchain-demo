@@ -220,6 +220,8 @@ def seed_demo(conn, flows):
         seed_workflow_example(conn, flows)
         from processing_rule_examples import link_demo_jobs
         link_demo_jobs(conn)
+        from processing_rule_versions import migrate_task_bindings
+        migrate_task_bindings(conn)
         return dict(tasks=0, records=0, processing_tasks=count, repaired_quality_results=repaired, already_seeded=True)
     totals = dict(tasks=0, records=0, processing_tasks=0, already_seeded=False)
     templates = collection.seed_tasks(current_app.config['COLLECTION_PROJECTS'],
@@ -274,6 +276,8 @@ def seed_demo(conn, flows):
     seed_workflow_example(conn, flows)
     from processing_rule_examples import link_demo_jobs
     link_demo_jobs(conn)
+    from processing_rule_versions import migrate_task_bindings
+    migrate_task_bindings(conn)
     conn.execute('INSERT INTO collection_meta VALUES (?, ?)', (FIXTURE, json.dumps(totals)))
     return totals
 

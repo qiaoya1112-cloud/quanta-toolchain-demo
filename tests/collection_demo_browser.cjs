@@ -83,7 +83,7 @@ async function main(){
     }
     await nav('/data/processing-tasks?linked=30004');
     await wait("document.querySelector('#drawerProcessingTaskForm').getAttribute('aria-hidden')==='false'");
-    check(await ev("!document.querySelector('#dc-processing-detail')&&document.querySelector('#processingTaskDrawerTitle').textContent==='处理任务详情'"),'关联入口复用原处理详情，不存在额外独立详情层');
+    check(await ev("!document.querySelector('#dc-processing-detail')&&document.querySelector('#processingTaskDrawerTitle').textContent==='饮料取放数据质检'"),'关联入口复用原处理详情并显示任务名称');
     check(await ev("document.querySelector('#processingTaskName').value==='饮料取放数据质检'&&document.querySelector('#processingTaskName').disabled"),'关联任务配置按原详情只读展示');
     check(await ev("[...document.querySelectorAll('.dc-processing-source-context a')].map(a=>a.textContent.slice(0,5)).sort().join(',')==='02601,02607'"),'配置详情保留两个来源采集任务返回链接');
     await shot('processing-shared-config-1440');

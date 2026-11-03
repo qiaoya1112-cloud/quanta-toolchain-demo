@@ -45,7 +45,7 @@ async function main(){
   await ev("document.querySelectorAll('.dpr-flow-node-card')[0].querySelector('.dpr-node-percent-input')?.setAttribute('value','83')");
   const before=await ev("[...document.querySelectorAll('.dpr-node-rule-select')].map(s=>s.value)");
   assert.ok(before.length>0&&before.every(value=>value===''));checks.push('新建处理任务的规则默认留空');
-  await check("document.querySelector('.dpr-node-rule-select').selectedOptions[0].textContent==='请选择规则'&&!dprProcessingAssignmentsValid()",'显示请选择规则，未选择时节点配置不通过校验');
+  await check("document.querySelector('.dpr-node-rule-select').selectedOptions[0].textContent==='请选择规则'&&document.querySelector('.dpr-inline-rule-hint')?.textContent==='自动使用规则最新内容'&&!document.querySelector('.dpr-inline-rule-refresh')&&!dprProcessingAssignmentsValid()",'标题旁提示使用最新内容，不显示刷新按钮，未选择时校验不通过');
   await click('.dpr-inline-rule-create');await wait("!!document.querySelector('#drawerRuleCreate.active')&&!!window.inlineRuleContext&&!document.querySelector('#rulePublishUse').disabled");
   await check("document.querySelector('#ruleCreateProject').disabled&&document.querySelector('#ruleCreateStage').disabled&&document.querySelector('#ruleCreateStage').value==='质检'&&!document.querySelector('#ruleCreateType').disabled",'当前项目/环节锁定，规则类型可选');
   await check("[...document.querySelector('#ruleCreateType').options].map(o=>o.value).join(',')==='质检'",'质检节点只提供质检规则类型');
@@ -54,6 +54,7 @@ async function main(){
   await completeQuality('桌面连续创建质检规则');await shot('inline-rule-drawer');
   await click('#rulePublishUse');await wait("!window.inlineRuleContext&&!document.querySelector('#drawerRuleCreate.active')");
   const selected=await ev("document.querySelector('.dpr-node-rule-select').value");assert.ok(selected.startsWith('rule:'));
+  await check("document.querySelector('.dpr-node-rule-select').selectedOptions[0].textContent==='桌面连续创建质检规则'",'新建并选中规则时只显示名称');
   await check("document.querySelector('#processingTaskName').value==='规则抽屉保留任务名'&&!document.querySelector('#drawerProcessingTaskForm').inert",'创建规则后原任务输入保留，背景恢复');
   assert.deepEqual(await ev("[...document.querySelectorAll('.dpr-node-rule-select')].slice(1).map(s=>s.value)"),before.slice(1),'只回填发起节点');checks.push('只回填发起节点');
   await click('.dpr-inline-rule-create');await wait("!!window.inlineRuleContext&&!document.querySelector('#rulePublishUse').disabled");

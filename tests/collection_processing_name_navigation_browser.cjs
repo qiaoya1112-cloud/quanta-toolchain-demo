@@ -38,10 +38,14 @@ async function main(){
   await click('.dc-processing-task-name');
   await wait("location.pathname==='/data/processing-tasks'&&document.querySelector('#drawerProcessingTaskForm')?.getAttribute('aria-hidden')==='false'");
   await wait("document.querySelector('#processingTaskName')?.value==="+JSON.stringify(name));
-  await check("document.querySelector('#processingTaskDrawerTitle').textContent==='处理任务详情'",'复用原处理配置详情标题');
+  await check("document.querySelector('#processingTaskDrawerTitle').textContent==="+JSON.stringify(name)+"&&document.querySelector('#processingTaskHeaderId').textContent.includes("+JSON.stringify(jobId)+")",'详情顶部显示处理任务名称和 ID');
   await check("document.querySelector('#drawerProcessingTaskForm').dataset.taskId==="+JSON.stringify(jobId),'打开点击的任务');
   await check("document.querySelector('#processingTaskName').disabled",'配置以只读方式展示');
   await check("['basic','filter','flow'].every(p=>document.querySelector('#drawerProcessingTaskForm [data-task-pane='+p+']'))",'保留完整原页面区域');
+  await check("(()=>{const buttons=[...document.querySelectorAll('.dpr-processing-task-menu button')],r=buttons.map(b=>b.getBoundingClientRect());return r.every(x=>Math.abs(x.top-r[0].top)<1)&&r[0].right<r[1].left&&r[1].right<r[2].left})()",'详情三个栏目横向排列');
+  await click('[data-task-pane=filter]');await check("document.querySelector('[data-task-pane-content=filter]').classList.contains('active')",'筛选条件 Tab 可切换');
+  await click('[data-task-pane=flow]');await check("document.querySelector('[data-task-pane-content=flow]').classList.contains('active')",'业务环节 Tab 可切换');
+  await click('[data-task-pane=basic]');
   await shot('config-from-collection');
   await click('.dpr-processing-back');
   await wait("location.pathname==='/data/post-training-collection/02602'&&location.hash==='#processing'&&document.querySelector('.dc-processing-task-name')");
@@ -49,6 +53,9 @@ async function main(){
   await click('.dc-processing-row-actions a');
   await wait("location.pathname.startsWith('/data/tasks/')&&document.querySelector('.dpr-record-page')");
   await check("new URLSearchParams(location.search).get('collection')==='02602'",'查看数据仍进入原处理数据页面并限定采集来源');
+  await call('Page.navigate',{url:origin+'/data/processing-tasks?new=1'});
+  await wait("document.querySelector('#drawerProcessingTaskForm')?.dataset.mode==='new'&&document.querySelector('#drawerProcessingTaskForm')?.getAttribute('aria-hidden')==='false'");
+  await check("getComputedStyle(document.querySelector('.dpr-processing-task-page-body')).display==='grid'&&document.querySelector('#processingTaskHeaderId').hidden&&document.querySelector('#processingTaskHeaderStatus').hidden",'新建任务保留原侧边导航');
   const unexpectedErrors=errors.filter(error=>!String(error).includes('ViewTransition opt-in disabled'));
   assert.deepEqual(unexpectedErrors,[]);checks.push('无未捕获脚本异常');
   fs.writeFileSync(path.join(out,'report.json'),JSON.stringify({passed:checks.length,checks},null,2));

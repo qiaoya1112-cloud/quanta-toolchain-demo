@@ -8734,8 +8734,7 @@ def data_rules():
                 f'</span></span>'
             )
         else:
-            pending_actions = ((f'<a href="#" {action_data} onclick="rulePublish(this);return false;">发布新版</a>' if rights['publish'] else '') +
-                (f'<a href="#" {action_data} onclick="ruleDiscardPending(this);return false;">撤销修改</a>' if rights['edit'] else '')) if r.get('has_draft') else ''
+            pending_actions = f'<a href="#" {action_data} onclick="rulePublish(this);return false;">发布新版</a>' if r.get('has_draft') and rights['publish'] else ''
             edit_action = f'<a class="rule-update-action" href="#" {action_data} onclick="ruleUpdate(this);return false;">编辑</a>' if rights['edit'] else ''
             actions += (
                 f'<span class="action-more"><a class="tbtn" href="#" aria-haspopup="menu" onclick="ruleOpenMenu(this);return false;">⋯ 更多</a>'

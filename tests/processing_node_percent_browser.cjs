@@ -8,7 +8,7 @@ let service,chrome,socket;const checks=[],errors=[];
 const get=url=>new Promise((resolve,reject)=>http.get(url,r=>{let s='';r.on('data',v=>s+=v);r.on('end',()=>{try{resolve(JSON.parse(s));}catch(e){reject(e);}});}).on('error',reject));
 async function main(){
   fs.mkdirSync(out,{recursive:true});const sandbox=fs.mkdtempSync(path.join(out,'isolated-'));
-  service=spawn(python,['-c','from toolchain_demo import app; app.run(host="127.0.0.1",port='+port+',debug=False,use_reloader=False)'],{cwd:root,env:{...process.env,COLLECTION_DEMO_DB:path.join(sandbox,'test.sqlite3')},stdio:'ignore',windowsHide:true});
+  service=spawn(python,['-c','from toolchain_demo import app; import data_platform_refactor as p; [f.setdefault("node_rule_configs",{}).setdefault(n,{}).update({"allow_task_percent":True}) for f in p.PROCESSING_FLOWS if f["name"] in ("双轮人工质检流程","双轮人工标注流程") for n in f.get("human_nodes",[])]; app.run(host="127.0.0.1",port='+port+',debug=False,use_reloader=False)'],{cwd:root,env:{...process.env,COLLECTION_DEMO_DB:path.join(sandbox,'test.sqlite3')},stdio:'ignore',windowsHide:true});
   let jobs;for(let i=0;i<100;i++){try{jobs=(await get(origin+api)).tasks;if(jobs?.length)break;}catch{}await delay(100);}assert.ok(jobs?.length);
   const job=jobs.find(j=>j.published&&j.stages['质检']&&j.stages['标注']);assert.ok(job);
   chrome=spawn('C:/Program Files/Google/Chrome/Application/chrome.exe',['--headless','--disable-gpu','--no-first-run','--disable-extensions','--no-default-browser-check','--user-data-dir='+path.join(sandbox,'chrome'),'--remote-debugging-port='+debug,'about:blank'],{stdio:'ignore',windowsHide:true});
@@ -29,6 +29,10 @@ async function main(){
   await wait('!!document.querySelector('+JSON.stringify('[data-collection-processing="'+job.id+'"]')+')&&!!window.DPR_INLINE_RULES');
   await open('edit');await stage('质检');
   await check('!!document.querySelector(".dpr-node-percent-edit")','比例旁提供编辑按钮');
+  await ev('window._ratioFlow=dprFlowByName(DPR_SELECTED_FLOWS["质检"]);window._ratioNode=document.querySelector(".dpr-flow-node-card").dataset.node;window._ratioConfig=dprNodeRuleConfig(window._ratioFlow,window._ratioNode);delete window._ratioConfig.allow_task_percent;dprShowAssignmentsForStage("质检")');
+  await check('![...document.querySelectorAll(".dpr-node-percent-edit")].some(button=>button.closest(".dpr-flow-node-card").dataset.node===window._ratioNode)','流程未显式允许时不显示比例编辑按钮');
+  await ev('window._ratioConfig.allow_task_percent=true;dprShowAssignmentsForStage("质检")');
+  await check('!![...document.querySelectorAll(".dpr-node-percent-edit")].find(button=>button.closest(".dpr-flow-node-card").dataset.node===window._ratioNode)','流程显式允许后显示比例编辑按钮');
   await ev('document.querySelector(".dpr-node-percent-edit").click()');
   await check('!!document.querySelector(".dpr-node-percent-input:not(:disabled)")','点击编辑后可修改节点比例');
   await check('[...document.querySelectorAll(".dpr-node-rule-select")].every(el=>el.disabled)','编辑比例不解锁规则');

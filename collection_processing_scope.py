@@ -211,6 +211,14 @@ def detail_payload(conn, job, source_id, record_id):
     if not row:
         return None
     configs = copy.deepcopy(job['configs'])
+    for stage, nodes in (row.get('member') or {}).get('rule_snapshots', {}).items():
+        for node, identity in nodes.items():
+            if node in configs.get(stage, {}) and identity:
+                configs[stage][node]['rule_identity'] = copy.deepcopy(identity)
+                if identity.get('reference'):
+                    configs[stage][node]['rule'] = identity['reference']
+                elif identity.get('id') and identity.get('version'):
+                    configs[stage][node]['rule'] = 'rule:'+identity['id']+'@'+identity['version'].lower().removeprefix('v')
     for stage, nodes in (row.get('member') or {}).get('node_percentages', {}).items():
         for node, value in nodes.items():
             if node in configs.get(stage, {}):

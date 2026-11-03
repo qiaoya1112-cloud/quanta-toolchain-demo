@@ -5,6 +5,10 @@
   const legacyChoices=(window.DPR_NODE_RULES || []).map(r=>({...r}));
   let project='', rights={create:false,publish:false}, epoch=0, editorPromise;
   const typesFor = flow => flow.rule_types || (flow.stage==='质检'?['质检']:flow.name.includes('端到端')?['语义标注']:['语义标注','动作标注','标签标注']);
+  function currentReference(value, rules) {
+    const match=String(value || '').match(/^rule:([^@]+)@[1-9]\d*$/);
+    return match ? (rules || []).find(rule=>rule.id===match[1])?.value || value : value;
+  }
   function addOptions() {
     const flow=window.dprFlowByName(window.DPR_SELECTED_FLOWS[window.DPR_ACTIVE_ASSIGNMENT_STAGE]);
     if(!flow)return;
@@ -13,14 +17,14 @@
       const config=window.dprNodeRuleConfig(flow,card.dataset.node);
       if(!['task_custom','fixed'].includes(config.mode))return;
       const fixed=config.mode==='fixed',isNew=form.dataset.mode==='new';
-      const selected=fixed ? config.rule : select.value;
+      const selected=fixed ? currentReference(config.rule,window.DPR_INLINE_RULES) : select.value;
       const oldLabel=select.selectedOptions[0]?.textContent;
-      select.replaceChildren(new Option(fixed?'流程固定版本':'请选择规则',''));
-      legacyChoices.filter(r=>r.stage===flow.stage && typesFor(flow).includes(r.rule_type) && (!isNew || !(window.DPR_INLINE_PUBLISHED_VERSIONS||[]).some(p=>p.name===r.name&&p.project===project&&p.stage===flow.stage))).forEach(r=>select.add(new Option(r.name+' · '+r.version,r.name+' '+r.version)));
+      select.replaceChildren(new Option(fixed?'流程指定规则':'请选择规则',''));
+      legacyChoices.filter(r=>r.stage===flow.stage && typesFor(flow).includes(r.rule_type) && (!isNew || !(window.DPR_INLINE_PUBLISHED_VERSIONS||[]).some(p=>p.name===r.name&&p.project===project&&p.stage===flow.stage))).forEach(r=>select.add(new Option(isNew?r.name:r.name+' · '+r.version,r.name+' '+r.version)));
       const choices = [...(window.DPR_INLINE_RULES||[])];
       const pinned = (window.DPR_INLINE_PUBLISHED_VERSIONS||[]).find(r=>r.value===selected);
       if (pinned && (!isNew || fixed) && !choices.some(r=>r.value===selected)) choices.push(pinned);
-      choices.filter(r=>r.project===project&&r.stage===flow.stage&&typesFor(flow).includes(r.rule_type)).forEach(r=>select.add(new Option(r.name+' · '+r.version.toUpperCase()+(fixed?' · 流程固定':''),r.value)));
+      choices.filter(r=>r.project===project&&r.stage===flow.stage&&typesFor(flow).includes(r.rule_type)).forEach(r=>select.add(new Option(isNew?r.name:r.name+' · '+r.version.toUpperCase()+(fixed?' · 流程固定':''),r.value)));
       if([...select.options].some(o=>o.value===selected))select.value=selected;
       else if(selected){
         const unavailable=new Option((window.DPR_INLINE_RULE_LABELS?.[selected]||oldLabel||selected).replace(/（[^）]+）$/,'')+'（请重新选择）',selected,true,true);
@@ -40,16 +44,18 @@
     const flow=window.dprFlowByName(window.DPR_SELECTED_FLOWS[window.DPR_ACTIVE_ASSIGNMENT_STAGE]);
     holder.querySelectorAll('.dpr-inline-rule-create').forEach(e=>e.remove());
     holder.querySelectorAll('.dpr-inline-rule-refresh').forEach(e=>e.remove());
+    holder.querySelectorAll('.dpr-inline-rule-hint').forEach(e=>e.remove());
     if(!flow||!project||form.dataset.mode!=='new')return;
     holder.querySelectorAll('.dpr-flow-node-card').forEach(card=>{
       const select=card.querySelector('.dpr-node-rule-select');
-      if(!select||select.disabled||window.dprNodeRuleConfig(flow,card.dataset.node).mode!=='task_custom')return;
-      const refreshButton=document.createElement('button');refreshButton.type='button';refreshButton.className='dpr-inline-rule-refresh';refreshButton.textContent='刷新';refreshButton.setAttribute('aria-label','刷新规则');refreshButton.onclick=refresh;
-      card.querySelector('.dpr-node-rule-module .dpr-node-config-module-head').append(refreshButton);
+      if(!select||!['task_custom','fixed'].includes(window.dprNodeRuleConfig(flow,card.dataset.node).mode))return;
+      const head=card.querySelector('.dpr-node-rule-module .dpr-node-config-module-head');
+      const hint=document.createElement('span');hint.className='dpr-inline-rule-hint';hint.textContent='自动使用规则最新内容';head.append(hint);
+      if(select.disabled||window.dprNodeRuleConfig(flow,card.dataset.node).mode!=='task_custom')return;
       if(!rights.create||!rights.edit||!rights.publish)return;
       const button=document.createElement('button');button.type='button';button.className='dpr-inline-rule-create';button.textContent='新建规则';
       button.onclick=()=>openEditor(button,card,flow);
-      card.querySelector('.dpr-node-rule-module .dpr-node-config-module-head').append(button);
+      head.append(button);
     });
   }
   async function refresh() {
@@ -95,7 +101,7 @@
       window.inlineRuleContext={project:capturedProject,stage,types,flow:flow.name,node,trigger:button,use:async rule=>{
         if(projectControl.value!==capturedProject||!select.isConnected||card.dataset.node!==node||window.DPR_ACTIVE_ASSIGNMENT_STAGE!==stage||window.DPR_SELECTED_FLOWS[stage]!==flow.name||rule.project!==capturedProject||rule.stage!==stage||!types.includes(rule.rule_type))throw Error('规则已保存，请在当前节点重新选择');
         window.DPR_INLINE_RULES=window.DPR_INLINE_RULES||[];window.DPR_INLINE_RULES.unshift(rule);if(!window.DPR_NODE_RULES.some(r=>r.stage===rule.stage&&r.name===rule.name&&r.version===rule.version&&r.inlineProject===rule.project))window.DPR_NODE_RULES.push({stage:rule.stage,name:rule.name,version:rule.version,inlineProject:rule.project});
-        if(![...select.options].some(o=>o.value===rule.value))select.add(new Option(rule.name+' · '+rule.version,rule.value));
+        if(![...select.options].some(o=>o.value===rule.value))select.add(new Option(rule.name,rule.value));
         select.value=rule.value;select.dispatchEvent(new Event('change',{bubbles:true}));
       }};
       const p=document.getElementById('ruleCreateProject');if(![...p.options].some(o=>o.value===capturedProject))p.add(new Option(capturedProject,capturedProject));p.value=capturedProject;p.disabled=true;
@@ -128,7 +134,7 @@
         for(const card of host.querySelectorAll('.dpr-flow-node-card')){
           const config=window.dprNodeRuleConfig(flow,card.dataset.node),select=card.querySelector('.dpr-node-rule-select');
           if(!select||['inherit','none'].includes(config.mode))continue;
-          const selected=config.mode==='fixed'?config.rule:select.value;
+          const selected=config.mode==='fixed'?currentReference(config.rule,data.rules):select.value;
           if(!selected)continue; // Required-field validation stays in the original form.
           const managed=(data.published_versions||[]).find(r=>r.value===selected);
           const current=(data.rules||[]).find(r=>r.value===selected);
@@ -136,7 +142,7 @@
           const migratedLegacy=legacy&&(data.published_versions||[]).some(r=>r.name===legacy.name&&r.project===projectControl.value&&r.stage===flow.stage);
           const applicable=rule=>rule&&rule.project===projectControl.value&&rule.stage===stage&&flow.stage===stage&&typesFor(flow).includes(rule.rule_type);
           const valid=data.permissions.use&&(selected.startsWith('rule:')
-            ? (config.mode==='fixed'?managed?.status==='enabled'&&applicable(managed):applicable(current))
+            ? applicable(current)
             : !!legacy&&typesFor(flow).includes(legacy.rule_type)&&!migratedLegacy);
           if(!valid){
             window.dprShowAssignmentsForStage(stage);addOptions();decorate();

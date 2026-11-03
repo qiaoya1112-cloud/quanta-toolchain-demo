@@ -185,6 +185,18 @@ def publish(rule):
     event(rule, '发布', previous, proposed, version='v'+str(number), source_version=source_version)
 
 
+def migrate_task_bindings(conn):
+    """Bring existing demo tasks forward once, retaining their record snapshots."""
+    marker='processing-rule-follow-latest-v1'
+    if conn.execute('SELECT 1 FROM collection_meta WHERE key=?', (marker,)).fetchone():
+        return
+    from collection_processing import apply_rule_publication
+    for rule in all_rules(conn):
+        if rule.get('versions') and not rule.get('deleted'):
+            apply_rule_publication(conn, rule)
+    conn.execute('INSERT INTO collection_meta VALUES (?,?)', (marker,'1'))
+
+
 def register(app, seeds, legacy_rules, editor):
     from processing_rule_store import permissions, allowed_types, name_conflict, setup
     import data_platform_refactor as platform
@@ -354,6 +366,10 @@ def register(app, seeds, legacy_rules, editor):
                     return jsonify(error='规则不存在'),404
                 if not permissions(rule['project'])['edit']:
                     return jsonify(error='没有编辑规则权限'),403
+                if rule['versions']:
+                    if not permissions(rule['project'])['publish']:
+                        return jsonify(error='编辑已发布规则需要发布权限'),403
+                    body['publish'] = True
                 if rule['versions'] and any(proposed[k]!=rule[k] for k in IDENTITY):
                     return jsonify(error='名称、项目、业务环节和规则类型发布后不可修改，请创建新规则'),409
                 if name_conflict(all_rules(conn),proposed['project'],proposed['name'],rule_id):
@@ -365,7 +381,14 @@ def register(app, seeds, legacy_rules, editor):
                 if body.get('restore_from') is not None:
                     return jsonify(error='历史版本仅供查看，编辑只能基于最新版本'),422
                 before = rule.get('draft') or (rule['versions'][-1]['content'] if rule['versions'] else content(rule))
-                if not body.get('publish') and same_content(before,proposed):
+                if rule['versions'] and same_content(rule['versions'][-1]['content'],proposed):
+                    if rule.get('draft') is not None:
+                        event(rule,'撤销待发布修改',rule['draft'],proposed)
+                        rule['draft']=None;rule.pop('draft_source_version',None)
+                        rule['revision']+=1;rule['updated_at']=now();persist(conn,rule)
+                        return jsonify(rule=view(rule),unchanged=True),200
+                    return jsonify(rule=view(rule), unchanged=True),200
+                if same_content(before,proposed) and not rule['versions']:
                     return jsonify(rule=view(rule), unchanged=True),200
                 rule['draft'] = proposed
                 rule.pop('draft_source_version',None)
@@ -400,6 +423,9 @@ def register(app, seeds, legacy_rules, editor):
                 rule.update(proposed)
             if rule_id:
                 persist(conn,rule)
+                if body.get('publish'):
+                    from collection_processing import apply_rule_publication
+                    apply_rule_publication(conn, rule)
             else:
                 conn.execute('INSERT INTO processing_rules VALUES(?,?,?,?)',(rule['id'],collection.USER+':'+key,fingerprint,json.dumps(rule,ensure_ascii=False)))
             return jsonify(rule=view(rule)),200 if rule_id else 201
@@ -466,6 +492,9 @@ def register(app, seeds, legacy_rules, editor):
             else:
                 return None
             rule['revision']+=1; persist(conn,rule)
+            if action == 'publish':
+                from collection_processing import apply_rule_publication
+                apply_rule_publication(conn, rule)
             return jsonify(rule=view(rule),status=rule['status'],publish_status=rule['publish_status'])
 
     @app.after_request

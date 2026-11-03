@@ -50,6 +50,7 @@
 .dc-review-hint{font-size:12px}
 .dc-state-cell .dc-review-hint{display:inline;margin:0;white-space:nowrap}
 .dc-footer{color:#6b7b8e;font-size:12px;padding:14px 20px}
+.dc-footer>.dc-page-buttons{margin-left:auto}
 /* Collection list: readable names, quiet metrics and consistent column alignment. */
 @media(min-width:761px){
   .dc-task-table{min-width:1040px;table-layout:fixed}

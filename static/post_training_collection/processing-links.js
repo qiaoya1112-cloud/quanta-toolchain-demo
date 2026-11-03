@@ -117,6 +117,7 @@
   }
   window.dprOpenProcessingTaskDrawer=function(mode,trigger){
     const isLinked=trigger?.dataset.collectionLinked==='true';
+    drawer.dataset.editingExisting=String(isLinked&&mode==='edit'&&!!jobs.find(j=>j.id===trigger.dataset.taskId&&!j.published));
     // Clear the previous adapter context before the shared form renders its controls.
     source=null;activeJob=null;
     window.DPR_TASK_FILTER_FIELDS['采集结论']={type:'single',options:['成功','失败']};
@@ -127,6 +128,7 @@
     if(job){
       context({id:job.source_ids[0],name:trigger.dataset.sourceName||job.source_ids.join('、'),project:job.project,project_name:trigger.dataset.project},job);
       restoreSavedNodes();
+      if(mode==='edit'&&!job.published)drawer.querySelectorAll('.dpr-node-percent-input').forEach(el=>el.disabled=true);
       if(mode==='edit'&&job.published)drawer.querySelectorAll('#processingTaskFilters input,#processingTaskFilters select,#processingTaskFilters button').forEach(el=>el.disabled=true);
     }
   };
@@ -137,6 +139,7 @@
     const more=trigger.closest('details')||window.DPR_OPEN_TASK_MORE;if(more)more.open=false;
     window.dprOpenProcessingTaskDrawer('new',trigger);
     activeJob=null;delete drawer.dataset.taskId;drawer.dataset.taskStatus='unpublished';
+    drawer.dataset.editingExisting='false';
     sourceContext.hidden=true;detailActions.hidden=true;
     document.getElementById('processingTaskName').value=job.name+'（复制）';
     document.getElementById('processingTaskDrawerSubmit').textContent='创建任务';
@@ -198,7 +201,7 @@
       const flow=window.DPR_PROCESSING_FLOWS.find(f=>f.stage===s&&f.name===flowName);
       if(!flow){card.querySelector('.dpr-node-percent-error').textContent='处理流程已不可用，请刷新后重试';return;}
       for(const n of flow.human_nodes||[]){
-        if(flow.node_rule_configs?.[n]?.allow_task_percent===false)continue;
+        if(flow.node_rule_configs?.[n]?.allow_task_percent!==true)continue;
         (percentages[s]||={})[n]=next[s]?.[n]?.percent;
       }
     }
@@ -237,7 +240,7 @@
           const flow=window.DPR_PROCESSING_FLOWS.find(f=>f.stage===stage&&f.name===flowName);
           if(!flow)throw Error('处理流程已不可用，请刷新后重试');
           for(const node of flow.human_nodes||[]){
-            if(flow.node_rule_configs?.[node]?.allow_task_percent===false)continue;
+            if(flow.node_rule_configs?.[node]?.allow_task_percent!==true)continue;
             const value=configs[stage]?.[node]?.percent;
             if(!Number.isInteger(value)||value<0||value>100)throw Error('处理比例请输入 0～100 的整数');
             (percentages[stage]||={})[node]=value;

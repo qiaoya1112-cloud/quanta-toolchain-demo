@@ -119,9 +119,12 @@ def filter_processing_results(conn, job, rows):
                 if not stage_finished(member, stage):
                     continue
                 result = member.get('results', {}).get(stage, {})
-                rules = {str(c.get('rule', '')) for c in previous.get('configs', {}).get(stage, {}).values()}
-                rules.update(c['rule_identity']['name'] + ' ' + c['rule_identity']['version']
-                             for c in previous.get('configs', {}).get(stage, {}).values() if c.get('rule_identity'))
+                snapshots = member.get('rule_snapshots', {}).get(stage)
+                if snapshots is None:
+                    snapshots = rule_snapshots(previous).get(stage, {})
+                rules = {identity.get('reference', '') for identity in snapshots.values() if identity}
+                rules.update(identity['name'] + ' ' + identity['version'] for identity in snapshots.values()
+                             if identity and identity.get('name') and identity.get('version'))
                 # A rule scope is accepted only when its version is known explicitly.
                 if result.get('rule'):
                     rules.add(str(result['rule']) + (' ' + str(result['rule_version']) if result.get('rule_version') else ''))
@@ -165,11 +168,60 @@ def admit(conn, job, task_id=None):
             job['records'].append({'id': record['id'], 'task_id': task['id'],
                                    'admitted_at': collection.now(),
                                    'stages': {stage: 'pending' for stage in job['stages']},
+                                   'rule_snapshots': rule_snapshots(job),
                                    # The allocation is a boundary snapshot. Editing the
                                    # task later must never move an already admitted record.
                                    'node_percentages': editable_node_percentages(
                                        job, current_app.config['COLLECTION_PROCESSING_FLOWS'], editable_only=False)})
             existing.add(key)
+
+
+def rule_snapshots(job):
+    return {stage: {node: dict(copy.deepcopy(config.get('rule_identity') or {}), reference=config.get('rule', ''))
+                    for node, config in nodes.items() if config.get('rule') or config.get('rule_identity')}
+            for stage, nodes in job.get('configs', {}).items()}
+
+
+def apply_rule_publication(conn, rule):
+    """Advance task bindings atomically, retaining each existing record's rule."""
+    from processing_rule_versions import view, content, legacy
+    latest = view(rule)
+    identity = dict(id=rule['id'], name=rule['name'], version=latest['version'],
+                    rule_type=rule['rule_type'], content=content(latest))
+    for job in all_jobs(conn):
+        project = next((p['name'] for p in current_app.config['COLLECTION_PROJECTS']
+                        if p['id'] == job.get('project')), job.get('project'))
+        if project != rule['project']:
+            continue
+        affected = []
+        for stage, nodes in job.get('configs', {}).items():
+            if stage != rule['stage']:
+                continue
+            for node, config in nodes.items():
+                binding = config.get('rule_identity') or {}
+                ref = str(config.get('rule', ''))
+                old = legacy(ref, stage) if not ref.startswith('rule:') else None
+                if ((binding.get('id') == rule['id'] or ref.startswith('rule:'+rule['id']+'@')
+                        or (old and old['name'] == rule['name']))
+                        and (ref != latest['value'] or binding.get('version') != latest['version'])):
+                    affected.append(config)
+        if not affected:
+            continue
+        # Snapshot only records already admitted. Unadmitted source recordings
+        # will enter under the new binding on the next intake event.
+        old_snapshots = rule_snapshots(job)
+        for member in job.get('records', []):
+            if 'rule_snapshots' not in member:
+                member['rule_snapshots'] = copy.deepcopy(old_snapshots)
+        for config in affected:
+            config['rule'] = latest['value']
+            config['rule_identity'] = copy.deepcopy(identity)
+        job['revision'] += 1
+        job['updated_at'] = collection.now()
+        job.setdefault('events', []).append(dict(at=job['updated_at'], actor=collection.USER,
+                                                  title='规则自动更新', rule_id=rule['id'],
+                                                  rule_version=latest['version']))
+        save_job(conn, job)
 
 
 def public_job(conn, job, task_id=None, record_id=None):
@@ -326,8 +378,7 @@ def validate(conn, body, flows):
             if rule_config.get('mode') not in ('inherit', 'none'):
                 from processing_rule_store import reference_error
                 project_name = next((p['name'] for p in current_app.config['COLLECTION_PROJECTS'] if p['id'] == tasks[0]['project']), tasks[0]['project'])
-                rule_error = reference_error(conn, config.get('rule', ''), project_name, stage, flow,
-                                             allow_historical=rule_config.get('mode') == 'fixed')
+                rule_error = reference_error(conn, config.get('rule', ''), project_name, stage, flow)
                 if rule_error:
                     return None, rule_error
                 from processing_rule_store import snapshot_reference
@@ -336,8 +387,13 @@ def validate(conn, body, flows):
                     config['rule_identity'] = identity
                 else:
                     config.pop('rule_identity', None)
-                if rule_config.get('mode') == 'fixed' and config.get('rule') != rule_config.get('rule'):
-                    return None, '固定规则不允许修改'
+                if rule_config.get('mode') == 'fixed':
+                    expected = str(rule_config.get('rule', ''))
+                    actual = str(config.get('rule', ''))
+                    expected_id = re.fullmatch(r'rule:([^@]+)@\d+', expected)
+                    actual_id = re.fullmatch(r'rule:([^@]+)@\d+', actual)
+                    if actual != expected and not (expected_id and actual_id and expected_id[1] == actual_id[1]):
+                        return None, '固定规则不允许修改'
             if assignment_config.get('mode') != 'inherit':
                 assignments = config.get('assignments')
                 if not isinstance(assignments, list) or not assignments or any(not isinstance(a, dict) or a.get('type') not in ('supplier', 'user_group') or not isinstance(a.get('target'), str) or not a['target'].strip() for a in assignments):
@@ -394,7 +450,7 @@ def editable_node_percentages(job, flows, editable_only=True):
             rule = configs.get(node, {})
             if node not in job.get('configs', {}).get(stage, {}):
                 continue
-            if editable_only and rule.get('allow_task_percent', True) is False:
+            if editable_only and rule.get('allow_task_percent') is not True:
                 continue
             value = job.get('configs', {}).get(stage, {}).get(node, {}).get('percent',
                     rule.get('percent', 100))
@@ -628,6 +684,17 @@ def register_processing(app, flows):
                 return jsonify(error=error), 422
             if data.get('upstream_id') == job['id']:
                 return jsonify(error='不能依赖当前处理任务'), 422
+            for stage, flow_name in data['stages'].items():
+                flow = next(f for f in flows if f['stage'] == stage and f['name'] == flow_name)
+                for node in flow.get('human_nodes', []):
+                    config = flow.get('node_rule_configs', {}).get(node, {})
+                    if config.get('allow_task_percent') is True:
+                        continue
+                    before = (job.get('configs', {}).get(stage, {}).get(node, {}).get('percent', config.get('percent', 100))
+                              if job['stages'].get(stage) == flow_name else config.get('percent', 100))
+                    after = data['configs'][stage][node].get('percent', config.get('percent', 100))
+                    if before != after:
+                        return jsonify(error='当前流程节点不允许修改处理比例'), 422
             job.update(data, revision=job['revision'] + 1, updated_at=collection.now())
             job['events'].append(dict(at=job['updated_at'], actor=collection.USER, title='修改处理配置'))
             save_job(conn, job)

@@ -71,8 +71,8 @@ async function main(){
   await check(`!${previewContent}.includes('出现碰撞')`,'读取失败不显示上次规则正文');
   await click('[data-preview-retry]');await wait(`${previewContent}.includes('出现碰撞')`);checks.push('失败重试成功且不丢任务输入');await click('[data-preview-close]');
   await nav('?linked='+a.id);await wait("document.querySelector('#drawerProcessingTaskForm').dataset.mode==='detail'");await click('[data-task-pane="flow"]');await wait("!!document.querySelector('.dpr-rule-preview-trigger')&&!document.querySelector('.dpr-rule-preview-trigger').disabled");
-  await click('.dpr-rule-preview-trigger');await wait("document.querySelector('#processingRulePreviewTitle').textContent.endsWith('V1')");
-  await check(`!${previewContent}.includes('出现碰撞')`,'规则升V2后旧任务预览仍为V1正文');await shot('02-task-a-preview-v1');await click('[data-preview-close]');
+  await click('.dpr-rule-preview-trigger');await wait("document.querySelector('#processingRulePreviewTitle').textContent.endsWith('V2')");
+  await check(`${previewContent}.includes('出现碰撞')`,'规则升V2后关联任务预览最新正文');await shot('02-task-a-preview-v2');await click('[data-preview-close]');
   await nav('?linked='+b.id);await wait("document.querySelector('#drawerProcessingTaskForm').dataset.mode==='detail'");await click('[data-task-pane="flow"]');await wait("!!document.querySelector('.dpr-rule-preview-trigger')&&!document.querySelector('.dpr-rule-preview-trigger').disabled");
   await click('.dpr-rule-preview-trigger');await wait("document.querySelector('#processingRulePreviewTitle').textContent.endsWith('V2')");await check(`${previewContent}.includes('出现碰撞')`,'新任务详情预览V2正文');await shot('03-task-b-preview-v2');await click('[data-preview-close]');
   await api('/data/rules/'+v1.id+'/status','POST',{status:'disabled'});

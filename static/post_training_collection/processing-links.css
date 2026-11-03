@@ -148,4 +148,17 @@ body:has(#drawerProcessingTaskForm[aria-hidden="false"][data-collection-source]:
 }
 
 .dc-processing-source-context{display:flex;align-items:center;gap:12px;margin:0 0 16px;padding:11px 14px;border:1px solid #e1eaed;border-radius:7px;background:#fafcfd;color:#657a82;font-size:12px;line-height:1.5}.dc-processing-source-context>span{white-space:nowrap}.dc-processing-source-context .dc-processing-sources{display:flex;gap:12px;flex-wrap:wrap;font-size:13px}.dc-processing-source-context .dc-processing-sources a{color:#118f9c;text-decoration:none}.dc-processing-source-context .dc-processing-sources a:hover{text-decoration:underline}.dc-processing-actions{display:flex;align-items:center;gap:8px}.dc-processing-actions .btn{white-space:nowrap}
+.dpr-processing-task-page[data-mode="detail"] .dpr-processing-task-page-body{display:flex;flex-direction:column}
+.dpr-processing-task-page[data-mode="detail"] .dpr-processing-task-menu{display:flex;gap:28px;flex:none;overflow:auto;padding:0 28px;border-right:0;border-bottom:1px solid #e2e8ea}
+.dpr-processing-task-page[data-mode="detail"] .dpr-processing-task-menu button{position:relative;flex:none;width:auto;min-height:54px;margin:0;padding:0;border-radius:0;background:transparent;color:#65767c;white-space:nowrap}
+.dpr-processing-task-page[data-mode="detail"] .dpr-processing-task-menu button i{display:none}
+.dpr-processing-task-page[data-mode="detail"] .dpr-processing-task-menu button.active{color:#118f9c;font-weight:600}
+.dpr-processing-task-page[data-mode="detail"] .dpr-processing-task-menu button.active::after{content:"";position:absolute;right:0;bottom:0;left:0;height:3px;border-radius:3px 3px 0 0;background:#149daa}
+.dpr-processing-task-page[data-mode="detail"] .dpr-processing-task-form{flex:1;min-height:0}
+.dpr-processing-task-page[data-mode="detail"] .dpr-processing-task-pane{max-width:none}
+.dpr-processing-task-page[data-mode="detail"] .dpr-processing-task-page-head>div{min-width:0}
+.dpr-processing-task-page[data-mode="detail"] .dpr-processing-task-page-head h2{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dpr-processing-header-id,.dpr-processing-header-status{flex:none;padding:4px 8px;border-radius:4px;background:#eff3f4;color:#657a82;font-size:12px;white-space:nowrap}
+.dpr-processing-header-status{background:#e8f6f5;color:#118f9c}
+.dpr-processing-header-id[hidden],.dpr-processing-header-status[hidden]{display:none}
 @media(max-width:760px){.dc-processing-source-context{align-items:flex-start;flex-direction:column;gap:5px}.dc-processing-actions{margin-left:0;flex-wrap:wrap}}
