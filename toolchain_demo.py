@@ -1643,7 +1643,7 @@ body.lineage-canvas-page .lineage-viewport { height:100%; min-height:0; }
   #trainModelRow { grid-template-columns:minmax(0,1fr); }
 }
 #trainSectionConfig #advConfigBox { padding-top:14px; border-top:1px solid #f0f0f0; }
-body.ksyun-train-mode #trainSectionConfig #advConfigBox { padding-top:0; border-top:0; }
+body.ksyun-train-mode #trainSectionConfig #entryCmdBox { margin-top:0; }
 
 /* ── Drawer: 更多配置 (可折叠) + 环境变量 key-value 表 ── */
 .more-cfg { border-top:1px solid #f0f0f0; margin-top:4px; padding-top:14px; }
@@ -1698,10 +1698,12 @@ body.ksyun-train-mode #trainSectionConfig #advConfigBox { padding-top:0; border-
 .split-menu.open { display:block; }
 .split-menu-item { display:block; width:100%; padding:9px 12px; border:0; border-radius:6px; background:transparent; color:rgba(0,0,0,0.86); font:inherit; font-size:13px; text-align:left; cursor:pointer; }
 .split-menu-item:hover { background:#eef7f8; color:#0f8190; }
-/* ── 金山云建训抽屉: 复用现有抽屉, 仅保留 任务信息 / 运行配置 / 训练配置(yaml + 入口命令) ── */
+/* ── 金山云建训抽屉: 训练配置仅保留入口命令，详情页独立展示 ── */
 body.ksyun-train-mode #resumeVersionNotice,
 body.ksyun-train-mode #resumeImageNotice,
 body.ksyun-train-mode #trainResumeSource,
+body.ksyun-train-mode #trainDatasetConfigSlot,
+body.ksyun-train-mode #trainRecommendedConfig,
 body.ksyun-train-mode #trainConfigModeField,
 body.ksyun-train-mode #trainConfigModeTabs,
 body.ksyun-train-mode #trainModelRow,
@@ -3493,7 +3495,7 @@ function openTrainDrawer(){
   initEnvRows();
   regenDefaultConfig();
 }
-/* 金山云建训: 复用现有建训抽屉, 仅保留 任务信息 / 运行配置 / 训练配置(yaml + 入口命令) */
+/* 金山云建训: 训练配置仅保留入口命令 */
 function setKsyunTrainMode(on){
   document.body.classList.toggle('ksyun-train-mode', !!on);
   var cloudPlatform = document.getElementById('trainCloudPlatform');
@@ -3504,11 +3506,11 @@ function setKsyunTrainMode(on){
   if (importButton) importButton.hidden = !on;
   var datasetHeading = document.getElementById('trainDatasetNameHeading');
   if (datasetHeading) datasetHeading.textContent = on ? '数据集名称 / 地址' : '数据集名称';
-  if (!on) closeTrainDatasetImport();
+  closeTrainDatasetImport();
   var title = document.getElementById('trainDrawerTitle');
   if (title) title.textContent = '新增训练任务';
   var entry = document.getElementById('entryCmdBox');
-  if (entry) entry.classList.add('collapsed');
+  if (entry) entry.classList.toggle('collapsed', !on);
   var adv = document.getElementById('advConfigBox');
   if (adv) adv.classList.add('collapsed');
   var entryInput = document.getElementById('entryCmdInput');
@@ -3672,6 +3674,7 @@ function validateTrainInstanceCount(input){
   input.setCustomValidity(value >= 1 && value <= 4 && Number.isInteger(value) ? '' : '实例数需为 1-4 的整数');
 }
 function validateTrainForm(){
+  var isKsyun = document.body.classList.contains('ksyun-train-mode');
   if (TRAIN_CREATE_MODE === 'resume'){
     if (!RESUME_TASK || !RESUME_CKPT){ toast('请先选择来源训练任务与来源 Checkpoint'); return false; }
     if (!resumeStepsValid()){ toast('总训练步数需大于来源 Checkpoint 的步数。'); return false; }
@@ -3686,12 +3689,12 @@ function validateTrainForm(){
     toast('暂无训练队列使用权限，请联系队列管理员申请。');
     return false;
   }
-  var unavailableDataset = Array.prototype.some.call(document.querySelectorAll('#trainDatasetRows .ds-row'), function(row){
+  var unavailableDataset = !isKsyun && Array.prototype.some.call(document.querySelectorAll('#trainDatasetRows .ds-row'), function(row){
     var selected = row.querySelector('.train-dataset-select').value;
     return selected && row.dataset.externalAddress !== selected && !row.querySelector('.train-dataset-version').value;
   });
   if (unavailableDataset){ toast('所选数据集暂无已发布版本，请先发布数据集版本。'); return false; }
-  if (TRAIN_CONFIG_MODE === 'custom' && !validateCustomYaml()) return false;
+  if (!isKsyun && TRAIN_CONFIG_MODE === 'custom' && !validateCustomYaml()) return false;
   var input = document.getElementById('trainInstanceCount');
   if (input) validateTrainInstanceCount(input);
   if (input && !input.checkValidity()){
@@ -10330,6 +10333,12 @@ def shared_datasets_save(did):
     return dp.datasets_save(did)
 
 
+@app.route("/model/data/datasets/batch-process", methods=["POST"])
+@app.route("/data/datasets/batch-process", methods=["POST"])
+def shared_dataset_batch_process():
+    return dp.dataset_batch_process()
+
+
 @app.route("/model/data/datasets/append", methods=["POST"])
 @app.route("/data/datasets/append", methods=["POST"])
 def shared_datasets_append():
@@ -12128,7 +12137,11 @@ dataset:
 
 # === Basic configuration ===
 """
-    ds_name = e["dataset"] if e["dataset"] != "—" else "clean_whiteboard_v4"
+    dataset_rows = "".join(
+        f'<tr><td>{html.escape(str(dataset["name"]))}</td>'
+        f'<td>{html.escape(str(dataset.get("version") or "—"))}</td><td>1</td></tr>'
+        for dataset in _exp_datasets(e)
+    ) or '<tr><td colspan="3" class="empty-cell">暂无数据集</td></tr>'
     resume_from = e.get("resume_from") or {}
     resume_block = ""
     if resume_from:
@@ -12144,32 +12157,7 @@ dataset:
         </div>
       </div>
 """
-    tab_basic = f"""
-    <div class="basic-info">
-{resume_block}
-      <!-- 基本信息 (字段顺序对齐「新增训练任务」表单) -->
-      <div class="bi-sec">
-        <h4 class="bi-sec-title">任务信息</h4>
-        <div class="bi-field-row"><div class="bi-field-item"><div class="bi-field-label">任务名称</div><div class="bi-field-value">{html.escape(e['name'])}</div></div></div>
-        <div class="bi-field-row"><div class="bi-field-item"><div class="bi-field-label">描述</div><div class="bi-field-value">{html.escape(_experiment_description(e))}</div></div></div>
-        <div class="bi-field-row bi-field-row-2"><div class="bi-field-item"><div class="bi-field-label">标签</div><div class="bi-field-value">{html.escape(e.get('tag', '—'))}</div></div><div class="bi-field-item"><div class="bi-field-label">飞书关注人</div><div class="bi-field-value">{_experiment_followers_html(e)}</div></div></div>
-      </div>
-
-      <div class="bi-sec">
-        <h4 class="bi-sec-title">运行配置</h4>
-        <div class="bi-field-row bi-field-row-2">
-          <div class="bi-field-item"><div class="bi-field-label">镜像模式</div><div class="bi-field-value">推荐镜像</div></div>
-          <div class="bi-field-item"><div class="bi-field-label">Mozbrain 版本</div><div class="bi-field-value">{html.escape(_experiment_mozbrain_version(e))}</div></div>
-        </div>
-        <div class="bi-field-row"><div class="bi-field-item"><div class="bi-field-label">镜像</div><div class="bi-field-value mono"><span class="bi-ellipsis" title="spirit-ai-cn-beijing.cr.volces.com/spirit-ai/mozbrain:thor-v1.0.0">spirit-ai-cn-beijing.cr.volces.com/spirit-ai/mozbrain:thor-v1.0.0</span></div></div></div>
-        <div class="bi-field-row"><div class="bi-field-item"><div class="bi-field-label">训练代码</div><div class="bi-field-value"><span class="bi-commit">a5ebbdd</span></div></div></div>
-        <div class="bi-field-row bi-field-row-2"><div class="bi-field-item"><div class="bi-field-label">训练队列</div><div class="bi-field-value">GPU-A100</div></div><div class="bi-field-item"><div class="bi-field-label">优先级</div><div class="bi-field-value">{e.get('priority', '4')}</div></div></div>
-        <div class="bi-field-row bi-field-row-2"><div class="bi-field-item"><div class="bi-field-label">实例规格</div><div class="bi-field-value">2 × A100 80GB</div></div><div class="bi-field-item"><div class="bi-field-label">实例数</div><div class="bi-field-value">{e.get('instance_count', 1)}</div></div></div>
-      </div>
-
-      <div class="bi-sec">
-        <h4 class="bi-sec-title">训练配置</h4>
-        <div class="bi-field-row"><div class="bi-field-item"><div class="bi-field-label">数据集及权重</div><div class="bi-field-value">{html.escape(ds_name)} · 权重 1</div></div></div>
+    post_training_config = f"""
         <div class="bi-field-row"><div class="bi-field-item"><div class="bi-field-label">配置模式</div><div class="bi-field-value">推荐配置</div></div></div>
         <div class="bi-field-row bi-field-row-2">
           <div class="bi-field-item"><div class="bi-field-label">模型</div><div class="bi-field-value"><span class="tag-inline">pi0.5</span></div></div>
@@ -12195,6 +12183,42 @@ dataset:
 steps: 300000</pre>
           </div>
         </div>
+
+    """ if resource_key == "volcano" else ""
+    tab_basic = f"""
+    <div class="basic-info">
+{resume_block}
+      <!-- 基本信息 (字段顺序对齐「新增训练任务」表单) -->
+      <div class="bi-sec">
+        <h4 class="bi-sec-title">任务信息</h4>
+        <div class="bi-field-row"><div class="bi-field-item"><div class="bi-field-label">任务名称</div><div class="bi-field-value">{html.escape(e['name'])}</div></div></div>
+        <div class="bi-field-row"><div class="bi-field-item"><div class="bi-field-label">描述</div><div class="bi-field-value">{html.escape(_experiment_description(e))}</div></div></div>
+        <div class="bi-field-row bi-field-row-2"><div class="bi-field-item"><div class="bi-field-label">标签</div><div class="bi-field-value">{html.escape(e.get('tag', '—'))}</div></div><div class="bi-field-item"><div class="bi-field-label">飞书关注人</div><div class="bi-field-value">{_experiment_followers_html(e)}</div></div></div>
+      </div>
+
+      <div class="bi-sec">
+        <h4 class="bi-sec-title">运行配置</h4>
+        <div class="bi-field-row bi-field-row-2">
+          <div class="bi-field-item"><div class="bi-field-label">镜像模式</div><div class="bi-field-value">推荐镜像</div></div>
+          <div class="bi-field-item"><div class="bi-field-label">Mozbrain 版本</div><div class="bi-field-value">{html.escape(_experiment_mozbrain_version(e))}</div></div>
+        </div>
+        <div class="bi-field-row"><div class="bi-field-item"><div class="bi-field-label">镜像</div><div class="bi-field-value mono"><span class="bi-ellipsis" title="spirit-ai-cn-beijing.cr.volces.com/spirit-ai/mozbrain:thor-v1.0.0">spirit-ai-cn-beijing.cr.volces.com/spirit-ai/mozbrain:thor-v1.0.0</span></div></div></div>
+        <div class="bi-field-row"><div class="bi-field-item"><div class="bi-field-label">训练代码</div><div class="bi-field-value"><span class="bi-commit">a5ebbdd</span></div></div></div>
+        <div class="bi-field-row bi-field-row-2"><div class="bi-field-item"><div class="bi-field-label">训练队列</div><div class="bi-field-value">GPU-A100</div></div><div class="bi-field-item"><div class="bi-field-label">优先级</div><div class="bi-field-value">{e.get('priority', '4')}</div></div></div>
+        <div class="bi-field-row bi-field-row-2"><div class="bi-field-item"><div class="bi-field-label">实例规格</div><div class="bi-field-value">2 × A100 80GB</div></div><div class="bi-field-item"><div class="bi-field-label">实例数</div><div class="bi-field-value">{e.get('instance_count', 1)}</div></div></div>
+      </div>
+
+      <div class="bi-sec">
+        <h4 class="bi-sec-title">训练配置</h4>
+        <div class="fg">
+          <label id="trainDetailDatasetLabel">数据集及权重</label>
+          <table class="ant-table train-dataset-table" id="trainDetailDatasetTable" aria-labelledby="trainDetailDatasetLabel">
+            <colgroup><col><col style="width:152px"><col style="width:100px"></colgroup>
+            <thead><tr><th>数据集名称</th><th>版本</th><th>权重</th></tr></thead>
+            <tbody>{dataset_rows}</tbody>
+          </table>
+        </div>
+{post_training_config}
 
         <!-- 入口命令 - 可折叠 -->
         <div class="bi-subsection bi-collapsible">

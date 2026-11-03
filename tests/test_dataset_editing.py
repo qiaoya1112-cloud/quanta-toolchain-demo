@@ -51,14 +51,15 @@ class DatasetEditingTests(unittest.TestCase):
         values = [field.get_text(strip=True) for field in summary.select('.dv')]
         self.assertEqual(values[0], self.source['name'])
         self.assertEqual(values[1], self.source['ident'])
-        self.assertEqual(values[3], self.source['tos'])
+        self.assertEqual([row.get_text(' ', strip=True) for row in summary.select('.dataset-storage-row')],
+                         ['tos ' + self.source['tos'], 'ks3 —', 'vepfs —'])
         self.assertEqual(values[4], str(len(self.original)))
         self.assertRegex(values[5], r'^\d{2}:\d{2}:\d{2}$')
         self.assertEqual(values[6], '自采数据')
 
         missing = self.client.get('/model/data/datasets?sel=ds2&tab=info')
         missing_summary = BeautifulSoup(missing.data, 'html.parser').select_one('#info_sum .desc-grid')
-        self.assertEqual(missing_summary.select('.dv')[3].get_text(strip=True), '—')
+        self.assertEqual([row.get_text(' ', strip=True) for row in missing_summary.select('.dataset-storage-row')], ['tos —', 'ks3 —', 'vepfs —'])
 
     def test_save_deletes_one_episode_updates_prompts_and_preserves_source(self):
         rows = deepcopy(self.original[1:])

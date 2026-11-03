@@ -208,9 +208,12 @@ TAG_SYSTEM = {
 }
 
 # —— 数据集管理: 业务语义目录 (用户可自建管理) ——
-V2_FOLDERS = ["预训练", "后训练", "自定义01", "自定义02"]
+V2_FOLDERS = ["预训练", "后训练", "自定义01", "自定义02", "机器人操作", "清洁任务"]
+V2_FOLDER_PARENTS = {"机器人操作": "预训练", "清洁任务": "机器人操作"}
 V2_FOLDER_MAP = {
-    "预训练": ["ds1", "ds4", "ds5", "ds6"],
+    "预训练": ["ds5", "ds6"],
+    "机器人操作": [],
+    "清洁任务": ["ds1", "ds4"],
     "后训练": ["ds2", "ds7", "ds8", "ds9"],
     "自定义01": ["ds3", "ds10"],
     "自定义02": ["ds11", "ds12"],
@@ -1020,18 +1023,12 @@ select option:disabled { color:rgba(0,0,0,0.32); }
 .third-source-filters .q-field { min-width:0; }
 .third-source-filters .q-field input, .third-source-filters .q-field select { width:100%; min-width:0; }
 .third-source-filters .third-source-filter-actions { grid-column:4/-1; align-self:end; justify-content:flex-end; margin:0; padding:0; border:0; }
-.third-source-title-copy { display:inline-flex; align-items:center; gap:4px; flex-wrap:wrap; min-width:0; }
-.third-source-title-copy .action-link { margin:0; }
-.third-source-title-note { color:rgba(0,0,0,.45); font-size:12px; white-space:nowrap; }
-.model-list-actions:has(.third-source-title-note) { flex-wrap:wrap; flex-shrink:1; justify-content:flex-end; min-width:0; }
 @media (max-width:1100px) {
   .third-source-filters .q-filter-row { grid-template-columns:repeat(3,minmax(0,1fr)); }
   .third-source-filters .third-source-filter-actions { grid-column:1/-1; }
 }
 @media (max-width:640px) {
   .third-source-filters .q-filter-row { grid-template-columns:repeat(2,minmax(0,1fr)); }
-  .model-list-actions:has(.third-source-title-note) { width:100%; justify-content:flex-start; }
-  .third-source-title-note { white-space:normal; }
 }
 .q-field { display:flex; flex-direction:column; gap:6px; }
 .q-field > label { font-size:12px; color:rgba(0,0,0,0.45); padding-left:1px; }
@@ -1318,6 +1315,7 @@ select option:disabled { color:rgba(0,0,0,0.32); }
 
 /* ── Tree + Tab split layout (左树右Tab, 两面板各自独立滚动) ── */
 .split { display:flex; gap:16px; align-items:stretch; height:calc(100vh - 96px); }
+.dataset-storage-row { display:grid; grid-template-columns:52px minmax(0,1fr); gap:12px; margin-bottom:8px; overflow-wrap:anywhere; }
 .tree-panel { width:300px; min-width:300px; background:#fff; border:1px solid #f0f0f0; border-radius:8px; overflow:hidden; display:flex; flex-direction:column; transition:width 0.2s,min-width 0.2s; }
 .th-left { display:flex; align-items:center; gap:8px; min-width:0; }
 .th-actions { display:flex; align-items:center; gap:8px; }
@@ -1967,6 +1965,10 @@ textarea.wf-edit-field { min-height:64px; height:auto; resize:vertical; line-hei
 .fg-row { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
 .fg .ms-panel label { display:flex; align-items:center; margin-bottom:0; }
 .fg .ms-panel input[type="checkbox"] { width:auto; padding:0; flex:none; }
+#buildDsStorageLocations .ms-trigger,#buildDsStorageLocations .ms-panel { width:100%; box-sizing:border-box; }
+#buildDsDrawer .fg label.switch { display:inline-block; margin-bottom:0; }
+#buildDsDrawer .switch input { width:0; height:0; padding:0; border:0; }
+#buildDsDrawer .switch input:focus-visible + .slider { outline:2px solid #1F80A0; outline-offset:3px; }
 /* 新建算子抽屉: 加宽 + 表单一行一列 */
 .op-drawer { width:680px; }
 .op-drawer .fg-row { grid-template-columns:1fr; }
@@ -2276,6 +2278,8 @@ async function dsCreating(modalId){
     var response=await fetch(prefix+'/datasets/create',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
       ident:ident,name:name,source_token:document.getElementById('qAppendSource').value,
       folder:document.getElementById('buildDsFolder').value,format:document.getElementById('buildDsFormat').value,
+      storage_locations:Array.from(document.querySelectorAll('#buildDsStorageLocations input:checked')).map(function(i){return i.value;}),
+      auto_split:document.getElementById('buildDsAutoSplit').checked,
       visibility:document.getElementById('buildDsVisibility').value,
       visible_group_ids:Array.from(document.querySelectorAll('#buildDsGroups input:checked')).map(function(i){return i.value;}),
       tags:Array.from(document.querySelectorAll('#buildDsTags input:checked')).map(function(i){return i.value;}),
@@ -2284,7 +2288,7 @@ async function dsCreating(modalId){
     var result=await response.json(); if(!response.ok) throw new Error(result.error || '提交失败');
     var url=prefix+'/datasets/tasks?'+new URLSearchParams({dataset_id:result.dataset_id,version:result.version,task:result.task_id});
     modal.querySelector('.modal-box').innerHTML='<div style="padding:46px 28px;text-align:center;"><h3>数据集校验中</h3>'
-      +'<p class="muted">已提交数据集创建任务，可在「数据准备任务」查看进度和结果。</p>'
+      +'<p class="muted">已提交数据集创建任务，生成成功后自动发布 v1 版本。可在「数据准备任务」查看进度和结果。</p>'
       +'<div style="display:flex;gap:10px;justify-content:center;"><button class="btn" onclick="location.reload()">关闭</button>'
       +'<a class="btn btn-primary" href="'+url.replace(/&/g,'&amp;')+'">查看任务</a></div></div>';
   }catch(error){ toast(error.message || '提交失败，请重试'); button.disabled=false; }
@@ -3624,8 +3628,15 @@ def third_party_rows():
             continue
         parsed = json.loads(row.get("parsed_json") or "{}")
         episode_rows = parsed.get("episodes", [])
+        sample_vepfs = {
+            "third_x5": "/mnt/vepfs01/3rd/open_x_embodiment_v1/",
+            "third_x6": "/mnt/vepfs01/3rd/robomimic_kitchen_v1/",
+        }.get(row["dataset_id"]) if parsed.get("sample_data") else None
         existing = get_ds(row["dataset_id"])
         if existing:
+            if sample_vepfs:
+                for snapshot in [existing, *(v["snapshot"] for v in DS_VERSIONS.get(existing["id"], []))]:
+                    snapshot.setdefault("vepfs", sample_vepfs)
             existing["third_party_storage_address"] = row["file_path"]
             for version in DS_VERSIONS.get(existing["id"], []):
                 version["snapshot"]["third_party_storage_address"] = row["file_path"]
@@ -3656,7 +3667,7 @@ def third_party_rows():
             "version": "v1", "type": "custom", "robot": parsed.get("robot") or "—", "fps": parsed.get("fps") or 0,
             "episodes": len(episode_rows), "frames": sum(item["length"] for item in episode_rows),
             "quality": "pass", "status": "未生效",
-            "publish_status": "未发布", "tos": row["file_path"] if row["file_path"].startswith("tos://") else "—",
+            "publish_status": "已发布", "tos": row["file_path"] if row["file_path"].startswith("tos://") else "—",
             "created": row["completed_at"] or row["created_at"], "owner": row["owner"],
             "recordings": [], "tasks": [], "recipe": {"groups": [], "alpha": 1, "train_ratio": .95, "seed": 42},
             "src": "开源数据 " + row["source_id"], "used_by": [], "episode_rows": episode_rows,
@@ -3668,11 +3679,13 @@ def third_party_rows():
             "import_info": parsed.get("info", {}), "import_tasks": parsed.get("tasks", []),
             "import_sample": parsed.get("sample_data", False), "import_task_id": row["id"],
         }
+        if sample_vepfs:
+            dataset["vepfs"] = sample_vepfs
         DATASETS.insert(0, dataset)
         V2_FOLDER_MAP.setdefault(row["folder"], []).insert(0, row["dataset_id"])
         DS_VERSIONS[row["dataset_id"]] = [{
             "version": "v1", "created": dataset["created"], "recordings": len(episode_rows),
-            "status": "未生效", "publish_status": "未发布", "note": "由开源数据导入创建",
+            "status": "未生效", "publish_status": "已发布", "note": "由开源数据导入创建",
             "creator": row["owner"], "snapshot": deepcopy(dataset),
         }]
     return rows
@@ -3909,11 +3922,7 @@ def raw_data(third_party_only=False):
         }catch(reason){ error.textContent=reason.message||'导入提交失败'; button.disabled=false; }
       }
         '''
-        raw_header = ('<!--title-action--><span class="third-source-title-copy">'
-                      '<span class="third-source-title-note">仅展示导入成功的开源数据，</span>'
-                      '<a class="action-link" href="/model/data/tasks?task_type=import">查看全部导入记录</a></span>'
-                      '<button class="btn-primary btn" id="rawImportBtn" '
-                      'onclick="openDrawerById(\'rawImportModal\')">导入开源数据</button><!--/title-action-->')
+        raw_header = ''
     else:
         raw_header = '''
     <div class="raw-head">
@@ -4073,7 +4082,7 @@ def dataset_task_records():
         dataset = get_ds(run["dataset_id"])
         if not dataset:
             continue
-        kind = "workflow" if run.get("pipeline") else "operator"
+        kind = run.get("kind") or ("workflow" if run.get("pipeline") else "operator")
         processing = {"done": "ready"}.get(run["status"], run["status"])
         records.append({**run, "name": dataset["name"], "kind": kind,
                         "processing": processing, "description": run["name"], "label": DATASET_PROCESSING_LABELS[processing],
@@ -4099,7 +4108,7 @@ def ds_progress(standalone=False):
     def safe_json(value):
         return json.dumps(value, ensure_ascii=False).replace("<", "\\u003c").replace(">", "\\u003e").replace("&", "\\u0026")
 
-    tasks = [{**task, "task_type": task["kind"] if task["kind"] in ("create", "import") else "update"}
+    tasks = [{**task, "task_type": task["kind"] if task["kind"] in ("create", "import", "storage") else "update"}
              for task in dataset_task_records()]
     st_map = {"done": ("tag-green", "成功"), "fail": ("imp-fail", "失败"), "running": ("tag-orange", "进行中"), "verify": ("tag-blue", "校验中")}
 
@@ -4199,7 +4208,9 @@ def ds_progress(standalone=False):
     if selected_kind in ("append", "operator", "workflow"):
         selected_kind = "update"
     selected_status = request.args.get("status", "")
-    creators = request.args.getlist("creator")
+    # Missing means the default user; an explicit empty value means all creators.
+    creators = ([value for value in request.args.getlist("creator") if value]
+                if "creator" in request.args else [CURRENT_USER])
     filtered = [task for task in tasks
                 if (not selected_dataset or task.get("dataset_id") == selected_dataset)
                 and (not task_id_keyword or task_id_keyword.casefold() in str(task["id"]).casefold())
@@ -4220,7 +4231,7 @@ def ds_progress(standalone=False):
     if opened:
         page = filtered.index(opened) // page_size + 1
     page_tasks = filtered[(page - 1) * page_size:page * page_size]
-    kind_labels = {"import": "开源数据导入", "create": "创建数据集", "update": "更新数据集"}
+    kind_labels = {"import": "开源数据导入", "create": "创建数据集", "storage": "同步存储", "update": "更新数据集"}
     rows = ""
     failure_templates = [failure_template(task["legacy_id"]) for task in page_tasks if task.get("legacy_id") and task["status"] == "fail"]
     for task in page_tasks:
@@ -4253,7 +4264,7 @@ def ds_progress(standalone=False):
     source_options = options([(value, value) for value in ("自采数据", "开源数据")], selected_source, "全部来源")
     kind_options = options(list(kind_labels.items()), selected_kind, "全部任务类型")
     status_options = options([(label, label) for label in dict.fromkeys([*DATASET_CREATION_LABELS.values(), *DATASET_PROCESSING_LABELS.values()])], selected_status, "全部状态")
-    creator_ms = ms_search_html("creator", "请选择创建人", [(name, name) for name in sorted({t.get("by", "—") for t in tasks})], creators)
+    creator_ms = ms_search_html("creator", "请选择创建人", [(name, name) for name in sorted({CURRENT_USER, *(t.get("by", "—") for t in tasks)})], creators)
     dataset_input = f'<input type="hidden" name="dataset_id" value="{html.escape(selected_dataset, quote=True)}">' if selected_dataset else ""
     return_url = ("/raw" if selected_kind == "import" else
                   "/datasets?" + urlencode({"sel": selected_dataset, "ver": selected_version, "tab": "version"}) if selected_dataset else "/datasets")
@@ -4309,6 +4320,7 @@ def ds_progress(standalone=False):
     {task_context}
     <form id="datasetTaskFilters" action="/datasets/tasks" method="get" class="q-filters dataset-task-filters" style="margin-bottom:16px;">
       {dataset_input}
+      <input type="hidden" name="creator" value="">
       <div class="q-filter-row q-adv-row">
         <div class="q-field"><label for="datasetTaskKeyword">数据集名称</label><input id="datasetTaskKeyword" name="keyword" value="{html.escape(keyword, quote=True)}" placeholder="请输入数据集名称"></div>
         <div class="q-field"><label for="datasetTaskVersion">版本</label><select id="datasetTaskVersion" name="version">{version_options}</select></div>
@@ -4850,14 +4862,15 @@ def query():
     processing_task_input = f'<input id="qProcessingTaskId" name="processing_task" value="{html.escape(f_processing_task, quote=True)}" placeholder="如 20454,20453 多个逗号隔开">'
 
     # 多选下拉 (ms-wrap)
-    def ms(name, base, items, selected):
+    def ms(name, base, items, selected, element_id=""):
         n = len(selected)
         label = f"{base} ({n})" if n else base
+        id_attr = f' id="{html.escape(element_id, quote=True)}"' if element_id else ""
         checks = "".join(
             f'<label><input type="checkbox" name="{name}" value="{v}"'
             f'{" checked" if v in selected else ""} onchange="msUpdate(this)">{lab}</label>'
             for v, lab in items)
-        return (f'<div class="ms-wrap"><div class="ms-trigger {"has-value" if n else ""}" data-base="{base}" '
+        return (f'<div class="ms-wrap"{id_attr}><div class="ms-trigger {"has-value" if n else ""}" data-base="{base}" '
                 f'onclick="this.closest(\'.ms-wrap\').classList.toggle(\'open\')">'
                 f'<span class="ms-label">{label}</span></div><div class="ms-panel">{checks}</div></div>')
 
@@ -4884,6 +4897,8 @@ def query():
                                  placeholder=f"搜索{label}", empty_text="无匹配提示词", browse=True)
         prompt_filter_fields += f'<div class="q-field grow"><label>{label}（模糊搜索）</label>{control}</div>'
     dagger_ms = ms("dtype", "全部", [("policy", "policy"), ("teleop", "teleop")], [])
+    storage_location_ms = ms("storage_locations", "请选择存储位置",
+                             [("火山云", "tos（火山云起训）"), ("金山云", "ks3（金山云起训）")], [], "buildDsStorageLocations")
 
     from data_platform_refactor import PROCESSING_RULES, PROCESSING_FLOWS
     processing_options = {}
@@ -5184,6 +5199,11 @@ def query():
           <div class="fg"><label><span class="req">*</span>标识</label><input id="buildDsIdent" value="{html.escape(request.args.get('dataset_ident', ''), quote=True)}" placeholder="英文唯一标识" oninput="var n=document.getElementById('buildDsName'); if(n) n.value=this.value;"><div class="hint">全局唯一</div></div>
           <div class="fg"><label><span class="req">*</span>数据集名称</label><input id="buildDsName" value="{html.escape(request.args.get('dataset_name', ''), quote=True)}" placeholder="填写标识后自动带入, 可修改"></div>
           <div class="fg"><label for="buildDsFormat">生成格式</label><select id="buildDsFormat"><option>LeRobort</option><option>Mozdataset v2</option></select></div>
+          <div class="fg"><label id="buildDsStorageLabel">存储位置</label>{storage_location_ms}</div>
+          <div class="fg"><label for="buildDsAutoSplit">自动拆分</label>
+            <label class="switch"><input type="checkbox" role="switch" id="buildDsAutoSplit" checked aria-label="自动拆分" aria-describedby="buildDsAutoSplitHelp"><span class="slider" aria-hidden="true"></span></label>
+            <div class="hint" id="buildDsAutoSplitHelp">设备 feature 不一致不能合并时，自动拆分为多个数据集</div>
+          </div>
           <div class="fg"><label for="buildDsFolder"><span class="req">*</span>选择目录</label><select id="buildDsFolder" required>{build_folder_opts}</select></div>
           <div class="fg"><label>标签</label>{build_tag_selector}</div>
           {dataset_visibility_fields("buildDs")}
@@ -5480,6 +5500,14 @@ def ds_versions(d):
         d["status"] = "生效中"
         d["publish_status"] = "已发布"
     vers = DS_VERSIONS[d["id"]]
+    # 初版统一已发布，兼容既有示例和导入/创建记录。
+    for version in vers:
+        if version["version"] == "v1":
+            version["publish_status"] = "已发布"
+            if "snapshot" in version:
+                version["snapshot"]["publish_status"] = "已发布"
+            if d["version"] == "v1":
+                d["publish_status"] = "已发布"
     active = next((v for v in vers if v["status"] == "生效中" and v["version"] == d["version"]), None)
     active = active or next((v for v in vers if v["status"] == "生效中"), None)
     active = active or next((v for v in vers if v["version"] == d["version"]), vers[0])
@@ -5542,6 +5570,10 @@ def dataset_task_retry(task_id):
         return jsonify(error="任务不存在或缺少重试所需的输入，请返回数据查询重新提交"), 404
     if task["processing"] != "failed":
         return jsonify(error="仅失败任务支持重试"), 409
+    if task["kind"] == "storage":
+        run = next(item for item in RUNS if item["id"] == task_id)
+        run.update(status="queued", progress=0, stage="待处理", error="", attempt=run.get("attempt", 1) + 1)
+        return jsonify(task_id=task_id, version=task["version"])
     dataset = get_ds(task["dataset_id"])
     version = next((v for v in ds_versions(dataset) if v["version"] == task["version"]), None)
     if not version or version["publish_status"] == "已发布" or version["snapshot"].get("run_id") != task_id:
@@ -5581,6 +5613,15 @@ def datasets_create():
     ds_format = payload.get("format")
     if ds_format not in ("LeRobort", "Mozdataset v2"):
         return jsonify(error="请选择有效的数据集格式"), 400
+    storage_locations = payload.get("storage_locations", [])
+    if (not isinstance(storage_locations, list) or len(storage_locations) > 2
+            or any(not isinstance(location, str) or location not in ("金山云", "火山云")
+                   for location in storage_locations)
+            or len(storage_locations) != len(set(storage_locations))):
+        return jsonify(error="请选择有效的存储位置"), 400
+    auto_split = payload.get("auto_split", True)
+    if not isinstance(auto_split, bool):
+        return jsonify(error="自动拆分须为开启或关闭"), 400
     visibility = payload.get("visibility", "公开")
     group_ids = payload.get("visible_group_ids", [])
     if visibility not in ("公开", "受限") or not isinstance(group_ids, list):
@@ -5603,19 +5644,22 @@ def datasets_create():
     task_id = "create_" + ident
     dataset = {"id": ident, "ident": ident, "name": name.strip(), "version": "v1", "type": "custom",
         "robot": records[0]["robot"], "fps": records[0]["fps"], "episodes": len(rows), "frames": sum(row["length"] for row in rows),
-        "quality": "pass", "status": "未生效", "publish_status": "未发布", "tos": "—", "created": now, "owner": CURRENT_USER,
+        "quality": "pass", "status": "未生效", "publish_status": "已发布", "tos": "—", "created": now, "owner": CURRENT_USER,
         "recordings": [record["id"] for record in records], "tasks": list(dict.fromkeys(record["task"] for record in records)),
         "recipe": {"groups": [], "alpha": 1, "train_ratio": .95, "seed": 42}, "src": "数据查询", "used_by": [],
-        "episode_rows": rows, "format": ds_format, "created_from_query": True,
+        "episode_rows": rows, "format": ds_format, "storage_locations": storage_locations,
+        "auto_split": auto_split,
+        "created_from_query": True,
         "visibility": visibility, "visible_group_ids": group_ids if visibility == "受限" else [], "labels": labels,
         "processing_status": "running", "run_id": task_id}
     DATASETS.insert(0, dataset)
     V2_FOLDER_MAP.setdefault(folder, []).insert(0, ident)
-    DS_VERSIONS[ident] = [{"version": "v1", "created": now, "recordings": len(rows), "status": "未生效", "publish_status": "未发布",
+    DS_VERSIONS[ident] = [{"version": "v1", "created": now, "recordings": len(rows), "status": "未生效", "publish_status": "已发布",
                            "note": "从数据查询创建", "creator": CURRENT_USER, "snapshot": deepcopy(dataset)}]
     DATASET_CREATION_TASKS.insert(0, {"id": task_id, "dataset_id": ident, "name": name.strip(), "version": "v1", "kind": "create",
         "status": "verify", "stage": "数据完整性校验", "at": now, "by": CURRENT_USER,
-        "query": {"筛选条件": payload.get("query", {}), "数据 ID": [record["id"] for record in records]}, "description": f"从数据查询结果创建，共 {len(rows)} 条数据"})
+        "query": {"筛选条件": payload.get("query", {}), "数据 ID": [record["id"] for record in records],
+                  "存储位置": storage_locations, "自动拆分": auto_split}, "description": f"从数据查询结果创建，共 {len(rows)} 条数据"})
     return jsonify(dataset_id=ident, version="v1", task_id=task_id)
 
 
@@ -5970,6 +6014,119 @@ def visible_datasets():
             and (not tag or tag in dataset_label_names(d))]
 
 
+def dataset_storage_addresses(snapshot):
+    candidates = [snapshot.get("third_party_storage_address"), snapshot.get("tos"), snapshot.get("ks3")]
+    candidates.extend(snapshot.get("storage_locations") or [])
+    addresses = list(dict.fromkeys(value.strip() for value in candidates
+                                  if isinstance(value, str) and re.fullmatch(r"(?:tos|ks3)://[^/\s]+/\S+", value.strip())))
+    vepfs_candidates = [*candidates, snapshot.get("vepfs"), snapshot.get("vepfs_path")]
+    vepfs_addresses = list(dict.fromkeys(value.strip() for value in vepfs_candidates
+                                        if isinstance(value, str) and (
+                                            re.fullmatch(r"(?:/mnt/vepfs[^/\s]*|vepfs://[^/\s]+)/\S+", value.strip())
+                                            or (snapshot.get("third_party_storage_location") == "vepfs"
+                                                and value == snapshot.get("third_party_storage_address")
+                                                and value.startswith("/") and value.strip() != "/"))))
+    return addresses, vepfs_addresses
+
+
+def dataset_copy_metadata(d, version=None):
+    snapshot = dataset_version_snapshot(d, version or d["version"]) or d
+    addresses, vepfs_addresses = dataset_storage_addresses(snapshot)
+    return {"id": d["id"], "ident": snapshot.get("ident") or d["id"], "name": snapshot["name"], "version": snapshot["version"],
+            "format": "mozdataset v2" if dataset_format(snapshot) == "Mozdataset v2" else "lebort",
+            "addresses": addresses, "vepfs_addresses": vepfs_addresses}
+
+
+def dataset_storage_sync_status(metadata):
+    states = {}
+    for target in ("tos", "ks3", "vepfs"):
+        present = bool(metadata.get("vepfs_addresses")) if target == "vepfs" else any(
+            address.startswith(target + "://") for address in metadata.get("addresses", []))
+        runs = [run for run in RUNS if run.get("kind") == "storage"
+                and run.get("dataset_id") == metadata["id"] and run.get("version") == metadata["version"]
+                and target in run.get("storage_targets", [])]
+        states[target] = ("synced" if present or any(run["status"] == "done" for run in runs)
+                          else "syncing" if any(run["status"] in ("queued", "running") for run in runs)
+                          else "pending")
+    return states
+
+
+def dataset_batch_version_metadata(d):
+    versions = sorted(ds_versions(d), key=lambda row: int(row["version"].lstrip("v")), reverse=True)
+    options = [{**dataset_copy_metadata(d, row["version"]), "publish_status": row["publish_status"]}
+               for row in versions]
+    for option in options:
+        option["storage_status"] = dataset_storage_sync_status(option)
+    published = [row for row in options if row["publish_status"] == "已发布"]
+    default = published[0] if published else {"id": d["id"], "name": d["name"], "version": "",
+                                          "format": "mozdataset v2" if dataset_format(d) == "Mozdataset v2" else "lebort",
+                                          "addresses": [], "vepfs_addresses": [], "publish_status": "暂无已发布版本"}
+    return {**default, "versions": published, "all_versions": options}
+
+
+@app.route("/datasets/batch-process", methods=["POST"])
+def dataset_batch_process():
+    payload = request.get_json(silent=True)
+    if not isinstance(payload, dict) or payload.get("type") not in ("storage", "operator"):
+        return jsonify(error="请选择有效的处理类型"), 400
+    rows = payload.get("datasets")
+    if not isinstance(rows, list) or not 1 <= len(rows) <= 100:
+        return jsonify(error="请选择 1 至 100 个数据集版本"), 400
+    third_party_rows()
+    sources, seen = [], set()
+    for row in rows:
+        if not isinstance(row, dict) or not isinstance(row.get("id"), str) or not isinstance(row.get("version"), str):
+            return jsonify(error="数据集版本无效"), 400
+        key = (row["id"], row["version"])
+        if key in seen:
+            return jsonify(error="同一数据集版本不能重复处理"), 400
+        seen.add(key)
+        dataset = get_ds(row["id"])
+        source = dataset_version_snapshot(dataset, row["version"]) if dataset else None
+        if not source:
+            return jsonify(error="所选数据已更新，请刷新页面后重新选择"), 409
+        if payload["type"] != "storage" and source["publish_status"] != "已发布":
+            return jsonify(error="仅支持已发布的数据集版本，请刷新后重试"), 400
+        if dataset_processing_status(source) != "ready":
+            return jsonify(error="所选版本尚未完成处理"), 400
+        sources.append((dataset, source))
+    if payload["type"] == "storage":
+        targets = payload.get("targets")
+        if not isinstance(targets, list) or not targets or any(target not in ("tos", "ks3", "vepfs") for target in targets) or len(set(targets)) != len(targets):
+            return jsonify(error="请选择有效的目标存储"), 400
+    else:
+        operation = {"type": "operator", "scope": "all", "target_id": payload.get("operator_id"), "params": payload.get("params", {})}
+        for _, source in sources:
+            try:
+                apply_dataset_edit_plan(source, [operation])
+            except ValueError as error:
+                return jsonify(error=str(error)), 400
+    results = []
+    for dataset, source in sources:
+        if payload["type"] == "operator":
+            response = save_dataset_edits(dataset["id"], {"base_version": source["version"], "operations": [operation]})
+            if isinstance(response, tuple):
+                return response
+            results.append({"id": dataset["id"], **response.get_json()})
+        else:
+            metadata = dataset_copy_metadata(dataset, source["version"])
+            storage_status = dataset_storage_sync_status(metadata)
+            pending_targets = [target for target in targets if storage_status[target] == "pending"]
+            result = {"id": dataset["id"], "version": source["version"], "storage_status": storage_status}
+            results.append(result)
+            if not pending_targets:
+                continue
+            _PROC_SEQ[0] += 1
+            run_id = f"proc_{_PROC_SEQ[0]:04d}"
+            RUNS.insert(0, {"id": run_id, "pipeline": "", "kind": "storage", "name": "同步存储：" + " / ".join(pending_targets),
+                           "target": source["name"] + " " + source["version"], "dataset_id": dataset["id"], "version": source["version"],
+                           "status": "queued", "stage": "待处理", "progress": 0, "at": _now(), "dur": "—", "by": CURRENT_USER,
+                           "trigger": "manual", "source_addresses": metadata["addresses"] + metadata["vepfs_addresses"], "storage_targets": pending_targets})
+            result["run_id"] = run_id
+            storage_status.update({target: "syncing" for target in pending_targets})
+    return jsonify(results=results)
+
+
 @app.route("/datasets")
 def datasets():
     third_party_rows()
@@ -5995,7 +6152,8 @@ def datasets():
         f'<option value="{html.escape(t, quote=True)}" {"selected" if t == tag else ""}>{html.escape(t)}</option>'
         for t in all_dataset_tags
     )
-    tree += ownership_tabs(mine_first=True)
+    tree += ('<div class="dataset-tree-controls">' + ownership_tabs(mine_first=True)
+             + '<button type="button" class="action-link" id="datasetTreeBatchToggle" aria-pressed="false">批量选择</button></div>')
     tree += (
         f'<form id="datasetFilters" method="get"><input type="hidden" name="scope" value="{scope}">'
         f'<div class="tree-search"><input id="datasetTreeKeyword" name="keyword" value="{html.escape(keyword, quote=True)}" placeholder="搜索数据集..." '
@@ -6006,22 +6164,29 @@ def datasets():
         '</form>'
         '<div class="tree-body dataset-tree-body">'
     )
-    for folder in V2_FOLDERS:
+    folder_counts = {}
+    def render_folder(folder, depth=0):
+        tree = ""
+        children = [name for name in V2_FOLDERS if V2_FOLDER_PARENTS.get(name) == folder]
+        child_markup = "".join(render_folder(name, depth + 1) for name in children)
         dss = [get_ds(i) for i in V2_FOLDER_MAP.get(folder, []) if i in visible_ids]
-        if filtering and not dss:
-            continue
-        empty = not V2_FOLDER_MAP.get(folder, [])
+        if filtering and not dss and not child_markup:
+            return ""
+        folder_counts[folder] = len(dss) + sum(folder_counts.get(child, 0) for child in children)
+        empty = not V2_FOLDER_MAP.get(folder, []) and not children
         del_item = (f'<div class="rm-item danger" onclick="rmClose();delFolder(\'{folder}\')">删除</div>'
                     if empty else
                     '<div class="rm-item disabled" title="目录不为空, 不可删除">删除</div>')
-        tree += (f'<div class="tree-grp" onclick="toggleTree(this)"><span class="caret">&#9656;</span>{folder} '
-                 f'<span class="sub" style="color:rgba(0,0,0,0.35);font-weight:400;">({len(dss)})</span>'
+        tree += (f'<section class="dataset-folder" data-folder="{html.escape(folder, quote=True)}" style="--folder-depth:{depth}">'
+                 f'<div class="tree-grp" onclick="toggleTree(this)"><span class="caret">&#9656;</span>'
+                 f'<input type="checkbox" class="dataset-folder-checkbox" aria-label="选择目录 {html.escape(folder, quote=True)}" onclick="event.stopPropagation()">{html.escape(folder)} '
+                 f'<span class="sub" style="color:rgba(0,0,0,0.35);font-weight:400;">({folder_counts[folder]})</span>'
                  f'<span class="row-act-wrap" onclick="event.stopPropagation();">'
                  f'<span class="folder-act" onclick="toggleRowMenu(this)">&#8943;</span>'
                  f'<div class="row-menu">'
                  f'<div class="rm-item" onclick="rmClose();openFolderEdit(\'{folder}\')">编辑</div>'
                  f'{del_item}</div></span></div>')
-        tree += '<div class="tree-children">'
+        tree += '<div class="tree-children">' + child_markup
         if dss:
             for d in dss:
                 cls = "active" if d["id"] == sel else ""
@@ -6030,17 +6195,27 @@ def datasets():
                 name_attr = html.escape(d["name"].lower(), quote=True)
                 tree += (f'<div class="tree-leaf-wrap row-act-wrap dataset-tree-item" '
                          f'data-dataset-name="{name_attr}" data-dataset-tags="{tags_attr}">'
+                         f'<input type="checkbox" class="dataset-tree-checkbox" value="{html.escape(d["id"], quote=True)}" '
+                         f'aria-label="选择数据集 {html.escape(d["name"], quote=True)} {html.escape(d["version"], quote=True)}">'
                          f'<a class="tree-leaf {cls}" href="/datasets{filter_url(sel=d["id"], ver="")}">{html.escape(d["name"])} <span class="sub">· {d["version"]}</span></a>'
                          f'<span class="leaf-act" onclick="event.stopPropagation();toggleRowMenu(this)">&#8943;</span>'
                          f'<div class="row-menu">'
                          f'<div class="rm-item" onclick="rmClose();openDsEdit(\'{d["id"]}\')">编辑</div>'
                          f'</div></div>')
-        else:
+        elif not child_markup:
             tree += '<div class="tree-leaf muted dataset-empty-folder" style="cursor:default;">（空目录）</div>'
-        tree += '</div>'
+        tree += '</div></section>'
+        return tree
+    tree += "".join(render_folder(folder) for folder in V2_FOLDERS if not V2_FOLDER_PARENTS.get(folder))
     if not visible:
         tree += '<div class="muted" style="padding:24px;text-align:center;">暂无匹配的数据集</div>'
     tree += '</div>'
+    tree += ('<div class="dataset-tree-batch" id="datasetTreeBatch" hidden>'
+             '<div class="dataset-tree-batch-actions"><div class="dataset-tree-batch-summary">'
+             '<span id="datasetTreeSelectedCount" aria-live="polite">已选 0 项</span>'
+             '<button type="button" class="action-link" id="datasetTreeClear" hidden>清空</button></div>'
+             '<button type="button" class="btn btn-secondary" id="datasetChooseVersions" disabled>批量处理</button></div>'
+             '<div class="hint" id="datasetTreeCopyStatus" role="status" hidden></div></div>')
 
     if sel == "new":
         right = dataset_new_panel_v2()
@@ -6067,9 +6242,54 @@ def datasets():
         for d in DATASETS
     }
     _folder_slug = {"预训练": "pretrain", "后训练": "posttrain", "自定义01": "custom01", "自定义02": "custom02"}
-    folder_meta = {f: {"name": f, "ident": _folder_slug.get(f, f), "parent": ""} for f in V2_FOLDERS}
+    folder_meta = {f: {"name": f, "ident": _folder_slug.get(f, f), "parent": V2_FOLDER_PARENTS.get(f, "")} for f in V2_FOLDERS}
     ds_meta_js = (f'<script>window._dsMeta={json.dumps(ds_meta, ensure_ascii=False)};'
                   f'window._folderMeta={json.dumps(folder_meta, ensure_ascii=False)};</script>')
+    copy_config = json.dumps([dataset_batch_version_metadata(d) for d in visible], ensure_ascii=False).replace("<", "\\u003c")
+    add_config = json.dumps([dataset_batch_version_metadata(d) for d in DATASETS if d["id"] not in visible_ids], ensure_ascii=False).replace("<", "\\u003c")
+    ds_meta_js += (f'<script type="application/json" id="datasetTreeCopyConfig">{copy_config}</script>'
+                   f'<script type="application/json" id="datasetAdditionalConfig">{add_config}</script>'
+                   '<link rel="stylesheet" href="/static/shared/dataset-batch-copy.css?v=20261103-sync-toast">'
+                   '<script defer src="/static/shared/dataset-batch-copy.js?v=20261103-default-preview"></script>')
+    operator_config = json.dumps(dataset_edit_catalog()["operator"], ensure_ascii=False).replace("<", "\\u003c")
+    ds_meta_js += f'<script type="application/json" id="datasetBatchOperators">{operator_config}</script>'
+    ds_meta_js += """
+    <div class="modal-mask" id="datasetVersionModal">
+      <div class="modal-box dataset-generate-modal" role="dialog" aria-modal="true" aria-labelledby="datasetVersionTitle">
+        <div class="drawer-head"><h3 id="datasetVersionTitle">批量处理数据集</h3><button type="button" class="drawer-close" data-close-version-modal aria-label="关闭">&times;</button></div>
+        <div class="drawer-body">
+          <div class="muted" id="datasetVersionHint">仅支持已发布版本，默认选择最新已发布版本。</div>
+          <div class="table-wrap"><table class="ant-table"><thead><tr><th>数据集</th><th>版本</th><th>格式</th><th>操作</th></tr></thead><tbody id="datasetVersionRows"></tbody></table></div>
+          <div class="hint" id="datasetVersionError" role="alert" hidden></div>
+          <div class="dataset-add-row"><button type="button" class="action-link" id="datasetAddButton">+ 添加行</button></div>
+          <div class="fg dataset-batch-type"><label for="datasetBatchType">处理类型</label><select id="datasetBatchType"><option value="preview" selected>生成预览</option><option value="operator">执行算子</option></select></div>
+          <div class="fg" id="datasetStorageFields" hidden><label>目标存储</label><div class="dataset-storage-targets"><label><input type="checkbox" value="tos">tos</label><label><input type="checkbox" value="ks3">ks3</label><label><input type="checkbox" value="vepfs">vepfs</label></div></div>
+          <div id="datasetStorageStatus" class="hint" hidden aria-live="polite"><span id="datasetStorageStatusRows"></span></div>
+          <div id="datasetOperatorFields" hidden><div class="fg"><label for="datasetBatchOperator">算子</label><select id="datasetBatchOperator"></select></div><div class="fg" id="datasetOperatorParams" hidden><label for="datasetOperatorScript">入参脚本（JSON）</label><textarea id="datasetOperatorScript" class="code-editor" rows="8" spellcheck="false"></textarea></div><div class="hint">每个数据集版本独立执行，结果保存为新版本。</div></div>
+          <div class="fg" id="datasetPreviewFields" hidden><label>预览格式</label><div class="dataset-storage-targets"><label><input type="radio" name="datasetPreviewFormat" data-dataset-copy="tos" value="tos" checked>tos 地址合集</label><label><input type="radio" name="datasetPreviewFormat" data-dataset-copy="ks3" value="ks3">ks3 地址合集</label><label><input type="radio" name="datasetPreviewFormat" data-dataset-copy="yaml" value="yaml">预训练 yaml</label></div></div>
+          <div id="datasetYamlValidation" class="dataset-yaml-validation" hidden aria-live="polite"><span class="dataset-validation-icon" aria-hidden="true">!</span><div><div id="datasetYamlSummary"></div><div class="hint" id="datasetValidationRequirement">仅支持 mozdataset v2 且有 VEPFS 地址的数据集版本。</div></div></div>
+          <div id="datasetBatchResult" role="status" class="hint" hidden></div>
+        </div>
+        <div class="drawer-foot">
+          <button type="button" class="btn" data-close-version-modal>取消</button>
+          <button type="button" class="btn btn-primary" id="datasetBatchSubmit" hidden>提交任务</button>
+          <button type="button" class="btn btn-primary" id="datasetPreviewButton" hidden>生成预览</button>
+        </div>
+      </div>
+    </div>
+    <div class="modal-mask" id="datasetGenerateModal">
+      <div class="modal-box dataset-generate-modal" role="dialog" aria-modal="true" aria-labelledby="datasetGenerateTitle">
+        <div class="drawer-head"><h3 id="datasetGenerateTitle">生成预览</h3><button type="button" class="drawer-close" data-close-dataset-preview aria-label="关闭">&times;</button></div>
+        <div class="drawer-body">
+          <div class="muted" id="datasetGenerateSummary"></div>
+          <div class="hint" id="datasetGenerateWarning" hidden></div>
+          <div class="fg"><textarea id="datasetGenerateContent" readonly aria-label="生成内容" spellcheck="false"></textarea></div>
+          <div class="hint" id="datasetGenerateStatus" role="status"></div>
+        </div>
+        <div class="drawer-foot"><button type="button" class="btn" data-close-dataset-preview>上一步</button><button type="button" class="btn btn-primary" id="datasetGenerateCopy">复制</button></div>
+      </div>
+    </div>
+    """
     edit_tag_selector = dataset_tag_picker_html("dsEditTags", [], editable=True)
     new_folder_drawer = f"""
     <div class="modal-mask" id="newFolderDrawer" onclick="if(event.target===this)this.classList.remove('active')">
@@ -6078,7 +6298,7 @@ def datasets():
         <div class="drawer-body">
           <div class="fg"><label><span class="req">*</span>标识</label><input id="newFolderIdent" placeholder="英文唯一标识 如 pretrain_sweep" oninput="var n=document.getElementById('newFolderName'); if(n) n.value=this.value;"><div class="hint">全局唯一, 用于引用</div></div>
           <div class="fg"><label><span class="req">*</span>目录名称</label><input id="newFolderName" placeholder="填写标识后自动带入, 可修改"></div>
-          <div class="fg"><label>上级目录</label><select><option>无 (一级目录)</option>{folder_opts}</select><div class="hint">目录最多两层, 仅可挂到一级目录下</div></div>
+          <div class="fg"><label>上级目录</label><select><option>无 (一级目录)</option>{folder_opts}</select><div class="hint">目录最多三层，可挂到一级或二级目录下</div></div>
         </div>
         <div class="drawer-foot">
           <button class="btn" onclick="closeDrawerById('newFolderDrawer')">取消</button>
@@ -6092,7 +6312,7 @@ def datasets():
         <div class="drawer-body">
           <div class="fg"><label><span class="req">*</span>目录名称</label><input id="folderEditName"></div>
           <div class="fg"><label>标识</label><input id="folderEditIdent" disabled><div class="hint">标识创建后不可修改</div></div>
-          <div class="fg"><label>上级目录</label><select id="folderEditParent"><option>无 (一级目录)</option>{folder_opts}</select><div class="hint">目录最多两层, 仅可挂到一级目录下</div></div>
+          <div class="fg"><label>上级目录</label><select id="folderEditParent"><option>无 (一级目录)</option>{folder_opts}</select><div class="hint">目录最多三层，可挂到一级或二级目录下</div></div>
         </div>
         <div class="drawer-foot">
           <button class="btn" onclick="closeDrawerById('folderEditModal')">取消</button>
@@ -6405,8 +6625,13 @@ def dataset_detail_panel_v2(d, viewed_ver=""):
                "meta/episodes_stats.jsonl": _episodes_stats}
     ds_full_json = html.escape(json.dumps(ds_full, ensure_ascii=False, indent=2))
     imported = bool(d.get("third_party_source_id"))
-    storage_path = d.get("third_party_storage_address") if imported else d.get("tos")
-    storage_path = storage_path if storage_path and storage_path != "—" else "—"
+    object_addresses, vepfs_addresses = dataset_storage_addresses(d)
+    storage_rows = "".join(
+        '<div class="dataset-storage-row"><span class="muted">' + kind + '</span><span>'
+        + ('<br>'.join(html.escape(address) for address in addresses) or '—') + '</span></div>'
+        for kind, addresses in [('tos', [path for path in object_addresses if path.startswith('tos://')]),
+                                ('ks3', [path for path in object_addresses if path.startswith('ks3://')]),
+                                ('vepfs', vepfs_addresses)])
     source_label = "开源数据" if imported else "自采数据"
     info = f"""
     <div class="tab-pane" id="pane-info">
@@ -6419,7 +6644,7 @@ def dataset_detail_panel_v2(d, viewed_ver=""):
           <div class="dk">名称</div><div class="dv">{html.escape(d['name'])}</div>
           <div class="dk">标识</div><div class="dv" style="font-family:monospace;">{html.escape(d.get('ident') or d['id'])}</div>
           <div class="dk">数据格式</div><div class="dv">{ds_format}</div>
-          <div class="dk">存储位置</div><div class="dv dataset-storage-path">{html.escape(storage_path)}</div>
+          <div class="dk">存储位置</div><div class="dv dataset-storage-path">{storage_rows}</div>
           <div class="dk">数据条数</div><div class="dv">{len(eps):,}</div>
           <div class="dk">数据时长</div><div class="dv">{total_duration}</div>
           <div class="dk">数据来源</div><div class="dv">{source_label}</div>
