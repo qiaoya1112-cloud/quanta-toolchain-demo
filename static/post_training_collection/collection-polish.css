@@ -65,7 +65,7 @@
   .dc-task-table col:nth-child(8){width:8%}
   .dc-task-table col:nth-child(9){width:10%}
   .dc-task-table col:nth-child(10){width:10%}
-  .dc-task-table col:nth-child(11){width:124px}
+  .dc-task-table col:nth-child(11){width:158px}
   .dc-task-table th,.dc-task-table td{padding-left:8px;padding-right:8px}
   .dc-task-table th:first-child,.dc-task-table td:first-child{padding-left:18px}
   .dc-task-table th:last-child,.dc-task-table td:last-child{padding-right:18px}

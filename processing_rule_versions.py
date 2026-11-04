@@ -166,6 +166,8 @@ def same_content(a,b):
 
 
 def publish(rule):
+    if rule.get('versions'):
+        raise ValueError('已发布规则不可修改，请复制创建新规则')
     if rule.get('draft') is None:
         raise ValueError('没有待发布修改')
     proposed = validate_content(rule['draft'])
@@ -183,18 +185,6 @@ def publish(rule):
         rule.update(status='enabled', enabled=True)
     rule['publish_status'] = '已发布'
     event(rule, '发布', previous, proposed, version='v'+str(number), source_version=source_version)
-
-
-def migrate_task_bindings(conn):
-    """Bring existing demo tasks forward once, retaining their record snapshots."""
-    marker='processing-rule-follow-latest-v1'
-    if conn.execute('SELECT 1 FROM collection_meta WHERE key=?', (marker,)).fetchone():
-        return
-    from collection_processing import apply_rule_publication
-    for rule in all_rules(conn):
-        if rule.get('versions') and not rule.get('deleted'):
-            apply_rule_publication(conn, rule)
-    conn.execute('INSERT INTO collection_meta VALUES (?,?)', (marker,'1'))
 
 
 def register(app, seeds, legacy_rules, editor):
@@ -367,9 +357,7 @@ def register(app, seeds, legacy_rules, editor):
                 if not permissions(rule['project'])['edit']:
                     return jsonify(error='没有编辑规则权限'),403
                 if rule['versions']:
-                    if not permissions(rule['project'])['publish']:
-                        return jsonify(error='编辑已发布规则需要发布权限'),403
-                    body['publish'] = True
+                    return jsonify(error='已发布规则不可编辑，请复制创建新规则'),403
                 if rule['versions'] and any(proposed[k]!=rule[k] for k in IDENTITY):
                     return jsonify(error='名称、项目、业务环节和规则类型发布后不可修改，请创建新规则'),409
                 if name_conflict(all_rules(conn),proposed['project'],proposed['name'],rule_id):
@@ -423,9 +411,6 @@ def register(app, seeds, legacy_rules, editor):
                 rule.update(proposed)
             if rule_id:
                 persist(conn,rule)
-                if body.get('publish'):
-                    from collection_processing import apply_rule_publication
-                    apply_rule_publication(conn, rule)
             else:
                 conn.execute('INSERT INTO processing_rules VALUES(?,?,?,?)',(rule['id'],collection.USER+':'+key,fingerprint,json.dumps(rule,ensure_ascii=False)))
             return jsonify(rule=view(rule)),200 if rule_id else 201
@@ -492,9 +477,6 @@ def register(app, seeds, legacy_rules, editor):
             else:
                 return None
             rule['revision']+=1; persist(conn,rule)
-            if action == 'publish':
-                from collection_processing import apply_rule_publication
-                apply_rule_publication(conn, rule)
             return jsonify(rule=view(rule),status=rule['status'],publish_status=rule['publish_status'])
 
     @app.after_request

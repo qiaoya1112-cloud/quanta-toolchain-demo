@@ -242,9 +242,6 @@
       const linksChanged=result.processingJobs&&JSON.stringify(result.processingJobs)!==JSON.stringify(processingJobs);
       if(result.processingJobs)processingJobs=result.processingJobs;
       root.querySelector('.dc-detail-info-row').innerHTML=detailInfo(task);
-      const stateButton=root.querySelector('[data-action="change-state"]');
-      stateButton.textContent=task.status==='open'?'结束采集':'重新开放';stateButton.className='dc-btn '+(task.status==='open'?'danger':'primary');
-      root.querySelector('[data-spec-shortcut]').innerHTML=task.spec_url?specLink.button(task.spec_url):'';
       const scroller=detailScroller(),position=scroller?.scrollTop||0,x=scroller?.scrollLeft||0;
       if(activeTab==='processing')loadProcessingLinks();
       else if(activeTab==='records'&&(linksChanged||oldTask.status!==task.status||JSON.stringify(oldTask.records)!==JSON.stringify(task.records)))renderRecords();
@@ -344,7 +341,7 @@
       <td class="dc-numeric-cell" data-label="已上传数据"><span class="dc-number">${t.metrics.uploaded}</span></td>
       <td class="dc-numeric-cell" data-label="采集时长（小时）"><span class="dc-number">${esc(hours(t.metrics.seconds))}</span></td>
       <td class="dc-muted" data-label="最近采集">${t.metrics.latest?date(t.metrics.latest):'-'}</td>
-      <td class="dc-actions-cell"><div class="dc-table-actions"><a aria-label="查看 ${esc(t.name)}" href="${withListContext(boot.base+'/'+t.id)}">查看</a><a aria-label="复制 ${esc(t.name)}" href="${withListContext(boot.base+'/new?copy='+t.id)}">复制</a><button type="button" class="dc-list-share" aria-label="分享 ${esc(t.name)}" title="复制任务卡" data-action="list-share-task" data-id="${esc(t.id)}">分享</button></div></td>
+      <td class="dc-actions-cell"><div class="dc-table-actions"><a aria-label="查看 ${esc(t.name)}" href="${withListContext(boot.base+'/'+t.id)}">查看</a><a aria-label="编辑 ${esc(t.name)}" href="${withListContext(boot.base+'/'+t.id+'/edit')}">编辑</a><a aria-label="复制 ${esc(t.name)}" href="${withListContext(boot.base+'/new?copy='+t.id)}">复制</a><button type="button" class="dc-list-share" aria-label="分享 ${esc(t.name)}" title="复制任务卡" data-action="list-share-task" data-id="${esc(t.id)}">分享</button></div></td>
     </tr>`).join('')}</tbody></table></div><footer class="dc-footer"><div class="dc-page-buttons"><button data-action="list-prev" aria-label="上一页" ${list.page===1?'disabled':''}>‹</button><span>${list.page} / ${pageCount}</span><button data-action="list-next" aria-label="下一页" ${list.page===pageCount?'disabled':''}>›</button></div></footer>` : empty('没有匹配的采集任务', '试试调整筛选条件，或创建新的采集任务。', `<button class="dc-btn small" data-action="reset-filters">清空筛选</button>`);
   }
   function defaultForm() {
@@ -653,7 +650,7 @@
     const previousScroller=detailScroller();
     if(previousScroller)detailScroll[activeTab]=previousScroller.scrollTop;
     ready(`<header class="dc-detail-header">
-      <div class="dc-detail-title-row"><div class="dc-detail-identity"><div class="dc-detail-heading-line"><div class="dc-detail-breadcrumb"><a class="dc-back" href="${esc(listReturnHref())}">${icon('back')}返回</a></div><h1 title="${esc(task.name)}">${esc(task.name)}</h1></div></div><div class="dc-head-actions"><span data-spec-shortcut>${task.spec_url?specLink.button(task.spec_url):''}</span><button class="dc-btn" data-action="share-task">${icon('copy')}任务卡</button><a class="dc-btn" href="${withListContext(boot.base+'/new?copy='+task.id)}">复制</a><a class="dc-btn" href="${withListContext(boot.base+'/'+task.id+'/edit')}">${icon('edit')}编辑</a><button class="dc-btn ${task.status==='open'?'danger':'primary'}" data-action="change-state">${task.status==='open'?'结束采集':'重新开放'}</button></div></div>
+      <div class="dc-detail-title-row"><div class="dc-detail-identity"><div class="dc-detail-heading-line"><div class="dc-detail-breadcrumb"><a class="dc-back" href="${esc(listReturnHref())}">${icon('back')}返回</a></div><h1 title="${esc(task.name)}">${esc(task.name)}</h1></div></div><div class="dc-head-actions"><button class="dc-btn" data-action="share-task">${icon('copy')}任务卡</button></div></div>
       <div class="dc-detail-info-row">${detailInfo(task)}</div>
     </header>` + `
       <section class="dc-detail-shell dc-panel"><div class="dc-tabs" role="tablist" aria-label="采集任务详情">${[['records','采集数据'],['processing','关联处理'],['config','任务要求与配置'],['activity','日志']].map(([id,label])=>`<button class="dc-tab" id="dc-detail-tab-${id}" role="tab" aria-controls="dc-detail-body" data-action="detail-tab" data-value="${id}" aria-selected="${activeTab===id}">${label}</button>`).join('')}<div class="dc-detail-refresh">${refreshControl()}</div></div><div id="dc-detail-body" role="tabpanel" aria-labelledby="dc-detail-tab-${activeTab}" tabindex="0"></div></section>

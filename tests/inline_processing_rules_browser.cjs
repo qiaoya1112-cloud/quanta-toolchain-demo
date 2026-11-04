@@ -45,7 +45,7 @@ async function main(){
   await ev("document.querySelectorAll('.dpr-flow-node-card')[0].querySelector('.dpr-node-percent-input')?.setAttribute('value','83')");
   const before=await ev("[...document.querySelectorAll('.dpr-node-rule-select')].map(s=>s.value)");
   assert.ok(before.length>0&&before.every(value=>value===''));checks.push('新建处理任务的规则默认留空');
-  await check("document.querySelector('.dpr-node-rule-select').selectedOptions[0].textContent==='请选择规则'&&document.querySelector('.dpr-inline-rule-hint')?.textContent==='自动使用规则最新内容'&&!document.querySelector('.dpr-inline-rule-refresh')&&!dprProcessingAssignmentsValid()",'标题旁提示使用最新内容，不显示刷新按钮，未选择时校验不通过');
+  await check("document.querySelector('.dpr-node-rule-select').selectedOptions[0].textContent==='请选择规则'&&document.querySelector('.dpr-inline-rule-hint')?.textContent==='请选择已发布规则'&&!document.querySelector('.dpr-inline-rule-refresh')&&!dprProcessingAssignmentsValid()",'标题旁提示选择已发布规则，不显示刷新按钮，未选择时校验不通过');
   await click('.dpr-inline-rule-create');await wait("!!document.querySelector('#drawerRuleCreate.active')&&!!window.inlineRuleContext&&!document.querySelector('#rulePublishUse').disabled");
   await check("document.querySelector('#ruleCreateProject').disabled&&document.querySelector('#ruleCreateStage').disabled&&document.querySelector('#ruleCreateStage').value==='质检'&&!document.querySelector('#ruleCreateType').disabled",'当前项目/环节锁定，规则类型可选');
   await check("[...document.querySelector('#ruleCreateType').options].map(o=>o.value).join(',')==='质检'",'质检节点只提供质检规则类型');

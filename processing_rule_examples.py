@@ -104,6 +104,8 @@ def link_demo_jobs(conn):
             if not version or job.get('revision')!=1 or not job.get('demo_fixture','').startswith('collection-linked-demo-'):
                 continue
             for config in job.get('configs',{}).get('质检',{}).values():
+                if config.get('rule_identity', {}).get('content') or str(config.get('rule', '')).startswith('rule:'):
+                    continue
                 config.update(rule=f'rule:{RULE_ID}@{version}',rule_identity=snapshot_reference(conn,f'rule:{RULE_ID}@{version}'))
             processing.save_job(conn,job)
         conn.execute('INSERT INTO collection_meta VALUES (?,?)',(marker,'1'))

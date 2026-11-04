@@ -53,7 +53,7 @@
       const inline = !!window.inlineRuleContext;
       const editing = ['edit','revision'].includes(drawer.dataset.mode);
       publish.hidden = (inline ? !data.permissions.create || !data.permissions.edit || !data.permissions.publish : !(editing ? data.permissions.edit && (drawer.dataset.mode !== 'revision' || data.permissions.publish) : data.permissions.create)) || drawer.dataset.mode === 'detail';
-      publish.textContent = inline ? '发布并使用' : drawer.dataset.mode === 'revision' ? '保存并发布' : editing ? '保存修改' : '创建';
+      publish.textContent = inline ? '发布并使用' : editing ? '保存修改' : '创建';
       publish.disabled = saving;
     } catch (e) { error.textContent = e.message; error.hidden = false; }
   }

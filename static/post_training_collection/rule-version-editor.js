@@ -47,12 +47,12 @@ function installRuleVersionEditor() {
   }
   function editMode() {
     closeRecords();
-    drawer.dataset.mode = current.versions.length ? 'revision' : 'edit';
+    drawer.dataset.mode = 'edit';
     drawer.dataset.ruleId = current.id; drawer.dataset.revision = current.revision;
     $('ruleEditorTitle').textContent = '编辑规则';
     applyContent(current.draft || current, false);
-    panel.hidden = !current.versions.length;
-    panel.innerHTML=current.versions.length ? '<div class="rule-pending-summary">'+(current.has_draft?'编辑待发布修改':'基于当前 '+esc(current.version.toUpperCase())+' 编辑')+'<span>保存后自动发布，新数据使用新版</span></div>' : '';
+    panel.hidden = true;
+    panel.innerHTML='';
     ruleRefreshPermissions();
   }
   function showVersion(number) {
@@ -104,6 +104,7 @@ function installRuleVersionEditor() {
   };
   window.openRuleDetail = async function(trigger, editable) {
     const rule = await load(trigger); if (!rule) return;
+    if (editable===false && rule.versions.length) {toast('已发布规则不可编辑，请复制创建新规则');return;}
     if (editable===false&&!rule.permissions.edit) {toast('没有编辑规则权限');return;}
     originalDetail(trigger, editable);
     drawer.dataset.revision = rule.revision;
@@ -113,6 +114,7 @@ function installRuleVersionEditor() {
   };
   window.ruleUpdate = async function(trigger) {
     const rule = await load(trigger); if (!rule) return;
+    if (rule.versions.length) {toast('已发布规则不可编辑，请复制创建新规则');return;}
     if (!rule.permissions.edit) {toast('没有编辑规则权限');return;}
     originalDetail(trigger, false); editMode();
   };
@@ -129,7 +131,8 @@ function installRuleVersionEditor() {
   window.rulePublish = async function(trigger) {
     const rule = await load(trigger); if (!rule) return;
     if (!rule.permissions.publish) { toast('没有发布规则权限'); return; }
-    if (!confirm('确认发布新版吗？')) return;
+    if (rule.versions.length) {toast('已发布规则不可修改，请复制创建新规则');return;}
+    if (!confirm('确认发布规则吗？')) return;
     try {
       const response = await fetch('/data/rules/'+encodeURIComponent(rule.id)+'/publish',{
         method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({revision:rule.revision})});

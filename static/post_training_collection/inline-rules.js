@@ -17,7 +17,7 @@
       const config=window.dprNodeRuleConfig(flow,card.dataset.node);
       if(!['task_custom','fixed'].includes(config.mode))return;
       const fixed=config.mode==='fixed',isNew=form.dataset.mode==='new';
-      const selected=fixed ? currentReference(config.rule,window.DPR_INLINE_RULES) : select.value;
+      const selected=fixed ? (isNew ? currentReference(config.rule,window.DPR_INLINE_RULES) : select.value || config.rule) : select.value;
       const oldLabel=select.selectedOptions[0]?.textContent;
       select.replaceChildren(new Option(fixed?'流程指定规则':'请选择规则',''));
       legacyChoices.filter(r=>r.stage===flow.stage && typesFor(flow).includes(r.rule_type) && (!isNew || !(window.DPR_INLINE_PUBLISHED_VERSIONS||[]).some(p=>p.name===r.name&&p.project===project&&p.stage===flow.stage))).forEach(r=>select.add(new Option(isNew?r.name:r.name+' · '+r.version,r.name+' '+r.version)));
@@ -50,7 +50,7 @@
       const select=card.querySelector('.dpr-node-rule-select');
       if(!select||!['task_custom','fixed'].includes(window.dprNodeRuleConfig(flow,card.dataset.node).mode))return;
       const head=card.querySelector('.dpr-node-rule-module .dpr-node-config-module-head');
-      const hint=document.createElement('span');hint.className='dpr-inline-rule-hint';hint.textContent='自动使用规则最新内容';head.append(hint);
+      const hint=document.createElement('span');hint.className='dpr-inline-rule-hint';hint.textContent='请选择已发布规则';head.append(hint);
       if(select.disabled||window.dprNodeRuleConfig(flow,card.dataset.node).mode!=='task_custom')return;
       if(!rights.create||!rights.edit||!rights.publish)return;
       const button=document.createElement('button');button.type='button';button.className='dpr-inline-rule-create';button.textContent='新建规则';

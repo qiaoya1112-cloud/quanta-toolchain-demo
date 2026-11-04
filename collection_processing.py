@@ -182,48 +182,6 @@ def rule_snapshots(job):
             for stage, nodes in job.get('configs', {}).items()}
 
 
-def apply_rule_publication(conn, rule):
-    """Advance task bindings atomically, retaining each existing record's rule."""
-    from processing_rule_versions import view, content, legacy
-    latest = view(rule)
-    identity = dict(id=rule['id'], name=rule['name'], version=latest['version'],
-                    rule_type=rule['rule_type'], content=content(latest))
-    for job in all_jobs(conn):
-        project = next((p['name'] for p in current_app.config['COLLECTION_PROJECTS']
-                        if p['id'] == job.get('project')), job.get('project'))
-        if project != rule['project']:
-            continue
-        affected = []
-        for stage, nodes in job.get('configs', {}).items():
-            if stage != rule['stage']:
-                continue
-            for node, config in nodes.items():
-                binding = config.get('rule_identity') or {}
-                ref = str(config.get('rule', ''))
-                old = legacy(ref, stage) if not ref.startswith('rule:') else None
-                if ((binding.get('id') == rule['id'] or ref.startswith('rule:'+rule['id']+'@')
-                        or (old and old['name'] == rule['name']))
-                        and (ref != latest['value'] or binding.get('version') != latest['version'])):
-                    affected.append(config)
-        if not affected:
-            continue
-        # Snapshot only records already admitted. Unadmitted source recordings
-        # will enter under the new binding on the next intake event.
-        old_snapshots = rule_snapshots(job)
-        for member in job.get('records', []):
-            if 'rule_snapshots' not in member:
-                member['rule_snapshots'] = copy.deepcopy(old_snapshots)
-        for config in affected:
-            config['rule'] = latest['value']
-            config['rule_identity'] = copy.deepcopy(identity)
-        job['revision'] += 1
-        job['updated_at'] = collection.now()
-        job.setdefault('events', []).append(dict(at=job['updated_at'], actor=collection.USER,
-                                                  title='规则自动更新', rule_id=rule['id'],
-                                                  rule_version=latest['version']))
-        save_job(conn, job)
-
-
 def public_job(conn, job, task_id=None, record_id=None):
     from collection_processing_scope import stage_finished
     result = copy.deepcopy(job)
@@ -303,7 +261,7 @@ def task_data_context(conn, job):
     return task, records
 
 
-def validate(conn, body, flows):
+def validate(conn, body, flows, allow_historical=False):
     if not isinstance(body, dict):
         return None, '请求内容无效'
     name = body.get('name')
@@ -378,7 +336,7 @@ def validate(conn, body, flows):
             if rule_config.get('mode') not in ('inherit', 'none'):
                 from processing_rule_store import reference_error
                 project_name = next((p['name'] for p in current_app.config['COLLECTION_PROJECTS'] if p['id'] == tasks[0]['project']), tasks[0]['project'])
-                rule_error = reference_error(conn, config.get('rule', ''), project_name, stage, flow)
+                rule_error = reference_error(conn, config.get('rule', ''), project_name, stage, flow, allow_historical=allow_historical)
                 if rule_error:
                     return None, rule_error
                 from processing_rule_store import snapshot_reference
@@ -585,7 +543,7 @@ def register_processing(app, flows):
                 return jsonify(error='处理任务已更新，请刷新后重试'), 409
             action = body.get('action')
             if action == 'publish' and not job['published']:
-                _, error = validate(conn, job, flows)
+                _, error = validate(conn, job, flows, allow_historical=True)
                 if error:
                     return jsonify(error=error), 422
                 expected = body.get('expected_count')

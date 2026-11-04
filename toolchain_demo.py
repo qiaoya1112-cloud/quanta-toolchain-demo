@@ -8737,12 +8737,10 @@ def data_rules():
                 f'</span></span>'
             )
         else:
-            pending_actions = f'<a href="#" {action_data} onclick="rulePublish(this);return false;">发布新版</a>' if r.get('has_draft') and rights['publish'] else ''
-            edit_action = f'<a class="rule-update-action" href="#" {action_data} onclick="ruleUpdate(this);return false;">编辑</a>' if rights['edit'] else ''
             actions += (
                 f'<span class="action-more"><a class="tbtn" href="#" aria-haspopup="menu" onclick="ruleOpenMenu(this);return false;">⋯ 更多</a>'
                 f'<span class="action-menu rule-overflow-menu" popover="auto" role="menu">{copy_action}'
-                f'{edit_action}{pending_actions}</span></span>'
+                f'</span></span>'
             )
         rows += f"""<tr>
           <td title="{html.escape(r['id'], quote=True)}">{html.escape(r['id'])}</td>
