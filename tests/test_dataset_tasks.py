@@ -59,6 +59,7 @@ class DatasetTaskTests(unittest.TestCase):
         self.assertEqual(snapshot['publish_status'], '已发布')
         self.assertEqual(snapshot['processing_status'], 'running')
         self.assertTrue(snapshot['auto_split'])
+        self.assertEqual(snapshot['storage_locations'], ['火山云'])
         self.assertEqual(snapshot['labels'], [dp.DATASET_TAG_PATH_OPTIONS[0]])
         self.assertEqual([dp.get_rec(row['rec'])['task'] for row in dp.dataset_episodes(snapshot)], ['t2', 't2'])
         page, config = self.tasks(dataset_id=dataset['id'], version='v1', task=result['task_id'])
@@ -93,8 +94,8 @@ class DatasetTaskTests(unittest.TestCase):
     def test_query_creation_accepts_multiple_storage_locations(self):
         page = self.client.get('/model/data/query').get_data(as_text=True)
         self.assertLess(page.index('id="buildDsFormat"'), page.index('id="buildDsStorageLocations"'))
-        self.assertIn('name="storage_locations" value="金山云"', page)
-        self.assertIn('name="storage_locations" value="火山云"', page)
+        self.assertIn('name="storage_locations" value="金山云">ks3（金山云起训）', page)
+        self.assertIn('name="storage_locations" value="火山云" checked disabled>tos（火山云起训）', page)
         response = self.create(storage_locations=['金山云', '火山云'], auto_split=True)
         self.assertEqual(response.status_code, 200)
         dataset = dp.get_ds(response.json['dataset_id'])

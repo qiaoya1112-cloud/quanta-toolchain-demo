@@ -1965,7 +1965,6 @@ textarea.wf-edit-field { min-height:64px; height:auto; resize:vertical; line-hei
 .fg-row { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
 .fg .ms-panel label { display:flex; align-items:center; margin-bottom:0; }
 .fg .ms-panel input[type="checkbox"] { width:auto; padding:0; flex:none; }
-#buildDsStorageLocations .ms-trigger,#buildDsStorageLocations .ms-panel { width:100%; box-sizing:border-box; }
 #buildDsDrawer .fg label.switch { display:inline-block; margin-bottom:0; }
 #buildDsDrawer .switch input { width:0; height:0; padding:0; border:0; }
 #buildDsDrawer .switch input:focus-visible + .slider { outline:2px solid #1F80A0; outline-offset:3px; }
@@ -4899,8 +4898,6 @@ def query():
                                  placeholder=f"搜索{label}", empty_text="无匹配提示词", browse=True)
         prompt_filter_fields += f'<div class="q-field grow"><label>{label}（模糊搜索）</label>{control}</div>'
     dagger_ms = ms("dtype", "全部", [("policy", "policy"), ("teleop", "teleop")], [])
-    storage_location_ms = ms("storage_locations", "请选择存储位置",
-                             [("火山云", "tos（火山云起训）"), ("金山云", "ks3（金山云起训）")], [], "buildDsStorageLocations")
 
     from data_platform_refactor import PROCESSING_RULES, PROCESSING_FLOWS
     processing_options = {}
@@ -5194,6 +5191,7 @@ def query():
         input_name="dataset_tag",
     )
     build_ds_drawer = f"""
+    <link rel="stylesheet" href="/static/shared/dataset-batch-copy.css?v=20261103-preview-by-format">
     <div class="modal-mask" id="buildDsDrawer" onclick="if(event.target===this)this.classList.remove('active')">
       <div class="modal-box" style="width:520px;max-width:calc(100vw - 32px);">
         <div class="drawer-head"><h3>用结果新建数据集</h3><!-- 兼容旧测试标记：用结果创建数据集 --><button class="drawer-close" onclick="document.getElementById('buildDsDrawer').classList.remove('active')">&times;</button></div>
@@ -5205,7 +5203,12 @@ def query():
             <label class="switch"><input type="checkbox" role="switch" id="buildDsAutoSplit" checked aria-label="自动拆分" aria-describedby="buildDsAutoSplitHelp"><span class="slider" aria-hidden="true"></span></label>
             <div class="hint" id="buildDsAutoSplitHelp">设备 feature 不一致不能合并时，自动拆分为多个数据集</div>
           </div>
-          <div class="fg"><label id="buildDsStorageLabel">存储位置</label>{storage_location_ms}</div>
+          <div class="fg"><label id="buildDsStorageLabel">存储位置</label>
+            <div class="dataset-storage-targets" id="buildDsStorageLocations" role="group" aria-labelledby="buildDsStorageLabel">
+              <label><input type="checkbox" name="storage_locations" value="火山云" checked disabled>tos（火山云起训）</label>
+              <label><input type="checkbox" name="storage_locations" value="金山云">ks3（金山云起训）</label>
+            </div>
+          </div>
           <div class="fg"><label for="buildDsFolder"><span class="req">*</span>选择目录</label><select id="buildDsFolder" required>{build_folder_opts}</select></div>
           <div class="fg"><label>标签</label>{build_tag_selector}</div>
           {dataset_visibility_fields("buildDs")}
@@ -5621,6 +5624,8 @@ def datasets_create():
                    for location in storage_locations)
             or len(storage_locations) != len(set(storage_locations))):
         return jsonify(error="请选择有效的存储位置"), 400
+    if "火山云" not in storage_locations:
+        storage_locations = ["火山云", *storage_locations]
     auto_split = payload.get("auto_split", True)
     if not isinstance(auto_split, bool):
         return jsonify(error="自动拆分须为开启或关闭"), 400
