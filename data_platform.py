@@ -4974,6 +4974,10 @@ def query():
     top_card = f"""
     <link rel="stylesheet" href="/static/shared/scene-images.css">
     <link rel="stylesheet" href="/static/data_query/conditions.css?v=20261027-result-granularity">
+    <div style="display:flex;align-items:center;flex-wrap:wrap;gap:12px;margin-bottom:18px;">
+      <h1 style="font-size:16px;font-weight:600;margin:0;">数据湖圈选</h1>
+      <span class="muted" style="font-size:13px;">数据按 T+1 同步，仅可查询截至前一天的采集与处理结果。如需紧急查看最新结果，请联系平台产品同步。</span>
+    </div>
     <div class="q-filters query-workspace">
       <div class="q-mode-tabs">
         <button class="qm-tab active" data-m="filter" onclick="qSetMode('filter')">固定筛选</button>
